@@ -2,41 +2,108 @@
 session_start();
 require_once 'config.php';
 
+// Security headers
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: DENY');
+header('X-XSS-Protection: 1; mode=block');
+header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+
+// Rate limiting for password reset requests
+if (!isset($_SESSION['reset_attempts'])) {
+    $_SESSION['reset_attempts'] = 0;
+    $_SESSION['last_reset_attempt'] = time();
+}
+
+// Lockout after 3 reset attempts for 30 minutes
+if ($_SESSION['reset_attempts'] >= 3) {
+    $time_diff = time() - $_SESSION['last_reset_attempt'];
+    if ($time_diff < 1800) { // 30 minutes
+        $error = "Too many reset attempts. Please try again in " . ceil((1800 - $time_diff) / 60) . " minutes.";
+    } else {
+        $_SESSION['reset_attempts'] = 0;
+        $_SESSION['last_reset_attempt'] = time();
+    }
+}
+
 $error = '';
 $success = '';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $email = $_POST['email'];
-    
-    // Check if email exists in database
-    $stmt = $conn->prepare("SELECT id, username, email FROM users WHERE email = ? AND is_active = 1");
-    $stmt->bind_param("s", $email);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    if ($result->num_rows === 1) {
-        $user = $result->fetch_assoc();
-        
-        // Generate reset token
-        $token = bin2hex(random_bytes(32));
-        $expiry = date('Y-m-d H:i:s', strtotime('+1 hour'));
-        
-        // Save token to database (you might want to create a password_resets table)
-        // For now, we'll just show a success message
-        $success = "Password reset link has been sent to your email. (Demo mode - check console for token)";
-        
-        // In production, you would send an email with the reset link
-        $reset_link = "http://localhost/PIMS/reset_password.php?token=" . $token . "&email=" . urlencode($email);
-        
-        // For demo purposes, show the link (remove this in production)
-        echo "<script>console.log('Reset Link: " . $reset_link . "');</script>";
-        
+    // CSRF token validation
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        $error = "Invalid request. Please try again.";
     } else {
-        // Don't reveal if email exists or not for security
-        $success = "If an account with that email exists, a password reset link has been sent.";
+        // Input validation and sanitization
+        $email = filter_input(INPUT_POST, 'email', FILTER_VALIDATE_EMAIL);
+        
+        // Validate email format
+        if (!$email) {
+            $error = "Invalid email format.";
+            $_SESSION['reset_attempts']++;
+            $_SESSION['last_reset_attempt'] = time();
+        } else {
+            try {
+                // Check if email exists in database
+                $stmt = $conn->prepare("SELECT id, username, email, is_active FROM users WHERE email = ? LIMIT 1");
+                
+                if ($stmt === false) {
+                    throw new Exception("Database error. Please try again later.");
+                }
+                
+                $stmt->bind_param("s", $email);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                
+                if ($result->num_rows === 1) {
+                    $user = $result->fetch_assoc();
+                    
+                    // Check if account is active
+                    if (!$user['is_active']) {
+                        $error = "Account is deactivated. Please contact administrator.";
+                        $_SESSION['reset_attempts']++;
+                        $_SESSION['last_reset_attempt'] = time();
+                    } else {
+                        // Generate secure reset token
+                        $token = bin2hex(random_bytes(32));
+                        $expiry = date('Y-m-d H:i:s', strtotime('+1 hour'));
+                        
+                        // In production, save token to password_resets table
+                        // For demo purposes, we'll just show a success message
+                        $success = "Password reset link has been sent to your email. (Demo mode - check console for token)";
+                        
+                        // In production, you would send an email with the reset link
+                        $reset_link = "http://localhost/PIMS/reset_password.php?token=" . $token . "&email=" . urlencode($email);
+                        
+                        // For demo purposes, show the link (remove this in production)
+                        error_log("Reset Link: " . $reset_link);
+                        
+                        // Log password reset request
+                        error_log("Password reset requested for user ID: " . $user['id'] . " from IP: " . $_SERVER['REMOTE_ADDR']);
+                        
+                        // Reset attempts on successful request
+                        $_SESSION['reset_attempts'] = 0;
+                        $_SESSION['last_reset_attempt'] = time();
+                    }
+                } else {
+                    // Don't reveal if email exists or not for security
+                    $success = "If an account with that email exists, a password reset link has been sent.";
+                    
+                    // Log attempt for unknown email
+                    error_log("Password reset requested for unknown email: " . $email . " from IP: " . $_SERVER['REMOTE_ADDR']);
+                }
+                
+                $stmt->close();
+            } catch (Exception $e) {
+                error_log("Password reset error: " . $e->getMessage());
+                $error = "System error. Please try again later.";
+            }
+        }
     }
-    
-    $stmt->close();
+}
+
+// Generate CSRF token
+if (!isset($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 ?>
 
@@ -49,295 +116,203 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="assets/css/index.css" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        
+        .split-screen {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+        
+        .carousel-section {
+            flex: 1;
+            background: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%);
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
-        }
-        
-        .forgot-wrapper {
-            width: 100%;
-            max-width: 480px;
-        }
-        
-        .forgot-container {
-            background: rgba(255, 255, 255, 0.98);
-            border-radius: 24px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-            overflow: hidden;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        .forgot-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 2.5rem 2rem;
-            text-align: center;
-            position: relative;
-        }
-        
-        .forgot-header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>') repeat;
-            opacity: 0.3;
-        }
-        
-        .forgot-header h1 {
-            margin: 0;
-            font-size: 2rem;
-            font-weight: 700;
-            position: relative;
-            z-index: 1;
-        }
-        
-        .forgot-header p {
-            margin: 0.5rem 0 0 0;
-            opacity: 0.9;
-            font-size: 1rem;
-            position: relative;
-            z-index: 1;
-        }
-        
-        .forgot-body {
-            padding: 2.5rem 2rem;
-        }
-        
-        .form-floating {
-            margin-bottom: 1.5rem;
-        }
-        
-        .form-control {
-            border: 2px solid #e9ecef;
-            border-radius: 12px;
-            padding: 1rem 1.25rem;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            background: #f8f9fa;
-        }
-        
-        .form-control:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.1);
-            background: white;
-        }
-        
-        .form-floating label {
-            color: #6c757d;
-            padding: 1rem 1.25rem;
-        }
-        
-        .form-floating .form-control:focus ~ label,
-        .form-floating .form-control:not(:placeholder-shown) ~ label {
-            color: #667eea;
-            transform: scale(0.85) translateY(-0.5rem) translateX(0.15rem);
-        }
-        
-        .btn-submit {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
             padding: 1rem;
-            font-weight: 600;
-            border-radius: 12px;
-            transition: all 0.3s ease;
-            font-size: 1.1rem;
             position: relative;
-            overflow: hidden;
+            height: 100vh;
         }
         
-        .btn-submit::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: left 0.5s;
-        }
-        
-        .btn-submit:hover::before {
-            left: 100%;
-        }
-        
-        .btn-submit:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
-        }
-        
-        .alert {
-            border-radius: 12px;
-            margin-bottom: 1.5rem;
-            border: none;
-            font-weight: 500;
-        }
-        
-        .alert-success {
-            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
-            color: #155724;
-        }
-        
-        .alert-danger {
-            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
-            color: #721c24;
-        }
-        
-        .back-link {
-            display: inline-block;
-            color: #667eea;
-            text-decoration: none;
-            font-weight: 500;
-            transition: color 0.3s ease;
-            margin-top: 1rem;
-        }
-        
-        .back-link:hover {
-            color: #764ba2;
-            text-decoration: underline;
-        }
-        
-        .instructions {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            border-left: 4px solid #667eea;
-        }
-        
-        .instructions h6 {
-            color: #495057;
-            font-weight: 600;
-            margin-bottom: 0.75rem;
-        }
-        
-        .instructions p {
-            color: #6c757d;
-            margin-bottom: 0;
-            font-size: 0.875rem;
+        .forgot-section {
+            flex: 1;
+            background: linear-gradient(135deg, #F7F3F3 0%, #C1EAF2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            height: 100vh;
         }
         
         /* Responsive Design */
+        @media (max-width: 992px) {
+            .split-screen {
+                flex-direction: column;
+                height: 100vh;
+            }
+            
+            .carousel-section {
+                height: 35vh;
+                flex: none;
+            }
+            
+            .forgot-section {
+                height: 65vh;
+                flex: none;
+            }
+        }
+        
         @media (max-width: 576px) {
-            body {
-                padding: 10px;
+            .carousel-section {
+                height: 30vh;
+                padding: 0.5rem;
             }
             
-            .forgot-wrapper {
-                max-width: 100%;
-            }
-            
-            .forgot-header {
-                padding: 2rem 1.5rem;
-            }
-            
-            .forgot-header h1 {
-                font-size: 1.75rem;
-            }
-            
-            .forgot-body {
-                padding: 2rem 1.5rem;
+            .forgot-section {
+                height: 70vh;
+                padding: 0.5rem;
             }
         }
         
         @media (max-width: 400px) {
-            .forgot-header h1 {
-                font-size: 1.5rem;
+            .carousel-section {
+                height: 20vh;
             }
             
-            .forgot-body {
-                padding: 1.5rem 1rem;
+            .forgot-section {
+                height: 80vh;
             }
-        }
-        
-        /* Loading Animation */
-        .btn-submit.loading {
-            pointer-events: none;
-            opacity: 0.7;
-        }
-        
-        .btn-submit.loading::after {
-            content: '';
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            margin: auto;
-            border: 2px solid transparent;
-            border-top-color: white;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            right: 0;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
-    <div class="forgot-wrapper">
-        <div class="forgot-container">
-            <div class="forgot-header">
-                <h1><i class="bi bi-key"></i> Forgot Password</h1>
-                <p>Reset your PIMS account password</p>
-            </div>
-            <div class="forgot-body">
-                <?php if ($success): ?>
-                    <div class="alert alert-success" role="alert">
-                        <i class="bi bi-check-circle"></i> <?php echo htmlspecialchars($success); ?>
+    <div class="split-screen">
+        <!-- Carousel Section -->
+        <div class="carousel-section">
+            <div class="carousel-content">
+                <div id="featureCarousel" class="carousel slide" data-bs-ride="carousel">
+                    <div class="carousel-indicators">
+                        <button type="button" data-bs-target="#featureCarousel" data-bs-slide-to="0" class="active"></button>
+                        <button type="button" data-bs-target="#featureCarousel" data-bs-slide-to="1"></button>
+                        <button type="button" data-bs-target="#featureCarousel" data-bs-slide-to="2"></button>
+                        <button type="button" data-bs-target="#featureCarousel" data-bs-slide-to="3"></button>
                     </div>
-                <?php endif; ?>
-                
-                <?php if ($error): ?>
-                    <div class="alert alert-danger" role="alert">
-                        <i class="bi bi-exclamation-triangle"></i> <?php echo htmlspecialchars($error); ?>
-                    </div>
-                <?php endif; ?>
-                
-                <?php if (!$success): ?>
-                    <div class="instructions">
-                        <h6><i class="bi bi-info-circle"></i> Instructions</h6>
-                        <p>Enter your email address and we'll send you a link to reset your password. The link will expire after 1 hour for security reasons.</p>
-                    </div>
-                    
-                    <form method="POST" action="" id="forgotForm">
-                        <div class="form-floating">
-                            <input type="email" class="form-control" id="email" name="email" placeholder="Email" required>
-                            <label for="email"><i class="bi bi-envelope"></i> Email Address</label>
+                    <div class="carousel-inner">
+                        <div class="carousel-item active">
+                            <div class="text-center text-white p-4">
+                                <div class="display-1 mb-3">
+                                    <i class="bi bi-key"></i>
+                                </div>
+                                <h3 class="carousel-title">Password Recovery</h3>
+                                <p class="lead">
+                                    Secure password recovery system - Reset your PIMS account password safely and quickly with our automated recovery process.
+                                </p>
+                            </div>
                         </div>
-                        
-                        <button type="submit" class="btn btn-primary btn-submit w-100" id="submitBtn">
-                            <i class="bi bi-send"></i> Send Reset Link
-                        </button>
-                    </form>
-                <?php endif; ?>
-                
-                <div class="text-center">
-                    <a href="index.php" class="back-link">
-                        <i class="bi bi-arrow-left"></i> Back to Login
-                    </a>
+                        <div class="carousel-item">
+                            <div class="text-center text-white p-4">
+                                <div class="display-1 mb-3">
+                                    <i class="bi bi-shield-check"></i>
+                                </div>
+                                <h3 class="carousel-title">Secure & Reliable</h3>
+                                <p class="lead">
+                                    Enterprise-grade security with encrypted reset links that expire after 1 hour, ensuring your account remains protected.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="carousel-item">
+                            <div class="text-center text-white p-4">
+                                <div class="display-1 mb-3">
+                                    <i class="bi bi-envelope-check"></i>
+                                </div>
+                                <h3 class="carousel-title">Email Delivery</h3>
+                                <p class="lead">
+                                    Instant email delivery with secure reset links sent directly to your registered email address for quick access.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="carousel-item">
+                            <div class="text-center text-white p-4">
+                                <div class="display-1 mb-3">
+                                    <i class="bi bi-clock-history"></i>
+                                </div>
+                                <h3 class="carousel-title">Time-Sensitive</h3>
+                                <p class="lead">
+                                    Reset links automatically expire after 1 hour for enhanced security, protecting your account from unauthorized access.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Forgot Password Section -->
+        <div class="forgot-section">
+            <div class="row w-100">
+                <div class="col-12 col-md-8 col-lg-6 mx-auto">
+                    <div class="card shadow-lg border-0 rounded-4">
+                        <div class="card-header bg-primary text-white text-center rounded-top-4">
+                            <div class="mb-3">
+                                <div class="logo-circle">
+                                    <img src="img/trans_logo.png" alt="PIMS Logo" class="img-fluid" style="max-height: 60px; border-radius: 8px;">
+                                </div>
+                            </div>
+                            <h6 class="mb-0">PILAR INVENTORY MANAGEMENT SYSTEM</h6>
+                            <small>Forgot Password</small>
+                        </div>
+                        <div class="card-body">
+                            <?php if ($success): ?>
+                                <div class="alert alert-success" role="alert">
+                                    <i class="bi bi-check-circle"></i> <?php echo htmlspecialchars($success); ?>
+                                </div>
+                            <?php endif; ?>
+                            
+                            <?php if ($error): ?>
+                                <div class="alert alert-danger" role="alert">
+                                    <i class="bi bi-exclamation-triangle"></i> <?php echo htmlspecialchars($error); ?>
+                                </div>
+                            <?php endif; ?>
+                            
+                            <?php if (!$success): ?>
+                                <div class="instructions">
+                                    <h6><i class="bi bi-info-circle"></i> Instructions</h6>
+                                    <p>Enter your email address and we'll send you a link to reset your password. The link will expire after 1 hour for security reasons.</p>
+                                </div>
+                                
+                                <form method="POST" action="" id="forgotForm">
+                                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
+                                    <div class="form-floating mb-3">
+                                        <input type="email" class="form-control" id="email" name="email" placeholder="Email" required>
+                                        <label for="email"><i class="bi bi-envelope"></i> Email Address</label>
+                                    </div>
+                                    
+                                    <button type="submit" class="btn btn-primary w-100" id="submitBtn">
+                                        <i class="bi bi-send"></i> Send Reset Link
+                                    </button>
+                                </form>
+                            <?php endif; ?>
+                            
+                            <div class="text-center mt-3">
+                                <hr>
+                                <a href="index.php" class="text-decoration-none">
+                                    <i class="bi bi-arrow-left"></i> Back to Login
+                                </a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -356,6 +331,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 submitBtn.innerHTML = '<span style="opacity: 0;">Sending...</span>';
             });
         }
+        
+        // Input focus effects
+        const inputs = document.querySelectorAll('.form-control');
+        inputs.forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentElement.classList.add('focused');
+            });
+            
+            input.addEventListener('blur', function() {
+                if (!this.value) {
+                    this.parentElement.classList.remove('focused');
+                }
+            });
+        });
         
         // Auto-hide alerts after 5 seconds
         const alerts = document.querySelectorAll('.alert');
