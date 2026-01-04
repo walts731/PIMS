@@ -1,7 +1,7 @@
 <?php
 // AJAX endpoint for exporting logs
 session_start();
-require_once '../config.php';
+require_once '../../config.php';
 
 // Check if user is logged in and has correct role
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {

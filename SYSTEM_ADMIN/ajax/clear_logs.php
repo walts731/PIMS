@@ -1,7 +1,7 @@
 <?php
 // AJAX endpoint for clearing logs
 session_start();
-require_once '../config.php';
+require_once '../../config.php';
 
 // Function to log system actions (if not already defined)
 if (!function_exists('logSystemAction')) {
