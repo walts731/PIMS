@@ -424,6 +424,77 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
         exit();
     }
 }
+
+// Get role permissions for management
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'get_role_permissions') {
+    $role = $_GET['role'];
+    
+    try {
+        $stmt = $conn->prepare("
+            SELECT p.name, p.description, p.module, rp.can_create, rp.can_read, rp.can_update, rp.can_delete 
+            FROM permissions p 
+            LEFT JOIN role_permissions rp ON p.id = rp.permission_id AND rp.role = ?
+            ORDER BY p.module, p.name
+        ");
+        $stmt->bind_param("s", $role);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        $permissions = [];
+        while ($row = $result->fetch_assoc()) {
+            $permissions[] = $row;
+        }
+        
+        header('Content-Type: application/json');
+        echo json_encode($permissions);
+        exit();
+        $stmt->close();
+    } catch (Exception $e) {
+        echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+        exit();
+    }
+}
+
+// Update role permissions
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_role_permissions') {
+    $role = $_POST['role'];
+    $permissions = $_POST['permissions'];
+    
+    try {
+        // Begin transaction
+        $conn->begin_transaction();
+        
+        foreach ($permissions as $permission_id => $perms) {
+            $can_create = isset($perms['can_create']) ? 1 : 0;
+            $can_read = isset($perms['can_read']) ? 1 : 0;
+            $can_update = isset($perms['can_update']) ? 1 : 0;
+            $can_delete = isset($perms['can_delete']) ? 1 : 0;
+            
+            // Update or insert role permission
+            $stmt = $conn->prepare("
+                INSERT INTO role_permissions (role, permission_id, can_create, can_read, can_update, can_delete)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE 
+                can_create = VALUES(can_create),
+                can_read = VALUES(can_read),
+                can_update = VALUES(can_update),
+                can_delete = VALUES(can_delete)
+            ");
+            $stmt->bind_param("siiiii", $role, $permission_id, $can_create, $can_read, $can_update, $can_delete);
+            $stmt->execute();
+            $stmt->close();
+        }
+        
+        $conn->commit();
+        $message = 'Role permissions updated successfully';
+        $message_type = 'success';
+        
+    } catch (Exception $e) {
+        $conn->rollback();
+        $message = 'Error updating role permissions: ' . $e->getMessage();
+        $message_type = 'danger';
+    }
+}
 $users = [];
 try {
     $stmt = $conn->prepare("SELECT id, username, email, role, first_name, last_name, is_active, created_at FROM users ORDER BY created_at DESC");
@@ -915,12 +986,14 @@ try {
                     <p class="text-muted mb-0">Manage system users, roles, and permissions</p>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <a href="dashboard.php" class="btn btn-outline-secondary btn-sm me-2">
-                        <i class="bi bi-arrow-left"></i> Back to Dashboard
-                    </a>
-                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addUserModal">
-                        <i class="bi bi-plus-circle"></i> Add User
-                    </button>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#rolePermissionsModal">
+                            <i class="bi bi-shield-check"></i> Role Permissions
+                        </button>
+                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                            <i class="bi bi-plus-circle"></i> Add User
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1210,7 +1283,63 @@ try {
             </div>
         </div>
     </div>
-    </div> <!-- Close main wrapper -->
+    
+    <!-- Role Permissions Modal -->
+    <div class="modal fade" id="rolePermissionsModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title"><i class="bi bi-shield-check"></i> Role Permissions Management</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="roleSelect" class="form-label">Select Role</label>
+                            <select class="form-control" id="roleSelect">
+                                <option value="">Choose a role...</option>
+                                <option value="system_admin">System Admin</option>
+                                <option value="admin">Admin</option>
+                                <option value="office_admin">Office Admin</option>
+                                <option value="user">User</option>
+                            </select>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="d-flex align-items-end h-100">
+                                <button class="btn btn-primary me-2" onclick="loadRolePermissions()">
+                                    <i class="bi bi-arrow-clockwise"></i> Load Permissions
+                                </button>
+                                <button class="btn btn-success" onclick="saveRolePermissions()" id="savePermissionsBtn" disabled>
+                                    <i class="bi bi-save"></i> Save Changes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="permissionsContainer" style="display: none;">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Module</th>
+                                        <th>Permission</th>
+                                        <th>Description</th>
+                                        <th>Create</th>
+                                        <th>Read</th>
+                                        <th>Update</th>
+                                        <th>Delete</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="permissionsTableBody">
+                                    <!-- Permissions will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -1370,6 +1499,135 @@ try {
                 alert('Error updating user');
             });
         });
+        
+        // Role Permissions Management
+        function loadRolePermissions() {
+            const role = document.getElementById('roleSelect').value;
+            
+            if (!role) {
+                alert('Please select a role first');
+                return;
+            }
+            
+            $.ajax({
+                url: 'user_management.php?action=get_role_permissions&role=' + role,
+                method: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.error) {
+                        alert('Error: ' + response.error);
+                    } else {
+                        displayPermissions(response);
+                        document.getElementById('permissionsContainer').style.display = 'block';
+                        document.getElementById('savePermissionsBtn').disabled = false;
+                    }
+                },
+                error: function() {
+                    alert('Error loading permissions');
+                }
+            });
+        }
+        
+        function displayPermissions(permissions) {
+            const tbody = document.getElementById('permissionsTableBody');
+            tbody.innerHTML = '';
+            
+            let currentModule = '';
+            permissions.forEach(permission => {
+                if (permission.module !== currentModule) {
+                    currentModule = permission.module;
+                    // Add module header row
+                    const moduleRow = document.createElement('tr');
+                    moduleRow.innerHTML = `
+                        <td colspan="8" class="table-secondary fw-bold">
+                            <i class="bi bi-folder"></i> ${currentModule.charAt(0).toUpperCase() + currentModule.slice(1)}
+                        </td>
+                    `;
+                    tbody.appendChild(moduleRow);
+                }
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td></td>
+                    <td>${permission.name}</td>
+                    <td><small>${permission.description}</small></td>
+                    <td class="text-center">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" 
+                                   id="create_${permission.name}" 
+                                   data-permission-id="${permission.name}" 
+                                   data-action="can_create" 
+                                   ${permission.can_create ? 'checked' : ''}>
+                        </div>
+                    </td>
+                    <td class="text-center">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" 
+                                   id="read_${permission.name}" 
+                                   data-permission-id="${permission.name}" 
+                                   data-action="can_read" 
+                                   ${permission.can_read ? 'checked' : ''}>
+                        </div>
+                    </td>
+                    <td class="text-center">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" 
+                                   id="update_${permission.name}" 
+                                   data-permission-id="${permission.name}" 
+                                   data-action="can_update" 
+                                   ${permission.can_update ? 'checked' : ''}>
+                        </div>
+                    </td>
+                    <td class="text-center">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" 
+                                   id="delete_${permission.name}" 
+                                   data-permission-id="${permission.name}" 
+                                   data-action="can_delete" 
+                                   ${permission.can_delete ? 'checked' : ''}>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        function saveRolePermissions() {
+            const role = document.getElementById('roleSelect').value;
+            const permissions = {};
+            
+            // Collect all permission data
+            const checkboxes = document.querySelectorAll('#permissionsTableBody input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                const permissionName = checkbox.dataset.permissionId;
+                const action = checkbox.dataset.action;
+                
+                if (!permissions[permissionName]) {
+                    permissions[permissionName] = {};
+                }
+                permissions[permissionName][action] = checkbox.checked;
+            });
+            
+            // Send data to server
+            const formData = new FormData();
+            formData.append('action', 'update_role_permissions');
+            formData.append('role', role);
+            formData.append('permissions', JSON.stringify(permissions));
+            
+            fetch('user_management.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.text())
+            .then(html => {
+                // Reload page to show updated data
+                location.reload();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error saving permissions');
+            });
+        }
     </script>
 </body>
 </html>
