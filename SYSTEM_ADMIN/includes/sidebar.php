@@ -219,13 +219,17 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <i class="bi bi-shield-exclamation"></i>
             Security Audit
         </a>
-        <a href="#" class="sidebar-nav-item">
+        <a href="backup.php" class="sidebar-nav-item <?php echo $current_page == 'backup.php' ? 'active' : ''; ?>">
             <i class="bi bi-cloud-download"></i>
             Backup System
         </a>
         <a href="logs.php" class="sidebar-nav-item <?php echo $current_page == 'logs.php' ? 'active' : ''; ?>">
             <i class="bi bi-clock-history"></i>
             System Logs
+        </a>
+        <a href="profile.php" class="sidebar-nav-item <?php echo $current_page == 'profile.php' ? 'active' : ''; ?>">
+            <i class="bi bi-person-circle"></i>
+            My Profile
         </a>
         <div class="sidebar-nav-item" style="margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 2rem;">
             <i class="bi bi-box-arrow-right"></i>
