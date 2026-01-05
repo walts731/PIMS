@@ -20,14 +20,27 @@ $code = $_GET['code'] ?? '';
 $error = $_GET['error'] ?? '';
 $state = $_GET['state'] ?? '';
 
+// If provider is not in GET parameters, try to get it from state
+if (empty($provider) && !empty($state)) {
+    $stateData = json_decode(base64_decode($state), true);
+    if ($stateData && isset($stateData['provider'])) {
+        $provider = $stateData['provider'];
+    }
+}
+
+// If still no provider, default to google_drive (most common case)
+if (empty($provider)) {
+    $provider = 'google_drive';
+}
+
 if ($error) {
     $_SESSION['cloud_error'] = "OAuth error: " . htmlspecialchars($error);
     header('Location: cloud_config.php');
     exit();
 }
 
-if (empty($provider) || empty($code)) {
-    $_SESSION['cloud_error'] = "Missing required OAuth parameters";
+if (empty($code)) {
+    $_SESSION['cloud_error'] = "Missing authorization code from OAuth provider";
     header('Location: cloud_config.php');
     exit();
 }

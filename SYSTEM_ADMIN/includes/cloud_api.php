@@ -120,6 +120,12 @@ class CloudStorageAPI {
             $remoteFileName = basename($localFilePath);
         }
         
+        // Check if we have access token
+        if (empty($this->config['access_token'])) {
+            // Need to get OAuth token
+            return $this->getDropboxOAuthToken($localFilePath, $remoteFileName);
+        }
+        
         $folderPath = $this->config['folder_path'] ?? '';
         $remotePath = $folderPath ? trim($folderPath, '/') . '/' . $remoteFileName : $remoteFileName;
         
@@ -169,6 +175,12 @@ class CloudStorageAPI {
             $remoteFileName = basename($localFilePath);
         }
         
+        // Check if we have access token
+        if (empty($this->config['access_token'])) {
+            // Need to get OAuth token
+            return $this->getOneDriveOAuthToken($localFilePath, $remoteFileName);
+        }
+        
         $folderPath = $this->config['folder_path'] ?? '';
         $remotePath = $folderPath ? trim($folderPath, '/') . '/' . $remoteFileName : $remoteFileName;
         
@@ -204,6 +216,60 @@ class CloudStorageAPI {
         } else {
             throw new Exception("OneDrive upload failed: HTTP {$httpCode}");
         }
+    }
+    
+    /**
+     * Get Dropbox OAuth Token
+     */
+    private function getDropboxOAuthToken($localFilePath, $remoteFileName) {
+        $redirectUri = self::getCallbackUrl();
+        $state = base64_encode(json_encode([
+            'provider' => 'dropbox',
+            'local_file' => $localFilePath,
+            'remote_file' => $remoteFileName
+        ]));
+        
+        $authUrl = 'https://www.dropbox.com/oauth2/authorize?' . http_build_query([
+            'client_id' => $this->config['api_key'],
+            'redirect_uri' => $redirectUri,
+            'response_type' => 'code',
+            'state' => $state
+        ]);
+        
+        return [
+            'success' => false,
+            'auth_required' => true,
+            'auth_url' => $authUrl,
+            'provider' => 'dropbox'
+        ];
+    }
+    
+    /**
+     * Get OneDrive OAuth Token
+     */
+    private function getOneDriveOAuthToken($localFilePath, $remoteFileName) {
+        $redirectUri = self::getCallbackUrl();
+        $state = base64_encode(json_encode([
+            'provider' => 'onedrive',
+            'local_file' => $localFilePath,
+            'remote_file' => $remoteFileName
+        ]));
+        
+        $authUrl = 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize?' . http_build_query([
+            'client_id' => $this->config['api_key'],
+            'redirect_uri' => $redirectUri,
+            'scope' => 'Files.ReadWrite offline_access',
+            'response_type' => 'code',
+            'state' => $state,
+            'response_mode' => 'query'
+        ]);
+        
+        return [
+            'success' => false,
+            'auth_required' => true,
+            'auth_url' => $authUrl,
+            'provider' => 'onedrive'
+        ];
     }
     
     /**
@@ -303,8 +369,15 @@ class CloudStorageAPI {
      */
     public static function getCallbackUrl() {
         $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https" : "http";
-        $host = $_SERVER['HTTP_HOST'];
-        return "{$protocol}://{$host}/PIMS/SYSTEM_ADMIN/cloud_callback.php";
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        
+        // For production, use the full path
+        if (strpos($host, 'localhost') === false) {
+            return "{$protocol}://{$host}/PIMS/SYSTEM_ADMIN/cloud_callback.php";
+        } else {
+            // For local development
+            return "{$protocol}://{$host}/PIMS/SYSTEM_ADMIN/cloud_callback.php";
+        }
     }
     
     /**

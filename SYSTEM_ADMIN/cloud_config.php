@@ -267,6 +267,24 @@ try {
                 </div>
             <?php endif; ?>
             
+            <?php if (isset($_SESSION['cloud_success'])): ?>
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle"></i>
+                    <?php echo htmlspecialchars($_SESSION['cloud_success']); ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                <?php unset($_SESSION['cloud_success']); ?>
+            <?php endif; ?>
+            
+            <?php if (isset($_SESSION['cloud_error'])): ?>
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <?php echo htmlspecialchars($_SESSION['cloud_error']); ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                <?php unset($_SESSION['cloud_error']); ?>
+            <?php endif; ?>
+            
             <?php if (!empty($errors)): ?>
                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
                     <i class="bi bi-exclamation-triangle"></i>
@@ -579,19 +597,28 @@ try {
                 'onedrive': 'OneDrive'
             };
             
-            providers.forEach(provider => {
-                const button = document.createElement('button');
-                button.type = 'button';
-                button.className = 'btn btn-outline-primary btn-sm me-2 mb-2';
-                button.innerHTML = `<i class="bi bi-plus"></i> Add ${providerNames[provider]}`;
-                button.onclick = function() {
-                    document.getElementById('provider').value = provider;
-                    document.getElementById('config_name').value = `${providerNames[provider]} Backup`;
-                    document.getElementById('config_name').focus();
-                };
-                
-                document.querySelector('.config-card h4').parentNode.appendChild(button);
-            });
+            // Check if there's a success message and redirect to backup page after 3 seconds
+            const successAlert = document.querySelector('.alert-success');
+            if (successAlert && successAlert.textContent.includes('Successfully connected')) {
+                setTimeout(function() {
+                    window.location.href = 'backup.php';
+                }, 3000);
+            }
+        });
+        
+        // Add quick setup buttons for each provider
+        providers.forEach(provider => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'btn btn-outline-primary btn-sm me-2 mb-2';
+            button.innerHTML = `<i class="bi bi-plus"></i> Add ${providerNames[provider]}`;
+            button.onclick = function() {
+                document.getElementById('provider').value = provider;
+                document.getElementById('config_name').value = `${providerNames[provider]} Backup`;
+                document.getElementById('config_name').focus();
+            };
+            
+            document.querySelector('.config-card h4').parentNode.appendChild(button);
         });
     </script>
 </body>
