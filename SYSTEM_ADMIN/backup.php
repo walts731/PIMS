@@ -101,6 +101,189 @@ if (!function_exists('simulateCloudUpload')) {
     }
 }
 
+// Handle scheduled backup creation
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_scheduled_backup'])) {
+    $schedule_name = trim($_POST['schedule_name']);
+    $backup_type = $_POST['backup_type'];
+    $schedule_type = $_POST['schedule_type'];
+    $schedule_day = $_POST['schedule_day'] ?? null;
+    $schedule_time = $_POST['schedule_time'];
+    $include_files = isset($_POST['include_files']);
+    $include_database = isset($_POST['include_database']);
+    $online_backup = isset($_POST['online_backup']);
+    $cloud_provider = $online_backup ? $_POST['cloud_provider'] : null;
+    
+    $errors = [];
+    
+    if (empty($schedule_name)) {
+        $errors[] = 'Schedule name is required';
+    }
+    
+    if ($schedule_type === 'weekly' && (empty($schedule_day) || $schedule_day < 1 || $schedule_day > 7)) {
+        $errors[] = 'Valid day of week (1-7) is required for weekly schedule';
+    }
+    
+    if ($schedule_type === 'monthly' && (empty($schedule_day) || $schedule_day < 1 || $schedule_day > 31)) {
+        $errors[] = 'Valid day of month (1-31) is required for monthly schedule';
+    }
+    
+    if (empty($errors)) {
+        try {
+            // Calculate next run time
+            $next_run = calculateNextRun($schedule_type, $schedule_day, $schedule_time);
+            
+            // Insert scheduled backup
+            $stmt = $conn->prepare("
+                INSERT INTO scheduled_backups 
+                (name, backup_type, schedule_type, schedule_day, schedule_time, include_files, include_database, online_backup, cloud_provider, next_run, created_by) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+            $stmt->bind_param("sssisiiissi", $schedule_name, $backup_type, $schedule_type, $schedule_day, $schedule_time, $include_files, $include_database, $online_backup, $cloud_provider, $next_run, $_SESSION['user_id']);
+            $stmt->execute();
+            $stmt->close();
+            
+            logSystemAction($_SESSION['user_id'], 'scheduled_backup_created', 'backup_system', 
+                "Schedule: $schedule_name, Type: $backup_type, Frequency: $schedule_type");
+            
+            $success_message = 'Scheduled backup created successfully!';
+            
+        } catch (Exception $e) {
+            error_log("Scheduled backup creation error: " . $e->getMessage());
+            $errors[] = 'Failed to create scheduled backup: ' . $e->getMessage();
+        }
+    }
+}
+
+// Handle scheduled backup update
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_scheduled_backup'])) {
+    $schedule_id = $_POST['schedule_id'];
+    $schedule_name = trim($_POST['schedule_name']);
+    $backup_type = $_POST['backup_type'];
+    $schedule_type = $_POST['schedule_type'];
+    $schedule_day = $_POST['schedule_day'] ?? null;
+    $schedule_time = $_POST['schedule_time'];
+    $include_files = isset($_POST['include_files']);
+    $include_database = isset($_POST['include_database']);
+    $online_backup = isset($_POST['online_backup']);
+    $cloud_provider = $online_backup ? $_POST['cloud_provider'] : null;
+    
+    $errors = [];
+    
+    if (empty($schedule_name)) {
+        $errors[] = 'Schedule name is required';
+    }
+    
+    if ($schedule_type === 'weekly' && (empty($schedule_day) || $schedule_day < 1 || $schedule_day > 7)) {
+        $errors[] = 'Valid day of week (1-7) is required for weekly schedule';
+    }
+    
+    if ($schedule_type === 'monthly' && (empty($schedule_day) || $schedule_day < 1 || $schedule_day > 31)) {
+        $errors[] = 'Valid day of month (1-31) is required for monthly schedule';
+    }
+    
+    if (empty($errors)) {
+        try {
+            // Calculate next run time
+            $next_run = calculateNextRun($schedule_type, $schedule_day, $schedule_time);
+            
+            // Update scheduled backup
+            $stmt = $conn->prepare("
+                UPDATE scheduled_backups 
+                SET name = ?, backup_type = ?, schedule_type = ?, schedule_day = ?, schedule_time = ?, 
+                    include_files = ?, include_database = ?, online_backup = ?, cloud_provider = ?, 
+                    next_run = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+            ");
+            $stmt->bind_param("sssisiiissii", $schedule_name, $backup_type, $schedule_type, $schedule_day, $schedule_time, $include_files, $include_database, $online_backup, $cloud_provider, $next_run, $schedule_id);
+            $stmt->execute();
+            $stmt->close();
+            
+            logSystemAction($_SESSION['user_id'], 'scheduled_backup_updated', 'backup_system', 
+                "Schedule: $schedule_name, Type: $backup_type, Frequency: $schedule_type");
+            
+            $success_message = 'Scheduled backup updated successfully!';
+            
+        } catch (Exception $e) {
+            error_log("Scheduled backup update error: " . $e->getMessage());
+            $errors[] = 'Failed to update scheduled backup: ' . $e->getMessage();
+        }
+    }
+}
+
+// Handle scheduled backup deletion
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_scheduled_backup'])) {
+    $schedule_id = $_POST['schedule_id'];
+    
+    try {
+        // Get schedule info
+        $stmt = $conn->prepare("SELECT * FROM scheduled_backups WHERE id = ?");
+        $stmt->bind_param("i", $schedule_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $schedule = $result->fetch_assoc();
+        $stmt->close();
+        
+        if ($schedule) {
+            // Delete scheduled backup
+            $stmt = $conn->prepare("DELETE FROM scheduled_backups WHERE id = ?");
+            $stmt->bind_param("i", $schedule_id);
+            $stmt->execute();
+            $stmt->close();
+            
+            logSystemAction($_SESSION['user_id'], 'scheduled_backup_deleted', 'backup_system', 
+                "Deleted scheduled backup: {$schedule['name']}");
+            
+            $success_message = 'Scheduled backup deleted successfully!';
+        }
+        
+    } catch (Exception $e) {
+        error_log("Scheduled backup deletion error: " . $e->getMessage());
+        $error_message = 'Failed to delete scheduled backup';
+    }
+}
+
+// Function to calculate next run time
+function calculateNextRun($schedule_type, $schedule_day, $schedule_time) {
+    $now = new DateTime();
+    $time_parts = explode(':', $schedule_time);
+    $hour = (int)$time_parts[0];
+    $minute = (int)$time_parts[1];
+    
+    switch ($schedule_type) {
+        case 'daily':
+            $next_run = new DateTime();
+            $next_run->setTime($hour, $minute, 0);
+            if ($next_run <= $now) {
+                $next_run->modify('+1 day');
+            }
+            break;
+            
+        case 'weekly':
+            $next_run = new DateTime();
+            $next_run->modify('next ' . date('l', strtotime("Sunday +{$schedule_day} days")));
+            $next_run->setTime($hour, $minute, 0);
+            if ($next_run <= $now) {
+                $next_run->modify('+1 week');
+            }
+            break;
+            
+        case 'monthly':
+            $next_run = new DateTime();
+            $next_run->setDate($now->format('Y'), $now->format('m'), $schedule_day);
+            $next_run->setTime($hour, $minute, 0);
+            if ($next_run <= $now) {
+                $next_run->modify('+1 month');
+            }
+            break;
+            
+        default:
+            $next_run = $now;
+            break;
+    }
+    
+    return $next_run->format('Y-m-d H:i:s');
+}
+
 // Handle backup creation
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_backup'])) {
     $backup_name = trim($_POST['backup_name']);
@@ -430,6 +613,42 @@ try {
 } catch (Exception $e) {
     error_log("Error fetching backups: " . $e->getMessage());
 }
+
+// Get scheduled backups
+$scheduled_backups = [];
+try {
+    $stmt = $conn->prepare("
+        SELECT s.*, u.first_name, u.last_name, u.username 
+        FROM scheduled_backups s 
+        LEFT JOIN users u ON s.created_by = u.id 
+        WHERE s.is_active = TRUE
+        ORDER BY s.next_run ASC
+    ");
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    while ($row = $result->fetch_assoc()) {
+        $scheduled_backups[] = $row;
+    }
+    $stmt->close();
+} catch (Exception $e) {
+    error_log("Error fetching scheduled backups: " . $e->getMessage());
+}
+
+// Get cloud providers for dropdown
+$cloud_providers = [];
+try {
+    $stmt = $conn->prepare("SELECT provider, api_key FROM online_backup_configs WHERE is_active = TRUE");
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    while ($row = $result->fetch_assoc()) {
+        $cloud_providers[] = $row;
+    }
+    $stmt->close();
+} catch (Exception $e) {
+    error_log("Error fetching cloud providers: " . $e->getMessage());
+}
 ?>
 
 <!DOCTYPE html>
@@ -479,12 +698,44 @@ try {
             margin-bottom: 1rem;
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
             border-left: 4px solid #191BA9;
-            transition: transform 0.3s ease;
+            transition: all 0.3s ease;
+            border: 1px solid #e9ecef;
         }
         
         .backup-item:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            border-color: #191BA9;
+        }
+        
+        .backup-item .btn {
+            min-width: 70px;
+            transition: all 0.2s ease;
+        }
+        
+        .backup-item .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        
+        .backup-item .btn-success:hover {
+            background-color: #218838;
+            border-color: #1e7e34;
+        }
+        
+        .backup-item .btn-info:hover {
+            background-color: #138496;
+            border-color: #117a8b;
+        }
+        
+        .backup-item .btn-primary:hover {
+            background-color: #0069d9;
+            border-color: #0062cc;
+        }
+        
+        .backup-item .btn-outline-danger:hover {
+            background-color: #dc3545;
+            border-color: #dc3545;
         }
         
         .form-control, .form-select {
@@ -715,6 +966,93 @@ try {
                 </div>
             </div>
             
+            <!-- Scheduled Backups -->
+            <div class="backup-card">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 class="mb-0"><i class="bi bi-clock"></i> Scheduled Backups</h4>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createScheduledBackupModal">
+                        <i class="bi bi-plus-circle"></i> Schedule Backup
+                    </button>
+                </div>
+                
+                <?php if (empty($scheduled_backups)): ?>
+                    <div class="text-center py-5">
+                        <i class="bi bi-clock fs-1 text-muted"></i>
+                        <p class="text-muted mt-3">No scheduled backups found. Create your first scheduled backup to automate your backups.</p>
+                    </div>
+                <?php else: ?>
+                    <?php foreach ($scheduled_backups as $schedule): ?>
+                        <div class="backup-item">
+                            <div class="row align-items-center">
+                                <div class="col-md-6">
+                                    <h5 class="mb-1"><?php echo htmlspecialchars($schedule['name']); ?></h5>
+                                    <p class="text-muted mb-2">
+                                        <small>
+                                            <i class="bi bi-person"></i> <?php echo htmlspecialchars($schedule['first_name'] . ' ' . $schedule['last_name']); ?> •
+                                            <i class="bi bi-calendar"></i> Next: <?php echo date('M j, Y H:i', strtotime($schedule['next_run'])); ?>
+                                        </small>
+                                    </p>
+                                    <div>
+                                        <span class="backup-type-badge backup-type-<?php echo $schedule['backup_type']; ?>">
+                                            <?php echo htmlspecialchars($schedule['backup_type']); ?>
+                                        </span>
+                                        <span class="badge bg-secondary ms-2">
+                                            <i class="bi bi-repeat"></i> <?php echo htmlspecialchars(ucwords($schedule['schedule_type'])); ?>
+                                        </span>
+                                        <?php if ($schedule['include_database']): ?>
+                                            <span class="badge bg-success ms-2">
+                                                <i class="bi bi-database"></i> Database
+                                            </span>
+                                        <?php endif; ?>
+                                        <?php if ($schedule['include_files']): ?>
+                                            <span class="badge bg-info ms-2">
+                                                <i class="bi bi-folder"></i> Files
+                                            </span>
+                                        <?php endif; ?>
+                                        <?php if ($schedule['online_backup']): ?>
+                                            <span class="badge bg-primary ms-2">
+                                                <i class="bi bi-cloud"></i> <?php echo htmlspecialchars(ucwords(str_replace('_', ' ', $schedule['cloud_provider']))); ?>
+                                            </span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <p class="mb-1">
+                                        <strong>Frequency:</strong><br>
+                                        <small class="text-muted">
+                                            <?php 
+                                            if ($schedule['schedule_type'] === 'daily') {
+                                                echo 'Daily at ' . date('g:i A', strtotime($schedule['schedule_time']));
+                                            } elseif ($schedule['schedule_type'] === 'weekly') {
+                                                $days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                                                echo $days[$schedule['schedule_day'] - 1] . 's at ' . date('g:i A', strtotime($schedule['schedule_time']));
+                                            } elseif ($schedule['schedule_type'] === 'monthly') {
+                                                echo 'Day ' . $schedule['schedule_day'] . ' at ' . date('g:i A', strtotime($schedule['schedule_time']));
+                                            }
+                                            ?>
+                                        </small>
+                                    </p>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="d-flex flex-wrap gap-1 justify-content-md-end">
+                                        <button class="btn btn-sm btn-warning" 
+                                                onclick="editScheduledBackup(<?php echo $schedule['id']; ?>)"
+                                                title="Edit Schedule">
+                                            <i class="bi bi-pencil"></i> Edit
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger" 
+                                                onclick="confirmDeleteScheduledBackup(<?php echo $schedule['id']; ?>, '<?php echo htmlspecialchars($schedule['name']); ?>')"
+                                                title="Delete Schedule">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+            
             <!-- Backup List -->
             <div class="backup-card">
                 <h4 class="mb-4"><i class="bi bi-clock-history"></i> Backup History</h4>
@@ -786,29 +1124,32 @@ try {
                                         ?>
                                     </p>
                                 </div>
-                                <div class="col-md-3 text-md-end">
-                                    <?php if ($backup['include_database'] && file_exists($backup['file_path'] . '_database.sql')): ?>
-                                        <a href="<?php echo htmlspecialchars($backup['file_path'] . '_database.sql'); ?>" 
-                                           class="btn btn-sm btn-success me-2" download>
-                                            <i class="bi bi-download"></i> DB
-                                        </a>
-                                    <?php endif; ?>
-                                    <?php if ($backup['include_files'] && file_exists($backup['file_path'] . '_files.zip')): ?>
-                                        <a href="<?php echo htmlspecialchars($backup['file_path'] . '_files.zip'); ?>" 
-                                           class="btn btn-sm btn-info me-2" download>
-                                            <i class="bi bi-download"></i> Files
-                                        </a>
-                                    <?php endif; ?>
-                                    <?php if ($backup['online_backup'] && !empty($backup['cloud_backup_url']) && $backup['cloud_backup_status'] === 'completed'): ?>
-                                        <a href="<?php echo htmlspecialchars($backup['cloud_backup_url']); ?>" 
-                                           target="_blank" class="btn btn-sm btn-primary me-2" title="View in Cloud">
-                                            <i class="bi bi-cloud"></i> Cloud
-                                        </a>
-                                    <?php endif; ?>
-                                    <button class="btn btn-sm btn-danger" 
-                                            onclick="confirmDeleteBackup(<?php echo $backup['id']; ?>, '<?php echo htmlspecialchars($backup['name']); ?>')">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
+                                <div class="col-md-3">
+                                    <div class="d-flex flex-wrap gap-1 justify-content-md-end">
+                                        <?php if ($backup['include_database'] && file_exists($backup['file_path'] . '_database.sql')): ?>
+                                            <a href="<?php echo htmlspecialchars($backup['file_path'] . '_database.sql'); ?>" 
+                                               class="btn btn-sm btn-success" download title="Download Database">
+                                                <i class="bi bi-database"></i> DB
+                                            </a>
+                                        <?php endif; ?>
+                                        <?php if ($backup['include_files'] && file_exists($backup['file_path'] . '_files.zip')): ?>
+                                            <a href="<?php echo htmlspecialchars($backup['file_path'] . '_files.zip'); ?>" 
+                                               class="btn btn-sm btn-info" download title="Download Files">
+                                                <i class="bi bi-folder"></i> Files
+                                            </a>
+                                        <?php endif; ?>
+                                        <?php if ($backup['online_backup'] && !empty($backup['cloud_backup_url']) && $backup['cloud_backup_status'] === 'completed'): ?>
+                                            <a href="<?php echo htmlspecialchars($backup['cloud_backup_url']); ?>" 
+                                               target="_blank" class="btn btn-sm btn-primary" title="View in Cloud">
+                                                <i class="bi bi-cloud"></i> Cloud
+                                            </a>
+                                        <?php endif; ?>
+                                        <button class="btn btn-sm btn-outline-danger" 
+                                                onclick="confirmDeleteBackup(<?php echo $backup['id']; ?>, '<?php echo htmlspecialchars($backup['name']); ?>')"
+                                                title="Delete Backup">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1017,6 +1358,402 @@ try {
                 cloudProvider.focus();
             }
         });
+        
+        // Toggle schedule options based on frequency
+        function toggleScheduleOptions() {
+            const scheduleType = document.getElementById('schedule_type');
+            const scheduleDaySection = document.getElementById('schedule_day_section');
+            const scheduleDayLabel = document.getElementById('schedule_day_label');
+            const scheduleDay = document.getElementById('schedule_day');
+            
+            if (scheduleType.value === 'daily') {
+                scheduleDaySection.style.display = 'none';
+            } else if (scheduleType.value === 'weekly') {
+                scheduleDaySection.style.display = 'block';
+                scheduleDayLabel.textContent = 'Day of Week';
+                
+                // Populate days of week
+                const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                scheduleDay.innerHTML = '';
+                days.forEach((day, index) => {
+                    const option = document.createElement('option');
+                    option.value = index + 1;
+                    option.textContent = day;
+                    scheduleDay.appendChild(option);
+                });
+            } else if (scheduleType.value === 'monthly') {
+                scheduleDaySection.style.display = 'block';
+                scheduleDayLabel.textContent = 'Day of Month';
+                
+                // Populate days of month
+                scheduleDay.innerHTML = '';
+                for (let i = 1; i <= 31; i++) {
+                    const option = document.createElement('option');
+                    option.value = i;
+                    option.textContent = i + (i === 1 || i === 21 || i === 31 ? 'st' : i === 2 || i === 22 ? 'nd' : i === 3 || i === 23 ? 'rd' : 'th');
+                    scheduleDay.appendChild(option);
+                }
+            }
+        }
+        
+        // Toggle cloud provider section for scheduled backups
+        document.getElementById('online_backup').addEventListener('change', function() {
+            const cloudSection = document.getElementById('cloud_provider_section_schedule');
+            cloudSection.style.display = this.checked ? 'block' : 'none';
+        });
+        
+        // Edit scheduled backup
+        function editScheduledBackup(scheduleId) {
+            // Find the schedule data from the page
+            const schedules = <?php echo json_encode($scheduled_backups); ?>;
+            const schedule = schedules.find(s => s.id == scheduleId);
+            
+            if (schedule) {
+                // Populate the edit form
+                document.getElementById('edit_schedule_id').value = schedule.id;
+                document.getElementById('edit_schedule_name').value = schedule.name;
+                document.getElementById('edit_backup_type').value = schedule.backup_type;
+                document.getElementById('edit_schedule_type').value = schedule.schedule_type;
+                document.getElementById('edit_schedule_time').value = schedule.schedule_time;
+                document.getElementById('edit_include_database').checked = schedule.include_database == 1;
+                document.getElementById('edit_include_files').checked = schedule.include_files == 1;
+                document.getElementById('edit_online_backup').checked = schedule.online_backup == 1;
+                
+                // Set cloud provider if online backup is enabled
+                if (schedule.online_backup == 1 && schedule.cloud_provider) {
+                    document.getElementById('edit_cloud_provider').value = schedule.cloud_provider;
+                    document.getElementById('edit_cloud_provider_section').style.display = 'block';
+                } else {
+                    document.getElementById('edit_cloud_provider_section').style.display = 'none';
+                }
+                
+                // Set schedule day and show appropriate section
+                if (schedule.schedule_type !== 'daily') {
+                    document.getElementById('edit_schedule_day_section').style.display = 'block';
+                    document.getElementById('edit_schedule_day').value = schedule.schedule_day || '';
+                    
+                    if (schedule.schedule_type === 'weekly') {
+                        document.getElementById('edit_schedule_day_label').textContent = 'Day of Week';
+                        populateEditScheduleDays('weekly');
+                    } else if (schedule.schedule_type === 'monthly') {
+                        document.getElementById('edit_schedule_day_label').textContent = 'Day of Month';
+                        populateEditScheduleDays('monthly');
+                    }
+                } else {
+                    document.getElementById('edit_schedule_day_section').style.display = 'none';
+                }
+                
+                // Show the modal
+                const modal = new bootstrap.Modal(document.getElementById('editScheduledBackupModal'));
+                modal.show();
+            }
+        }
+        
+        // Populate edit schedule days
+        function populateEditScheduleDays(type) {
+            const scheduleDay = document.getElementById('edit_schedule_day');
+            scheduleDay.innerHTML = '';
+            
+            if (type === 'weekly') {
+                const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                days.forEach((day, index) => {
+                    const option = document.createElement('option');
+                    option.value = index + 1;
+                    option.textContent = day;
+                    scheduleDay.appendChild(option);
+                });
+            } else if (type === 'monthly') {
+                for (let i = 1; i <= 31; i++) {
+                    const option = document.createElement('option');
+                    option.value = i;
+                    option.textContent = i + (i === 1 || i === 21 || i === 31 ? 'st' : i === 2 || i === 22 ? 'nd' : i === 3 || i === 23 ? 'rd' : 'th');
+                    scheduleDay.appendChild(option);
+                }
+            }
+        }
+        
+        // Toggle edit schedule options
+        function toggleEditScheduleOptions() {
+            const scheduleType = document.getElementById('edit_schedule_type');
+            const scheduleDaySection = document.getElementById('edit_schedule_day_section');
+            const scheduleDayLabel = document.getElementById('edit_schedule_day_label');
+            
+            if (scheduleType.value === 'daily') {
+                scheduleDaySection.style.display = 'none';
+            } else if (scheduleType.value === 'weekly') {
+                scheduleDaySection.style.display = 'block';
+                scheduleDayLabel.textContent = 'Day of Week';
+                populateEditScheduleDays('weekly');
+            } else if (scheduleType.value === 'monthly') {
+                scheduleDaySection.style.display = 'block';
+                scheduleDayLabel.textContent = 'Day of Month';
+                populateEditScheduleDays('monthly');
+            }
+        }
+        
+        // Toggle cloud provider section for edit modal
+        document.getElementById('edit_online_backup').addEventListener('change', function() {
+            const cloudSection = document.getElementById('edit_cloud_provider_section');
+            cloudSection.style.display = this.checked ? 'block' : 'none';
+        });
+        
+        // Confirm delete scheduled backup
+        function confirmDeleteScheduledBackup(scheduleId, scheduleName) {
+            document.getElementById('delete_schedule_id').value = scheduleId;
+            document.getElementById('delete_schedule_name').textContent = scheduleName;
+            
+            const modal = new bootstrap.Modal(document.getElementById('deleteScheduledBackupModal'));
+            modal.show();
+        }
+        
+        // Initialize schedule options on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            toggleScheduleOptions();
+        });
     </script>
+    
+    <!-- Create Scheduled Backup Modal -->
+    <div class="modal fade" id="createScheduledBackupModal" tabindex="-1" aria-labelledby="createScheduledBackupModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="POST" action="backup.php">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="createScheduledBackupModalLabel">
+                            <i class="bi bi-clock"></i> Schedule Automated Backup
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="schedule_name" class="form-label">Schedule Name</label>
+                            <input type="text" class="form-control" id="schedule_name" name="schedule_name" required 
+                                   placeholder="e.g., Weekly Database Backup">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="backup_type" class="form-label">Backup Type</label>
+                            <select class="form-select" id="backup_type" name="backup_type" required>
+                                <option value="full">Full Backup (Database + Files)</option>
+                                <option value="database">Database Only</option>
+                                <option value="files">Files Only</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="schedule_type" class="form-label">Schedule Frequency</label>
+                            <select class="form-select" id="schedule_type" name="schedule_type" required onchange="toggleScheduleOptions()">
+                                <option value="daily">Daily</option>
+                                <option value="weekly">Weekly</option>
+                                <option value="monthly">Monthly</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3" id="schedule_day_section" style="display: none;">
+                            <label for="schedule_day" class="form-label">
+                                <span id="schedule_day_label">Day</span>
+                            </label>
+                            <select class="form-select" id="schedule_day" name="schedule_day">
+                                <!-- Will be populated by JavaScript -->
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="schedule_time" class="form-label">Execution Time</label>
+                            <input type="time" class="form-control" id="schedule_time" name="schedule_time" value="02:00" required>
+                            <div class="form-text">
+                                <i class="bi bi-info-circle"></i> Recommended: Early morning hours (2:00 AM - 4:00 AM) for minimal disruption
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Backup Contents</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="include_database" name="include_database" checked>
+                                <label class="form-check-label" for="include_database">
+                                    <i class="bi bi-database"></i> Database
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="include_files" name="include_files" checked>
+                                <label class="form-check-label" for="include_files">
+                                    <i class="bi bi-folder"></i> System Files
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="online_backup" name="online_backup">
+                                <label class="form-check-label" for="online_backup">
+                                    <i class="bi bi-cloud-upload"></i> Upload to Cloud Storage
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3" id="cloud_provider_section_schedule" style="display: none;">
+                            <label for="cloud_provider_schedule" class="form-label">Cloud Storage Provider</label>
+                            <select class="form-select" id="cloud_provider_schedule" name="cloud_provider">
+                                <option value="">Select Provider</option>
+                                <?php foreach ($cloud_providers as $provider): ?>
+                                    <option value="<?php echo $provider['provider']; ?>">
+                                        <?php echo htmlspecialchars(ucwords(str_replace('_', ' ', $provider['provider']))); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <div class="form-text">
+                                <i class="bi bi-info-circle"></i> Automated backups will be uploaded to this cloud provider.
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info" role="alert">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>Automated Backup Information:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>Backups will be created automatically based on your schedule</li>
+                                <li>System will calculate the next run time automatically</li>
+                                <li>Failed backups will be logged for troubleshooting</li>
+                                <li>Consider storage space when scheduling frequent backups</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" name="create_scheduled_backup" class="btn btn-primary">
+                            <i class="bi bi-clock"></i> Schedule Backup
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit Scheduled Backup Modal -->
+    <div class="modal fade" id="editScheduledBackupModal" tabindex="-1" aria-labelledby="editScheduledBackupModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="POST" action="backup.php" id="editScheduledBackupForm">
+                    <input type="hidden" name="schedule_id" id="edit_schedule_id">
+                    <div class="modal-header bg-warning text-white">
+                        <h5 class="modal-title" id="editScheduledBackupModalLabel">
+                            <i class="bi bi-pencil"></i> Edit Scheduled Backup
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="edit_schedule_name" class="form-label">Schedule Name</label>
+                            <input type="text" class="form-control" id="edit_schedule_name" name="schedule_name" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="edit_backup_type" class="form-label">Backup Type</label>
+                            <select class="form-select" id="edit_backup_type" name="backup_type" required>
+                                <option value="full">Full Backup (Database + Files)</option>
+                                <option value="database">Database Only</option>
+                                <option value="files">Files Only</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="edit_schedule_type" class="form-label">Schedule Frequency</label>
+                            <select class="form-select" id="edit_schedule_type" name="schedule_type" required onchange="toggleEditScheduleOptions()">
+                                <option value="daily">Daily</option>
+                                <option value="weekly">Weekly</option>
+                                <option value="monthly">Monthly</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3" id="edit_schedule_day_section" style="display: none;">
+                            <label for="edit_schedule_day" class="form-label">
+                                <span id="edit_schedule_day_label">Day</span>
+                            </label>
+                            <select class="form-select" id="edit_schedule_day" name="schedule_day">
+                                <!-- Will be populated by JavaScript -->
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="edit_schedule_time" class="form-label">Execution Time</label>
+                            <input type="time" class="form-control" id="edit_schedule_time" name="schedule_time" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Backup Contents</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="edit_include_database" name="include_database">
+                                <label class="form-check-label" for="edit_include_database">
+                                    <i class="bi bi-database"></i> Database
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="edit_include_files" name="include_files">
+                                <label class="form-check-label" for="edit_include_files">
+                                    <i class="bi bi-folder"></i> System Files
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="edit_online_backup" name="online_backup">
+                                <label class="form-check-label" for="edit_online_backup">
+                                    <i class="bi bi-cloud-upload"></i> Upload to Cloud Storage
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3" id="edit_cloud_provider_section" style="display: none;">
+                            <label for="edit_cloud_provider" class="form-label">Cloud Storage Provider</label>
+                            <select class="form-select" id="edit_cloud_provider" name="cloud_provider">
+                                <option value="">Select Provider</option>
+                                <?php foreach ($cloud_providers as $provider): ?>
+                                    <option value="<?php echo $provider['provider']; ?>">
+                                        <?php echo htmlspecialchars(ucwords(str_replace('_', ' ', $provider['provider']))); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" name="update_scheduled_backup" class="btn btn-warning">
+                            <i class="bi bi-pencil"></i> Update Schedule
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Delete Scheduled Backup Modal -->
+    <div class="modal fade" id="deleteScheduledBackupModal" tabindex="-1" aria-labelledby="deleteScheduledBackupModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="POST" action="backup.php" id="deleteScheduledBackupForm">
+                    <input type="hidden" name="schedule_id" id="delete_schedule_id">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title" id="deleteScheduledBackupModalLabel">
+                            <i class="bi bi-exclamation-triangle"></i> Delete Scheduled Backup
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-warning" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            <strong>Warning:</strong> This action cannot be undone. All future scheduled backups will be cancelled.
+                        </div>
+                        <p>Are you sure you want to delete the scheduled backup <strong id="delete_schedule_name"></strong>?</p>
+                        <p class="text-muted">This will remove the schedule and stop any future automated backups.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" name="delete_scheduled_backup" class="btn btn-danger">
+                            <i class="bi bi-trash"></i> Delete Schedule
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
