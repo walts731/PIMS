@@ -394,18 +394,61 @@ if ($form['form_code'] === 'PAR') {
         // Zoom preview functionality
         let zoomLevel = 1;
         function zoomPreview() {
-            const preview = document.querySelector('.par-preview-container');
-            zoomLevel = zoomLevel === 1 ? 1.5 : 1;
-            preview.style.transform = `scale(${zoomLevel})`;
-            preview.style.transformOrigin = 'top center';
-            preview.style.transition = 'transform 0.3s ease';
+            // Try to find the active preview container based on the current form
+            const previewContainers = [
+                '.par-preview-container',
+                '.ics-preview-container', 
+                '.ris-preview-container',
+                '.itr-preview-container',
+                '.iirup-preview-container'
+            ];
             
-            // Update button text
-            const zoomBtn = event.target.closest('button');
-            if (zoomLevel === 1.5) {
-                zoomBtn.innerHTML = '<i class="bi bi-zoom-out"></i> Zoom Out';
+            let preview = null;
+            for (const selector of previewContainers) {
+                preview = document.querySelector(selector);
+                if (preview) break;
+            }
+            
+            if (!preview) return;
+            
+            // Cycle through four zoom levels: 0.6 (extra slim), 1 (normal), 1.5 (large), 2.0 (extra large)
+            if (zoomLevel === 1) {
+                zoomLevel = 1.5; // Go to large
+            } else if (zoomLevel === 1.5) {
+                zoomLevel = 2.0; // Go to extra large
+            } else if (zoomLevel === 2.0) {
+                zoomLevel = 0.6; // Go to extra slim
             } else {
-                zoomBtn.innerHTML = '<i class="bi bi-zoom-in"></i> Zoom';
+                zoomLevel = 1; // Go to normal
+            }
+            
+            // Apply zoom to the parent container to prevent overlap
+            const parentContainer = preview.parentElement;
+            parentContainer.style.transform = `scale(${zoomLevel})`;
+            parentContainer.style.transformOrigin = 'top center';
+            parentContainer.style.transition = 'transform 0.3s ease';
+            
+            // Adjust container height to prevent overlap
+            if (zoomLevel === 2.0) {
+                parentContainer.style.marginBottom = '400px';
+            } else if (zoomLevel === 1.5) {
+                parentContainer.style.marginBottom = '200px';
+            } else if (zoomLevel === 0.6) {
+                parentContainer.style.marginBottom = '-150px';
+            } else {
+                parentContainer.style.marginBottom = '0';
+            }
+            
+            // Update button text based on current zoom level
+            const zoomBtn = event.target.closest('button');
+            if (zoomLevel === 2.0) {
+                zoomBtn.innerHTML = '<i class="bi bi-zoom-out"></i> Zoom Out';
+            } else if (zoomLevel === 1.5) {
+                zoomBtn.innerHTML = '<i class="bi bi-zoom-out"></i> Zoom Out';
+            } else if (zoomLevel === 0.6) {
+                zoomBtn.innerHTML = '<i class="bi bi-zoom-in"></i> Zoom In';
+            } else {
+                zoomBtn.innerHTML = '<i class="bi bi-zoom-out"></i> Zoom Out';
             }
         }
     </script>
