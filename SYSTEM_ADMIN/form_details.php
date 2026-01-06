@@ -139,6 +139,18 @@ if ($form['form_code'] === 'PAR') {
     while ($row = $result->fetch_assoc()) {
         $form_data[] = $row;
     }
+} elseif ($form['form_code'] === 'ICS') {
+    // Get ICS forms
+    $result = $conn->query("
+        SELECT icf.*, o.office_name 
+        FROM ics_form icf 
+        LEFT JOIN offices o ON icf.office_id = o.id 
+        WHERE icf.form_id = $form_id 
+        ORDER BY icf.created_at DESC
+    ");
+    while ($row = $result->fetch_assoc()) {
+        $form_data[] = $row;
+    }
 }
 
 // Get header image from forms table
@@ -162,6 +174,12 @@ if ($form['form_code'] === 'PAR') {
     $stats['total_entries'] = $result->fetch_assoc()['count'];
     
     $result = $conn->query("SELECT COUNT(*) as count FROM par_items WHERE form_id IN (SELECT id FROM par_form WHERE form_id = $form_id)");
+    $stats['total_items'] = $result->fetch_assoc()['count'];
+} elseif ($form['form_code'] === 'ICS') {
+    $result = $conn->query("SELECT COUNT(*) as count FROM ics_form WHERE form_id = $form_id");
+    $stats['total_entries'] = $result->fetch_assoc()['count'];
+    
+    $result = $conn->query("SELECT COUNT(*) as count FROM ics_items WHERE ics_id IN (SELECT id FROM ics_form WHERE form_id = $form_id)");
     $stats['total_items'] = $result->fetch_assoc()['count'];
 }
 ?>
@@ -324,21 +342,10 @@ if ($form['form_code'] === 'PAR') {
             
             <!-- Form-Specific Content -->
             <?php if ($form['form_code'] === 'PAR'): ?>
-                <!-- PAR Form Management -->
-                <ul class="nav nav-tabs" id="parTabs" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="par-preview-tab" data-bs-toggle="tab" data-bs-target="#par-preview" type="button" role="tab">
-                            <i class="bi bi-eye"></i> PAR Preview
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="par-entries-tab" data-bs-toggle="tab" data-bs-target="#par-entries" type="button" role="tab">
-                            <i class="bi bi-list"></i> PAR Entries
-                        </button>
-                    </li>
-                </ul>
-                
-                <div class="tab-content" id="parTabsContent">
+                <?php include 'forms/par_form.php'; ?>
+            <?php elseif ($form['form_code'] === 'ICS'): ?>
+                <?php include 'forms/ics_form.php'; ?>
+            <?php endif; ?>
                     <!-- PAR Preview Tab -->
                     <div class="tab-pane fade show active" id="par-preview" role="tabpanel">
                         <div class="card border-0 shadow-lg rounded-4">
@@ -588,8 +595,9 @@ if ($form['form_code'] === 'PAR') {
                         </div>
                     </div>
                 </div>
-            <?php endif; ?>
+            </div>
         </div>
+    </div>
     </div>
     
     <?php require_once 'includes/logout-modal.php'; ?>

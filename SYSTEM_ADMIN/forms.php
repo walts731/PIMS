@@ -107,6 +107,62 @@ if ($table_check->num_rows === 0) {
     $conn->query($create_table_sql);
 }
 
+// Create ics_form table if not exists
+$table_check = $conn->query("SHOW TABLES LIKE 'ics_form'");
+if ($table_check->num_rows === 0) {
+    $create_table_sql = "
+        CREATE TABLE `ics_form` (
+            `id` int(11) NOT NULL AUTO_INCREMENT,
+            `form_id` int(11) NOT NULL,
+            `office_id` int(11) DEFAULT NULL,
+            `header_image` varchar(255) DEFAULT NULL,
+            `entity_name` varchar(200) DEFAULT NULL,
+            `fund_cluster` varchar(100) DEFAULT NULL,
+            `ics_no` varchar(50) DEFAULT NULL,
+            `received_from_name` varchar(200) DEFAULT NULL,
+            `received_from_position` varchar(200) DEFAULT NULL,
+            `received_by_name` varchar(200) DEFAULT NULL,
+            `received_by_position` varchar(200) DEFAULT NULL,
+            `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+            PRIMARY KEY (`id`),
+            KEY `idx_form_id` (`form_id`),
+            KEY `idx_office_id` (`office_id`),
+            KEY `idx_ics_no` (`ics_no`),
+            FOREIGN KEY (`form_id`) REFERENCES `forms`(`id`) ON DELETE CASCADE,
+            FOREIGN KEY (`office_id`) REFERENCES `offices`(`id`) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+    ";
+    
+    $conn->query($create_table_sql);
+}
+
+// Create ics_items table if not exists
+$table_check = $conn->query("SHOW TABLES LIKE 'ics_items'");
+if ($table_check->num_rows === 0) {
+    $create_table_sql = "
+        CREATE TABLE `ics_items` (
+            `item_id` int(11) NOT NULL AUTO_INCREMENT,
+            `ics_id` int(11) NOT NULL,
+            `asset_id` int(11) DEFAULT NULL,
+            `ics_no` varchar(50) DEFAULT NULL,
+            `quantity` decimal(10,2) DEFAULT NULL,
+            `unit` varchar(50) DEFAULT NULL,
+            `unit_cost` decimal(10,2) DEFAULT NULL,
+            `total_cost` decimal(10,2) DEFAULT NULL,
+            `description` text DEFAULT NULL,
+            `item_no` varchar(100) DEFAULT NULL,
+            `estimated_useful_life` int(11) DEFAULT NULL,
+            `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+            PRIMARY KEY (`item_id`),
+            KEY `idx_ics_id` (`ics_id`),
+            KEY `idx_asset_id` (`asset_id`),
+            FOREIGN KEY (`ics_id`) REFERENCES `ics_form`(`id`) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+    ";
+    
+    $conn->query($create_table_sql);
+}
+
 // Insert default forms if none exist
 $result = $conn->query("SELECT COUNT(*) as count FROM forms");
 if ($result->fetch_assoc()['count'] == 0) {
