@@ -127,28 +127,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['clear_logs'])) {
     }
 }
 
-// Function to log system actions
-function logSystemAction($user_id, $action, $module, $details = null) {
-    global $conn;
-    
-    try {
-        $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'Unknown';
-        $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
-        
-        $stmt = $conn->prepare("
-            INSERT INTO system_logs (user_id, action, module, description, ip_address, user_agent) 
-            VALUES (?, ?, ?, ?, ?, ?)
-        ");
-        $stmt->bind_param("isssss", $user_id, $action, $module, $details, $ip_address, $user_agent);
-        $stmt->execute();
-        $stmt->close();
-        
-        return true;
-    } catch (Exception $e) {
-        error_log("Failed to log system action: " . $e->getMessage());
-        return false;
-    }
-}
 
 // Get all logs for DataTables
 $logs = [];
