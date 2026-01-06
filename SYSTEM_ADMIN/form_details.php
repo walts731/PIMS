@@ -130,16 +130,22 @@ $form_data = [];
 if ($form['form_code'] === 'PAR') {
     // Get PAR forms
     $result = $conn->query("
-        SELECT pf.*, o.office_name, u.first_name, u.last_name 
+        SELECT pf.*, o.office_name 
         FROM par_form pf 
         LEFT JOIN offices o ON pf.office_id = o.id 
-        LEFT JOIN users u ON pf.created_by = u.id 
         WHERE pf.form_id = $form_id 
         ORDER BY pf.created_at DESC
     ");
     while ($row = $result->fetch_assoc()) {
         $form_data[] = $row;
     }
+}
+
+// Get header image from forms table
+$header_image = '';
+$result = $conn->query("SELECT header_image FROM forms WHERE id = $form_id");
+if ($result && $row = $result->fetch_assoc()) {
+    $header_image = $row['header_image'];
 }
 
 // Get offices for dropdown
@@ -321,20 +327,207 @@ if ($form['form_code'] === 'PAR') {
                 <!-- PAR Form Management -->
                 <ul class="nav nav-tabs" id="parTabs" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="par-entries-tab" data-bs-toggle="tab" data-bs-target="#par-entries" type="button" role="tab">
-                            <i class="bi bi-list"></i> PAR Entries
+                        <button class="nav-link active" id="par-preview-tab" data-bs-toggle="tab" data-bs-target="#par-preview" type="button" role="tab">
+                            <i class="bi bi-eye"></i> PAR Preview
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="new-par-tab" data-bs-toggle="tab" data-bs-target="#new-par" type="button" role="tab">
-                            <i class="bi bi-plus"></i> New PAR
+                        <button class="nav-link" id="par-entries-tab" data-bs-toggle="tab" data-bs-target="#par-entries" type="button" role="tab">
+                            <i class="bi bi-list"></i> PAR Entries
                         </button>
                     </li>
                 </ul>
                 
                 <div class="tab-content" id="parTabsContent">
+                    <!-- PAR Preview Tab -->
+                    <div class="tab-pane fade show active" id="par-preview" role="tabpanel">
+                        <div class="card border-0 shadow-lg rounded-4">
+                            <div class="card-header bg-info text-white rounded-top-4">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-eye"></i> PAR Form Preview
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="par-preview-container" style="background: white; border: 2px solid #dee2e6; border-radius: 8px; padding: 20px; font-family: 'Times New Roman', serif;">
+                                    <!-- PAR Form Header -->
+                                    <div style="text-align: center; margin-bottom: 20px;">
+                                        <?php 
+                                        // Debug: Check header image
+                                        if (!empty($header_image)) {
+                                            echo "<!-- Debug: header_image found: " . htmlspecialchars($header_image) . " -->";
+                                            echo '<div style="margin-bottom: 10px;">';
+                                            echo '<img src="../uploads/forms/' . htmlspecialchars($header_image) . '" alt="Header Image" style="width: 100%; max-height: 120px; object-fit: contain; border: 1px solid red;">';
+                                            echo '</div>';
+                                        } else {
+                                            echo "<!-- Debug: header_image is empty -->";
+                                        }
+                                        ?>
+                                        <div style="text-align: center;">
+                                            <p style="margin: 0; font-size: 16px; font-weight: bold;">PROPERTY ACKNOWLEDGEMENT RECEIPT</p>
+                                            <p style="margin: 0; font-size: 12px;">MUNICIPALITY OF PILAR</p>
+                                            <p style="margin: 0; font-size: 12px;">OMM</p>
+                                            <p style="margin: 0; font-size: 12px;">OFFICE/LOCATION</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Entity Name and Fund Cluster -->
+                                    <div style="margin-bottom: 15px;">
+                                        <table style="width: 100%; border-collapse: collapse;">
+                                            <tr>
+                                                <td style="width: 33%; padding: 5px; border: 1px solid #000;">
+                                                    <strong>Entity Name:</strong> ___________________________
+                                                </td>
+                                                <td style="width: 33%; padding: 5px; border: 1px solid #000;">
+                                                    <strong>Fund Cluster:</strong> ___________________________
+                                                </td>
+                                                <td style="width: 34%; padding: 5px; border: 1px solid #000;">
+                                                    <strong>PAR No:</strong> ___________________________
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                    
+                                    <!-- Main Table -->
+                                    <div style="margin-bottom: 20px;">
+                                        <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                                            <thead>
+                                                <tr style="background-color: #f8f9fa;">
+                                                    <th style="border: 1px solid #000; padding: 8px; text-align: center;">Qty.</th>
+                                                    <th style="border: 1px solid #000; padding: 8px; text-align: center;">Unit</th>
+                                                    <th style="border: 1px solid #000; padding: 8px;">Description</th>
+                                                    <th style="border: 1px solid #000; padding: 8px;">Property Number</th>
+                                                    <th style="border: 1px solid #000; padding: 8px;">Date Acquired</th>
+                                                    <th style="border: 1px solid #000; padding: 8px; text-align: right;">Amount</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td style="border: 1px solid #000; padding: 8px; text-align: center;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px; text-align: center;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px; text-align: right;">&nbsp;</td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="border: 1px solid #000; padding: 8px; text-align: center;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px; text-align: center;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px; text-align: right;">&nbsp;</td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="border: 1px solid #000; padding: 8px; text-align: center;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px; text-align: center;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px; text-align: right;">&nbsp;</td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="border: 1px solid #000; padding: 8px; text-align: center;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px; text-align: center;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px; text-align: right;">&nbsp;</td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="border: 1px solid #000; padding: 8px; text-align: center;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px; text-align: center;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px; text-align: right;">&nbsp;</td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="border: 1px solid #000; padding: 8px; text-align: center;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px; text-align: center;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px; text-align: right;">&nbsp;</td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="border: 1px solid #000; padding: 8px; text-align: center;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px; text-align: center;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px; text-align: right;">&nbsp;</td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="border: 1px solid #000; padding: 8px; text-align: center;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px; text-align: center;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px;">&nbsp;</td>
+                                                    <td style="border: 1px solid #000; padding: 8px; text-align: right;">&nbsp;</td>
+                                                </tr>
+                                                <tr style="font-weight: bold; background-color: #f8f9fa;">
+                                                    <td colspan="5" style="border: 1px solid #000; padding: 8px; text-align: right;">TOTAL</td>
+                                                    <td style="border: 1px solid #000; padding: 8px; text-align: right;">&nbsp;</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    
+                                    <!-- Remarks Section -->
+                                    <div style="margin-bottom: 20px;">
+                                        <p style="margin: 0; font-weight: bold;">Remarks:</p>
+                                        <div style="border: 1px solid #000; padding: 10px; min-height: 60px; font-size: 12px;">
+                                            This is to acknowledge receipt of the above-mentioned property items which shall be accounted for in accordance with existing government accounting and auditing rules and regulations.
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Signature Section -->
+                                    <div style="margin-top: 40px;">
+                                        <table style="width: 100%; border-collapse: collapse;">
+                                            <tr>
+                                                <td style="width: 50%; padding: 10px; text-align: center; vertical-align: top;">
+                                                    <p style="margin: 0; font-weight: bold;">Received by:</p>
+                                                    <div style="border-bottom: 1px solid #000; margin-bottom: 5px; height: 40px;"></div>
+                                                    <p style="margin: 5px 0; font-size: 12px;">Signature over Printed Name</p>
+                                                    <div style="border-bottom: 1px solid #000; margin-bottom: 5px; height: 20px;"></div>
+                                                    <p style="margin: 5px 0; font-size: 12px;">Position / Office</p>
+                                                    <div style="border-bottom: 1px solid #000; margin-bottom: 5px; height: 20px;"></div>
+                                                    <p style="margin: 5px 0; font-size: 12px;">Date</p>
+                                                </td>
+                                                <td style="width: 50%; padding: 10px; text-align: center; vertical-align: top;">
+                                                    <p style="margin: 0; font-weight: bold;">Issued by:</p>
+                                                    <div style="border-bottom: 1px solid #000; margin-bottom: 5px; height: 40px;"></div>
+                                                    <p style="margin: 5px 0; font-size: 12px;">Signature over Printed Name</p>
+                                                    <div style="border-bottom: 1px solid #000; margin-bottom: 5px; height: 20px;"></div>
+                                                    <p style="margin: 5px 0; font-size: 12px;">Position / Office</p>
+                                                    <div style="border-bottom: 1px solid #000; margin-bottom: 5px; height: 20px;"></div>
+                                                    <p style="margin: 5px 0; font-size: 12px;">Date</p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                    
+                                    <!-- Footer Note -->
+                                    <div style="margin-top: 30px; text-align: center; font-size: 10px; color: #666;">
+                                        <p style="margin: 0;">This form is prescribed by the Commission on Audit (COA)</p>
+                                        <p style="margin: 0;">Property Acknowledgement Receipt (PAR) - Government Property Management</p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Preview Controls -->
+                                <div class="mt-3 text-center">
+                                    <button class="btn btn-outline-primary btn-sm" onclick="window.print()">
+                                        <i class="bi bi-printer"></i> Print Preview
+                                    </button>
+                                    <button class="btn btn-outline-secondary btn-sm" onclick="zoomPreview()">
+                                        <i class="bi bi-zoom-in"></i> Zoom
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <!-- PAR Entries Tab -->
-                    <div class="tab-pane fade show active" id="par-entries" role="tabpanel">
+                    <div class="tab-pane fade" id="par-entries" role="tabpanel">
                         <div class="card border-0 shadow-lg rounded-4">
                             <div class="card-header bg-primary text-white rounded-top-4">
                                 <h6 class="mb-0">
@@ -394,87 +587,6 @@ if ($form['form_code'] === 'PAR') {
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- New PAR Tab -->
-                    <div class="tab-pane fade" id="new-par" role="tabpanel">
-                        <div class="card border-0 shadow-lg rounded-4">
-                            <div class="card-header bg-success text-white rounded-top-4">
-                                <h6 class="mb-0">
-                                    <i class="bi bi-plus"></i> Create New PAR
-                                </h6>
-                            </div>
-                            <div class="card-body">
-                                <form method="POST" action="form_details.php?id=<?php echo $form_id; ?>" enctype="multipart/form-data">
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="mb-3">
-                                                <label for="par_no" class="form-label">PAR Number *</label>
-                                                <input type="text" class="form-control" id="par_no" name="par_no" required>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="entity_name" class="form-label">Entity Name *</label>
-                                                <input type="text" class="form-control" id="entity_name" name="entity_name" required>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="fund_cluster" class="form-label">Fund Cluster</label>
-                                                <input type="text" class="form-control" id="fund_cluster" name="fund_cluster">
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="office_id" class="form-label">Office *</label>
-                                                <select class="form-select" id="office_id" name="office_id" required>
-                                                    <option value="">Select Office</option>
-                                                    <?php foreach ($offices as $office): ?>
-                                                        <option value="<?php echo $office['id']; ?>"><?php echo htmlspecialchars($office['office_name']); ?></option>
-                                                    <?php endforeach; ?>
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="mb-3">
-                                                <label for="received_by_name" class="form-label">Received By Name *</label>
-                                                <input type="text" class="form-control" id="received_by_name" name="received_by_name" required>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="issued_by_name" class="form-label">Issued By Name *</label>
-                                                <input type="text" class="form-control" id="issued_by_name" name="issued_by_name" required>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="position_office_left" class="form-label">Position (Left)</label>
-                                                <input type="text" class="form-control" id="position_office_left" name="position_office_left">
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="position_office_right" class="form-label">Position (Right)</label>
-                                                <input type="text" class="form-control" id="position_office_right" name="position_office_right">
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="header_image" class="form-label">Header Image</label>
-                                                <input type="file" class="form-control" id="header_image" name="header_image" accept="image/*">
-                                            </div>
-                                        </div>
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="date_received_left" class="form-label">Date Received (Left)</label>
-                                                    <input type="date" class="form-control" id="date_received_left" name="date_received_left">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="date_received_right" class="form-label">Date Received (Right)</label>
-                                                    <input type="date" class="form-control" id="date_received_right" name="date_received_right">
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="text-end">
-                                            <button type="submit" name="add_par" class="btn btn-success">
-                                                <i class="bi bi-plus"></i> Create PAR
-                                            </button>
-                                        </div>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             <?php endif; ?>
         </div>
@@ -513,6 +625,24 @@ if ($form['form_code'] === 'PAR') {
         function manageItems(parId) {
             // This would open items management modal or page
             alert('Manage items functionality would be implemented here');
+        }
+        
+        // Zoom preview functionality
+        let zoomLevel = 1;
+        function zoomPreview() {
+            const preview = document.querySelector('.par-preview-container');
+            zoomLevel = zoomLevel === 1 ? 1.5 : 1;
+            preview.style.transform = `scale(${zoomLevel})`;
+            preview.style.transformOrigin = 'top center';
+            preview.style.transition = 'transform 0.3s ease';
+            
+            // Update button text
+            const zoomBtn = event.target.closest('button');
+            if (zoomLevel === 1.5) {
+                zoomBtn.innerHTML = '<i class="bi bi-zoom-out"></i> Zoom Out';
+            } else {
+                zoomBtn.innerHTML = '<i class="bi bi-zoom-in"></i> Zoom';
+            }
         }
     </script>
 </body>

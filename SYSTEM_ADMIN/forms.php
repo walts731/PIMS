@@ -28,6 +28,7 @@ if ($table_check->num_rows === 0) {
             `form_code` varchar(50) NOT NULL UNIQUE,
             `form_title` varchar(200) NOT NULL,
             `description` text DEFAULT NULL,
+            `header_image` varchar(255) DEFAULT NULL,
             `status` enum('active','inactive') DEFAULT 'active',
             `created_by` int(11) DEFAULT NULL,
             `updated_by` int(11) DEFAULT NULL,
@@ -42,6 +43,12 @@ if ($table_check->num_rows === 0) {
     ";
     
     $conn->query($create_table_sql);
+} else {
+    // Check if header_image column exists and add it if not
+    $column_check = $conn->query("SHOW COLUMNS FROM forms LIKE 'header_image'");
+    if ($column_check->num_rows === 0) {
+        $conn->query("ALTER TABLE forms ADD COLUMN header_image varchar(255) DEFAULT NULL AFTER description");
+    }
 }
 
 // Create par_form table if not exists
@@ -126,11 +133,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $form_title = $_POST['form_title'];
         $description = $_POST['description'];
         
-        $stmt = $conn->prepare("INSERT INTO forms (form_code, form_title, description, created_by) VALUES (?, ?, ?, ?)");
-        $stmt->bind_param("sssi", $form_code, $form_title, $description, $_SESSION['user_id']);
+        // Handle header image upload
+        $header_image = null;
+        if (isset($_FILES['header_image']) && $_FILES['header_image']['error'] === UPLOAD_ERR_OK) {
+            $upload_dir = '../uploads/forms/';
+            if (!is_dir($upload_dir)) {
+                mkdir($upload_dir, 0755, true);
+            }
+            
+            $file_name = time() . '_' . basename($_FILES['header_image']['name']);
+            $target_path = $upload_dir . $file_name;
+            
+            if (move_uploaded_file($_FILES['header_image']['tmp_name'], $target_path)) {
+                $header_image = $file_name;
+            }
+        }
+        
+        // Handle user ID - validate against database
+        $user_id = null;
+        if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
+            // Check if user actually exists in database
+            $user_check = $conn->prepare("SELECT id FROM users WHERE id = ?");
+            $user_check->bind_param("i", $_SESSION['user_id']);
+            $user_check->execute();
+            $user_result = $user_check->get_result();
+            if ($user_result->num_rows > 0) {
+                $user_id = $_SESSION['user_id'];
+            }
+            $user_check->close();
+        }
+        
+        // Build query dynamically based on user ID
+        if ($user_id === null) {
+            $sql = "INSERT INTO forms (form_code, form_title, description, header_image, created_by) VALUES (?, ?, ?, ?, NULL)";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("ssss", $form_code, $form_title, $description, $header_image);
+        } else {
+            $sql = "INSERT INTO forms (form_code, form_title, description, header_image, created_by) VALUES (?, ?, ?, ?, ?)";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("ssssi", $form_code, $form_title, $description, $header_image, $user_id);
+        }
         
         if ($stmt->execute()) {
-            logSystemAction($_SESSION['user_id'], 'create', 'forms', "Created new form: $form_code - $form_title");
+            if ($user_id !== null) {
+                logSystemAction($user_id, 'create', 'forms', "Created new form: $form_code - $form_title");
+            }
             header('Location: forms.php?message=Form added successfully');
         } else {
             header('Location: forms.php?error=Failed to add form');
@@ -146,11 +193,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $description = $_POST['description'];
         $status = $_POST['status'];
         
-        $stmt = $conn->prepare("UPDATE forms SET form_code = ?, form_title = ?, description = ?, status = ?, updated_by = ? WHERE id = ?");
-        $stmt->bind_param("ssssii", $form_code, $form_title, $description, $status, $_SESSION['user_id'], $form_id);
+        // Handle header image upload
+        $header_image = null;
+        if (isset($_FILES['header_image']) && $_FILES['header_image']['error'] === UPLOAD_ERR_OK) {
+            $upload_dir = '../uploads/forms/';
+            if (!is_dir($upload_dir)) {
+                mkdir($upload_dir, 0755, true);
+            }
+            
+            $file_name = time() . '_' . basename($_FILES['header_image']['name']);
+            $target_path = $upload_dir . $file_name;
+            
+            if (move_uploaded_file($_FILES['header_image']['tmp_name'], $target_path)) {
+                $header_image = $file_name;
+            }
+        }
+        
+        // Get current header image if no new image uploaded
+        if ($header_image === null) {
+            $current_result = $conn->query("SELECT header_image FROM forms WHERE id = $form_id");
+            $current_row = $current_result->fetch_assoc();
+            $header_image = $current_row['header_image'];
+        }
+        
+        // Handle user ID - validate against database
+        $user_id = null;
+        if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
+            // Check if user actually exists in database
+            $user_check = $conn->prepare("SELECT id FROM users WHERE id = ?");
+            $user_check->bind_param("i", $_SESSION['user_id']);
+            $user_check->execute();
+            $user_result = $user_check->get_result();
+            if ($user_result->num_rows > 0) {
+                $user_id = $_SESSION['user_id'];
+            }
+            $user_check->close();
+        }
+        
+        // Build query dynamically based on user ID
+        if ($user_id === null) {
+            $sql = "UPDATE forms SET form_code = ?, form_title = ?, description = ?, header_image = ?, status = ?, updated_by = NULL WHERE id = ?";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("sssssi", $form_code, $form_title, $description, $header_image, $status, $form_id);
+        } else {
+            $sql = "UPDATE forms SET form_code = ?, form_title = ?, description = ?, header_image = ?, status = ?, updated_by = ? WHERE id = ?";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("sssssii", $form_code, $form_title, $description, $header_image, $status, $user_id, $form_id);
+        }
         
         if ($stmt->execute()) {
-            logSystemAction($_SESSION['user_id'], 'update', 'forms', "Updated form: $form_code - $form_title");
+            if ($user_id !== null) {
+                logSystemAction($user_id, 'update', 'forms', "Updated form: $form_code - $form_title");
+            }
             header('Location: forms.php?message=Form updated successfully');
         } else {
             header('Location: forms.php?error=Failed to update form');
@@ -456,7 +550,7 @@ $stats['inactive_forms'] = $result->fetch_assoc()['inactive'];
     <div class="modal fade" id="addFormModal" tabindex="-1" aria-labelledby="addFormModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-                <form method="POST" action="forms.php">
+                <form method="POST" action="forms.php" enctype="multipart/form-data">
                     <div class="modal-header bg-primary text-white">
                         <h5 class="modal-title" id="addFormModalLabel">
                             <i class="bi bi-plus"></i> Add New Form
@@ -479,6 +573,11 @@ $stats['inactive_forms'] = $result->fetch_assoc()['inactive'];
                             <textarea class="form-control" id="description" name="description" rows="3"></textarea>
                             <div class="form-text">Brief description of the form's purpose</div>
                         </div>
+                        <div class="mb-3">
+                            <label for="header_image" class="form-label">Header Image</label>
+                            <input type="file" class="form-control" id="header_image" name="header_image" accept="image/*">
+                            <div class="form-text">Upload header image for the form (optional)</div>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -495,7 +594,7 @@ $stats['inactive_forms'] = $result->fetch_assoc()['inactive'];
     <div class="modal fade" id="editFormModal" tabindex="-1" aria-labelledby="editFormModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-                <form method="POST" action="forms.php">
+                <form method="POST" action="forms.php" enctype="multipart/form-data">
                     <input type="hidden" id="edit_form_id" name="form_id">
                     <div class="modal-header bg-warning text-white">
                         <h5 class="modal-title" id="editFormModalLabel">
@@ -515,6 +614,11 @@ $stats['inactive_forms'] = $result->fetch_assoc()['inactive'];
                         <div class="mb-3">
                             <label for="edit_description" class="form-label">Description</label>
                             <textarea class="form-control" id="edit_description" name="description" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit_header_image" class="form-label">Header Image</label>
+                            <input type="file" class="form-control" id="edit_header_image" name="header_image" accept="image/*">
+                            <div class="form-text">Upload new header image for form (optional - leave empty to keep current)</div>
                         </div>
                         <div class="mb-3">
                             <label for="edit_status" class="form-label">Status *</label>
