@@ -2,6 +2,13 @@
 session_start();
 ob_start(); // Start output buffering to prevent JSON corruption
 
+require_once '../config.php';
+require_once '../includes/system_functions.php';
+require_once '../includes/logger.php';
+
+// Check session timeout
+checkSessionTimeout();
+
 // Check if user is logged in
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     header('Location: ../index.php');

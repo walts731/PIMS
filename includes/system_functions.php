@@ -1,6 +1,19 @@
 <?php
 // System functions for PIMS
-require_once '../config.php';
+
+// Determine the correct path to config.php based on current working directory
+$cwd = getcwd();
+$config_path = '';
+
+// Check if we're in the root directory (contains config.php)
+if (file_exists($cwd . '/config.php')) {
+    $config_path = 'config.php';
+} else {
+    // We're in a subdirectory, need to go up to find config.php
+    $config_path = '../config.php';
+}
+
+require_once $config_path;
 
 /**
  * Log system actions for audit trail
@@ -198,6 +211,52 @@ function logLoginAttempt($username, $success, $failure_reason = '') {
     } catch (Exception $e) {
         error_log("Failed to log login attempt: " . $e->getMessage());
         return false;
+    }
+}
+
+/**
+ * Check session timeout and logout if expired
+ */
+function checkSessionTimeout() {
+    // Get session timeout setting from database (default: 3600 seconds = 1 hour)
+    $session_timeout = getSystemSetting('session_timeout', 3600);
+    
+    // Check if user is logged in and login_time is set
+    if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true && isset($_SESSION['login_time'])) {
+        $login_time = $_SESSION['login_time'];
+        $current_time = time();
+        $elapsed_time = $current_time - $login_time;
+        
+        // Check if session has expired
+        if ($elapsed_time > $session_timeout) {
+            // Log session timeout
+            $user_id = $_SESSION['user_id'] ?? null;
+            $user_name = ($_SESSION['first_name'] ?? '') . ' ' . ($_SESSION['last_name'] ?? '');
+            $user_email = $_SESSION['email'] ?? '';
+            
+            logSystemAction($user_id, 'session_timeout', 'authentication', "Session expired for user: {$user_name} ({$user_email}) after {$elapsed_time} seconds");
+            logSecurityEvent('session_timeout', "Session timeout for user: {$user_name} ({$user_email})", 'medium', $user_id);
+            
+            // Destroy session
+            session_destroy();
+            
+            // Redirect to login page with timeout message
+            header('Location: ../index.php?timeout=1');
+            exit();
+        }
+        
+        // Update last activity time (optional - for future idle timeout feature)
+        $_SESSION['last_activity'] = $current_time;
+    }
+}
+
+/**
+ * Extend session timeout (refresh login time)
+ */
+function extendSessionTimeout() {
+    if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
+        $_SESSION['login_time'] = time();
+        $_SESSION['last_activity'] = time();
     }
 }
 ?>

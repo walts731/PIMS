@@ -2,6 +2,11 @@
 // AJAX endpoint for clearing logs
 session_start();
 require_once '../../config.php';
+require_once '../../includes/system_functions.php';
+require_once '../../includes/logger.php';
+
+// Check session timeout
+checkSessionTimeout();
 
 // Function to log system actions (if not already defined)
 if (!function_exists('logSystemAction')) {
