@@ -215,7 +215,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <i class="bi bi-gear"></i>
             System Settings
         </a>
-        <a href="#" class="sidebar-nav-item">
+        <a href="security_audit.php" class="sidebar-nav-item <?php echo $current_page == 'security_audit.php' ? 'active' : ''; ?>">
             <i class="bi bi-shield-exclamation"></i>
             Security Audit
         </a>
