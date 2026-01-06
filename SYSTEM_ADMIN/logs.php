@@ -128,6 +128,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['clear_logs'])) {
 }
 
 
+// Get logs statistics
+$log_stats = [];
+try {
+    // Total logs
+    $result = $conn->query("SELECT COUNT(*) as total FROM system_logs");
+    $log_stats['total'] = $result->fetch_assoc()['total'];
+    
+    // Logs today
+    $result = $conn->query("SELECT COUNT(*) as today FROM system_logs WHERE DATE(timestamp) = CURDATE()");
+    $log_stats['today'] = $result->fetch_assoc()['today'];
+    
+    // Logs this week
+    $result = $conn->query("SELECT COUNT(*) as week FROM system_logs WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 7 DAY)");
+    $log_stats['week'] = $result->fetch_assoc()['week'];
+    
+    // Logs this month
+    $result = $conn->query("SELECT COUNT(*) as month FROM system_logs WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 30 DAY)");
+    $log_stats['month'] = $result->fetch_assoc()['month'];
+    
+    // Top actions
+    $result = $conn->query("SELECT action, COUNT(*) as count FROM system_logs GROUP BY action ORDER BY count DESC LIMIT 5");
+    $log_stats['top_actions'] = [];
+    while ($row = $result->fetch_assoc()) {
+        $log_stats['top_actions'][] = $row;
+    }
+    
+    // Top modules
+    $result = $conn->query("SELECT module, COUNT(*) as count FROM system_logs GROUP BY module ORDER BY count DESC LIMIT 5");
+    $log_stats['top_modules'] = [];
+    while ($row = $result->fetch_assoc()) {
+        $log_stats['top_modules'][] = $row;
+    }
+    
+    // Recent activity (last 24 hours)
+    $result = $conn->query("SELECT COUNT(*) as recent FROM system_logs WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 24 HOUR)");
+    $log_stats['recent_24h'] = $result->fetch_assoc()['recent'];
+    
+    // Error logs count
+    $result = $conn->query("SELECT COUNT(*) as errors FROM system_logs WHERE action LIKE '%error%' OR action LIKE '%delete%' OR action LIKE '%failed%'");
+    $log_stats['errors'] = $result->fetch_assoc()['errors'];
+    
+} catch (Exception $e) {
+    error_log("Error fetching log statistics: " . $e->getMessage());
+}
+
 // Get all logs for DataTables
 $logs = [];
 $total_logs = 0;
@@ -349,6 +394,107 @@ $page_title = 'System Logs';
                 </div>
             <?php endif; ?>
             
+            <?php if (isset($error_message)): ?>
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <?php echo htmlspecialchars($error_message); ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php endif; ?>
+            
+            <!-- Logs Statistics -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card border-0 shadow-lg rounded-4">
+                        <div class="card-header bg-info text-white rounded-top-4">
+                            <h6 class="mb-0">
+                                <i class="bi bi-graph-up"></i> Logs Statistics
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <!-- Total Logs -->
+                                <div class="col-md-2 col-sm-4 col-6 mb-3">
+                                    <div class="text-center">
+                                        <div class="text-primary fs-2 fw-bold"><?php echo number_format($log_stats['total'] ?? 0); ?></div>
+                                        <div class="text-muted small">Total Logs</div>
+                                    </div>
+                                </div>
+                                <!-- Today -->
+                                <div class="col-md-2 col-sm-4 col-6 mb-3">
+                                    <div class="text-center">
+                                        <div class="text-success fs-2 fw-bold"><?php echo number_format($log_stats['today'] ?? 0); ?></div>
+                                        <div class="text-muted small">Today</div>
+                                    </div>
+                                </div>
+                                <!-- This Week -->
+                                <div class="col-md-2 col-sm-4 col-6 mb-3">
+                                    <div class="text-center">
+                                        <div class="text-info fs-2 fw-bold"><?php echo number_format($log_stats['week'] ?? 0); ?></div>
+                                        <div class="text-muted small">This Week</div>
+                                    </div>
+                                </div>
+                                <!-- This Month -->
+                                <div class="col-md-2 col-sm-4 col-6 mb-3">
+                                    <div class="text-center">
+                                        <div class="text-warning fs-2 fw-bold"><?php echo number_format($log_stats['month'] ?? 0); ?></div>
+                                        <div class="text-muted small">This Month</div>
+                                    </div>
+                                </div>
+                                <!-- Last 24 Hours -->
+                                <div class="col-md-2 col-sm-4 col-6 mb-3">
+                                    <div class="text-center">
+                                        <div class="text-secondary fs-2 fw-bold"><?php echo number_format($log_stats['recent_24h'] ?? 0); ?></div>
+                                        <div class="text-muted small">Last 24 Hours</div>
+                                    </div>
+                                </div>
+                                <!-- Errors -->
+                                <div class="col-md-2 col-sm-4 col-6 mb-3">
+                                    <div class="text-center">
+                                        <div class="text-danger fs-2 fw-bold"><?php echo number_format($log_stats['errors'] ?? 0); ?></div>
+                                        <div class="text-muted small">Errors</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Top Actions and Modules -->
+                            <div class="row mt-4">
+                                <div class="col-md-6">
+                                    <h6 class="text-primary mb-3">
+                                        <i class="bi bi-lightning"></i> Top Actions
+                                    </h6>
+                                    <?php if (!empty($log_stats['top_actions'])): ?>
+                                        <?php foreach ($log_stats['top_actions'] as $action): ?>
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span class="badge bg-secondary"><?php echo htmlspecialchars($action['action']); ?></span>
+                                                <span class="badge bg-primary"><?php echo number_format($action['count']); ?></span>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <p class="text-muted">No actions found</p>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="text-primary mb-3">
+                                        <i class="bi bi-box"></i> Top Modules
+                                    </h6>
+                                    <?php if (!empty($log_stats['top_modules'])): ?>
+                                        <?php foreach ($log_stats['top_modules'] as $module): ?>
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span class="badge bg-secondary"><?php echo htmlspecialchars(ucfirst($module['module'])); ?></span>
+                                                <span class="badge bg-primary"><?php echo number_format($module['count']); ?></span>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <p class="text-muted">No modules found</p>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Logs Display -->
             <div class="row">
                 <div class="col-12">
@@ -413,7 +559,7 @@ $page_title = 'System Logs';
                                                     </td>
                                                     <td>
                                                         <small class="text-muted">
-                                                            <?php echo !empty($log['details']) ? htmlspecialchars(substr($log['details'], 0, 100)) . (strlen($log['details']) > 100 ? '...' : '') : 'No details'; ?>
+                                                            <?php echo !empty($log['description']) ? htmlspecialchars(substr($log['description'], 0, 100)) . (strlen($log['description']) > 100 ? '...' : '') : 'No details'; ?>
                                                         </small>
                                                     </td>
                                                     <td>
@@ -427,7 +573,7 @@ $page_title = 'System Logs';
                                                         </small>
                                                     </td>
                                                     <td>
-                                                        <button class="btn btn-sm btn-outline-primary" onclick="viewLogDetails(<?php echo $log['id']; ?>)">
+                                                        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#logDetailsModal<?php echo $log['id']; ?>">
                                                             <i class="bi bi-eye"></i> Details
                                                         </button>
                                                     </td>
@@ -442,29 +588,64 @@ $page_title = 'System Logs';
                 </div>
             </div>
             
-            <!-- DataTables handles pagination automatically -->
-        </div>
-    </div>
-    
-    <!-- Log Details Modal -->
-    <div class="modal fade" id="logDetailsModal" tabindex="-1" aria-labelledby="logDetailsModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title" id="logDetailsModalLabel">
-                        <i class="bi bi-clock-history"></i> Log Entry Details
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div id="logDetailsContent">
-                        <!-- Log details will be loaded here -->
+            <!-- Individual Log Details Modals (PHP-based) -->
+            <?php foreach ($logs as $log): ?>
+                <div class="modal fade" id="logDetailsModal<?php echo $log['id']; ?>" tabindex="-1" aria-labelledby="logDetailsModalLabel<?php echo $log['id']; ?>" aria-hidden="true">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header bg-primary text-white">
+                                <h5 class="modal-title" id="logDetailsModalLabel<?php echo $log['id']; ?>">
+                                    <i class="bi bi-clock-history"></i> Log Entry Details
+                                </h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6 class="text-primary">Basic Information</h6>
+                                        <table class="table table-sm">
+                                            <tr><td><strong>ID:</strong></td><td><?php echo htmlspecialchars($log['id']); ?></td></tr>
+                                            <tr><td><strong>Action:</strong></td><td><span class="badge bg-<?php echo $log['action'] && (strpos($log['action'], 'delete') !== false || strpos($log['action'], 'error') !== false) ? 'danger' : (strpos($log['action'], 'update') !== false || strpos($log['action'], 'edit') !== false ? 'warning' : 'success'); ?>"><?php echo htmlspecialchars($log['action']); ?></span></td></tr>
+                                            <tr><td><strong>Module:</strong></td><td><span class="badge bg-secondary"><?php echo htmlspecialchars(ucfirst($log['module'])); ?></span></td></tr>
+                                            <tr><td><strong>Date/Time:</strong></td><td><?php echo date('M j, Y H:i:s', strtotime($log['timestamp'])); ?></td></tr>
+                                        </table>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6 class="text-primary">User Information</h6>
+                                        <table class="table table-sm">
+                                            <tr><td><strong>Name:</strong></td><td><?php echo $log['user_id'] ? htmlspecialchars($log['first_name'] . ' ' . $log['last_name']) : 'System'; ?></td></tr>
+                                            <tr><td><strong>Username:</strong></td><td><?php echo htmlspecialchars($log['username'] ?? 'N/A'); ?></td></tr>
+                                            <tr><td><strong>User ID:</strong></td><td><?php echo htmlspecialchars($log['user_id'] ?? 'N/A'); ?></td></tr>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-12">
+                                        <h6 class="text-primary">Details</h6>
+                                        <div class="alert alert-light">
+                                            <?php echo !empty($log['description']) ? htmlspecialchars($log['description']) : 'No details available'; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6 class="text-primary">Network Information</h6>
+                                        <table class="table table-sm">
+                                            <tr><td><strong>IP Address:</strong></td><td><?php echo htmlspecialchars($log['ip_address']); ?></td></tr>
+                                            <tr><td><strong>User Agent:</strong></td><td><small><?php echo htmlspecialchars($log['user_agent']); ?></small></td></tr>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                </div>
-            </div>
+            <?php endforeach; ?>
+            
+            <!-- DataTables handles pagination automatically -->
         </div>
     </div>
     
@@ -639,99 +820,6 @@ $page_title = 'System Logs';
                 $('#confirmClearBtn').prop('disabled', !$(this).is(':checked'));
             });
         });
-        
-        // View log details
-        function viewLogDetails(logId) {
-            // Fetch log details via AJAX
-            $.ajax({
-                url: 'ajax/get_log_details.php',
-                method: 'POST',
-                data: { log_id: logId },
-                success: function(response) {
-                    const logData = JSON.parse(response);
-                    if (logData.success) {
-                        const log = logData.log;
-                        const logClass = getLogClass(log.action);
-                        
-                        const detailsHtml = `
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h6 class="text-primary">Basic Information</h6>
-                                    <table class="table table-sm">
-                                        <tr><td><strong>ID:</strong></td><td>${log.id}</td></tr>
-                                        <tr><td><strong>Action:</strong></td><td><span class="badge bg-${getBadgeColor(logClass)}">${log.action}</span></td></tr>
-                                        <tr><td><strong>Module:</strong></td><td><span class="badge bg-secondary">${log.module}</span></td></tr>
-                                        <tr><td><strong>Date/Time:</strong></td><td>${formatDateTime(log.timestamp)}</td></tr>
-                                    </table>
-                                </div>
-                                <div class="col-md-6">
-                                    <h6 class="text-primary">User Information</h6>
-                                    <table class="table table-sm">
-                                        <tr><td><strong>Name:</strong></td><td>${log.user_id ? log.first_name + ' ' + log.last_name : 'System'}</td></tr>
-                                        <tr><td><strong>Username:</strong></td><td>${log.username || 'N/A'}</td></tr>
-                                        <tr><td><strong>User ID:</strong></td><td>${log.user_id || 'N/A'}</td></tr>
-                                    </table>
-                                </div>
-                            </div>
-                            <div class="row mt-3">
-                                <div class="col-12">
-                                    <h6 class="text-primary">Details</h6>
-                                    <div class="alert alert-light">
-                                        ${log.details || 'No details available'}
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h6 class="text-primary">Network Information</h6>
-                                    <table class="table table-sm">
-                                        <tr><td><strong>IP Address:</strong></td><td>${log.ip_address}</td></tr>
-                                        <tr><td><strong>User Agent:</strong></td><td><small>${log.user_agent}</small></td></tr>
-                                    </table>
-                                </div>
-                            </div>
-                        `;
-                        
-                        $('#logDetailsContent').html(detailsHtml);
-                        $('#logDetailsModal').modal('show');
-                    } else {
-                        alert('Error loading log details: ' + logData.message);
-                    }
-                },
-                error: function() {
-                    alert('Error loading log details. Please try again.');
-                }
-            });
-        }
-        
-        // Helper functions
-        function getLogClass(action) {
-            if (action.includes('delete') || action.includes('error')) return 'error';
-            if (action.includes('update') || action.includes('edit')) return 'warning';
-            if (action.includes('create') || action.includes('add') || action.includes('login')) return 'success';
-            return 'info';
-        }
-        
-        function getBadgeColor(logClass) {
-            switch(logClass) {
-                case 'error': return 'danger';
-                case 'warning': return 'warning';
-                case 'success': return 'success';
-                default: return 'info';
-            }
-        }
-        
-        function formatDateTime(dateString) {
-            const date = new Date(dateString);
-            return date.toLocaleString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            });
-        }
         
         // Export logs
         function exportLogs() {
