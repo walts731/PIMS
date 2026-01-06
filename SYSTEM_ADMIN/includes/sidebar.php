@@ -195,7 +195,7 @@ try {
         <div class="d-flex align-items-center">
             <div class="sidebar-logo">
                 <?php 
-                $logo_path = !empty($system_settings['system_logo']) ? '../img/trans_logo.png' : '../' . htmlspecialchars($system_settings['system_logo']);
+                $logo_path = !empty($system_settings['system_logo']) ? '../' . htmlspecialchars($system_settings['system_logo']) : '../img/trans_logo.png';
                 $system_name = htmlspecialchars($system_settings['system_name'] ?? 'PIMS');
                 ?>
                 <img src="<?php echo $logo_path; ?>" alt="<?php echo $system_name; ?> Logo" class="img-fluid" style="max-height: 40px; border-radius: 8px;">
