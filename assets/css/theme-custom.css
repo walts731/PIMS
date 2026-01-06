@@ -1,10 +1,15 @@
 
 :root {
-    --primary-color: #18b43f;
+    --primary-color: #0d39e7;
     --secondary-color: #5cc2f2;
-    --accent-color: #ff6b6b;
-    --primary-hover: #04a02b;
+    --accent-color: #6b90ff;
+    --primary-hover: #0025d3;
     --secondary-hover: #48aede;
+    
+    /* Update gradients with new colors */
+    --primary-gradient: linear-gradient(135deg, #0d39e7 0%, #5cc2f2 100%);
+    --secondary-gradient: linear-gradient(135deg, #5cc2f2 0%, #6b90ff 100%);
+    --accent-gradient: linear-gradient(135deg, #6b90ff 0%, #F7F3F3 100%);
 }
 
 .bg-primary-custom { background-color: var(--primary-color) !important; }

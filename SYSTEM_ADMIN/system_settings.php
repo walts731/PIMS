@@ -30,6 +30,11 @@ function createThemeCSS($primary_color, $secondary_color, $accent_color) {
     --accent-color: {$accent_color};
     --primary-hover: " . adjustColor($primary_color, -20) . ";
     --secondary-hover: " . adjustColor($secondary_color, -20) . ";
+    
+    /* Update gradients with new colors */
+    --primary-gradient: linear-gradient(135deg, {$primary_color} 0%, {$secondary_color} 100%);
+    --secondary-gradient: linear-gradient(135deg, {$secondary_color} 0%, {$accent_color} 100%);
+    --accent-gradient: linear-gradient(135deg, {$accent_color} 0%, #F7F3F3 100%);
 }
 
 .bg-primary-custom { background-color: var(--primary-color) !important; }
@@ -385,6 +390,7 @@ $current_page = 'system_settings.php';
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
     <link href="../assets/css/index.css" rel="stylesheet">
+    <link href="../assets/css/theme-custom.css" rel="stylesheet">
     <style>
         .page-header {
             background: white;
