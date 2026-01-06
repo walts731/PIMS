@@ -224,6 +224,42 @@ $current_page = 'security_audit.php';
             background: linear-gradient(90deg, #dc3545 0%, #fd7e14 50%, #ffc107 100%);
             transition: width 0.3s ease;
         }
+        
+        /* Modal z-index fixes */
+        .modal {
+            z-index: 1055;
+        }
+        
+        .modal-backdrop {
+            z-index: 1050;
+        }
+        
+        .modal-dialog {
+            z-index: 1060;
+        }
+        
+        /* Ensure sidebar overlay doesn't interfere with modals */
+        .sidebar-overlay {
+            z-index: 1040;
+        }
+        
+        /* Fix modal backdrop issues */
+        .modal.show {
+            display: block !important;
+        }
+        
+        .modal-backdrop.show {
+            display: block !important;
+            opacity: 0.5;
+        }
+        
+        /* Ensure modal buttons are clickable */
+        .modal-footer button,
+        .modal-header button,
+        .modal-footer a {
+            z-index: 1061;
+            position: relative;
+        }
     </style>
 </head>
 <body>
@@ -582,6 +618,38 @@ $current_page = 'security_audit.php';
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         <?php require_once 'includes/sidebar-scripts.php'; ?>
+        
+        // Fix modal backdrop issues
+        document.addEventListener('DOMContentLoaded', function() {
+            const logoutModal = document.getElementById('logoutModal');
+            if (logoutModal) {
+                logoutModal.addEventListener('show.bs.modal', function () {
+                    // Ensure proper backdrop
+                    document.body.classList.add('modal-open');
+                });
+                
+                logoutModal.addEventListener('hidden.bs.modal', function () {
+                    // Clean up backdrop
+                    document.body.classList.remove('modal-open');
+                    const backdrop = document.querySelector('.modal-backdrop');
+                    if (backdrop) {
+                        backdrop.remove();
+                    }
+                });
+                
+                // Ensure cancel button works properly
+                const cancelButton = logoutModal.querySelector('[data-bs-dismiss="modal"]');
+                if (cancelButton) {
+                    cancelButton.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const modal = bootstrap.Modal.getInstance(logoutModal);
+                        if (modal) {
+                            modal.hide();
+                        }
+                    });
+                }
+            }
+        });
         
         // Security Audit functions
         function runSecurityScan() {

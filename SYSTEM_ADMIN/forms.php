@@ -428,6 +428,42 @@ $stats['inactive_forms'] = $result->fetch_assoc()['inactive'];
             padding: 0.25rem 0.5rem;
             font-size: 0.875rem;
         }
+        
+        /* Modal z-index fixes */
+        .modal {
+            z-index: 1055;
+        }
+        
+        .modal-backdrop {
+            z-index: 1050;
+        }
+        
+        .modal-dialog {
+            z-index: 1060;
+        }
+        
+        /* Ensure sidebar overlay doesn't interfere with modals */
+        .sidebar-overlay {
+            z-index: 1040;
+        }
+        
+        /* Fix modal backdrop issues */
+        .modal.show {
+            display: block !important;
+        }
+        
+        .modal-backdrop.show {
+            display: block !important;
+            opacity: 0.5;
+        }
+        
+        /* Ensure modal buttons are clickable */
+        .modal-footer button,
+        .modal-header button,
+        .modal-footer a {
+            z-index: 1061;
+            position: relative;
+        }
     </style>
 </head>
 <body>
@@ -707,6 +743,38 @@ $stats['inactive_forms'] = $result->fetch_assoc()['inactive'];
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     <script>
         <?php require_once 'includes/sidebar-scripts.php'; ?>
+        
+        // Fix modal backdrop issues
+        document.addEventListener('DOMContentLoaded', function() {
+            const logoutModal = document.getElementById('logoutModal');
+            if (logoutModal) {
+                logoutModal.addEventListener('show.bs.modal', function () {
+                    // Ensure proper backdrop
+                    document.body.classList.add('modal-open');
+                });
+                
+                logoutModal.addEventListener('hidden.bs.modal', function () {
+                    // Clean up backdrop
+                    document.body.classList.remove('modal-open');
+                    const backdrop = document.querySelector('.modal-backdrop');
+                    if (backdrop) {
+                        backdrop.remove();
+                    }
+                });
+                
+                // Ensure cancel button works properly
+                const cancelButton = logoutModal.querySelector('[data-bs-dismiss="modal"]');
+                if (cancelButton) {
+                    cancelButton.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const modal = bootstrap.Modal.getInstance(logoutModal);
+                        if (modal) {
+                            modal.hide();
+                        }
+                    });
+                }
+            }
+        });
         
         // Forms data from PHP
         const formsData = <?php echo $forms_data_json; ?>;

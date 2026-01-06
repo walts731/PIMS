@@ -509,6 +509,42 @@ foreach ($defaults as $key => $value) {
             font-weight: 500;
         }
         
+        /* Modal z-index fixes */
+        .modal {
+            z-index: 1055;
+        }
+        
+        .modal-backdrop {
+            z-index: 1050;
+        }
+        
+        .modal-dialog {
+            z-index: 1060;
+        }
+        
+        /* Ensure sidebar overlay doesn't interfere with modals */
+        .sidebar-overlay {
+            z-index: 1040;
+        }
+        
+        /* Fix modal backdrop issues */
+        .modal.show {
+            display: block !important;
+        }
+        
+        .modal-backdrop.show {
+            display: block !important;
+            opacity: 0.5;
+        }
+        
+        /* Ensure modal buttons are clickable */
+        .modal-footer button,
+        .modal-header button,
+        .modal-footer a {
+            z-index: 1061;
+            position: relative;
+        }
+        
         .chart-card {
             background: rgba(255, 255, 255, 0.25);
             backdrop-filter: blur(10px);
@@ -1048,6 +1084,36 @@ $page_title = 'Dashboard';
             // Chart.js global configuration
             Chart.defaults.font.family = 'Inter, sans-serif';
             Chart.defaults.color = '#666';
+            
+            // Fix modal backdrop issues
+            const logoutModal = document.getElementById('logoutModal');
+            if (logoutModal) {
+                logoutModal.addEventListener('show.bs.modal', function () {
+                    // Ensure proper backdrop
+                    document.body.classList.add('modal-open');
+                });
+                
+                logoutModal.addEventListener('hidden.bs.modal', function () {
+                    // Clean up backdrop
+                    document.body.classList.remove('modal-open');
+                    const backdrop = document.querySelector('.modal-backdrop');
+                    if (backdrop) {
+                        backdrop.remove();
+                    }
+                });
+                
+                // Ensure cancel button works properly
+                const cancelButton = logoutModal.querySelector('[data-bs-dismiss="modal"]');
+                if (cancelButton) {
+                    cancelButton.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const modal = bootstrap.Modal.getInstance(logoutModal);
+                        if (modal) {
+                            modal.hide();
+                        }
+                    });
+                }
+            }
             
             // User Role Distribution Pie Chart
             const roleCtx = document.getElementById('roleChart').getContext('2d');
