@@ -355,6 +355,9 @@ try {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
@@ -532,8 +535,8 @@ try {
                 </div>
                 <div class="col-md-6">
                     <div class="row g-2">
-                        <div class="col-md-4">
-                            <select class="form-select form-select-sm" id="categoryFilter" onchange="applyFilters()">
+                        <div class="col-md-6">
+                            <select class="form-select form-select-sm" id="categoryFilter">
                                 <option value="">All Categories</option>
                                 <?php foreach ($categories as $category): ?>
                                     <option value="<?php echo $category['id']; ?>" <?php echo $category_filter == $category['id'] ? 'selected' : ''; ?>>
@@ -542,8 +545,8 @@ try {
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-md-4">
-                            <select class="form-select form-select-sm" id="officeFilter" onchange="applyFilters()">
+                        <div class="col-md-6">
+                            <select class="form-select form-select-sm" id="officeFilter">
                                 <option value="">All Offices</option>
                                 <?php foreach ($offices as $office): ?>
                                     <option value="<?php echo $office['id']; ?>" <?php echo $office_filter == $office['id'] ? 'selected' : ''; ?>>
@@ -551,9 +554,6 @@ try {
                                     </option>
                                 <?php endforeach; ?>
                             </select>
-                        </div>
-                        <div class="col-md-4">
-                            <input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Search assets..." value="<?php echo htmlspecialchars($search_filter); ?>">
                         </div>
                     </div>
                 </div>
@@ -600,15 +600,6 @@ try {
                                 <td colspan="7" class="text-center text-muted py-4">
                                     <i class="bi bi-inbox fs-1"></i>
                                     <p class="mt-2">No assets found. Click "Add Asset" to create your first asset.</p>
-                                </td>
-                            </tr>
-                        <?php endif; ?>
-                        
-                        <!-- Debug: Show total assets count -->
-                        <?php if (!empty($assets)): ?>
-                            <tr>
-                                <td colspan="7" class="text-center text-muted py-2">
-                                    <small>Total assets loaded: <?php echo count($assets); ?></small>
                                 </td>
                             </tr>
                         <?php endif; ?>
@@ -720,6 +711,18 @@ try {
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
     <?php require_once 'includes/sidebar-scripts.php'; ?>
     <script>
         // Asset data for editing
@@ -778,28 +781,109 @@ try {
         }
         
         
-        // Export assets function
-        function exportAssets() {
-            const table = document.getElementById('assetsTable');
-            let csv = 'ID,Category,Description,Quantity,Unit Cost,Total Value,Office,Created\n';
-            
-            const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
-            for (let row of rows) {
-                const cells = row.getElementsByTagName('td');
-                if (cells.length > 1) {
-                    const rowData = [
-                        cells[0].textContent,
-                        cells[1].textContent.replace(/\n/g, ' '),
-                        cells[2].textContent,
-                        cells[3].textContent,
-                        cells[4].textContent,
-                        cells[5].textContent,
-                        cells[6].textContent,
-                        cells[7].textContent
-                    ];
-                    csv += rowData.map(cell => `"${cell.trim()}"`).join(',') + '\n';
+        // Initialize DataTable
+        let assetsTable;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize DataTable
+            assetsTable = $('#assetsTable').DataTable({
+                responsive: true,
+                pageLength: 25,
+                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                order: [[5, 'desc']], // Sort by Created date column (index 5) by default
+                columnDefs: [
+                    {
+                        targets: 0, // Category column
+                        orderable: true,
+                        render: function(data, type, row) {
+                            if (type === 'display') {
+                                return data;
+                            }
+                            return data.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+                        }
+                    },
+                    {
+                        targets: 3, // Total Value column
+                        orderable: true,
+                        render: function(data, type, row) {
+                            if (type === 'sort' || type === 'type') {
+                                // Remove formatting and convert to number for sorting
+                                return parseFloat(data.replace(/[^0-9.-]+/g, ''));
+                            }
+                            return data;
+                        }
+                    },
+                    {
+                        targets: 5, // Created date column
+                        orderable: true,
+                        render: function(data, type, row) {
+                            if (type === 'sort' || type === 'type') {
+                                // Convert date string to timestamp for sorting
+                                return new Date(data).getTime();
+                            }
+                            return data;
+                        }
+                    },
+                    {
+                        targets: -1, // Actions column (last column)
+                        orderable: false,
+                        searchable: false
+                    }
+                ],
+                dom: '<"row"<"col-md-6"l><"col-md-6 text-end"f>>rtip',
+                language: {
+                    search: "Search assets:",
+                    lengthMenu: "Show _MENU_ assets per page",
+                    info: "Showing _START_ to _END_ of _TOTAL_ assets",
+                    paginate: {
+                        first: "First",
+                        last: "Last",
+                        next: "Next",
+                        previous: "Previous"
+                    },
+                    emptyTable: "No assets available",
+                    zeroRecords: "No matching assets found"
                 }
-            }
+            });
+            
+            // Category filter
+            $('#categoryFilter').on('change', function() {
+                const categoryValue = this.value;
+                if (categoryValue) {
+                    assetsTable.column(0).search($(this).find('option:selected').text()).draw();
+                } else {
+                    assetsTable.column(0).search('').draw();
+                }
+            });
+            
+            // Office filter
+            $('#officeFilter').on('change', function() {
+                const officeValue = this.value;
+                if (officeValue) {
+                    assetsTable.column(4).search($(this).find('option:selected').text()).draw();
+                } else {
+                    assetsTable.column(4).search('').draw();
+                }
+            });
+        });
+        
+        // Export assets function (updated for DataTables)
+        function exportAssets() {
+            // Use DataTables export functionality
+            const data = assetsTable.data().toArray();
+            let csv = 'Category,Description,Quantity,Total Value,Office,Created\n';
+            
+            data.forEach(row => {
+                const rowData = [
+                    row[0].replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim(), // Category
+                    row[1], // Description
+                    row[2], // Quantity
+                    row[3].replace(/[^0-9.-]+/g, ''), // Total Value
+                    row[4], // Office
+                    row[5]  // Created
+                ];
+                csv += rowData.map(cell => `"${cell.trim()}"`).join(',') + '\n';
+            });
             
             const blob = new Blob([csv], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
@@ -809,49 +893,6 @@ try {
             a.click();
             window.URL.revokeObjectURL(url);
         }
-        
-        // Apply filters function
-        function applyFilters() {
-            const category = document.getElementById('categoryFilter').value;
-            const office = document.getElementById('officeFilter').value;
-            const search = document.getElementById('searchInput').value;
-            
-            const params = new URLSearchParams();
-            if (category) params.append('category', category);
-            if (office) params.append('office', office);
-            if (search) params.append('search', search);
-            
-            const url = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
-            window.location.href = url;
-        }
-        
-        // Search functionality with Enter key and debounce
-        let searchTimeout;
-        document.getElementById('searchInput').addEventListener('keyup', function(e) {
-            clearTimeout(searchTimeout);
-            if (e.key === 'Enter') {
-                applyFilters();
-            } else {
-                searchTimeout = setTimeout(() => {
-                    applyFilters();
-                }, 500);
-            }
-        });
-        
-        // Category filter change
-        document.getElementById('categoryFilter').addEventListener('change', function() {
-            applyFilters();
-        });
-        
-        // Office filter change
-        document.getElementById('officeFilter').addEventListener('change', function() {
-            applyFilters();
-        });
-        
-        // Add event listeners for category selection in modals
-        document.addEventListener('DOMContentLoaded', function() {
-            
-        });
     </script>
 </body>
 </html>

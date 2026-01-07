@@ -69,6 +69,9 @@ $notag_items = count(array_filter($items, function($item) { return $item['status
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
@@ -192,9 +195,12 @@ $notag_items = count(array_filter($items, function($item) { return $item['status
                     <p class="text-muted mb-0">Individual items for: <?php echo htmlspecialchars($asset['description']); ?></p>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <a href="assets.php" class="btn btn-back">
+                    <a href="assets.php" class="btn btn-back me-2">
                         <i class="bi bi-arrow-left"></i> Back to Assets
                     </a>
+                    <button class="btn btn-outline-success btn-sm" onclick="exportAssetItems()">
+                        <i class="bi bi-download"></i> Export
+                    </button>
                 </div>
             </div>
         </div>
@@ -266,17 +272,27 @@ $notag_items = count(array_filter($items, function($item) { return $item['status
                 <div class="col-md-6">
                     <h5 class="mb-0"><i class="bi bi-list-ul"></i> Individual Asset Items</h5>
                 </div>
-                <div class="col-md-6 text-md-end">
-                    <span class="text-muted">Showing <?php echo count($items); ?> of <?php echo $total_items; ?> items</span>
+                <div class="col-md-6">
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <select class="form-select form-select-sm" id="statusFilter">
+                                <option value="">All Statuses</option>
+                                <option value="Serviceable">Serviceable</option>
+                                <option value="Unserviceable">Unserviceable</option>
+                                <option value="Red-Tagged">Red-Tagged</option>
+                                <option value="Borrowed">Borrowed</option>
+                                <option value="No Tag">No Tag</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </div>
             
             <div class="table-responsive">
                 <?php if (!empty($items)): ?>
-                    <table class="table table-hover">
+                    <table class="table table-hover" id="assetItemsTable">
                         <thead class="table-light">
                             <tr>
-                                <th>Item ID</th>
                                 <th>Description</th>
                                 <th>Status</th>
                                 <th>Value</th>
@@ -288,7 +304,6 @@ $notag_items = count(array_filter($items, function($item) { return $item['status
                         <tbody>
                             <?php foreach ($items as $item): ?>
                                 <tr>
-                                    <td><?php echo $item['id']; ?></td>
                                     <td><?php echo htmlspecialchars($item['description']); ?></td>
                                     <td>
                                         <?php
@@ -324,14 +339,9 @@ $notag_items = count(array_filter($items, function($item) { return $item['status
                                     <td><?php echo date('M j, Y', strtotime($item['acquisition_date'])); ?></td>
                                     <td><?php echo date('M j, Y', strtotime($item['last_updated'])); ?></td>
                                     <td>
-                                        <div class="btn-group btn-group-sm" role="group">
-                                            <button type="button" class="btn btn-outline-primary btn-action" title="Edit">
-                                                <i class="bi bi-pencil"></i>
-                                            </button>
-                                            <button type="button" class="btn btn-outline-info btn-action" title="View Details">
-                                                <i class="bi bi-eye"></i>
-                                            </button>
-                                        </div>
+                                        <button type="button" class="btn btn-outline-info btn-action" title="View Details">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -354,6 +364,138 @@ $notag_items = count(array_filter($items, function($item) { return $item['status
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
     <?php require_once 'includes/sidebar-scripts.php'; ?>
+    <script>
+        // Initialize DataTable
+        let assetItemsTable;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize DataTable
+            assetItemsTable = $('#assetItemsTable').DataTable({
+                responsive: true,
+                pageLength: 25,
+                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                order: [[3, 'desc']], // Sort by Acquisition Date by default
+                columnDefs: [
+                    {
+                        targets: 0, // Description column
+                        orderable: true
+                    },
+                    {
+                        targets: 1, // Status column
+                        orderable: true,
+                        render: function(data, type, row) {
+                            if (type === 'display') {
+                                return data;
+                            }
+                            // Extract text from span for sorting
+                            return data.replace(/<[^>]*>/g, '').trim();
+                        }
+                    },
+                    {
+                        targets: 2, // Value column
+                        orderable: true,
+                        render: function(data, type, row) {
+                            if (type === 'sort' || type === 'type') {
+                                // Remove formatting and convert to number for sorting
+                                return parseFloat(data.replace(/[^0-9.-]+/g, ''));
+                            }
+                            return data;
+                        }
+                    },
+                    {
+                        targets: 3, // Acquisition Date column
+                        orderable: true,
+                        render: function(data, type, row) {
+                            if (type === 'sort' || type === 'type') {
+                                // Convert date string to timestamp for sorting
+                                return new Date(data).getTime();
+                            }
+                            return data;
+                        }
+                    },
+                    {
+                        targets: 4, // Last Updated column
+                        orderable: true,
+                        render: function(data, type, row) {
+                            if (type === 'sort' || type === 'type') {
+                                // Convert date string to timestamp for sorting
+                                return new Date(data).getTime();
+                            }
+                            return data;
+                        }
+                    },
+                    {
+                        targets: -1, // Actions column (last column)
+                        orderable: false,
+                        searchable: false,
+                        className: 'text-center'
+                    }
+                ],
+                dom: '<"row"<"col-md-6"l><"col-md-6 text-end"f>>rtip',
+                language: {
+                    search: "Search items:",
+                    lengthMenu: "Show _MENU_ items per page",
+                    info: "Showing _START_ to _END_ of _TOTAL_ items",
+                    paginate: {
+                        first: "First",
+                        last: "Last",
+                        next: "Next",
+                        previous: "Previous"
+                    },
+                    emptyTable: "No items available",
+                    zeroRecords: "No matching items found"
+                }
+            });
+            
+            // Status filter
+            $('#statusFilter').on('change', function() {
+                const statusValue = this.value;
+                if (statusValue) {
+                    assetItemsTable.column(1).search(statusValue).draw();
+                } else {
+                    assetItemsTable.column(1).search('').draw();
+                }
+            });
+        });
+        
+        // Export asset items function
+        function exportAssetItems() {
+            // Use DataTables export functionality
+            const data = assetItemsTable.data().toArray();
+            let csv = 'Description,Status,Value,Acquisition Date,Last Updated\n';
+            
+            data.forEach(row => {
+                const rowData = [
+                    row[0], // Description
+                    row[1].replace(/<[^>]*>/g, '').trim(), // Status
+                    row[2].replace(/[^0-9.-]+/g, ''), // Value
+                    row[3], // Acquisition Date
+                    row[4]  // Last Updated
+                ];
+                csv += rowData.map(cell => `"${cell.trim()}"`).join(',') + '\n';
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `asset_items_export_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+    </script>
 </body>
 </html>
