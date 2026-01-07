@@ -327,12 +327,15 @@ try {
 $stats = [];
 try {
     $sql = "SELECT 
-                COUNT(*) as total_assets,
-                SUM(quantity) as total_quantity,
-                SUM(quantity * unit_cost) as total_value,
-                COUNT(DISTINCT asset_categories_id) as total_categories,
-                COUNT(DISTINCT office_id) as total_offices
-            FROM assets";
+                COUNT(DISTINCT ai.asset_id) as total_assets,
+                COUNT(ai.id) as total_quantity,
+                SUM(ai.value) as total_value,
+                COUNT(DISTINCT a.asset_categories_id) as total_categories,
+                COUNT(DISTINCT a.office_id) as total_offices,
+                SUM(CASE WHEN ai.status = 'available' THEN 1 ELSE 0 END) as serviceable_count,
+                SUM(CASE WHEN ai.status = 'in_use' THEN 1 ELSE 0 END) as unserviceable_count
+            FROM asset_items ai
+            LEFT JOIN assets a ON ai.asset_id = a.id";
     $result = $conn->query($sql);
     if ($result) {
         $stats = $result->fetch_assoc();
@@ -390,9 +393,11 @@ try {
         }
         
         .stats-number {
-            font-size: 2rem;
+            font-size: 1.2rem;
             font-weight: 700;
             margin-bottom: 0.5rem;
+            word-wrap: break-word;
+            line-height: 1.2;
         }
         
         .stats-label {
@@ -487,25 +492,31 @@ try {
         
         <!-- Statistics Cards -->
         <div class="row mb-4">
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg-2 col-md-6">
                 <div class="stats-card">
-                    <div class="stats-number"><?php echo $stats['total_assets'] ?? 0; ?></div>
+                    <div class="stats-number"><?php echo $stats['total_quantity'] ?? 0; ?></div>
                     <div class="stats-label"><i class="bi bi-box"></i> Total Assets</div>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg-2 col-md-6">
                 <div class="stats-card">
-                    <div class="stats-number"><?php echo $stats['total_quantity'] ?? 0; ?></div>
-                    <div class="stats-label"><i class="bi bi-stack"></i> Total Quantity</div>
+                    <div class="stats-number"><?php echo $stats['serviceable_count'] ?? 0; ?></div>
+                    <div class="stats-label"><i class="bi bi-check-circle"></i> Serviceable</div>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg-2 col-md-6">
+                <div class="stats-card">
+                    <div class="stats-number"><?php echo $stats['unserviceable_count'] ?? 0; ?></div>
+                    <div class="stats-label"><i class="bi bi-x-circle"></i> Unserviceable</div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-6">
                 <div class="stats-card">
                     <div class="stats-number"><?php echo number_format($stats['total_value'] ?? 0, 2); ?></div>
                     <div class="stats-label"><i class="bi bi-currency-dollar"></i> Total Value</div>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg-2 col-md-6">
                 <div class="stats-card">
                     <div class="stats-number"><?php echo $stats['total_categories'] ?? 0; ?></div>
                     <div class="stats-label"><i class="bi bi-tags"></i> Categories</div>
