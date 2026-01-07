@@ -35,6 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     $asset_categories_id = intval($_POST['asset_categories_id'] ?? 0);
     $description = trim($_POST['description'] ?? '');
     $quantity = intval($_POST['quantity'] ?? 0);
+    $unit = trim($_POST['unit'] ?? '');
     $unit_cost = floatval($_POST['unit_cost'] ?? 0);
     $office_id = intval($_POST['office_id'] ?? 0);
     
@@ -70,6 +71,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     } elseif ($office_id <= 0) {
         $message = "Please select an office.";
         $message_type = "danger";
+    } elseif (empty($unit)) {
+        $message = "Unit is required.";
+        $message_type = "danger";
     } elseif ($quantity <= 0) {
         $message = "Quantity must be greater than 0.";
         $message_type = "danger";
@@ -77,39 +81,62 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         $message = "Unit cost cannot be negative.";
         $message_type = "danger";
     } else {
+        error_log("DEBUG: Form validation passed - Description: '$description', Unit: '$unit', Category: $asset_categories_id, Office: $office_id, Quantity: $quantity, Cost: $unit_cost");
         try {
             if ($existing_asset) {
-                // Update existing asset quantity
+                // Update existing asset quantity using traditional SQL
                 $new_quantity = $existing_asset['quantity'] + $quantity;
-                $update_stmt = $conn->prepare("UPDATE assets SET quantity = ?, unit_cost = ? WHERE id = ?");
-                $update_stmt->bind_param("idi", $new_quantity, $unit_cost, $existing_asset['id']);
-                if ($update_stmt->execute()) {
+                $unit = mysqli_real_escape_string($conn, $unit);
+                $unit_cost = floatval($unit_cost);
+                $existing_asset_id = intval($existing_asset['id']);
+                
+                $update_sql = "UPDATE assets SET quantity = '$new_quantity', unit_cost = '$unit_cost', unit = '$unit' WHERE id = '$existing_asset_id'";
+                error_log("DEBUG: Update SQL: " . $update_sql);
+                
+                if ($conn->query($update_sql)) {
                     $asset_id = $existing_asset['id'];
+                    error_log("DEBUG: Asset updated with ID: $asset_id");
                     
                     // Create additional asset items for new quantity
                     for ($i = 1; $i <= $quantity; $i++) {
-                        $item_description = $description . ' - Item ' . ($existing_asset['quantity'] + $i);
-                        $item_stmt = $conn->prepare("INSERT INTO asset_items (asset_id, description, quantity, status, value, acquisition_date, office_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                        $item_description = mysqli_real_escape_string($conn, $description . ' - ' . $unit . ' ' . ($existing_asset['quantity'] + $i));
                         $item_status = 'available';
-                        $item_quantity = 1;
                         $acquisition_date = date('Y-m-d');
-                        $item_stmt->bind_param("isisdss", $asset_id, $item_description, $item_quantity, $item_status, $unit_cost, $acquisition_date, $office_id);
-                        $item_stmt->execute();
+                        
+                        $item_sql = "INSERT INTO asset_items (asset_id, description, status, value, acquisition_date, office_id) 
+                                     VALUES ('$asset_id', '$item_description', '$item_status', '$unit_cost', '$acquisition_date', '$office_id')";
+                        error_log("DEBUG: Item SQL: " . $item_sql);
+                        
+                        if ($conn->query($item_sql)) {
+                            error_log("DEBUG: Successfully created item $i with ID: " . $conn->insert_id);
+                        } else {
+                            error_log("DEBUG: Failed to create item $i - Error: " . $conn->error);
+                        }
                     }
                     
                     $message = "Asset quantity updated successfully! Added {$quantity} more items to existing asset.";
                     $message_type = "success";
                     logSystemAction($_SESSION['user_id'], 'asset_quantity_updated', 'asset_management', "Updated quantity for existing asset: {$description}");
                 } else {
-                    throw new Exception("Failed to update asset: " . $update_stmt->error);
+                    throw new Exception("Failed to update asset: " . $conn->error);
                 }
             } else {
-                // Insert new asset
-                $stmt = $conn->prepare("INSERT INTO assets (asset_categories_id, description, quantity, unit_cost, office_id) VALUES (?, ?, ?, ?, ?)");
-                $stmt->bind_param("isidi", $asset_categories_id, $description, $quantity, $unit_cost, $office_id);
+                // Insert new asset using traditional SQL
+                $asset_categories_id = intval($asset_categories_id);
+                $description = mysqli_real_escape_string($conn, $description);
+                $unit = mysqli_real_escape_string($conn, $unit);
+                $quantity = intval($quantity);
+                $unit_cost = floatval($unit_cost);
+                $office_id = intval($office_id);
                 
-                if ($stmt->execute()) {
+                $sql = "INSERT INTO assets (asset_categories_id, description, unit, quantity, unit_cost, office_id, status) 
+                        VALUES ('$asset_categories_id', '$description', '$unit', '$quantity', '$unit_cost', '$office_id', 'active')";
+                
+                error_log("DEBUG: SQL Query: " . $sql);
+                
+                if ($conn->query($sql)) {
                     $asset_id = $conn->insert_id;
+                    error_log("DEBUG: Asset inserted with ID: $asset_id");
                     
                     // Handle specific asset data
                     if (!empty($category_code)) {
@@ -136,13 +163,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                     
                     // Create individual asset items for each unit
                     for ($i = 1; $i <= $quantity; $i++) {
-                        $item_description = $description . ' - Item ' . $i;
-                        $item_stmt = $conn->prepare("INSERT INTO asset_items (asset_id, description, quantity, status, value, acquisition_date, office_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                        $item_description = mysqli_real_escape_string($conn, $description . ' - ' . $unit . ' ' . $i);
                         $item_status = 'available';
-                        $item_quantity = 1;
                         $acquisition_date = date('Y-m-d');
-                        $item_stmt->bind_param("isisdss", $asset_id, $item_description, $item_quantity, $item_status, $unit_cost, $acquisition_date, $office_id);
-                        $item_stmt->execute();
+                        
+                        $item_sql = "INSERT INTO asset_items (asset_id, description, status, value, acquisition_date, office_id) 
+                                     VALUES ('$asset_id', '$item_description', '$item_status', '$unit_cost', '$acquisition_date', '$office_id')";
+                        error_log("DEBUG: New Item SQL: " . $item_sql);
+                        
+                        if ($conn->query($item_sql)) {
+                            error_log("DEBUG: Successfully created new item $i with ID: " . $conn->insert_id);
+                        } else {
+                            error_log("DEBUG: Failed to create new item $i - Error: " . $conn->error);
+                        }
                     }
                     
                     $message = "Asset added successfully!";
@@ -150,7 +183,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                     
                     logSystemAction($_SESSION['user_id'], 'asset_added', 'asset_management', "Added asset: {$description}");
                 } else {
-                    throw new Exception("Failed to insert asset: " . $stmt->error);
+                    throw new Exception("Failed to insert asset: " . $conn->error);
                 }
             }
             
@@ -168,7 +201,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['action']) && $_GET['acti
     
     if ($asset_id > 0) {
         try {
-            $items_query = "SELECT ai.*, a.description as asset_description 
+            $items_query = "SELECT ai.id, ai.description, ai.status, ai.value, ai.acquisition_date, a.description as asset_description 
                          FROM asset_items ai 
                          LEFT JOIN assets a ON ai.asset_id = a.id 
                          WHERE ai.asset_id = ? 
@@ -580,13 +613,38 @@ try {
                         </div>
                         
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="mb-3">
                                     <label class="form-label">Quantity *</label>
                                     <input type="number" class="form-control" name="quantity" min="1" required>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Unit *</label>
+                                    <select class="form-select" name="unit" required>
+                                        <option value="">Select Unit</option>
+                                        <option value="pcs">Pieces (pcs)</option>
+                                        <option value="units">Units</option>
+                                        <option value="sets">Sets</option>
+                                        <option value="boxes">Boxes</option>
+                                        <option value="packages">Packages</option>
+                                        <option value="liters">Liters</option>
+                                        <option value="kilograms">Kilograms (kg)</option>
+                                        <option value="meters">Meters (m)</option>
+                                        <option value="square_meters">Square Meters (m²)</option>
+                                        <option value="cubic_meters">Cubic Meters (m³)</option>
+                                        <option value="pairs">Pairs</option>
+                                        <option value="dozens">Dozens</option>
+                                        <option value="rolls">Rolls</option>
+                                        <option value="bottles">Bottles</option>
+                                        <option value="bags">Bags</option>
+                                        <option value="containers">Containers</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
                                 <div class="mb-3">
                                     <label class="form-label">Unit Cost *</label>
                                     <input type="number" class="form-control" name="unit_cost" step="0.01" min="0" required>
@@ -912,7 +970,6 @@ try {
                         data.items.forEach(item => {
                             const statusBadge = getStatusBadge(item.status);
                             html += '<tr>';
-                            html += '<td>' + item.id + '</td>';
                             html += '<td>' + item.description + '</td>';
                             html += '<td>' + statusBadge + '</td>';
                             html += '<td>₱' + parseFloat(item.value).toFixed(2) + '</td>';
@@ -921,13 +978,13 @@ try {
                         });
                         tbody.innerHTML = html;
                     } else {
-                        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No individual items found for this asset.</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No individual items found for this asset.</td></tr>';
                     }
                 })
                 .catch(error => {
                     console.error('Error loading asset items:', error);
                     const tbody = document.getElementById('assetItemsBody_' + assetId);
-                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error loading items.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error loading items.</td></tr>';
                 });
         }
         
@@ -948,16 +1005,21 @@ try {
             if (asset) {
                 let html = '<div class="row">';
                 
-                // Basic Information
+                // Basic Information - First Div
                 html += '<div class="col-md-6">';
                 html += '<h6 class="text-primary mb-3"><i class="bi bi-info-circle"></i> Basic Information</h6>';
                 html += '<table class="table table-sm table-borderless">';
-                html += '<tr><td><strong>Asset ID:</strong></td><td>' + asset.id + '</td></tr>';
                 html += '<tr><td><strong>Category:</strong></td><td>' + (asset.category_code || 'N/A') + ' - ' + (asset.category_name || 'N/A') + '</td></tr>';
                 html += '<tr><td><strong>Description:</strong></td><td>' + asset.description + '</td></tr>';
                 html += '<tr><td><strong>Quantity:</strong></td><td>' + asset.quantity + '</td></tr>';
-                html += '<tr><td><strong>Unit Cost:</strong></td><td>₱' + parseFloat(asset.unit_cost).toFixed(2) + '</td></tr>';
                 html += '<tr><td><strong>Total Value:</strong></td><td>₱' + (asset.quantity * asset.unit_cost).toFixed(2) + '</td></tr>';
+                html += '</table>';
+                html += '</div>';
+                
+                // Additional Information - Second Div
+                html += '<div class="col-md-6">';
+                html += '<h6 class="text-primary mb-3"><i class="bi bi-building"></i> Additional Information</h6>';
+                html += '<table class="table table-sm table-borderless">';
                 html += '<tr><td><strong>Office:</strong></td><td>' + (asset.office_name || 'N/A') + '</td></tr>';
                 html += '<tr><td><strong>Created:</strong></td><td>' + new Date(asset.created_at).toLocaleDateString() + '</td></tr>';
                 html += '</table>';
@@ -969,14 +1031,13 @@ try {
                 html += '<div class="table-responsive">';
                 html += '<table class="table table-sm table-bordered">';
                 html += '<thead><tr>';
-                html += '<th>Item ID</th>';
                 html += '<th>Description</th>';
                 html += '<th>Status</th>';
                 html += '<th>Value</th>';
                 html += '<th>Acquisition Date</th>';
                 html += '</tr></thead>';
                 html += '<tbody id="assetItemsBody_' + id + '">';
-                html += '<tr><td colspan="5" class="text-center"><div class="spinner-border spinner-border-sm" role="status"></div> Loading items...</td></tr>';
+                html += '<tr><td colspan="4" class="text-center"><div class="spinner-border spinner-border-sm" role="status"></div> Loading items...</td></tr>';
                 html += '</tbody>';
                 html += '</table>';
                 html += '</div>';

@@ -124,7 +124,7 @@ if (!$conn || $conn->connect_error) {
 
         // Recent Asset Items
         $recent_items_query = "SELECT 
-            ai.id, ai.description, ai.quantity, ai.status, ai.acquisition_date,
+            ai.id, ai.description, ai.status, ai.acquisition_date,
             a.description as asset_description,
             o.office_name,
             CONCAT(e.firstname, ' ', e.lastname) as employee_name
