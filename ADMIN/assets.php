@@ -100,7 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                     // Create additional asset items for new quantity
                     for ($i = 1; $i <= $quantity; $i++) {
                         $item_description = mysqli_real_escape_string($conn, $description . ' - ' . $unit . ' ' . ($existing_asset['quantity'] + $i));
-                        $item_status = 'available';
+                        $item_status = 'pending';
                         $acquisition_date = date('Y-m-d');
                         
                         $item_sql = "INSERT INTO asset_items (asset_id, description, status, value, acquisition_date, office_id) 
@@ -129,8 +129,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                 $unit_cost = floatval($unit_cost);
                 $office_id = intval($office_id);
                 
-                $sql = "INSERT INTO assets (asset_categories_id, description, unit, quantity, unit_cost, office_id, status) 
-                        VALUES ('$asset_categories_id', '$description', '$unit', '$quantity', '$unit_cost', '$office_id', 'active')";
+                $sql = "INSERT INTO assets (asset_categories_id, description, unit, quantity, unit_cost, office_id) 
+                        VALUES ('$asset_categories_id', '$description', '$unit', '$quantity', '$unit_cost', '$office_id')";
                 
                 error_log("DEBUG: SQL Query: " . $sql);
                 
@@ -164,7 +164,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                     // Create individual asset items for each unit
                     for ($i = 1; $i <= $quantity; $i++) {
                         $item_description = mysqli_real_escape_string($conn, $description . ' - ' . $unit . ' ' . $i);
-                        $item_status = 'available';
+                        $item_status = 'pending';
                         $acquisition_date = date('Y-m-d');
                         
                         $item_sql = "INSERT INTO asset_items (asset_id, description, status, value, acquisition_date, office_id) 
@@ -990,13 +990,17 @@ try {
         
         // Get status badge HTML
         function getStatusBadge(status) {
+            console.log('DEBUG: getStatusBadge called with status:', JSON.stringify(status), 'type:', typeof status, 'length:', status ? status.length : 'null');
             const badges = {
+                'pending': '<span class="badge bg-warning text-dark">Pending</span>',
                 'available': '<span class="badge bg-success">Available</span>',
                 'in_use': '<span class="badge bg-primary">In Use</span>',
                 'maintenance': '<span class="badge bg-warning">Maintenance</span>',
                 'disposed': '<span class="badge bg-danger">Disposed</span>'
             };
-            return badges[status] || '<span class="badge bg-secondary">Unknown</span>';
+            const result = badges[status] || '<span class="badge bg-secondary">Unknown</span>';
+            console.log('DEBUG: getStatusBadge result:', result);
+            return result;
         }
         
         // View asset function
