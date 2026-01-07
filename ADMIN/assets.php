@@ -234,6 +234,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['action']) && $_GET['acti
 
 // Handle filter parameters
 $category_filter = isset($_GET['category']) ? intval($_GET['category']) : 0;
+$office_filter = isset($_GET['office']) ? intval($_GET['office']) : 0;
 $search_filter = isset($_GET['search']) ? trim($_GET['search']) : '';
 
 // Get assets with category and office information
@@ -251,6 +252,12 @@ try {
     if ($category_filter > 0) {
         $sql .= " AND a.asset_categories_id = ?";
         $params[] = $category_filter;
+        $types .= 'i';
+    }
+    
+    if ($office_filter > 0) {
+        $sql .= " AND a.office_id = ?";
+        $params[] = $office_filter;
         $types .= 'i';
     }
     
@@ -511,7 +518,7 @@ try {
                 </div>
                 <div class="col-md-6">
                     <div class="row g-2">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <select class="form-select form-select-sm" id="categoryFilter" onchange="applyFilters()">
                                 <option value="">All Categories</option>
                                 <?php foreach ($categories as $category): ?>
@@ -521,7 +528,17 @@ try {
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
+                            <select class="form-select form-select-sm" id="officeFilter" onchange="applyFilters()">
+                                <option value="">All Offices</option>
+                                <?php foreach ($offices as $office): ?>
+                                    <option value="<?php echo $office['id']; ?>" <?php echo $office_filter == $office['id'] ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($office['office_name']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
                             <input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Search assets..." value="<?php echo htmlspecialchars($search_filter); ?>">
                         </div>
                     </div>
@@ -558,9 +575,6 @@ try {
                                     <td><?php echo htmlspecialchars($asset['office_name'] ?? 'N/A'); ?></td>
                                     <td><small><?php echo date('M j, Y', strtotime($asset['created_at'])); ?></small></td>
                                     <td>
-                                        <button class="btn btn-sm btn-outline-info btn-action" onclick="viewAsset(<?php echo $asset['id']; ?>)">
-                                            <i class="bi bi-eye"></i>
-                                        </button>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -678,23 +692,6 @@ try {
     </div>
     
     
-    <!-- View Asset Modal -->
-    <div class="modal fade" id="viewAssetModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-eye"></i> Asset Details</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body" id="viewAssetContent">
-                    <!-- Content will be dynamically loaded -->
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
     
     
     <!-- Bootstrap JS -->
@@ -1003,100 +1000,6 @@ try {
             return result;
         }
         
-        // View asset function
-        function viewAsset(id) {
-            const asset = assetData.find(a => a.id == id);
-            if (asset) {
-                let html = '<div class="row">';
-                
-                // Basic Information - First Div
-                html += '<div class="col-md-6">';
-                html += '<h6 class="text-primary mb-3"><i class="bi bi-info-circle"></i> Basic Information</h6>';
-                html += '<table class="table table-sm table-borderless">';
-                html += '<tr><td><strong>Category:</strong></td><td>' + (asset.category_code || 'N/A') + ' - ' + (asset.category_name || 'N/A') + '</td></tr>';
-                html += '<tr><td><strong>Description:</strong></td><td>' + asset.description + '</td></tr>';
-                html += '<tr><td><strong>Quantity:</strong></td><td>' + asset.quantity + '</td></tr>';
-                html += '<tr><td><strong>Total Value:</strong></td><td>₱' + (asset.quantity * asset.unit_cost).toFixed(2) + '</td></tr>';
-                html += '</table>';
-                html += '</div>';
-                
-                // Additional Information - Second Div
-                html += '<div class="col-md-6">';
-                html += '<h6 class="text-primary mb-3"><i class="bi bi-building"></i> Additional Information</h6>';
-                html += '<table class="table table-sm table-borderless">';
-                html += '<tr><td><strong>Office:</strong></td><td>' + (asset.office_name || 'N/A') + '</td></tr>';
-                html += '<tr><td><strong>Created:</strong></td><td>' + new Date(asset.created_at).toLocaleDateString() + '</td></tr>';
-                html += '</table>';
-                html += '</div>';
-                
-                // Asset Items Information
-                html += '<div class="col-md-12">';
-                html += '<h6 class="text-primary mb-3"><i class="bi bi-list-ul"></i> Individual Asset Items</h6>';
-                html += '<div class="table-responsive">';
-                html += '<table class="table table-sm table-bordered">';
-                html += '<thead><tr>';
-                html += '<th>Description</th>';
-                html += '<th>Status</th>';
-                html += '<th>Value</th>';
-                html += '<th>Acquisition Date</th>';
-                html += '</tr></thead>';
-                html += '<tbody id="assetItemsBody_' + id + '">';
-                html += '<tr><td colspan="4" class="text-center"><div class="spinner-border spinner-border-sm" role="status"></div> Loading items...</td></tr>';
-                html += '</tbody>';
-                html += '</table>';
-                html += '</div>';
-                html += '</div>';
-                
-                // Category-Specific Information
-                const categoryCode = getCategoryCode(asset.asset_categories_id);
-                const fields = categoryFields[categoryCode];
-                
-                if (fields) {
-                    html += '<div class="col-md-6">';
-                    html += '<h6 class="text-primary mb-3"><i class="bi bi-gear"></i> Specific Details</h6>';
-                    html += '<table class="table table-sm table-borderless">';
-                    
-                    for (const [fieldName, fieldConfig] of Object.entries(fields)) {
-                        const value = asset[fieldName];
-                        if (value && value !== '' && value !== '0') {
-                            let displayValue = value;
-                            
-                            // Format special fields
-                            if (fieldConfig.type === 'checkbox') {
-                                displayValue = value ? 'Yes' : 'No';
-                            } else if (fieldConfig.type === 'date') {
-                                displayValue = new Date(value).toLocaleDateString();
-                            } else if (fieldConfig.type === 'select') {
-                                displayValue = value.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                            }
-                            
-                            html += '<tr><td><strong>' + fieldConfig.label + ':</strong></td><td>' + displayValue + '</td></tr>';
-                        }
-                    }
-                    
-                    html += '</table>';
-                    html += '</div>';
-                }
-                
-                html += '</div>';
-                
-                // Notes section if exists
-                if (asset.notes && asset.notes !== '') {
-                    html += '<div class="mt-3">';
-                    html += '<h6 class="text-primary mb-2"><i class="bi bi-sticky-note"></i> Notes</h6>';
-                    html += '<div class="alert alert-secondary">' + asset.notes + '</div>';
-                    html += '</div>';
-                }
-                
-                document.getElementById('viewAssetContent').innerHTML = html;
-                new bootstrap.Modal(document.getElementById('viewAssetModal')).show();
-                
-                // Load asset items after modal is shown
-                setTimeout(() => {
-                    loadAssetItems(id);
-                }, 500);
-            }
-        }
         
         // Export assets function
         function exportAssets() {
@@ -1133,10 +1036,12 @@ try {
         // Apply filters function
         function applyFilters() {
             const category = document.getElementById('categoryFilter').value;
+            const office = document.getElementById('officeFilter').value;
             const search = document.getElementById('searchInput').value;
             
             const params = new URLSearchParams();
             if (category) params.append('category', category);
+            if (office) params.append('office', office);
             if (search) params.append('search', search);
             
             const url = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
@@ -1158,6 +1063,11 @@ try {
         
         // Category filter change
         document.getElementById('categoryFilter').addEventListener('change', function() {
+            applyFilters();
+        });
+        
+        // Office filter change
+        document.getElementById('officeFilter').addEventListener('change', function() {
             applyFilters();
         });
         
