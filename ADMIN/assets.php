@@ -483,9 +483,6 @@ try {
                     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAssetModal">
                         <i class="bi bi-plus-circle"></i> Add Asset
                     </button>
-                    <button class="btn btn-warning btn-sm ms-2" onclick="window.location.href='no_inventory_tag.php'">
-                        <i class="bi bi-exclamation-triangle"></i> No Inventory Tag
-                    </button>
                     <button class="btn btn-outline-success btn-sm ms-2" onclick="exportAssets()">
                         <i class="bi bi-download"></i> Export
                     </button>

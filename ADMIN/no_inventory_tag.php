@@ -3,6 +3,7 @@ session_start();
 require_once '../config.php';
 require_once '../includes/system_functions.php';
 require_once '../includes/logger.php';
+require_once '../includes/asset_specific_manager.php';
 
 // Check session timeout
 checkSessionTimeout();
@@ -21,6 +22,9 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
 
 // Log no inventory tag page access
 logSystemAction($_SESSION['user_id'], 'access', 'no_inventory_tag', 'Admin accessed no inventory tag page');
+
+// Initialize asset specific manager
+$assetManager = new AssetSpecificManager($conn);
 
 // Handle filter parameters
 $search_filter = isset($_GET['search']) ? trim($_GET['search']) : '';
@@ -96,10 +100,9 @@ $stats = [];
 try {
     $sql = "SELECT 
                 COUNT(*) as total_untagged,
-                SUM(quantity) as total_quantity,
                 SUM(value) as total_value
             FROM asset_items 
-            WHERE description LIKE '%no tag%' OR description LIKE '%untagged%' OR status = 'pending'";
+            WHERE description LIKE '%no tag%' OR description LIKE '%untagged%' OR status = 'no_tag'";
     $result = $conn->query($sql);
     if ($result) {
         $stats = $result->fetch_assoc();
@@ -119,6 +122,8 @@ try {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <!-- DataTables CSS -->
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
@@ -241,19 +246,13 @@ try {
         
         <!-- Statistics Cards -->
         <div class="row mb-4">
-            <div class="col-lg-4 col-md-6">
+            <div class="col-lg-6 col-md-6">
                 <div class="stats-card">
                     <div class="stats-number"><?php echo $stats['total_untagged'] ?? 0; ?></div>
                     <div class="stats-label"><i class="bi bi-exclamation-triangle"></i> Untagged Assets</div>
                 </div>
             </div>
-            <div class="col-lg-4 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $stats['total_quantity'] ?? 0; ?></div>
-                    <div class="stats-label"><i class="bi bi-stack"></i> Total Quantity</div>
-                </div>
-            </div>
-            <div class="col-lg-4 col-md-6">
+            <div class="col-lg-6 col-md-6">
                 <div class="stats-card">
                     <div class="stats-number"><?php echo number_format($stats['total_value'] ?? 0, 2); ?></div>
                     <div class="stats-label"><i class="bi bi-currency-dollar"></i> Total Value</div>
@@ -270,7 +269,7 @@ try {
                 <div class="col-md-6">
                     <div class="row g-2">
                         <div class="col-md-6">
-                            <select class="form-select form-select-sm" id="officeFilter" onchange="applyFilters()">
+                            <select class="form-select form-select-sm" id="officeFilter">
                                 <option value="">All Offices</option>
                                 <?php foreach ($offices as $office): ?>
                                     <option value="<?php echo $office['id']; ?>" <?php echo $office_filter == $office['id'] ? 'selected' : ''; ?>>
@@ -334,13 +333,17 @@ try {
                                                 $status_class = 'bg-danger';
                                                 $status_icon = 'bi-trash';
                                                 break;
+                                            case 'no_tag':
+                                                $status_class = 'bg-danger';
+                                                $status_icon = 'bi-exclamation-triangle';
+                                                break;
                                             default:
                                                 $status_class = 'bg-secondary';
                                                 $status_icon = 'bi-question-circle';
                                         }
                                         ?>
                                         <span class="badge <?php echo $status_class; ?>">
-                                            <i class="bi <?php echo $status_icon; ?>"></i> <?php echo ucfirst($item['status']); ?>
+                                            <i class="bi <?php echo $status_icon; ?>"></i> <?php echo ucfirst(str_replace('_', ' ', $item['status'])); ?>
                                         </span>
                                     </td>
                                     <td class="text-value"><?php echo number_format($item['value'], 2); ?></td>
@@ -367,49 +370,101 @@ try {
         </div>
         
     </div>
-    </div> <!-- Close main wrapper -->
+    </div> <!-- Close main-wrapper -->
     
     <?php require_once 'includes/logout-modal.php'; ?>
     <?php require_once 'includes/change-password-modal.php'; ?>
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     <?php require_once 'includes/sidebar-scripts.php'; ?>
     <script>
-        // Apply filters function
-        function applyFilters() {
-            const office = document.getElementById('officeFilter').value;
-            const search = document.getElementById('searchInput').value;
-            
-            const params = new URLSearchParams();
-            if (office) params.append('office', office);
-            if (search) params.append('search', search);
-            
-            const url = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
-            window.location.href = url;
-        }
-        
+        $(document).ready(function() {
+            // Initialize DataTable
+            var table = $('#untaggedTable').DataTable({
+                responsive: true,
+                pageLength: 25,
+                lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]],
+                order: [[7, 'desc']], // Sort by last updated column by default
+                searching: false, // Disable DataTables default search
+                language: {
+                    lengthMenu: "Show _MENU_ assets per page",
+                    info: "Showing _START_ to _END_ of _TOTAL_ untagged assets",
+                    paginate: {
+                        first: "First",
+                        last: "Last",
+                        next: "Next",
+                        previous: "Previous"
+                    },
+                    emptyTable: "No asset items requiring inventory tags found."
+                },
+                columnDefs: [
+                    {
+                        targets: [0], // Category column
+                        orderable: true
+                    },
+                    {
+                        targets: [7], // Actions column
+                        orderable: false,
+                        searchable: false
+                    }
+                ]
+            });
+
+            // Custom search functionality
+            $('#searchInput').on('keyup', function() {
+                table.search(this.value).draw();
+            });
+
+            // Office filter functionality
+            $('#officeFilter').on('change', function() {
+                var officeValue = this.value;
+                if (officeValue === '') {
+                    // Clear office filter
+                    table.column(5).search('').draw();
+                } else {
+                    // Apply office filter to the Office column (index 5)
+                    table.column(5).search(officeValue).draw();
+                }
+            });
+
+            // Set initial office filter if selected
+            var initialOfficeFilter = '<?php echo $office_filter; ?>';
+            if (initialOfficeFilter !== '0') {
+                $('#officeFilter').val(initialOfficeFilter);
+                table.column(5).search(initialOfficeFilter).draw();
+            }
+
+            // Set initial search if provided
+            var initialSearch = '<?php echo htmlspecialchars($search_filter); ?>';
+            if (initialSearch !== '') {
+                $('#searchInput').val(initialSearch);
+                table.search(initialSearch).draw();
+            }
+        });
+
         // Export untagged assets function
         function exportUntagged() {
-            const table = document.getElementById('untaggedTable');
+            const table = $('#untaggedTable').DataTable();
             let csv = 'ID,Category,Asset Description,Item Description,Status,Value,Office,Last Updated\n';
             
-            const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
-            for (let row of rows) {
-                const cells = row.getElementsByTagName('td');
-                if (cells.length > 1) {
-                    const rowData = [
-                        cells[0].textContent,
-                        cells[1].textContent.replace(/\n/g, ' '),
-                        cells[2].textContent.replace(/\n/g, ' '),
-                        cells[3].textContent,
-                        cells[4].textContent,
-                        cells[5].textContent,
-                        cells[6].textContent,
-                        cells[7].textContent
-                    ];
-                    csv += rowData.map(cell => `"${cell.trim()}"`).join(',') + '\n';
-                }
+            const data = table.data().toArray();
+            for (let row of data) {
+                const rowData = [
+                    row[0], // Category
+                    row[1], // Asset Description  
+                    row[2], // Item Description
+                    row[3], // Status
+                    row[4], // Value
+                    row[5], // Office
+                    row[6]  // Last Updated
+                ];
+                csv += rowData.map(cell => `"${cell.toString().trim()}"`).join(',') + '\n';
             }
             
             const blob = new Blob([csv], { type: 'text/csv' });
@@ -428,24 +483,6 @@ try {
                 alert('Tag functionality will be implemented. Item ID: ' + itemId);
             }
         }
-        
-        // Search functionality with Enter key and debounce
-        let searchTimeout;
-        document.getElementById('searchInput').addEventListener('keyup', function(e) {
-            clearTimeout(searchTimeout);
-            if (e.key === 'Enter') {
-                applyFilters();
-            } else {
-                searchTimeout = setTimeout(() => {
-                    applyFilters();
-                }, 500);
-            }
-        });
-        
-        // Office filter change
-        document.getElementById('officeFilter').addEventListener('change', function() {
-            applyFilters();
-        });
     </script>
 </body>
 </html>
