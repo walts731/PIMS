@@ -36,18 +36,11 @@ try {
     error_log("Error fetching PAR forms: " . $e->getMessage());
 }
 
-// Get header image if any
+// Get header image from forms table
 $header_image = '';
-try {
-    $stmt = $conn->prepare("SELECT setting_value FROM system_settings WHERE setting_name = 'header_image'");
-    $stmt->execute();
-    $result = $stmt->get_result();
-    if ($row = $result->fetch_assoc()) {
-        $header_image = $row['setting_value'];
-    }
-    $stmt->close();
-} catch (Exception $e) {
-    error_log("Error fetching header image: " . $e->getMessage());
+$result = $conn->query("SELECT header_image FROM forms WHERE form_code = 'PAR'");
+if ($result && $row = $result->fetch_assoc()) {
+    $header_image = $row['header_image'];
 }
 ?>
 

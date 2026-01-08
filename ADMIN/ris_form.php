@@ -19,7 +19,12 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
     exit();
 }
 
-logSystemAction($_SESSION['user_id'], 'Accessed Requisition and Issue Slip Form', 'forms', 'ris_form.php');
+// Get header image from forms table
+$header_image = '';
+$result = $conn->query("SELECT header_image FROM forms WHERE form_code = 'RIS'");
+if ($result && $row = $result->fetch_assoc()) {
+    $header_image = $row['header_image'];
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -156,7 +161,24 @@ logSystemAction($_SESSION['user_id'], 'Accessed Requisition and Issue Slip Form'
             </div>
             
             <form id="risForm" method="POST" action="process_ris.php">
-                            <!-- Entity Name, Fund Cluster, and RIS No -->
+                <!-- RIS Form Header -->
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <?php 
+                    if (!empty($header_image)) {
+                        echo '<div style="margin-bottom: 10px;">';
+                        echo '<img src="../uploads/forms/' . htmlspecialchars($header_image) . '" alt="Header Image" style="width: 100%; max-height: 120px; object-fit: contain;">';
+                        echo '</div>';
+                    }
+                    ?>
+                    <div style="text-align: center;">
+                        <p style="margin: 0; font-size: 16px; font-weight: bold;">REQUISITION AND ISSUE SLIP</p>
+                        <p style="margin: 0; font-size: 12px;">MUNICIPALITY OF PILAR</p>
+                        <p style="margin: 0; font-size: 12px;">OMM</p>
+                        <p style="margin: 0; font-size: 12px;">OFFICE/LOCATION</p>
+                    </div>
+                </div>
+                
+                <!-- Entity Name, Fund Cluster, and RIS No -->
                             <div class="row mb-3">
                                 <div class="col-md-4">
                                     <label class="form-label"><strong>Entity Name:</strong></label>

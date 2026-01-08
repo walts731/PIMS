@@ -21,9 +21,12 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
 
 logSystemAction($_SESSION['user_id'], 'Accessed Inventory Custodian Slip Form', 'forms', 'ics_form.php');
 
-$form_data = [];
+// Get header image from forms table
 $header_image = '';
-// Database queries similar to par_form.php
+$result = $conn->query("SELECT header_image FROM forms WHERE form_code = 'ICS'");
+if ($result && $row = $result->fetch_assoc()) {
+    $header_image = $row['header_image'];
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -160,7 +163,24 @@ $header_image = '';
             </div>
             
             <form id="icsForm" method="POST" action="process_ics.php">
-                            <!-- Entity Name, Fund Cluster, and ICS No -->
+                <!-- ICS Form Header -->
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <?php 
+                    if (!empty($header_image)) {
+                        echo '<div style="margin-bottom: 10px;">';
+                        echo '<img src="../uploads/forms/' . htmlspecialchars($header_image) . '" alt="Header Image" style="width: 100%; max-height: 120px; object-fit: contain;">';
+                        echo '</div>';
+                    }
+                    ?>
+                    <div style="text-align: center;">
+                        <p style="margin: 0; font-size: 16px; font-weight: bold;">INVENTORY CUSTODIAN SLIP</p>
+                        <p style="margin: 0; font-size: 12px;">MUNICIPALITY OF PILAR</p>
+                        <p style="margin: 0; font-size: 12px;">OMM</p>
+                        <p style="margin: 0; font-size: 12px;">OFFICE/LOCATION</p>
+                    </div>
+                </div>
+                
+                <!-- Entity Name, Fund Cluster, and ICS No -->
                             <div class="row mb-3">
                                 <div class="col-md-4">
                                     <label class="form-label"><strong>Entity Name:</strong></label>
