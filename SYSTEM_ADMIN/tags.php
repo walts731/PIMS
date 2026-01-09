@@ -158,6 +158,30 @@ $tag_types = [
     'code' => 'General Code'
 ];
 
+function getFormatPattern($components, $separator) {
+    $parts = [];
+    
+    foreach ($components as $component) {
+        switch ($component['type']) {
+            case 'text':
+                $parts[] = $component['value'] ?? 'TEXT';
+                break;
+            case 'digits':
+                $digits = $component['digits'] ?? 4;
+                $parts[] = str_repeat('0', $digits);
+                break;
+            case 'month':
+                $parts[] = 'MM';
+                break;
+            case 'year':
+                $parts[] = 'YYYY';
+                break;
+        }
+    }
+    
+    return implode($separator, $parts);
+}
+
 function generateTagPreview($tag_type, $components, $auto_increment, $digits, $separator) {
     global $conn;
     
@@ -289,6 +313,18 @@ logSystemAction($_SESSION['user_id'], 'Accessed Tags Management', 'tags', 'tags.
             background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
             color: white;
         }
+        
+        .border-success {
+            border-left: 4px solid #28a745 !important;
+        }
+        
+        .border-secondary {
+            border-left: 4px solid #6c757d !important;
+        }
+        
+        .min-height-60 {
+            min-height: 60px;
+        }
     </style>
 </head>
 <body>
@@ -345,20 +381,46 @@ logSystemAction($_SESSION['user_id'], 'Accessed Tags Management', 'tags', 'tags.
                 ];
                 
                 $components = json_decode($tag_config['format_components'], true);
+                // Handle double-encoded JSON
+                if (is_string($components)) {
+                    $components = json_decode($components, true);
+                }
                 if (!is_array($components)) {
                     $components = [];
                 }
                 ?>
                 
                 <div class="col-lg-6 col-xl-4">
-                    <div class="tag-card">
+                    <div class="tag-card <?php echo isset($tag_formats[$tag_key]) ? 'border-success' : 'border-secondary'; ?>">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h5 class="mb-0">
                                 <i class="bi bi-tag"></i> <?php echo htmlspecialchars($tag_name); ?>
+                                <?php if (isset($tag_formats[$tag_key])): ?>
+                                    <small class="text-success ms-2">
+                                        <i class="bi bi-check-circle-fill"></i> Configured
+                                    </small>
+                                <?php else: ?>
+                                    <small class="text-muted ms-2">
+                                        <i class="bi bi-plus-circle"></i> Not configured
+                                    </small>
+                                <?php endif; ?>
                             </h5>
                             <span class="status-badge status-<?php echo $tag_config['status']; ?>">
                                 <?php echo ucfirst($tag_config['status']); ?>
                             </span>
+                        </div>
+                        
+                        <!-- Tag Info -->
+                        <div class="alert alert-info py-2 mb-3">
+                            <small class="mb-0">
+                                <strong>Format Pattern:</strong> 
+                                <span class="font-monospace"><?php echo getFormatPattern($components, $tag_config['separator']); ?></span>
+                                <br>
+                                <strong>Next Tag:</strong> 
+                                <span class="font-monospace text-success"><?php echo generateTagPreview($tag_key, $components, true, $tag_config['digits'], $tag_config['separator']); ?></span>
+                                <br>
+                                <strong>Next Number:</strong> <?php echo $tag_config['current_number']; ?>
+                            </small>
                         </div>
                         
                         <form method="POST" class="tag-form" data-tag-type="<?php echo $tag_key; ?>">
@@ -367,7 +429,9 @@ logSystemAction($_SESSION['user_id'], 'Accessed Tags Management', 'tags', 'tags.
                             
                             <!-- Format Builder -->
                             <div class="mb-3">
-                                <label class="form-label">Format Builder</label>
+                                <label class="form-label">
+                                    <?php echo isset($tag_formats[$tag_key]) ? 'Edit Format' : 'Create Format'; ?>
+                                </label>
                                 <div class="btn-group d-flex flex-wrap gap-2 mb-2" role="group">
                                     <button type="button" class="btn btn-outline-primary btn-sm" onclick="addComponent('<?php echo $tag_key; ?>', 'text')">
                                         <i class="bi bi-fonts"></i> TEXT
@@ -465,7 +529,7 @@ logSystemAction($_SESSION['user_id'], 'Accessed Tags Management', 'tags', 'tags.
                             <!-- Actions -->
                             <div class="d-flex gap-2 mt-3">
                                 <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-save"></i> Save
+                                    <i class="bi bi-save"></i> <?php echo isset($tag_formats[$tag_key]) ? 'Update' : 'Create'; ?>
                                 </button>
                                 <button type="button" class="btn btn-outline-secondary" onclick="generatePreview('<?php echo $tag_key; ?>')">
                                     <i class="bi bi-eye"></i> Preview
@@ -500,6 +564,10 @@ let tagComponents = {};
     ];
     
     $components_for_js = json_decode($tag_config['format_components'], true);
+    // Handle double-encoded JSON
+    if (is_string($components_for_js)) {
+        $components_for_js = json_decode($components_for_js, true);
+    }
     if (!is_array($components_for_js)) {
         $components_for_js = [];
     }
