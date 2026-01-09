@@ -22,6 +22,19 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
 // Log page access
 logSystemAction($_SESSION['user_id'], 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php');
 
+// Get next PAR number
+$next_par_no = getNextTagPreview('par_no');
+if ($next_par_no === null) {
+    $next_par_no = ''; // Fallback if no configuration exists
+}
+
+// Get PAR configuration for JavaScript
+$par_config = null;
+$result = $conn->query("SELECT * FROM tag_formats WHERE tag_type = 'par_no' AND status = 'active'");
+if ($result && $row = $result->fetch_assoc()) {
+    $par_config = $row;
+}
+
 // Get form data from database
 $form_data = [];
 try {
@@ -173,6 +186,24 @@ if ($result && $row = $result->fetch_assoc()) {
             </div>
         </div>
 
+        <?php 
+        // Display success/error messages
+        if (isset($_SESSION['success_message'])): ?>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle"></i> <?php echo htmlspecialchars($_SESSION['success_message']); ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <?php unset($_SESSION['success_message']); ?>
+        <?php endif; ?>
+
+        <?php if (isset($_SESSION['error_message'])): ?>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle"></i> <?php echo htmlspecialchars($_SESSION['error_message']); ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <?php unset($_SESSION['error_message']); ?>
+        <?php endif; ?>
+
                 <!-- PAR Form Management -->
         <div class="form-card">
             <div class="d-flex justify-content-between align-items-center mb-4">
@@ -235,7 +266,8 @@ if ($result && $row = $result->fetch_assoc()) {
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label"><strong>PAR No:</strong></label>
-                                <input type="text" class="form-control" name="par_no" required>
+                                <input type="text" class="form-control bg-light" name="par_no" id="par_no" value="<?php echo htmlspecialchars($next_par_no); ?>" readonly>
+                                <small class="text-muted">Auto-generated next number from system configuration.</small>
                             </div>
                         </div>
                         
@@ -427,7 +459,52 @@ if ($result && $row = $result->fetch_assoc()) {
             const inputTab = document.getElementById('par-input-tab');
             const tab = new bootstrap.Tab(inputTab);
             tab.show();
+            
+            // Generate fresh PAR number
+            generateNewParNumber();
         }
+        
+        // Generate new PAR number via AJAX
+        function generateNewParNumber() {
+            <?php if ($par_config): ?>
+            const components = <?php 
+                $components = json_decode($par_config['format_components'], true);
+                if (is_string($components)) {
+                    $components = json_decode($components, true);
+                }
+                echo json_encode($components ?: []);
+            ?>;
+            const digits = <?php echo $par_config['digits']; ?>;
+            const separator = '<?php echo $par_config['separator']; ?>';
+            
+            fetch('../SYSTEM_ADMIN/tags.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'action=generate_preview&tag_type=par_no&components=' + encodeURIComponent(JSON.stringify(components)) + '&digits=' + digits + '&separator=' + encodeURIComponent(separator)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.preview) {
+                    document.getElementById('par_no').value = data.preview;
+                }
+            })
+            .catch(error => {
+                console.error('Error generating PAR number:', error);
+            });
+            <?php endif; ?>
+        }
+        
+        // Handle form submission to update counter
+        document.getElementById('parForm').addEventListener('submit', function(e) {
+            // Always increment counter since field is always auto-generated
+            const incrementField = document.createElement('input');
+            incrementField.type = 'hidden';
+            incrementField.name = 'increment_par_counter';
+            incrementField.value = '1';
+            this.appendChild(incrementField);
+        });
     </script>
 </body>
 </html>

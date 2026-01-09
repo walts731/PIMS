@@ -259,4 +259,128 @@ function extendSessionTimeout() {
         $_SESSION['last_activity'] = time();
     }
 }
+
+/**
+ * Generate next tag number based on tag_formats configuration
+ */
+function generateNextTag($tag_type) {
+    global $conn;
+    
+    // Get tag configuration
+    $stmt = $conn->prepare("SELECT * FROM tag_formats WHERE tag_type = ? AND status = 'active'");
+    $stmt->bind_param("s", $tag_type);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($result->num_rows === 0) {
+        $stmt->close();
+        return null; // No configuration found
+    }
+    
+    $config = $result->fetch_assoc();
+    $stmt->close();
+    
+    // Get current number and increment it
+    $current_number = $config['current_number'];
+    $next_number = $current_number + 1;
+    
+    // Update the counter in database
+    $update_stmt = $conn->prepare("UPDATE tag_formats SET current_number = ? WHERE tag_type = ?");
+    $update_stmt->bind_param("is", $next_number, $tag_type);
+    $update_stmt->execute();
+    $update_stmt->close();
+    
+    // Build the tag from components
+    $components = json_decode($config['format_components'], true);
+    // Handle double-encoded JSON
+    if (is_string($components)) {
+        $components = json_decode($components, true);
+    }
+    
+    if (!is_array($components) || empty($components)) {
+        return null; // Invalid components
+    }
+    
+    $parts = [];
+    
+    foreach ($components as $component) {
+        switch ($component['type']) {
+            case 'text':
+                $parts[] = $component['value'] ?? '';
+                break;
+            case 'digits':
+                $component_digits = $component['digits'] ?? $config['digits'];
+                $number = str_pad($next_number, $component_digits, '0', STR_PAD_LEFT);
+                $parts[] = $number;
+                break;
+            case 'month':
+                $parts[] = date('m');
+                break;
+            case 'year':
+                $parts[] = date('Y');
+                break;
+        }
+    }
+    
+    return implode($config['separator'], $parts);
+}
+
+/**
+ * Get next tag preview without incrementing the counter
+ */
+function getNextTagPreview($tag_type) {
+    global $conn;
+    
+    // Get tag configuration
+    $stmt = $conn->prepare("SELECT * FROM tag_formats WHERE tag_type = ? AND status = 'active'");
+    $stmt->bind_param("s", $tag_type);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($result->num_rows === 0) {
+        $stmt->close();
+        return null; // No configuration found
+    }
+    
+    $config = $result->fetch_assoc();
+    $stmt->close();
+    
+    // Get current number for preview (don't increment)
+    $current_number = $config['current_number'];
+    $next_number = $current_number + 1;
+    
+    // Build the tag from components
+    $components = json_decode($config['format_components'], true);
+    // Handle double-encoded JSON
+    if (is_string($components)) {
+        $components = json_decode($components, true);
+    }
+    
+    if (!is_array($components) || empty($components)) {
+        return null; // Invalid components
+    }
+    
+    $parts = [];
+    
+    foreach ($components as $component) {
+        switch ($component['type']) {
+            case 'text':
+                $parts[] = $component['value'] ?? '';
+                break;
+            case 'digits':
+                $component_digits = $component['digits'] ?? $config['digits'];
+                $number = str_pad($next_number, $component_digits, '0', STR_PAD_LEFT);
+                $parts[] = $number;
+                break;
+            case 'month':
+                $parts[] = date('m');
+                break;
+            case 'year':
+                $parts[] = date('Y');
+                break;
+        }
+    }
+    
+    return implode($config['separator'], $parts);
+}
 ?>

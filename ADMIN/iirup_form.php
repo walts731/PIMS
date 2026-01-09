@@ -19,6 +19,21 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
     exit();
 }
 
+logSystemAction($_SESSION['user_id'], 'Accessed Individual Item Request for User Property Form', 'forms', 'iirup_form.php');
+
+// Get next SAI number (IIRUP uses sai_no tag type)
+$next_sai_no = getNextTagPreview('sai_no');
+if ($next_sai_no === null) {
+    $next_sai_no = ''; // Fallback if no configuration exists
+}
+
+// Get SAI configuration for JavaScript
+$sai_config = null;
+$result = $conn->query("SELECT * FROM tag_formats WHERE tag_type = 'sai_no' AND status = 'active'");
+if ($result && $row = $result->fetch_assoc()) {
+    $sai_config = $row;
+}
+
 // Get header image from forms table
 $header_image = '';
 $result = $conn->query("SELECT header_image FROM forms WHERE form_code = 'IIRUP'");
@@ -190,7 +205,8 @@ if ($result && $row = $result->fetch_assoc()) {
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label"><strong>IIRUP No:</strong></label>
-                                    <input type="text" class="form-control" name="iirup_no" required>
+                                    <input type="text" class="form-control bg-light" name="iirup_no" id="iirup_no" value="<?php echo htmlspecialchars($next_sai_no); ?>" readonly>
+                                    <small class="text-muted">Auto-generated next number from system configuration.</small>
                                 </div>
                             </div>
                             
@@ -328,7 +344,51 @@ if ($result && $row = $result->fetch_assoc()) {
         
         function createNewIIRUP() {
             document.getElementById('iirupForm').reset();
+            // Generate fresh SAI number
+            generateNewSaiNumber();
         }
+        
+        // Generate new SAI number via AJAX
+        function generateNewSaiNumber() {
+            <?php if ($sai_config): ?>
+            const components = <?php 
+                $components = json_decode($sai_config['format_components'], true);
+                if (is_string($components)) {
+                    $components = json_decode($components, true);
+                }
+                echo json_encode($components ?: []);
+            ?>;
+            const digits = <?php echo $sai_config['digits']; ?>;
+            const separator = '<?php echo $sai_config['separator']; ?>';
+            
+            fetch('../SYSTEM_ADMIN/tags.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'action=generate_preview&tag_type=sai_no&components=' + encodeURIComponent(JSON.stringify(components)) + '&digits=' + digits + '&separator=' + encodeURIComponent(separator)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.preview) {
+                    document.getElementById('iirup_no').value = data.preview;
+                }
+            })
+            .catch(error => {
+                console.error('Error generating SAI number:', error);
+            });
+            <?php endif; ?>
+        }
+        
+        // Handle form submission to update counter
+        document.getElementById('iirupForm').addEventListener('submit', function(e) {
+            // Always increment counter since field is always auto-generated
+            const incrementField = document.createElement('input');
+            incrementField.type = 'hidden';
+            incrementField.name = 'increment_sai_counter';
+            incrementField.value = '1';
+            this.appendChild(incrementField);
+        });
         
         function exportIIRUPData() {
             // TODO: Implement export functionality

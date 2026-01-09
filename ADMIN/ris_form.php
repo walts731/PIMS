@@ -19,6 +19,21 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
     exit();
 }
 
+logSystemAction($_SESSION['user_id'], 'Accessed Requisition and Issue Slip Form', 'forms', 'ris_form.php');
+
+// Get next RIS number
+$next_ris_no = getNextTagPreview('ris_no');
+if ($next_ris_no === null) {
+    $next_ris_no = ''; // Fallback if no configuration exists
+}
+
+// Get RIS configuration for JavaScript
+$ris_config = null;
+$result = $conn->query("SELECT * FROM tag_formats WHERE tag_type = 'ris_no' AND status = 'active'");
+if ($result && $row = $result->fetch_assoc()) {
+    $ris_config = $row;
+}
+
 // Get header image from forms table
 $header_image = '';
 $result = $conn->query("SELECT header_image FROM forms WHERE form_code = 'RIS'");
@@ -190,7 +205,8 @@ if ($result && $row = $result->fetch_assoc()) {
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label"><strong>RIS No:</strong></label>
-                                    <input type="text" class="form-control" name="ris_no" required>
+                                    <input type="text" class="form-control bg-light" name="ris_no" id="ris_no" value="<?php echo htmlspecialchars($next_ris_no); ?>" readonly>
+                                    <small class="text-muted">Auto-generated next number from system configuration.</small>
                                 </div>
                             </div>
                             
@@ -336,7 +352,51 @@ if ($result && $row = $result->fetch_assoc()) {
         
         function createNewRIS() {
             document.getElementById('risForm').reset();
+            // Generate fresh RIS number
+            generateNewRisNumber();
         }
+        
+        // Generate new RIS number via AJAX
+        function generateNewRisNumber() {
+            <?php if ($ris_config): ?>
+            const components = <?php 
+                $components = json_decode($ris_config['format_components'], true);
+                if (is_string($components)) {
+                    $components = json_decode($components, true);
+                }
+                echo json_encode($components ?: []);
+            ?>;
+            const digits = <?php echo $ris_config['digits']; ?>;
+            const separator = '<?php echo $ris_config['separator']; ?>';
+            
+            fetch('../SYSTEM_ADMIN/tags.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'action=generate_preview&tag_type=ris_no&components=' + encodeURIComponent(JSON.stringify(components)) + '&digits=' + digits + '&separator=' + encodeURIComponent(separator)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.preview) {
+                    document.getElementById('ris_no').value = data.preview;
+                }
+            })
+            .catch(error => {
+                console.error('Error generating RIS number:', error);
+            });
+            <?php endif; ?>
+        }
+        
+        // Handle form submission to update counter
+        document.getElementById('risForm').addEventListener('submit', function(e) {
+            // Always increment counter since field is always auto-generated
+            const incrementField = document.createElement('input');
+            incrementField.type = 'hidden';
+            incrementField.name = 'increment_ris_counter';
+            incrementField.value = '1';
+            this.appendChild(incrementField);
+        });
         
         function exportRISData() {
             // TODO: Implement export functionality

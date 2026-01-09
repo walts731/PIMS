@@ -19,6 +19,21 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
     exit();
 }
 
+logSystemAction($_SESSION['user_id'], 'Accessed Inventory Transfer Request Form', 'forms', 'itr_form.php');
+
+// Get next ITR number
+$next_itr_no = getNextTagPreview('itr_no');
+if ($next_itr_no === null) {
+    $next_itr_no = ''; // Fallback if no configuration exists
+}
+
+// Get ITR configuration for JavaScript
+$itr_config = null;
+$result = $conn->query("SELECT * FROM tag_formats WHERE tag_type = 'itr_no' AND status = 'active'");
+if ($result && $row = $result->fetch_assoc()) {
+    $itr_config = $row;
+}
+
 // Get header image from forms table
 $header_image = '';
 $result = $conn->query("SELECT header_image FROM forms WHERE form_code = 'ITR'");
@@ -190,7 +205,8 @@ if ($result && $row = $result->fetch_assoc()) {
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label"><strong>ITR No:</strong></label>
-                                    <input type="text" class="form-control" name="itr_no" required>
+                                    <input type="text" class="form-control bg-light" name="itr_no" id="itr_no" value="<?php echo htmlspecialchars($next_itr_no); ?>" readonly>
+                                    <small class="text-muted">Auto-generated next number from system configuration.</small>
                                 </div>
                             </div>
                             
@@ -343,7 +359,51 @@ if ($result && $row = $result->fetch_assoc()) {
         
         function createNewITR() {
             document.getElementById('itrForm').reset();
+            // Generate fresh ITR number
+            generateNewItrNumber();
         }
+        
+        // Generate new ITR number via AJAX
+        function generateNewItrNumber() {
+            <?php if ($itr_config): ?>
+            const components = <?php 
+                $components = json_decode($itr_config['format_components'], true);
+                if (is_string($components)) {
+                    $components = json_decode($components, true);
+                }
+                echo json_encode($components ?: []);
+            ?>;
+            const digits = <?php echo $itr_config['digits']; ?>;
+            const separator = '<?php echo $itr_config['separator']; ?>';
+            
+            fetch('../SYSTEM_ADMIN/tags.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'action=generate_preview&tag_type=itr_no&components=' + encodeURIComponent(JSON.stringify(components)) + '&digits=' + digits + '&separator=' + encodeURIComponent(separator)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.preview) {
+                    document.getElementById('itr_no').value = data.preview;
+                }
+            })
+            .catch(error => {
+                console.error('Error generating ITR number:', error);
+            });
+            <?php endif; ?>
+        }
+        
+        // Handle form submission to update counter
+        document.getElementById('itrForm').addEventListener('submit', function(e) {
+            // Always increment counter since field is always auto-generated
+            const incrementField = document.createElement('input');
+            incrementField.type = 'hidden';
+            incrementField.name = 'increment_itr_counter';
+            incrementField.value = '1';
+            this.appendChild(incrementField);
+        });
         
         function exportITRData() {
             // TODO: Implement export functionality
