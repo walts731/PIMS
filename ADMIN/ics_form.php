@@ -193,12 +193,6 @@ if ($result) {
                     <a href="ics_entries.php" class="btn btn-outline-secondary btn-sm">
                         <i class="bi bi-list"></i> View Entries
                     </a>
-                    <button class="btn btn-outline-primary btn-sm ms-2" onclick="createNewICS()">
-                        <i class="bi bi-plus-circle"></i> Create New ICS
-                    </button>
-                    <button class="btn btn-outline-success btn-sm ms-2" onclick="exportICSData()">
-                        <i class="bi bi-download"></i> Export
-                    </button>
                 </div>
             </div>
         </div>
@@ -212,9 +206,6 @@ if ($result) {
                 <div class="no-print">
                     <button class="btn btn-sm btn-outline-secondary" onclick="resetICSForm()">
                         <i class="bi bi-arrow-clockwise"></i> Reset
-                    </button>
-                    <button class="btn btn-sm btn-outline-info ms-2" onclick="printICSForm()">
-                        <i class="bi bi-printer"></i> Print
                     </button>
                 </div>
             </div>
@@ -433,10 +424,6 @@ if ($result) {
                     itemNoInput.value = '1';
                 }
             }
-        }
-        
-        function printICSForm() {
-            window.print();
         }
         
         function createNewICS() {

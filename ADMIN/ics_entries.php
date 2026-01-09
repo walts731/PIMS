@@ -256,11 +256,8 @@ if ($result && $row = $result->fetch_assoc()) {
                                         <button class="btn btn-sm btn-outline-primary btn-action me-2" onclick="viewICS(<?php echo $ics['id']; ?>)">
                                             <i class="bi bi-eye"></i> View
                                         </button>
-                                        <button class="btn btn-sm btn-outline-info btn-action me-2" onclick="printICS(<?php echo $ics['id']; ?>)">
+                                        <button class="btn btn-sm btn-outline-info btn-action" onclick="printICS(<?php echo $ics['id']; ?>)">
                                             <i class="bi bi-printer"></i> Print
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-danger btn-action" onclick="deleteICS(<?php echo $ics['id']; ?>)">
-                                            <i class="bi bi-trash"></i> Delete
                                         </button>
                                     </div>
                                 </div>
@@ -284,12 +281,6 @@ if ($result && $row = $result->fetch_assoc()) {
         
         function printICS(id) {
             window.open('ics_print.php?id=' + id, '_blank');
-        }
-        
-        function deleteICS(id) {
-            if (confirm('Are you sure you want to delete this ICS form? This action cannot be undone.')) {
-                window.location.href = 'process_ics_delete.php?id=' + id;
-            }
         }
         
         function exportICSData() {

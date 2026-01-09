@@ -183,29 +183,20 @@ if ($result && $row = $result->fetch_assoc()) {
                 ?>
                 <div style="text-align: center;">
                     <p style="margin: 0; font-size: 16px; font-weight: bold;">INVENTORY CUSTODIAN SLIP</p>
-                    <p style="margin: 0; font-size: 12px;">MUNICIPALITY OF PILAR</p>
-                    <p style="margin: 0; font-size: 12px;">OMM</p>
-                    <p style="margin: 0; font-size: 12px;">OFFICE/LOCATION</p>
                 </div>
-            </div>
-            
-            <div class="ics-number">
-                <i class="bi bi-file-earmark-text"></i> <?php echo htmlspecialchars($ics_form['ics_no']); ?>
             </div>
             
             <!-- Entity Information -->
             <div class="row mb-3">
-                <div class="col-md-4">
+                <div class="col-md-6">
                     <label class="form-label"><strong>Entity Name:</strong></label>
                     <p class="form-control-plaintext"><?php echo htmlspecialchars($ics_form['entity_name']); ?></p>
-                </div>
-                <div class="col-md-4">
                     <label class="form-label"><strong>Fund Cluster:</strong></label>
                     <p class="form-control-plaintext"><?php echo htmlspecialchars($ics_form['fund_cluster']); ?></p>
                 </div>
-                <div class="col-md-4">
-                    <label class="form-label"><strong>Date Created:</strong></label>
-                    <p class="form-control-plaintext"><?php echo date('F d, Y', strtotime($ics_form['created_at'])); ?></p>
+                <div class="col-md-6">
+                    <label class="form-label"><strong>ICS Number:</strong></label>
+                    <p class="form-control-plaintext"><?php echo htmlspecialchars($ics_form['ics_no']); ?></p>
                 </div>
             </div>
             
@@ -247,6 +238,9 @@ if ($result && $row = $result->fetch_assoc()) {
                         </tfoot>
                     </table>
                 </div>
+                <div class="text-center mt-3">
+                    <p class="text-muted fst-italic">Nothing follows</p>
+                </div>
             </div>
             
             <!-- Signature Section -->
@@ -256,16 +250,20 @@ if ($result && $row = $result->fetch_assoc()) {
                         <h6><strong>Received From:</strong></h6>
                         <p><?php echo htmlspecialchars($ics_form['received_from']); ?></p>
                         <p class="text-muted"><?php echo htmlspecialchars($ics_form['received_from_position']); ?></p>
-                        <?php if (!empty($ics_form['received_from_date'])): ?>
+                        <?php if (!empty($ics_form['received_from_date']) && $ics_form['received_from_date'] !== '0000-00-00'): ?>
                             <p class="text-muted">Date: <?php echo date('F d, Y', strtotime($ics_form['received_from_date'])); ?></p>
+                        <?php else: ?>
+                            <p class="text-muted">Date: ______________</p>
                         <?php endif; ?>
                     </div>
                     <div class="col-md-6">
                         <h6><strong>Received By:</strong></h6>
                         <p><?php echo htmlspecialchars($ics_form['received_by']); ?></p>
                         <p class="text-muted"><?php echo htmlspecialchars($ics_form['received_by_position']); ?></p>
-                        <?php if (!empty($ics_form['received_by_date'])): ?>
+                        <?php if (!empty($ics_form['received_by_date']) && $ics_form['received_by_date'] !== '0000-00-00'): ?>
                             <p class="text-muted">Date: <?php echo date('F d, Y', strtotime($ics_form['received_by_date'])); ?></p>
+                        <?php else: ?>
+                            <p class="text-muted">Date: ______________</p>
                         <?php endif; ?>
                     </div>
                 </div>
