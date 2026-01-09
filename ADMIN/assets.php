@@ -333,7 +333,8 @@ try {
                 COUNT(DISTINCT a.asset_categories_id) as total_categories,
                 COUNT(DISTINCT a.office_id) as total_offices,
                 SUM(CASE WHEN ai.status = 'available' THEN 1 ELSE 0 END) as serviceable_count,
-                SUM(CASE WHEN ai.status = 'in_use' THEN 1 ELSE 0 END) as unserviceable_count
+                SUM(CASE WHEN ai.status = 'in_use' THEN 1 ELSE 0 END) as unserviceable_count,
+                SUM(CASE WHEN ai.status = 'no_tag' THEN 1 ELSE 0 END) as no_tag_count
             FROM asset_items ai
             LEFT JOIN assets a ON ai.asset_id = a.id";
     $result = $conn->query($sql);
@@ -520,6 +521,12 @@ try {
                 <div class="stats-card">
                     <div class="stats-number"><?php echo $stats['total_categories'] ?? 0; ?></div>
                     <div class="stats-label"><i class="bi bi-tags"></i> Categories</div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-6">
+                <div class="stats-card">
+                    <div class="stats-number"><?php echo $stats['no_tag_count'] ?? 0; ?></div>
+                    <div class="stats-label"><i class="bi bi-x-circle"></i> No Tag Assets</div>
                 </div>
             </div>
         </div>
