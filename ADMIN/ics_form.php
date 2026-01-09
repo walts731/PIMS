@@ -81,6 +81,13 @@ if ($result) {
         $offices[] = $row;
     }
 }
+
+// Get latest signature data from the most recent ICS form
+$latest_signature = [];
+$result = $conn->query("SELECT received_from, received_from_position, received_by, received_by_position FROM ics_forms ORDER BY created_at DESC LIMIT 1");
+if ($result && $row = $result->fetch_assoc()) {
+    $latest_signature = $row;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -308,17 +315,17 @@ if ($result) {
                             <div class="row mb-3">
                                 <div class="col-md-6">
                                     <label class="form-label"><strong>Received from:</strong></label>
-                                    <input type="text" class="form-control" name="received_from" required>
+                                    <input type="text" class="form-control" name="received_from" required value="<?php echo htmlspecialchars($latest_signature['received_from'] ?? ''); ?>">
                                     <label class="form-label"><strong>Position/Office:</strong></label>
-                                    <input type="text" class="form-control" name="received_from_position" required>
+                                    <input type="text" class="form-control" name="received_from_position" required value="<?php echo htmlspecialchars($latest_signature['received_from_position'] ?? ''); ?>">
                                     <label class="form-label"><strong>Date:</strong></label>
                                     <input type="date" class="form-control" name="received_from_date">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label"><strong>Received by:</strong></label>
-                                    <input type="text" class="form-control" name="received_by" required>
+                                    <input type="text" class="form-control" name="received_by" required value="<?php echo htmlspecialchars($latest_signature['received_by'] ?? ''); ?>">
                                     <label class="form-label"><strong>Position/Office:</strong></label>
-                                    <input type="text" class="form-control" name="received_by_position" required>
+                                    <input type="text" class="form-control" name="received_by_position" required value="<?php echo htmlspecialchars($latest_signature['received_by_position'] ?? ''); ?>">
                                     <label class="form-label"><strong>Date:</strong></label>
                                     <input type="date" class="form-control" name="received_by_date">
                                 </div>

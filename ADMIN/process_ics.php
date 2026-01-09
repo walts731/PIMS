@@ -107,12 +107,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $asset_id = $asset_stmt->insert_id;
                 $asset_stmt->close();
                 
-                // Insert asset item
-                $asset_item_stmt = $conn->prepare("INSERT INTO asset_items (asset_id, description, status, value, acquisition_date, office_id, created_at, last_updated) VALUES (?, ?, 'available', ?, CURDATE(), ?, NOW(), NOW())");
-                $asset_item_stmt->bind_param("isdi", $asset_id, $descriptions[$i], $total_cost, $office_id);
+                // Insert multiple asset items based on quantity
+                $asset_item_stmt = $conn->prepare("INSERT INTO asset_items (asset_id, description, status, value, acquisition_date, office_id, created_at, last_updated) VALUES (?, ?, 'no_tag', ?, CURDATE(), ?, NOW(), NOW())");
                 
-                if (!$asset_item_stmt->execute()) {
-                    throw new Exception('Failed to save asset item: ' . $asset_item_stmt->error);
+                // Create individual asset items for each quantity
+                for ($item_num = 1; $item_num <= $quantity; $item_num++) {
+                    $asset_item_stmt->bind_param("isdi", $asset_id, $descriptions[$i], $unit_cost, $office_id);
+                    
+                    if (!$asset_item_stmt->execute()) {
+                        throw new Exception('Failed to save asset item ' . $item_num . ': ' . $asset_item_stmt->error);
+                    }
                 }
                 $asset_item_stmt->close();
             }
