@@ -153,12 +153,15 @@ if ($result && $row = $result->fetch_assoc()) {
                     <p class="text-muted mb-0">View and manage Inventory Custodian Slip entries</p>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <a href="ics_form.php" class="btn btn-primary">
-                        <i class="bi bi-plus-circle"></i> New ICS
-                    </a>
-                    <button class="btn btn-outline-success btn-sm ms-2" onclick="exportICSData()">
-                        <i class="bi bi-download"></i> Export
-                    </button>
+                    <input type="text" class="form-control" id="searchInput" placeholder="Search ICS forms..." style="margin-bottom: 10px;">
+                    <div>
+                        <a href="ics_form.php" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> New ICS
+                        </a>
+                        <button class="btn btn-outline-success btn-sm ms-2" onclick="exportICSData()">
+                            <i class="bi bi-download"></i> Export
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -282,6 +285,39 @@ if ($result && $row = $result->fetch_assoc()) {
         function printICS(id) {
             window.open('ics_print.php?id=' + id, '_blank');
         }
+        
+        function searchICSForms() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const icsCards = document.querySelectorAll('.ics-card');
+            
+            icsCards.forEach(card => {
+                const text = card.textContent.toLowerCase();
+                const icsNumber = card.querySelector('.ics-number')?.textContent.toLowerCase() || '';
+                const entityName = card.querySelector('h5')?.textContent.toLowerCase() || '';
+                const fundCluster = card.querySelector('.text-muted')?.textContent.toLowerCase() || '';
+                
+                // Check if search term matches any field
+                const matches = text.includes(searchTerm) || 
+                               icsNumber.includes(searchTerm) || 
+                               entityName.includes(searchTerm) || 
+                               fundCluster.includes(searchTerm);
+                
+                // Show/hide card based on search
+                if (matches || searchTerm === '') {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+        
+        // Add search on input change
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.addEventListener('input', searchICSForms);
+            }
+        });
         
         function exportICSData() {
             // TODO: Implement export functionality
