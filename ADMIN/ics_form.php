@@ -175,6 +175,11 @@ if ($result && $row = $result->fetch_assoc()) {
     </style>
 </head>
 <body>
+    <!-- Toast Container -->
+    <div class="position-fixed top-0 end-0 p-3" style="z-index: 9999;">
+        <div id="toastContainer"></div>
+    </div>
+    
     <?php
     // Set page title for topbar
     $page_title = 'Inventory Custodian Slip';
@@ -414,6 +419,15 @@ if ($result && $row = $result->fetch_assoc()) {
             const unitCost = row.querySelector('input[name="unit_cost[]"]').value || 0;
             const totalCost = (parseFloat(quantity) * parseFloat(unitCost)).toFixed(2);
             
+            // Validate unit cost should be ₱50,000 or below
+            if (parseFloat(unitCost) > 50000) {
+                showToast('Unit cost should be ₱50,000 or below. Please enter a valid amount.', 'danger');
+                row.querySelector('input[name="unit_cost[]"]').value = '';
+                row.querySelector('input[name="total_cost[]"]').value = '';
+                row.querySelector('input[name="unit_cost[]"]').focus();
+                return;
+            }
+            
             row.querySelector('input[name="total_cost[]"]').value = totalCost;
         }
         
@@ -491,6 +505,34 @@ if ($result && $row = $result->fetch_assoc()) {
             incrementField.value = '1';
             this.appendChild(incrementField);
         });
+        
+        function showToast(message, type = 'info') {
+            const toastContainer = document.getElementById('toastContainer');
+            const toastId = 'toast-' + Date.now();
+            
+            const toastHtml = `
+                <div id="${toastId}" class="toast align-items-center text-white bg-${type} border-0 mb-3" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            ${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                </div>
+            `;
+            
+            toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+            
+            const toastElement = document.getElementById(toastId);
+            const toast = new bootstrap.Toast(toastElement);
+            toast.show();
+            
+            // Auto-remove toast after 5 seconds
+            setTimeout(() => {
+                toast.dispose();
+                toastElement.remove();
+            }, 5000);
+        }
         
         function exportICSData() {
             // TODO: Implement export functionality
