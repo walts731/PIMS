@@ -68,6 +68,13 @@ $result = $conn->query("SELECT header_image FROM forms WHERE form_code = 'PAR'")
 if ($result && $row = $result->fetch_assoc()) {
     $header_image = $row['header_image'];
 }
+
+// Get latest signature data from the most recent PAR form
+$latest_signature = [];
+$result = $conn->query("SELECT received_by_name, received_by_position, issued_by_name, issued_by_position FROM par_forms ORDER BY created_at DESC LIMIT 1");
+if ($result && $row = $result->fetch_assoc()) {
+    $latest_signature = $row;
+}
 ?>
 
 <!DOCTYPE html>
@@ -318,17 +325,17 @@ if ($result && $row = $result->fetch_assoc()) {
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label class="form-label"><strong>Received by:</strong></label>
-                                <input type="text" class="form-control" name="received_by" required>
+                                <input type="text" class="form-control" name="received_by" required value="<?php echo htmlspecialchars($latest_signature['received_by_name'] ?? ''); ?>">
                                 <label class="form-label mt-2"><strong>Position:</strong></label>
-                                <input type="text" class="form-control" name="received_by_position">
+                                <input type="text" class="form-control" name="received_by_position" value="<?php echo htmlspecialchars($latest_signature['received_by_position'] ?? ''); ?>">
                                 <label class="form-label mt-2"><strong>Date:</strong></label>
                                 <input type="date" class="form-control" name="received_by_date">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label"><strong>Issued by:</strong></label>
-                                <input type="text" class="form-control" name="issued_by" required>
+                                <input type="text" class="form-control" name="issued_by" required value="<?php echo htmlspecialchars($latest_signature['issued_by_name'] ?? ''); ?>">
                                 <label class="form-label mt-2"><strong>Position:</strong></label>
-                                <input type="text" class="form-control" name="issued_by_position">
+                                <input type="text" class="form-control" name="issued_by_position" value="<?php echo htmlspecialchars($latest_signature['issued_by_position'] ?? ''); ?>">
                                 <label class="form-label mt-2"><strong>Date:</strong></label>
                                 <input type="date" class="form-control" name="issued_by_date">
                             </div>
