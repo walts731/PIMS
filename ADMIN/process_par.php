@@ -91,6 +91,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $amount = floatval($amounts[$i]);
                 $unit_cost = $quantity > 0 ? $amount / $quantity : 0;
                 
+                // Check for property number duplication if property number is provided
+                if (!empty($property_number)) {
+                    $check_stmt = $conn->prepare("SELECT COUNT(*) as count FROM asset_items WHERE property_number = ? AND par_id != ?");
+                    $check_stmt->bind_param("si", $property_number, $par_form_id);
+                    $check_stmt->execute();
+                    $check_result = $check_stmt->get_result();
+                    $count = $check_result->fetch_assoc()['count'];
+                    $check_stmt->close();
+                    
+                    if ($count > 0) {
+                        throw new Exception("Property number '$property_number' already exists in the system. Please use a different property number.");
+                    }
+                }
+                
                 $item_stmt->bind_param("idssdsd", $par_form_id, $quantity, $units[$i], $descriptions[$i], $property_number, $date_acquired, $amount);
                 
                 if (!$item_stmt->execute()) {
