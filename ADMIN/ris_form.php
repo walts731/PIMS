@@ -203,12 +203,6 @@ if ($result && $row = $result->fetch_assoc()) {
                         echo '</div>';
                     }
                     ?>
-                    <div style="text-align: center;">
-                        <p style="margin: 0; font-size: 16px; font-weight: bold;">REQUISITION AND ISSUE SLIP</p>
-                        <p style="margin: 0; font-size: 12px;">MUNICIPALITY OF PILAR</p>
-                        <p style="margin: 0; font-size: 12px;">OMM</p>
-                        <p style="margin: 0; font-size: 12px;">OFFICE/LOCATION</p>
-                    </div>
                 </div>
                 
                 <!-- Entity Fields Header -->
@@ -259,20 +253,22 @@ if ($result && $row = $result->fetch_assoc()) {
                                         <thead class="table-light">
                                             <tr>
                                                 <th>Stock No.</th>
-                                                <th>Quantity</th>
                                                 <th>Unit</th>
                                                 <th>Description</th>
-                                                <th>Remarks</th>
+                                                <th>Quantity</th>
+                                                <th>Price</th>
+                                                <th>Total Amount</th>
                                                 <th>Action</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <tr>
-                                                <td><input type="text" class="form-control form-control-sm" name="stock_no[]" required></td>
-                                                <td><input type="number" class="form-control form-control-sm" name="quantity[]" required></td>
+                                                <td><input type="text" class="form-control form-control-sm" name="stock_no[]" readonly></td>
                                                 <td><input type="text" class="form-control form-control-sm" name="unit[]" required></td>
                                                 <td><input type="text" class="form-control form-control-sm" name="description[]" required></td>
-                                                <td><input type="text" class="form-control form-control-sm" name="remarks[]"></td>
+                                                <td><input type="number" class="form-control form-control-sm" name="quantity[]" required onchange="calculateTotal(this)"></td>
+                                                <td><input type="number" class="form-control form-control-sm" name="price[]" step="0.01" onchange="calculateTotal(this)"></td>
+                                                <td><input type="number" class="form-control form-control-sm" name="total_amount[]" readonly step="0.01"></td>
                                                 <td><button type="button" class="btn btn-sm btn-danger" onclick="removeRISRow(this)"><i class="bi bi-trash"></i></button></td>
                                             </tr>
                                         </tbody>
@@ -352,11 +348,12 @@ if ($result && $row = $result->fetch_assoc()) {
             const newRow = table.insertRow();
             
             const cells = [
-                '<input type="text" class="form-control form-control-sm" name="stock_no[]" required>',
-                '<input type="number" class="form-control form-control-sm" name="quantity[]" required>',
+                '<input type="text" class="form-control form-control-sm" name="stock_no[]" readonly>',
                 '<input type="text" class="form-control form-control-sm" name="unit[]" required>',
                 '<input type="text" class="form-control form-control-sm" name="description[]" required>',
-                '<input type="text" class="form-control form-control-sm" name="remarks[]">',
+                '<input type="number" class="form-control form-control-sm" name="quantity[]" required onchange="calculateTotal(this)">',
+                '<input type="number" class="form-control form-control-sm" name="price[]" step="0.01" onchange="calculateTotal(this)">',
+                '<input type="number" class="form-control form-control-sm" name="total_amount[]" readonly step="0.01">',
                 '<button type="button" class="btn btn-sm btn-danger" onclick="removeRISRow(this)"><i class="bi bi-trash"></i></button>'
             ];
             
@@ -364,6 +361,9 @@ if ($result && $row = $result->fetch_assoc()) {
                 const cell = newRow.insertCell(index);
                 cell.innerHTML = cellHtml;
             });
+            
+            // Update stock numbers
+            updateStockNumbers();
         }
         
         function removeRISRow(button) {
@@ -372,9 +372,30 @@ if ($result && $row = $result->fetch_assoc()) {
             
             if (table.rows.length > 1) {
                 row.remove();
+                // Update stock numbers after removal
+                updateStockNumbers();
             } else {
                 alert('At least one row is required');
             }
+        }
+        
+        function updateStockNumbers() {
+            const table = document.getElementById('risItemsTable').getElementsByTagName('tbody')[0];
+            const stockNoInputs = table.querySelectorAll('input[name="stock_no[]"]');
+            
+            stockNoInputs.forEach((input, index) => {
+                input.value = index + 1;
+            });
+        }
+        
+        function calculateTotal(element) {
+            const row = element.closest('tr');
+            const quantity = row.querySelector('input[name="quantity[]"]').value || 0;
+            const price = row.querySelector('input[name="price[]"]').value || 0;
+            const totalAmount = row.querySelector('input[name="total_amount[]"]');
+            
+            const total = parseFloat(quantity) * parseFloat(price);
+            totalAmount.value = total.toFixed(2);
         }
         
         function resetRISForm() {
@@ -384,6 +405,8 @@ if ($result && $row = $result->fetch_assoc()) {
                 while (table.rows.length > 1) {
                     table.deleteRow(1);
                 }
+                // Reset stock numbers
+                updateStockNumbers();
             }
         }
         
@@ -503,6 +526,11 @@ if ($result && $row = $result->fetch_assoc()) {
             incrementCodeField.name = 'increment_code_counter';
             incrementCodeField.value = '1';
             this.appendChild(incrementCodeField);
+        });
+        
+        // Initialize stock numbers on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateStockNumbers();
         });
         
     </script>
