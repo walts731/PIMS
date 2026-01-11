@@ -286,42 +286,90 @@ if ($result && $row = $result->fetch_assoc()) {
                             </div>
                             
                             <!-- Signature Section -->
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label"><strong>Requested by:</strong></label>
-                                    <input type="text" class="form-control" name="requested_by" required>
-                                    <label class="form-label"><strong>Position:</strong></label>
-                                    <input type="text" class="form-control" name="requested_by_position" required>
-                                    <label class="form-label"><strong>Date:</strong></label>
-                                    <input type="date" class="form-control" name="requested_date" required>
+                            <div class="row mb-4">
+                                <div class="col-md-3">
+                                    <div class="border p-3 text-center">
+                                        <label class="form-label"><strong>REQUESTED BY:</strong></label>
+                                        <div class="mb-3">
+                                            <small class="text-muted">SIGNATURE:</small>
+                                            <div style="height: 60px; border-bottom: 1px solid #ccc;"></div>
+                                        </div>
+                                        <div class="mb-2">
+                                            <small class="text-muted">PRINTED NAME:</small>
+                                            <input type="text" class="form-control form-control-sm" name="requested_by" required>
+                                        </div>
+                                        <div class="mb-2">
+                                            <small class="text-muted">DESIGNATION:</small>
+                                            <input type="text" class="form-control form-control-sm" name="requested_by_position" required>
+                                        </div>
+                                        <div>
+                                            <small class="text-muted">DATE:</small>
+                                            <input type="date" class="form-control form-control-sm" name="requested_date" required>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="form-label"><strong>Approved by:</strong></label>
-                                    <input type="text" class="form-control" name="approved_by" required>
-                                    <label class="form-label"><strong>Position:</strong></label>
-                                    <input type="text" class="form-control" name="approved_by_position" required>
-                                    <label class="form-label"><strong>Date:</strong></label>
-                                    <input type="date" class="form-control" name="approved_date" required>
+                                <div class="col-md-3">
+                                    <div class="border p-3 text-center">
+                                        <label class="form-label"><strong>APPROVED BY:</strong></label>
+                                        <div class="mb-3">
+                                            <small class="text-muted">SIGNATURE:</small>
+                                            <div style="height: 60px; border-bottom: 1px solid #ccc;"></div>
+                                        </div>
+                                        <div class="mb-2">
+                                            <small class="text-muted">PRINTED NAME:</small>
+                                            <input type="text" class="form-control form-control-sm" name="approved_by" required>
+                                        </div>
+                                        <div class="mb-2">
+                                            <small class="text-muted">DESIGNATION:</small>
+                                            <input type="text" class="form-control form-control-sm" name="approved_by_position" required>
+                                        </div>
+                                        <div>
+                                            <small class="text-muted">DATE:</small>
+                                            <input type="date" class="form-control form-control-sm" name="approved_date" required>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                            
-                            <!-- Issued Section -->
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label"><strong>Issued by:</strong></label>
-                                    <input type="text" class="form-control" name="issued_by" required>
-                                    <label class="form-label"><strong>Position:</strong></label>
-                                    <input type="text" class="form-control" name="issued_by_position" required>
-                                    <label class="form-label"><strong>Date:</strong></label>
-                                    <input type="date" class="form-control" name="issued_date" required>
+                                <div class="col-md-3">
+                                    <div class="border p-3 text-center">
+                                        <label class="form-label"><strong>ISSUED BY:</strong></label>
+                                        <div class="mb-3">
+                                            <small class="text-muted">SIGNATURE:</small>
+                                            <div style="height: 60px; border-bottom: 1px solid #ccc;"></div>
+                                        </div>
+                                        <div class="mb-2">
+                                            <small class="text-muted">PRINTED NAME:</small>
+                                            <input type="text" class="form-control form-control-sm" name="issued_by" required>
+                                        </div>
+                                        <div class="mb-2">
+                                            <small class="text-muted">DESIGNATION:</small>
+                                            <input type="text" class="form-control form-control-sm" name="issued_by_position" required>
+                                        </div>
+                                        <div>
+                                            <small class="text-muted">DATE:</small>
+                                            <input type="date" class="form-control form-control-sm" name="issued_date" required>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="form-label"><strong>Received by:</strong></label>
-                                    <input type="text" class="form-control" name="received_by" required>
-                                    <label class="form-label"><strong>Position:</strong></label>
-                                    <input type="text" class="form-control" name="received_by_position" required>
-                                    <label class="form-label"><strong>Date:</strong></label>
-                                    <input type="date" class="form-control" name="received_date" required>
+                                <div class="col-md-3">
+                                    <div class="border p-3 text-center">
+                                        <label class="form-label"><strong>RECEIVED BY:</strong></label>
+                                        <div class="mb-3">
+                                            <small class="text-muted">SIGNATURE:</small>
+                                            <div style="height: 60px; border-bottom: 1px solid #ccc;"></div>
+                                        </div>
+                                        <div class="mb-2">
+                                            <small class="text-muted">PRINTED NAME:</small>
+                                            <input type="text" class="form-control form-control-sm" name="received_by" required>
+                                        </div>
+                                        <div class="mb-2">
+                                            <small class="text-muted">DESIGNATION:</small>
+                                            <input type="text" class="form-control form-control-sm" name="received_by_position" required>
+                                        </div>
+                                        <div>
+                                            <small class="text-muted">DATE:</small>
+                                            <input type="date" class="form-control form-control-sm" name="received_date" required>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             
