@@ -28,11 +28,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $remarks = $_POST['remarks'] ?? '';
         $received_by = $_POST['received_by'];
         $issued_by = $_POST['issued_by'];
-        $items = $_POST['item_no'] ?? [];
-        $descriptions = $_POST['description'] ?? [];
         $quantities = $_POST['quantity'] ?? [];
         $units = $_POST['unit'] ?? [];
-        $unit_prices = $_POST['unit_price'] ?? [];
+        $descriptions = $_POST['description'] ?? [];
+        $property_numbers = $_POST['property_number'] ?? [];
+        $dates_acquired = $_POST['date_acquired'] ?? [];
         $amounts = $_POST['amount'] ?? [];
         
         // Validate required fields
@@ -65,15 +65,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->close();
         
         // Insert PAR items
-        $item_stmt = $conn->prepare("INSERT INTO par_items (form_id, item_no, description, quantity, unit, unit_price, amount) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $item_stmt = $conn->prepare("INSERT INTO par_items (form_id, quantity, unit, description, property_number, date_acquired, amount) VALUES (?, ?, ?, ?, ?, ?, ?)");
         
-        for ($i = 0; $i < count($items); $i++) {
-            if (!empty($items[$i]) && !empty($descriptions[$i])) {
+        for ($i = 0; $i < count($descriptions); $i++) {
+            if (!empty($descriptions[$i])) {
                 $quantity = floatval($quantities[$i]);
-                $unit_price = floatval($unit_prices[$i]);
+                $property_number = $property_numbers[$i] ?? null;
+                $date_acquired = !empty($dates_acquired[$i]) ? $dates_acquired[$i] : null;
                 $amount = floatval($amounts[$i]);
                 
-                $item_stmt->bind_param("isssddd", $par_form_id, $items[$i], $descriptions[$i], $quantity, $units[$i], $unit_price, $amount);
+                $item_stmt->bind_param("idssdsd", $par_form_id, $quantity, $units[$i], $descriptions[$i], $property_number, $date_acquired, $amount);
                 
                 if (!$item_stmt->execute()) {
                     throw new Exception('Failed to save PAR item: ' . $item_stmt->error);

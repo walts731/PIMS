@@ -278,23 +278,23 @@ if ($result && $row = $result->fetch_assoc()) {
                                 <table class="table table-bordered" id="itemsTable">
                                     <thead class="table-light">
                                         <tr>
-                                            <th>Item No.</th>
-                                            <th>Description</th>
                                             <th>Quantity</th>
                                             <th>Unit</th>
-                                            <th>Unit Price</th>
+                                            <th>Description</th>
+                                            <th>Property Number</th>
+                                            <th>Date Acquired</th>
                                             <th>Amount</th>
                                             <th>Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td><input type="text" class="form-control form-control-sm" name="item_no[]" required></td>
-                                            <td><input type="text" class="form-control form-control-sm" name="description[]" required></td>
                                             <td><input type="number" class="form-control form-control-sm" name="quantity[]" required onchange="calculateAmount(this)"></td>
                                             <td><input type="text" class="form-control form-control-sm" name="unit[]" required></td>
-                                            <td><input type="number" step="0.01" class="form-control form-control-sm" name="unit_price[]" required onchange="calculateAmount(this)"></td>
-                                            <td><input type="number" step="0.01" class="form-control form-control-sm" name="amount[]" readonly></td>
+                                            <td><input type="text" class="form-control form-control-sm" name="description[]" required></td>
+                                            <td><input type="text" class="form-control form-control-sm" name="property_number[]"></td>
+                                            <td><input type="date" class="form-control form-control-sm" name="date_acquired[]"></td>
+                                            <td><input type="number" step="0.01" class="form-control form-control-sm" name="amount[]" required></td>
                                             <td><button type="button" class="btn btn-sm btn-danger" onclick="removeRow(this)"><i class="bi bi-trash"></i></button></td>
                                         </tr>
                                     </tbody>
@@ -404,12 +404,12 @@ if ($result && $row = $result->fetch_assoc()) {
             const newRow = table.insertRow();
             
             const cells = [
-                '<input type="text" class="form-control form-control-sm" name="item_no[]" required>',
-                '<input type="text" class="form-control form-control-sm" name="description[]" required>',
                 '<input type="number" class="form-control form-control-sm" name="quantity[]" required onchange="calculateAmount(this)">',
                 '<input type="text" class="form-control form-control-sm" name="unit[]" required>',
-                '<input type="number" step="0.01" class="form-control form-control-sm" name="unit_price[]" required onchange="calculateAmount(this)">',
-                '<input type="number" step="0.01" class="form-control form-control-sm" name="amount[]" readonly>',
+                '<input type="text" class="form-control form-control-sm" name="description[]" required>',
+                '<input type="text" class="form-control form-control-sm" name="property_number[]">',
+                '<input type="date" class="form-control form-control-sm" name="date_acquired[]">',
+                '<input type="number" step="0.01" class="form-control form-control-sm" name="amount[]" required>',
                 '<button type="button" class="btn btn-sm btn-danger" onclick="removeRow(this)"><i class="bi bi-trash"></i></button>'
             ];
             
@@ -431,12 +431,19 @@ if ($result && $row = $result->fetch_assoc()) {
         }
         
         function calculateAmount(input) {
+            // Since amount is now directly entered, we don't need to calculate it
+            // This function can be used for validation if needed
             const row = input.closest('tr');
             const quantity = row.querySelector('input[name="quantity[]"]').value || 0;
-            const unitPrice = row.querySelector('input[name="unit_price[]"]').value || 0;
-            const amount = (parseFloat(quantity) * parseFloat(unitPrice)).toFixed(2);
+            const amount = row.querySelector('input[name="amount[]"]').value || 0;
             
-            row.querySelector('input[name="amount[]"]').value = amount;
+            // Optional: Validate that amount is reasonable
+            if (parseFloat(quantity) < 0) {
+                row.querySelector('input[name="quantity[]"]').value = 0;
+            }
+            if (parseFloat(amount) < 0) {
+                row.querySelector('input[name="amount[]"]').value = 0;
+            }
         }
         
         function resetForm() {
