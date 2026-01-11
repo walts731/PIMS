@@ -66,6 +66,22 @@ $result = $conn->query("SELECT header_image FROM forms WHERE form_code = 'RIS'")
 if ($result && $row = $result->fetch_assoc()) {
     $header_image = $row['header_image'];
 }
+
+// Get offices for dropdown
+$offices = [];
+$result = $conn->query("SELECT id, office_name FROM offices WHERE status = 'active' ORDER BY office_name");
+if ($result) {
+    while ($row = $result->fetch_assoc()) {
+        $offices[] = $row;
+    }
+}
+
+// Get latest signature data from the most recent RIS form
+$latest_signature = [];
+$result = $conn->query("SELECT requested_by, requested_by_position, approved_by, approved_by_position, issued_by, issued_by_position, received_by, received_by_position FROM ris_forms ORDER BY created_at DESC LIMIT 1");
+if ($result && $row = $result->fetch_assoc()) {
+    $latest_signature = $row;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -229,7 +245,14 @@ if ($result && $row = $result->fetch_assoc()) {
                 <div class="row mb-3">
                     <div class="col-md-3">
                         <label class="form-label"><strong>OFFICE:</strong></label>
-                        <input type="text" class="form-control" name="office" required>
+                        <select class="form-control" name="office" required>
+                            <option value="">Select Office</option>
+                            <?php foreach ($offices as $office): ?>
+                                <option value="<?php echo htmlspecialchars($office['office_name']); ?>">
+                                    <?php echo htmlspecialchars($office['office_name']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label"><strong>Code:</strong></label>
@@ -264,7 +287,31 @@ if ($result && $row = $result->fetch_assoc()) {
                                         <tbody>
                                             <tr>
                                                 <td><input type="text" class="form-control form-control-sm" name="stock_no[]" readonly></td>
-                                                <td><input type="text" class="form-control form-control-sm" name="unit[]" required></td>
+                                                <td>
+                                                    <select class="form-control form-control-sm" name="unit[]" required>
+                                                        <option value="">Select Unit</option>
+                                                        <option value="pcs">pcs</option>
+                                                        <option value="sets">sets</option>
+                                                        <option value="boxes">boxes</option>
+                                                        <option value="packs">packs</option>
+                                                        <option value="bottles">bottles</option>
+                                                        <option value="liters">liters</option>
+                                                        <option value="gallons">gallons</option>
+                                                        <option value="kilograms">kilograms</option>
+                                                        <option value="grams">grams</option>
+                                                        <option value="meters">meters</option>
+                                                        <option value="feet">feet</option>
+                                                        <option value="inches">inches</option>
+                                                        <option value="reams">reams</option>
+                                                        <option value="dozens">dozens</option>
+                                                        <option value="pairs">pairs</option>
+                                                        <option value="rolls">rolls</option>
+                                                        <option value="bags">bags</option>
+                                                        <option value="cans">cans</option>
+                                                        <option value="tubes">tubes</option>
+                                                        <option value="units">units</option>
+                                                    </select>
+                                                </td>
                                                 <td><input type="text" class="form-control form-control-sm" name="description[]" required></td>
                                                 <td><input type="number" class="form-control form-control-sm" name="quantity[]" required onchange="calculateTotal(this)"></td>
                                                 <td><input type="number" class="form-control form-control-sm" name="price[]" step="0.01" onchange="calculateTotal(this)"></td>
@@ -296,15 +343,15 @@ if ($result && $row = $result->fetch_assoc()) {
                                         </div>
                                         <div class="mb-2">
                                             <small class="text-muted">PRINTED NAME:</small>
-                                            <input type="text" class="form-control form-control-sm" name="requested_by" required>
+                                            <input type="text" class="form-control form-control-sm" name="requested_by" value="<?php echo htmlspecialchars($latest_signature['requested_by'] ?? ''); ?>" required>
                                         </div>
                                         <div class="mb-2">
                                             <small class="text-muted">DESIGNATION:</small>
-                                            <input type="text" class="form-control form-control-sm" name="requested_by_position" required>
+                                            <input type="text" class="form-control form-control-sm" name="requested_by_position" value="<?php echo htmlspecialchars($latest_signature['requested_by_position'] ?? ''); ?>" required>
                                         </div>
                                         <div>
                                             <small class="text-muted">DATE:</small>
-                                            <input type="date" class="form-control form-control-sm" name="requested_date" required>
+                                            <input type="date" class="form-control form-control-sm" name="requested_date">
                                         </div>
                                     </div>
                                 </div>
@@ -317,15 +364,15 @@ if ($result && $row = $result->fetch_assoc()) {
                                         </div>
                                         <div class="mb-2">
                                             <small class="text-muted">PRINTED NAME:</small>
-                                            <input type="text" class="form-control form-control-sm" name="approved_by" required>
+                                            <input type="text" class="form-control form-control-sm" name="approved_by" value="<?php echo htmlspecialchars($latest_signature['approved_by'] ?? ''); ?>" required>
                                         </div>
                                         <div class="mb-2">
                                             <small class="text-muted">DESIGNATION:</small>
-                                            <input type="text" class="form-control form-control-sm" name="approved_by_position" required>
+                                            <input type="text" class="form-control form-control-sm" name="approved_by_position" value="<?php echo htmlspecialchars($latest_signature['approved_by_position'] ?? ''); ?>" required>
                                         </div>
                                         <div>
                                             <small class="text-muted">DATE:</small>
-                                            <input type="date" class="form-control form-control-sm" name="approved_date" required>
+                                            <input type="date" class="form-control form-control-sm" name="approved_date">
                                         </div>
                                     </div>
                                 </div>
@@ -338,15 +385,15 @@ if ($result && $row = $result->fetch_assoc()) {
                                         </div>
                                         <div class="mb-2">
                                             <small class="text-muted">PRINTED NAME:</small>
-                                            <input type="text" class="form-control form-control-sm" name="issued_by" required>
+                                            <input type="text" class="form-control form-control-sm" name="issued_by" value="<?php echo htmlspecialchars($latest_signature['issued_by'] ?? ''); ?>" required>
                                         </div>
                                         <div class="mb-2">
                                             <small class="text-muted">DESIGNATION:</small>
-                                            <input type="text" class="form-control form-control-sm" name="issued_by_position" required>
+                                            <input type="text" class="form-control form-control-sm" name="issued_by_position" value="<?php echo htmlspecialchars($latest_signature['issued_by_position'] ?? ''); ?>" required>
                                         </div>
                                         <div>
                                             <small class="text-muted">DATE:</small>
-                                            <input type="date" class="form-control form-control-sm" name="issued_date" required>
+                                            <input type="date" class="form-control form-control-sm" name="issued_date">
                                         </div>
                                     </div>
                                 </div>
@@ -359,15 +406,15 @@ if ($result && $row = $result->fetch_assoc()) {
                                         </div>
                                         <div class="mb-2">
                                             <small class="text-muted">PRINTED NAME:</small>
-                                            <input type="text" class="form-control form-control-sm" name="received_by" required>
+                                            <input type="text" class="form-control form-control-sm" name="received_by" value="<?php echo htmlspecialchars($latest_signature['received_by'] ?? ''); ?>" required>
                                         </div>
                                         <div class="mb-2">
                                             <small class="text-muted">DESIGNATION:</small>
-                                            <input type="text" class="form-control form-control-sm" name="received_by_position" required>
+                                            <input type="text" class="form-control form-control-sm" name="received_by_position" value="<?php echo htmlspecialchars($latest_signature['received_by_position'] ?? ''); ?>" required>
                                         </div>
                                         <div>
                                             <small class="text-muted">DATE:</small>
-                                            <input type="date" class="form-control form-control-sm" name="received_date" required>
+                                            <input type="date" class="form-control form-control-sm" name="received_date">
                                         </div>
                                     </div>
                                 </div>
@@ -395,9 +442,15 @@ if ($result && $row = $result->fetch_assoc()) {
             const table = document.getElementById('risItemsTable').getElementsByTagName('tbody')[0];
             const newRow = table.insertRow();
             
+            const units = [
+                'pcs', 'sets', 'boxes', 'packs', 'bottles', 'liters', 'gallons', 
+                'kilograms', 'grams', 'meters', 'feet', 'inches', 'reams', 
+                'dozens', 'pairs', 'rolls', 'bags', 'cans', 'tubes', 'units'
+            ].map(unit => `<option value="${unit}">${unit}</option>`).join('');
+            
             const cells = [
                 '<input type="text" class="form-control form-control-sm" name="stock_no[]" readonly>',
-                '<input type="text" class="form-control form-control-sm" name="unit[]" required>',
+                `<select class="form-control form-control-sm" name="unit[]" required><option value="">Select Unit</option>${units}</select>`,
                 '<input type="text" class="form-control form-control-sm" name="description[]" required>',
                 '<input type="number" class="form-control form-control-sm" name="quantity[]" required onchange="calculateTotal(this)">',
                 '<input type="number" class="form-control form-control-sm" name="price[]" step="0.01" onchange="calculateTotal(this)">',
