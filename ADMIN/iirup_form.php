@@ -124,6 +124,57 @@ if ($result && $row = $result->fetch_assoc()) {
             .no-print { display: none !important; }
             .form-card { box-shadow: none; }
         }
+        
+        /* Make table inputs more compact */
+        .form-control-sm {
+            padding: 2px 4px !important;
+            font-size: 11px !important;
+            height: 24px !important;
+            line-height: 1.2 !important;
+        }
+        
+        .table th, .table td {
+            padding: 4px 6px !important;
+            font-size: 11px !important;
+            vertical-align: middle !important;
+        }
+        
+        .table th {
+            font-size: 10px !important;
+            font-weight: 600 !important;
+        }
+        
+        .table-responsive {
+            font-size: 11px !important;
+        }
+        
+        /* Reduce button sizes */
+        .btn-sm {
+            padding: 2px 6px !important;
+            font-size: 10px !important;
+            height: 24px !important;
+        }
+        
+        /* Footer Styles */
+        .signature-block {
+            margin-bottom: 30px;
+        }
+        .signature-line {
+            border-bottom: 1px solid #000;
+            padding-bottom: 2px;
+            margin-bottom: 5px;
+            min-height: 30px;
+            display: flex;
+            align-items: center;
+        }
+        .signature-block p {
+            margin-bottom: 5px;
+            font-size: 12px;
+        }
+        .signature-block p:not(.signature-line) {
+            font-style: italic;
+            color: #666;
+        }
     </style>
 </head>
 <body>
@@ -149,12 +200,9 @@ if ($result && $row = $result->fetch_assoc()) {
                     <p class="text-muted mb-0">Manage Individual Item Request for User Property forms</p>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <button class="btn btn-outline-primary btn-sm" onclick="createNewIIRUP()">
-                        <i class="bi bi-plus-circle"></i> Create New IIRUP
-                    </button>
-                    <button class="btn btn-outline-success btn-sm ms-2" onclick="exportIIRUPData()">
-                        <i class="bi bi-download"></i> Export
-                    </button>
+                    <a href="iirup_entries.php" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-list"></i> View Entries
+                    </a>
                 </div>
             </div>
         </div>
@@ -168,9 +216,6 @@ if ($result && $row = $result->fetch_assoc()) {
                 <div class="no-print">
                     <button class="btn btn-sm btn-outline-secondary" onclick="resetIIRUPForm()">
                         <i class="bi bi-arrow-clockwise"></i> Reset
-                    </button>
-                    <button class="btn btn-sm btn-outline-info ms-2" onclick="printIIRUPForm()">
-                        <i class="bi bi-printer"></i> Print
                     </button>
                 </div>
             </div>
@@ -186,55 +231,144 @@ if ($result && $row = $result->fetch_assoc()) {
                     }
                     ?>
                     <div style="text-align: center;">
-                        <p style="margin: 0; font-size: 16px; font-weight: bold;">INDIVIDUAL ITEM REQUEST FOR USER PROPERTY</p>
-                        <p style="margin: 0; font-size: 12px;">MUNICIPALITY OF PILAR</p>
-                        <p style="margin: 0; font-size: 12px;">OMM</p>
-                        <p style="margin: 0; font-size: 12px;">OFFICE/LOCATION</p>
+                        <p style="margin: 0; font-size: 16px; font-weight: bold;">As of Year: <?php echo date('Y'); ?></p>
                     </div>
                 </div>
                 
-                <!-- Entity Name, Fund Cluster, and IIRUP No -->
-                            <div class="row mb-3">
+                <!-- Header Section -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div style="border: 1px solid #dee2e6; padding: 20px; border-radius: 8px; background-color: #f8f9fa;">
+                            <div class="row">
                                 <div class="col-md-4">
-                                    <label class="form-label"><strong>Entity Name:</strong></label>
-                                    <input type="text" class="form-control" name="entity_name" required>
+                                    <label class="form-label" style="font-weight: normal; margin-bottom: 5px;">Name of Accountable Officer:</label>
+                                    <input type="text" class="form-control" name="accountable_officer" required>
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label"><strong>Fund Cluster:</strong></label>
-                                    <input type="text" class="form-control" name="fund_cluster" required>
+                                    <label class="form-label" style="font-weight: normal; margin-bottom: 5px;">Designation:</label>
+                                    <input type="text" class="form-control" name="designation" required>
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label"><strong>IIRUP No:</strong></label>
-                                    <input type="text" class="form-control bg-light" name="iirup_no" id="iirup_no" value="<?php echo htmlspecialchars($next_sai_no); ?>" readonly>
-                                    <small class="text-muted">Auto-generated next number from system configuration.</small>
+                                    <label class="form-label" style="font-weight: normal; margin-bottom: 5px;">Department/Office:</label>
+                                    <input type="text" class="form-control" name="department_office" required>
                                 </div>
                             </div>
-                            
-                            <!-- Items Table -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Hidden field for as_of_year -->
+                <input type="hidden" name="as_of_year" value="<?php echo date('Y'); ?>">
+                
+                <!-- Items Table -->
                             <div class="mb-3">
                                 <label class="form-label"><strong>Items:</strong></label>
                                 <div class="table-responsive">
                                     <table class="table table-bordered" id="iirupItemsTable">
                                         <thead class="table-light">
                                             <tr>
-                                                <th>Item No.</th>
-                                                <th>Description</th>
-                                                <th>Quantity</th>
-                                                <th>Unit</th>
-                                                <th>Unit Price</th>
-                                                <th>Total Amount</th>
-                                                <th>Action</th>
+                                                <th rowspan="3">Date Acquired</th>
+                                                <th rowspan="3">Particulars/ Articles</th>
+                                                <th rowspan="3">Property No.</th>
+                                                <th rowspan="3">Qty</th>
+                                                <th colspan="6">INVENTORY</th>
+                                                <th colspan="7">INSPECTION and DISPOSAL</th>
+                                                <th colspan="2">RECORD OF SALES</th>
+                                                <th rowspan="3">DEPT/OFFICE</th>
+                                                <th rowspan="3">CONTROL NO.</th>
+                                                <th rowspan="3">DATE RECEIVED</th>
+                                                <th rowspan="3">Action</th>
+                                            </tr>
+                                            <tr>
+                                                <th rowspan="2">Unit Cost</th>
+                                                <th rowspan="2">Total Cost</th>
+                                                <th rowspan="2">Accumulated Depreciation</th>
+                                                <th rowspan="2">Accumulated Impairment Losses</th>
+                                                <th rowspan="2">Carrying Amount</th>
+                                                <th rowspan="2">Remarks</th>
+                                                <th colspan="5">DISPOSAL</th>
+                                                <th rowspan="2">Appraised Value</th>
+                                                <th rowspan="2">Total</th>
+                                                <th rowspan="2">OR No.</th>
+                                                <th rowspan="2">Amount</th>
+                                            </tr>
+                                            <tr>
+                                                <th>Sale</th>
+                                                <th>Transfer</th>
+                                                <th>Destruction</th>
+                                                <th>Others (Specify)</th>
+                                                <th>Total</th>
+                                            </tr>
+                                            <tr>
+                                                <th>(1)</th>
+                                                <th>(2)</th>
+                                                <th>(3)</th>
+                                                <th>(4)</th>
+                                                <th>(5)</th>
+                                                <th>(6)</th>
+                                                <th>(7)</th>
+                                                <th>(8)</th>
+                                                <th>(9)</th>
+                                                <th>(10)</th>
+                                                <th>(11)</th>
+                                                <th>(12)</th>
+                                                <th>(13)</th>
+                                                <th>(14)</th>
+                                                <th>(15)</th>
+                                                <th>(16)</th>
+                                                <th>(17)</th>
+                                                <th>(18)</th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <tr>
-                                                <td><input type="text" class="form-control form-control-sm" name="item_no[]" required></td>
-                                                <td><input type="text" class="form-control form-control-sm" name="description[]" required></td>
-                                                <td><input type="number" class="form-control form-control-sm" name="quantity[]" required onchange="calculateIIRUPTotal(this)"></td>
-                                                <td><input type="text" class="form-control form-control-sm" name="unit[]" required></td>
-                                                <td><input type="number" step="0.01" class="form-control form-control-sm" name="unit_price[]" required onchange="calculateIIRUPTotal(this)"></td>
-                                                <td><input type="number" step="0.01" class="form-control form-control-sm" name="total_amount[]" readonly></td>
-                                                <td><button type="button" class="btn btn-sm btn-danger" onclick="removeIIRUPRow(this)"><i class="bi bi-trash"></i></button></td>
+                                                <td><input type="date" class="form-control form-control-sm" name="date_acquired[]"></td>
+                                                <td><input type="text" class="form-control form-control-sm" name="particulars[]"></td>
+                                                <td><input type="text" class="form-control form-control-sm" name="property_no[]"></td>
+                                                <td><input type="number" class="form-control form-control-sm" name="qty[]"></td>
+                                                <td><input type="number" step="0.01" class="form-control form-control-sm" name="unit_cost[]"></td>
+                                                <td><input type="number" step="0.01" class="form-control form-control-sm" name="total_cost[]"></td>
+                                                <td><input type="number" step="0.01" class="form-control form-control-sm" name="accumulated_depreciation[]"></td>
+                                                <td><input type="number" step="0.01" class="form-control form-control-sm" name="impairment_losses[]"></td>
+                                                <td><input type="number" step="0.01" class="form-control form-control-sm" name="carrying_amount[]"></td>
+                                                <td><input type="text" class="form-control form-control-sm" name="inventory_remarks[]"></td>
+                                                <td><input type="number" step="0.01" class="form-control form-control-sm" name="disposal_sale[]"></td>
+                                                <td><input type="number" step="0.01" class="form-control form-control-sm" name="disposal_transfer[]"></td>
+                                                <td><input type="number" step="0.01" class="form-control form-control-sm" name="disposal_destruction[]"></td>
+                                                <td><input type="text" class="form-control form-control-sm" name="disposal_others[]"></td>
+                                                <td><input type="number" step="0.01" class="form-control form-control-sm" name="disposal_total[]"></td>
+                                                <td><input type="number" step="0.01" class="form-control form-control-sm" name="appraised_value[]"></td>
+                                                <td><input type="number" step="0.01" class="form-control form-control-sm" name="total[]"></td>
+                                                <td><input type="text" class="form-control form-control-sm" name="or_no[]"></td>
+                                                <td><input type="number" step="0.01" class="form-control form-control-sm" name="amount[]"></td>
+                                                <td><select class="form-control form-control-sm" name="dept_office[]">
+                                                    <option value="">Select Department/Office</option>
+                                                    <?php
+                                                    // Fetch offices from database
+                                                    $offices_result = $conn->query("SELECT office_name FROM offices WHERE status = 'active' ORDER BY office_name");
+                                                    if ($offices_result) {
+                                                        while ($office = $offices_result->fetch_assoc()) {
+                                                            echo '<option value="' . htmlspecialchars($office['office_name']) . '">' . htmlspecialchars($office['office_name']) . '</option>';
+                                                        }
+                                                    }
+                                                    ?>
+                                                </select></td>
+                                                <td><input type="text" class="form-control form-control-sm" name="control_no[]"></td>
+                                                <td><input type="date" class="form-control form-control-sm" name="date_received[]"></td>
+                                                <td>
+                                                    <div class="btn-group btn-group-sm" role="group">
+                                                        <button type="button" class="btn btn-sm btn-info" onclick="openFillModal(this)" title="Fill Data">
+                                                            <i class="bi bi-pencil-fill"></i>
+                                                        </button>
+                                                        <button type="button" class="btn btn-sm btn-danger" onclick="removeIIRUPRow(this)" title="Delete Row">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -244,31 +378,45 @@ if ($result && $row = $result->fetch_assoc()) {
                                 </button>
                             </div>
                             
-                            <!-- Purpose -->
-                            <div class="mb-3">
-                                <label class="form-label"><strong>Purpose:</strong></label>
-                                <textarea class="form-control" name="purpose" rows="3" required></textarea>
-                            </div>
-                            
-                            <!-- Signature Section -->
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label"><strong>Requested by:</strong></label>
-                                    <input type="text" class="form-control" name="requested_by" required>
-                                    <label class="form-label"><strong>Position:</strong></label>
-                                    <input type="text" class="form-control" name="requested_by_position" required>
-                                    <label class="form-label"><strong>Date:</strong></label>
-                                    <input type="date" class="form-control" name="requested_date" required>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label"><strong>Approved by:</strong></label>
-                                    <input type="text" class="form-control" name="approved_by" required>
-                                    <label class="form-label"><strong>Position:</strong></label>
-                                    <input type="text" class="form-control" name="approved_by_position" required>
-                                    <label class="form-label"><strong>Date:</strong></label>
-                                    <input type="date" class="form-control" name="approved_date" required>
-                                </div>
-                            </div>
+                            <!-- Footer Section -->
+        <div class="row mt-5">
+            <div class="col-md-6">
+                <p class="mb-4">I HEREBY request inspection and disposition, pursuant to Section 79 of PD 1445, of property enumerated above.</p>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p>Requested by:</p>
+                        <div class="signature-block">
+                            <input type="text" class="form-control form-control-sm mb-2" name="accountable_officer_name" placeholder="Signature over Printed Name of Accountable Officer">
+                            <input type="text" class="form-control form-control-sm mb-2" name="accountable_officer_designation" placeholder="Designation of Accountable Officer">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p>Approved by:</p>
+                        <div class="signature-block">
+                            <input type="text" class="form-control form-control-sm mb-2" name="authorized_official_name" placeholder="Signature over Printed Name of Authorized Official">
+                            <input type="text" class="form-control form-control-sm mb-2" name="authorized_official_designation" placeholder="Designation of Authorized Official">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p>I CERTIFY that I have inspected each and every article enumerated in this report, and that disposition made thereof was, in my judgment, best for public interest.</p>
+                        <div class="signature-block">
+                            <input type="text" class="form-control form-control-sm mb-2" name="inspection_officer_name" placeholder="Signature over Printed Name of Inspection Officer">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p>I CERTIFY that I have witnessed disposition of articles enumerated on this report this _____ day of _____.</p>
+                        <div class="signature-block">
+                            <input type="text" class="form-control form-control-sm mb-2" name="witness_name" placeholder="Signature over Printed Name of Witness">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
                             
                             <!-- Form Actions -->
                         <div class="text-center">
@@ -280,10 +428,151 @@ if ($result && $row = $result->fetch_assoc()) {
                 </div>
             </div>
         </div>
-    </div>
+
+        
 
     <?php include 'includes/logout-modal.php'; ?>
     <?php include 'includes/change-password-modal.php'; ?>
+    
+    <!-- Fill Data Modal -->
+    <div class="modal fade" id="fillDataModal" tabindex="-1" aria-labelledby="fillDataModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="fillDataModalLabel">
+                        <i class="bi bi-pencil-fill"></i> Fill Row Data
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Date Acquired</label>
+                            <input type="date" class="form-control" id="modal_date_acquired">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Property No.</label>
+                            <input type="text" class="form-control" id="modal_property_no">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Particulars/Articles</label>
+                            <input type="text" class="form-control" id="modal_particulars">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Quantity</label>
+                            <input type="number" class="form-control" id="modal_qty">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Unit Cost</label>
+                            <input type="number" step="0.01" class="form-control" id="modal_unit_cost">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Total Cost</label>
+                            <input type="number" step="0.01" class="form-control" id="modal_total_cost">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Accumulated Depreciation</label>
+                            <input type="number" step="0.01" class="form-control" id="modal_accumulated_depreciation">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Impairment Losses</label>
+                            <input type="number" step="0.01" class="form-control" id="modal_impairment_losses">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Carrying Amount</label>
+                            <input type="number" step="0.01" class="form-control" id="modal_carrying_amount">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Inventory Remarks</label>
+                            <input type="text" class="form-control" id="modal_inventory_remarks">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Appraised Value</label>
+                            <input type="number" step="0.01" class="form-control" id="modal_appraised_value">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Disposal - Sale</label>
+                            <input type="number" step="0.01" class="form-control" id="modal_disposal_sale">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Disposal - Transfer</label>
+                            <input type="number" step="0.01" class="form-control" id="modal_disposal_transfer">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Disposal - Destruction</label>
+                            <input type="number" step="0.01" class="form-control" id="modal_disposal_destruction">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Disposal - Others</label>
+                            <input type="text" class="form-control" id="modal_disposal_others">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Disposal Total</label>
+                            <input type="number" step="0.01" class="form-control" id="modal_disposal_total">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Total</label>
+                            <input type="number" step="0.01" class="form-control" id="modal_total">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">OR No.</label>
+                            <input type="text" class="form-control" id="modal_or_no">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Amount</label>
+                            <input type="number" step="0.01" class="form-control" id="modal_amount">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Department/Office</label>
+                            <select class="form-control" id="modal_dept_office">
+                                <option value="">Select Department/Office</option>
+                                <?php
+                                // Fetch offices from database
+                                $offices_result = $conn->query("SELECT office_name FROM offices WHERE status = 'active' ORDER BY office_name");
+                                if ($offices_result) {
+                                    while ($office = $offices_result->fetch_assoc()) {
+                                        echo '<option value="' . htmlspecialchars($office['office_name']) . '">' . htmlspecialchars($office['office_name']) . '</option>';
+                                    }
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Control No.</label>
+                            <input type="text" class="form-control" id="modal_control_no">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Date Received</label>
+                            <input type="date" class="form-control" id="modal_date_received">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveFillData()">
+                        <i class="bi bi-check-lg"></i> Save Data
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <?php include 'includes/sidebar-scripts.php'; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -293,13 +582,38 @@ if ($result && $row = $result->fetch_assoc()) {
             const newRow = table.insertRow();
             
             const cells = [
-                '<input type="text" class="form-control form-control-sm" name="item_no[]" required>',
-                '<input type="text" class="form-control form-control-sm" name="description[]" required>',
-                '<input type="number" class="form-control form-control-sm" name="quantity[]" required onchange="calculateIIRUPTotal(this)">',
-                '<input type="text" class="form-control form-control-sm" name="unit[]" required>',
-                '<input type="number" step="0.01" class="form-control form-control-sm" name="unit_price[]" required onchange="calculateIIRUPTotal(this)">',
-                '<input type="number" step="0.01" class="form-control form-control-sm" name="total_amount[]" readonly>',
-                '<button type="button" class="btn btn-sm btn-danger" onclick="removeIIRUPRow(this)"><i class="bi bi-trash"></i></button>'
+                '<input type="date" class="form-control form-control-sm" name="date_acquired[]">',
+                '<input type="text" class="form-control form-control-sm" name="particulars[]">',
+                '<input type="text" class="form-control form-control-sm" name="property_no[]">',
+                '<input type="number" class="form-control form-control-sm" name="qty[]">',
+                '<input type="number" step="0.01" class="form-control form-control-sm" name="unit_cost[]">',
+                '<input type="number" step="0.01" class="form-control form-control-sm" name="total_cost[]">',
+                '<input type="number" step="0.01" class="form-control form-control-sm" name="accumulated_depreciation[]">',
+                '<input type="number" step="0.01" class="form-control form-control-sm" name="impairment_losses[]">',
+                '<input type="number" step="0.01" class="form-control form-control-sm" name="carrying_amount[]">',
+                '<input type="text" class="form-control form-control-sm" name="inventory_remarks[]">',
+                '<input type="number" step="0.01" class="form-control form-control-sm" name="disposal_sale[]">',
+                '<input type="number" step="0.01" class="form-control form-control-sm" name="disposal_transfer[]">',
+                '<input type="number" step="0.01" class="form-control form-control-sm" name="disposal_destruction[]">',
+                '<input type="text" class="form-control form-control-sm" name="disposal_others[]">',
+                '<input type="number" step="0.01" class="form-control form-control-sm" name="disposal_total[]">',
+                '<input type="number" step="0.01" class="form-control form-control-sm" name="appraised_value[]">',
+                '<input type="number" step="0.01" class="form-control form-control-sm" name="total[]">',
+                '<input type="text" class="form-control form-control-sm" name="or_no[]">',
+                '<input type="number" step="0.01" class="form-control form-control-sm" name="amount[]">',
+                '<select class="form-control form-control-sm" name="dept_office[]">' +
+                    '<option value="">Select Department/Office</option>' +
+                '</select>',
+                '<input type="text" class="form-control form-control-sm" name="control_no[]">',
+                '<input type="date" class="form-control form-control-sm" name="date_received[]">',
+                '<div class="btn-group btn-group-sm" role="group">' +
+                    '<button type="button" class="btn btn-sm btn-info" onclick="openFillModal(this)" title="Fill Data">' +
+                        '<i class="bi bi-pencil-fill"></i>' +
+                    '</button>' +
+                    '<button type="button" class="btn btn-sm btn-danger" onclick="removeIIRUPRow(this)" title="Delete Row">' +
+                        '<i class="bi bi-trash"></i>' +
+                    '</button>' +
+                '</div>'
             ];
             
             cells.forEach((cellHtml, index) => {
@@ -393,6 +707,81 @@ if ($result && $row = $result->fetch_assoc()) {
         function exportIIRUPData() {
             // TODO: Implement export functionality
             alert('Export functionality will be implemented');
+        }
+        
+        let currentRow = null;
+        
+        function openFillModal(button) {
+            currentRow = button.closest('tr');
+            const modal = new bootstrap.Modal(document.getElementById('fillDataModal'));
+            
+            // Get current values from the row
+            const inputs = currentRow.getElementsByTagName('input');
+            const selects = currentRow.getElementsByTagName('select');
+            
+            // Populate modal with current values (all 22 fields)
+            document.getElementById('modal_date_acquired').value = inputs[0].value || '';
+            document.getElementById('modal_particulars').value = inputs[1].value || '';
+            document.getElementById('modal_property_no').value = inputs[2].value || '';
+            document.getElementById('modal_qty').value = inputs[3].value || '';
+            document.getElementById('modal_unit_cost').value = inputs[4].value || '';
+            document.getElementById('modal_total_cost').value = inputs[5].value || '';
+            document.getElementById('modal_accumulated_depreciation').value = inputs[6].value || '';
+            document.getElementById('modal_impairment_losses').value = inputs[7].value || '';
+            document.getElementById('modal_carrying_amount').value = inputs[8].value || '';
+            document.getElementById('modal_inventory_remarks').value = inputs[9].value || '';
+            document.getElementById('modal_disposal_sale').value = inputs[10].value || '';
+            document.getElementById('modal_disposal_transfer').value = inputs[11].value || '';
+            document.getElementById('modal_disposal_destruction').value = inputs[12].value || '';
+            document.getElementById('modal_disposal_others').value = inputs[13].value || '';
+            document.getElementById('modal_disposal_total').value = inputs[14].value || '';
+            document.getElementById('modal_appraised_value').value = inputs[15].value || '';
+            document.getElementById('modal_total').value = inputs[16].value || '';
+            document.getElementById('modal_or_no').value = inputs[17].value || '';
+            document.getElementById('modal_amount').value = inputs[18].value || '';
+            document.getElementById('modal_dept_office').value = selects[0].value || '';
+            document.getElementById('modal_control_no').value = inputs[19].value || '';
+            document.getElementById('modal_date_received').value = inputs[20].value || '';
+            
+            modal.show();
+        }
+        
+        function saveFillData() {
+            if (!currentRow) return;
+            
+            const inputs = currentRow.getElementsByTagName('input');
+            const selects = currentRow.getElementsByTagName('select');
+            
+            // Save modal values back to the row (all 22 fields)
+            inputs[0].value = document.getElementById('modal_date_acquired').value;
+            inputs[1].value = document.getElementById('modal_particulars').value;
+            inputs[2].value = document.getElementById('modal_property_no').value;
+            inputs[3].value = document.getElementById('modal_qty').value;
+            inputs[4].value = document.getElementById('modal_unit_cost').value;
+            inputs[5].value = document.getElementById('modal_total_cost').value;
+            inputs[6].value = document.getElementById('modal_accumulated_depreciation').value;
+            inputs[7].value = document.getElementById('modal_impairment_losses').value;
+            inputs[8].value = document.getElementById('modal_carrying_amount').value;
+            inputs[9].value = document.getElementById('modal_inventory_remarks').value;
+            inputs[10].value = document.getElementById('modal_disposal_sale').value;
+            inputs[11].value = document.getElementById('modal_disposal_transfer').value;
+            inputs[12].value = document.getElementById('modal_disposal_destruction').value;
+            inputs[13].value = document.getElementById('modal_disposal_others').value;
+            inputs[14].value = document.getElementById('modal_disposal_total').value;
+            inputs[15].value = document.getElementById('modal_appraised_value').value;
+            inputs[16].value = document.getElementById('modal_total').value;
+            inputs[17].value = document.getElementById('modal_or_no').value;
+            inputs[18].value = document.getElementById('modal_amount').value;
+            selects[0].value = document.getElementById('modal_dept_office').value;
+            inputs[19].value = document.getElementById('modal_control_no').value;
+            inputs[20].value = document.getElementById('modal_date_received').value;
+            
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('fillDataModal'));
+            modal.hide();
+            
+            // Clear current row reference
+            currentRow = null;
         }
     </script>
 </body>
