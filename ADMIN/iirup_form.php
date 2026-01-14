@@ -219,6 +219,15 @@ if ($result && $row = $result->fetch_assoc()) {
             display: block;
             margin-top: 2px;
         }
+        
+        /* Clear button styles */
+        .position-relative {
+            position: relative !important;
+        }
+        
+        .position-absolute {
+            position: absolute !important;
+        }
     </style>
 </head>
 <body>
@@ -372,8 +381,11 @@ if ($result && $row = $result->fetch_assoc()) {
                                             <tr>
                                                 <td><input type="date" class="form-control form-control-sm" name="date_acquired[]"></td>
                                                 <td>
-                                                    <div class="autocomplete-container">
+                                                    <div class="autocomplete-container position-relative">
                                                         <input type="text" class="form-control form-control-sm" name="particulars[]" placeholder="Type to search assets..." autocomplete="off">
+                                                        <button type="button" class="btn btn-sm btn-outline-secondary position-absolute" style="right: 2px; top: 2px; padding: 2px 6px; font-size: 10px;" onclick="clearParticulars(this)" title="Clear">
+                                                            <i class="bi bi-x"></i>
+                                                        </button>
                                                         <div class="autocomplete-dropdown"></div>
                                                     </div>
                                                 </td>
@@ -512,8 +524,11 @@ if ($result && $row = $result->fetch_assoc()) {
                     <div class="row">
                         <div class="col-md-12 mb-3">
                             <label class="form-label">Particulars/Articles</label>
-                            <div class="autocomplete-container">
+                            <div class="autocomplete-container position-relative">
                                 <input type="text" class="form-control" id="modal_particulars" placeholder="Type to search assets..." autocomplete="off">
+                                <button type="button" class="btn btn-sm btn-outline-secondary position-absolute" style="right: 2px; top: 2px; padding: 2px 6px; font-size: 10px;" onclick="clearModalParticulars()" title="Clear">
+                                    <i class="bi bi-x"></i>
+                                </button>
                                 <div class="autocomplete-dropdown"></div>
                             </div>
                         </div>
@@ -963,9 +978,11 @@ if ($result && $row = $result->fetch_assoc()) {
                 return;
             }
             
+            console.log('Searching for:', query);
             fetch('../api/search_assets.php?q=' + encodeURIComponent(query))
                 .then(response => response.json())
                 .then(data => {
+                    console.log('Search results:', data);
                     if (data.success && data.assets.length > 0) {
                         displaySearchResults(data.assets, dropdown, input);
                     } else {
@@ -987,7 +1004,7 @@ if ($result && $row = $result->fetch_assoc()) {
                 item.className = 'autocomplete-item';
                 item.innerHTML = `
                     <strong>${asset.description}</strong>
-                    <small>ID: ${asset.id} | Value: ₱${parseFloat(asset.value).toFixed(2)} | Status: ${asset.status}</small>
+                    <small>Property No: ${asset.property_no || 'N/A'} | Value: ₱${parseFloat(asset.value).toFixed(2)} | Status: ${asset.status}</small>
                 `;
                 
                 item.addEventListener('click', function() {
@@ -1027,8 +1044,6 @@ if ($result && $row = $result->fetch_assoc()) {
             for (let i = 0; i < inputs.length; i++) {
                 if (inputs[i].name === 'particulars[]') {
                     inputs[i].value = asset.description;
-                    inputs[i].readOnly = true; // Make read-only
-                    inputs[i].style.backgroundColor = '#f8f9fa'; // Visual indicator
                     inputIndex = i;
                     break;
                 }
@@ -1089,11 +1104,10 @@ if ($result && $row = $result->fetch_assoc()) {
         }
         
         function selectAssetForModal(asset, input) {
-            // Fill modal fields with asset data and make them read-only
+            // Fill modal fields with asset data and make them read-only (except particulars)
             const particularsField = document.getElementById('modal_particulars');
             particularsField.value = asset.description;
-            particularsField.readOnly = true;
-            particularsField.style.backgroundColor = '#f8f9fa';
+            // Keep particulars field editable - don't make it read-only
             
             if (asset.acquisition_date) {
                 const dateField = document.getElementById('modal_date_acquired');
@@ -1141,6 +1155,35 @@ if ($result && $row = $result->fetch_assoc()) {
                     deptOffice.disabled = true; // Make read-only
                     deptOffice.style.backgroundColor = '#f8f9fa';
                 }
+            }
+        }
+        
+        function clearParticulars(button) {
+            const container = button.closest('.autocomplete-container');
+            const input = container.querySelector('input[name="particulars[]"]');
+            if (input) {
+                input.value = '';
+                input.focus();
+            }
+            
+            // Hide autocomplete dropdown if visible
+            const dropdown = container.querySelector('.autocomplete-dropdown');
+            if (dropdown) {
+                dropdown.style.display = 'none';
+            }
+        }
+        
+        function clearModalParticulars() {
+            const input = document.getElementById('modal_particulars');
+            if (input) {
+                input.value = '';
+                input.focus();
+            }
+            
+            // Hide autocomplete dropdown if visible
+            const dropdown = document.querySelector('#fillDataModal .autocomplete-dropdown');
+            if (dropdown) {
+                dropdown.style.display = 'none';
             }
         }
         
