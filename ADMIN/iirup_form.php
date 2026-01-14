@@ -175,6 +175,50 @@ if ($result && $row = $result->fetch_assoc()) {
             font-style: italic;
             color: #666;
         }
+        
+        /* Autocomplete styles */
+        .autocomplete-container {
+            position: relative;
+        }
+        
+        .autocomplete-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-top: none;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+        
+        .autocomplete-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #f8f9fa;
+            font-size: 11px;
+        }
+        
+        .autocomplete-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .autocomplete-item.selected {
+            background-color: #e9ecef;
+        }
+        
+        .autocomplete-item strong {
+            color: #191BA9;
+        }
+        
+        .autocomplete-item small {
+            color: #6c757d;
+            display: block;
+            margin-top: 2px;
+        }
     </style>
 </head>
 <body>
@@ -327,7 +371,12 @@ if ($result && $row = $result->fetch_assoc()) {
                                         <tbody>
                                             <tr>
                                                 <td><input type="date" class="form-control form-control-sm" name="date_acquired[]"></td>
-                                                <td><input type="text" class="form-control form-control-sm" name="particulars[]"></td>
+                                                <td>
+                                                    <div class="autocomplete-container">
+                                                        <input type="text" class="form-control form-control-sm" name="particulars[]" placeholder="Type to search assets..." autocomplete="off">
+                                                        <div class="autocomplete-dropdown"></div>
+                                                    </div>
+                                                </td>
                                                 <td><input type="text" class="form-control form-control-sm" name="property_no[]"></td>
                                                 <td><input type="number" class="form-control form-control-sm" name="qty[]"></td>
                                                 <td><input type="number" step="0.01" class="form-control form-control-sm" name="unit_cost[]"></td>
@@ -363,6 +412,9 @@ if ($result && $row = $result->fetch_assoc()) {
                                                     <div class="btn-group btn-group-sm" role="group">
                                                         <button type="button" class="btn btn-sm btn-info" onclick="openFillModal(this)" title="Fill Data">
                                                             <i class="bi bi-pencil-fill"></i>
+                                                        </button>
+                                                        <button type="button" class="btn btn-sm btn-warning" onclick="clearRowData(this)" title="Clear Row">
+                                                            <i class="bi bi-arrow-clockwise"></i>
                                                         </button>
                                                         <button type="button" class="btn btn-sm btn-danger" onclick="removeIIRUPRow(this)" title="Delete Row">
                                                             <i class="bi bi-trash"></i>
@@ -415,15 +467,17 @@ if ($result && $row = $result->fetch_assoc()) {
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-                            
-                            <!-- Form Actions -->
+
+              <!-- Form Actions -->
                         <div class="text-center">
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-save"></i> Save IIRUP
                             </button>
                         </div>
+        </div>
+    </div>
+                            
+                          
                     </form>
                 </div>
             </div>
@@ -458,7 +512,10 @@ if ($result && $row = $result->fetch_assoc()) {
                     <div class="row">
                         <div class="col-md-12 mb-3">
                             <label class="form-label">Particulars/Articles</label>
-                            <input type="text" class="form-control" id="modal_particulars">
+                            <div class="autocomplete-container">
+                                <input type="text" class="form-control" id="modal_particulars" placeholder="Type to search assets..." autocomplete="off">
+                                <div class="autocomplete-dropdown"></div>
+                            </div>
                         </div>
                     </div>
                     <div class="row">
@@ -583,7 +640,7 @@ if ($result && $row = $result->fetch_assoc()) {
             
             const cells = [
                 '<input type="date" class="form-control form-control-sm" name="date_acquired[]">',
-                '<input type="text" class="form-control form-control-sm" name="particulars[]">',
+                '<div class="autocomplete-container"><input type="text" class="form-control form-control-sm" name="particulars[]" placeholder="Type to search assets..." autocomplete="off"><div class="autocomplete-dropdown"></div></div>',
                 '<input type="text" class="form-control form-control-sm" name="property_no[]">',
                 '<input type="number" class="form-control form-control-sm" name="qty[]">',
                 '<input type="number" step="0.01" class="form-control form-control-sm" name="unit_cost[]">',
@@ -610,6 +667,9 @@ if ($result && $row = $result->fetch_assoc()) {
                     '<button type="button" class="btn btn-sm btn-info" onclick="openFillModal(this)" title="Fill Data">' +
                         '<i class="bi bi-pencil-fill"></i>' +
                     '</button>' +
+                    '<button type="button" class="btn btn-sm btn-warning" onclick="clearRowData(this)" title="Clear Row">' +
+                        '<i class="bi bi-arrow-clockwise"></i>' +
+                    '</button>' +
                     '<button type="button" class="btn btn-sm btn-danger" onclick="removeIIRUPRow(this)" title="Delete Row">' +
                         '<i class="bi bi-trash"></i>' +
                     '</button>' +
@@ -620,6 +680,32 @@ if ($result && $row = $result->fetch_assoc()) {
                 const cell = newRow.insertCell(index);
                 cell.innerHTML = cellHtml;
             });
+        }
+        
+        function clearRowData(button) {
+            const row = button.closest('tr');
+            const inputs = row.getElementsByTagName('input');
+            const selects = row.getElementsByTagName('select');
+            
+            // Clear all input values and make them editable
+            inputs.forEach(input => {
+                input.value = '';
+                input.readOnly = false;
+                input.style.backgroundColor = '';
+            });
+            
+            // Reset select fields and make them editable
+            selects.forEach(select => {
+                select.value = '';
+                select.disabled = false;
+                select.style.backgroundColor = '';
+            });
+            
+            // Hide autocomplete dropdown if visible
+            const dropdown = row.querySelector('.autocomplete-dropdown');
+            if (dropdown) {
+                dropdown.style.display = 'none';
+            }
         }
         
         function removeIIRUPRow(button) {
@@ -645,6 +731,21 @@ if ($result && $row = $result->fetch_assoc()) {
         function resetIIRUPForm() {
             if (confirm('Are you sure you want to reset form? All data will be lost.')) {
                 document.getElementById('iirupForm').reset();
+                
+                // Clear all read-only states and backgrounds
+                const allInputs = document.querySelectorAll('#iirupItemsTable input');
+                const allSelects = document.querySelectorAll('#iirupItemsTable select');
+                
+                allInputs.forEach(input => {
+                    input.readOnly = false;
+                    input.style.backgroundColor = '';
+                });
+                
+                allSelects.forEach(select => {
+                    select.disabled = false;
+                    select.style.backgroundColor = '';
+                });
+                
                 const table = document.getElementById('iirupItemsTable').getElementsByTagName('tbody')[0];
                 while (table.rows.length > 1) {
                     table.deleteRow(1);
@@ -715,6 +816,22 @@ if ($result && $row = $result->fetch_assoc()) {
             currentRow = button.closest('tr');
             const modal = new bootstrap.Modal(document.getElementById('fillDataModal'));
             
+            // Reset modal fields to editable state
+            const modalInputs = document.querySelectorAll('#fillDataModal input');
+            const modalSelects = document.querySelectorAll('#fillDataModal select');
+            
+            modalInputs.forEach(input => {
+                input.readOnly = false;
+                input.style.backgroundColor = '';
+                input.value = '';
+            });
+            
+            modalSelects.forEach(select => {
+                select.disabled = false;
+                select.style.backgroundColor = '';
+                select.value = '';
+            });
+            
             // Get current values from the row
             const inputs = currentRow.getElementsByTagName('input');
             const selects = currentRow.getElementsByTagName('select');
@@ -783,6 +900,252 @@ if ($result && $row = $result->fetch_assoc()) {
             // Clear current row reference
             currentRow = null;
         }
+        
+        // Autocomplete functionality for asset search
+        let searchTimeout;
+        let currentSearchIndex = -1;
+        
+        function initAutocomplete() {
+            // Add event listeners to all particulars inputs (both table and modal)
+            document.addEventListener('input', function(e) {
+                if (e.target.matches('input[name="particulars[]"]') || e.target.matches('#modal_particulars')) {
+                    const input = e.target;
+                    const container = input.closest('.autocomplete-container');
+                    const dropdown = container.querySelector('.autocomplete-dropdown');
+                    
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        searchAssets(input.value, dropdown, input);
+                    }, 150);
+                }
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.autocomplete-container')) {
+                    document.querySelectorAll('.autocomplete-dropdown').forEach(dropdown => {
+                        dropdown.style.display = 'none';
+                    });
+                }
+            });
+            
+            // Keyboard navigation
+            document.addEventListener('keydown', function(e) {
+                if (e.target.matches('input[name="particulars[]"]') || e.target.matches('#modal_particulars')) {
+                    const container = e.target.closest('.autocomplete-container');
+                    const dropdown = container.querySelector('.autocomplete-dropdown');
+                    const items = dropdown.querySelectorAll('.autocomplete-item');
+                    
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        currentSearchIndex = Math.min(currentSearchIndex + 1, items.length - 1);
+                        updateSelection(items);
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        currentSearchIndex = Math.max(currentSearchIndex - 1, -1);
+                        updateSelection(items);
+                    } else if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (currentSearchIndex >= 0 && items[currentSearchIndex]) {
+                            items[currentSearchIndex].click();
+                        }
+                    } else if (e.key === 'Escape') {
+                        dropdown.style.display = 'none';
+                        currentSearchIndex = -1;
+                    }
+                }
+            });
+        }
+        
+        function searchAssets(query, dropdown, input) {
+            if (query.length < 1) {
+                dropdown.style.display = 'none';
+                return;
+            }
+            
+            fetch('../api/search_assets.php?q=' + encodeURIComponent(query))
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.assets.length > 0) {
+                        displaySearchResults(data.assets, dropdown, input);
+                    } else {
+                        dropdown.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error searching assets:', error);
+                    dropdown.style.display = 'none';
+                });
+        }
+        
+        function displaySearchResults(assets, dropdown, input) {
+            dropdown.innerHTML = '';
+            currentSearchIndex = -1;
+            
+            assets.forEach((asset, index) => {
+                const item = document.createElement('div');
+                item.className = 'autocomplete-item';
+                item.innerHTML = `
+                    <strong>${asset.description}</strong>
+                    <small>ID: ${asset.id} | Value: ₱${parseFloat(asset.value).toFixed(2)} | Status: ${asset.status}</small>
+                `;
+                
+                item.addEventListener('click', function() {
+                    if (input.id === 'modal_particulars') {
+                        selectAssetForModal(asset, input);
+                    } else {
+                        selectAsset(asset, input);
+                    }
+                    dropdown.style.display = 'none';
+                });
+                
+                dropdown.appendChild(item);
+            });
+            
+            dropdown.style.display = 'block';
+        }
+        
+        function updateSelection(items) {
+            items.forEach((item, index) => {
+                if (index === currentSearchIndex) {
+                    item.classList.add('selected');
+                    item.scrollIntoView({ block: 'nearest' });
+                } else {
+                    item.classList.remove('selected');
+                }
+            });
+        }
+        
+        function selectAsset(asset, input) {
+            const row = input.closest('tr');
+            const inputs = row.getElementsByTagName('input');
+            const selects = row.getElementsByTagName('select');
+            
+            // Fill the form fields with asset data
+            // Find the correct input indices (accounting for the autocomplete container)
+            let inputIndex = 0;
+            for (let i = 0; i < inputs.length; i++) {
+                if (inputs[i].name === 'particulars[]') {
+                    inputs[i].value = asset.description;
+                    inputs[i].readOnly = true; // Make read-only
+                    inputs[i].style.backgroundColor = '#f8f9fa'; // Visual indicator
+                    inputIndex = i;
+                    break;
+                }
+            }
+            
+            // Fill other fields and make them read-only
+            const dateAcquired = row.querySelector('input[name="date_acquired[]"]');
+            if (dateAcquired && asset.acquisition_date) {
+                dateAcquired.value = asset.acquisition_date;
+                dateAcquired.readOnly = true;
+                dateAcquired.style.backgroundColor = '#f8f9fa';
+            }
+            
+            const qty = row.querySelector('input[name="qty[]"]');
+            if (qty) {
+                qty.value = 1; // Default quantity
+                qty.readOnly = true;
+                qty.style.backgroundColor = '#f8f9fa';
+            }
+            
+            const unitCost = row.querySelector('input[name="unit_cost[]"]');
+            if (unitCost && asset.value) {
+                unitCost.value = asset.value;
+                unitCost.readOnly = true;
+                unitCost.style.backgroundColor = '#f8f9fa';
+            }
+            
+            const totalCost = row.querySelector('input[name="total_cost[]"]');
+            if (totalCost && asset.value) {
+                totalCost.value = asset.value;
+                totalCost.readOnly = true;
+                totalCost.style.backgroundColor = '#f8f9fa';
+            }
+            
+            // Set department/office if available
+            if (asset.office_name) {
+                const deptOffice = row.querySelector('select[name="dept_office[]"]');
+                if (deptOffice) {
+                    // Add option if not exists
+                    let optionExists = false;
+                    for (let option of deptOffice.options) {
+                        if (option.value === asset.office_name) {
+                            optionExists = true;
+                            break;
+                        }
+                    }
+                    if (!optionExists) {
+                        const newOption = document.createElement('option');
+                        newOption.value = asset.office_name;
+                        newOption.textContent = asset.office_name;
+                        deptOffice.appendChild(newOption);
+                    }
+                    deptOffice.value = asset.office_name;
+                    deptOffice.disabled = true; // Make read-only
+                    deptOffice.style.backgroundColor = '#f8f9fa';
+                }
+            }
+        }
+        
+        function selectAssetForModal(asset, input) {
+            // Fill modal fields with asset data and make them read-only
+            const particularsField = document.getElementById('modal_particulars');
+            particularsField.value = asset.description;
+            particularsField.readOnly = true;
+            particularsField.style.backgroundColor = '#f8f9fa';
+            
+            if (asset.acquisition_date) {
+                const dateField = document.getElementById('modal_date_acquired');
+                dateField.value = asset.acquisition_date;
+                dateField.readOnly = true;
+                dateField.style.backgroundColor = '#f8f9fa';
+            }
+            
+            const qtyField = document.getElementById('modal_qty');
+            qtyField.value = 1; // Default quantity
+            qtyField.readOnly = true;
+            qtyField.style.backgroundColor = '#f8f9fa';
+            
+            if (asset.value) {
+                const unitCostField = document.getElementById('modal_unit_cost');
+                unitCostField.value = asset.value;
+                unitCostField.readOnly = true;
+                unitCostField.style.backgroundColor = '#f8f9fa';
+                
+                const totalCostField = document.getElementById('modal_total_cost');
+                totalCostField.value = asset.value;
+                totalCostField.readOnly = true;
+                totalCostField.style.backgroundColor = '#f8f9fa';
+            }
+            
+            // Set department/office if available
+            if (asset.office_name) {
+                const deptOffice = document.getElementById('modal_dept_office');
+                if (deptOffice) {
+                    // Add option if not exists
+                    let optionExists = false;
+                    for (let option of deptOffice.options) {
+                        if (option.value === asset.office_name) {
+                            optionExists = true;
+                            break;
+                        }
+                    }
+                    if (!optionExists) {
+                        const newOption = document.createElement('option');
+                        newOption.value = asset.office_name;
+                        newOption.textContent = asset.office_name;
+                        deptOffice.appendChild(newOption);
+                    }
+                    deptOffice.value = asset.office_name;
+                    deptOffice.disabled = true; // Make read-only
+                    deptOffice.style.backgroundColor = '#f8f9fa';
+                }
+            }
+        }
+        
+        // Initialize autocomplete when page loads
+        document.addEventListener('DOMContentLoaded', initAutocomplete);
     </script>
 </body>
 </html>
