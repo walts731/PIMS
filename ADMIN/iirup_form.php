@@ -260,6 +260,21 @@ if ($result && $row = $result->fetch_assoc()) {
             </div>
         </div>
 
+        <!-- Success/Error Messages -->
+        <?php if (isset($_SESSION['success'])): ?>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle-fill"></i> <?php echo htmlspecialchars($_SESSION['success']); unset($_SESSION['success']); ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
+        
+        <?php if (isset($_SESSION['error'])): ?>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill"></i> <?php echo htmlspecialchars($_SESSION['error']); unset($_SESSION['error']); ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
+
         <!-- IIRUP Form -->
         <div class="form-card">
             <div class="d-flex justify-content-between align-items-center mb-4">
@@ -823,6 +838,10 @@ if ($result && $row = $result->fetch_assoc()) {
         
         // Handle form submission to update counter
         document.getElementById('iirupForm').addEventListener('submit', function(e) {
+            console.log('Form submitting...');
+            console.log('Form action:', this.action);
+            console.log('Form method:', this.method);
+            
             // Always increment counter since field is always auto-generated
             const incrementField = document.createElement('input');
             incrementField.type = 'hidden';
