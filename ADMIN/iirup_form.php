@@ -285,6 +285,12 @@ if ($result && $row = $result->fetch_assoc()) {
                     <button class="btn btn-sm btn-outline-secondary" onclick="resetIIRUPForm()">
                         <i class="bi bi-arrow-clockwise"></i> Reset
                     </button>
+                    <div class="btn-group" role="group">
+                        <input type="text" class="form-control form-control-sm" id="formNumberSearch" placeholder="Form Number..." style="width: 200px;">
+                        <button class="btn btn-sm btn-info" onclick="loadIIRUPForm()" title="Load Form">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
             
@@ -1081,10 +1087,27 @@ if ($result && $row = $result->fetch_assoc()) {
             
             // Fill other fields and make them read-only
             const dateAcquired = row.querySelector('input[name="date_acquired[]"]');
-            if (dateAcquired && asset.acquisition_date) {
-                dateAcquired.value = asset.acquisition_date;
-                dateAcquired.readOnly = true;
-                dateAcquired.style.backgroundColor = '#f8f9fa';
+            if (dateAcquired) {
+                // Use created_at date, fallback to acquisition_date, then leave empty
+                let dateToUse = asset.created_at || asset.acquisition_date || '';
+                if (dateToUse) {
+                    // Format the date to YYYY-MM-DD for input field
+                    const dateObj = new Date(dateToUse);
+                    if (!isNaN(dateObj.getTime())) {
+                        dateToUse = dateObj.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+                        dateAcquired.value = dateToUse;
+                        dateAcquired.readOnly = true;
+                        dateAcquired.style.backgroundColor = '#f8f9fa';
+                    }
+                }
+            }
+            
+            // Fill property_no field
+            const propertyNo = row.querySelector('input[name="property_no[]"]');
+            if (propertyNo && asset.property_no) {
+                propertyNo.value = asset.property_no;
+                propertyNo.readOnly = true;
+                propertyNo.style.backgroundColor = '#f8f9fa';
             }
             
             const qty = row.querySelector('input[name="qty[]"]');
@@ -1139,11 +1162,26 @@ if ($result && $row = $result->fetch_assoc()) {
             particularsField.value = asset.description;
             // Keep particulars field editable - don't make it read-only
             
-            if (asset.acquisition_date) {
+            // Use created_at date, fallback to acquisition_date, then leave empty
+            let dateToUse = asset.created_at || asset.acquisition_date || '';
+            if (dateToUse) {
                 const dateField = document.getElementById('modal_date_acquired');
-                dateField.value = asset.acquisition_date;
-                dateField.readOnly = true;
-                dateField.style.backgroundColor = '#f8f9fa';
+                // Format the date to YYYY-MM-DD for input field
+                const dateObj = new Date(dateToUse);
+                if (!isNaN(dateObj.getTime())) {
+                    dateToUse = dateObj.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+                    dateField.value = dateToUse;
+                    dateField.readOnly = true;
+                    dateField.style.backgroundColor = '#f8f9fa';
+                }
+            }
+            
+            // Fill property_no field in modal
+            if (asset.property_no) {
+                const propertyNoField = document.getElementById('modal_property_no');
+                propertyNoField.value = asset.property_no;
+                propertyNoField.readOnly = true;
+                propertyNoField.style.backgroundColor = '#f8f9fa';
             }
             
             const qtyField = document.getElementById('modal_qty');
@@ -1215,6 +1253,137 @@ if ($result && $row = $result->fetch_assoc()) {
             if (dropdown) {
                 dropdown.style.display = 'none';
             }
+        }
+        
+        function loadIIRUPForm() {
+            const formNumber = document.getElementById('formNumberSearch').value.trim();
+            
+            if (!formNumber) {
+                alert('Please enter a form number');
+                return;
+            }
+            
+            fetch(`../api/get_iirup_form.php?form_number=${encodeURIComponent(formNumber)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        populateIIRUPForm(data.form);
+                        populateIIRUPItems(data.items);
+                        
+                        // Show success message
+                        const alertDiv = document.createElement('div');
+                        alertDiv.className = 'alert alert-success alert-dismissible fade show';
+                        alertDiv.innerHTML = `
+                            <i class="bi bi-check-circle-fill"></i> 
+                            IIRUP Form '${formNumber}' loaded successfully!
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        `;
+                        
+                        // Insert after the header
+                        const header = document.querySelector('.d-flex.justify-content-between');
+                        header.parentNode.insertBefore(alertDiv, header.nextSibling);
+                        
+                        // Auto-hide after 3 seconds
+                        setTimeout(() => {
+                            alertDiv.remove();
+                        }, 3000);
+                        
+                    } else {
+                        alert('Form not found: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading form:', error);
+                    alert('Error loading form. Please try again.');
+                });
+        }
+        
+        function populateIIRUPForm(form) {
+            // Populate header fields
+            document.querySelector('input[name="accountable_officer"]').value = form.accountable_officer || '';
+            document.querySelector('input[name="designation"]').value = form.designation || '';
+            document.querySelector('select[name="department_office"]').value = form.department_office || '';
+            document.querySelector('input[name="accountable_officer_name"]').value = form.accountable_officer_name || '';
+            document.querySelector('input[name="accountable_officer_designation"]').value = form.accountable_officer_designation || '';
+            document.querySelector('input[name="authorized_official_name"]').value = form.authorized_official_name || '';
+            document.querySelector('input[name="authorized_official_designation"]').value = form.authorized_official_designation || '';
+            document.querySelector('input[name="inspection_officer_name"]').value = form.inspection_officer_name || '';
+            document.querySelector('input[name="witness_name"]').value = form.witness_name || '';
+            
+            // Update as_of_year if available
+            if (form.as_of_year) {
+                const yearDisplay = document.querySelector('p');
+                if (yearDisplay) {
+                    yearDisplay.textContent = 'As of Year: ' + form.as_of_year;
+                }
+            }
+        }
+        
+        function populateIIRUPItems(items) {
+            // Clear existing rows
+            const tbody = document.querySelector('#iirupItemsTable tbody');
+            tbody.innerHTML = '';
+            
+            // Add items
+            items.forEach((item, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><input type="date" class="form-control form-control-sm" name="date_acquired[]" value="${item.date_acquired || ''}"></td>
+                    <td>
+                        <div class="autocomplete-container position-relative">
+                            <input type="text" class="form-control form-control-sm" name="particulars[]" value="${item.particulars || ''}" placeholder="Type to search assets..." autocomplete="off">
+                            <button type="button" class="btn btn-sm btn-outline-secondary position-absolute" style="right: 2px; top: 2px; padding: 2px 6px; font-size: 10px;" onclick="clearParticulars(this)" title="Clear">
+                                <i class="bi bi-x"></i>
+                            </button>
+                            <div class="autocomplete-dropdown"></div>
+                        </div>
+                    </td>
+                    <td><input type="text" class="form-control form-control-sm" name="property_no[]" value="${item.property_no || ''}"></td>
+                    <td><input type="number" class="form-control form-control-sm" name="qty[]" value="${item.quantity || '1'}" step="0.01"></td>
+                    <td><input type="number" class="form-control form-control-sm" name="unit_cost[]" value="${item.unit_cost || '0'}" step="0.01"></td>
+                    <td><input type="number" class="form-control form-control-sm" name="total_cost[]" value="${item.total_cost || '0'}" step="0.01"></td>
+                    <td><input type="number" class="form-control form-control-sm" name="accumulated_depreciation[]" value="${item.accumulated_depreciation || '0'}" step="0.01"></td>
+                    <td><input type="number" class="form-control form-control-sm" name="impairment_losses[]" value="${item.impairment_losses || '0'}" step="0.01"></td>
+                    <td><input type="number" class="form-control form-control-sm" name="carrying_amount[]" value="${item.carrying_amount || '0'}" step="0.01"></td>
+                    <td><input type="text" class="form-control form-control-sm" name="inventory_remarks[]" value="${item.inventory_remarks || ''}"></td>
+                    <td><input type="number" class="form-control form-control-sm" name="disposal_sale[]" value="${item.disposal_sale || '0'}" step="0.01"></td>
+                    <td><input type="number" class="form-control form-control-sm" name="disposal_transfer[]" value="${item.disposal_transfer || '0'}" step="0.01"></td>
+                    <td><input type="number" class="form-control form-control-sm" name="disposal_destruction[]" value="${item.disposal_destruction || '0'}" step="0.01"></td>
+                    <td><input type="text" class="form-control form-control-sm" name="disposal_others[]" value="${item.disposal_others || ''}"></td>
+                    <td><input type="number" class="form-control form-control-sm" name="disposal_total[]" value="${item.disposal_total || '0'}" step="0.01"></td>
+                    <td><input type="number" class="form-control form-control-sm" name="appraised_value[]" value="${item.appraised_value || '0'}" step="0.01"></td>
+                    <td><input type="number" class="form-control form-control-sm" name="total[]" value="${item.total || '0'}" step="0.01"></td>
+                    <td><input type="text" class="form-control form-control-sm" name="or_no[]" value="${item.or_no || ''}"></td>
+                    <td><input type="number" class="form-control form-control-sm" name="amount[]" value="${item.amount || '0'}" step="0.01"></td>
+                    <td>
+                        <select class="form-control form-control-sm" name="dept_office[]">
+                            <option value="">Select Department/Office</option>
+                            ${getOfficeOptions(item.dept_office)}
+                        </select>
+                    </td>
+                    <td><input type="text" class="form-control form-control-sm" name="control_no[]" value="${item.control_no || ''}"></td>
+                    <td><input type="date" class="form-control form-control-sm" name="date_received[]" value="${item.date_received || ''}"></td>
+                    <td>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button type="button" class="btn btn-sm btn-info" onclick="openFillModal(this)" title="Fill Data">
+                                <i class="bi bi-pencil-fill"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-warning" onclick="clearRowData(this)" title="Clear Row">
+                                <i class="bi bi-x-circle"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-danger" onclick="deleteRow(this)" title="Delete Row">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        function getOfficeOptions(selectedOffice = '') {
+            // This would need to fetch from server, for now return empty
+            return selectedOffice ? `<option value="${selectedOffice}" selected>${selectedOffice}</option>` : '';
         }
         
         // Initialize autocomplete when page loads

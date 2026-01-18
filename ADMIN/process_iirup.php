@@ -164,13 +164,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Update asset items status to unserviceable
         if (!empty($asset_ids_to_update)) {
             $unique_asset_ids = array_unique($asset_ids_to_update);
-            $placeholders = str_repeat('?,', count($unique_asset_ids) - 1) . '?';
             
-            $update_sql = "UPDATE asset_items SET status = 'unserviceable' 
-                          WHERE id IN ($placeholders) AND status != 'disposed'";
-            $update_stmt = $conn->prepare($update_sql);
-            $update_stmt->bind_param(str_repeat('i', count($unique_asset_ids)), ...$unique_asset_ids);
-            $update_stmt->execute();
+            if (!empty($unique_asset_ids)) {
+                $ids_string = implode(',', array_map('intval', $unique_asset_ids));
+                $update_sql = "UPDATE asset_items SET status = 'unserviceable' 
+                              WHERE id IN ($ids_string) AND status != 'disposed'";
+                
+                $conn->query($update_sql);
+                error_log("Updated asset items to unserviceable: " . $update_sql);
+            }
         }
         
         // Commit transaction
@@ -204,24 +206,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 function extractAssetIdFromDescription($description) {
     // Try to extract property number from description
     if (preg_match('/Property\s*No\s*:\s*([A-Za-z0-9-]+)/i', $description, $matches)) {
-        return $matches[1]; // Return property number
+        $property_no = $matches[1];
+        error_log("Extracted property number: $property_no from: $description");
+        
+        // Look up the asset ID by property number
+        global $conn;
+        $stmt = $conn->prepare("SELECT id FROM asset_items WHERE property_no = ? LIMIT 1");
+        $stmt->bind_param("s", $property_no);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($row = $result->fetch_assoc()) {
+            error_log("Found asset ID: " . $row['id'] . " for property number: $property_no");
+            return (int)$row['id'];
+        }
     }
     
     // If description starts with property number pattern (like "PROP-001")
     if (preg_match('/^([A-Za-z0-9-]+)/', $description, $matches)) {
-        return $matches[1];
+        $property_no = $matches[1];
+        error_log("Trying property number pattern: $property_no from: $description");
+        
+        // Look up the asset ID by property number
+        global $conn;
+        $stmt = $conn->prepare("SELECT id FROM asset_items WHERE property_no = ? LIMIT 1");
+        $stmt->bind_param("s", $property_no);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($row = $result->fetch_assoc()) {
+            error_log("Found asset ID: " . $row['id'] . " for property number: $property_no");
+            return (int)$row['id'];
+        }
     }
     
     // Fallback to ID if no property number found
     if (preg_match('/ID:\s*(\d+)/i', $description, $matches)) {
-        return (int)$matches[1];
+        $asset_id = (int)$matches[1];
+        error_log("Extracted asset ID: $asset_id from: $description");
+        return $asset_id;
     }
     
     // If description starts with a number, assume it's ID
     if (preg_match('/^(\d+)/', $description, $matches)) {
-        return (int)$matches[1];
+        $asset_id = (int)$matches[1];
+        error_log("Extracted numeric ID: $asset_id from: $description");
+        return $asset_id;
     }
     
+    error_log("Could not extract asset ID from: $description");
     return null;
 }
 

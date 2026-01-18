@@ -11,13 +11,16 @@ if (empty($query)) {
 }
 
 try {
-    // Search asset items with office information, excluding no_tag and unserviceable status
+    // Search asset items with office information, excluding unserviceable status only
+    // Include assets with property_no even if they have no_tag status
     $sql = "SELECT ai.id, ai.description, ai.value, ai.acquisition_date, ai.status, 
-                   ai.property_no, o.office_name 
+                   ai.property_no, ai.created_at, o.office_name 
             FROM asset_items ai 
             LEFT JOIN offices o ON ai.office_id = o.id 
             WHERE (ai.description LIKE ? OR ai.id LIKE ? OR ai.property_no LIKE ?) 
-            AND ai.status NOT IN ('no_tag', 'unserviceable')
+            AND ai.status != 'unserviceable'
+            AND ai.property_no IS NOT NULL 
+            AND ai.property_no != ''
             ORDER BY ai.description
             LIMIT 10";
     
@@ -36,6 +39,7 @@ try {
             'acquisition_date' => $row['acquisition_date'],
             'status' => $row['status'],
             'property_no' => $row['property_no'],
+            'created_at' => $row['created_at'],
             'office_name' => $row['office_name']
         ];
     }
