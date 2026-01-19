@@ -334,16 +334,16 @@ try {
             Employees
         </a>
         <div class="sidebar-dropdown">
-            <button class="sidebar-dropdown-toggle <?php echo (in_array($current_page, ['par_form.php', 'ics_form.php', 'ris_form.php', 'iirup_form.php', 'iirup_entries.php', 'itr_form.php'])) ? 'active' : ''; ?>" 
+            <button class="sidebar-dropdown-toggle <?php echo (in_array($current_page, ['par_form.php', 'ics_form.php', 'ris_form.php', 'iirup_form.php', 'itr_form.php'])) ? 'active' : ''; ?>" 
                     type="button" data-bs-toggle="collapse" data-bs-target="#formsDropdown" 
-                    aria-expanded="<?php echo (in_array($current_page, ['par_form.php', 'ics_form.php', 'ris_form.php', 'iirup_form.php', 'iirup_entries.php', 'itr_form.php'])) ? 'true' : 'false'; ?>">
+                    aria-expanded="<?php echo (in_array($current_page, ['par_form.php', 'ics_form.php', 'ris_form.php', 'iirup_form.php', 'itr_form.php'])) ? 'true' : 'false'; ?>">
                 <div>
                     <i class="bi bi-file-earmark-text"></i>
                     Forms
                 </div>
                 <i class="bi bi-chevron-down"></i>
             </button>
-            <div class="collapse <?php echo (in_array($current_page, ['par_form.php', 'ics_form.php', 'ris_form.php', 'iirup_form.php', 'iirup_entries.php', 'itr_form.php'])) ? 'show' : ''; ?>" id="formsDropdown">
+            <div class="collapse <?php echo (in_array($current_page, ['par_form.php', 'ics_form.php', 'ris_form.php', 'iirup_form.php', 'itr_form.php'])) ? 'show' : ''; ?>" id="formsDropdown">
                 <ul class="sidebar-dropdown-menu">
                     <li>
                         <a href="par_form.php" class="sidebar-dropdown-item <?php echo $current_page == 'par_form.php' ? 'active' : ''; ?>">
@@ -362,12 +362,7 @@ try {
                     </li>
                     <li>
                         <a href="iirup_form.php" class="sidebar-dropdown-item <?php echo $current_page == 'iirup_form.php' ? 'active' : ''; ?>">
-                            Create IIRUP Form
-                        </a>
-                    </li>
-                    <li>
-                        <a href="iirup_entries.php" class="sidebar-dropdown-item <?php echo $current_page == 'iirup_entries.php' ? 'active' : ''; ?>">
-                            IIRUP Entries
+                            Inventory and Inspection Report of Unserviceable Property
                         </a>
                     </li>
                     <li>
