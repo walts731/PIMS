@@ -430,7 +430,7 @@ if ($result && $row = $result->fetch_assoc()) {
                                                 <td><input type="number" step="0.01" class="form-control form-control-sm" name="accumulated_depreciation[]"></td>
                                                 <td><input type="number" step="0.01" class="form-control form-control-sm" name="impairment_losses[]"></td>
                                                 <td><input type="number" step="0.01" class="form-control form-control-sm" name="carrying_amount[]"></td>
-                                                <td><input type="text" class="form-control form-control-sm" name="inventory_remarks[]"></td>
+                                                <td><input type="text" class="form-control form-control-sm" name="inventory_remarks[]" value="unserviceable"></td>
                                                 <td><input type="number" step="0.01" class="form-control form-control-sm" name="disposal_sale[]"></td>
                                                 <td><input type="number" step="0.01" class="form-control form-control-sm" name="disposal_transfer[]"></td>
                                                 <td><input type="number" step="0.01" class="form-control form-control-sm" name="disposal_destruction[]"></td>
@@ -598,7 +598,7 @@ if ($result && $row = $result->fetch_assoc()) {
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Inventory Remarks</label>
-                            <input type="text" class="form-control" id="modal_inventory_remarks">
+                            <input type="text" class="form-control" id="modal_inventory_remarks" value="unserviceable">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Appraised Value</label>
@@ -723,7 +723,7 @@ if ($result && $row = $result->fetch_assoc()) {
                 '<input type="number" step="0.01" class="form-control form-control-sm" name="accumulated_depreciation[]">',
                 '<input type="number" step="0.01" class="form-control form-control-sm" name="impairment_losses[]">',
                 '<input type="number" step="0.01" class="form-control form-control-sm" name="carrying_amount[]">',
-                '<input type="text" class="form-control form-control-sm" name="inventory_remarks[]">',
+                '<input type="text" class="form-control form-control-sm" name="inventory_remarks[]" value="unserviceable">',
                 '<input type="number" step="0.01" class="form-control form-control-sm" name="disposal_sale[]">',
                 '<input type="number" step="0.01" class="form-control form-control-sm" name="disposal_transfer[]">',
                 '<input type="number" step="0.01" class="form-control form-control-sm" name="disposal_destruction[]">',
