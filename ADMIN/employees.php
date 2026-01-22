@@ -997,8 +997,8 @@ $showing_to = min($page * $per_page, $total_records);
         }
         
         function viewEmployee(id) {
-            // Simple view - just show basic info
-            alert('View employee ID: ' + id + '\n\nThis will show detailed employee information in a future update.');
+            // Redirect to view employee page
+            window.location.href = 'view_employee.php?id=' + id;
         }
         
         function editEmployee(id) {
