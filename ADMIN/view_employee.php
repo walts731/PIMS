@@ -33,7 +33,13 @@ if ($employee_id <= 0) {
 $employee = null;
 $office_name = 'N/A';
 try {
-    $stmt = $conn->prepare("SELECT e.*, o.office_name FROM employees e LEFT JOIN offices o ON e.office_id = o.id WHERE e.id = ?");
+    $stmt = $conn->prepare("SELECT e.*, o.office_name,
+                                 CASE WHEN EXISTS (
+                                     SELECT 1 FROM asset_items ai WHERE ai.employee_id = e.id
+                                 ) THEN 'uncleared' ELSE 'cleared' END as computed_clearance_status
+                          FROM employees e 
+                          LEFT JOIN offices o ON e.office_id = o.id 
+                          WHERE e.id = ?");
     $stmt->bind_param("i", $employee_id);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -230,8 +236,8 @@ function getStatusBadgeClass($status, $type = 'employment') {
                         <span class="status-badge <?php echo getStatusBadgeClass($employee['employment_status'] ?? 'permanent', 'employment'); ?>">
                             <?php echo ucfirst(str_replace('_', ' ', $employee['employment_status'] ?? 'permanent')); ?>
                         </span>
-                        <span class="status-badge <?php echo getStatusBadgeClass($employee['clearance_status'] ?? 'uncleared', 'clearance'); ?>">
-                            <?php echo ucfirst($employee['clearance_status'] ?? 'uncleared'); ?>
+                        <span class="status-badge <?php echo getStatusBadgeClass($employee['computed_clearance_status'] ?? 'uncleared', 'clearance'); ?>">
+                            <?php echo ucfirst($employee['computed_clearance_status'] ?? 'uncleared'); ?>
                         </span>
                     </div>
                 </div>
@@ -317,8 +323,8 @@ function getStatusBadgeClass($status, $type = 'employment') {
                             <i class="bi bi-shield-check"></i> Clearance Status
                         </div>
                         <div class="info-value">
-                            <span class="status-badge <?php echo getStatusBadgeClass($employee['clearance_status'] ?? 'uncleared', 'clearance'); ?>">
-                                <?php echo ucfirst($employee['clearance_status'] ?? 'uncleared'); ?>
+                            <span class="status-badge <?php echo getStatusBadgeClass($employee['computed_clearance_status'] ?? 'uncleared', 'clearance'); ?>">
+                                <?php echo ucfirst($employee['computed_clearance_status'] ?? 'uncleared'); ?>
                             </span>
                         </div>
                     </div>

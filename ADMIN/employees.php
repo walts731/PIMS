@@ -304,7 +304,10 @@ try {
     $total_records = $count_stmt->get_result()->fetch_assoc()['total'];
     
     // Now get the paginated data
-    $sql = "SELECT e.*, o.office_name 
+    $sql = "SELECT e.*, o.office_name,
+                   CASE WHEN EXISTS (
+                       SELECT 1 FROM asset_items ai WHERE ai.employee_id = e.id
+                   ) THEN 'uncleared' ELSE 'cleared' END as computed_clearance_status
             FROM employees e 
             LEFT JOIN offices o ON e.office_id = o.id 
             WHERE 1=1";
@@ -655,7 +658,7 @@ $showing_to = min($page * $per_page, $total_records);
                                     <td>
                                         <?php
                                         $clearance_class = '';
-                                        $clearance = $employee['clearance_status'] ?? 'uncleared';
+                                        $clearance = $employee['computed_clearance_status'] ?? 'uncleared';
                                         switch($clearance) {
                                             case 'cleared':
                                                 $clearance_class = 'clearance-cleared';
