@@ -81,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->close();
         
         // Insert PAR items
-        $item_stmt = $conn->prepare("INSERT INTO par_items (form_id, quantity, unit, description, property_number, date_acquired, amount) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $item_stmt = $conn->prepare("INSERT INTO par_items (form_id, asset_id, quantity, unit, description, property_number, date_acquired, amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
         
         for ($i = 0; $i < count($descriptions); $i++) {
             if (!empty($descriptions[$i])) {
@@ -93,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 // Check for property number duplication if property number is provided
                 if (!empty($property_number)) {
-                    $check_stmt = $conn->prepare("SELECT COUNT(*) as count FROM asset_items WHERE property_number = ? AND par_id != ?");
+                    $check_stmt = $conn->prepare("SELECT COUNT(*) as count FROM par_items WHERE property_number = ? AND form_id != ?");
                     $check_stmt->bind_param("si", $property_number, $par_form_id);
                     $check_stmt->execute();
                     $check_result = $check_stmt->get_result();
@@ -105,13 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
                 
-                $item_stmt->bind_param("idssdsd", $par_form_id, $quantity, $units[$i], $descriptions[$i], $property_number, $date_acquired, $amount);
-                
-                if (!$item_stmt->execute()) {
-                    throw new Exception('Failed to save PAR item: ' . $item_stmt->error);
-                }
-                
-                // Also insert as asset and asset item
+                // Also insert as asset and asset item first to get asset_id
                 $asset_stmt = $conn->prepare("INSERT INTO assets (description, unit, quantity, unit_cost, office_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NOW(), NOW())");
                 $asset_stmt->bind_param("ssidi", $descriptions[$i], $units[$i], $quantity, $unit_cost, $office_id);
                 
@@ -122,18 +116,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $asset_id = $asset_stmt->insert_id;
                 $asset_stmt->close();
                 
-                // Insert multiple asset items based on quantity
-                $asset_item_stmt = $conn->prepare("INSERT INTO asset_items (asset_id, par_id, description, status, value, acquisition_date, office_id, created_at, last_updated) VALUES (?, ?, ?, 'no_tag', ?, ?, ?, NOW(), NOW())");
+                // Now insert PAR item with the correct asset_id
+                $item_stmt->bind_param("iidssdsd", $par_form_id, $asset_id, $quantity, $units[$i], $descriptions[$i], $property_number, $date_acquired, $amount);
                 
-                // Create individual asset items for each quantity
+                if (!$item_stmt->execute()) {
+                    throw new Exception('Failed to save PAR item: ' . $item_stmt->error);
+                }
+                
+                // Insert multiple asset items based on quantity
                 for ($item_num = 1; $item_num <= $quantity; $item_num++) {
-                    $asset_item_stmt->bind_param("iisddi", $asset_id, $par_form_id, $descriptions[$i], $unit_cost, $date_acquired, $office_id);
+                    $description = $conn->real_escape_string($descriptions[$i]);
+                    $status = 'no_tag';
+                    $acquisition_date = !empty($date_acquired) ? "'$date_acquired'" : 'NULL';
                     
-                    if (!$asset_item_stmt->execute()) {
-                        throw new Exception('Failed to save asset item ' . $item_num . ': ' . $asset_item_stmt->error);
+                    $sql = "INSERT INTO asset_items (asset_id, par_id, description, status, value, acquisition_date, office_id, created_at, last_updated) 
+                           VALUES ($asset_id, $par_form_id, '$description', '$status', $unit_cost, $acquisition_date, $office_id, NOW(), NOW())";
+                    
+                    if (!$conn->query($sql)) {
+                        throw new Exception('Failed to save asset item ' . $item_num . ': ' . $conn->error);
+                    }
+                    
+                    // Get the asset_item_id for potential property number assignment
+                    $asset_item_id = $conn->insert_id;
+                    
+                    // If property number is provided and this is the first item, assign it
+                    if (!empty($property_number) && $item_num == 1) {
+                        // Update the asset item with property number if the column exists
+                        $update_stmt = $conn->prepare("UPDATE asset_items SET property_number = ? WHERE id = ?");
+                        if ($update_stmt) {
+                            $update_stmt->bind_param("si", $property_number, $asset_item_id);
+                            $update_stmt->execute();
+                            $update_stmt->close();
+                        }
                     }
                 }
-                $asset_item_stmt->close();
             }
         }
         $item_stmt->close();
