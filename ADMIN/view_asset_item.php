@@ -23,6 +23,8 @@ $item_sql = "SELECT ai.*,
                    a.description as asset_description, a.unit, a.quantity as asset_quantity, a.unit_cost,
                    ac.category_name, ac.category_code,
                    o.office_name,
+                   comp.processor, comp.ram_capacity, comp.storage_type, comp.storage_capacity, 
+                   comp.operating_system, comp.serial_number as computer_serial_number,
                    e.employee_no, e.firstname, e.lastname, e.email,
                    ics.ics_no,
                    par.par_no
@@ -30,6 +32,7 @@ $item_sql = "SELECT ai.*,
             LEFT JOIN assets a ON ai.asset_id = a.id 
             LEFT JOIN asset_categories ac ON a.asset_categories_id = ac.id 
             LEFT JOIN offices o ON ai.office_id = o.id 
+            LEFT JOIN asset_computers comp ON ai.id = comp.asset_item_id
             LEFT JOIN employees e ON ai.employee_id = e.id 
             LEFT JOIN ics_forms ics ON ai.ics_id = ics.id 
             LEFT JOIN par_forms par ON ai.par_id = par.id 
@@ -370,6 +373,43 @@ $status_display = formatStatus($item['status']);
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- Computer Equipment Specific Fields -->
+                    <?php if ($item['category_code'] === 'CE' && ($item['processor'] || $item['ram_capacity'] || $item['storage_capacity'] || $item['operating_system'] || $item['computer_serial_number'])): ?>
+                    <div class="detail-section">
+                        <h5 class="mb-3"><i class="bi bi-cpu"></i> Computer Equipment Specifications</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="detail-label">Processor</div>
+                                    <div class="detail-value"><?php echo $item['processor'] ? htmlspecialchars($item['processor']) : '<span class="text-muted">Not specified</span>'; ?></div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="detail-label">RAM (GB)</div>
+                                    <div class="detail-value"><?php echo $item['ram_capacity'] ? htmlspecialchars($item['ram_capacity']) : '<span class="text-muted">Not specified</span>'; ?></div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="detail-label">Storage</div>
+                                    <div class="detail-value"><?php echo $item['storage_capacity'] ? htmlspecialchars($item['storage_capacity']) : '<span class="text-muted">Not specified</span>'; ?></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="detail-label">Operating System</div>
+                                    <div class="detail-value"><?php echo $item['operating_system'] ? htmlspecialchars($item['operating_system']) : '<span class="text-muted">Not specified</span>'; ?></div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="detail-label">Serial Number</div>
+                                    <div class="detail-value"><?php echo $item['computer_serial_number'] ? htmlspecialchars($item['computer_serial_number']) : '<span class="text-muted">Not specified</span>'; ?></div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="detail-label">Storage Type</div>
+                                    <div class="detail-value"><?php echo $item['storage_type'] ? htmlspecialchars(ucfirst($item['storage_type'])) : '<span class="text-muted">Not specified</span>'; ?></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endif; ?>
                 </div>
                 
                 <!-- History -->

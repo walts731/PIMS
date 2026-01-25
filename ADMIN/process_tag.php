@@ -119,13 +119,55 @@ try {
         $update_tag_stmt->execute();
     }
     
-    // Get category information for logging
+    // Get category information for specific field handling
     $category_sql = "SELECT category_name, category_code FROM asset_categories WHERE id = ?";
     $category_stmt = $conn->prepare($category_sql);
     $category_stmt->bind_param("i", $category_id);
     $category_stmt->execute();
     $category_result = $category_stmt->get_result();
     $category = $category_result->fetch_assoc();
+    
+    // Handle category-specific fields
+    if ($category && $category['category_code'] === 'ITS') {
+        // Computer Equipment specific fields
+        $processor = trim($_POST['processor'] ?? '');
+        $ram = trim($_POST['ram'] ?? '');
+        $storage = trim($_POST['storage'] ?? '');
+        $operating_system = trim($_POST['operating_system'] ?? '');
+        $serial_number = trim($_POST['serial_number'] ?? '');
+        
+        // Insert or update computer-specific information
+        $computer_sql = "INSERT INTO asset_computers 
+                       (asset_item_id, processor, ram_capacity, storage_capacity, operating_system, serial_number, created_by, created_at)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                       ON DUPLICATE KEY UPDATE
+                       processor = VALUES(processor),
+                       ram_capacity = VALUES(ram_capacity),
+                       storage_capacity = VALUES(storage_capacity),
+                       operating_system = VALUES(operating_system),
+                       serial_number = VALUES(serial_number),
+                       updated_by = VALUES(created_by),
+                       updated_at = CURRENT_TIMESTAMP";
+        
+        $computer_stmt = $conn->prepare($computer_sql);
+        $computer_stmt->bind_param("isssssi", $item_id, $processor, $ram, $storage, $operating_system, $serial_number, $_SESSION['user_id']);
+        $computer_stmt->execute();
+        
+        // Log computer-specific field updates
+        $computer_details = sprintf(
+            "Computer Equipment specs saved - Processor: %s, RAM: %s, Storage: %s, OS: %s, Serial: %s",
+            $processor ?: 'Not specified',
+            $ram ?: 'Not specified', 
+            $storage ?: 'Not specified',
+            $operating_system ?: 'Not specified',
+            $serial_number ?: 'Not specified'
+        );
+        
+        $computer_history_sql = "INSERT INTO asset_item_history (item_id, action, details, created_by, created_at) VALUES (?, 'Computer Specs Updated', ?, ?, CURRENT_TIMESTAMP)";
+        $computer_history_stmt = $conn->prepare($computer_history_sql);
+        $computer_history_stmt->bind_param("isi", $item_id, $computer_details, $_SESSION['user_id']);
+        $computer_history_stmt->execute();
+    }
     
     // Get employee information for logging
     $employee_sql = "SELECT employee_no, firstname, lastname FROM employees WHERE id = ?";

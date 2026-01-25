@@ -301,7 +301,7 @@ if ($result && $row = $result->fetch_assoc()) {
                                                         <?php endforeach; ?>
                                                     </select>
                                                 </td>
-                                                <td><input type="number" step="0.01" class="form-control form-control-sm" name="unit_cost[]" required onchange="calculateTotal(this)"></td>
+                                                <td><input type="number" step="0.01" class="form-control form-control-sm" name="unit_cost[]" required onchange="calculateTotal(this)" max="50000" min="0.01"></td>
                                                 <td><input type="number" step="0.01" class="form-control form-control-sm" name="total_cost[]" readonly></td>
                                                 <td><input type="text" class="form-control form-control-sm" name="description[]" required></td>
                                                 <td><input type="text" class="form-control form-control-sm bg-light" name="item_no[]" value="1" readonly></td>
@@ -373,7 +373,7 @@ if ($result && $row = $result->fetch_assoc()) {
             const cells = [
                 '<input type="number" class="form-control form-control-sm" name="quantity[]" required onchange="calculateTotal(this)">',
                 '<select class="form-select form-select-sm" name="unit[]" required>' + unitOptions + '</select>',
-                '<input type="number" step="0.01" class="form-control form-control-sm" name="unit_cost[]" required onchange="calculateTotal(this)">',
+                '<input type="number" step="0.01" class="form-control form-control-sm" name="unit_cost[]" required onchange="calculateTotal(this)" max="50000" min="0.01">',
                 '<input type="number" step="0.01" class="form-control form-control-sm" name="total_cost[]" readonly>',
                 '<input type="text" class="form-control form-control-sm" name="description[]" required>',
                 '<input type="text" class="form-control form-control-sm bg-light" name="item_no[]" value="' + nextItemNumber + '" readonly>',
@@ -419,9 +419,9 @@ if ($result && $row = $result->fetch_assoc()) {
             const unitCost = row.querySelector('input[name="unit_cost[]"]').value || 0;
             const totalCost = (parseFloat(quantity) * parseFloat(unitCost)).toFixed(2);
             
-            // Validate unit cost should be ₱50,000 or below
+            // Validate unit cost should be less than ₱50,000
             if (parseFloat(unitCost) > 50000) {
-                showToast('Unit cost should be ₱50,000 or below. Please enter a valid amount.', 'danger');
+                showToast('Unit cost must be less than ₱50,000. Please enter a valid amount.', 'danger');
                 row.querySelector('input[name="unit_cost[]"]').value = '';
                 row.querySelector('input[name="total_cost[]"]').value = '';
                 row.querySelector('input[name="unit_cost[]"]').focus();
