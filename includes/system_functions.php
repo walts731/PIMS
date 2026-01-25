@@ -383,4 +383,25 @@ function getNextTagPreview($tag_type) {
     
     return implode($config['separator'], $parts);
 }
+
+// Handle AJAX requests
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'generateNextTag') {
+    header('Content-Type: application/json');
+    
+    $tag_type = $_POST['tag_type'] ?? '';
+    
+    if (empty($tag_type)) {
+        echo json_encode(['success' => false, 'error' => 'Tag type is required']);
+        exit;
+    }
+    
+    $tag_number = generateNextTag($tag_type);
+    
+    if ($tag_number !== null) {
+        echo json_encode(['success' => true, 'tag_number' => $tag_number]);
+    } else {
+        echo json_encode(['success' => false, 'error' => 'Failed to generate tag number']);
+    }
+    exit;
+}
 ?>

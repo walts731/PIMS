@@ -689,7 +689,14 @@ $status_display = formatStatus($item['status']);
                 <div class="detail-card text-center">
                     <h5 class="mb-3"><i class="bi bi-qr-code"></i> QR Code</h5>
                     <div class="qr-code">
-                        <i class="bi bi-qr-code-scan fs-1 text-muted"></i>
+                        <?php if (!empty($item['qr_code'])): ?>
+                            <img src="../uploads/qr_codes/<?php echo htmlspecialchars($item['qr_code']); ?>" 
+                                 alt="QR Code" 
+                                 class="img-fluid rounded"
+                                 style="max-width: 150px; max-height: 150px;">
+                        <?php else: ?>
+                            <i class="bi bi-qr-code-scan fs-1 text-muted"></i>
+                        <?php endif; ?>
                     </div>
                     <p class="mt-2 mb-0 text-muted">Property No: <?php echo $item['property_no'] ? htmlspecialchars($item['property_no']) : 'Not assigned'; ?></p>
                 </div>

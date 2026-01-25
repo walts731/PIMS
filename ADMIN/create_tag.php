@@ -543,6 +543,43 @@ $category_fields = [
                 const categoryCode = selectedOption.getAttribute('data-category-code');
                 loadCategoryFields(categoryCode);
             });
+            
+            // Auto-fill property number if empty
+            const propertyNoField = document.getElementById('property_no');
+            if (propertyNoField && !propertyNoField.value.trim()) {
+                // Add increment field for property number generation
+                const incrementField = document.createElement('input');
+                incrementField.type = 'hidden';
+                incrementField.name = 'increment_property_counter';
+                incrementField.value = '1';
+                document.querySelector('form').appendChild(incrementField);
+                
+                // Generate property number via AJAX
+                fetch('../includes/system_functions.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'action=generateNextTag&tag_type=property_no'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.tag_number) {
+                        propertyNoField.value = data.tag_number;
+                        propertyNoField.readOnly = true;
+                        propertyNoField.classList.add('bg-light');
+                        
+                        // Add info text
+                        const infoDiv = document.createElement('small');
+                        infoDiv.className = 'form-text text-muted';
+                        infoDiv.textContent = 'Property number auto-generated';
+                        propertyNoField.parentNode.appendChild(infoDiv);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error generating property number:', error);
+                });
+            }
         });
     </script>
 </body>

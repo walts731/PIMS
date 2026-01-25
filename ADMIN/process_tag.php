@@ -1,6 +1,8 @@
 <?php
 session_start();
 require_once '../config.php';
+require_once '../includes/qr_generator.php';
+require_once '../includes/system_functions.php';
 
 // Check if user is logged in and has appropriate role
 if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['system_admin', 'admin'])) {
@@ -25,6 +27,16 @@ $end_user = trim($_POST['end_user']);
 $date_counted = trim($_POST['date_counted']);
 $tag_format_id = intval($_POST['tag_format_id']);
 $current_number = intval($_POST['current_number']);
+
+// Check if we should increment the property number counter
+if (isset($_POST['increment_property_counter']) && $_POST['increment_property_counter'] == '1') {
+    // Generate the actual property number (this increments the counter)
+    $generated_property_no = generateNextTag('property_no');
+    if ($generated_property_no !== null) {
+        $property_no = $generated_property_no;
+        logSystemAction($_SESSION['user_id'], 'Property number counter incremented', 'forms', "Generated property number: $property_no");
+    }
+}
 
 // Handle image upload
 $image_filename = '';
@@ -90,6 +102,44 @@ try {
     $update_stmt = $conn->prepare($update_sql);
     $update_stmt->bind_param("ssssiii", $property_no, $inventory_tag, $date_counted, $image_filename, $person_accountable, $category_id, $item_id);
     $update_stmt->execute();
+    
+    // Generate QR code for the asset item
+    $qrGenerator = new QRCodeGenerator();
+    
+    // Get complete asset data for QR code
+    $asset_data_sql = "SELECT ai.*, a.description as asset_description, ac.category_name, o.office_name,
+                      e.employee_no, e.firstname, e.lastname
+                      FROM asset_items ai 
+                      LEFT JOIN assets a ON ai.asset_id = a.id 
+                      LEFT JOIN asset_categories ac ON a.asset_categories_id = ac.id 
+                      LEFT JOIN offices o ON ai.office_id = o.id 
+                      LEFT JOIN employees e ON ai.employee_id = e.id 
+                      WHERE ai.id = ?";
+    $asset_data_stmt = $conn->prepare($asset_data_sql);
+    $asset_data_stmt->bind_param("i", $item_id);
+    $asset_data_stmt->execute();
+    $asset_data_result = $asset_data_stmt->get_result();
+    $asset_data = $asset_data_result->fetch_assoc();
+    
+    if ($asset_data) {
+        // Generate QR code
+        $qr_filename = $qrGenerator->generateAssetQRCode($asset_data);
+        
+        if ($qr_filename) {
+            // Update asset item with QR code filename
+            $update_qr_sql = "UPDATE asset_items SET qr_code = ? WHERE id = ?";
+            $update_qr_stmt = $conn->prepare($update_qr_sql);
+            $update_qr_stmt->bind_param("si", $qr_filename, $item_id);
+            $update_qr_stmt->execute();
+            
+            // Log QR code generation
+            $qr_details = "QR code generated for asset item: $qr_filename";
+            $qr_history_sql = "INSERT INTO asset_item_history (item_id, action, details, created_by, created_at) VALUES (?, 'QR Code Generated', ?, ?, CURRENT_TIMESTAMP)";
+            $qr_history_stmt = $conn->prepare($qr_history_sql);
+            $qr_history_stmt->bind_param("isi", $item_id, $qr_details, $_SESSION['user_id']);
+            $qr_history_stmt->execute();
+        }
+    }
     
     // Also update the assets table with the category_id
     $get_asset_sql = "SELECT asset_id FROM asset_items WHERE id = ?";
