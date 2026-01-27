@@ -455,18 +455,29 @@ $unserviceable_checked = ($tag['status'] === 'unserviceable') ? '☑' : '☐';
                 
                 <div class="two-column">
                     <div class="field-row">
-                        <div class="field-label">Unit:</div>
+                        <div class="field-label">Unit/Quantity:</div>
                         <div class="field-value"><?php echo htmlspecialchars($unit_value); ?></div>
                     </div>
                     <div class="field-row">
-                        <div class="field-label">Cost:</div>
-                        <div class="field-value"><?php echo htmlspecialchars($tag['unit_cost']); ?></div>
+                        <div class="field-label">Acquisition Date/Cost:</div>
+                        <div class="field-value"><?php echo htmlspecialchars($acquisition_date); ?> / <?php echo htmlspecialchars($tag['unit_cost']); ?></div>
                     </div>
                 </div>
                 
                 <div class="field-row">
                     <div class="field-label">Accountable:</div>
                     <div class="field-value"><?php echo htmlspecialchars($person_accountable); ?></div>
+                </div>
+                
+                <div class="two-column">
+                    <div class="field-row">
+                        <div class="field-label">Date: (Acquired)</div>
+                        <div class="field-value"><?php echo htmlspecialchars($acquisition_date); ?></div>
+                    </div>
+                    <div class="field-row">
+                        <div class="field-label">Date: (Counted)</div>
+                        <div class="field-value"><?php echo htmlspecialchars($date_counted); ?></div>
+                    </div>
                 </div>
             </div>
             
