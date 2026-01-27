@@ -51,7 +51,7 @@ while ($employee_row = $employees_result->fetch_assoc()) {
 
 // Get all active employees for "To" dropdown (can receive assets regardless of clearance)
 $to_employees = [];
-$to_employees_sql = "SELECT id, employee_no, firstname, lastname FROM employees WHERE employment_status IN ('permanent', 'contractual', 'job_order') ORDER BY lastname, firstname";
+$to_employees_sql = "SELECT id, employee_no, firstname, lastname FROM employees WHERE employment_status = 'permanent' ORDER BY lastname, firstname";
 $to_employees_result = $conn->query($to_employees_sql);
 while ($employee_row = $to_employees_result->fetch_assoc()) {
     $to_employees[] = $employee_row;
@@ -337,7 +337,7 @@ while ($employee_row = $to_employees_result->fetch_assoc()) {
                         <div class="col-md-8">
                             <label class="form-label"><strong>To Accountable Officer/Agency/Fund Cluster:</strong></label>
                             <select class="form-select" id="to_employee_search" name="to_office" required>
-                                <option value="">Select Employee</option>
+                                <option value="">Select Employee (Permanent Only)</option>
                                 <?php foreach ($to_employees as $employee): ?>
                                     <option value="<?php echo $employee['id']; ?>">
                                         <?php echo htmlspecialchars($employee['employee_no'] . ' - ' . $employee['lastname'] . ', ' . $employee['firstname']); ?>
@@ -407,10 +407,9 @@ while ($employee_row = $to_employees_result->fetch_assoc()) {
                                         <td><input type="text" class="form-control form-control-sm" name="item_no[]" value="1" readonly></td>
                                         <td><input type="text" class="form-control form-control-sm" name="ics_par_no[]" placeholder="ICS & PAR No./Date"></td>
                                         <td>
-                                            <div class="autocomplete-container">
-                                                <input type="text" class="form-control form-control-sm" name="description[]" required autocomplete="off">
-                                                <div class="autocomplete-dropdown"></div>
-                                            </div>
+                                            <select class="form-select form-select-sm" name="description[]" required>
+                                                <option value="">Select Asset</option>
+                                            </select>
                                         </td>
                                         <td><input type="number" step="0.01" class="form-control form-control-sm" name="quantity[]" value="1" min="1" onchange="calculateITRTotal(this)"></td>
                                         <td><input type="number" step="0.01" class="form-control form-control-sm" name="unit_price[]" required onchange="calculateITRTotal(this)"></td>
@@ -520,7 +519,7 @@ while ($employee_row = $to_employees_result->fetch_assoc()) {
                 '<input type="date" class="form-control form-control-sm" name="date_acquired[]" required>',
                 '<input type="text" class="form-control form-control-sm" name="item_no[]" value="' + nextItemNo + '" readonly>',
                 '<input type="text" class="form-control form-control-sm" name="ics_par_no[]" placeholder="ICS & PAR No./Date">',
-                '<div class="autocomplete-container"><input type="text" class="form-control form-control-sm" name="description[]" required autocomplete="off"><div class="autocomplete-dropdown"></div></div>',
+                '<select class="form-select form-select-sm" name="description[]" required><option value="">Select Asset</option></select>',
                 '<input type="number" step="0.01" class="form-control form-control-sm" name="quantity[]" value="1" min="1" onchange="calculateITRTotal(this)">',
                 '<input type="number" step="0.01" class="form-control form-control-sm" name="unit_price[]" required onchange="calculateITRTotal(this)">',
                 '<input type="number" step="0.01" class="form-control form-control-sm" name="total_amount[]" readonly>',
@@ -658,9 +657,6 @@ while ($employee_row = $to_employees_result->fetch_assoc()) {
             // Initial check
             toggleOthersInput();
 
-            // Initialize autocomplete for description fields
-            initializeAutocomplete();
-            
             // Initialize Select2 for employee dropdowns
             $('#from_employee_search').select2({
                 theme: 'bootstrap-5',
@@ -675,24 +671,31 @@ while ($employee_row = $to_employees_result->fetch_assoc()) {
                 allowClear: true,
                 width: '100%'
             });
+
+            // Initialize Select2 for asset description dropdowns
+            initializeAssetDropdowns();
+            
+            // Update asset dropdowns when employee selection changes
+            $('#from_employee_search').on('change', function() {
+                updateAllAssetDropdowns();
+            });
         });
 
-        // Autocomplete functionality for ITR asset search
-        function initializeAutocomplete() {
-            // Add autocomplete to existing description fields
-            document.querySelectorAll('input[name="description[]"]').forEach(input => {
-                setupAutocomplete(input);
+        function initializeAssetDropdowns() {
+            // Initialize Select2 for all existing asset dropdowns
+            $('select[name="description[]"]').each(function() {
+                initializeAssetDropdown($(this));
             });
 
-            // Setup autocomplete for new rows when added
+            // Setup for new rows when added
             const observer = new MutationObserver(function(mutations) {
                 mutations.forEach(function(mutation) {
                     if (mutation.type === 'childList') {
                         mutation.addedNodes.forEach(function(node) {
                             if (node.nodeType === 1) { // Element node
-                                const descriptionInput = node.querySelector('input[name="description[]"]');
-                                if (descriptionInput) {
-                                    setupAutocomplete(descriptionInput);
+                                const assetSelect = node.querySelector('select[name="description[]"]');
+                                if (assetSelect) {
+                                    initializeAssetDropdown($(assetSelect));
                                 }
                             }
                         });
@@ -706,157 +709,127 @@ while ($employee_row = $to_employees_result->fetch_assoc()) {
             });
         }
 
-        function setupAutocomplete(input) {
-            let timeout;
-            const container = input.closest('.autocomplete-container');
-            const dropdown = container.querySelector('.autocomplete-dropdown');
+        function initializeAssetDropdown($select) {
+            $select.select2({
+                theme: 'bootstrap-5',
+                placeholder: 'Select Asset',
+                allowClear: true,
+                width: '100%'
+            });
 
-            console.log('Autocomplete setup for:', input);
-            console.log('Container:', container);
-            console.log('Dropdown:', dropdown);
-
-            input.addEventListener('input', function() {
-                const query = this.value.trim();
-
-                clearTimeout(timeout);
-
-                if (query.length < 2) {
-                    dropdown.style.display = 'none';
-                    return;
+            // Handle asset selection
+            $select.on('change', function() {
+                const selectedOption = $(this).find('option:selected');
+                const row = $(this).closest('tr');
+                
+                if (selectedOption.val()) {
+                    // Get asset data from data attributes
+                    const assetData = {
+                        description: selectedOption.text(),
+                        acquisition_date: selectedOption.data('acquisition-date'),
+                        property_no: selectedOption.data('property-no'),
+                        value: selectedOption.data('value')
+                    };
+                    
+                    // Fill form fields
+                    fillAssetFields(row, assetData);
+                } else {
+                    // Clear fields when no asset selected
+                    clearAssetFields(row);
                 }
-
-                timeout = setTimeout(() => {
-                    searchITRAssets(query, dropdown, input);
-                }, 300);
-            });
-
-            input.addEventListener('focus', function() {
-                if (this.value.trim().length >= 2) {
-                    const query = this.value.trim();
-                    searchITRAssets(query, dropdown, input);
-                }
-            });
-
-            // Hide dropdown when clicking outside
-            document.addEventListener('click', function(e) {
-                if (!input.contains(e.target) && !dropdown.contains(e.target)) {
-                    dropdown.style.display = 'none';
-                }
-            });
-
-            // Hide dropdown when scrolling
-            window.addEventListener('scroll', function() {
-                dropdown.style.display = 'none';
-            });
-
-            // Hide dropdown when window is resized
-            window.addEventListener('resize', function() {
-                dropdown.style.display = 'none';
             });
         }
 
-        function searchITRAssets(query, dropdown, input) {
-            console.log('Searching for:', query);
-            fetch(`../api/search_itr_assets.php?q=${encodeURIComponent(query)}`)
-                .then(response => response.json())
-                .then(data => {
-                    console.log('Search results:', data);
-                    // Always call display function for testing
-                    displayAutocompleteResults(data.assets || [], dropdown, input);
-
-                    // Original logic (commented out for testing)
-                    // if (data.success && data.assets.length > 0) {
-                    //     displayAutocompleteResults(data.assets, dropdown, input);
-                    // } else {
-                    //     dropdown.style.display = 'none';
-                    // }
-                })
-                .catch(error => {
-                    console.error('Error searching assets:', error);
-                    dropdown.style.display = 'none';
+        function updateAllAssetDropdowns() {
+            const employeeId = $('#from_employee_search').val();
+            console.log('Updating asset dropdowns for employee ID:', employeeId);
+            
+            if (!employeeId) {
+                console.log('No employee selected, clearing dropdowns');
+                // Clear all asset dropdowns if no employee selected
+                $('select[name="description[]"]').each(function() {
+                    $(this).html('<option value="">Select Asset</option>');
+                    $(this).trigger('change');
                 });
-        }
-
-        function displayAutocompleteResults(assets, dropdown, input) {
-            console.log('Displaying results for assets:', assets);
-            console.log('Dropdown element:', dropdown);
-
-            dropdown.innerHTML = '';
-
-            if (assets.length === 0) {
-                // Add a test item to see if dropdown shows
-                const testItem = document.createElement('div');
-                testItem.className = 'autocomplete-item';
-                testItem.innerHTML = '<strong>No results found</strong><br><small>Test item</small>';
-                testItem.style.background = 'red';
-                testItem.style.color = 'white';
-                dropdown.appendChild(testItem);
-            } else {
-                assets.forEach(asset => {
-                    const item = document.createElement('div');
-                    item.className = 'autocomplete-item';
-                    item.innerHTML = `
-                        <strong>${highlightMatch(asset.description, input.value.trim())}</strong><br>
-                        <small>Property No: ${asset.property_no} | Unit Cost: ₱${parseFloat(asset.value).toFixed(2)}</small>
-                    `;
-
-                    item.addEventListener('click', function() {
-                        selectAsset(asset, input);
-                        dropdown.style.display = 'none';
-                    });
-
-                    dropdown.appendChild(item);
-                });
+                return;
             }
 
-            // Calculate position for fixed dropdown
-            const rect = input.getBoundingClientRect();
-            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-            const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
-
-            dropdown.style.position = 'fixed';
-            dropdown.style.top = (rect.bottom + 2) + 'px';
-            dropdown.style.left = rect.left + 'px';
-            dropdown.style.width = Math.max(rect.width, 300) + 'px';
-
-            console.log('Dropdown HTML after adding items:', dropdown.innerHTML);
-            dropdown.style.display = 'block';
-            dropdown.style.visibility = 'visible';
-            dropdown.style.opacity = '1';
-            console.log('Dropdown position set to:', dropdown.style.top, dropdown.style.left);
-            console.log('Dropdown display set to block');
-        }
-
-        function selectAsset(asset, input) {
-            const row = input.closest('tr');
-
-            // Fill the form fields
-            input.value = asset.description;
-
-            // Fill other fields if they exist
-            const dateAcquiredInput = row.querySelector('input[name="date_acquired[]"]');
-            if (dateAcquiredInput && asset.acquisition_date) {
-                dateAcquiredInput.value = asset.acquisition_date;
-            }
-
-            const icsParInput = row.querySelector('input[name="ics_par_no[]"]');
-            if (icsParInput) {
-                icsParInput.value = asset.property_no;
-            }
-
-            const unitPriceInput = row.querySelector('input[name="unit_price[]"]');
-            if (unitPriceInput) {
-                unitPriceInput.value = asset.value;
-                // Trigger total calculation if function exists
-                if (typeof calculateITRTotal === 'function') {
-                    calculateITRTotal(unitPriceInput);
+            console.log('Fetching assets for employee:', employeeId);
+            // Fetch assets for the selected employee
+            $.ajax({
+                url: `../api/search_itr_assets.php?employee_id=${employeeId}`,
+                method: 'GET',
+                dataType: 'json',
+                success: function(data) {
+                    console.log('API Response:', data);
+                    if (data.success && data.assets) {
+                        console.log('Found assets:', data.assets);
+                        // Update all asset dropdowns with the employee's assets
+                        $('select[name="description[]"]').each(function() {
+                            const $select = $(this);
+                            const currentValue = $select.val();
+                            
+                            // Build options HTML
+                            let options = '<option value="">Select Asset</option>';
+                            data.assets.forEach(function(asset) {
+                                const selected = asset.id == currentValue ? 'selected' : '';
+                                options += `<option value="${asset.id}" ${selected}
+                                           data-acquisition-date="${asset.acquisition_date}"
+                                           data-property-no="${asset.property_no}"
+                                           data-value="${asset.value}">
+                                           ${asset.description}
+                                           </option>`;
+                            });
+                            
+                            console.log('Setting dropdown options:', options);
+                            $select.html(options);
+                            
+                            // Re-initialize Select2
+                            $select.trigger('change');
+                        });
+                    } else {
+                        console.log('No assets found or error:', data);
+                        // Clear dropdowns if no assets
+                        $('select[name="description[]"]').each(function() {
+                            $(this).html('<option value="">No Assets Available</option>');
+                            $(this).trigger('change');
+                        });
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('AJAX Error:', error);
+                    console.error('Response Text:', xhr.responseText);
                 }
+            });
+        }
+
+        function fillAssetFields(row, assetData) {
+            // Fill Date Acquired
+            const dateAcquiredInput = row.find('input[name="date_acquired[]"]');
+            if (dateAcquiredInput.length && assetData.acquisition_date) {
+                dateAcquiredInput.val(assetData.acquisition_date);
+            }
+
+            // Fill ICS & PAR No
+            const icsParInput = row.find('input[name="ics_par_no[]"]');
+            if (icsParInput.length && assetData.property_no) {
+                icsParInput.val(assetData.property_no);
+            }
+
+            // Fill Unit Price and calculate total
+            const unitPriceInput = row.find('input[name="unit_price[]"]');
+            if (unitPriceInput.length && assetData.value) {
+                unitPriceInput.val(assetData.value);
+                calculateITRTotal(unitPriceInput[0]);
             }
         }
 
-        function highlightMatch(text, query) {
-            const regex = new RegExp(`(${query})`, 'gi');
-            return text.replace(regex, '<strong>$1</strong>');
+        function clearAssetFields(row) {
+            // Clear all related fields
+            row.find('input[name="date_acquired[]"]').val('');
+            row.find('input[name="ics_par_no[]"]').val('');
+            row.find('input[name="unit_price[]"]').val('');
+            row.find('input[name="total_amount[]"]').val('');
         }
 
         // Employee Search Functionality

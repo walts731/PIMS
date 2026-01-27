@@ -2,23 +2,38 @@
 header('Content-Type: application/json');
 require_once '../config.php';
 
-// Get search query
+// Get search query and employee ID
 $query = isset($_GET['q']) ? trim($_GET['q']) : '';
+$employee_id = isset($_GET['employee_id']) ? (int)$_GET['employee_id'] : 0;
 
-if (empty($query)) {
-    echo json_encode(['success' => false, 'message' => 'Empty query']);
+// For dropdown functionality, we allow empty query if employee_id is provided
+if (empty($employee_id)) {
+    echo json_encode(['success' => false, 'message' => 'Employee ID required']);
     exit;
 }
 
 try {
-    // Search serviceable assets available for transfer with all required ITR fields
+    // Search serviceable assets assigned to the specific employee
+    // If query is provided, search within assets; otherwise get all assets
     $sql = "SELECT ai.id, ai.description, ai.value, ai.acquisition_date, ai.status, 
                    ai.property_no, ai.inventory_tag, ai.created_at, 
                    o.office_name 
             FROM asset_items ai 
             LEFT JOIN offices o ON ai.office_id = o.id 
-            WHERE (ai.description LIKE ? OR ai.property_no LIKE ? OR ai.inventory_tag LIKE ?) 
-            AND ai.status = 'serviceable'
+            WHERE ai.employee_id = ?";
+    
+    $params = [$employee_id];
+    $types = "i";
+    
+    // Add search conditions if query is provided
+    if (!empty($query)) {
+        $sql .= " AND (ai.description LIKE ? OR ai.property_no LIKE ? OR ai.inventory_tag LIKE ?)";
+        $searchTerm = "%$query%";
+        $params = array_merge($params, [$searchTerm, $searchTerm, $searchTerm]);
+        $types .= "sss";
+    }
+    
+    $sql .= " AND ai.status = 'serviceable'
             AND ai.property_no IS NOT NULL 
             AND ai.property_no != ''
             AND ai.inventory_tag IS NOT NULL 
@@ -26,11 +41,10 @@ try {
             AND ai.value IS NOT NULL 
             AND ai.value > 0
             ORDER BY ai.description
-            LIMIT 10";
+            LIMIT 50";
     
-    $searchTerm = "%$query%";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("sss", $searchTerm, $searchTerm, $searchTerm);
+    $stmt->bind_param($types, ...$params);
     $stmt->execute();
     $result = $stmt->get_result();
     
@@ -52,7 +66,9 @@ try {
     echo json_encode([
         'success' => true,
         'assets' => $assets,
-        'count' => count($assets)
+        'count' => count($assets),
+        'employee_id' => $employee_id,
+        'query' => $query
     ]);
     
 } catch (Exception $e) {
