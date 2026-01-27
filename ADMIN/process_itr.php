@@ -128,6 +128,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $affected_rows = mysqli_affected_rows($conn);
                 if ($affected_rows > 0) {
                     logSystemAction($_SESSION['user_id'], 'Asset item transferred', 'assets', "Asset ID: {$asset_id}, Description: {$asset_info['description']}, From Employee ID: {$asset_info['employee_id']}, To Employee ID: {$to_office}, End User: {$end_user}, ITR: {$itr_no}, Rows affected: {$affected_rows}");
+                    
+                    // Add entry to asset_item_history table
+                    $from_employee_name = 'Unknown';
+                    $to_employee_name = 'Unknown';
+                    
+                    // Get employee names for history
+                    $from_emp_sql = "SELECT firstname, lastname FROM employees WHERE id = ?";
+                    $from_emp_stmt = $conn->prepare($from_emp_sql);
+                    $from_emp_stmt->bind_param("i", $asset_info['employee_id']);
+                    $from_emp_stmt->execute();
+                    $from_emp_result = $from_emp_stmt->get_result();
+                    if ($from_emp_row = $from_emp_result->fetch_assoc()) {
+                        $from_employee_name = $from_emp_row['firstname'] . ' ' . $from_emp_row['lastname'];
+                    }
+                    $from_emp_stmt->close();
+                    
+                    $to_emp_sql = "SELECT firstname, lastname FROM employees WHERE id = ?";
+                    $to_emp_stmt = $conn->prepare($to_emp_sql);
+                    $to_emp_stmt->bind_param("i", $to_office);
+                    $to_emp_stmt->execute();
+                    $to_emp_result = $to_emp_stmt->get_result();
+                    if ($to_emp_row = $to_emp_result->fetch_assoc()) {
+                        $to_employee_name = $to_emp_row['firstname'] . ' ' . $to_emp_row['lastname'];
+                    }
+                    $to_emp_stmt->close();
+                    
+                    // Create history entry
+                    $itr_details = "Transferred via ITR form {$itr_no} - From: {$from_employee_name}, To: {$to_employee_name}, Transfer Type: {$transfer_type}";
+                    if (!empty($end_user)) {
+                        $itr_details .= ", End User: {$end_user}";
+                    }
+                    if (!empty($purpose)) {
+                        $itr_details .= ", Purpose: {$purpose}";
+                    }
+                    
+                    $history_sql = "INSERT INTO asset_item_history (item_id, action, details, old_value, new_value, created_by, created_at) VALUES (?, 'ITR Transfer', ?, ?, ?, ?, CURRENT_TIMESTAMP)";
+                    $history_stmt = $conn->prepare($history_sql);
+                    $old_value = "Employee ID: {$asset_info['employee_id']} ({$from_employee_name})";
+                    $new_value = "Employee ID: {$to_office} ({$to_employee_name})";
+                    $history_stmt->bind_param("isssi", $asset_id, $itr_details, $old_value, $new_value, $_SESSION['user_id']);
+                    $history_stmt->execute();
+                    $history_stmt->close();
                 } else {
                     // Log if no items were updated for debugging
                     logSystemAction($_SESSION['user_id'], 'Asset item transfer - no items updated', 'assets', "Asset ID: {$asset_id}, To Employee ID: {$to_office}, End User: {$end_user}, ITR: {$itr_no}");
