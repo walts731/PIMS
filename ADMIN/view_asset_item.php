@@ -761,8 +761,16 @@ $status_display = formatStatus($item['status']);
     <script>
         // Action functions
         function transferItem() {
-            // Placeholder for transfer functionality
-            alert('Transfer functionality will be implemented');
+            // Redirect to ITR form with asset item details for auto-filling
+            const assetId = <?php echo $item['asset_id']; ?>;
+            const itemId = <?php echo $item['id']; ?>;
+            const description = '<?php echo addslashes($item['description']); ?>';
+            const propertyNo = '<?php echo addslashes($item['property_no'] ?? ''); ?>';
+            const value = <?php echo $item['value']; ?>;
+            const unitCost = <?php echo $item['unit_cost']; ?>;
+            
+            const url = `itr_form.php?transfer_asset=1&asset_id=${assetId}&item_id=${itemId}&description=${encodeURIComponent(description)}&property_no=${encodeURIComponent(propertyNo)}&value=${value}&unit_cost=${unitCost}`;
+            window.location.href = url;
         }
         
         function addToIirup() {

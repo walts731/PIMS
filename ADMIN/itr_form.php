@@ -88,6 +88,21 @@ if (isset($_GET['id']) && !empty($_GET['id'])) {
     }
     $stmt->close();
 }
+
+// Handle transfer asset parameters from view_asset_item.php
+$transfer_asset = false;
+$transfer_data = [];
+if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
+    $transfer_asset = true;
+    $transfer_data = [
+        'asset_id' => $_GET['asset_id'] ?? '',
+        'item_id' => $_GET['item_id'] ?? '',
+        'description' => $_GET['description'] ?? '',
+        'property_no' => $_GET['property_no'] ?? '',
+        'value' => $_GET['value'] ?? 0,
+        'unit_cost' => $_GET['unit_cost'] ?? 0
+    ];
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -712,6 +727,58 @@ if (isset($_GET['id']) && !empty($_GET['id'])) {
                 updateAllAssetDropdowns();
                 filterToEmployeeDropdown();
             });
+            
+            // Handle transfer asset auto-fill
+            <?php if ($transfer_asset): ?>
+                // Auto-fill transfer asset data
+                const transferData = <?php echo json_encode($transfer_data); ?>;
+                console.log('Transfer asset data:', transferData);
+                
+                // Set current employee in "From" dropdown if we can determine it
+                // We'll need to fetch the current employee assignment for this asset
+                $.ajax({
+                    url: `../api/get_asset_employee.php?item_id=${transferData.item_id}`,
+                    method: 'GET',
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success && response.employee_id) {
+                            $('#from_employee_search').val(response.employee_id).trigger('change');
+                            
+                            // Wait for assets to load, then select the specific asset
+                            setTimeout(() => {
+                                const firstRow = $('#itrItemsTable tbody tr:first');
+                                const assetDropdown = firstRow.find('select[name="description[]"]');
+                                
+                                // Try to select the asset in the dropdown first
+                                assetDropdown.val(transferData.asset_id).trigger('change');
+                                
+                                // Check if the asset was actually selected
+                                setTimeout(() => {
+                                    if (!assetDropdown.val() || assetDropdown.val() !== transferData.asset_id) {
+                                        // If asset wasn't found in dropdown, add it manually
+                                        const option = `<option value="${transferData.asset_id}" selected>${transferData.description}</option>`;
+                                        assetDropdown.append(option);
+                                        assetDropdown.val(transferData.asset_id).trigger('change');
+                                    }
+                                    
+                                    // Auto-fill unit price and calculate total
+                                    firstRow.find('input[name="unit_price[]"]').val(transferData.unit_cost);
+                                    firstRow.find('input[name="quantity[]"]').val(1);
+                                    calculateITRTotal(firstRow.find('input[name="unit_price[]"]')[0]);
+                                    
+                                    // Add ICS/PAR reference if property number exists
+                                    if (transferData.property_no) {
+                                        firstRow.find('input[name="ics_par_no[]"]').val(transferData.property_no);
+                                    }
+                                }, 500);
+                            }, 1000);
+                        }
+                    },
+                    error: function() {
+                        console.log('Could not determine current employee for asset');
+                    }
+                });
+            <?php endif; ?>
         });
 
         function filterToEmployeeDropdown() {
