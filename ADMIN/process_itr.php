@@ -51,6 +51,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $total_amounts = $_POST['total_amount'] ?? [];
         $remarks = $_POST['remarks'] ?? [];
         
+        // Debug: Log the form data we received
+        logSystemAction($_SESSION['user_id'], 'ITR Form Data Received', 'forms', "From Office: {$from_office}, To Office: {$to_office}, Items: " . json_encode($descriptions));
+        
         // Validate required fields
         if (empty($entity_name) || empty($fund_cluster) || empty($itr_no) || empty($from_office) || empty($to_office)) {
             throw new Exception('All required fields must be filled');
@@ -71,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         // Insert ITR form
         $stmt = $conn->prepare("INSERT INTO itr_forms (entity_name, fund_cluster, itr_no, from_office, to_office, transfer_date, transfer_type, transfer_type_others, end_user, purpose, approved_by, approved_by_position, approved_date, released_by, released_by_position, released_date, received_by, received_by_position, received_date, created_by, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("sssssssssssssssssssi", $entity_name, $fund_cluster, $itr_no, $from_office, $to_office, $transfer_date, $transfer_type, $transfer_type_others, $end_user, $purpose, $approved_by, $approved_by_position, $approved_date, $released_by, $released_by_position, $released_date, $received_by, $received_by_position, $received_date, $_SESSION['user_id'], $_SESSION['user_id']);
+        $stmt->bind_param("ssssssssssssssssssssi", $entity_name, $fund_cluster, $itr_no, $from_office, $to_office, $transfer_date, $transfer_type, $transfer_type_others, $end_user, $purpose, $approved_by, $approved_by_position, $approved_date, $released_by, $released_by_position, $released_date, $received_by, $received_by_position, $received_date, $_SESSION['user_id'], $_SESSION['user_id']);
         
         if (!$stmt->execute()) {
             throw new Exception('Failed to save ITR form: ' . $stmt->error);
@@ -80,23 +83,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $itr_form_id = $stmt->insert_id;
         $stmt->close();
         
-        // Insert ITR items
-        $item_stmt = $conn->prepare("INSERT INTO itr_items (form_id, item_no, date_acquired, ics_par_no, description, quantity, unit_price, total_amount, condition_of_inventory, remarks) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        
+        // Update asset_items table - transfer ownership to "To" employee
+        // Use asset_id for precise updates instead of description
         for ($i = 0; $i < count($items); $i++) {
             if (!empty($items[$i]) && !empty($descriptions[$i])) {
-                $quantity = floatval($quantities[$i]);
-                $unit_price = floatval($unit_prices[$i]);
-                $total_amount = floatval($total_amounts[$i]);
+                // The descriptions[] array actually contains asset_id values from the dropdown
+                $asset_id = mysqli_real_escape_string($conn, $descriptions[$i]);
+                $to_office_safe = mysqli_real_escape_string($conn, $to_office);
                 
-                $item_stmt->bind_param("issssddsss", $itr_form_id, $items[$i], $date_acquireds[$i], $ics_par_nos[$i], $descriptions[$i], $quantity, $unit_price, $total_amount, $conditions[$i], $remarks[$i]);
+                // Debug: Log what we're trying to update
+                logSystemAction($_SESSION['user_id'], 'ITR Asset Transfer Debug', 'assets', "Attempting to transfer: Asset ID={$asset_id}, To Employee ID={$to_office}");
                 
-                if (!$item_stmt->execute()) {
-                    throw new Exception('Failed to save ITR item: ' . $item_stmt->error);
+                // First, let's check if this asset exists
+                $check_sql = "SELECT id, description, employee_id FROM asset_items WHERE id = '$asset_id'";
+                logSystemAction($_SESSION['user_id'], 'ITR Asset Check SQL', 'assets', "Check SQL: $check_sql");
+                
+                $check_result = mysqli_query($conn, $check_sql);
+                $asset_info = null;
+                
+                if ($check_result) {
+                    $asset_info = mysqli_fetch_assoc($check_result);
+                }
+                
+                // Debug: Log what we found
+                if ($asset_info) {
+                    logSystemAction($_SESSION['user_id'], 'ITR Asset Check Results', 'assets', "Found asset: ID={$asset_info['id']}, Description='{$asset_info['description']}', Current Employee ID={$asset_info['employee_id']}");
+                } else {
+                    logSystemAction($_SESSION['user_id'], 'ITR Asset Transfer - Asset not found', 'assets', "No asset found with ID={$asset_id}");
+                    continue; // Skip to next item
+                }
+                
+                // Update the specific asset item to the "To" employee
+                $update_sql = "UPDATE asset_items SET employee_id = '$to_office_safe' WHERE id = '$asset_id'";
+                logSystemAction($_SESSION['user_id'], 'ITR Asset Update SQL', 'assets', "Update SQL: $update_sql");
+                
+                $update_result = mysqli_query($conn, $update_sql);
+                
+                if (!$update_result) {
+                    throw new Exception('Failed to update asset item ownership: ' . mysqli_error($conn));
+                }
+                
+                // Log the transfer
+                $affected_rows = mysqli_affected_rows($conn);
+                if ($affected_rows > 0) {
+                    logSystemAction($_SESSION['user_id'], 'Asset item transferred', 'assets', "Asset ID: {$asset_id}, Description: {$asset_info['description']}, From Employee ID: {$asset_info['employee_id']}, To Employee ID: {$to_office}, ITR: {$itr_no}, Rows affected: {$affected_rows}");
+                } else {
+                    // Log if no items were updated for debugging
+                    logSystemAction($_SESSION['user_id'], 'Asset item transfer - no items updated', 'assets', "Asset ID: {$asset_id}, To Employee ID: {$to_office}, ITR: {$itr_no}");
                 }
             }
         }
-        $item_stmt->close();
         
         // Commit transaction
         $conn->commit();

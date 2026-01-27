@@ -56,6 +56,38 @@ $to_employees_result = $conn->query($to_employees_sql);
 while ($employee_row = $to_employees_result->fetch_assoc()) {
     $to_employees[] = $employee_row;
 }
+
+// Get latest signature data from the most recent ITR form
+$latest_signature = [];
+$result = $conn->query("SELECT approved_by, approved_by_position, approved_date, released_by, released_by_position, released_date, received_by, received_by_position, received_date FROM itr_forms ORDER BY created_at DESC LIMIT 1");
+if ($result && $row = $result->fetch_assoc()) {
+    $latest_signature = $row;
+}
+
+// Check if editing existing ITR form
+$itr_data = null;
+$itr_items = [];
+if (isset($_GET['id']) && !empty($_GET['id'])) {
+    $itr_id = $_GET['id'];
+    $stmt = $conn->prepare("SELECT * FROM itr_forms WHERE id = ?");
+    $stmt->bind_param("i", $itr_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($result->num_rows > 0) {
+        $itr_data = $result->fetch_assoc();
+        
+        // Get ITR items
+        $items_stmt = $conn->prepare("SELECT * FROM itr_items WHERE form_id = ? ORDER BY item_no");
+        $items_stmt->bind_param("i", $itr_id);
+        $items_stmt->execute();
+        $items_result = $items_stmt->get_result();
+        while ($item_row = $items_result->fetch_assoc()) {
+            $itr_items[] = $item_row;
+        }
+        $items_stmt->close();
+    }
+    $stmt->close();
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -347,7 +379,7 @@ while ($employee_row = $to_employees_result->fetch_assoc()) {
                         </div>
                         <div class="col-md-4">
                             <label class="form-label"><strong>Date:</strong></label>
-                            <input type="date" class="form-control" name="transfer_date" required>
+                            <input type="date" class="form-control" name="transfer_date" value="<?php echo $itr_data ? htmlspecialchars($itr_data['transfer_date']) : date('Y-m-d'); ?>">
                         </div>
                     </div>
 
@@ -403,7 +435,7 @@ while ($employee_row = $to_employees_result->fetch_assoc()) {
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td><input type="date" class="form-control form-control-sm" name="date_acquired[]" required></td>
+                                        <td><input type="date" class="form-control form-control-sm" name="date_acquired[]" value="<?php echo date('Y-m-d'); ?>" required></td>
                                         <td><input type="text" class="form-control form-control-sm" name="item_no[]" value="1" readonly></td>
                                         <td><input type="text" class="form-control form-control-sm" name="ics_par_no[]" placeholder="ICS & PAR No./Date"></td>
                                         <td>
@@ -458,29 +490,29 @@ while ($employee_row = $to_employees_result->fetch_assoc()) {
 
                         <div class="col-md-3">
 
-                            <input type="text" class="form-control mb-3" name="approved_by" required>
+                            <input type="text" class="form-control mb-3" name="approved_by" value="<?php echo $itr_data ? htmlspecialchars($itr_data['approved_by']) : (isset($latest_signature['approved_by']) ? htmlspecialchars($latest_signature['approved_by']) : ''); ?>" required>
 
-                            <input type="text" class="form-control mb-3" name="approved_by_position" required>
+                            <input type="text" class="form-control mb-3" name="approved_by_position" value="<?php echo $itr_data ? htmlspecialchars($itr_data['approved_by_position']) : (isset($latest_signature['approved_by_position']) ? htmlspecialchars($latest_signature['approved_by_position']) : ''); ?>" required>
 
-                            <input type="date" class="form-control mb-3" name="approved_date" required>
+                            <input type="date" class="form-control mb-3" name="approved_date" value="<?php echo $itr_data ? htmlspecialchars($itr_data['approved_date']) : (isset($latest_signature['approved_date']) ? htmlspecialchars($latest_signature['approved_date']) : ''); ?>">
                         </div>
 
                         <div class="col-md-3">
                             
-                            <input type="text" class="form-control mb-3" name="released_by" required>
+                            <input type="text" class="form-control mb-3" name="released_by" value="<?php echo $itr_data ? htmlspecialchars($itr_data['released_by']) : (isset($latest_signature['released_by']) ? htmlspecialchars($latest_signature['released_by']) : ''); ?>" required>
 
-                            <input type="text" class="form-control mb-3" name="released_by_position" required>
+                            <input type="text" class="form-control mb-3" name="released_by_position" value="<?php echo $itr_data ? htmlspecialchars($itr_data['released_by_position']) : (isset($latest_signature['released_by_position']) ? htmlspecialchars($latest_signature['released_by_position']) : ''); ?>" required>
 
-                            <input type="date" class="form-control mb-3" name="released_date" required>
+                            <input type="date" class="form-control mb-3" name="released_date" value="<?php echo $itr_data ? htmlspecialchars($itr_data['released_date']) : (isset($latest_signature['released_date']) ? htmlspecialchars($latest_signature['released_date']) : ''); ?>">
                         </div>
 
                         <div class="col-md-3">
                             
-                            <input type="text" class="form-control mb-3" name="received_by" required>
+                            <input type="text" class="form-control mb-3" name="received_by" value="<?php echo $itr_data ? htmlspecialchars($itr_data['received_by']) : (isset($latest_signature['received_by']) ? htmlspecialchars($latest_signature['received_by']) : ''); ?>" required>
 
-                            <input type="text" class="form-control mb-3" name="received_by_position" required>
+                            <input type="text" class="form-control mb-3" name="received_by_position" value="<?php echo $itr_data ? htmlspecialchars($itr_data['received_by_position']) : (isset($latest_signature['received_by_position']) ? htmlspecialchars($latest_signature['received_by_position']) : ''); ?>" required>
 
-                            <input type="date" class="form-control mb-3" name="received_date" required>
+                            <input type="date" class="form-control mb-3" name="received_date" value="<?php echo $itr_data ? htmlspecialchars($itr_data['received_date']) : (isset($latest_signature['received_date']) ? htmlspecialchars($latest_signature['received_date']) : ''); ?>">
                         </div>
 
                     </div>
@@ -516,7 +548,7 @@ while ($employee_row = $to_employees_result->fetch_assoc()) {
             const nextItemNo = currentRows;
 
             const cells = [
-                '<input type="date" class="form-control form-control-sm" name="date_acquired[]" required>',
+                '<input type="date" class="form-control form-control-sm" name="date_acquired[]" value="' + new Date().toISOString().split('T')[0] + '" required>',
                 '<input type="text" class="form-control form-control-sm" name="item_no[]" value="' + nextItemNo + '" readonly>',
                 '<input type="text" class="form-control form-control-sm" name="ics_par_no[]" placeholder="ICS & PAR No./Date">',
                 '<select class="form-select form-select-sm" name="description[]" required><option value="">Select Asset</option></select>',
@@ -678,8 +710,41 @@ while ($employee_row = $to_employees_result->fetch_assoc()) {
             // Update asset dropdowns when employee selection changes
             $('#from_employee_search').on('change', function() {
                 updateAllAssetDropdowns();
+                filterToEmployeeDropdown();
             });
         });
+
+        function filterToEmployeeDropdown() {
+            const fromEmployeeId = $('#from_employee_search').val();
+            const $toDropdown = $('#to_employee_search');
+            
+            // Get current selection in "To" dropdown
+            const currentToSelection = $toDropdown.val();
+            
+            // Store all original options if not already stored
+            if (!$toDropdown.data('original-options')) {
+                $toDropdown.data('original-options', $toDropdown.html());
+            }
+            
+            // Restore original options
+            $toDropdown.html($toDropdown.data('original-options'));
+            
+            // Remove the selected "From" employee from "To" dropdown
+            if (fromEmployeeId) {
+                $toDropdown.find(`option[value="${fromEmployeeId}"]`).remove();
+            }
+            
+            // Restore previous selection if it's still valid (not the excluded employee)
+            if (currentToSelection && currentToSelection !== fromEmployeeId) {
+                $toDropdown.val(currentToSelection);
+            } else {
+                // Clear selection if the previously selected employee is now excluded
+                $toDropdown.val('').trigger('change');
+            }
+            
+            // Re-initialize Select2 to reflect changes
+            $toDropdown.trigger('change.select2');
+        }
 
         function initializeAssetDropdowns() {
             // Initialize Select2 for all existing asset dropdowns
