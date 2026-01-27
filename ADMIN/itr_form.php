@@ -43,10 +43,18 @@ if ($result && $row = $result->fetch_assoc()) {
 
 // Get active employees for dropdown
 $employees = [];
-$employees_sql = "SELECT id, employee_no, firstname, lastname FROM employees WHERE employment_status IN ('permanent', 'contractual', 'job_order') ORDER BY lastname, firstname";
+$employees_sql = "SELECT id, employee_no, firstname, lastname FROM employees WHERE employment_status IN ('permanent', 'contractual', 'job_order') AND clearance_status = 'uncleared' ORDER BY lastname, firstname";
 $employees_result = $conn->query($employees_sql);
 while ($employee_row = $employees_result->fetch_assoc()) {
     $employees[] = $employee_row;
+}
+
+// Get all active employees for "To" dropdown (can receive assets regardless of clearance)
+$to_employees = [];
+$to_employees_sql = "SELECT id, employee_no, firstname, lastname FROM employees WHERE employment_status IN ('permanent', 'contractual', 'job_order') ORDER BY lastname, firstname";
+$to_employees_result = $conn->query($to_employees_sql);
+while ($employee_row = $to_employees_result->fetch_assoc()) {
+    $to_employees[] = $employee_row;
 }
 ?>
 <!DOCTYPE html>
@@ -310,7 +318,7 @@ while ($employee_row = $employees_result->fetch_assoc()) {
                         <div class="col-md-8">
                             <label class="form-label"><strong>From Accountable Officer/Agency/Fund Cluster:</strong></label>
                             <select class="form-select" id="from_employee_search" name="from_office" required>
-                                <option value="">Select Employee</option>
+                                <option value="">Select Employee (Uncleared Only)</option>
                                 <?php foreach ($employees as $employee): ?>
                                     <option value="<?php echo $employee['id']; ?>">
                                         <?php echo htmlspecialchars($employee['employee_no'] . ' - ' . $employee['lastname'] . ', ' . $employee['firstname']); ?>
@@ -330,7 +338,7 @@ while ($employee_row = $employees_result->fetch_assoc()) {
                             <label class="form-label"><strong>To Accountable Officer/Agency/Fund Cluster:</strong></label>
                             <select class="form-select" id="to_employee_search" name="to_office" required>
                                 <option value="">Select Employee</option>
-                                <?php foreach ($employees as $employee): ?>
+                                <?php foreach ($to_employees as $employee): ?>
                                     <option value="<?php echo $employee['id']; ?>">
                                         <?php echo htmlspecialchars($employee['employee_no'] . ' - ' . $employee['lastname'] . ', ' . $employee['firstname']); ?>
                                     </option>

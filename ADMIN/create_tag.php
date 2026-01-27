@@ -59,7 +59,7 @@ while ($category_row = $categories_result->fetch_assoc()) {
 
 // Get active employees for dropdown
 $employees = [];
-$employees_sql = "SELECT id, employee_no, firstname, lastname FROM employees WHERE employment_status IN ('permanent', 'contractual', 'job_order') ORDER BY lastname, firstname";
+$employees_sql = "SELECT id, employee_no, firstname, lastname FROM employees WHERE employment_status = 'permanent' ORDER BY lastname, firstname";
 $employees_result = $conn->query($employees_sql);
 while ($employee_row = $employees_result->fetch_assoc()) {
     $employees[] = $employee_row;
