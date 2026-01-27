@@ -113,8 +113,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     continue; // Skip to next item
                 }
                 
-                // Update the specific asset item to the "To" employee
-                $update_sql = "UPDATE asset_items SET employee_id = '$to_office_safe' WHERE id = '$asset_id'";
+                // Update the specific asset item to the "To" employee and set end_user
+                $end_user_safe = mysqli_real_escape_string($conn, $end_user);
+                $update_sql = "UPDATE asset_items SET employee_id = '$to_office_safe', end_user = '$end_user_safe' WHERE id = '$asset_id'";
                 logSystemAction($_SESSION['user_id'], 'ITR Asset Update SQL', 'assets', "Update SQL: $update_sql");
                 
                 $update_result = mysqli_query($conn, $update_sql);
@@ -126,10 +127,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Log the transfer
                 $affected_rows = mysqli_affected_rows($conn);
                 if ($affected_rows > 0) {
-                    logSystemAction($_SESSION['user_id'], 'Asset item transferred', 'assets', "Asset ID: {$asset_id}, Description: {$asset_info['description']}, From Employee ID: {$asset_info['employee_id']}, To Employee ID: {$to_office}, ITR: {$itr_no}, Rows affected: {$affected_rows}");
+                    logSystemAction($_SESSION['user_id'], 'Asset item transferred', 'assets', "Asset ID: {$asset_id}, Description: {$asset_info['description']}, From Employee ID: {$asset_info['employee_id']}, To Employee ID: {$to_office}, End User: {$end_user}, ITR: {$itr_no}, Rows affected: {$affected_rows}");
                 } else {
                     // Log if no items were updated for debugging
-                    logSystemAction($_SESSION['user_id'], 'Asset item transfer - no items updated', 'assets', "Asset ID: {$asset_id}, To Employee ID: {$to_office}, ITR: {$itr_no}");
+                    logSystemAction($_SESSION['user_id'], 'Asset item transfer - no items updated', 'assets', "Asset ID: {$asset_id}, To Employee ID: {$to_office}, End User: {$end_user}, ITR: {$itr_no}");
                 }
             }
         }
