@@ -22,6 +22,24 @@ if ($tag_id === 0) {
     exit();
 }
 
+// Get system settings for logo
+$system_settings = [];
+try {
+    $stmt = $conn->prepare("SELECT setting_name, setting_value FROM system_settings WHERE setting_name IN ('system_logo', 'system_name')");
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($result && $result->num_rows > 0) {
+        while ($row = $result->fetch_assoc()) {
+            $system_settings[$row['setting_name']] = $row['setting_value'];
+        }
+    }
+    $stmt->close();
+} catch (Exception $e) {
+    // Fallback to default if database fails
+    $system_settings['system_logo'] = '';
+    $system_settings['system_name'] = 'PIMS';
+}
+
 // Get tag details with additional fields
 $sql = "SELECT ai.*, 
                a.description as asset_description, a.unit_cost,
@@ -203,6 +221,13 @@ $unserviceable_checked = ($tag['status'] === 'unserviceable') ? '☑' : '☐';
             margin: 0 10px;
         }
         
+        .header-logo {
+            max-width: 36px;
+            max-height: 36px;
+            border-radius: 50%;
+            object-fit: contain;
+        }
+        
         .header-text h2 {
             margin: 0;
             font-size: 10px;
@@ -218,9 +243,29 @@ $unserviceable_checked = ($tag['status'] === 'unserviceable') ? '☑' : '☐';
         }
         
         .tag-number {
-            font-size: 8px;
+            font-size: 12px;
             font-weight: bold;
             text-align: right;
+        }
+        
+        .tag-qr-code {
+            width: 40px;
+            height: 40px;
+            border: 1px solid #000;
+            border-radius: 4px;
+            object-fit: contain;
+        }
+        
+        .qr-placeholder {
+            width: 40px;
+            height: 40px;
+            border: 1px solid #000;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #666;
         }
         
         .tag-body {
@@ -342,15 +387,35 @@ $unserviceable_checked = ($tag['status'] === 'unserviceable') ? '☑' : '☐';
             <div class="tag-header">
                 <div class="header-row">
                     <div class="seal">
-                        SEAL<br>OF<br>LGU
+                        <?php 
+                        $logo_path = '../img/trans_logo.png'; // default
+                        if (!empty($system_settings['system_logo'])) {
+                            if (file_exists('../' . $system_settings['system_logo'])) {
+                                $logo_path = '../' . $system_settings['system_logo'];
+                            } elseif (file_exists($system_settings['system_logo'])) {
+                                $logo_path = $system_settings['system_logo'];
+                            }
+                        }
+                        ?>
+                        <img src="<?php echo $logo_path; ?>" alt="LGU Logo" class="header-logo">
                     </div>
                     <div class="header-text">
+                        
                         <h2>BAYAN NG PILAR</h2>
                         <h3>LALAWIGAN NG SORSOGON</h3>
                     </div>
                     <div class="tag-number">
-                        No. <?php echo htmlspecialchars($tag['inventory_tag']); ?><br>
-                        <small>INVENTORY TAG</small>
+                        <?php if (!empty($tag['qr_code'])): ?>
+                            <img src="../uploads/qr_codes/<?php echo htmlspecialchars($tag['qr_code']); ?>" 
+                                 alt="QR Code" 
+                                 class="tag-qr-code">
+                        <?php else: ?>
+                            <div class="qr-placeholder">
+                                <i class="bi bi-qr-code-scan"></i>
+                            </div>
+                        <?php endif; ?>
+                        <br>
+                        <small>No. <?php echo htmlspecialchars($tag['inventory_tag']); ?></small>
                     </div>
                 </div>
             </div>
