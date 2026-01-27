@@ -316,6 +316,12 @@ try {
                     <p class="text-muted mb-0">View and print inventory tags for all tagged assets</p>
                 </div>
                 <div class="col-md-4 text-md-end">
+                    <button type="button" class="btn btn-warning btn-sm me-2" onclick="alert('Test works!')">
+                        <i class="bi bi-bug"></i> Test
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm me-2" onclick="window.open('print_inventory_tag.php?id=48', '_blank')">
+                        <i class="bi bi-printer"></i> Test Print
+                    </button>
                     <button type="button" class="btn btn-success" onclick="printSelectedTags()">
                         <i class="bi bi-printer"></i> Print Selected
                     </button>
@@ -553,13 +559,13 @@ try {
             new bootstrap.Modal(document.getElementById('imageModal')).show();
         }
 
-        // Print single tag - simple window.open like print_ics.php
+        // Print single tag - open in new tab (working version)
         function printTag(tagId) {
             console.log('printTag called with tagId:', tagId);
             window.open('print_inventory_tag.php?id=' + tagId, '_blank');
         }
 
-        // Print selected tags - simple window.open
+        // Print selected tags - open in new tab (working version)
         function printSelectedTags() {
             const checkboxes = document.querySelectorAll('.tag-checkbox:checked');
             if (checkboxes.length === 0) {
@@ -572,7 +578,7 @@ try {
             window.open('print_inventory_tags.php?ids=' + tagIds, '_blank');
         }
 
-        // Print all tags - get all current tag IDs
+        // Print all tags - open in new tab (working version)
         function printAllTags() {
             <?php if (!empty($tags)): ?>
                 const allTagIds = [<?php echo implode(',', array_column($tags, 'id')); ?>];
@@ -583,30 +589,8 @@ try {
             <?php endif; ?>
         }
         function exportToCSV() {
-            let csv = 'Inventory Tag,Property No,Description,Category,Office,Person Accountable,Status,Date Created\n';
-            
-            <?php if (!empty($tags)): ?>
-                <?php foreach ($tags as $tag): ?>
-                    csv += '<?php echo 
-                        "\"" . addslashes($tag['inventory_tag']) . "\"," .
-                        "\"" . addslashes($tag['property_no'] ?? 'N/A') . "\"," .
-                        "\"" . addslashes($tag['description']) . "\"," .
-                        "\"" . addslashes($tag['category_code'] . ' - ' . $tag['category_name']) . "\"," .
-                        "\"" . addslashes($tag['office_name'] ?? 'N/A') . "\"," .
-                        "\"" . addslashes($tag['employee_no'] . ' ' . $tag['firstname'] . ' ' . $tag['lastname']) . "\"," .
-                        "\"" . addslashes($tag['status']) . "\"," .
-                        "\"" . date('Y-m-d', strtotime($tag['created_at'])) . "\"" . "\n"; 
-                    ?>';
-                <?php endforeach; ?>
-            <?php endif; ?>
-            
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'inventory_tags_' + new Date().toISOString().split('T')[0] + '.csv';
-            a.click();
-            window.URL.revokeObjectURL(url);
+            // Simple CSV export without complex PHP generation
+            window.location.href = 'inventory_tags.php?export=csv';
         }
     </script>
     </div>
