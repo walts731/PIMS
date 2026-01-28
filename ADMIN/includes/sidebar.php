@@ -383,6 +383,10 @@ try {
             <i class="bi bi-file-earmark-bar-graph"></i>
             Reports
         </a>
+        <a href="system_settings.php" class="sidebar-nav-item <?php echo $current_page == 'system_settings.php' ? 'active' : ''; ?>">
+            <i class="bi bi-gear"></i>
+            System Settings
+        </a>
         <a href="profile.php" class="sidebar-nav-item <?php echo $current_page == 'profile.php' ? 'active' : ''; ?>">
             <i class="bi bi-person-circle"></i>
             My Profile
