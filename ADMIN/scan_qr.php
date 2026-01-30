@@ -238,15 +238,7 @@ $page_title = 'QR Scanner';
                 <p>Scan QR codes to quickly view asset information</p>
             </div>
             
-            <div class="instructions">
-                <h6><i class="bi bi-info-circle"></i> Instructions:</h6>
-                <ul>
-                    <li>Click "Start Scanner" to activate the camera</li>
-                    <li>Position the QR code within the frame</li>
-                    <li>The scanner will automatically detect and read the QR code</li>
-                    <li>You will be redirected to the asset details page</li>
-                </ul>
-            </div>
+            <div id="qr-reader"></div>
             
             <div class="scanner-status status-ready" id="scannerStatus">
                 <i class="bi bi-qr-code"></i> Ready to scan
@@ -261,7 +253,15 @@ $page_title = 'QR Scanner';
                 </button>
             </div>
             
-            <div id="qr-reader"></div>
+            <div class="instructions">
+                <h6><i class="bi bi-info-circle"></i> Instructions:</h6>
+                <ul>
+                    <li>Click "Start Scanner" to activate the camera</li>
+                    <li>Position the QR code within the frame</li>
+                    <li>The scanner will automatically detect and read the QR code</li>
+                    <li>You will be redirected to the asset details page</li>
+                </ul>
+            </div>
             
             <div class="loading-spinner" id="loadingSpinner">
                 <div class="spinner-border text-primary" role="status">
