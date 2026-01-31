@@ -6,6 +6,152 @@ let currentRow = null;
 var iirupSearchTimeout;
 var iirupSearchIndex = -1;
 
+// Session storage key for IIRUP form data
+const IIRUP_STORAGE_KEY = 'iirup_form_data';
+
+// Save form data to session storage
+function saveFormDataToSession() {
+    try {
+        const table = document.getElementById('iirupItemsTable');
+        if (!table) return;
+        
+        const tbody = table.getElementsByTagName('tbody')[0];
+        const rows = tbody.getElementsByTagName('tr');
+        
+        const formData = {
+            rows: [],
+            timestamp: new Date().toISOString()
+        };
+        
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            const rowData = {};
+            
+            // Get all input values
+            const inputs = row.getElementsByTagName('input');
+            for (let j = 0; j < inputs.length; j++) {
+                const input = inputs[j];
+                if (input.name) {
+                    rowData[input.name] = input.value;
+                }
+            }
+            
+            // Get all select values
+            const selects = row.getElementsByTagName('select');
+            for (let j = 0; j < selects.length; j++) {
+                const select = selects[j];
+                if (select.name) {
+                    rowData[select.name] = select.value;
+                }
+            }
+            
+            // Only save row if it has meaningful data
+            if (rowData['particulars[]'] || rowData['property_no[]'] || rowData['qty[]']) {
+                formData.rows.push(rowData);
+            }
+        }
+        
+        sessionStorage.setItem(IIRUP_STORAGE_KEY, JSON.stringify(formData));
+        console.log('Form data saved to session storage:', formData);
+    } catch (error) {
+        console.error('Error saving form data to session:', error);
+    }
+}
+
+// Load form data from session storage
+function loadFormDataFromSession() {
+    try {
+        const storedData = sessionStorage.getItem(IIRUP_STORAGE_KEY);
+        if (!storedData) return false;
+        
+        const formData = JSON.parse(storedData);
+        
+        // Check if data is recent (within 24 hours)
+        const storedTime = new Date(formData.timestamp);
+        const now = new Date();
+        const hoursDiff = (now - storedTime) / (1000 * 60 * 60);
+        
+        if (hoursDiff > 24) {
+            console.log('Stored data is too old, clearing session storage');
+            sessionStorage.removeItem(IIRUP_STORAGE_KEY);
+            return false;
+        }
+        
+        // Restore the form data
+        const table = document.getElementById('iirupItemsTable');
+        if (!table || !formData.rows || formData.rows.length === 0) return false;
+        
+        const tbody = table.getElementsByTagName('tbody')[0];
+        
+        // Clear existing rows except the first one
+        while (tbody.rows.length > 1) {
+            tbody.deleteRow(1);
+        }
+        
+        // Restore each row of data
+        formData.rows.forEach((rowData, index) => {
+            if (index === 0) {
+                // Fill the first row
+                fillRowWithData(tbody.rows[0], rowData);
+            } else {
+                // Add new row and fill it
+                addIIRUPRow();
+                const newRow = tbody.rows[tbody.rows.length - 1];
+                fillRowWithData(newRow, rowData);
+            }
+        });
+        
+        console.log('Form data restored from session storage:', formData);
+        return true;
+    } catch (error) {
+        console.error('Error loading form data from session:', error);
+        return false;
+    }
+}
+
+// Fill a row with stored data
+function fillRowWithData(row, rowData) {
+    // Fill all input fields
+    const inputs = row.getElementsByTagName('input');
+    for (let i = 0; i < inputs.length; i++) {
+        const input = inputs[i];
+        if (input.name && rowData[input.name] !== undefined) {
+            input.value = rowData[input.name];
+            // Add visual highlight for filled fields
+            if (rowData[input.name]) {
+                input.style.backgroundColor = '#e8f5e8';
+                input.style.border = '1px solid #28a745';
+            }
+        }
+    }
+    
+    // Fill all select fields
+    const selects = row.getElementsByTagName('select');
+    for (let i = 0; i < selects.length; i++) {
+        const select = selects[i];
+        if (select.name && rowData[select.name] !== undefined) {
+            // Add option if not exists
+            if (rowData[select.name] && !select.querySelector(`option[value="${rowData[select.name]}"]`)) {
+                const newOption = document.createElement('option');
+                newOption.value = rowData[select.name];
+                newOption.textContent = rowData[select.name];
+                select.appendChild(newOption);
+            }
+            select.value = rowData[select.name];
+        }
+    }
+}
+
+// Clear session storage
+function clearIIRUPSessionData() {
+    try {
+        sessionStorage.removeItem(IIRUP_STORAGE_KEY);
+        console.log('IIRUP session data cleared');
+    } catch (error) {
+        console.error('Error clearing session data:', error);
+    }
+}
+
 // Utility function to show Bootstrap modal instead of alert
 function showModal(title, message, type = 'info') {
     // Create modal container if it doesn't exist
@@ -68,6 +214,74 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize autocomplete functionality
     initAutocomplete();
+    
+    // Load existing form data from session storage
+    const hasStoredData = loadFormDataFromSession();
+    
+    // Show notification if data was restored
+    if (hasStoredData) {
+        const restoreDiv = document.createElement('div');
+        restoreDiv.className = 'alert alert-info alert-dismissible fade show';
+        restoreDiv.innerHTML = `
+            <i class="bi bi-clock-history"></i> 
+            <strong>Previous data restored!</strong> Your previous IIRUP form data has been restored.
+            <br><small class="text-muted">
+                You can continue adding more assets or modify existing items.
+            </small>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        const pageHeader = document.querySelector('.page-header');
+        if (pageHeader) {
+            pageHeader.parentNode.insertBefore(restoreDiv, pageHeader.nextSibling);
+        }
+    }
+    
+    // Add auto-save functionality
+    // Save data when form inputs change
+    document.addEventListener('input', function(e) {
+        if (e.target.closest('#iirupItemsTable')) {
+            saveFormDataToSession();
+        }
+    });
+    
+    // Save data when form selects change
+    document.addEventListener('change', function(e) {
+        if (e.target.closest('#iirupItemsTable')) {
+            saveFormDataToSession();
+        }
+    });
+    
+    // Save data when rows are added or removed
+    const originalAddRow = window.addIIRUPRow;
+    window.addIIRUPRow = function() {
+        const result = originalAddRow.apply(this, arguments);
+        setTimeout(saveFormDataToSession, 100); // Small delay to ensure DOM is updated
+        return result;
+    };
+    
+    const originalRemoveRow = window.removeIIRUPRow;
+    window.removeIIRUPRow = function() {
+        const result = originalRemoveRow.apply(this, arguments);
+        setTimeout(saveFormDataToSession, 100); // Small delay to ensure DOM is updated
+        return result;
+    };
+    
+    // Clear session data when form is reset
+    const resetButton = document.querySelector('button[onclick*="resetIIRUPForm"]');
+    if (resetButton) {
+        resetButton.addEventListener('click', function() {
+            clearIIRUPSessionData();
+        });
+    }
+    
+    // Clear session data when form is submitted
+    const form = document.getElementById('iirupForm');
+    if (form) {
+        form.addEventListener('submit', function() {
+            clearIIRUPSessionData();
+        });
+    }
 });
 
 function addIIRUPRow() {
@@ -522,6 +736,42 @@ function updateSelection(items) {
 
 function selectAsset(asset, input) {
     const row = input.closest('tr');
+    const table = document.getElementById('iirupItemsTable');
+    const tbody = table.getElementsByTagName('tbody')[0];
+    
+    // Check if this is the first row and it's empty (has no meaningful data)
+    const isFirstRow = tbody.rows[0] === row;
+    const isFirstRowEmpty = isFirstRow && isRowEmpty(row);
+    
+    // If this is not the first row or the first row is not empty, add a new row
+    if (!isFirstRow || !isFirstRowEmpty) {
+        addIIRUPRow();
+        const newRow = tbody.rows[tbody.rows.length - 1];
+        fillRowWithAssetData(newRow, asset);
+    } else {
+        // Fill the current (first) row with asset data
+        fillRowWithAssetData(row, asset);
+    }
+    
+    // Save the updated form data to session storage
+    setTimeout(saveFormDataToSession, 100);
+}
+
+function isRowEmpty(row) {
+    const inputs = row.getElementsByTagName('input');
+    const selects = row.getElementsByTagName('select');
+    
+    // Check if all meaningful fields are empty
+    const particularsInput = row.querySelector('input[name="particulars[]"]');
+    const propertyNoInput = row.querySelector('input[name="property_no[]"]');
+    const qtyInput = row.querySelector('input[name="qty[]"]');
+    
+    return (!particularsInput || !particularsInput.value.trim()) && 
+           (!propertyNoInput || !propertyNoInput.value.trim()) && 
+           (!qtyInput || !qtyInput.value);
+}
+
+function fillRowWithAssetData(row, asset) {
     const inputs = row.getElementsByTagName('input');
     const selects = row.getElementsByTagName('select');
     

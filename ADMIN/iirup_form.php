@@ -561,69 +561,41 @@ if ($result && $row = $result->fetch_assoc()) {
     <?php if (!empty($auto_fill_data)): ?>
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Auto-fill the first row with asset data
-        const table = document.getElementById('iirupItemsTable');
-        if (table) {
-            const tbody = table.getElementsByTagName('tbody')[0];
-            const firstRow = tbody.getElementsByTagName('tr')[0];
-            
-            if (firstRow) {
-                const inputs = firstRow.getElementsByTagName('input');
-                const selects = firstRow.getElementsByTagName('select');
+        // Wait for session data to be loaded first
+        setTimeout(function() {
+            const table = document.getElementById('iirupItemsTable');
+            if (table) {
+                const tbody = table.getElementsByTagName('tbody')[0];
                 
-                // Fill the form fields with asset data
-                <?php if (!empty($auto_fill_data['description'])): ?>
-                const particularsInput = firstRow.querySelector('input[name="particulars[]"]');
-                if (particularsInput) particularsInput.value = '<?php echo addslashes($auto_fill_data['description']); ?>';
-                <?php endif; ?>
+                // Check if first row is empty or has existing data
+                const firstRow = tbody.rows[0];
+                const isFirstRowEmpty = isRowEmpty(firstRow);
                 
-                <?php if (!empty($auto_fill_data['property_no'])): ?>
-                const propertyNoInput = firstRow.querySelector('input[name="property_no[]"]');
-                if (propertyNoInput) propertyNoInput.value = '<?php echo addslashes($auto_fill_data['property_no']); ?>';
-                <?php endif; ?>
-                
-                <?php if (!empty($auto_fill_data['acquisition_date'])): ?>
-                const dateAcquiredInput = firstRow.querySelector('input[name="date_acquired[]"]');
-                if (dateAcquiredInput) dateAcquiredInput.value = '<?php echo $auto_fill_data['acquisition_date']; ?>';
-                <?php endif; ?>
-                
-                <?php if (!empty($auto_fill_data['value'])): ?>
-                const qtyInput = firstRow.querySelector('input[name="qty[]"]');
-                if (qtyInput) qtyInput.value = 1;
-                
-                const unitCostInput = firstRow.querySelector('input[name="unit_cost[]"]');
-                if (unitCostInput) unitCostInput.value = '<?php echo $auto_fill_data['value']; ?>';
-                
-                const totalCostInput = firstRow.querySelector('input[name="total_cost[]"]');
-                if (totalCostInput) totalCostInput.value = '<?php echo $auto_fill_data['value']; ?>';
-                <?php endif; ?>
-                
-                <?php if (!empty($auto_fill_data['office_name'])): ?>
-                const deptOfficeSelect = firstRow.querySelector('select[name="dept_office[]"]');
-                if (deptOfficeSelect) {
-                    // Check if option exists, if not add it
-                    let optionExists = false;
-                    for (let option of deptOfficeSelect.options) {
-                        if (option.value === '<?php echo addslashes($auto_fill_data['office_name']); ?>') {
-                            optionExists = true;
-                            break;
-                        }
-                    }
-                    if (!optionExists) {
-                        const newOption = document.createElement('option');
-                        newOption.value = '<?php echo addslashes($auto_fill_data['office_name']); ?>';
-                        newOption.textContent = '<?php echo addslashes($auto_fill_data['office_name']); ?>';
-                        deptOfficeSelect.appendChild(newOption);
-                    }
-                    deptOfficeSelect.value = '<?php echo addslashes($auto_fill_data['office_name']); ?>';
+                // Add the new asset to an appropriate row
+                if (!isFirstRowEmpty) {
+                    // First row has data, add a new row for the new asset
+                    addIIRUPRow();
+                    const newRow = tbody.rows[tbody.rows.length - 1];
+                    fillRowWithAutoFillData(newRow);
+                } else {
+                    // First row is empty, fill it
+                    fillRowWithAutoFillData(firstRow);
                 }
-                <?php endif; ?>
+                
+                // Save the updated data to session storage
+                setTimeout(saveFormDataToSession, 100);
                 
                 // Show success message
                 const successDiv = document.createElement('div');
                 successDiv.className = 'alert alert-success alert-dismissible fade show';
                 successDiv.innerHTML = `
-                    <i class="bi bi-check-circle-fill"></i> Asset item "<?php echo addslashes($auto_fill_data['description']); ?>" has been auto-filled in the form.
+                    <i class="bi bi-check-circle-fill"></i> 
+                    <strong>Asset added successfully!</strong> "<?php echo addslashes($auto_fill_data['description']); ?>" has been added to the form.
+                    <br><small class="text-muted">
+                        <i class="bi bi-info-circle"></i> 
+                        To add more assets, type in the "Particulars/Articles" field below and search for additional items. 
+                        Each new asset will be added to a new row.
+                    </small>
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 `;
                 
@@ -632,8 +604,92 @@ if ($result && $row = $result->fetch_assoc()) {
                     pageHeader.parentNode.insertBefore(successDiv, pageHeader.nextSibling);
                 }
             }
-        }
+        }, 200); // Small delay to ensure session data is loaded
     });
+    
+    function isRowEmpty(row) {
+        const particularsInput = row.querySelector('input[name="particulars[]"]');
+        const propertyNoInput = row.querySelector('input[name="property_no[]"]');
+        const qtyInput = row.querySelector('input[name="qty[]"]');
+        
+        return (!particularsInput || !particularsInput.value.trim()) && 
+               (!propertyNoInput || !propertyNoInput.value.trim()) && 
+               (!qtyInput || !qtyInput.value);
+    }
+    
+    function fillRowWithAutoFillData(row) {
+        // Fill the form fields with auto-fill asset data
+        <?php if (!empty($auto_fill_data['description'])): ?>
+        const particularsInput = row.querySelector('input[name="particulars[]"]');
+        if (particularsInput) {
+            particularsInput.value = '<?php echo addslashes($auto_fill_data['description']); ?>';
+            particularsInput.style.backgroundColor = '#e8f5e8';
+            particularsInput.style.border = '1px solid #28a745';
+        }
+        <?php endif; ?>
+        
+        <?php if (!empty($auto_fill_data['property_no'])): ?>
+        const propertyNoInput = row.querySelector('input[name="property_no[]"]');
+        if (propertyNoInput) {
+            propertyNoInput.value = '<?php echo addslashes($auto_fill_data['property_no']); ?>';
+            propertyNoInput.style.backgroundColor = '#e8f5e8';
+            propertyNoInput.style.border = '1px solid #28a745';
+        }
+        <?php endif; ?>
+        
+        <?php if (!empty($auto_fill_data['acquisition_date'])): ?>
+        const dateAcquiredInput = row.querySelector('input[name="date_acquired[]"]');
+        if (dateAcquiredInput) {
+            dateAcquiredInput.value = '<?php echo $auto_fill_data['acquisition_date']; ?>';
+            dateAcquiredInput.style.backgroundColor = '#e8f5e8';
+            dateAcquiredInput.style.border = '1px solid #28a745';
+        }
+        <?php endif; ?>
+        
+        <?php if (!empty($auto_fill_data['value'])): ?>
+        const qtyInput = row.querySelector('input[name="qty[]"]');
+        if (qtyInput) {
+            qtyInput.value = 1;
+            qtyInput.style.backgroundColor = '#e8f5e8';
+            qtyInput.style.border = '1px solid #28a745';
+        }
+        
+        const unitCostInput = row.querySelector('input[name="unit_cost[]"]');
+        if (unitCostInput) {
+            unitCostInput.value = '<?php echo $auto_fill_data['value']; ?>';
+            unitCostInput.style.backgroundColor = '#e8f5e8';
+            unitCostInput.style.border = '1px solid #28a745';
+        }
+        
+        const totalCostInput = row.querySelector('input[name="total_cost[]"]');
+        if (totalCostInput) {
+            totalCostInput.value = '<?php echo $auto_fill_data['value']; ?>';
+            totalCostInput.style.backgroundColor = '#e8f5e8';
+            totalCostInput.style.border = '1px solid #28a745';
+        }
+        <?php endif; ?>
+        
+        <?php if (!empty($auto_fill_data['office_name'])): ?>
+        const deptOfficeSelect = row.querySelector('select[name="dept_office[]"]');
+        if (deptOfficeSelect) {
+            // Check if option exists, if not add it
+            let optionExists = false;
+            for (let option of deptOfficeSelect.options) {
+                if (option.value === '<?php echo addslashes($auto_fill_data['office_name']); ?>') {
+                    optionExists = true;
+                    break;
+                }
+            }
+            if (!optionExists) {
+                const newOption = document.createElement('option');
+                newOption.value = '<?php echo addslashes($auto_fill_data['office_name']); ?>';
+                newOption.textContent = '<?php echo addslashes($auto_fill_data['office_name']); ?>';
+                deptOfficeSelect.appendChild(newOption);
+            }
+            deptOfficeSelect.value = '<?php echo addslashes($auto_fill_data['office_name']); ?>';
+        }
+        <?php endif; ?>
+    }
     </script>
     <?php endif; ?>
 </body>
