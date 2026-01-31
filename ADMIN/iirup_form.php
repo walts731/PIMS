@@ -21,6 +21,25 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
 
 logSystemAction($_SESSION['user_id'], 'Accessed Individual Item Request for User Property Form', 'forms', 'iirup_form.php');
 
+// Handle auto-fill data from view_asset_item.php
+$auto_fill_data = [];
+if (isset($_GET['auto_fill']) && $_GET['auto_fill'] === 'true') {
+    $auto_fill_data = [
+        'asset_id' => $_GET['asset_id'] ?? '',
+        'description' => $_GET['description'] ?? '',
+        'property_no' => $_GET['property_no'] ?? '',
+        'inventory_tag' => $_GET['inventory_tag'] ?? '',
+        'acquisition_date' => $_GET['acquisition_date'] ?? '',
+        'value' => $_GET['value'] ?? '',
+        'unit_cost' => $_GET['unit_cost'] ?? '',
+        'office_name' => $_GET['office_name'] ?? '',
+        'category_name' => $_GET['category_name'] ?? '',
+        'category_code' => $_GET['category_code'] ?? '',
+        'asset_description' => $_GET['asset_description'] ?? '',
+        'unit' => $_GET['unit'] ?? ''
+    ];
+}
+
 // Get next SAI number (IIRUP uses sai_no tag type)
 $next_sai_no = getNextTagPreview('sai_no');
 if ($next_sai_no === null) {
@@ -538,5 +557,84 @@ if ($result && $row = $result->fetch_assoc()) {
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/iirup_form.js?v=<?php echo time(); ?>"></script>
+    
+    <?php if (!empty($auto_fill_data)): ?>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Auto-fill the first row with asset data
+        const table = document.getElementById('iirupItemsTable');
+        if (table) {
+            const tbody = table.getElementsByTagName('tbody')[0];
+            const firstRow = tbody.getElementsByTagName('tr')[0];
+            
+            if (firstRow) {
+                const inputs = firstRow.getElementsByTagName('input');
+                const selects = firstRow.getElementsByTagName('select');
+                
+                // Fill the form fields with asset data
+                <?php if (!empty($auto_fill_data['description'])): ?>
+                const particularsInput = firstRow.querySelector('input[name="particulars[]"]');
+                if (particularsInput) particularsInput.value = '<?php echo addslashes($auto_fill_data['description']); ?>';
+                <?php endif; ?>
+                
+                <?php if (!empty($auto_fill_data['property_no'])): ?>
+                const propertyNoInput = firstRow.querySelector('input[name="property_no[]"]');
+                if (propertyNoInput) propertyNoInput.value = '<?php echo addslashes($auto_fill_data['property_no']); ?>';
+                <?php endif; ?>
+                
+                <?php if (!empty($auto_fill_data['acquisition_date'])): ?>
+                const dateAcquiredInput = firstRow.querySelector('input[name="date_acquired[]"]');
+                if (dateAcquiredInput) dateAcquiredInput.value = '<?php echo $auto_fill_data['acquisition_date']; ?>';
+                <?php endif; ?>
+                
+                <?php if (!empty($auto_fill_data['value'])): ?>
+                const qtyInput = firstRow.querySelector('input[name="qty[]"]');
+                if (qtyInput) qtyInput.value = 1;
+                
+                const unitCostInput = firstRow.querySelector('input[name="unit_cost[]"]');
+                if (unitCostInput) unitCostInput.value = '<?php echo $auto_fill_data['value']; ?>';
+                
+                const totalCostInput = firstRow.querySelector('input[name="total_cost[]"]');
+                if (totalCostInput) totalCostInput.value = '<?php echo $auto_fill_data['value']; ?>';
+                <?php endif; ?>
+                
+                <?php if (!empty($auto_fill_data['office_name'])): ?>
+                const deptOfficeSelect = firstRow.querySelector('select[name="dept_office[]"]');
+                if (deptOfficeSelect) {
+                    // Check if option exists, if not add it
+                    let optionExists = false;
+                    for (let option of deptOfficeSelect.options) {
+                        if (option.value === '<?php echo addslashes($auto_fill_data['office_name']); ?>') {
+                            optionExists = true;
+                            break;
+                        }
+                    }
+                    if (!optionExists) {
+                        const newOption = document.createElement('option');
+                        newOption.value = '<?php echo addslashes($auto_fill_data['office_name']); ?>';
+                        newOption.textContent = '<?php echo addslashes($auto_fill_data['office_name']); ?>';
+                        deptOfficeSelect.appendChild(newOption);
+                    }
+                    deptOfficeSelect.value = '<?php echo addslashes($auto_fill_data['office_name']); ?>';
+                }
+                <?php endif; ?>
+                
+                // Show success message
+                const successDiv = document.createElement('div');
+                successDiv.className = 'alert alert-success alert-dismissible fade show';
+                successDiv.innerHTML = `
+                    <i class="bi bi-check-circle-fill"></i> Asset item "<?php echo addslashes($auto_fill_data['description']); ?>" has been auto-filled in the form.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                
+                const pageHeader = document.querySelector('.page-header');
+                if (pageHeader) {
+                    pageHeader.parentNode.insertBefore(successDiv, pageHeader.nextSibling);
+                }
+            }
+        }
+    });
+    </script>
+    <?php endif; ?>
 </body>
 </html>

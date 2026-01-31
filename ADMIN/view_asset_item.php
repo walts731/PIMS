@@ -774,8 +774,40 @@ $status_display = formatStatus($item['status']);
         }
         
         function addToIirup() {
-            // Placeholder for IIRUP functionality
-            alert('Add to IIRUP functionality will be implemented');
+            // Prepare asset data for IIRUP form
+            const assetData = {
+                id: <?php echo $item_id; ?>,
+                description: '<?php echo addslashes($item['description']); ?>',
+                property_no: '<?php echo addslashes($item['property_no'] ?? ''); ?>',
+                inventory_tag: '<?php echo addslashes($item['inventory_tag'] ?? ''); ?>',
+                acquisition_date: '<?php echo $item['acquisition_date']; ?>',
+                value: '<?php echo $item['value']; ?>',
+                unit_cost: '<?php echo $item['unit_cost']; ?>',
+                office_name: '<?php echo addslashes($item['office_name'] ?? ''); ?>',
+                category_name: '<?php echo addslashes($item['category_name'] ?? ''); ?>',
+                category_code: '<?php echo addslashes($item['category_code'] ?? ''); ?>',
+                asset_description: '<?php echo addslashes($item['asset_description']); ?>',
+                unit: '<?php echo addslashes($item['unit']); ?>'
+            };
+            
+            // Create URL with asset data
+            const params = new URLSearchParams();
+            params.append('asset_id', assetData.id);
+            params.append('description', assetData.description);
+            params.append('property_no', assetData.property_no);
+            params.append('inventory_tag', assetData.inventory_tag);
+            params.append('acquisition_date', assetData.acquisition_date);
+            params.append('value', assetData.value);
+            params.append('unit_cost', assetData.unit_cost);
+            params.append('office_name', assetData.office_name);
+            params.append('category_name', assetData.category_name);
+            params.append('category_code', assetData.category_code);
+            params.append('asset_description', assetData.asset_description);
+            params.append('unit', assetData.unit);
+            params.append('auto_fill', 'true');
+            
+            // Open IIRUP form with asset data
+            window.open('iirup_form.php?' + params.toString(), '_blank');
         }
     </script>
 </body>
