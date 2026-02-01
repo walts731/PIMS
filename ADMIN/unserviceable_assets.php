@@ -24,6 +24,7 @@ logSystemAction($_SESSION['user_id'], 'Accessed Unserviceable Assets page', 'inv
 // Handle search functionality
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 $office_filter = isset($_GET['office']) ? intval($_GET['office']) : '';
+$category_filter = isset($_GET['category']) ? intval($_GET['category']) : '';
 
 // Build query
 $where_conditions = ["ai.status = 'unserviceable'"];
@@ -42,6 +43,12 @@ if (!empty($search)) {
 if (!empty($office_filter)) {
     $where_conditions[] = "ai.office_id = ?";
     $params[] = $office_filter;
+    $types .= 'i';
+}
+
+if (!empty($category_filter)) {
+    $where_conditions[] = "ai.category_id = ?";
+    $params[] = $category_filter;
     $types .= 'i';
 }
 
@@ -86,6 +93,15 @@ $offices_result = $conn->query("SELECT id, office_name FROM offices WHERE status
 if ($offices_result) {
     while ($office = $offices_result->fetch_assoc()) {
         $offices[] = $office;
+    }
+}
+
+// Get categories for filter
+$categories = [];
+$categories_result = $conn->query("SELECT id, category_name, category_code FROM asset_categories WHERE status = 'active' ORDER BY category_name");
+if ($categories_result) {
+    while ($category = $categories_result->fetch_assoc()) {
+        $categories[] = $category;
     }
 }
 ?>
@@ -274,17 +290,17 @@ if ($offices_result) {
 
         <!-- Search Section -->
         <div class="search-section no-print">
-            <form method="GET" class="row g-3">
+            <div class="row g-3">
                 <div class="col-md-4">
                     <label class="form-label">Search Assets</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-search"></i></span>
-                        <input type="text" class="form-control" name="search" placeholder="Search description, property number, or inventory tag..." value="<?php echo htmlspecialchars($search); ?>">
+                        <input type="text" class="form-control" id="searchInput" name="search" placeholder="Search description, property number, or inventory tag..." value="<?php echo htmlspecialchars($search); ?>">
                     </div>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Office</label>
-                    <select class="form-select" name="office">
+                    <select class="form-select" id="officeFilter" name="office">
                         <option value="">All Offices</option>
                         <?php foreach ($offices as $office): ?>
                             <option value="<?php echo $office['id']; ?>" <?php echo $office_filter == $office['id'] ? 'selected' : ''; ?>>
@@ -293,15 +309,26 @@ if ($offices_result) {
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <div class="col-md-3 d-flex align-items-end">
-                    <button type="submit" class="btn btn-danger">
-                        <i class="bi bi-search"></i> Search
-                    </button>
-                    <a href="unserviceable_assets.php" class="btn btn-outline-secondary ms-2">
+                <div class="col-md-3">
+                    <label class="form-label">Category</label>
+                    <select class="form-select" id="categoryFilter" name="category">
+                        <option value="">All Categories</option>
+                        <?php foreach ($categories as $category): ?>
+                            <option value="<?php echo $category['id']; ?>" <?php echo $category_filter == $category['id'] ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($category['category_name']); ?>
+                                <?php if (!empty($category['category_code'])): ?>
+                                    (<?php echo htmlspecialchars($category['category_code']); ?>)
+                                <?php endif; ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <a href="unserviceable_assets.php" class="btn btn-outline-secondary">
                         <i class="bi bi-arrow-clockwise"></i> Reset
                     </a>
                 </div>
-            </form>
+            </div>
         </div>
 
         <!-- Assets Table -->
@@ -391,8 +418,82 @@ if ($offices_result) {
     <?php include 'includes/sidebar-scripts.php'; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.1.min.js"></script>
     
     <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Office filter
+            $('#officeFilter').on('change', function() {
+                const officeValue = this.value;
+                const currentUrl = new URL(window.location);
+                if (officeValue) {
+                    currentUrl.searchParams.set('office', officeValue);
+                } else {
+                    currentUrl.searchParams.delete('office');
+                }
+                // Preserve search parameter if exists
+                const searchValue = currentUrl.searchParams.get('search');
+                if (!searchValue) {
+                    currentUrl.searchParams.delete('search');
+                }
+                // Preserve category parameter if exists
+                const categoryValue = currentUrl.searchParams.get('category');
+                if (!categoryValue) {
+                    currentUrl.searchParams.delete('category');
+                }
+                window.location.href = currentUrl.toString();
+            });
+            
+            // Category filter
+            $('#categoryFilter').on('change', function() {
+                const categoryValue = this.value;
+                const currentUrl = new URL(window.location);
+                if (categoryValue) {
+                    currentUrl.searchParams.set('category', categoryValue);
+                } else {
+                    currentUrl.searchParams.delete('category');
+                }
+                // Preserve search parameter if exists
+                const searchValue = currentUrl.searchParams.get('search');
+                if (!searchValue) {
+                    currentUrl.searchParams.delete('search');
+                }
+                // Preserve office parameter if exists
+                const officeValue = currentUrl.searchParams.get('office');
+                if (!officeValue) {
+                    currentUrl.searchParams.delete('office');
+                }
+                window.location.href = currentUrl.toString();
+            });
+            
+            // Search functionality with debounce
+            let searchTimeout;
+            $('#searchInput').on('input', function() {
+                clearTimeout(searchTimeout);
+                const searchValue = this.value.trim();
+                
+                searchTimeout = setTimeout(() => {
+                    const currentUrl = new URL(window.location);
+                    if (searchValue) {
+                        currentUrl.searchParams.set('search', searchValue);
+                    } else {
+                        currentUrl.searchParams.delete('search');
+                    }
+                    // Preserve office parameter if exists
+                    const officeValue = currentUrl.searchParams.get('office');
+                    if (!officeValue) {
+                        currentUrl.searchParams.delete('office');
+                    }
+                    // Preserve category parameter if exists
+                    const categoryValue = currentUrl.searchParams.get('category');
+                    if (!categoryValue) {
+                        currentUrl.searchParams.delete('category');
+                    }
+                    window.location.href = currentUrl.toString();
+                }, 500); // Wait 500ms after user stops typing
+            });
+        });
+        
         function exportToCSV() {
             let csv = 'Description,Category,Status,Value,Office,Assigned To,Last Updated\n';
             
