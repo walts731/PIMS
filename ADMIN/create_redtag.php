@@ -95,7 +95,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['generate_redtag'])) {
         `action` varchar(50) NOT NULL,
         `office_id` int(11) DEFAULT NULL,
         `asset_id` int(11) DEFAULT NULL,
-        `status` enum('pending','processed','disposed') DEFAULT 'pending',
         `created_by` int(11) NOT NULL,
         `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
         `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

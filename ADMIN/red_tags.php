@@ -25,7 +25,6 @@ logSystemAction($_SESSION['user_id'], 'access', 'red_tags', 'Admin accessed red 
 // Handle search and filter
 $search = trim($_GET['search'] ?? '');
 $office_filter = intval($_GET['office'] ?? 0);
-$action_filter = $_GET['action'] ?? '';
 $date_from = $_GET['date_from'] ?? '';
 $date_to = $_GET['date_to'] ?? '';
 
@@ -45,12 +44,6 @@ if ($office_filter > 0) {
     $where_conditions[] = "rt.office_id = ?";
     $params[] = $office_filter;
     $types .= 'i';
-}
-
-if (!empty($action_filter)) {
-    $where_conditions[] = "rt.action = ?";
-    $params[] = $action_filter;
-    $types .= 's';
 }
 
 if (!empty($date_from)) {
@@ -80,7 +73,6 @@ $create_table_sql = "CREATE TABLE IF NOT EXISTS `red_tags` (
     `action` varchar(50) NOT NULL,
     `office_id` int(11) DEFAULT NULL,
     `asset_id` int(11) DEFAULT NULL,
-    `status` enum('pending','processed','disposed') DEFAULT 'pending',
     `created_by` int(11) NOT NULL,
     `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
     `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -94,21 +86,41 @@ $create_table_sql = "CREATE TABLE IF NOT EXISTS `red_tags` (
 
 $conn->query($create_table_sql);
 
+// Check if status column exists and remove it if it does
+$column_check = $conn->query("SHOW COLUMNS FROM red_tags LIKE 'status'");
+if ($column_check && $column_check->num_rows > 0) {
+    // Remove the status column
+    $conn->query("ALTER TABLE red_tags DROP COLUMN status");
+    error_log("Removed status column from red_tags table");
+}
+
+// Check if table exists and has data
+$table_check = $conn->query("SHOW TABLES LIKE 'red_tags'");
+$table_exists = $table_check && $table_check->num_rows > 0;
+
+$data_count = 0;
+if ($table_exists) {
+    $count_result = $conn->query("SELECT COUNT(*) as count FROM red_tags");
+    if ($count_result) {
+        $row = $count_result->fetch_assoc();
+        $data_count = $row['count'];
+    }
+}
+
+// Debug: Log table status
+error_log("Red Tags table exists: " . ($table_exists ? 'Yes' : 'No'));
+error_log("Red Tags table has data: " . $data_count . " rows");
+
 // Get red tags
 $red_tags = [];
 try {
-    $sql = "SELECT rt.*, o.office_name, a.description as asset_description, u.firstname as created_firstname, u.lastname as created_lastname
-            FROM red_tags rt 
-            LEFT JOIN offices o ON rt.office_id = o.id 
-            LEFT JOIN asset_items a ON rt.asset_id = a.id 
-            LEFT JOIN users u ON rt.created_by = u.id 
-            $where_clause
-            ORDER BY rt.created_at DESC";
+    // Simple query without JOINs to avoid foreign key issues
+    $sql = "SELECT * FROM red_tags rt ORDER BY rt.created_at DESC";
+    
+    // Debug: Log the SQL query
+    error_log("Red Tags SQL: " . $sql);
     
     $stmt = $conn->prepare($sql);
-    if (!empty($params)) {
-        $stmt->bind_param($types, ...$params);
-    }
     $stmt->execute();
     $result = $stmt->get_result();
     
@@ -118,6 +130,10 @@ try {
         }
     }
     $stmt->close();
+    
+    // Debug: Log the number of red tags found
+    error_log("Red Tags found: " . count($red_tags));
+    
 } catch (Exception $e) {
     error_log("Error fetching red tags: " . $e->getMessage());
 }
@@ -138,14 +154,11 @@ try {
 // Get statistics
 $stats = [];
 try {
-    $sql = "SELECT 
+    $stats_sql = "SELECT 
                 COUNT(*) as total_red_tags,
-                COUNT(CASE WHEN rt.status = 'pending' THEN 1 END) as pending,
-                COUNT(CASE WHEN rt.status = 'processed' THEN 1 END) as processed,
-                COUNT(CASE WHEN rt.status = 'disposed' THEN 1 END) as disposed,
                 COUNT(DISTINCT rt.office_id) as offices_with_tags
               FROM red_tags rt";
-    $result = $conn->query($sql);
+    $result = $conn->query($stats_sql);
     if ($result) {
         $stats = $result->fetch_assoc();
     }
@@ -336,43 +349,37 @@ try {
 
         <!-- Statistics Cards -->
         <div class="row mb-4 no-print">
-            <div class="col-md-3 mb-3">
+            <div class="col-md-4 mb-3">
                 <div class="stats-card">
                     <div class="stats-number"><?php echo number_format($stats['total_red_tags'] ?? 0); ?></div>
                     <div class="stats-label">Total Red Tags</div>
                 </div>
             </div>
-            <div class="col-md-3 mb-3">
+            <div class="col-md-4 mb-3">
                 <div class="stats-card">
-                    <div class="stats-number"><?php echo number_format($stats['pending'] ?? 0); ?></div>
-                    <div class="stats-label">Pending</div>
+                    <div class="stats-number"><?php echo number_format($stats['offices_with_tags'] ?? 0); ?></div>
+                    <div class="stats-label">Offices with Tags</div>
                 </div>
             </div>
-            <div class="col-md-3 mb-3">
+            <div class="col-md-4 mb-3">
                 <div class="stats-card">
-                    <div class="stats-number"><?php echo number_format($stats['processed'] ?? 0); ?></div>
-                    <div class="stats-label">Processed</div>
-                </div>
-            </div>
-            <div class="col-md-3 mb-3">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo number_format($stats['disposed'] ?? 0); ?></div>
-                    <div class="stats-label">Disposed</div>
+                    <div class="stats-number"><?php echo date('M Y'); ?></div>
+                    <div class="stats-label">Current Period</div>
                 </div>
             </div>
         </div>
 
         <!-- Filter Section -->
         <div class="filter-section no-print">
-            <form method="GET" class="row g-3">
+            <div class="row g-3">
                 <div class="col-md-4">
                     <div class="search-box">
                         <i class="bi bi-search"></i>
-                        <input type="text" class="form-control" name="search" placeholder="Search red tags..." value="<?php echo htmlspecialchars($search); ?>">
+                        <input type="text" class="form-control" id="searchInput" placeholder="Search red tags..." value="<?php echo htmlspecialchars($search); ?>">
                     </div>
                 </div>
                 <div class="col-md-2">
-                    <select class="form-select" name="office">
+                    <select class="form-select" id="officeFilter">
                         <option value="">All Offices</option>
                         <?php foreach ($offices as $office): ?>
                             <option value="<?php echo $office['id']; ?>" <?php echo $office_filter == $office['id'] ? 'selected' : ''; ?>>
@@ -382,21 +389,17 @@ try {
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <select class="form-select" name="action">
-                        <option value="">All Actions</option>
-                        <option value="repair" <?php echo $action_filter == 'repair' ? 'selected' : ''; ?>>Repair</option>
-                        <option value="recondition" <?php echo $action_filter == 'recondition' ? 'selected' : ''; ?>>Recondition</option>
-                        <option value="dispose" <?php echo $action_filter == 'dispose' ? 'selected' : ''; ?>>Dispose</option>
-                        <option value="relocate" <?php echo $action_filter == 'relocate' ? 'selected' : ''; ?>>Relocate</option>
-                    </select>
+                    <input type="date" class="form-control" id="dateFromFilter" value="<?php echo htmlspecialchars($date_from); ?>" placeholder="From Date">
                 </div>
                 <div class="col-md-2">
-                    <input type="date" class="form-control" name="date_from" value="<?php echo htmlspecialchars($date_from); ?>" placeholder="From Date">
+                    <input type="date" class="form-control" id="dateToFilter" value="<?php echo htmlspecialchars($date_to); ?>" placeholder="To Date">
                 </div>
                 <div class="col-md-2">
-                    <input type="date" class="form-control" name="date_to" value="<?php echo htmlspecialchars($date_to); ?>" placeholder="To Date">
+                    <button type="button" class="btn btn-outline-secondary w-100" onclick="clearFilters()">
+                        <i class="bi bi-x-circle"></i> Clear Filters
+                    </button>
                 </div>
-            </form>
+            </div>
         </div>
 
         <!-- Red Tags Table -->
@@ -421,7 +424,7 @@ try {
                                 <th>Item Description</th>
                                 <th>Location</th>
                                 <th>Action</th>
-                                <th>Status</th>
+                                <th>Tagged By</th>
                                 <th class="no-print">Actions</th>
                             </tr>
                         </thead>
@@ -437,24 +440,9 @@ try {
                                     </td>
                                     <td><?php echo htmlspecialchars($red_tag['item_location']); ?></td>
                                     <td><?php echo htmlspecialchars($red_tag['action']); ?></td>
-                                    <td>
-                                        <?php
-                                        $status_class = [
-                                            'pending' => 'bg-warning',
-                                            'processed' => 'bg-info',
-                                            'disposed' => 'bg-success'
-                                        ];
-                                        $status_text = ucfirst($red_tag['status']);
-                                        ?>
-                                        <span class="badge <?php echo $status_class[$red_tag['status']]; ?>">
-                                            <?php echo $status_text; ?>
-                                        </span>
-                                    </td>
+                                    <td><?php echo htmlspecialchars($red_tag['tagged_by']); ?></td>
                                     <td class="no-print">
                                         <div class="btn-group" role="group">
-                                            <a href="view_redtag.php?id=<?php echo $red_tag['id']; ?>" class="btn btn-outline-primary btn-sm" title="View Details">
-                                                <i class="bi bi-eye"></i>
-                                            </a>
                                             <a href="create_redtag.php?control_no=<?php echo urlencode($red_tag['control_no']); ?>" class="btn btn-outline-danger btn-sm" title="Print Red Tag">
                                                 <i class="bi bi-printer"></i>
                                             </a>
@@ -476,27 +464,80 @@ try {
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Auto-filter functionality
+        // Auto-filter functionality using vanilla JavaScript
         document.addEventListener('DOMContentLoaded', function() {
-            const form = document.querySelector('.filter-section form');
-            const inputs = form.querySelectorAll('input, select');
+            console.log('DOM loaded and ready');
             
-            inputs.forEach(input => {
-                input.addEventListener('change', function() {
-                    form.submit();
+            // Office filter change
+            const officeFilter = document.getElementById('officeFilter');
+            if (officeFilter) {
+                officeFilter.addEventListener('change', function() {
+                    console.log('Office filter changed to:', this.value);
+                    updateFilters();
                 });
+            }
+            
+            // Date from filter change
+            const dateFromFilter = document.getElementById('dateFromFilter');
+            if (dateFromFilter) {
+                dateFromFilter.addEventListener('change', function() {
+                    console.log('Date from filter changed to:', this.value);
+                    updateFilters();
+                });
+            }
+            
+            // Date to filter change
+            const dateToFilter = document.getElementById('dateToFilter');
+            if (dateToFilter) {
+                dateToFilter.addEventListener('change', function() {
+                    console.log('Date to filter changed to:', this.value);
+                    updateFilters();
+                });
+            }
+            
+            // Search input with debouncing
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                let searchTimeout;
+                searchInput.addEventListener('input', function() {
+                    console.log('Search input changed to:', this.value);
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(function() {
+                        console.log('Executing search for:', searchInput.value.trim());
+                        updateFilters();
+                    }, 500); // Wait 500ms after user stops typing
+                });
+            }
+            
+            // Function to update filters
+            function updateFilters() {
+                const searchValue = searchInput ? searchInput.value.trim() : '';
+                const officeValue = officeFilter ? officeFilter.value : '';
+                const dateFromValue = dateFromFilter ? dateFromFilter.value : '';
+                const dateToValue = dateToFilter ? dateToFilter.value : '';
                 
-                // For search input, add debounce
-                if (input.type === 'text') {
-                    let timeout;
-                    input.addEventListener('input', function() {
-                        clearTimeout(timeout);
-                        timeout = setTimeout(() => {
-                            form.submit();
-                        }, 500);
-                    });
+                // Build URL with parameters
+                let url = 'red_tags.php';
+                const params = [];
+                
+                if (searchValue) params.push('search=' + encodeURIComponent(searchValue));
+                if (officeValue) params.push('office=' + encodeURIComponent(officeValue));
+                if (dateFromValue) params.push('date_from=' + encodeURIComponent(dateFromValue));
+                if (dateToValue) params.push('date_to=' + encodeURIComponent(dateToValue));
+                
+                if (params.length > 0) {
+                    url += '?' + params.join('&');
                 }
-            });
+                
+                console.log('Redirecting to:', url);
+                window.location.href = url;
+            }
+            
+            // Clear filters function
+            window.clearFilters = function() {
+                console.log('Clearing filters');
+                window.location.href = 'red_tags.php';
+            };
         });
     </script>
 </body>
