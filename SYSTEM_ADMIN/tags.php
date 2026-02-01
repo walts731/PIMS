@@ -155,7 +155,9 @@ $tag_types = [
     'par_no' => 'PAR Number',
     'ris_no' => 'RIS Number',
     'sai_no' => 'SAI Number',
-    'code' => 'General Code'
+    'code' => 'General Code',
+    'red_tag_control' => 'Red Tag Control No',
+    'red_tag_no' => 'Red Tag No'
 ];
 
 function getFormatPattern($components, $separator) {
