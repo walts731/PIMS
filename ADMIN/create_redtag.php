@@ -64,22 +64,155 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['generate_redtag'])) {
         $action = $other_action;
     }
     
-    // Log red tag creation
-    logSystemAction($_SESSION['user_id'], 'redtag_created', 'inventory', "Created red tag for: {$item_description}");
+    // Generate red_tag_no if not provided or empty
+    if (empty($red_tag_no)) {
+        $red_tag_no = generateNextTag('red_tag_no');
+        if (empty($red_tag_no)) {
+            // Fallback to manual generation if tag_formats not configured
+            $red_tag_no = 'RTN-' . date('Y') . '-' . str_pad(mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
+        }
+    }
     
-    $_SESSION['success'] = "Red tag created successfully! Control No: {$control_no}";
+    // Ensure control_no is not empty
+    if (empty($control_no)) {
+        $control_no = generateNextTag('red_tag_control');
+        if (empty($control_no)) {
+            // Fallback to manual generation if tag_formats not configured
+            $control_no = 'RT-' . date('Y') . '-' . str_pad(mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
+        }
+    }
+    
+    // Create red_tags table if it doesn't exist
+    $create_table_sql = "CREATE TABLE IF NOT EXISTS `red_tags` (
+        `id` int(11) NOT NULL AUTO_INCREMENT,
+        `control_no` varchar(50) NOT NULL,
+        `red_tag_no` varchar(50) NOT NULL,
+        `date_received` date NOT NULL,
+        `tagged_by` varchar(100) NOT NULL,
+        `item_location` varchar(255) NOT NULL,
+        `item_description` text NOT NULL,
+        `removal_reason` text NOT NULL,
+        `action` varchar(50) NOT NULL,
+        `office_id` int(11) DEFAULT NULL,
+        `asset_id` int(11) DEFAULT NULL,
+        `status` enum('pending','processed','disposed') DEFAULT 'pending',
+        `created_by` int(11) NOT NULL,
+        `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `control_no` (`control_no`),
+        UNIQUE KEY `red_tag_no` (`red_tag_no`),
+        KEY `office_id` (`office_id`),
+        KEY `asset_id` (`asset_id`),
+        KEY `created_by` (`created_by`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+    
+    $conn->query($create_table_sql);
+    
+    try {
+        // Start transaction
+        $conn->begin_transaction();
+        
+        // Get office_id from office_name
+        $office_id = null;
+        if (!empty($item_location)) {
+            $office_stmt = $conn->prepare("SELECT id FROM offices WHERE office_name = ? LIMIT 1");
+            $office_stmt->bind_param("s", $item_location);
+            $office_stmt->execute();
+            $office_result = $office_stmt->get_result();
+            if ($office_row = $office_result->fetch_assoc()) {
+                $office_id = $office_row['id'];
+            }
+            $office_stmt->close();
+        }
+        
+        // Debug logging
+        error_log("Red Tag Debug - Data: control_no=$control_no, red_tag_no=$red_tag_no, asset_id=$asset_id, office_id=$office_id");
+        
+        // Insert into red_tags table
+        $insert_sql = "INSERT INTO red_tags (control_no, red_tag_no, date_received, tagged_by, item_location, item_description, removal_reason, action, office_id, asset_id, created_by) 
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $insert_stmt = $conn->prepare($insert_sql);
+        if (!$insert_stmt) {
+            throw new Exception("Prepare failed: " . $conn->error);
+        }
+        
+        $bind_result = $insert_stmt->bind_param("ssssssssiii", $control_no, $red_tag_no, $date_received, $tagged_by, $item_location, $item_description, $removal_reason, $action, $office_id, $asset_id, $_SESSION['user_id']);
+        if (!$bind_result) {
+            throw new Exception("Bind failed: " . $insert_stmt->error);
+        }
+        
+        $execute_result = $insert_stmt->execute();
+        if (!$execute_result) {
+            throw new Exception("Execute failed: " . $insert_stmt->error);
+        }
+        
+        $insert_stmt->close();
+        
+        // Update asset_item status to 'red_tagged' if asset_id is provided
+        if ($asset_id > 0) {
+            $update_sql = "UPDATE asset_items SET status = 'red_tagged', last_updated = NOW() WHERE id = ?";
+            $update_stmt = $conn->prepare($update_sql);
+            if (!$update_stmt) {
+                throw new Exception("Update prepare failed: " . $conn->error);
+            }
+            
+            $update_bind = $update_stmt->bind_param("i", $asset_id);
+            if (!$update_bind) {
+                throw new Exception("Update bind failed: " . $update_stmt->error);
+            }
+            
+            $update_execute = $update_stmt->execute();
+            if (!$update_execute) {
+                throw new Exception("Update execute failed: " . $update_stmt->error);
+            }
+            
+            $update_stmt->close();
+            
+            // Log the asset status change
+            logSystemAction($_SESSION['user_id'], 'asset_status_updated', 'inventory', "Asset ID {$asset_id} status changed to red_tagged");
+        }
+        
+        // Commit transaction
+        $conn->commit();
+        
+        // Log red tag creation
+        logSystemAction($_SESSION['user_id'], 'redtag_created', 'inventory', "Created red tag {$control_no} for: {$item_description}");
+        
+        $_SESSION['success'] = "Red tag created successfully! Control No: {$control_no}";
+        
+    } catch (Exception $e) {
+        // Rollback transaction on error
+        $conn->rollback();
+        error_log("Error creating red tag: " . $e->getMessage());
+        error_log("Error details: " . print_r([
+            'control_no' => $control_no,
+            'red_tag_no' => $red_tag_no,
+            'asset_id' => $asset_id,
+            'user_id' => $_SESSION['user_id'] ?? 'none'
+        ], true));
+        $_SESSION['error'] = "Error creating red tag: " . $e->getMessage();
+    }
 }
 
-// Generate control number using tag_formats system
+// Generate control number using tag_formats system with fallback
 $control_no = $control_no ?? generateNextTag('red_tag_control');
+if (empty($control_no)) {
+    // Fallback to manual generation if tag_formats not configured
+    $control_no = 'RT-' . date('Y') . '-' . str_pad(mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
+}
 $tagged_by = $tagged_by ?? ($_SESSION['firstname'] ?? '') . ' ' . ($_SESSION['lastname'] ?? '');
 $date_received = $date_received ?? date('Y-m-d');
 $item_location = $item_location ?? $office_name;
 $item_description = $item_description ?? $description;
 $action = $action ?? ''; // Initialize action variable
 
-// Generate separate red tag number for header
+// Generate separate red tag number for header with fallback
 $red_tag_no = generateNextTag('red_tag_no');
+if (empty($red_tag_no)) {
+    // Fallback to manual generation if tag_formats not configured
+    $red_tag_no = 'RTN-' . date('Y') . '-' . str_pad(mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">

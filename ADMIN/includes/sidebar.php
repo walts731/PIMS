@@ -297,16 +297,16 @@ try {
             Dashboard
         </a>
         <div class="sidebar-dropdown">
-            <button class="sidebar-dropdown-toggle <?php echo (in_array($current_page, ['assets.php', 'consumables.php', 'no_inventory_tag.php', 'inventory_tags.php', 'unserviceable_assets.php'])) ? 'active' : ''; ?>" 
+            <button class="sidebar-dropdown-toggle <?php echo (in_array($current_page, ['assets.php', 'consumables.php', 'no_inventory_tag.php', 'inventory_tags.php', 'unserviceable_assets.php', 'red_tags.php'])) ? 'active' : ''; ?>" 
                     type="button" data-bs-toggle="collapse" data-bs-target="#inventoryDropdown" 
-                    aria-expanded="<?php echo (in_array($current_page, ['assets.php', 'consumables.php', 'no_inventory_tag.php', 'inventory_tags.php', 'unserviceable_assets.php'])) ? 'true' : 'false'; ?>">
+                    aria-expanded="<?php echo (in_array($current_page, ['assets.php', 'consumables.php', 'no_inventory_tag.php', 'inventory_tags.php', 'unserviceable_assets.php', 'red_tags.php'])) ? 'true' : 'false'; ?>">
                 <div>
                     <i class="bi bi-archive"></i>
                     Inventory
                 </div>
                 <i class="bi bi-chevron-down"></i>
             </button>
-            <div class="collapse <?php echo (in_array($current_page, ['assets.php', 'consumables.php', 'no_inventory_tag.php', 'inventory_tags.php', 'unserviceable_assets.php'])) ? 'show' : ''; ?>" id="inventoryDropdown">
+            <div class="collapse <?php echo (in_array($current_page, ['assets.php', 'consumables.php', 'no_inventory_tag.php', 'inventory_tags.php', 'unserviceable_assets.php', 'red_tags.php'])) ? 'show' : ''; ?>" id="inventoryDropdown">
                 <ul class="sidebar-dropdown-menu">
                     <li>
                         <a href="assets.php" class="sidebar-dropdown-item <?php echo $current_page == 'assets.php' ? 'active' : ''; ?>">
@@ -336,6 +336,12 @@ try {
                         <a href="unserviceable_assets.php" class="sidebar-dropdown-item <?php echo $current_page == 'unserviceable_assets.php' ? 'active' : ''; ?>">
                             <i class="bi bi-x-circle"></i>
                             Unserviceable Assets
+                        </a>
+                    </li>
+                    <li>
+                        <a href="red_tags.php" class="sidebar-dropdown-item <?php echo $current_page == 'red_tags.php' ? 'active' : ''; ?>">
+                            <i class="bi bi-tag"></i>
+                            Red Tags
                         </a>
                     </li>
                 </ul>
