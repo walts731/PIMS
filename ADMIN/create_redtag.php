@@ -487,9 +487,9 @@ if (empty($red_tag_no)) {
                             <p class="text-muted mb-0">Generate 5S Red Tag for unserviceable items</p>
                         </div>
                         <div class="d-flex gap-2">
-                            <button onclick="window.print()" class="btn btn-primary btn-custom">
+                            <a href="print_redtag.php?control_no=<?php echo urlencode($control_no); ?>" class="btn btn-primary btn-custom" target="_blank">
                                 <i class="bi bi-printer"></i> Print Red Tag
-                            </button>
+                            </a>
                             <a href="unserviceable_assets.php" class="btn btn-outline-secondary btn-custom">
                                 <i class="bi bi-arrow-left"></i> Back to Assets
                             </a>

@@ -107,8 +107,6 @@ logSystemAction($_SESSION['user_id'], 'print', 'red_tag', "Printed red tag: {$co
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 2px solid #000;
-            border-radius: 50%;
             font-size: 6px;
             text-align: center;
             font-weight: bold;
@@ -117,7 +115,6 @@ logSystemAction($_SESSION['user_id'], 'print', 'red_tag', "Printed red tag: {$co
         .tag-logo .header-logo {
             max-width: 36px;
             max-height: 36px;
-            border-radius: 50%;
             object-fit: contain;
         }
         
