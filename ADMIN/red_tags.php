@@ -340,6 +340,9 @@ try {
                     <p class="text-muted mb-0">View and manage all 5S red tags in the system</p>
                 </div>
                 <div class="col-md-4 text-md-end">
+                    <button type="button" class="btn btn-success btn-custom" onclick="printSelectedTags()">
+                        <i class="bi bi-printer"></i> Print Selected
+                    </button>
                     <a href="unserviceable_assets.php" class="btn btn-danger btn-custom">
                         <i class="bi bi-plus-circle"></i> Create Red Tag
                     </a>
@@ -418,6 +421,9 @@ try {
                     <table class="table table-hover">
                         <thead>
                             <tr>
+                                <th width="40" class="no-print">
+                                    <input type="checkbox" id="selectAll" onchange="toggleAllCheckboxes()">
+                                </th>
                                 <th>Control No</th>
                                 <th>Red Tag No</th>
                                 <th>Date Received</th>
@@ -431,6 +437,9 @@ try {
                         <tbody>
                             <?php foreach ($red_tags as $red_tag): ?>
                                 <tr>
+                                    <td class="no-print">
+                                        <input type="checkbox" name="selected_tags[]" value="<?php echo $red_tag['id']; ?>" class="tag-checkbox">
+                                    </td>
                                     <td><strong><?php echo htmlspecialchars($red_tag['control_no']); ?></strong></td>
                                     <td><?php echo htmlspecialchars($red_tag['red_tag_no']); ?></td>
                                     <td><?php echo date('M d, Y', strtotime($red_tag['date_received'])); ?></td>
@@ -537,6 +546,28 @@ try {
             window.clearFilters = function() {
                 console.log('Clearing filters');
                 window.location.href = 'red_tags.php';
+            };
+            
+            // Toggle all checkboxes
+            window.toggleAllCheckboxes = function() {
+                const selectAll = document.getElementById('selectAll');
+                const checkboxes = document.querySelectorAll('.tag-checkbox');
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = selectAll.checked;
+                });
+            };
+            
+            // Print selected tags - open in new tab
+            window.printSelectedTags = function() {
+                const checkboxes = document.querySelectorAll('.tag-checkbox:checked');
+                if (checkboxes.length === 0) {
+                    alert('Please select at least one red tag to print.');
+                    return;
+                }
+
+                const tagIds = Array.from(checkboxes).map(cb => cb.value).join(',');
+                console.log('Printing selected tags:', tagIds);
+                window.open('print_redtags.php?ids=' + tagIds, '_blank');
             };
         });
     </script>
