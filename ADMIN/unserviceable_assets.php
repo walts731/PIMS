@@ -371,8 +371,8 @@ if ($offices_result) {
                                             <a href="view_asset_item.php?id=<?php echo $asset['id']; ?>" class="btn btn-outline-primary btn-action" title="View Details">
                                                 <i class="bi bi-eye"></i>
                                             </a>
-                                            <a href="iirup_form.php?auto_fill=true&asset_id=<?php echo $asset['id']; ?>&description=<?php echo urlencode($asset['description']); ?>&property_no=<?php echo urlencode($asset['property_number'] ?? ''); ?>&inventory_tag=<?php echo urlencode($asset['inventory_tag'] ?? ''); ?>&acquisition_date=<?php echo $asset['acquisition_date']; ?>&value=<?php echo $asset['value']; ?>&office_name=<?php echo urlencode($asset['office_name'] ?? ''); ?>" class="btn btn-outline-warning btn-action" title="Add to IIRUP">
-                                                <i class="bi bi-file-earmark-text"></i>
+                                            <a href="create_redtag.php?asset_id=<?php echo $asset['id']; ?>&description=<?php echo urlencode($asset['description']); ?>&property_no=<?php echo urlencode($asset['property_number'] ?? ''); ?>&inventory_tag=<?php echo urlencode($asset['inventory_tag'] ?? ''); ?>&acquisition_date=<?php echo $asset['acquisition_date']; ?>&value=<?php echo $asset['value']; ?>&office_name=<?php echo urlencode($asset['office_name'] ?? ''); ?>" class="btn btn-outline-danger btn-action" title="Create Red Tag">
+                                                <i class="bi bi-exclamation-triangle"></i>
                                             </a>
                                         </div>
                                     </td>
