@@ -382,10 +382,20 @@ logSystemAction($_SESSION['user_id'], 'Accessed Tags Management', 'tags', 'tags.
             height: 100vh;
             z-index: 1002;
             transition: left 0.3s ease;
+            overflow: hidden;
         }
         
         .sidebar.active {
             left: 0;
+        }
+        
+        /* Remove scrollbar from sidebar content */
+        .sidebar * {
+            scrollbar-width: none; /* Firefox */
+        }
+        
+        .sidebar::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Edge */
         }
         
         /* Main content adjustments */

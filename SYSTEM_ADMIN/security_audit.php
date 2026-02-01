@@ -243,6 +243,19 @@ $current_page = 'security_audit.php';
             z-index: 1040;
         }
         
+        /* Remove scrollbar from sidebar */
+        .sidebar {
+            overflow: hidden;
+        }
+        
+        .sidebar * {
+            scrollbar-width: none; /* Firefox */
+        }
+        
+        .sidebar::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Edge */
+        }
+        
         /* Fix modal backdrop issues */
         .modal.show {
             display: block !important;
