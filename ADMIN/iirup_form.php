@@ -502,15 +502,15 @@ if ($result && $row = $result->fetch_assoc()) {
                     <div class="col-md-6">
                         <p>Requested by:</p>
                         <div class="signature-block">
-                            <input type="text" class="form-control form-control-sm mb-2" name="accountable_officer_name" placeholder="Signature over Printed Name of Accountable Officer">
-                            <input type="text" class="form-control form-control-sm mb-2" name="accountable_officer_designation" placeholder="Designation of Accountable Officer">
+                            <input type="text" class="form-control form-control-sm mb-2" name="accountable_officer_name" placeholder="Signature over Printed Name of Accountable Officer" value="<?php echo htmlspecialchars($latest_iirup['accountable_officer_name'] ?? ''); ?>">
+                            <input type="text" class="form-control form-control-sm mb-2" name="accountable_officer_designation" placeholder="Designation of Accountable Officer" value="<?php echo htmlspecialchars($latest_iirup['accountable_officer_designation'] ?? ''); ?>">
                         </div>
                     </div>
                     <div class="col-md-6">
                         <p>Approved by:</p>
                         <div class="signature-block">
-                            <input type="text" class="form-control form-control-sm mb-2" name="authorized_official_name" placeholder="Signature over Printed Name of Authorized Official">
-                            <input type="text" class="form-control form-control-sm mb-2" name="authorized_official_designation" placeholder="Designation of Authorized Official">
+                            <input type="text" class="form-control form-control-sm mb-2" name="authorized_official_name" placeholder="Signature over Printed Name of Authorized Official" value="<?php echo htmlspecialchars($latest_iirup['authorized_official_name'] ?? ''); ?>">
+                            <input type="text" class="form-control form-control-sm mb-2" name="authorized_official_designation" placeholder="Designation of Authorized Official" value="<?php echo htmlspecialchars($latest_iirup['authorized_official_designation'] ?? ''); ?>">
                         </div>
                     </div>
                 </div>
@@ -520,13 +520,13 @@ if ($result && $row = $result->fetch_assoc()) {
                     <div class="col-md-6">
                         <p>I CERTIFY that I have inspected each and every article enumerated in this report, and that disposition made thereof was, in my judgment, best for public interest.</p>
                         <div class="signature-block">
-                            <input type="text" class="form-control form-control-sm mb-2" name="inspection_officer_name" placeholder="Signature over Printed Name of Inspection Officer">
+                            <input type="text" class="form-control form-control-sm mb-2" name="inspection_officer_name" placeholder="Signature over Printed Name of Inspection Officer" value="<?php echo htmlspecialchars($latest_iirup['inspection_officer_name'] ?? ''); ?>">
                         </div>
                     </div>
                     <div class="col-md-6">
                         <p>I CERTIFY that I have witnessed disposition of articles enumerated on this report this _____ day of _____.</p>
                         <div class="signature-block">
-                            <input type="text" class="form-control form-control-sm mb-2" name="witness_name" placeholder="Signature over Printed Name of Witness">
+                            <input type="text" class="form-control form-control-sm mb-2" name="witness_name" placeholder="Signature over Printed Name of Witness" value="<?php echo htmlspecialchars($latest_iirup['witness_name'] ?? ''); ?>">
                         </div>
                     </div>
                 </div>
