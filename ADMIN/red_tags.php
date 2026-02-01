@@ -340,7 +340,7 @@ try {
                     <p class="text-muted mb-0">View and manage all 5S red tags in the system</p>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <a href="create_redtag.php" class="btn btn-danger btn-custom">
+                    <a href="unserviceable_assets.php" class="btn btn-danger btn-custom">
                         <i class="bi bi-plus-circle"></i> Create Red Tag
                     </a>
                 </div>
@@ -409,7 +409,7 @@ try {
                     <i class="bi bi-tag"></i>
                     <h4>No Red Tags Found</h4>
                     <p class="text-muted">No red tags match your search criteria.</p>
-                    <a href="create_redtag.php" class="btn btn-danger">
+                    <a href="unserviceable_assets.php" class="btn btn-danger">
                         <i class="bi bi-plus-circle"></i> Create First Red Tag
                     </a>
                 </div>
@@ -443,7 +443,7 @@ try {
                                     <td><?php echo htmlspecialchars($red_tag['tagged_by']); ?></td>
                                     <td class="no-print">
                                         <div class="btn-group" role="group">
-                                            <a href="create_redtag.php?control_no=<?php echo urlencode($red_tag['control_no']); ?>" class="btn btn-outline-danger btn-sm" title="Print Red Tag">
+                                            <a href="print_redtag.php?control_no=<?php echo urlencode($red_tag['control_no']); ?>" class="btn btn-outline-danger btn-sm" title="Print Red Tag" target="_blank">
                                                 <i class="bi bi-printer"></i>
                                             </a>
                                         </div>
