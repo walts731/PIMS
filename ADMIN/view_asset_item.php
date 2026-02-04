@@ -746,12 +746,20 @@ $status_display = formatStatus($item['status']);
                 <div class="detail-card">
                     <h5 class="mb-3"><i class="bi bi-gear"></i> Actions</h5>
                     <div class="d-grid gap-2">
-                        <button class="btn btn-outline-success" onclick="transferItem()">
-                            <i class="bi bi-arrow-left-right"></i> Transfer Item
-                        </button>
-                        <button class="btn btn-outline-info" onclick="addToIirup()">
-                            <i class="bi bi-file-earmark-text"></i> Add to IIRUP
-                        </button>
+                        <?php if ($item['status'] === 'no_tag'): ?>
+                            <!-- Show Create Tag button for no_tag assets -->
+                            <a href="create_tag.php?id=<?php echo $item_id; ?>" class="btn btn-primary">
+                                <i class="bi bi-tag"></i> Create Tag
+                            </a>
+                        <?php else: ?>
+                            <!-- Show Transfer and IIRUP buttons for tagged assets -->
+                            <button class="btn btn-outline-success" onclick="transferItem()">
+                                <i class="bi bi-arrow-left-right"></i> Transfer Item
+                            </button>
+                            <button class="btn btn-outline-info" onclick="addToIirup()">
+                                <i class="bi bi-file-earmark-text"></i> Add to IIRUP
+                            </button>
+                        <?php endif; ?>
                     </div>
                 </div>
                 
