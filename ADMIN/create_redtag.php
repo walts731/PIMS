@@ -150,6 +150,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['generate_redtag'])) {
         
         // Update asset_item status to 'red_tagged' if asset_id is provided
         if ($asset_id > 0) {
+            // Get current status before updating
+            $current_status_sql = "SELECT status FROM asset_items WHERE id = ?";
+            $current_status_stmt = $conn->prepare($current_status_sql);
+            $current_status_stmt->bind_param("i", $asset_id);
+            $current_status_stmt->execute();
+            $current_status_result = $current_status_stmt->get_result();
+            $old_status = 'unknown';
+            if ($current_status_row = $current_status_result->fetch_assoc()) {
+                $old_status = $current_status_row['status'];
+            }
+            $current_status_stmt->close();
+            
             $update_sql = "UPDATE asset_items SET status = 'red_tagged', last_updated = NOW() WHERE id = ?";
             $update_stmt = $conn->prepare($update_sql);
             if (!$update_stmt) {
@@ -168,8 +180,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['generate_redtag'])) {
             
             $update_stmt->close();
             
+            // Record history for the asset status change
+            $history_sql = "INSERT INTO asset_history (asset_item_id, action, old_value, new_value, changed_by, changed_at, notes) 
+                          VALUES (?, 'status_change', ?, 'red_tagged', ?, NOW(), 'Status changed via Red Tag: $control_no')";
+            $history_stmt = $conn->prepare($history_sql);
+            $history_stmt->bind_param("issi", $asset_id, $old_status, $_SESSION['user_id']);
+            $history_stmt->execute();
+            $history_stmt->close();
+            
             // Log the asset status change
-            logSystemAction($_SESSION['user_id'], 'asset_status_updated', 'inventory', "Asset ID {$asset_id} status changed to red_tagged");
+            logSystemAction($_SESSION['user_id'], 'asset_status_updated', 'inventory', "Asset ID {$asset_id} status changed from {$old_status} to red_tagged");
         }
         
         // Commit transaction

@@ -206,21 +206,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     error_log("Assets already unserviceable: " . implode(', ', $already_unserviceable));
                 }
                 
-                // Update only assets that can be changed to unserviceable
-                if (!empty($assets_to_update)) {
-                    $update_ids_string = implode(',', $assets_to_update);
-                    $update_sql = "UPDATE asset_items SET status = 'unserviceable', last_updated = NOW() 
-                                  WHERE id IN ($update_ids_string)";
-                    
-                    $update_result = $conn->query($update_sql);
-                    $updated_count = $conn->affected_rows;
-                    
-                    error_log("Updated $updated_count asset items to unserviceable. IDs: " . implode(', ', $assets_to_update));
-                    
-                    // Log the action for audit trail
-                    logSystemAction($_SESSION['user_id'], 'Updated asset status to unserviceable', 'assets', 
-                                  'asset_ids: ' . implode(',', $assets_to_update) . ', form_id: ' . $form_id);
-                }
+                    // Update only assets that can be changed to unserviceable
+                    if (!empty($assets_to_update)) {
+                        $update_ids_string = implode(',', $assets_to_update);
+                        $update_sql = "UPDATE asset_items SET status = 'unserviceable', last_updated = NOW() 
+                                      WHERE id IN ($update_ids_string)";
+                        
+                        $update_result = $conn->query($update_sql);
+                        $updated_count = $conn->affected_rows;
+                        
+                        error_log("Updated $updated_count asset items to unserviceable. IDs: " . implode(', ', $assets_to_update));
+                        
+                        // Record history for each updated asset
+                        foreach ($assets_to_update as $asset_id) {
+                            $history_sql = "INSERT INTO asset_history (asset_item_id, action, old_value, new_value, changed_by, changed_at, notes) 
+                                          VALUES (?, 'status_change', 'serviceable', 'unserviceable', ?, NOW(), 'Status changed via IIRUP Form: $form_number')";
+                            $history_stmt = $conn->prepare($history_sql);
+                            $history_stmt->bind_param("ii", $asset_id, $_SESSION['user_id']);
+                            $history_stmt->execute();
+                            $history_stmt->close();
+                        }
+                        
+                        // Log the action for audit trail
+                        logSystemAction($_SESSION['user_id'], 'Updated asset status to unserviceable', 'assets', 
+                                      'asset_ids: ' . implode(',', $assets_to_update) . ', form_id: ' . $form_id);
+                    }
             }
         }
         
