@@ -94,12 +94,12 @@ $history_stmt->close();
 // Format status for display
 function formatStatus($status) {
     $status_map = [
-        'available' => ['Serviceable', 'status-serviceable'],
-        'in_use' => ['Unserviceable', 'status-unserviceable'],
-        'maintenance' => ['Red-Tagged', 'status-red-tagged'],
-        'disposed' => ['Disposed', 'status-borrowed']
+        'serviceable' => ['Serviceable', 'status-serviceable'],
+        'unserviceable' => ['Unserviceable', 'status-unserviceable'],
+        'red_tagged' => ['Red Tagged', 'status-red-tagged'],
+        'no_tag' => ['No Tag', 'status-no-tag']
     ];
-    return $status_map[$status] ?? [$status, ''];
+    return $status_map[$status] ?? [$status, 'status-default'];
 }
 
 // Get item status display
@@ -172,17 +172,46 @@ $status_display = formatStatus($item['status']);
         }
         
         .status-badge {
-            padding: 0.5rem 1rem;
-            border-radius: var(--border-radius-xl);
-            font-size: 0.9rem;
+            padding: 0.4rem 0.8rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
             font-weight: 600;
             display: inline-block;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
         }
         
-        .status-serviceable { background-color: #d4edda; color: #155724; }
-        .status-unserviceable { background-color: #cce5ff; color: #004085; }
-        .status-red-tagged { background-color: #f8d7da; color: #721c24; }
-        .status-borrowed { background-color: #fff3cd; color: #856404; }
+        .status-serviceable { 
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%); 
+            color: white; 
+            border: 1px solid #28a745;
+        }
+        
+        .status-unserviceable { 
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); 
+            color: white; 
+            border: 1px solid #dc3545;
+        }
+        
+        .status-red-tagged { 
+            background: linear-gradient(135deg, #fd7e14 0%, #e55a00 100%); 
+            color: white; 
+            border: 1px solid #fd7e14;
+        }
+        
+        .status-no-tag { 
+            background: linear-gradient(135deg, #6c757d 0%, #545b62 100%); 
+            color: white; 
+            border: 1px solid #6c757d;
+        }
+        
+        .status-default { 
+            background: linear-gradient(135deg, #e9ecef 0%, #ced4da 100%); 
+            color: #495057; 
+            border: 1px solid #e9ecef;
+        }
         
         .text-value {
             font-weight: 700;
@@ -295,9 +324,9 @@ $status_display = formatStatus($item['status']);
                     <a href="asset_items.php?asset_id=<?php echo $asset_id; ?>" class="btn btn-back me-2">
                         <i class="bi bi-arrow-left"></i> Back to Items
                     </a>
-                    <button class="btn btn-outline-primary btn-sm" onclick="window.print()">
+                    <a href="print_inventory_tag.php?id=<?php echo $item_id; ?>" class="btn btn-outline-primary btn-sm" target="_blank">
                         <i class="bi bi-printer"></i> Print
-                    </button>
+                    </a>
                 </div>
             </div>
         </div>

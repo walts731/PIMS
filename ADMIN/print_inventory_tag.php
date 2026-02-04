@@ -140,7 +140,7 @@ if ($tag['firstname'] && $tag['lastname']) {
 
 // Status checkboxes
 $serviceable_checked = ($tag['status'] === 'serviceable') ? '☑' : '☐';
-$unserviceable_checked = ($tag['status'] === 'unserviceable') ? '☑' : '☐';
+$unserviceable_checked = ($tag['status'] === 'unserviceable' || $tag['status'] === 'red_tagged') ? '☑' : '☐';
 ?>
 
 <!DOCTYPE html>

@@ -429,7 +429,7 @@ function getTagSpecificData($conn, $tag_id, $category_code) {
             
             // Status checkboxes
             $serviceable_checked = ($tag['status'] === 'serviceable') ? '☑' : '☐';
-            $unserviceable_checked = ($tag['status'] === 'unserviceable') ? '☑' : '☐';
+            $unserviceable_checked = ($tag['status'] === 'unserviceable' || $tag['status'] === 'red_tagged') ? '☑' : '☐';
             ?>
             
             <div class="tag-container">
