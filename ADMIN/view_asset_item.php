@@ -751,14 +751,19 @@ $status_display = formatStatus($item['status']);
                             <a href="create_tag.php?id=<?php echo $item_id; ?>" class="btn btn-primary">
                                 <i class="bi bi-tag"></i> Create Tag
                             </a>
-                        <?php else: ?>
-                            <!-- Show Transfer and IIRUP buttons for tagged assets -->
+                        <?php elseif ($item['status'] === 'serviceable' || $item['status'] === 'red_tagged'): ?>
+                            <!-- Show Transfer and IIRUP buttons for serviceable and red_tagged assets -->
                             <button class="btn btn-outline-success" onclick="transferItem()">
                                 <i class="bi bi-arrow-left-right"></i> Transfer Item
                             </button>
                             <button class="btn btn-outline-info" onclick="addToIirup()">
                                 <i class="bi bi-file-earmark-text"></i> Add to IIRUP
                             </button>
+                        <?php else: ?>
+                            <!-- No action buttons for unserviceable assets -->
+                            <div class="text-muted text-center">
+                                <i class="bi bi-info-circle"></i> This asset is unserviceable and cannot be transferred or added to IIRUP
+                            </div>
                         <?php endif; ?>
                     </div>
                 </div>

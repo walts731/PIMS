@@ -181,7 +181,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['generate_redtag'])) {
             $update_stmt->close();
             
             // Record history for the asset status change
-            $history_sql = "INSERT INTO asset_history (asset_item_id, action, old_value, new_value, changed_by, changed_at, notes) 
+            $history_sql = "INSERT INTO asset_item_history (item_id, action, old_value, new_value, created_by, created_at, details) 
                           VALUES (?, 'status_change', ?, 'red_tagged', ?, NOW(), 'Status changed via Red Tag: $control_no')";
             $history_stmt = $conn->prepare($history_sql);
             $history_stmt->bind_param("issi", $asset_id, $old_status, $_SESSION['user_id']);
