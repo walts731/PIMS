@@ -593,50 +593,43 @@ if ($conn && !$conn->connect_error) {
         });
         
         function exportToCSV() {
-            // Trigger DataTables CSV export
-            $('#propertyCardTable').DataTable().button().add(0, {
-                extend: 'csv',
-                text: '<i class="bi bi-download me-1"></i> Export to CSV',
-                className: 'btn export-btn',
-                filename: function() {
-                    return 'property_card_' + new Date().toISOString().split('T')[0];
-                }
-            }).trigger();
+            // Get current filter parameters
+            const category = document.getElementById('categoryFilter').value;
+            const office = document.getElementById('officeFilter').value;
+            
+            // Build URL with filter parameters
+            let url = 'export_property_card_csv.php';
+            const params = new URLSearchParams();
+            
+            if (category) params.append('category', category);
+            if (office) params.append('office', office);
+            
+            if (params.toString()) {
+                url += '?' + params.toString();
+            }
+            
+            // Open export in new window
+            window.open(url, '_blank');
         }
         
         function exportToPDF() {
-            // Trigger DataTables PDF export
-            $('#propertyCardTable').DataTable().button().add(0, {
-                extend: 'pdf',
-                text: '<i class="bi bi-file-pdf me-1"></i> Export to PDF',
-                className: 'btn btn-danger',
-                filename: function() {
-                    return 'property_card_' + new Date().toISOString().split('T')[0];
-                },
-                title: 'Property Card Report',
-                orientation: 'landscape',
-                pageSize: 'A4',
-                exportOptions: {
-                    columns: ':visible'
-                },
-                customize: function(doc) {
-                    // Add custom styling to PDF
-                    doc.styles.title = {
-                        fontSize: 18,
-                        bold: true,
-                        alignment: 'center'
-                    };
-                    doc.styles.tableHeader = {
-                        fillColor: '#191BA9',
-                        color: 'white',
-                        alignment: 'center'
-                    };
-                    doc.defaultStyle = {
-                        fontSize: 10,
-                        alignment: 'left'
-                    };
-                }
-            }).trigger();
+            // Get current filter parameters
+            const category = document.getElementById('categoryFilter').value;
+            const office = document.getElementById('officeFilter').value;
+            
+            // Build URL with filter parameters
+            let url = 'export_property_card_pdf.php';
+            const params = new URLSearchParams();
+            
+            if (category) params.append('category', category);
+            if (office) params.append('office', office);
+            
+            if (params.toString()) {
+                url += '?' + params.toString();
+            }
+            
+            // Open export in new window
+            window.open(url, '_blank');
         }
         
         function autoFilter() {
