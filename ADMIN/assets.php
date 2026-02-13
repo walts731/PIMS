@@ -235,7 +235,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['action']) && $_GET['acti
 // Handle filter parameters
 $category_filter = isset($_GET['category']) ? intval($_GET['category']) : 0;
 $office_filter = isset($_GET['office']) ? intval($_GET['office']) : 0;
-$status_filter = isset($_GET['status']) ? trim($_GET['status']) : '';
 $search_filter = isset($_GET['search']) ? trim($_GET['search']) : '';
 
 // Get assets with category and office information
@@ -261,12 +260,6 @@ try {
         $sql .= " AND a.office_id = ?";
         $params[] = $office_filter;
         $types .= 'i';
-    }
-    
-    if (!empty($status_filter)) {
-        $sql .= " AND EXISTS (SELECT 1 FROM asset_items ai WHERE ai.asset_id = a.id AND ai.status = ?)";
-        $params[] = $status_filter;
-        $types .= 's';
     }
     
     if (!empty($search_filter)) {
@@ -562,13 +555,7 @@ try {
                             </select>
                         </div>
                         <div class="col-md-4">
-                            <select class="form-select form-select-sm" id="statusFilter">
-                                <option value="">All Status</option>
-                                <option value="no_tag" <?php echo $status_filter == 'no_tag' ? 'selected' : ''; ?>>No Tag</option>
-                                <option value="serviceable" <?php echo $status_filter == 'serviceable' ? 'selected' : ''; ?>>Serviceable</option>
-                                <option value="unserviceable" <?php echo $status_filter == 'unserviceable' ? 'selected' : ''; ?>>Unserviceable</option>
-                                <option value="red_tagged" <?php echo $status_filter == 'red_tagged' ? 'selected' : ''; ?>>Red Tagged</option>
-                            </select>
+                            <!-- Search removed - using DataTables built-in search -->
                         </div>
                     </div>
                 </div>
@@ -848,35 +835,32 @@ try {
                 }
             });
             
-            // Category filter
+            // Category filter - reload page with filter parameter
             $('#categoryFilter').on('change', function() {
                 const categoryValue = this.value;
+                const currentUrl = new URL(window.location);
                 if (categoryValue) {
-                    assetsTable.column(0).search($(this).find('option:selected').text()).draw();
+                    currentUrl.searchParams.set('category', categoryValue);
                 } else {
-                    assetsTable.column(0).search('').draw();
+                    currentUrl.searchParams.delete('category');
                 }
+                currentUrl.searchParams.delete('page'); // Reset pagination
+                window.location.href = currentUrl.toString();
             });
             
-            // Office filter
+            // Office filter - reload page with filter parameter
             $('#officeFilter').on('change', function() {
                 const officeValue = this.value;
+                const currentUrl = new URL(window.location);
                 if (officeValue) {
-                    assetsTable.column(5).search($(this).find('option:selected').text()).draw();
+                    currentUrl.searchParams.set('office', officeValue);
                 } else {
-                    assetsTable.column(5).search('').draw();
+                    currentUrl.searchParams.delete('office');
                 }
+                currentUrl.searchParams.delete('page'); // Reset pagination
+                window.location.href = currentUrl.toString();
             });
             
-            // Status filter
-            $('#statusFilter').on('change', function() {
-                const statusValue = this.value;
-                if (statusValue) {
-                    assetsTable.column(3).search($(this).find('option:selected').text()).draw();
-                } else {
-                    assetsTable.column(3).search('').draw();
-                }
-            });
         });
         
         // Export assets function (updated for DataTables)
