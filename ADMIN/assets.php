@@ -234,16 +234,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['action']) && $_GET['acti
 
 // Handle filter parameters
 $category_filter = isset($_GET['category']) ? intval($_GET['category']) : 0;
+$subcategory_filter = isset($_GET['subcategory']) ? intval($_GET['subcategory']) : 0;
 $office_filter = isset($_GET['office']) ? intval($_GET['office']) : 0;
 $search_filter = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-// Get assets with category and office information
+// Get assets with category, subcategory, and office information
 $assets = [];
 try {
     $sql = "SELECT a.*, ac.category_name, ac.category_code, o.office_name,
+                   sc.sub_category_name, sc.sub_category_code,
                    (SELECT ai.status FROM asset_items ai WHERE ai.asset_id = a.id GROUP BY ai.status ORDER BY COUNT(*) DESC LIMIT 1) as most_common_status
             FROM assets a 
             LEFT JOIN asset_categories ac ON a.asset_categories_id = ac.id 
+            LEFT JOIN asset_sub_categories sc ON a.asset_subcategory_id = sc.id
             LEFT JOIN offices o ON a.office_id = o.id 
             WHERE 1=1";
     
@@ -256,6 +259,12 @@ try {
         $types .= 'i';
     }
     
+    if ($subcategory_filter > 0) {
+        $sql .= " AND a.asset_subcategory_id = ?";
+        $params[] = $subcategory_filter;
+        $types .= 'i';
+    }
+    
     if ($office_filter > 0) {
         $sql .= " AND a.office_id = ?";
         $params[] = $office_filter;
@@ -263,12 +272,15 @@ try {
     }
     
     if (!empty($search_filter)) {
-        $sql .= " AND (a.description LIKE ? OR ac.category_name LIKE ? OR o.office_name LIKE ?)";
+        $sql .= " AND (a.description LIKE ? OR ac.category_name LIKE ? OR ac.category_code LIKE ? OR sc.sub_category_name LIKE ? OR sc.sub_category_code LIKE ? OR o.office_name LIKE ?)";
         $search_term = '%' . $search_filter . '%';
         $params[] = $search_term;
         $params[] = $search_term;
         $params[] = $search_term;
-        $types .= 'sss';
+        $params[] = $search_term;
+        $params[] = $search_term;
+        $params[] = $search_term;
+        $types .= 'ssssss';
     }
     
     $sql .= " ORDER BY a.created_at DESC";
@@ -309,6 +321,25 @@ try {
     }
 } catch (Exception $e) {
     error_log("Error fetching categories: " . $e->getMessage());
+}
+
+// Get subcategories for the selected category
+$subcategories = [];
+if ($category_filter > 0) {
+    try {
+        $stmt = $conn->prepare("SELECT id, sub_category_code, sub_category_name FROM asset_sub_categories WHERE asset_categories_id = ? AND status = 'active' ORDER BY sub_category_code");
+        $stmt->bind_param("i", $category_filter);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $subcategories[] = $row;
+            }
+        }
+        $stmt->close();
+    } catch (Exception $e) {
+        error_log("Error fetching subcategories: " . $e->getMessage());
+    }
 }
 
 // Get offices for dropdown
@@ -433,6 +464,15 @@ try {
             font-weight: 600;
         }
         
+        .subcategory-badge {
+            background: #6c757d;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: var(--border-radius-xl);
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
         .text-value {
             font-weight: 600;
             color: #191BA9;
@@ -534,7 +574,7 @@ try {
                 </div>
                 <div class="col-md-6">
                     <div class="row g-2">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <select class="form-select form-select-sm" id="categoryFilter">
                                 <option value="">All Categories</option>
                                 <?php foreach ($categories as $category): ?>
@@ -544,7 +584,17 @@ try {
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
+                            <select class="form-select form-select-sm" id="subcategoryFilter" <?php echo $category_filter == 0 ? 'disabled' : ''; ?>>
+                                <option value="">All Subcategories</option>
+                                <?php foreach ($subcategories as $subcategory): ?>
+                                    <option value="<?php echo $subcategory['id']; ?>" <?php echo $subcategory_filter == $subcategory['id'] ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($subcategory['sub_category_code'] . ' - ' . $subcategory['sub_category_name']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
                             <select class="form-select form-select-sm" id="officeFilter">
                                 <option value="">All Offices</option>
                                 <?php foreach ($offices as $office): ?>
@@ -554,7 +604,7 @@ try {
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <!-- Search removed - using DataTables built-in search -->
                         </div>
                     </div>
@@ -566,6 +616,7 @@ try {
                     <thead>
                         <tr>
                             <th>Category</th>
+                            <th>Subcategory</th>
                             <th>Description</th>
                             <th>Quantity</th>
                             <th>Office</th>
@@ -584,6 +635,17 @@ try {
                                         <br>
                                         <small class="text-muted"><?php echo htmlspecialchars($asset['category_name'] ?? 'N/A'); ?></small>
                                     </td>
+                                    <td>
+                                        <?php if (!empty($asset['sub_category_code'])): ?>
+                                            <span class="subcategory-badge">
+                                                <?php echo htmlspecialchars($asset['sub_category_code']); ?>
+                                            </span>
+                                            <br>
+                                            <small class="text-muted"><?php echo htmlspecialchars($asset['sub_category_name']); ?></small>
+                                        <?php else: ?>
+                                            <span class="text-muted">No subcategory</span>
+                                        <?php endif; ?>
+                                    </td>
                                     <td><?php echo htmlspecialchars($asset['description']); ?></td>
                                     <td><?php echo $asset['quantity']; ?></td>
                                     <td><?php echo htmlspecialchars($asset['office_name'] ?? 'N/A'); ?></td>
@@ -597,7 +659,7 @@ try {
                             <?php endforeach; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="7" class="text-center text-muted py-4">
+                                <td colspan="8" class="text-center text-muted py-4">
                                     <i class="bi bi-inbox fs-1"></i>
                                     <p class="mt-2">No assets found. Click "Add Asset" to create your first asset.</p>
                                 </td>
@@ -839,10 +901,28 @@ try {
             $('#categoryFilter').on('change', function() {
                 const categoryValue = this.value;
                 const currentUrl = new URL(window.location);
+                
+                // Clear subcategory filter when category changes
+                currentUrl.searchParams.delete('subcategory');
+                
                 if (categoryValue) {
                     currentUrl.searchParams.set('category', categoryValue);
                 } else {
                     currentUrl.searchParams.delete('category');
+                }
+                currentUrl.searchParams.delete('page'); // Reset pagination
+                window.location.href = currentUrl.toString();
+            });
+            
+            // Subcategory filter - reload page with filter parameter
+            $('#subcategoryFilter').on('change', function() {
+                const subcategoryValue = this.value;
+                const currentUrl = new URL(window.location);
+                
+                if (subcategoryValue) {
+                    currentUrl.searchParams.set('subcategory', subcategoryValue);
+                } else {
+                    currentUrl.searchParams.delete('subcategory');
                 }
                 currentUrl.searchParams.delete('page'); // Reset pagination
                 window.location.href = currentUrl.toString();

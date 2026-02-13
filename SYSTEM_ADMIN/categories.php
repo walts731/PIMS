@@ -38,9 +38,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     if (empty($category_name) || empty($category_code)) {
         $message = "Category name and code are required.";
         $message_type = "danger";
-    } elseif (!preg_match('/^[A-Z]{2,5}$/', $category_code)) {
-        $message = "Category code must be 2-5 uppercase letters.";
-        $message_type = "danger";
     } elseif ($depreciation_rate < 0 || $depreciation_rate > 100) {
         $message = "Depreciation rate must be between 0 and 100.";
         $message_type = "danger";
@@ -82,9 +79,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     // Validation
     if (empty($category_name) || empty($category_code)) {
         $message = "Category name and code are required.";
-        $message_type = "danger";
-    } elseif (!preg_match('/^[A-Z]{2,5}$/', $category_code)) {
-        $message = "Category code must be 2-5 uppercase letters.";
         $message_type = "danger";
     } elseif ($depreciation_rate < 0 || $depreciation_rate > 100) {
         $message = "Depreciation rate must be between 0 and 100.";
@@ -542,8 +536,7 @@ $page_title = 'Categories';
                             <div class="col-md-6 mb-3">
                                 <label for="category_code" class="form-label">Category Code *</label>
                                 <input type="text" class="form-control" id="category_code" name="category_code" 
-                                       pattern="[A-Z]{2,5}" placeholder="e.g., FF" required>
-                                <small class="form-text text-muted">2-5 uppercase letters</small>
+                                       placeholder="e.g., FF" required>
                             </div>
                         </div>
                         <div class="mb-3">
@@ -592,8 +585,7 @@ $page_title = 'Categories';
                             <div class="col-md-6 mb-3">
                                 <label for="edit_category_code" class="form-label">Category Code *</label>
                                 <input type="text" class="form-control" id="edit_category_code" name="category_code" 
-                                       pattern="[A-Z]{2,5}" placeholder="e.g., FF" required>
-                                <small class="form-text text-muted">2-5 uppercase letters</small>
+                                       placeholder="e.g., FF" required>
                             </div>
                         </div>
                         <div class="mb-3">
@@ -737,15 +729,6 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('deleteConfirmBtn').href = `categories.php?action=delete&id=${id}`;
         new bootstrap.Modal(document.getElementById('deleteModal')).show();
     }
-    
-    // Auto-uppercase category codes
-    document.getElementById('category_code').addEventListener('input', function(e) {
-        e.target.value = e.target.value.toUpperCase();
-    });
-    
-    document.getElementById('edit_category_code').addEventListener('input', function(e) {
-        e.target.value = e.target.value.toUpperCase();
-    });
     
     // Handle status switch changes
     document.querySelectorAll('.status-switch').forEach(switchElement => {
