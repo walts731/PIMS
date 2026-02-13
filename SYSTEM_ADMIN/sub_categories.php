@@ -454,7 +454,6 @@ try {
     </div>
     </div> <!-- Close main-content and main wrapper -->
     
-    <?php require_once 'includes/logout-modal.php'; ?>
     <?php require_once 'includes/change-password-modal.php'; ?>
     
     <!-- Add Sub Category Modal -->
