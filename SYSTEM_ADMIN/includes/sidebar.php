@@ -88,7 +88,7 @@ try {
     position: fixed;
     top: 20px;
     left: 20px;
-    z-index: 1050;
+    z-index: 9999;
     background: var(--primary-gradient);
     border: none;
     border-radius: var(--border-radius);
@@ -97,6 +97,11 @@ try {
     cursor: pointer;
     transition: var(--transition);
     box-shadow: var(--shadow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 50px;
+    min-height: 50px;
 }
 
 .sidebar-toggle:hover {
@@ -219,6 +224,10 @@ try {
         <a href="categories.php" class="sidebar-nav-item <?php echo $current_page == 'categories.php' ? 'active' : ''; ?>">
             <i class="bi bi-tags"></i>
             Categories
+        </a>
+        <a href="sub_categories.php" class="sidebar-nav-item <?php echo $current_page == 'sub_categories.php' ? 'active' : ''; ?>">
+            <i class="bi bi-tags-fill"></i>
+            Sub Categories
         </a>
         <a href="offices.php" class="sidebar-nav-item <?php echo $current_page == 'offices.php' ? 'active' : ''; ?>">
             <i class="bi bi-building"></i>
