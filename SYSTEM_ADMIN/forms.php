@@ -49,6 +49,23 @@ if ($table_check->num_rows === 0) {
     if ($column_check->num_rows === 0) {
         $conn->query("ALTER TABLE forms ADD COLUMN header_image varchar(255) DEFAULT NULL AFTER description");
     }
+    
+    // Check if code column exists and add it if not
+    $column_check = $conn->query("SHOW COLUMNS FROM forms LIKE 'code'");
+    if ($column_check->num_rows === 0) {
+        $conn->query("ALTER TABLE forms ADD COLUMN code varchar(20) DEFAULT NULL AFTER form_code");
+        $conn->query("ALTER TABLE forms ADD INDEX idx_code (code)");
+        
+        // Update existing forms with numeric codes only if code is NULL
+        $conn->query("UPDATE forms SET code = '01' WHERE form_code = 'PAR' AND (code IS NULL OR code = '')");
+        $conn->query("UPDATE forms SET code = '02' WHERE form_code = 'ICS' AND (code IS NULL OR code = '')");
+        $conn->query("UPDATE forms SET code = '03' WHERE form_code = 'RIS' AND (code IS NULL OR code = '')");
+        $conn->query("UPDATE forms SET code = '04' WHERE form_code = 'JO' AND (code IS NULL OR code = '')");
+        $conn->query("UPDATE forms SET code = '05' WHERE form_code = 'PO' AND (code IS NULL OR code = '')");
+        
+        // Make the code column unique after updating existing records
+        $conn->query("ALTER TABLE forms ADD CONSTRAINT uc_forms_code UNIQUE (code)");
+    }
 }
 
 // Create par_form table if not exists
@@ -167,16 +184,16 @@ if ($table_check->num_rows === 0) {
 $result = $conn->query("SELECT COUNT(*) as count FROM forms");
 if ($result->fetch_assoc()['count'] == 0) {
     $default_forms = [
-        ['PAR', 'Property Acknowledgement Receipt', 'Form for acknowledging receipt of government property'],
-        ['ICS', 'Inventory Custodian Slip', 'Form for transferring accountability of property'],
-        ['RIS', 'Requisition and Issue Slip', 'Form for requesting and issuing supplies'],
-        ['JO', 'Job Order', 'Form for requesting services or repairs'],
-        ['PO', 'Purchase Order', 'Form for procuring items and services']
+        ['PAR', '01', 'Property Acknowledgement Receipt', 'Form for acknowledging receipt of government property'],
+        ['ICS', '02', 'Inventory Custodian Slip', 'Form for transferring accountability of property'],
+        ['RIS', '03', 'Requisition and Issue Slip', 'Form for requesting and issuing supplies'],
+        ['JO', '04', 'Job Order', 'Form for requesting services or repairs'],
+        ['PO', '05', 'Purchase Order', 'Form for procuring items and services']
     ];
     
     foreach ($default_forms as $form) {
-        $stmt = $conn->prepare("INSERT INTO forms (form_code, form_title, description, created_by) VALUES (?, ?, ?, ?)");
-        $stmt->bind_param("sssi", $form[0], $form[1], $form[2], $_SESSION['user_id']);
+        $stmt = $conn->prepare("INSERT INTO forms (form_code, code, form_title, description, created_by) VALUES (?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssssi", $form[0], $form[1], $form[2], $form[3], $_SESSION['user_id']);
         $stmt->execute();
         $stmt->close();
     }
@@ -186,6 +203,7 @@ if ($result->fetch_assoc()['count'] == 0) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['add_form'])) {
         $form_code = strtoupper($_POST['form_code']);
+        $code = $_POST['code'];
         $form_title = $_POST['form_title'];
         $description = $_POST['description'];
         
@@ -220,14 +238,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         // Build query dynamically based on user ID
+        // Check if code is unique
+        $check_code = $conn->prepare("SELECT id FROM forms WHERE code = ?");
+        $check_code->bind_param("s", $code);
+        $check_code->execute();
+        $code_exists = $check_code->get_result()->num_rows > 0;
+        $check_code->close();
+        
+        if ($code_exists) {
+            header('Location: forms.php?error=Code already exists. Please use a different code.');
+            exit();
+        }
+        
         if ($user_id === null) {
-            $sql = "INSERT INTO forms (form_code, form_title, description, header_image, created_by) VALUES (?, ?, ?, ?, NULL)";
+            $sql = "INSERT INTO forms (form_code, code, form_title, description, header_image, created_by) VALUES (?, ?, ?, ?, ?, NULL)";
             $stmt = $conn->prepare($sql);
-            $stmt->bind_param("ssss", $form_code, $form_title, $description, $header_image);
+            $stmt->bind_param("sssss", $form_code, $code, $form_title, $description, $header_image);
         } else {
-            $sql = "INSERT INTO forms (form_code, form_title, description, header_image, created_by) VALUES (?, ?, ?, ?, ?)";
+            $sql = "INSERT INTO forms (form_code, code, form_title, description, header_image, created_by) VALUES (?, ?, ?, ?, ?, ?)";
             $stmt = $conn->prepare($sql);
-            $stmt->bind_param("ssssi", $form_code, $form_title, $description, $header_image, $user_id);
+            $stmt->bind_param("sssssi", $form_code, $code, $form_title, $description, $header_image, $user_id);
         }
         
         if ($stmt->execute()) {
@@ -245,6 +275,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['update_form'])) {
         $form_id = $_POST['form_id'];
         $form_code = strtoupper($_POST['form_code']);
+        $code = $_POST['code'];
         $form_title = $_POST['form_title'];
         $description = $_POST['description'];
         $status = $_POST['status'];
@@ -287,14 +318,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         // Build query dynamically based on user ID
+        // Check if code is unique (excluding current form)
+        $check_code = $conn->prepare("SELECT id FROM forms WHERE code = ? AND id != ?");
+        $check_code->bind_param("si", $code, $form_id);
+        $check_code->execute();
+        $code_exists = $check_code->get_result()->num_rows > 0;
+        $check_code->close();
+        
+        if ($code_exists) {
+            header('Location: forms.php?error=Code already exists. Please use a different code.');
+            exit();
+        }
+        
         if ($user_id === null) {
-            $sql = "UPDATE forms SET form_code = ?, form_title = ?, description = ?, header_image = ?, status = ?, updated_by = NULL WHERE id = ?";
+            $sql = "UPDATE forms SET form_code = ?, code = ?, form_title = ?, description = ?, header_image = ?, status = ?, updated_by = NULL WHERE id = ?";
             $stmt = $conn->prepare($sql);
-            $stmt->bind_param("sssssi", $form_code, $form_title, $description, $header_image, $status, $form_id);
+            $stmt->bind_param("ssssssi", $form_code, $code, $form_title, $description, $header_image, $status, $form_id);
         } else {
-            $sql = "UPDATE forms SET form_code = ?, form_title = ?, description = ?, header_image = ?, status = ?, updated_by = ? WHERE id = ?";
+            $sql = "UPDATE forms SET form_code = ?, code = ?, form_title = ?, description = ?, header_image = ?, status = ?, updated_by = ? WHERE id = ?";
             $stmt = $conn->prepare($sql);
-            $stmt->bind_param("sssssii", $form_code, $form_title, $description, $header_image, $status, $user_id, $form_id);
+            $stmt->bind_param("ssssssii", $form_code, $code, $form_title, $description, $header_image, $status, $user_id, $form_id);
         }
         
         if ($stmt->execute()) {
@@ -477,6 +520,59 @@ $stats['inactive_forms'] = $result->fetch_assoc()['inactive'];
             z-index: 1061;
             position: relative;
         }
+        
+        /* Table column width styling */
+        #formsTable th:nth-child(1), /* Form Code */
+        #formsTable td:nth-child(1) {
+            width: 120px;
+            min-width: 120px;
+        }
+        
+        #formsTable th:nth-child(2), /* Code */
+        #formsTable td:nth-child(2) {
+            width: 80px;
+            min-width: 80px;
+            text-align: center;
+        }
+        
+        #formsTable th:nth-child(3), /* Form Title */
+        #formsTable td:nth-child(3) {
+            width: 200px;
+            min-width: 200px;
+        }
+        
+        #formsTable th:nth-child(4), /* Description */
+        #formsTable td:nth-child(4) {
+            width: 300px;
+            min-width: 250px;
+            max-width: 400px;
+        }
+        
+        #formsTable th:nth-child(5), /* Status */
+        #formsTable td:nth-child(5) {
+            width: 100px;
+            min-width: 100px;
+            text-align: center;
+        }
+        
+        #formsTable th:nth-child(6), /* Created By */
+        #formsTable td:nth-child(6) {
+            width: 150px;
+            min-width: 150px;
+        }
+        
+        #formsTable th:nth-child(7), /* Created Date */
+        #formsTable td:nth-child(7) {
+            width: 140px;
+            min-width: 140px;
+        }
+        
+        #formsTable th:nth-child(8), /* Actions */
+        #formsTable td:nth-child(8) {
+            width: 120px;
+            min-width: 120px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -590,6 +686,7 @@ $stats['inactive_forms'] = $result->fetch_assoc()['inactive'];
                                         <thead class="table-light">
                                             <tr>
                                                 <th>Form Code</th>
+                                                <th>Code</th>
                                                 <th>Form Title</th>
                                                 <th>Description</th>
                                                 <th>Status</th>
@@ -603,6 +700,9 @@ $stats['inactive_forms'] = $result->fetch_assoc()['inactive'];
                                                 <tr>
                                                     <td>
                                                         <strong><?php echo htmlspecialchars($form['form_code']); ?></strong>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge bg-info text-white"><?php echo htmlspecialchars($form['code']); ?></span>
                                                     </td>
                                                     <td>
                                                         <?php echo htmlspecialchars($form['form_title']); ?>
@@ -669,6 +769,11 @@ $stats['inactive_forms'] = $result->fetch_assoc()['inactive'];
                             <div class="form-text">Unique code for the form (e.g., PAR, ICS, RIS)</div>
                         </div>
                         <div class="mb-3">
+                            <label for="code" class="form-label">Code *</label>
+                            <input type="text" class="form-control" id="code" name="code" required maxlength="20" placeholder="e.g., 01, 02, 03">
+                            <div class="form-text">Numeric code for the form (e.g., 01, 02, 03)</div>
+                        </div>
+                        <div class="mb-3">
                             <label for="form_title" class="form-label">Form Title *</label>
                             <input type="text" class="form-control" id="form_title" name="form_title" required maxlength="200">
                             <div class="form-text">Full title of the form</div>
@@ -711,6 +816,10 @@ $stats['inactive_forms'] = $result->fetch_assoc()['inactive'];
                         <div class="mb-3">
                             <label for="edit_form_code" class="form-label">Form Code *</label>
                             <input type="text" class="form-control" id="edit_form_code" name="form_code" required maxlength="50" style="text-transform: uppercase;">
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit_code" class="form-label">Code *</label>
+                            <input type="text" class="form-control" id="edit_code" name="code" required maxlength="20" placeholder="e.g., 01, 02, 03">
                         </div>
                         <div class="mb-3">
                             <label for="edit_form_title" class="form-label">Form Title *</label>
@@ -825,6 +934,7 @@ $stats['inactive_forms'] = $result->fetch_assoc()['inactive'];
             if (form) {
                 $('#edit_form_id').val(form.id);
                 $('#edit_form_code').val(form.form_code);
+                $('#edit_code').val(form.code || '');
                 $('#edit_form_title').val(form.form_title);
                 $('#edit_description').val(form.description || '');
                 $('#edit_status').val(form.status);

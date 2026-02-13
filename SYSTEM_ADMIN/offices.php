@@ -133,11 +133,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                         continue;
                     }
                     
-                    if (!preg_match('/^[A-Z]{1,5}$/', strtoupper($office_code))) {
-                        $errors[] = "Row {$row_num}: Office code must be 1-5 uppercase letters";
-                        $error_count++;
-                        continue;
-                    }
                     
                     if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
                         $errors[] = "Row {$row_num}: Invalid email format";
@@ -151,7 +146,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                         continue;
                     }
                     
-                    $office_code = strtoupper($office_code);
                     
                     try {
                         // Check for duplicates if skip option is enabled
@@ -250,9 +244,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     if (empty($office_name) || empty($office_code)) {
         $message = "Office name and code are required.";
         $message_type = "danger";
-    } elseif (!preg_match('/^[A-Z]{1,5}$/', $office_code)) {
-        $message = "Office code must be 1-5 uppercase letters.";
-        $message_type = "danger";
     } elseif (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $message = "Please enter a valid email address.";
         $message_type = "danger";
@@ -297,9 +288,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     // Validation
     if (empty($office_name) || empty($office_code)) {
         $message = "Office name and code are required.";
-        $message_type = "danger";
-    } elseif (!preg_match('/^[A-Z]{1,5}$/', $office_code)) {
-        $message = "Office code must be 1-5 uppercase letters.";
         $message_type = "danger";
     } elseif (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $message = "Please enter a valid email address.";
@@ -757,8 +745,7 @@ $page_title = 'Offices';
                             <div class="col-md-6 mb-3">
                                 <label for="office_code" class="form-label">Office Code *</label>
                                 <input type="text" class="form-control" id="office_code" name="office_code" 
-                                       pattern="[A-Z]{1,5}" placeholder="e.g., HO" required>
-                                <small class="form-text text-muted">1-5 uppercase letters</small>
+                                       placeholder="e.g., HO" required>
                             </div>
                         </div>
                         <div class="mb-3">
@@ -877,9 +864,8 @@ $page_title = 'Offices';
                             <div class="col-md-6 mb-3">
                                 <label for="edit_office_code" class="form-label">Office Code *</label>
                                 <input type="text" class="form-control" id="edit_office_code" name="office_code" 
-                                       pattern="[A-Z]{1,5}" placeholder="e.g., HO" 
+                                       placeholder="e.g., HO" 
                                        value="<?php echo htmlspecialchars($edit_office['office_code'] ?? ''); ?>" required>
-                                <small class="form-text text-muted">1-5 uppercase letters</small>
                             </div>
                         </div>
                         <div class="mb-3">
@@ -1032,15 +1018,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Auto-uppercase office codes
-    document.getElementById('office_code').addEventListener('input', function(e) {
-        e.target.value = e.target.value.toUpperCase();
-    });
-    
-    document.getElementById('edit_office_code').addEventListener('input', function(e) {
-        e.target.value = e.target.value.toUpperCase();
-    });
-    
+        
     // Show edit modal if editing
     <?php if ($edit_office): ?>
         document.addEventListener('DOMContentLoaded', function() {
