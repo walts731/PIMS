@@ -52,7 +52,7 @@ $selected_office = $_GET['office'] ?? '';
 $asset_items = [];
 if ($conn && !$conn->connect_error) {
     try {
-        // Simple query first to test
+        // Optimized query with JOINs to avoid N+1 queries
         $query = "SELECT 
                     ai.id,
                     ai.created_at,
@@ -64,12 +64,17 @@ if ($conn && !$conn->connect_error) {
                     ai.office_id,
                     COALESCE(ac.category_code, 'UNCAT') as asset_category,
                     COALESCE(o1.office_name, o2.office_name, 'Unassigned') as office_name,
-                    COALESCE(o1.office_code, o2.office_code, 'NONE') as office_code
+                    COALESCE(o1.office_code, o2.office_code, 'NONE') as office_code,
+                    CONCAT(COALESCE(e.firstname, ''), ' ', COALESCE(e.lastname, '')) as employee_name,
+                    e.employee_no,
+                    pf.par_no,
+                    pf.received_by_name
                   FROM asset_items ai
                   LEFT JOIN asset_categories ac ON ai.category_id = ac.id
                   LEFT JOIN offices o1 ON ai.office_id = o1.id
                   LEFT JOIN employees e ON ai.employee_id = e.id
                   LEFT JOIN offices o2 ON e.office_id = o2.id
+                  LEFT JOIN par_forms pf ON ai.par_id = pf.id
                   WHERE ai.par_id IS NOT NULL AND ai.par_id != ''";
         
         // Add category filter
@@ -86,31 +91,18 @@ if ($conn && !$conn->connect_error) {
         
         $result = $conn->query($query);
         if ($result) {
-            
             while ($row = $result->fetch_assoc()) {
-                // Add employee and PAR info separately
-                $row['employee_name'] = '';
-                $row['employee_no'] = '';
-                $row['par_no'] = '';
-                
-                // Get employee info
-                if (!empty($row['employee_id'])) {
-                    $emp_query = "SELECT CONCAT(firstname, ' ', lastname) as name, employee_no FROM employees WHERE id = " . intval($row['employee_id']);
-                    $emp_result = $conn->query($emp_query);
-                    if ($emp_result && $emp_data = $emp_result->fetch_assoc()) {
-                        $row['employee_name'] = $emp_data['name'];
-                        $row['employee_no'] = $emp_data['employee_no'];
-                    }
+                // Clean up employee name if empty
+                if (empty(trim($row['employee_name']))) {
+                    $row['employee_name'] = '';
+                    $row['employee_no'] = '';
                 }
                 
-                // Get PAR info
-                if (!empty($row['par_id'])) {
-                    $par_query = "SELECT par_no, received_by_name FROM par_forms WHERE id = " . intval($row['par_id']);
-                    $par_result = $conn->query($par_query);
-                    if ($par_result && $par_data = $par_result->fetch_assoc()) {
-                        $row['par_no'] = $par_data['par_no'];
-                        $row['received_by'] = $par_data['received_by_name'];
-                    }
+                // Clean up received_by_name if empty
+                if (empty($row['received_by_name'])) {
+                    $row['received_by'] = '';
+                } else {
+                    $row['received_by'] = $row['received_by_name'];
                 }
                 
                 $asset_items[] = $row;
@@ -118,6 +110,7 @@ if ($conn && !$conn->connect_error) {
         }
     } catch (Exception $e) {
         // Error handling - could add user feedback here
+        error_log("Property Card Query Error: " . $e->getMessage());
     }
 }
 ?>
@@ -371,6 +364,31 @@ if ($conn && !$conn->connect_error) {
             color: white;
         }
         
+        .btn-group .btn {
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: none;
+            margin: 0 2px;
+        }
+        
+        .btn-group .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .btn-group .btn-info:hover {
+            box-shadow: 0 4px 12px rgba(13, 202, 240, 0.3);
+        }
+        
+        .btn-group .btn-success:hover {
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        }
+        
+        .btn-group .btn-danger:hover {
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+        }
+        
         @media (max-width: 768px) {
             .table-custom {
                 font-size: 0.8rem;
@@ -404,12 +422,20 @@ if ($conn && !$conn->connect_error) {
                     <p class="text-muted mb-0">View all asset items with Property Acknowledgment Receipt (PAR) references</p>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <button class="btn export-btn me-2" onclick="exportToCSV()">
-                        <i class="bi bi-download me-1"></i> Export to CSV
-                    </button>
-                    <button class="btn btn-danger" onclick="exportToPDF()">
-                        <i class="bi bi-file-pdf me-1"></i> Export to PDF
-                    </button>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-info" onclick="showSummary()" data-bs-toggle="tooltip" title="View Summary">
+                            <i class="bi bi-list-ul"></i>
+                            <span class="d-none d-md-inline ms-1">Summary</span>
+                        </button>
+                        <button type="button" class="btn btn-success" onclick="exportToCSV()" data-bs-toggle="tooltip" title="Export to CSV">
+                            <i class="bi bi-download"></i>
+                            <span class="d-none d-md-inline ms-1">CSV</span>
+                        </button>
+                        <button type="button" class="btn btn-danger" onclick="exportToPDF()" data-bs-toggle="tooltip" title="Export to PDF">
+                            <i class="bi bi-file-pdf"></i>
+                            <span class="d-none d-md-inline ms-1">PDF</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -497,7 +523,6 @@ if ($conn && !$conn->connect_error) {
                                 <th>Receipt/Quantity</th>
                                 <th>Unit Cost</th>
                                 <th>Total Value</th>
-                                <th>Balance Qty</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -541,9 +566,7 @@ if ($conn && !$conn->connect_error) {
                                     <td class="value-cell">
                                         ₱<?php echo number_format($item['value'], 2); ?>
                                     </td>
-                                    <td class="balance-qty">
-                                        <?php echo $item_counter; ?>
-                                    </td>
+                                </tr>
                             <?php 
                                 $item_counter++;
                             endforeach; 
@@ -571,7 +594,7 @@ if ($conn && !$conn->connect_error) {
     <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
     <?php require_once 'includes/sidebar-scripts.php'; ?>
     <script>
-        // Initialize DataTable
+        // Initialize DataTable and tooltips
         $(document).ready(function() {
             $('#propertyCardTable').DataTable({
                 responsive: true,
@@ -589,6 +612,12 @@ if ($conn && !$conn->connect_error) {
                         previous: "Previous"
                     }
                 }
+            });
+            
+            // Initialize tooltips
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl)
             });
         });
         
@@ -654,6 +683,32 @@ if ($conn && !$conn->connect_error) {
         function clearFilters() {
             // Redirect to page without filters
             window.location.href = 'property_card.php';
+        }
+        
+        function showSummary() {
+            // Check if there are any items to summarize
+            if (<?php echo count($asset_items); ?> === 0) {
+                alert('No items available to summarize.');
+                return;
+            }
+            
+            // Get current filter parameters
+            const category = document.getElementById('categoryFilter').value;
+            const office = document.getElementById('officeFilter').value;
+            
+            // Build URL with filter parameters
+            let url = 'property_summary.php';
+            const params = new URLSearchParams();
+            
+            if (category) params.append('category', category);
+            if (office) params.append('office', office);
+            
+            if (params.toString()) {
+                url += '?' + params.toString();
+            }
+            
+            // Redirect to summary page
+            window.location.href = url;
         }
         
         // Auto-refresh every 5 minutes
