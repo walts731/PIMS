@@ -126,13 +126,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         $ris_form_id = $conn->insert_id;
+        
+        // Validate that we got a valid insert ID
+        if ($ris_form_id <= 0) {
+            throw new Exception('Failed to get RIS form insert ID');
+        }
+        
         error_log("RIS Form ID: " . $ris_form_id);
         
         // Insert RIS items
         $item_stmt = $conn->prepare("INSERT INTO ris_items (ris_form_id, stock_no, unit, description, quantity, price, total_amount) VALUES (?, ?, ?, ?, ?, ?, ?)");
         
         // Prepare statement for consumables
-        $consumable_stmt = $conn->prepare("INSERT INTO consumables (description, quantity, unit_cost, office_id, created_at, updated_at) VALUES (?, ?, ?, ?, NOW(), NOW())");
+        $consumable_stmt = $conn->prepare("INSERT INTO consumables (description, quantity, unit_cost, office_id, for_office_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NOW(), NOW())");
         
         $total_form_amount = 0;
         for ($i = 0; $i < count($stock_numbers); $i++) {
@@ -152,8 +158,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 
                 // Insert into consumables table
-                // Always use Supply Office (ID = 3) as requested
+                // Always use Supply Office (ID = 3) for actual storage
                 $supply_office_id = 3;
+                
+                // Get the original requesting office ID
+                $requesting_office_query = $conn->prepare("SELECT id FROM offices WHERE office_name = ? LIMIT 1");
+                $requesting_office_query->bind_param("s", $office);
+                $requesting_office_query->execute();
+                $requesting_office_result = $requesting_office_query->get_result();
+                $requesting_office_id = 1; // Default if not found
+                
+                if ($requesting_office_row = $requesting_office_result->fetch_assoc()) {
+                    $requesting_office_id = $requesting_office_row['id'];
+                }
+                $requesting_office_query->close();
                 
                 // Check if consumable already exists (to avoid duplicates)
                 $check_consumable = $conn->prepare("SELECT id FROM consumables WHERE description = ? AND office_id = ? LIMIT 1");
@@ -163,15 +181,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 if ($check_result->num_rows == 0) {
                     // Insert new consumable if it doesn't exist
-                    $consumable_stmt->bind_param("sdii", $descriptions[$i], $quantity, $price, $supply_office_id);
+                    $consumable_stmt->bind_param("sdiii", $descriptions[$i], $quantity, $price, $supply_office_id, $requesting_office_id);
                     
                     if (!$consumable_stmt->execute()) {
                         throw new Exception('Failed to save consumable: ' . $consumable_stmt->error);
                     }
+                    
+                    // Get the ID of the newly inserted consumable
+                    $new_consumable_id = $conn->insert_id;
+                    
+                    // Validate that we got a valid insert ID
+                    if ($new_consumable_id <= 0) {
+                        throw new Exception('Failed to get consumable insert ID');
+                    }
+                    
+                    // No need to update for_office_id since it's already included in the INSERT
                 } else {
                     // Update existing consumable quantity
-                    $update_consumable = $conn->prepare("UPDATE consumables SET quantity = quantity + ?, unit_cost = ?, updated_at = NOW() WHERE description = ? AND office_id = ?");
-                    $update_consumable->bind_param("disi", $quantity, $price, $descriptions[$i], $supply_office_id);
+                    $update_consumable = $conn->prepare("UPDATE consumables SET quantity = quantity + ?, unit_cost = ?, updated_at = NOW(), for_office_id = ? WHERE description = ? AND office_id = ?");
+                    $update_consumable->bind_param("disiii", $quantity, $price, $requesting_office_id, $descriptions[$i], $supply_office_id);
                     $update_consumable->execute();
                     $update_consumable->close();
                 }

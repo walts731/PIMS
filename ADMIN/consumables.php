@@ -223,9 +223,10 @@ $search_filter = isset($_GET['search']) ? trim($_GET['search']) : '';
 // Get consumables with office information
 $consumables = [];
 try {
-    $sql = "SELECT c.*, o.office_name
+    $sql = "SELECT c.*, o.office_name, fo.office_name as for_office_name
             FROM consumables c 
             LEFT JOIN offices o ON c.office_id = o.id 
+            LEFT JOIN offices fo ON c.for_office_id = fo.id 
             WHERE 1=1";
     
     $params = [];
@@ -238,11 +239,12 @@ try {
     }
     
     if (!empty($search_filter)) {
-        $sql .= " AND (c.description LIKE ? OR o.office_name LIKE ?)";
+        $sql .= " AND (c.description LIKE ? OR o.office_name LIKE ? OR fo.office_name LIKE ?)";
         $search_term = '%' . $search_filter . '%';
         $params[] = $search_term;
         $params[] = $search_term;
-        $types .= 'ss';
+        $params[] = $search_term;
+        $types .= 'sss';
     }
     
     $sql .= " ORDER BY c.created_at DESC";
@@ -509,6 +511,7 @@ try {
                             <th>Total Value</th>
                             <th>Reorder Level</th>
                             <th>Office</th>
+                            <th>For Office</th>
                             <th>Created</th>
                             <th>Actions</th>
                         </tr>
@@ -528,6 +531,7 @@ try {
                                     <td class="text-value"><?php echo number_format($consumable['quantity'] * $consumable['unit_cost'], 2); ?></td>
                                     <td><?php echo $consumable['reorder_level']; ?></td>
                                     <td><?php echo htmlspecialchars($consumable['office_name'] ?? 'N/A'); ?></td>
+                                    <td><?php echo htmlspecialchars($consumable['for_office_name'] ?? 'N/A'); ?></td>
                                     <td><small><?php echo date('M j, Y', strtotime($consumable['created_at'])); ?></small></td>
                                     <td>
                                         <button class="btn btn-sm btn-outline-warning" onclick="editReorderLevel(<?php echo $consumable['id']; ?>, '<?php echo htmlspecialchars($consumable['description']); ?>', <?php echo $consumable['quantity']; ?>)">
@@ -541,7 +545,7 @@ try {
                             <?php endforeach; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="8" class="text-center text-muted py-4">
+                                <td colspan="9" class="text-center text-muted py-4">
                                     <i class="bi bi-inbox fs-1"></i>
                                     <p class="mt-2">No consumables found. Click "Add Consumable" to create your first consumable.</p>
                                 </td>
@@ -820,11 +824,11 @@ try {
             // Get current table data from DOM
             const table = document.getElementById('consumablesTable');
             const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
-            let csv = 'Description,Quantity,Unit Cost,Total Value,Reorder Level,Office,Created\n';
+            let csv = 'Description,Quantity,Unit Cost,Total Value,Reorder Level,Office,For Office,Created\n';
             
             for (let i = 0; i < rows.length; i++) {
                 const cells = rows[i].getElementsByTagName('td');
-                if (cells.length === 8) { // Skip empty message row
+                if (cells.length === 9) { // Skip empty message row
                     const rowData = [
                         cells[0].textContent.replace(/\s+/g, ' ').trim(), // Description
                         cells[1].textContent.trim(), // Quantity
@@ -832,7 +836,8 @@ try {
                         cells[3].textContent.replace(/[^0-9.-]+/g, '').trim(), // Total Value
                         cells[4].textContent.trim(), // Reorder Level
                         cells[5].textContent.trim(), // Office
-                        cells[6].textContent.trim()  // Created
+                        cells[6].textContent.trim(), // For Office
+                        cells[7].textContent.trim()  // Created
                     ];
                     csv += rowData.map(cell => `"${cell}"`).join(',') + '\n';
                 }

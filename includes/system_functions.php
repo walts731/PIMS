@@ -321,12 +321,6 @@ function generateNextTag($tag_type) {
     $current_number = $config['current_number'];
     $next_number = $current_number + 1;
     
-    // Update the counter in database
-    $update_stmt = $conn->prepare("UPDATE tag_formats SET current_number = ? WHERE tag_type = ?");
-    $update_stmt->bind_param("is", $next_number, $tag_type);
-    $update_stmt->execute();
-    $update_stmt->close();
-    
     // Build the tag from components
     $components = json_decode($config['format_components'], true);
     // Handle double-encoded JSON
@@ -359,7 +353,83 @@ function generateNextTag($tag_type) {
         }
     }
     
-    return implode($config['separator'], $parts);
+    $generated_tag = implode($config['separator'], $parts);
+    
+    // Check for duplicate in the appropriate table
+    $duplicate_check_table = '';
+    $duplicate_check_column = '';
+    
+    switch ($tag_type) {
+        case 'ris_no':
+            $duplicate_check_table = 'ris_forms';
+            $duplicate_check_column = 'ris_no';
+            break;
+        case 'sai_no':
+            $duplicate_check_table = 'ris_forms';
+            $duplicate_check_column = 'sai_no';
+            break;
+        case 'code':
+            $duplicate_check_table = 'ris_forms';
+            $duplicate_check_column = 'code';
+            break;
+        default:
+            // For other tag types, don't check duplicates
+            break;
+    }
+    
+    // If we have a table to check, verify uniqueness
+    if (!empty($duplicate_check_table) && !empty($duplicate_check_column)) {
+        $check_stmt = $conn->prepare("SELECT COUNT(*) as count FROM $duplicate_check_table WHERE $duplicate_check_column = ?");
+        $check_stmt->bind_param("s", $generated_tag);
+        $check_stmt->execute();
+        $check_result = $check_stmt->get_result();
+        $count = $check_result->fetch_assoc()['count'];
+        $check_stmt->close();
+        
+        // If duplicate exists, increment and try again
+        if ($count > 0) {
+            // Find the next available number
+            $max_stmt = $conn->prepare("SELECT MAX(SUBSTRING_INDEX($duplicate_check_column, '{$config['separator']}', -1)) as max_num FROM $duplicate_check_table WHERE $duplicate_check_column LIKE ?");
+            $like_pattern = implode($config['separator'], array_slice(explode($config['separator'], $generated_tag), 0, -1)) . $config['separator'] . '%';
+            $max_stmt->bind_param("s", $like_pattern);
+            $max_stmt->execute();
+            $max_result = $max_stmt->get_result();
+            $max_num = $max_result->fetch_assoc()['max_num'];
+            $max_stmt->close();
+            
+            $next_number = intval($max_num) + 1;
+            
+            // Regenerate the tag with the new number
+            $parts = [];
+            foreach ($components as $component) {
+                switch ($component['type']) {
+                    case 'text':
+                        $parts[] = $component['value'] ?? '';
+                        break;
+                    case 'digits':
+                        $component_digits = $component['digits'] ?? $config['digits'];
+                        $number = str_pad($next_number, $component_digits, '0', STR_PAD_LEFT);
+                        $parts[] = $number;
+                        break;
+                    case 'month':
+                        $parts[] = date('m');
+                        break;
+                    case 'year':
+                        $parts[] = date('Y');
+                        break;
+                }
+            }
+            $generated_tag = implode($config['separator'], $parts);
+        }
+    }
+    
+    // Update the counter in database with the final number
+    $update_stmt = $conn->prepare("UPDATE tag_formats SET current_number = ? WHERE tag_type = ?");
+    $update_stmt->bind_param("is", $next_number, $tag_type);
+    $update_stmt->execute();
+    $update_stmt->close();
+    
+    return $generated_tag;
 }
 
 /**
