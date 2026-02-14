@@ -201,7 +201,9 @@ function getFormatPattern($components, $defaultSeparator) {
                 $parts[] = ($separator && $index > 0 ? $separator : '') . 'MM';
                 break;
             case 'year':
-                $parts[] = ($separator && $index > 0 ? $separator : '') . 'YYYY';
+                $year_format = $component['year_format'] ?? 'full';
+                $year_pattern = $year_format === 'short' ? 'YY' : 'YYYY';
+                $parts[] = ($separator && $index > 0 ? $separator : '') . $year_pattern;
                 break;
             case 'form_code':
                 $parts[] = ($separator && $index > 0 ? $separator : '') . 'FC';
@@ -321,7 +323,9 @@ function generateTagPreview($tag_type, $components, $auto_increment, $digits, $d
                 $parts[] = ($separator && $index > 0 ? $separator : '') . date('m');
                 break;
             case 'year':
-                $parts[] = ($separator && $index > 0 ? $separator : '') . date('Y');
+                $year_format = $component['year_format'] ?? 'full';
+                $year_value = $year_format === 'short' ? date('y') : date('Y');
+                $parts[] = ($separator && $index > 0 ? $separator : '') . $year_value;
                 break;
             case 'form_code':
                 // Get form code based on tag type
@@ -710,7 +714,9 @@ logSystemAction($_SESSION['user_id'], 'Accessed Tags Management', 'tags', 'tags.
                                                                 echo '<i class="bi bi-calendar-month"></i> MONTH';
                                                                 break;
                                                             case 'year':
-                                                                echo '<i class="bi bi-calendar-year"></i> YEAR';
+                                                                $year_format = $component['year_format'] ?? 'full';
+                                                                $year_display = $year_format === 'full' ? 'YEAR (2026)' : 'YEAR (26)';
+                                                                echo '<i class="bi bi-calendar-year"></i> ' . $year_display;
                                                                 break;
                                                             case 'form_code':
                                                                 echo '<i class="bi bi-file-earmark-code"></i> FORM CODE';
@@ -883,6 +889,20 @@ function addComponent(tagType, componentType) {
         if (digitsSelect) {
             digitsSelect.value = digits;
         }
+    } else if (componentType === 'year') {
+        const yearFormat = prompt('Select year format:\n1. Full year (2026)\n2. Short year (26)\nEnter 1 or 2:', '1');
+        
+        if (yearFormat === null || yearFormat.trim() === '') {
+            return;
+        }
+        
+        const format = parseInt(yearFormat);
+        if (isNaN(format) || (format !== 1 && format !== 2)) {
+            alert('Please enter 1 for full year or 2 for short year');
+            return;
+        }
+        
+        component.year_format = format === 1 ? 'full' : 'short';
     }
     
     tagComponents[tagType].push(component);
@@ -928,7 +948,9 @@ function updateComponentsDisplay(tagType) {
                     displayText = '<i class="bi bi-calendar-month"></i> MONTH';
                     break;
                 case 'year':
-                    displayText = '<i class="bi bi-calendar-year"></i> YEAR';
+                    const yearFormat = component.year_format || 'full';
+                    const yearDisplay = yearFormat === 'full' ? 'YEAR (2026)' : 'YEAR (26)';
+                    displayText = '<i class="bi bi-calendar-year"></i> ' + yearDisplay;
                     break;
                 case 'form_code':
                     displayText = '<i class="bi bi-file-earmark-code"></i> FORM CODE';
@@ -1055,7 +1077,11 @@ function generateClientPreview(components, defaultSeparator, digits) {
                 parts.push((separator && index > 0 ? separator : '') + String(new Date().getMonth() + 1).padStart(2, '0'));
                 break;
             case 'year':
-                parts.push((separator && index > 0 ? separator : '') + new Date().getFullYear().toString());
+                const yearFormat = component.year_format || 'full';
+                const yearValue = yearFormat === 'short' ? 
+                    new Date().getFullYear().toString().slice(-2) : 
+                    new Date().getFullYear().toString();
+                parts.push((separator && index > 0 ? separator : '') + yearValue);
                 break;
             case 'form_code':
                 // For client-side preview, use placeholder

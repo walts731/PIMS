@@ -40,6 +40,13 @@ if (!function_exists('logSystemAction')) {
             $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'Unknown';
             $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
             
+            // Convert details array to JSON string if it's an array
+            if (is_array($details)) {
+                $details = json_encode($details);
+            } elseif (is_null($details)) {
+                $details = '';
+            }
+            
             $stmt = $conn->prepare("
                 INSERT INTO system_logs (user_id, action, module, description, ip_address, user_agent) 
                 VALUES (?, ?, ?, ?, ?, ?)

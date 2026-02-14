@@ -8,9 +8,46 @@ $config_path = '';
 // Check if we're in the root directory (contains config.php)
 if (file_exists($cwd . '/config.php')) {
     $config_path = 'config.php';
-} else {
-    // We're in a subdirectory, need to go up to find config.php
+} elseif (file_exists($cwd . '/../config.php')) {
+    // We're one level down (like ADMIN or SYSTEM_ADMIN)
     $config_path = '../config.php';
+} elseif (file_exists($cwd . '/../../config.php')) {
+    // We're two levels down (like ADMIN/ajax or SYSTEM_ADMIN/ajax)
+    $config_path = '../../config.php';
+} elseif (file_exists($cwd . '/../../../config.php')) {
+    // We're three levels down (unlikely but just in case)
+    $config_path = '../../../config.php';
+} else {
+    // Fallback: try to find config.php by going up until we find it
+    $levels_up = 0;
+    $test_path = '';
+    while ($levels_up <= 5) {
+        $test_path = str_repeat('../', $levels_up) . 'config.php';
+        if (file_exists($cwd . '/' . $test_path)) {
+            $config_path = $test_path;
+            break;
+        }
+        $levels_up++;
+    }
+    
+    // If still not found, try absolute path
+    if (empty($config_path)) {
+        $absolute_path = dirname(__DIR__) . '/config.php';
+        if (file_exists($absolute_path)) {
+            $config_path = $absolute_path;
+        }
+    }
+}
+
+if (empty($config_path)) {
+    // If we're in an AJAX context, don't output HTML error
+    if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'message' => 'Config file not found']);
+        exit();
+    } else {
+        die('Error: config.php not found. Please check your file structure.');
+    }
 }
 
 require_once $config_path;
