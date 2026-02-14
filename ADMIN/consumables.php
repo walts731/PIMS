@@ -533,6 +533,9 @@ try {
                                         <button class="btn btn-sm btn-outline-warning" onclick="editReorderLevel(<?php echo $consumable['id']; ?>, '<?php echo htmlspecialchars($consumable['description']); ?>', <?php echo $consumable['quantity']; ?>)">
                                             <i class="bi bi-pencil"></i> Edit Reorder
                                         </button>
+                                        <button class="btn btn-sm btn-outline-success" onclick="openReleaseModal(<?php echo $consumable['id']; ?>)">
+                                            <i class="bi bi-box-arrow-right"></i> Release
+                                        </button>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -670,6 +673,21 @@ try {
         </div>
     </div>
     
+    <!-- Release Consumable Modal -->
+    <div class="modal fade" id="releaseConsumableModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-box-arrow-right"></i> Release Consumable</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <iframe id="releaseModalFrame" src="" style="width: 100%; height: 600px; border: none;"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- jQuery -->
@@ -711,6 +729,41 @@ try {
                     console.error('Error:', error);
                     alert('Error loading consumable data');
                 });
+        }
+        
+        // Open release modal function
+        function openReleaseModal(consumableId) {
+            const modal = new bootstrap.Modal(document.getElementById('releaseConsumableModal'));
+            document.getElementById('releaseModalFrame').src = 'release_consumable_modal.php?id=' + consumableId;
+            modal.show();
+        }
+        
+        // Close release modal function (called from iframe)
+        function closeReleaseModal() {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('releaseConsumableModal'));
+            if (modal) {
+                modal.hide();
+            }
+        }
+        
+        // Show release success message (called from iframe)
+        function showReleaseSuccess(message) {
+            // Create success alert
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
+            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            alertDiv.innerHTML = `
+                <i class="bi bi-check-circle"></i> ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alertDiv);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.parentNode.removeChild(alertDiv);
+                }
+            }, 5000);
         }
         
         // Initialize DataTable
