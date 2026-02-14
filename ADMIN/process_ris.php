@@ -152,27 +152,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 
                 // Insert into consumables table
-                // Get office_id from offices table using office name
-                $office_query = $conn->prepare("SELECT id FROM offices WHERE office_name = ? LIMIT 1");
-                $office_query->bind_param("s", $office);
-                $office_query->execute();
-                $office_result = $office_query->get_result();
-                $office_id = 1; // Default office_id if not found
-                
-                if ($office_row = $office_result->fetch_assoc()) {
-                    $office_id = $office_row['id'];
-                }
-                $office_query->close();
+                // Always use Supply Office (ID = 3) as requested
+                $supply_office_id = 3;
                 
                 // Check if consumable already exists (to avoid duplicates)
                 $check_consumable = $conn->prepare("SELECT id FROM consumables WHERE description = ? AND office_id = ? LIMIT 1");
-                $check_consumable->bind_param("si", $descriptions[$i], $office_id);
+                $check_consumable->bind_param("si", $descriptions[$i], $supply_office_id);
                 $check_consumable->execute();
                 $check_result = $check_consumable->get_result();
                 
                 if ($check_result->num_rows == 0) {
                     // Insert new consumable if it doesn't exist
-                    $consumable_stmt->bind_param("sdii", $descriptions[$i], $quantity, $price, $office_id);
+                    $consumable_stmt->bind_param("sdii", $descriptions[$i], $quantity, $price, $supply_office_id);
                     
                     if (!$consumable_stmt->execute()) {
                         throw new Exception('Failed to save consumable: ' . $consumable_stmt->error);
@@ -180,7 +171,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } else {
                     // Update existing consumable quantity
                     $update_consumable = $conn->prepare("UPDATE consumables SET quantity = quantity + ?, unit_cost = ?, updated_at = NOW() WHERE description = ? AND office_id = ?");
-                    $update_consumable->bind_param("disi", $quantity, $price, $descriptions[$i], $office_id);
+                    $update_consumable->bind_param("disi", $quantity, $price, $descriptions[$i], $supply_office_id);
                     $update_consumable->execute();
                     $update_consumable->close();
                 }
@@ -201,10 +192,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $conn->commit();
         
         // Log action
-        logSystemAction($_SESSION['user_id'], 'Created RIS form', 'forms', "RIS No: $ris_no, Division: $division, Office: $office");
+        logSystemAction($_SESSION['user_id'], 'Created RIS form', 'forms', "RIS No: $ris_no, Division: $division, Office: $office, Items added to Supply Office");
         
         // Set success message
-        $_SESSION['success_message'] = "RIS form saved successfully! RIS Number: $ris_no, Total Amount: " . number_format($total_form_amount, 2);
+        $_SESSION['success_message'] = "RIS form saved successfully! RIS Number: $ris_no, Total Amount: " . number_format($total_form_amount, 2) . " (Items added to Supply Office)";
         
         // Redirect back to form
         header('Location: ris_form.php');
