@@ -25,7 +25,11 @@ $consumable = null;
 
 if ($consumable_id > 0) {
     try {
-        $stmt = $conn->prepare("SELECT * FROM consumables WHERE id = ?");
+        $stmt = $conn->prepare("SELECT c.*, o.office_name, fo.office_name as for_office_name 
+                            FROM consumables c 
+                            LEFT JOIN offices o ON c.office_id = o.id 
+                            LEFT JOIN offices fo ON c.for_office_id = fo.id 
+                            WHERE c.id = ?");
         $stmt->bind_param("i", $consumable_id);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -245,11 +249,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         <div class="row justify-content-center">
             <div class="col-lg-8">
                 <div class="card shadow">
-                    <div class="modal-header">
-                        <h5 class="modal-title">
-                            <i class="bi bi-box-arrow-right"></i> Release Consumable
-                        </h5>
-                    </div>
+                    
                     
                     <?php if ($message): ?>
                         <div class="alert alert-<?php echo $message_type; ?> m-3" role="alert">
@@ -287,7 +287,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                                 <input type="hidden" name="source_consumable_id" value="<?php echo $consumable['id']; ?>">
                                 
                                 <div class="row">
-                                    <div class="col-md-4">
+                                    <div class="col-md-6">
                                         <div class="mb-3">
                                             <label class="form-label">Release Quantity *</label>
                                             <input type="number" class="form-control" name="release_quantity" 
@@ -295,23 +295,35 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                                             <small class="text-muted">Maximum available: <?php echo $consumable['quantity']; ?> items</small>
                                         </div>
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-6">
                                         <div class="mb-3">
                                             <label class="form-label">Target Office *</label>
                                             <select class="form-select" name="target_office_id" required>
-                                                <option value="">Select Office</option>
+                                                <?php if (!empty($consumable['for_office_id'])): ?>
+                                                    <option value="<?php echo $consumable['for_office_id']; ?>" selected>
+                                                        <?php echo htmlspecialchars($consumable['for_office_name']); ?> (Default)
+                                                    </option>
+                                                <?php endif; ?>
                                                 <?php foreach ($offices as $office): ?>
-                                                    <?php if ($office['id'] != $consumable['office_id']): ?>
+                                                    <?php if ($office['id'] != $consumable['office_id'] && $office['id'] != $consumable['for_office_id']): ?>
                                                         <option value="<?php echo $office['id']; ?>">
                                                             <?php echo htmlspecialchars($office['office_name']); ?>
                                                         </option>
                                                     <?php endif; ?>
                                                 <?php endforeach; ?>
                                             </select>
-                                            <small class="text-muted">Select office to receive consumables</small>
+                                            <small class="text-muted">
+                                                <?php if (!empty($consumable['for_office_name'])): ?>
+                                                    Default: <?php echo htmlspecialchars($consumable['for_office_name']); ?>
+                                                <?php else: ?>
+                                                    Select office to receive consumables
+                                                <?php endif; ?>
+                                            </small>
                                         </div>
                                     </div>
-                                    <div class="col-md-4">
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12">
                                         <div class="mb-3">
                                             <label class="form-label">Received By</label>
                                             <input type="text" class="form-control" name="received_by" 

@@ -227,7 +227,7 @@ try {
             FROM consumables c 
             LEFT JOIN offices o ON c.office_id = o.id 
             LEFT JOIN offices fo ON c.for_office_id = fo.id 
-            WHERE 1=1";
+            WHERE c.quantity > 0";
     
     $params = [];
     $types = '';
@@ -535,12 +535,18 @@ try {
                                     <td><?php echo htmlspecialchars($consumable['office_name'] ?? 'N/A'); ?></td>
                                     <td><?php echo htmlspecialchars($consumable['for_office_name'] ?? 'N/A'); ?></td>
                                     <td>
-                                        <button class="btn btn-sm btn-outline-warning" onclick="editReorderLevel(<?php echo $consumable['id']; ?>, '<?php echo htmlspecialchars($consumable['description']); ?>', <?php echo $consumable['quantity']; ?>)">
-                                            <i class="bi bi-pencil"></i> Edit Reorder
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-success" onclick="openReleaseModal(<?php echo $consumable['id']; ?>)">
-                                            <i class="bi bi-box-arrow-right"></i> Release
-                                        </button>
+                                        <?php if (empty($consumable['for_office_name'])): ?>
+                                            <button class="btn btn-sm btn-outline-info" disabled>
+                                                <i class="bi bi-check-circle"></i> Released
+                                            </button>
+                                        <?php else: ?>
+                                            <button class="btn btn-sm btn-outline-warning" onclick="editReorderLevel(<?php echo $consumable['id']; ?>, '<?php echo htmlspecialchars($consumable['description']); ?>', <?php echo $consumable['quantity']; ?>)">
+                                                <i class="bi bi-pencil"></i> Edit Reorder
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-success" onclick="openReleaseModal(<?php echo $consumable['id']; ?>)">
+                                                <i class="bi bi-box-arrow-right"></i> Release
+                                            </button>
+                                        <?php endif; ?>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
