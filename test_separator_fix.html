@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Separator Fix</title>
+</head>
+<body>
+    <h2>Testing Separator Fix</h2>
+    
+    <label>Separator:</label>
+    <select id="separator">
+        <option value="-">Dash (-)</option>
+        <option value="/">Slash (/)</option>
+        <option value="_">Underscore (_)</option>
+        <option value=" ">Space</option>
+        <option value="">None</option>
+    </select>
+    
+    <br><br>
+    
+    <button onclick="testSeparator()">Test</button>
+    
+    <h3>Result:</h3>
+    <div id="result"></div>
+    
+    <script>
+    function testSeparator() {
+        const separator = document.getElementById('separator').value;
+        const parts = ['2026', '0001', 'CAT', 'OF'];
+        const result = parts.join(separator);
+        
+        document.getElementById('result').innerHTML = 
+            '<strong>Separator:</strong> "' + separator + '" (Length: ' + separator.length + ')<br>' +
+            '<strong>Parts:</strong> ' + parts.join(', ') + '<br>' +
+            '<strong>Result:</strong> "' + result + '"<br>' +
+            '<strong>Expected:</strong> ' + (separator === '' ? 'No separator between parts' : 'Separator: ' + separator);
+    }
+    </script>
+</body>
+</html>

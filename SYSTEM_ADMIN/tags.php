@@ -64,6 +64,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $separator = $_POST['separator'];
             $status = $_POST['status'];
             
+            // Debug: Log what we're saving
+            error_log("Saving tag format for: $tag_type");
+            error_log("Components: " . $format_components);
+            error_log("Digits: $digits, Separator: '$separator', Status: $status");
+            
             // Check if tag exists
             $check_sql = "SELECT id FROM tag_formats WHERE tag_type = ?";
             $check_stmt = $conn->prepare($check_sql);
@@ -75,17 +80,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Update existing - always set auto_increment to 1
                 $sql = "UPDATE tag_formats SET format_components = ?, auto_increment = 1, digits = ?, `separator` = ?, status = ?, updated_by = ? WHERE tag_type = ?";
                 $stmt = $conn->prepare($sql);
-                $stmt->bind_param("sisssi", $format_components, $digits, $separator, $status, $_SESSION['user_id'], $tag_type);
+                $stmt->bind_param("sissis", $format_components, $digits, $separator, $status, $_SESSION['user_id'], $tag_type);
+                error_log("Updating existing tag: $tag_type");
             } else {
                 // Insert new - always set auto_increment to 1
                 $sql = "INSERT INTO tag_formats (tag_type, format_components, auto_increment, digits, `separator`, status, created_by) VALUES (?, ?, 1, ?, ?, ?, ?)";
                 $stmt = $conn->prepare($sql);
                 $stmt->bind_param("sssssi", $tag_type, $format_components, $digits, $separator, $status, $_SESSION['user_id']);
+                error_log("Inserting new tag: $tag_type");
             }
             
             if ($stmt->execute()) {
+                error_log("Successfully saved tag format for: $tag_type");
+                error_log("Rows affected: " . $stmt->affected_rows);
                 logSystemAction($_SESSION['user_id'], 'Updated tag format', 'tags', "Tag type: $tag_type");
                 $success_message = "Tag format saved successfully!";
+                
+                // Redirect to prevent form resubmission and refresh the page
+                header("Location: tags.php?success=" . urlencode($success_message));
+                exit();
+            } else {
+                error_log("Failed to save tag format: " . $stmt->error);
             }
             
             $stmt->close();
@@ -94,13 +109,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         if ($_POST['action'] === 'reset_counter') {
             $tag_type = $_POST['tag_type'];
+            error_log("Resetting counter for: $tag_type");
             $sql = "UPDATE tag_formats SET current_number = 1, updated_by = ? WHERE tag_type = ?";
             $stmt = $conn->prepare($sql);
             $stmt->bind_param("is", $_SESSION['user_id'], $tag_type);
             
             if ($stmt->execute()) {
+                error_log("Successfully reset counter for: $tag_type");
                 logSystemAction($_SESSION['user_id'], 'Reset tag counter', 'tags', "Tag type: $tag_type");
                 $success_message = "Counter reset successfully!";
+                
+                // Redirect to prevent form resubmission
+                header("Location: tags.php?success=" . urlencode($success_message));
+                exit();
+            } else {
+                error_log("Failed to reset counter: " . $stmt->error);
             }
             
             $stmt->close();
@@ -160,31 +183,115 @@ $tag_types = [
     'red_tag_no' => 'Red Tag No'
 ];
 
-function getFormatPattern($components, $separator) {
+function getFormatPattern($components, $defaultSeparator) {
     $parts = [];
     
-    foreach ($components as $component) {
+    foreach ($components as $index => $component) {
+        $separator = $component['separator'] ?? $defaultSeparator;
+        
         switch ($component['type']) {
             case 'text':
-                $parts[] = $component['value'] ?? 'TEXT';
+                $parts[] = ($separator && $index > 0 ? $separator : '') . ($component['value'] ?? 'TEXT');
                 break;
             case 'digits':
                 $digits = $component['digits'] ?? 4;
-                $parts[] = str_repeat('0', $digits);
+                $parts[] = ($separator && $index > 0 ? $separator : '') . str_repeat('0', $digits);
                 break;
             case 'month':
-                $parts[] = 'MM';
+                $parts[] = ($separator && $index > 0 ? $separator : '') . 'MM';
                 break;
             case 'year':
-                $parts[] = 'YYYY';
+                $parts[] = ($separator && $index > 0 ? $separator : '') . 'YYYY';
+                break;
+            case 'form_code':
+                $parts[] = ($separator && $index > 0 ? $separator : '') . 'FC';
+                break;
+            case 'office_code':
+                $parts[] = ($separator && $index > 0 ? $separator : '') . 'OF';
+                break;
+            case 'category_code':
+                $parts[] = ($separator && $index > 0 ? $separator : '') . 'CAT';
+                break;
+            case 'sub_category_code':
+                $parts[] = ($separator && $index > 0 ? $separator : '') . 'SUB';
                 break;
         }
     }
     
-    return implode($separator, $parts);
+    return implode('', $parts);
 }
 
-function generateTagPreview($tag_type, $components, $auto_increment, $digits, $separator) {
+function getFormCodeByTagType($tag_type) {
+    global $conn;
+    
+    // Map tag types to form codes
+    $tag_to_form_mapping = [
+        'par_no' => 'PAR',
+        'ics_no' => 'ICS', 
+        'ris_no' => 'RIS',
+        'itr_no' => 'ITR',
+        'sai_no' => 'SAI'
+    ];
+    
+    $form_code = $tag_to_form_mapping[$tag_type] ?? null;
+    
+    if ($form_code) {
+        // Get numeric code from forms table
+        $stmt = $conn->prepare("SELECT code FROM forms WHERE form_code = ? AND status = 'active' LIMIT 1");
+        $stmt->bind_param("s", $form_code);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($row = $result->fetch_assoc()) {
+            return $row['code'];
+        }
+    }
+    
+    return null;
+}
+
+function getDynamicCode($code_type, $tag_type = null) {
+    global $conn;
+    
+    switch ($code_type) {
+        case 'office_code':
+            // Return first active office code as example
+            $stmt = $conn->prepare("SELECT office_code FROM offices WHERE status = 'active' LIMIT 1");
+            $stmt->execute();
+            $result = $stmt->get_result();
+            if ($row = $result->fetch_assoc()) {
+                return $row['office_code'];
+            }
+            break;
+            
+        case 'category_code':
+            // Return first active asset category code as example
+            $stmt = $conn->prepare("SELECT category_code FROM asset_categories WHERE status = 'active' LIMIT 1");
+            $stmt->execute();
+            $result = $stmt->get_result();
+            if ($row = $result->fetch_assoc()) {
+                return $row['category_code'];
+            }
+            break;
+            
+        case 'sub_category_code':
+            // Return first active asset sub-category code as example
+            $stmt = $conn->prepare("SELECT sub_category_code FROM asset_sub_categories WHERE status = 'active' LIMIT 1");
+            $stmt->execute();
+            $result = $stmt->get_result();
+            if ($row = $result->fetch_assoc()) {
+                return $row['sub_category_code'];
+            }
+            break;
+            
+        case 'form_code':
+            return getFormCodeByTagType($tag_type);
+    }
+    
+    return null;
+}
+
+function generateTagPreview($tag_type, $components, $auto_increment, $digits, $defaultSeparator) {
     global $conn;
     
     // Get current number for this tag type (always auto-increment)
@@ -197,27 +304,49 @@ function generateTagPreview($tag_type, $components, $auto_increment, $digits, $s
     // Build the tag from components
     $parts = [];
     
-    foreach ($components as $component) {
+    foreach ($components as $index => $component) {
+        $separator = $component['separator'] ?? $defaultSeparator;
+        
         switch ($component['type']) {
             case 'text':
-                $parts[] = $component['value'] ?? '';
+                $parts[] = ($separator && $index > 0 ? $separator : '') . ($component['value'] ?? '');
                 break;
             case 'digits':
                 $component_digits = $component['digits'] ?? $digits; // Use component-specific digits or fallback to global
                 // Always auto-increment digits
                 $number = str_pad($current_number, $component_digits, '0', STR_PAD_LEFT);
-                $parts[] = $number;
+                $parts[] = ($separator && $index > 0 ? $separator : '') . $number;
                 break;
             case 'month':
-                $parts[] = date('m');
+                $parts[] = ($separator && $index > 0 ? $separator : '') . date('m');
                 break;
             case 'year':
-                $parts[] = date('Y');
+                $parts[] = ($separator && $index > 0 ? $separator : '') . date('Y');
+                break;
+            case 'form_code':
+                // Get form code based on tag type
+                $form_code = getFormCodeByTagType($tag_type);
+                $parts[] = ($separator && $index > 0 ? $separator : '') . ($form_code ?: 'FC');
+                break;
+            case 'office_code':
+                // Get office code
+                $office_code = getDynamicCode('office_code');
+                $parts[] = ($separator && $index > 0 ? $separator : '') . ($office_code ?: 'OF');
+                break;
+            case 'category_code':
+                // Get category code
+                $category_code = getDynamicCode('category_code');
+                $parts[] = ($separator && $index > 0 ? $separator : '') . ($category_code ?: 'CAT');
+                break;
+            case 'sub_category_code':
+                // Get sub-category code
+                $sub_category_code = getDynamicCode('sub_category_code');
+                $parts[] = ($separator && $index > 0 ? $separator : '') . ($sub_category_code ?: 'SUB');
                 break;
         }
     }
     
-    return implode($separator, $parts);
+    return implode('', $parts);
 }
 
 // Log page access
@@ -402,6 +531,25 @@ logSystemAction($_SESSION['user_id'], 'Accessed Tags Management', 'tags', 'tags.
         .main-wrapper.sidebar-active {
             margin-left: 280px;
         }
+        
+        /* Component styling */
+        .component-item {
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 6px;
+            padding: 8px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .component-badge {
+            font-size: 0.8rem;
+            padding: 6px 10px;
+            min-width: 120px;
+            text-align: left;
+        }
+        
+        .component-separator {
+            min-width: 100px;
+        }
     </style>
 </head>
 <body>
@@ -440,6 +588,11 @@ logSystemAction($_SESSION['user_id'], 'Accessed Tags Management', 'tags', 'tags.
         <?php if (isset($success_message)): ?>
             <div class="alert alert-success alert-dismissible fade show" role="alert">
                 <i class="bi bi-check-circle"></i> <?php echo htmlspecialchars($success_message); ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php elseif (isset($_GET['success'])): ?>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle"></i> <?php echo htmlspecialchars($_GET['success']); ?>
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         <?php endif; ?>
@@ -522,6 +675,18 @@ logSystemAction($_SESSION['user_id'], 'Accessed Tags Management', 'tags', 'tags.
                                     <button type="button" class="btn btn-outline-warning btn-sm" onclick="addComponent('<?php echo $tag_key; ?>', 'year')">
                                         <i class="bi bi-calendar-year"></i> YEAR
                                     </button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="addComponent('<?php echo $tag_key; ?>', 'form_code')">
+                                        <i class="bi bi-file-earmark-code"></i> FORM CODE
+                                    </button>
+                                    <button type="button" class="btn btn-outline-dark btn-sm" onclick="addComponent('<?php echo $tag_key; ?>', 'office_code')">
+                                        <i class="bi bi-building"></i> OFFICE
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="addComponent('<?php echo $tag_key; ?>', 'category_code')">
+                                        <i class="bi bi-tags"></i> CATEGORY
+                                    </button>
+                                    <button type="button" class="btn btn-outline-info btn-sm" onclick="addComponent('<?php echo $tag_key; ?>', 'sub_category_code')">
+                                        <i class="bi bi-tag"></i> SUBCATEGORY
+                                    </button>
                                 </div>
                                 
                                 <!-- Components Display -->
@@ -530,25 +695,52 @@ logSystemAction($_SESSION['user_id'], 'Accessed Tags Management', 'tags', 'tags.
                                         <span class="text-muted">Click buttons above to add components</span>
                                     <?php else: ?>
                                         <?php foreach ($components as $index => $component): ?>
-                                            <span class="badge bg-secondary me-1 mb-1 component-badge" data-index="<?php echo $index; ?>">
-                                                <?php 
-                                                switch ($component['type']) {
-                                                    case 'text':
-                                                        echo '<i class="bi bi-fonts"></i> ' . htmlspecialchars($component['value']);
-                                                        break;
-                                                    case 'digits':
-                                                        echo '<i class="bi bi-123"></i> DIGITS (' . ($component['digits'] ?? 4) . ')';
-                                                        break;
-                                                    case 'month':
-                                                        echo '<i class="bi bi-calendar-month"></i> MONTH';
-                                                        break;
-                                                    case 'year':
-                                                        echo '<i class="bi bi-calendar-year"></i> YEAR';
-                                                        break;
-                                                }
-                                                ?>
-                                                <button type="button" class="btn-close btn-close-white ms-1" onclick="removeComponent('<?php echo $tag_key; ?>', <?php echo $index; ?>)"></button>
-                                            </span>
+                                            <div class="component-item mb-2" data-index="<?php echo $index; ?>">
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <span class="badge bg-secondary component-badge">
+                                                        <?php 
+                                                        switch ($component['type']) {
+                                                            case 'text':
+                                                                echo '<i class="bi bi-fonts"></i> ' . htmlspecialchars($component['value']);
+                                                                break;
+                                                            case 'digits':
+                                                                echo '<i class="bi bi-123"></i> DIGITS (' . ($component['digits'] ?? 4) . ')';
+                                                                break;
+                                                            case 'month':
+                                                                echo '<i class="bi bi-calendar-month"></i> MONTH';
+                                                                break;
+                                                            case 'year':
+                                                                echo '<i class="bi bi-calendar-year"></i> YEAR';
+                                                                break;
+                                                            case 'form_code':
+                                                                echo '<i class="bi bi-file-earmark-code"></i> FORM CODE';
+                                                                break;
+                                                            case 'office_code':
+                                                                echo '<i class="bi bi-building"></i> OFFICE';
+                                                                break;
+                                                            case 'category_code':
+                                                                echo '<i class="bi bi-tags"></i> CATEGORY';
+                                                                break;
+                                                            case 'sub_category_code':
+                                                                echo '<i class="bi bi-tag"></i> SUBCATEGORY';
+                                                                break;
+                                                        }
+                                                        ?>
+                                                    </span>
+                                                    <?php if ($index > 0): ?>
+                                                        <select class="form-select form-select-sm component-separator" style="width: auto;" onchange="updateComponentSeparator('<?php echo $tag_key; ?>', <?php echo $index; ?>, this.value)">
+                                                            <option value="-" <?php echo ($component['separator'] ?? '-') == '-' ? 'selected' : ''; ?>>Dash (-)</option>
+                                                            <option value="/" <?php echo ($component['separator'] ?? '-') == '/' ? 'selected' : ''; ?>>Slash (/)</option>
+                                                            <option value="_" <?php echo ($component['separator'] ?? '-') == '_' ? 'selected' : ''; ?>>Underscore (_)</option>
+                                                            <option value=" " <?php echo ($component['separator'] ?? '-') == ' ' ? 'selected' : ''; ?>>Space</option>
+                                                            <option value="" <?php echo ($component['separator'] ?? '-') == '' ? 'selected' : ''; ?>>None</option>
+                                                        </select>
+                                                    <?php endif; ?>
+                                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeComponent('<?php echo $tag_key; ?>', <?php echo $index; ?>)">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
                                         <?php endforeach; ?>
                                     <?php endif; ?>
                                 </div>
@@ -659,6 +851,11 @@ function addComponent(tagType, componentType) {
     
     let component = { type: componentType };
     
+    // Set default separator for new components (except first one)
+    if (tagComponents[tagType].length > 0) {
+        component.separator = '-'; // Default separator for new components
+    }
+    
     if (componentType === 'text') {
         const textValue = prompt('Enter text value:');
         if (textValue === null || textValue.trim() === '') {
@@ -733,17 +930,59 @@ function updateComponentsDisplay(tagType) {
                 case 'year':
                     displayText = '<i class="bi bi-calendar-year"></i> YEAR';
                     break;
+                case 'form_code':
+                    displayText = '<i class="bi bi-file-earmark-code"></i> FORM CODE';
+                    break;
+                case 'office_code':
+                    displayText = '<i class="bi bi-building"></i> OFFICE';
+                    break;
+                case 'category_code':
+                    displayText = '<i class="bi bi-tags"></i> CATEGORY';
+                    break;
+                case 'sub_category_code':
+                    displayText = '<i class="bi bi-tag"></i> SUBCATEGORY';
+                    break;
             }
-            html += '<span class="badge bg-secondary me-1 mb-1 component-badge" data-index="' + index + '">' +
-                    displayText +
-                    '<button type="button" class="btn-close btn-close-white ms-1" onclick="removeComponent(\'' + tagType + '\', ' + index + ')"></button>' +
-                    '</span>';
+            
+            html += '<div class="component-item mb-2" data-index="' + index + '">' +
+                    '<div class="d-flex align-items-center gap-2">' +
+                    '<span class="badge bg-secondary component-badge">' + displayText + '</span>';
+            
+            // Add separator dropdown for components after the first one
+            if (index > 0) {
+                const currentSeparator = component.separator || '-';
+                html += '<select class="form-select form-select-sm component-separator" style="width: auto;" onchange="updateComponentSeparator(\'' + tagType + '\', ' + index + ', this.value)">' +
+                        '<option value="-"' + (currentSeparator === '-' ? ' selected' : '') + '>Dash (-)</option>' +
+                        '<option value="/"' + (currentSeparator === '/' ? ' selected' : '') + '>Slash (/)</option>' +
+                        '<option value="_"' + (currentSeparator === '_' ? ' selected' : '') + '>Underscore (_)</option>' +
+                        '<option value=" "' + (currentSeparator === ' ' ? ' selected' : '') + '>Space</option>' +
+                        '<option value=""' + (currentSeparator === '' ? ' selected' : '') + '>None</option>' +
+                        '</select>';
+            }
+            
+            html += '<button type="button" class="btn btn-sm btn-outline-danger" onclick="removeComponent(\'' + tagType + '\', ' + index + ')">' +
+                    '<i class="bi bi-trash"></i>' +
+                    '</button>' +
+                    '</div>' +
+                    '</div>';
         });
         container.innerHTML = html;
     }
     
     // Update hidden input
     input.value = JSON.stringify(components);
+}
+
+function updateComponentSeparator(tagType, componentIndex, separator) {
+    if (tagComponents[tagType] && tagComponents[tagType][componentIndex]) {
+        tagComponents[tagType][componentIndex].separator = separator;
+        updateComponentsDisplay(tagType);
+        
+        // Auto-generate preview immediately after updating separator
+        setTimeout(() => {
+            generatePreview(tagType);
+        }, 100);
+    }
 }
 
 function generatePreview(tagType) {
@@ -787,7 +1026,7 @@ function generatePreview(tagType) {
         const previewElement = document.getElementById('preview_' + tagType);
         if (previewElement) {
             const components = tagComponents[tagType] || [];
-            const separator = form.querySelector('select[name="separator"]').value || '-';
+            const separator = form.querySelector('select[name="separator"]').value;
             const digits = parseInt(form.querySelector('select[name="digits"]').value) || 4;
             
             let preview = generateClientPreview(components, separator, digits);
@@ -796,30 +1035,48 @@ function generatePreview(tagType) {
     });
 }
 
-function generateClientPreview(components, separator, digits) {
+function generateClientPreview(components, defaultSeparator, digits) {
     const parts = [];
     const currentNumber = 1; // Default to 1 for client-side preview
     
-    components.forEach(component => {
+    components.forEach((component, index) => {
+        const separator = component.separator || defaultSeparator;
+        
         switch (component.type) {
             case 'text':
-                parts.push(component.value || '');
+                parts.push((separator && index > 0 ? separator : '') + (component.value || ''));
                 break;
             case 'digits':
                 const componentDigits = component.digits || digits;
                 const number = String(currentNumber).padStart(componentDigits, '0');
-                parts.push(number);
+                parts.push((separator && index > 0 ? separator : '') + number);
                 break;
             case 'month':
-                parts.push(String(new Date().getMonth() + 1).padStart(2, '0'));
+                parts.push((separator && index > 0 ? separator : '') + String(new Date().getMonth() + 1).padStart(2, '0'));
                 break;
             case 'year':
-                parts.push(new Date().getFullYear().toString());
+                parts.push((separator && index > 0 ? separator : '') + new Date().getFullYear().toString());
+                break;
+            case 'form_code':
+                // For client-side preview, use placeholder
+                parts.push((separator && index > 0 ? separator : '') + 'FC');
+                break;
+            case 'office_code':
+                // For client-side preview, use placeholder
+                parts.push((separator && index > 0 ? separator : '') + 'OF');
+                break;
+            case 'category_code':
+                // For client-side preview, use placeholder
+                parts.push((separator && index > 0 ? separator : '') + 'CAT');
+                break;
+            case 'sub_category_code':
+                // For client-side preview, use placeholder
+                parts.push((separator && index > 0 ? separator : '') + 'SUB');
                 break;
         }
     });
     
-    return parts.join(separator);
+    return parts.join('');
 }
 
 function resetCounter(tagType) {
@@ -865,6 +1122,14 @@ document.querySelectorAll('.tag-form input, .tag-form select').forEach(element =
         const form = this.closest('.tag-form');
         const tagType = form.dataset.tagType;
         generatePreview(tagType);
+    });
+});
+
+// Prevent form submission from affecting other forms
+document.querySelectorAll('.tag-form').forEach(form => {
+    form.addEventListener('submit', function(e) {
+        // Let the form submit normally - no need to prevent default
+        console.log('Submitting form for tag type:', this.dataset.tagType);
     });
 });
 
