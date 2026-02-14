@@ -217,6 +217,9 @@ function getFormatPattern($components, $defaultSeparator) {
             case 'sub_category_code':
                 $parts[] = ($separator && $index > 0 ? $separator : '') . 'SUB';
                 break;
+            case 'fund_code':
+                $parts[] = ($separator && $index > 0 ? $separator : '') . 'FUND';
+                break;
         }
     }
     
@@ -286,6 +289,16 @@ function getDynamicCode($code_type, $tag_type = null) {
             }
             break;
             
+        case 'fund_code':
+            // Return first active fund code as example
+            $stmt = $conn->prepare("SELECT fund_code FROM funds WHERE status = 'active' LIMIT 1");
+            $stmt->execute();
+            $result = $stmt->get_result();
+            if ($row = $result->fetch_assoc()) {
+                return $row['fund_code'];
+            }
+            break;
+            
         case 'form_code':
             return getFormCodeByTagType($tag_type);
     }
@@ -346,6 +359,11 @@ function generateTagPreview($tag_type, $components, $auto_increment, $digits, $d
                 // Get sub-category code
                 $sub_category_code = getDynamicCode('sub_category_code');
                 $parts[] = ($separator && $index > 0 ? $separator : '') . ($sub_category_code ?: 'SUB');
+                break;
+            case 'fund_code':
+                // Get fund code
+                $fund_code = getDynamicCode('fund_code');
+                $parts[] = ($separator && $index > 0 ? $separator : '') . ($fund_code ?: 'FUND');
                 break;
         }
     }
@@ -691,6 +709,9 @@ logSystemAction($_SESSION['user_id'], 'Accessed Tags Management', 'tags', 'tags.
                                     <button type="button" class="btn btn-outline-info btn-sm" onclick="addComponent('<?php echo $tag_key; ?>', 'sub_category_code')">
                                         <i class="bi bi-tag"></i> SUBCATEGORY
                                     </button>
+                                    <button type="button" class="btn btn-outline-success btn-sm" onclick="addComponent('<?php echo $tag_key; ?>', 'fund_code')">
+                                        <i class="bi bi-cash-stack"></i> FUND
+                                    </button>
                                 </div>
                                 
                                 <!-- Components Display -->
@@ -729,6 +750,9 @@ logSystemAction($_SESSION['user_id'], 'Accessed Tags Management', 'tags', 'tags.
                                                                 break;
                                                             case 'sub_category_code':
                                                                 echo '<i class="bi bi-tag"></i> SUBCATEGORY';
+                                                                break;
+                                                            case 'fund_code':
+                                                                echo '<i class="bi bi-cash-stack"></i> FUND';
                                                                 break;
                                                         }
                                                         ?>
@@ -964,6 +988,9 @@ function updateComponentsDisplay(tagType) {
                 case 'sub_category_code':
                     displayText = '<i class="bi bi-tag"></i> SUBCATEGORY';
                     break;
+                case 'fund_code':
+                    displayText = '<i class="bi bi-cash-stack"></i> FUND';
+                    break;
             }
             
             html += '<div class="component-item mb-2" data-index="' + index + '">' +
@@ -1098,6 +1125,10 @@ function generateClientPreview(components, defaultSeparator, digits) {
             case 'sub_category_code':
                 // For client-side preview, use placeholder
                 parts.push((separator && index > 0 ? separator : '') + 'SUB');
+                break;
+            case 'fund_code':
+                // For client-side preview, use placeholder
+                parts.push((separator && index > 0 ? separator : '') + 'FUND');
                 break;
         }
     });
