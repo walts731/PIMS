@@ -65,6 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     $source_consumable_id = intval($_POST['source_consumable_id'] ?? 0);
     $release_quantity = intval($_POST['release_quantity'] ?? 0);
     $target_office_id = intval($_POST['target_office_id'] ?? 0);
+    $received_by = trim($_POST['received_by'] ?? '');
     $remarks = trim($_POST['remarks'] ?? '');
     
     // Validation
@@ -76,6 +77,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         $message_type = "danger";
     } elseif ($target_office_id <= 0) {
         $message = "Please select a target office.";
+        $message_type = "danger";
+    } elseif (empty($received_by)) {
+        $message = "Please enter the name of the person receiving the consumables.";
         $message_type = "danger";
     } else {
         try {
@@ -142,8 +146,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             
             // Record release history
             $total_value = $release_quantity * $source_data['unit_cost'];
-            $history_stmt = $conn->prepare("INSERT INTO consumable_release_history (consumable_id, description, quantity_released, unit_cost, total_value, from_office_id, to_office_id, released_by, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $history_stmt->bind_param("isddiiiss", 
+            $history_stmt = $conn->prepare("INSERT INTO consumable_release_history (consumable_id, description, quantity_released, unit_cost, total_value, from_office_id, to_office_id, released_by, received_by, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $history_stmt->bind_param("isddiiisss", 
                 $source_consumable_id,
                 $source_data['description'],
                 $release_quantity,
@@ -152,6 +156,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                 $source_data['office_id'],
                 $target_office_id,
                 $_SESSION['user_id'],
+                $received_by,
                 $remarks
             );
             $history_stmt->execute();
@@ -175,12 +180,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             $message = "Successfully released {$release_quantity} '{$source_data['description']}' item(s) to {$office_data['office_name']}. Source remaining: {$new_source_quantity}.";
             $message_type = "success";
             
-            // Close modal on success
+            // Close modal on success and refresh parent consumables page
             echo "<script>
-                parent.showReleaseSuccess('{$message}');
-                setTimeout(() => {
-                    parent.location.reload();
-                }, 2000);
+                if (window.parent && window.parent !== window) {
+                    // We're in an iframe, refresh the parent window
+                    window.parent.location.reload();
+                } else {
+                    // We're not in an iframe, reload current page
+                    window.location.reload();
+                }
             </script>";
             
         } catch (Exception $e) {
@@ -279,7 +287,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                                 <input type="hidden" name="source_consumable_id" value="<?php echo $consumable['id']; ?>">
                                 
                                 <div class="row">
-                                    <div class="col-md-6">
+                                    <div class="col-md-4">
                                         <div class="mb-3">
                                             <label class="form-label">Release Quantity *</label>
                                             <input type="number" class="form-control" name="release_quantity" 
@@ -287,7 +295,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                                             <small class="text-muted">Maximum available: <?php echo $consumable['quantity']; ?> items</small>
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
+                                    <div class="col-md-4">
                                         <div class="mb-3">
                                             <label class="form-label">Target Office *</label>
                                             <select class="form-select" name="target_office_id" required>
@@ -301,6 +309,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                                                 <?php endforeach; ?>
                                             </select>
                                             <small class="text-muted">Select office to receive consumables</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label class="form-label">Received By</label>
+                                            <input type="text" class="form-control" name="received_by" 
+                                                   placeholder="Enter name of person receiving" required>
+                                            <small class="text-muted">Name of person receiving the consumables</small>
                                         </div>
                                     </div>
                                 </div>

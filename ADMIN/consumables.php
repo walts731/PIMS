@@ -515,7 +515,6 @@ try {
                             <th>Reorder Level</th>
                             <th>Office</th>
                             <th>For Office</th>
-                            <th>Created</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -535,7 +534,6 @@ try {
                                     <td><?php echo $consumable['reorder_level']; ?></td>
                                     <td><?php echo htmlspecialchars($consumable['office_name'] ?? 'N/A'); ?></td>
                                     <td><?php echo htmlspecialchars($consumable['for_office_name'] ?? 'N/A'); ?></td>
-                                    <td><small><?php echo date('M j, Y', strtotime($consumable['created_at'])); ?></small></td>
                                     <td>
                                         <button class="btn btn-sm btn-outline-warning" onclick="editReorderLevel(<?php echo $consumable['id']; ?>, '<?php echo htmlspecialchars($consumable['description']); ?>', <?php echo $consumable['quantity']; ?>)">
                                             <i class="bi bi-pencil"></i> Edit Reorder
@@ -548,7 +546,7 @@ try {
                             <?php endforeach; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="9" class="text-center text-muted py-4">
+                                <td colspan="8" class="text-center text-muted py-4">
                                     <i class="bi bi-inbox fs-1"></i>
                                     <p class="mt-2">No consumables found. Click "Add Consumable" to create your first consumable.</p>
                                 </td>
@@ -827,7 +825,7 @@ try {
             // Get current table data from DOM
             const table = document.getElementById('consumablesTable');
             const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
-            let csv = 'Description,Quantity,Unit Cost,Total Value,Reorder Level,Office,For Office,Created\n';
+            let csv = 'Description,Quantity,Unit Cost,Total Value,Reorder Level,Office,For Office\n';
             
             for (let i = 0; i < rows.length; i++) {
                 const cells = rows[i].getElementsByTagName('td');
@@ -839,8 +837,7 @@ try {
                         cells[3].textContent.replace(/[^0-9.-]+/g, '').trim(), // Total Value
                         cells[4].textContent.trim(), // Reorder Level
                         cells[5].textContent.trim(), // Office
-                        cells[6].textContent.trim(), // For Office
-                        cells[7].textContent.trim()  // Created
+                        cells[6].textContent.trim()  // For Office
                     ];
                     csv += rowData.map(cell => `"${cell}"`).join(',') + '\n';
                 }

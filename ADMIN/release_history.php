@@ -375,6 +375,7 @@ try {
                             <th>From Office</th>
                             <th>To Office</th>
                             <th>Released By</th>
+                            <th>Received By</th>
                             <th>Notes</th>
                         </tr>
                     </thead>
@@ -390,12 +391,13 @@ try {
                                     <td><?php echo htmlspecialchars($release['from_office_name']); ?></td>
                                     <td><?php echo htmlspecialchars($release['to_office_name']); ?></td>
                                     <td><?php echo htmlspecialchars($release['released_by_name']); ?></td>
+                                    <td><?php echo htmlspecialchars($release['received_by'] ?: 'Not specified'); ?></td>
                                     <td><small><?php echo htmlspecialchars($release['notes'] ?: 'No notes'); ?></small></td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="9" class="text-center text-muted py-4">
+                                <td colspan="10" class="text-center text-muted py-4">
                                     <i class="bi bi-clock-history fs-1"></i>
                                     <p class="mt-2">No release history found.</p>
                                 </td>
@@ -433,11 +435,11 @@ try {
             const params = new URLSearchParams(window.location.search);
             
             // Create CSV content
-            let csvContent = "Date,Description,Quantity,Unit Cost,Total Value,From Office,To Office,Released By,Notes\n";
+            let csvContent = "Date,Description,Quantity,Unit Cost,Total Value,From Office,To Office,Released By,Received By,Notes\n";
             
             <?php if (!empty($release_history)): ?>
                 <?php foreach ($release_history as $release): ?>
-                    csvContent += "<?php echo date('Y-m-d H:i', strtotime($release['release_date'])); ?>","<?php echo addslashes($release['description']); ?>","<?php echo $release['quantity_released']; ?>","<?php echo $release['unit_cost']; ?>","<?php echo $release['total_value']; ?>","<?php echo addslashes($release['from_office_name']); ?>","<?php echo addslashes($release['to_office_name']); ?>","<?php echo addslashes($release['released_by_name']); ?>","<?php echo addslashes($release['notes'] ?: 'No notes'); ?>"\n";
+                    csvContent += "<?php echo date('Y-m-d H:i', strtotime($release['release_date'])); ?>","<?php echo addslashes($release['description']); ?>","<?php echo $release['quantity_released']; ?>","<?php echo $release['unit_cost']; ?>","<?php echo $release['total_value']; ?>","<?php echo addslashes($release['from_office_name']); ?>","<?php echo addslashes($release['to_office_name']); ?>","<?php echo addslashes($release['released_by_name']); ?>","<?php echo addslashes($release['received_by'] ?: 'Not specified'); ?>","<?php echo addslashes($release['notes'] ?: 'No notes'); ?>"\n";
                 <?php endforeach; ?>
             <?php endif; ?>
             
