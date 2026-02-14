@@ -140,6 +140,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             $update_source_stmt->execute();
             $update_source_stmt->close();
             
+            // Record release history
+            $total_value = $release_quantity * $source_data['unit_cost'];
+            $history_stmt = $conn->prepare("INSERT INTO consumable_release_history (consumable_id, description, quantity_released, unit_cost, total_value, from_office_id, to_office_id, released_by, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $history_stmt->bind_param("isddiiiss", 
+                $source_consumable_id,
+                $source_data['description'],
+                $release_quantity,
+                $source_data['unit_cost'],
+                $total_value,
+                $source_data['office_id'],
+                $target_office_id,
+                $_SESSION['user_id'],
+                $remarks
+            );
+            $history_stmt->execute();
+            $history_stmt->close();
+            
             // Get target office name for logging
             $office_stmt = $conn->prepare("SELECT office_name FROM offices WHERE id = ?");
             $office_stmt->bind_param("i", $target_office_id);

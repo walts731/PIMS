@@ -441,6 +441,9 @@ try {
                     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addConsumableModal">
                         <i class="bi bi-plus-circle"></i> Add Consumable
                     </button>
+                    <button class="btn btn-outline-info btn-sm ms-2" onclick="window.location.href='release_history.php'">
+                        <i class="bi bi-clock-history"></i> History
+                    </button>
                     <button class="btn btn-outline-success btn-sm ms-2" onclick="exportConsumables()">
                         <i class="bi bi-download"></i> Export
                     </button>
