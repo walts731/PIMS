@@ -72,7 +72,10 @@ $create_table_sql = "CREATE TABLE IF NOT EXISTS `red_tags` (
     `removal_reason` text NOT NULL,
     `action` varchar(50) NOT NULL,
     `office_id` int(11) DEFAULT NULL,
-    `asset_id` int(11) DEFAULT NULL,
+    `asset_item_id` int(11) DEFAULT NULL,
+    `disposal_reason` text DEFAULT NULL,
+    `disposal_date` date DEFAULT NULL,
+    `updated_by` int(11) DEFAULT NULL,
     `created_by` int(11) NOT NULL,
     `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
     `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -80,7 +83,8 @@ $create_table_sql = "CREATE TABLE IF NOT EXISTS `red_tags` (
     UNIQUE KEY `control_no` (`control_no`),
     UNIQUE KEY `red_tag_no` (`red_tag_no`),
     KEY `office_id` (`office_id`),
-    KEY `asset_id` (`asset_id`),
+    KEY `asset_item_id` (`asset_item_id`),
+    KEY `updated_by` (`updated_by`),
     KEY `created_by` (`created_by`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
 
@@ -349,7 +353,26 @@ try {
                 </div>
             </div>
         </div>
-
+        
+        <!-- Messages -->
+        <?php if (isset($_SESSION['success'])): ?>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle-fill"></i>
+                <?php echo htmlspecialchars($_SESSION['success']); ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            <?php unset($_SESSION['success']); ?>
+        <?php endif; ?>
+        
+        <?php if (isset($_SESSION['error'])): ?>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <?php echo htmlspecialchars($_SESSION['error']); ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            <?php unset($_SESSION['error']); ?>
+        <?php endif; ?>
+        
         <!-- Statistics Cards -->
         <div class="row mb-4 no-print">
             <div class="col-md-4 mb-3">
@@ -455,6 +478,12 @@ try {
                                             <a href="print_redtag.php?control_no=<?php echo urlencode($red_tag['control_no']); ?>" class="btn btn-outline-danger btn-sm" title="Print Red Tag" target="_blank">
                                                 <i class="bi bi-printer"></i>
                                             </a>
+                                            <?php if (strtolower($red_tag['action']) === 'disposal'): ?>
+                                                <button type="button" class="btn btn-warning btn-sm" title="Dispose Item" data-bs-toggle="modal" data-bs-target="#disposeModal" 
+                                                        onclick="setDisposalData(<?php echo $red_tag['id']; ?>, '<?php echo htmlspecialchars($red_tag['control_no']); ?>', '<?php echo htmlspecialchars($red_tag['item_description']); ?>')">
+                                                    <i class="bi bi-trash"></i> Dispose
+                                                </button>
+                                            <?php endif; ?>
                                         </div>
                                     </td>
                                 </tr>
@@ -469,6 +498,62 @@ try {
 
     <?php require_once 'includes/logout-modal.php'; ?>
     <?php require_once 'includes/change-password-modal.php'; ?>
+    
+    <!-- Disposal Confirmation Modal -->
+    <div class="modal fade" id="disposeModal" tabindex="-1" aria-labelledby="disposeModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="disposeModalLabel">
+                        <i class="bi bi-exclamation-triangle text-warning"></i> Confirm Disposal
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="disposeForm" method="POST" action="process_disposal.php">
+                        <input type="hidden" name="red_tag_id" id="disposeRedTagId">
+                        <input type="hidden" name="action" value="dispose">
+                        <input type="hidden" name="csrf_token" value="<?php echo bin2hex(random_bytes(32)); ?>">
+                        
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <strong>Warning:</strong> This action cannot be undone. The item will be marked as disposed and removed from active inventory.
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label"><strong>Control No:</strong></label>
+                            <p class="form-control-plaintext" id="disposeControlNo"></p>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label"><strong>Item Description:</strong></label>
+                            <p class="form-control-plaintext" id="disposeDescription"></p>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="disposalReason" class="form-label"><strong>Disposal Reason:</strong></label>
+                            <textarea class="form-control" id="disposalReason" name="disposal_reason" rows="3" 
+                                      placeholder="Enter reason for disposal..." required></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="disposalDate" class="form-label"><strong>Disposal Date:</strong></label>
+                            <input type="date" class="form-control" id="disposalDate" name="disposal_date" 
+                                   value="<?php echo date('Y-m-d'); ?>" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </button>
+                    <button type="button" class="btn btn-warning" onclick="confirmDisposal()">
+                        <i class="bi bi-trash"></i> Confirm Disposal
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
     <?php require_once 'includes/sidebar-scripts.php'; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -568,6 +653,36 @@ try {
                 const tagIds = Array.from(checkboxes).map(cb => cb.value).join(',');
                 console.log('Printing selected tags:', tagIds);
                 window.open('print_redtags.php?ids=' + tagIds, '_blank');
+            };
+            
+            // Set disposal data in modal
+            window.setDisposalData = function(redTagId, controlNo, description) {
+                document.getElementById('disposeRedTagId').value = redTagId;
+                document.getElementById('disposeControlNo').textContent = controlNo;
+                document.getElementById('disposeDescription').textContent = description;
+                
+                // Reset form fields
+                document.getElementById('disposalReason').value = '';
+                document.getElementById('disposalDate').value = new Date().toISOString().split('T')[0];
+            };
+            
+            // Confirm disposal and submit form
+            window.confirmDisposal = function() {
+                const reason = document.getElementById('disposalReason').value.trim();
+                const date = document.getElementById('disposalDate').value;
+                
+                if (!reason) {
+                    alert('Please enter a disposal reason.');
+                    return;
+                }
+                
+                if (!date) {
+                    alert('Please select a disposal date.');
+                    return;
+                }
+                
+                // Submit the form
+                document.getElementById('disposeForm').submit();
             };
         });
     </script>

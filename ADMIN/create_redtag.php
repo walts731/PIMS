@@ -40,7 +40,7 @@ try {
 }
 
 // Get asset data from URL parameters if provided
-$asset_id = isset($_GET['asset_id']) ? intval($_GET['asset_id']) : 0;
+$asset_item_id = isset($_GET['asset_id']) ? intval($_GET['asset_id']) : 0;
 $description = isset($_GET['description']) ? htmlspecialchars($_GET['description']) : '';
 $property_no = isset($_GET['property_no']) ? htmlspecialchars($_GET['property_no']) : '';
 $inventory_tag = isset($_GET['inventory_tag']) ? htmlspecialchars($_GET['inventory_tag']) : '';
@@ -94,7 +94,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['generate_redtag'])) {
         `removal_reason` text NOT NULL,
         `action` varchar(50) NOT NULL,
         `office_id` int(11) DEFAULT NULL,
-        `asset_id` int(11) DEFAULT NULL,
+        `asset_item_id` int(11) DEFAULT NULL,
+        `disposal_reason` text DEFAULT NULL,
+        `disposal_date` date DEFAULT NULL,
+        `updated_by` int(11) DEFAULT NULL,
         `created_by` int(11) NOT NULL,
         `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
         `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -102,7 +105,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['generate_redtag'])) {
         UNIQUE KEY `control_no` (`control_no`),
         UNIQUE KEY `red_tag_no` (`red_tag_no`),
         KEY `office_id` (`office_id`),
-        KEY `asset_id` (`asset_id`),
+        KEY `asset_item_id` (`asset_item_id`),
+        KEY `updated_by` (`updated_by`),
         KEY `created_by` (`created_by`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
     
@@ -126,17 +130,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['generate_redtag'])) {
         }
         
         // Debug logging
-        error_log("Red Tag Debug - Data: control_no=$control_no, red_tag_no=$red_tag_no, asset_id=$asset_id, office_id=$office_id");
+        error_log("Red Tag Debug - Data: control_no=$control_no, red_tag_no=$red_tag_no, asset_item_id=$asset_item_id, office_id=$office_id");
         
         // Insert into red_tags table
-        $insert_sql = "INSERT INTO red_tags (control_no, red_tag_no, date_received, tagged_by, item_location, item_description, removal_reason, action, office_id, asset_id, created_by) 
+        $insert_sql = "INSERT INTO red_tags (control_no, red_tag_no, date_received, tagged_by, item_location, item_description, removal_reason, action, office_id, asset_item_id, created_by) 
                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $insert_stmt = $conn->prepare($insert_sql);
         if (!$insert_stmt) {
             throw new Exception("Prepare failed: " . $conn->error);
         }
         
-        $bind_result = $insert_stmt->bind_param("ssssssssiii", $control_no, $red_tag_no, $date_received, $tagged_by, $item_location, $item_description, $removal_reason, $action, $office_id, $asset_id, $_SESSION['user_id']);
+        $bind_result = $insert_stmt->bind_param("ssssssssiii", $control_no, $red_tag_no, $date_received, $tagged_by, $item_location, $item_description, $removal_reason, $action, $office_id, $asset_item_id, $_SESSION['user_id']);
         if (!$bind_result) {
             throw new Exception("Bind failed: " . $insert_stmt->error);
         }
@@ -148,12 +152,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['generate_redtag'])) {
         
         $insert_stmt->close();
         
-        // Update asset_item status to 'red_tagged' if asset_id is provided
-        if ($asset_id > 0) {
+        // Update asset_item status to 'red_tagged' if asset_item_id is provided
+        if ($asset_item_id > 0) {
             // Get current status before updating
             $current_status_sql = "SELECT status FROM asset_items WHERE id = ?";
             $current_status_stmt = $conn->prepare($current_status_sql);
-            $current_status_stmt->bind_param("i", $asset_id);
+            $current_status_stmt->bind_param("i", $asset_item_id);
             $current_status_stmt->execute();
             $current_status_result = $current_status_stmt->get_result();
             $old_status = 'unknown';
@@ -168,7 +172,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['generate_redtag'])) {
                 throw new Exception("Update prepare failed: " . $conn->error);
             }
             
-            $update_bind = $update_stmt->bind_param("i", $asset_id);
+            $update_bind = $update_stmt->bind_param("i", $asset_item_id);
             if (!$update_bind) {
                 throw new Exception("Update bind failed: " . $update_stmt->error);
             }
@@ -184,12 +188,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['generate_redtag'])) {
             $history_sql = "INSERT INTO asset_item_history (item_id, action, old_value, new_value, created_by, created_at, details) 
                           VALUES (?, 'status_change', ?, 'red_tagged', ?, NOW(), 'Status changed via Red Tag: $control_no')";
             $history_stmt = $conn->prepare($history_sql);
-            $history_stmt->bind_param("iss", $asset_id, $old_status, $_SESSION['user_id']);
+            $history_stmt->bind_param("iss", $asset_item_id, $old_status, $_SESSION['user_id']);
             $history_stmt->execute();
             $history_stmt->close();
             
             // Log the asset status change
-            logSystemAction($_SESSION['user_id'], 'asset_status_updated', 'inventory', "Asset ID {$asset_id} status changed from {$old_status} to red_tagged");
+            logSystemAction($_SESSION['user_id'], 'asset_status_updated', 'inventory', "Asset ID {$asset_item_id} status changed from {$old_status} to red_tagged");
         }
         
         // Commit transaction
@@ -207,7 +211,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['generate_redtag'])) {
         error_log("Error details: " . print_r([
             'control_no' => $control_no,
             'red_tag_no' => $red_tag_no,
-            'asset_id' => $asset_id,
+            'asset_item_id' => $asset_item_id,
             'user_id' => $_SESSION['user_id'] ?? 'none'
         ], true));
         $_SESSION['error'] = "Error creating red tag: " . $e->getMessage();
