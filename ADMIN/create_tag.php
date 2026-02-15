@@ -78,7 +78,11 @@ function generateTagNumber($format) {
     if (!$format) return '';
     
     $components = json_decode($format['format_components'], true);
-    if (!$components) return '';
+    // Handle double-encoded JSON - if we get a string, decode it again
+    if (is_string($components)) {
+        $components = json_decode($components, true);
+    }
+    if (!$components || !is_array($components)) return '';
     
     $tag_number = '';
     $current_number = $format['current_number'] + 1;
@@ -119,7 +123,7 @@ if ($tag_format) {
     $generated_inventory_tag = generateTagNumber($tag_format);
 }
 $category_fields = [
-    'VH' => [
+    '07' => [
         'brand' => ['label' => 'Brand', 'type' => 'text', 'required' => true],
         'model' => ['label' => 'Model', 'type' => 'text', 'required' => true],
         'plate_number' => ['label' => 'Plate Number', 'type' => 'text', 'required' => true],
@@ -128,38 +132,38 @@ $category_fields = [
         'chassis_number' => ['label' => 'Chassis Number', 'type' => 'text', 'required' => false],
         'year_model' => ['label' => 'Year Model', 'type' => 'number', 'required' => false]
     ],
-    'ITS' => [
+    '030' => [
         'processor' => ['label' => 'Processor', 'type' => 'text', 'required' => true],
         'ram' => ['label' => 'RAM (GB)', 'type' => 'text', 'required' => true],
         'storage' => ['label' => 'Storage', 'type' => 'text', 'required' => true],
         'operating_system' => ['label' => 'Operating System', 'type' => 'text', 'required' => false],
         'serial_number' => ['label' => 'Serial Number', 'type' => 'text', 'required' => false]
     ],
-    'FF' => [
+    '02' => [
         'material' => ['label' => 'Material', 'type' => 'text', 'required' => true],
         'dimensions' => ['label' => 'Dimensions (LxWxH)', 'type' => 'text', 'required' => false],
         'color' => ['label' => 'Color', 'type' => 'text', 'required' => false],
         'manufacturer' => ['label' => 'Manufacturer', 'type' => 'text', 'required' => false]
     ],
-    'ME' => [
+    '04' => [
         'manufacturer' => ['label' => 'Manufacturer', 'type' => 'text', 'required' => true],
         'model' => ['label' => 'Model', 'type' => 'text', 'required' => true],
         'capacity' => ['label' => 'Capacity', 'type' => 'text', 'required' => false],
         'power_rating' => ['label' => 'Power Rating', 'type' => 'text', 'required' => false],
         'serial_number' => ['label' => 'Serial Number', 'type' => 'text', 'required' => false]
     ],
-    'OE' => [
+    '05' => [
         'brand' => ['label' => 'Brand', 'type' => 'text', 'required' => true],
         'model' => ['label' => 'Model', 'type' => 'text', 'required' => false],
         'serial_number' => ['label' => 'Serial Number', 'type' => 'text', 'required' => false]
     ],
-    'SW' => [
+    '06' => [
         'software_name' => ['label' => 'Software Name', 'type' => 'text', 'required' => true],
         'version' => ['label' => 'Version', 'type' => 'text', 'required' => true],
         'license_key' => ['label' => 'License Key', 'type' => 'text', 'required' => false],
         'expiry_date' => ['label' => 'Expiry Date', 'type' => 'date', 'required' => false]
     ],
-    'LD' => [
+    '03' => [
         'lot_number' => ['label' => 'Lot Number', 'type' => 'text', 'required' => true],
         'area_size' => ['label' => 'Area Size (sqm)', 'type' => 'text', 'required' => true],
         'location' => ['label' => 'Location', 'type' => 'text', 'required' => true],
@@ -471,13 +475,13 @@ $category_fields = [
         // Function to get category name from code
         function getCategoryName(categoryCode) {
             const categoryNames = {
-                'VH': 'Vehicles',
-                'ITS': 'Computer Equipment',
-                'FF': 'Furniture & Fixtures',
-                'ME': 'Machinery & Equipment',
-                'OE': 'Office Equipment',
-                'SW': 'Software',
-                'LD': 'Land'
+                '07': 'Vehicles',
+                '030': 'Computer Equipment',
+                '02': 'Furniture & Fixtures',
+                '04': 'Machinery & Equipment',
+                '05': 'Office Equipment',
+                '06': 'Software',
+                '03': 'Land'
             };
             return categoryNames[categoryCode] || 'Unknown';
         }

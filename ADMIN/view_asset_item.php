@@ -459,7 +459,7 @@ $status_display = formatStatus($item['status']);
                     </div>
                     
                     <!-- Computer Equipment Specific Fields -->
-                    <?php if ($item['category_code'] === 'CE' || $item['category_code'] === 'ITS'): ?>
+                    <?php if ($item['category_code'] === '030'): ?>
                     <div class="detail-section">
                         <h5 class="mb-3"><i class="bi bi-cpu"></i> Computer Equipment Specifications</h5>
                         <div class="row">
@@ -496,7 +496,7 @@ $status_display = formatStatus($item['status']);
                     <?php endif; ?>
                     
                     <!-- Vehicles Specific Fields -->
-                    <?php if ($item['category_code'] === 'VH'): ?>
+                    <?php if ($item['category_code'] === '07'): ?>
                     <div class="detail-section">
                         <h5 class="mb-3"><i class="bi bi-truck"></i> Vehicle Specifications</h5>
                         <div class="row">
@@ -533,7 +533,7 @@ $status_display = formatStatus($item['status']);
                     <?php endif; ?>
                     
                     <!-- Furniture & Fixtures Specific Fields -->
-                    <?php if ($item['category_code'] === 'FF'): ?>
+                    <?php if ($item['category_code'] === '02'): ?>
                     <div class="detail-section">
                         <h5 class="mb-3"><i class="bi bi-lamp"></i> Furniture & Fixtures Specifications</h5>
                         <div class="row">
@@ -562,7 +562,7 @@ $status_display = formatStatus($item['status']);
                     <?php endif; ?>
                     
                     <!-- Machinery & Equipment Specific Fields -->
-                    <?php if ($item['category_code'] === 'ME'): ?>
+                    <?php if ($item['category_code'] === '04'): ?>
                     <div class="detail-section">
                         <h5 class="mb-3"><i class="bi bi-gear"></i> Machinery & Equipment Specifications</h5>
                         <div class="row">
@@ -599,7 +599,7 @@ $status_display = formatStatus($item['status']);
                     <?php endif; ?>
                     
                     <!-- Office Equipment Specific Fields -->
-                    <?php if ($item['category_code'] === 'OE'): ?>
+                    <?php if ($item['category_code'] === '05'): ?>
                     <div class="detail-section">
                         <h5 class="mb-3"><i class="bi bi-printer"></i> Office Equipment Specifications</h5>
                         <div class="row">
@@ -624,7 +624,7 @@ $status_display = formatStatus($item['status']);
                     <?php endif; ?>
                     
                     <!-- Software Specific Fields -->
-                    <?php if ($item['category_code'] === 'SW'): ?>
+                    <?php if ($item['category_code'] === '06'): ?>
                     <div class="detail-section">
                         <h5 class="mb-3"><i class="bi bi-window"></i> Software Specifications</h5>
                         <div class="row">
@@ -653,7 +653,7 @@ $status_display = formatStatus($item['status']);
                     <?php endif; ?>
                     
                     <!-- Land Specific Fields -->
-                    <?php if ($item['category_code'] === 'LD'): ?>
+                    <?php if ($item['category_code'] === '03'): ?>
                     <div class="detail-section">
                         <h5 class="mb-3"><i class="bi bi-map"></i> Land Specifications</h5>
                         <div class="row">
