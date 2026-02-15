@@ -73,7 +73,7 @@ $model_no = '';
 $serial_no = '';
 $unit_value = 1;
 
-if ($tag['category_code'] === 'ITS') {
+if ($tag['category_code'] === '030') {
     // Computer Equipment
     $comp_sql = "SELECT processor as model_no, serial_number FROM asset_computers WHERE asset_item_id = ?";
     $comp_stmt = $conn->prepare($comp_sql);
@@ -85,7 +85,7 @@ if ($tag['category_code'] === 'ITS') {
         $serial_no = $comp_row['serial_number'] ?? '';
     }
     $comp_stmt->close();
-} elseif ($tag['category_code'] === 'VH') {
+} elseif ($tag['category_code'] === '07') {
     // Vehicles
     $veh_sql = "SELECT model, serial_number FROM asset_vehicles WHERE asset_item_id = ?";
     $veh_stmt = $conn->prepare($veh_sql);
@@ -97,7 +97,7 @@ if ($tag['category_code'] === 'ITS') {
         $serial_no = $veh_row['serial_number'] ?? '';
     }
     $veh_stmt->close();
-} elseif ($tag['category_code'] === 'ME') {
+} elseif ($tag['category_code'] === '04') {
     // Machinery & Equipment
     $mach_sql = "SELECT model_number as model_no, serial_number FROM asset_machinery WHERE asset_item_id = ?";
     $mach_stmt = $conn->prepare($mach_sql);
@@ -109,7 +109,7 @@ if ($tag['category_code'] === 'ITS') {
         $serial_no = $mach_row['serial_number'] ?? '';
     }
     $mach_stmt->close();
-} elseif ($tag['category_code'] === 'OE') {
+} elseif ($tag['category_code'] === '05') {
     // Office Equipment
     $oe_sql = "SELECT model, serial_number FROM asset_office_equipment WHERE asset_item_id = ?";
     $oe_stmt = $conn->prepare($oe_sql);

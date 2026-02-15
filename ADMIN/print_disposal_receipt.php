@@ -24,7 +24,7 @@ try {
             LEFT JOIN asset_items ai ON rt.asset_item_id = ai.id
             LEFT JOIN assets a ON ai.asset_id = a.id
             LEFT JOIN offices o ON rt.office_id = o.id
-            LEFT JOIN employees e ON rt.updated_by = e.employee_id
+            LEFT JOIN employees e ON rt.updated_by = e.id
             WHERE rt.id = ? AND rt.action = 'disposed'";
     
     $stmt = $conn->prepare($sql);

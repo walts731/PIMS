@@ -475,6 +475,11 @@ try {
                                     <td><?php echo htmlspecialchars($red_tag['tagged_by']); ?></td>
                                     <td class="no-print">
                                         <div class="btn-group" role="group">
+                                            <?php if (!empty($red_tag['asset_item_id'])): ?>
+                                                <a href="view_asset_item.php?id=<?php echo $red_tag['asset_item_id']; ?>" class="btn btn-outline-primary btn-sm" title="View Asset Item">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                            <?php endif; ?>
                                             <a href="print_redtag.php?control_no=<?php echo urlencode($red_tag['control_no']); ?>" class="btn btn-outline-danger btn-sm" title="Print Red Tag" target="_blank">
                                                 <i class="bi bi-printer"></i>
                                             </a>

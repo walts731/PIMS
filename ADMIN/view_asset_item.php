@@ -759,10 +759,11 @@ $status_display = formatStatus($item['status']);
                                 <i class="bi bi-file-earmark-text"></i> Add to IIRUP
                             </button>
                         <?php elseif ($item['status'] === 'red_tagged'): ?>
-                            <!-- No action buttons for red_tagged assets -->
-                            <div class="text-muted text-center">
-                                <i class="bi bi-info-circle"></i> No actions available for red-tagged assets
-                            </div>
+                            <!-- Show Dispose button for red_tagged assets -->
+                            <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#disposeModal" 
+                                    onclick="setDisposalData(<?php echo $item_id; ?>, '<?php echo htmlspecialchars($item['description']); ?>', '<?php echo htmlspecialchars($item['property_no'] ?? ''); ?>')">
+                                <i class="bi bi-trash"></i> Dispose Asset
+                            </button>
                         <?php elseif ($item['status'] === 'unserviceable'): ?>
                             <!-- Show Create Red Tag button for unserviceable assets -->
                             <a href="create_redtag.php?asset_id=<?php echo $item['id']; ?>&description=<?php echo urlencode($item['description']); ?>&property_no=<?php echo urlencode($item['property_no'] ?? ''); ?>&inventory_tag=<?php echo urlencode($item['inventory_tag'] ?? ''); ?>&acquisition_date=<?php echo $item['acquisition_date']; ?>&value=<?php echo $item['value']; ?>&office_name=<?php echo urlencode($item['office_name'] ?? ''); ?>" class="btn btn-danger">
@@ -805,6 +806,62 @@ $status_display = formatStatus($item['status']);
     
     <?php require_once 'includes/logout-modal.php'; ?>
     <?php require_once 'includes/change-password-modal.php'; ?>
+    
+    <!-- Disposal Confirmation Modal -->
+    <div class="modal fade" id="disposeModal" tabindex="-1" aria-labelledby="disposeModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="disposeModalLabel">
+                        <i class="bi bi-exclamation-triangle text-warning"></i> Confirm Asset Disposal
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="disposeForm" method="POST" action="process_disposal.php">
+                        <input type="hidden" name="asset_item_id" id="disposeAssetItemId">
+                        <input type="hidden" name="action" value="dispose">
+                        <input type="hidden" name="csrf_token" value="<?php echo bin2hex(random_bytes(32)); ?>">
+                        
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <strong>Warning:</strong> This action cannot be undone. The asset will be marked as disposed and removed from active inventory.
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label"><strong>Asset Description:</strong></label>
+                            <p class="form-control-plaintext" id="disposeDescription"></p>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label"><strong>Property No:</strong></label>
+                            <p class="form-control-plaintext" id="disposePropertyNo"></p>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="disposalReason" class="form-label"><strong>Disposal Reason:</strong></label>
+                            <textarea class="form-control" id="disposalReason" name="disposal_reason" rows="3" 
+                                      placeholder="Enter reason for disposal..." required></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="disposalDate" class="form-label"><strong>Disposal Date:</strong></label>
+                            <input type="date" class="form-control" id="disposalDate" name="disposal_date" 
+                                   value="<?php echo date('Y-m-d'); ?>" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </button>
+                    <button type="button" class="btn btn-warning" onclick="confirmDisposal()">
+                        <i class="bi bi-trash"></i> Confirm Disposal
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -860,6 +917,36 @@ $status_display = formatStatus($item['status']);
             // Open IIRUP form with asset data
             window.open('iirup_form.php?' + params.toString(), '_blank');
         }
+        
+        // Set disposal data in modal
+        window.setDisposalData = function(assetItemId, description, propertyNo) {
+            document.getElementById('disposeAssetItemId').value = assetItemId;
+            document.getElementById('disposeDescription').textContent = description;
+            document.getElementById('disposePropertyNo').textContent = propertyNo || 'Not assigned';
+            
+            // Reset form fields
+            document.getElementById('disposalReason').value = '';
+            document.getElementById('disposalDate').value = new Date().toISOString().split('T')[0];
+        };
+        
+        // Confirm disposal and submit form
+        window.confirmDisposal = function() {
+            const reason = document.getElementById('disposalReason').value.trim();
+            const date = document.getElementById('disposalDate').value;
+            
+            if (!reason) {
+                alert('Please enter a disposal reason.');
+                return;
+            }
+            
+            if (!date) {
+                alert('Please select a disposal date.');
+                return;
+            }
+            
+            // Submit the form
+            document.getElementById('disposeForm').submit();
+        };
     </script>
 </body>
 </html>
