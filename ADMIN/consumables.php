@@ -218,6 +218,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['action']) && $_GET['acti
 
 // Handle filter parameters
 $office_filter = isset($_GET['office']) ? intval($_GET['office']) : 0;
+$for_office_filter = isset($_GET['for_office']) ? intval($_GET['for_office']) : 0;
 $search_filter = isset($_GET['search']) ? trim($_GET['search']) : '';
 
 // Get consumables with office information
@@ -235,6 +236,12 @@ try {
     if ($office_filter > 0) {
         $sql .= " AND c.office_id = ?";
         $params[] = $office_filter;
+        $types .= 'i';
+    }
+    
+    if ($for_office_filter > 0) {
+        $sql .= " AND c.for_office_id = ?";
+        $params[] = $for_office_filter;
         $types .= 'i';
     }
     
@@ -481,17 +488,27 @@ try {
         
         <!-- Consumables Table -->
         <div class="table-container">
-            <div class="row mb-3">
-                <div class="col-md-6">
+            <div class="row mb-3 align-items-center">
+                <div class="col-md-2">
                     <h5 class="mb-0"><i class="bi bi-list-ul"></i> Consumables List</h5>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-10">
                     <div class="row g-2">
-                        <div class="col-md-6">
+                        <div class="col-md-3">
                             <select class="form-select form-select-sm" id="officeFilter">
                                 <option value="">All Offices</option>
                                 <?php foreach ($offices as $office): ?>
                                     <option value="<?php echo $office['id']; ?>" <?php echo $office_filter == $office['id'] ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($office['office_name']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select form-select-sm" id="forOfficeFilter">
+                                <option value="">All For Offices</option>
+                                <?php foreach ($offices as $office): ?>
+                                    <option value="<?php echo $office['id']; ?>" <?php echo $for_office_filter == $office['id'] ? 'selected' : ''; ?>>
                                         <?php echo htmlspecialchars($office['office_name']); ?>
                                     </option>
                                 <?php endforeach; ?>
@@ -786,6 +803,27 @@ try {
             // The table will be rendered by PHP with proper filtering
             consumablesTable = null;
             
+            // Preserve other URL parameters function
+            function preserveOtherParams(currentUrl) {
+                // Preserve search parameter
+                const searchValue = currentUrl.searchParams.get('search');
+                if (!searchValue) {
+                    currentUrl.searchParams.delete('search');
+                }
+                
+                // Preserve office parameter
+                const officeValue = currentUrl.searchParams.get('office');
+                if (!officeValue) {
+                    currentUrl.searchParams.delete('office');
+                }
+                
+                // Preserve for_office parameter
+                const forOfficeValue = currentUrl.searchParams.get('for_office');
+                if (!forOfficeValue) {
+                    currentUrl.searchParams.delete('for_office');
+                }
+            }
+            
             // Office filter
             $('#officeFilter').on('change', function() {
                 const officeValue = this.value;
@@ -795,11 +833,22 @@ try {
                 } else {
                     currentUrl.searchParams.delete('office');
                 }
-                // Preserve search parameter if exists
-                const searchValue = currentUrl.searchParams.get('search');
-                if (!searchValue) {
-                    currentUrl.searchParams.delete('search');
+                // Preserve other parameters
+                preserveOtherParams(currentUrl);
+                window.location.href = currentUrl.toString();
+            });
+            
+            // For Office filter
+            $('#forOfficeFilter').on('change', function() {
+                const forOfficeValue = this.value;
+                const currentUrl = new URL(window.location);
+                if (forOfficeValue) {
+                    currentUrl.searchParams.set('for_office', forOfficeValue);
+                } else {
+                    currentUrl.searchParams.delete('for_office');
                 }
+                // Preserve other parameters
+                preserveOtherParams(currentUrl);
                 window.location.href = currentUrl.toString();
             });
             
@@ -816,11 +865,8 @@ try {
                     } else {
                         currentUrl.searchParams.delete('search');
                     }
-                    // Preserve office parameter if exists
-                    const officeValue = currentUrl.searchParams.get('office');
-                    if (!officeValue) {
-                        currentUrl.searchParams.delete('office');
-                    }
+                    // Preserve other parameters
+                    preserveOtherParams(currentUrl);
                     window.location.href = currentUrl.toString();
                 }, 500); // Wait 500ms after user stops typing
             });
