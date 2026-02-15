@@ -22,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $item_id = intval($_POST['item_id']);
 $category_id = intval($_POST['category_id']);
 $property_no = trim($_POST['property_no']);
-$inventory_tag = trim($_POST['inventory_tag']);
+$inventory_tag = trim($_POST['inventory_tag'] ?? '');
 $person_accountable = intval($_POST['person_accountable']);
 $end_user = trim($_POST['end_user'] ?? '');
 $date_counted = trim($_POST['date_counted']);
@@ -88,7 +88,7 @@ if (isset($_FILES['asset_image']) && $_FILES['asset_image']['error'] === UPLOAD_
 }
 
 // Validate required fields
-if (empty($item_id) || empty($category_id) || empty($property_no) || empty($inventory_tag) || empty($person_accountable) || empty($end_user) || empty($date_counted)) {
+if (empty($item_id) || empty($category_id) || empty($property_no) || empty($person_accountable) || empty($end_user) || empty($date_counted)) {
     $_SESSION['error'] = 'Please fill in all required fields';
     header('Location: create_tag.php?id=' . $item_id);
     exit();
@@ -100,14 +100,14 @@ try {
     
     // Update asset item with tag information using traditional SQL
     $property_no_safe = mysqli_real_escape_string($conn, $property_no);
-    $inventory_tag_safe = mysqli_real_escape_string($conn, $inventory_tag);
+    $inventory_tag_safe = !empty($inventory_tag) ? "'" . mysqli_real_escape_string($conn, $inventory_tag) . "'" : 'NULL';
     $date_counted_safe = mysqli_real_escape_string($conn, $date_counted);
     $image_filename_safe = mysqli_real_escape_string($conn, $image_filename);
     $end_user_safe = mysqli_real_escape_string($conn, $end_user);
     
     $update_sql = "UPDATE asset_items SET 
                    property_no = '$property_no_safe', 
-                   inventory_tag = '$inventory_tag_safe', 
+                   inventory_tag = $inventory_tag_safe, 
                    date_counted = '$date_counted_safe',
                    image = '$image_filename_safe',
                    employee_id = $person_accountable, 
@@ -212,7 +212,7 @@ try {
     $category = $category_result->fetch_assoc();
     
     // Handle category-specific fields
-    if ($category && $category['category_code'] === 'ITS') {
+    if ($category && $category['category_code'] === '030') {
         // Computer Equipment specific fields
         $processor = trim($_POST['processor'] ?? '');
         $ram = trim($_POST['ram'] ?? '');
@@ -252,7 +252,7 @@ try {
         $computer_history_stmt->bind_param("isi", $item_id, $computer_details, $_SESSION['user_id']);
         $computer_history_stmt->execute();
     }
-    elseif ($category && $category['category_code'] === 'VH') {
+    elseif ($category && $category['category_code'] === '07') {
         // Vehicles specific fields
         $brand = trim($_POST['brand'] ?? '');
         $model = trim($_POST['model'] ?? '');
@@ -280,7 +280,7 @@ try {
         $vehicle_stmt->bind_param("isssssiii", $item_id, $brand, $model, $plate_number, $color, $engine_number, $chassis_number, $year_model, $_SESSION['user_id']);
         $vehicle_stmt->execute();
     }
-    elseif ($category && $category['category_code'] === 'FF') {
+    elseif ($category && $category['category_code'] === '02') {
         // Furniture & Fixtures specific fields
         $material = trim($_POST['material'] ?? '');
         $dimensions = trim($_POST['dimensions'] ?? '');
@@ -302,7 +302,7 @@ try {
         $furniture_stmt->bind_param("issssi", $item_id, $material, $dimensions, $furniture_color, $manufacturer, $_SESSION['user_id']);
         $furniture_stmt->execute();
     }
-    elseif ($category && $category['category_code'] === 'ME') {
+    elseif ($category && $category['category_code'] === '04') {
         // Machinery & Equipment specific fields
         $manufacturer = trim($_POST['manufacturer'] ?? '');
         $model = trim($_POST['model'] ?? '');
@@ -327,7 +327,7 @@ try {
         $machinery_stmt->bind_param("issssssi", $item_id, $manufacturer, $manufacturer, $model, $capacity, $power_rating, $serial_number, $_SESSION['user_id']);
         $machinery_stmt->execute();
     }
-    elseif ($category && $category['category_code'] === 'OE') {
+    elseif ($category && $category['category_code'] === '05') {
         // Office Equipment specific fields
         $brand = trim($_POST['brand'] ?? '');
         $model = trim($_POST['model'] ?? '');
@@ -347,7 +347,7 @@ try {
         $office_equipment_stmt->bind_param("isssi", $item_id, $brand, $model, $serial_number, $_SESSION['user_id']);
         $office_equipment_stmt->execute();
     }
-    elseif ($category && $category['category_code'] === 'SW') {
+    elseif ($category && $category['category_code'] === '06') {
         // Software specific fields
         $software_name = trim($_POST['software_name'] ?? '');
         $version = trim($_POST['version'] ?? '');
@@ -369,7 +369,7 @@ try {
         $software_stmt->bind_param("issssi", $item_id, $software_name, $version, $license_key, $expiry_date, $_SESSION['user_id']);
         $software_stmt->execute();
     }
-    elseif ($category && $category['category_code'] === 'LD') {
+    elseif ($category && $category['category_code'] === '03') {
         // Land specific fields
         $lot_number = trim($_POST['lot_number'] ?? '');
         $area_size = trim($_POST['area_size'] ?? '');

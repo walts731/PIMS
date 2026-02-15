@@ -325,6 +325,29 @@ $category_fields = [
             </div>
         </div>
 
+        <!-- Messages Display -->
+        <?php if (isset($_SESSION['success'])): ?>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <?php 
+                echo htmlspecialchars($_SESSION['success']); 
+                unset($_SESSION['success']);
+                ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
+
+        <?php if (isset($_SESSION['error'])): ?>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <?php 
+                echo htmlspecialchars($_SESSION['error']); 
+                unset($_SESSION['error']);
+                ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
+
         <!-- Tag Creation Form -->
         <div class="form-container">
             <form method="POST" action="process_tag.php" id="tagForm" enctype="multipart/form-data">
@@ -357,13 +380,6 @@ $category_fields = [
                 <div class="row">
                     <div class="col-md-6">
                         <div class="mb-3">
-                            <label for="inventory_tag" class="form-label">Inventory Tag Number <span class="required">*</span></label>
-                            <input type="text" class="form-control" id="inventory_tag" name="inventory_tag" value="<?php echo htmlspecialchars($generated_inventory_tag); ?>" readonly required>
-                            <small class="form-text text-muted">Auto-generated from tag format</small>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="mb-3">
                             <label for="person_accountable" class="form-label">Person Accountable <span class="required">*</span></label>
                             <select class="form-select" id="person_accountable" name="person_accountable" required>
                                 <option value="">Select Employee</option>
@@ -375,10 +391,7 @@ $category_fields = [
                             </select>
                         </div>
                     </div>
-                </div>
-                
-                <div class="row">
-                    <div class="col-md-12">
+                    <div class="col-md-6">
                         <div class="mb-3">
                             <label for="end_user" class="form-label">End User <span class="required">*</span></label>
                             <input type="text" class="form-control" id="end_user" name="end_user" placeholder="Enter end user name" required>

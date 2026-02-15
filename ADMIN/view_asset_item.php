@@ -348,10 +348,6 @@ $status_display = formatStatus($item['status']);
                                     <div class="detail-value"><?php echo $item['property_no'] ? htmlspecialchars($item['property_no']) : '<span class="text-muted">Not assigned</span>'; ?></div>
                                 </div>
                                 <div class="mb-3">
-                                    <div class="detail-label">Inventory Tag</div>
-                                    <div class="detail-value"><?php echo $item['inventory_tag'] ? htmlspecialchars($item['inventory_tag']) : '<span class="text-muted">Not assigned</span>'; ?></div>
-                                </div>
-                                <div class="mb-3">
                                     <div class="detail-label">ICS No/PAR No</div>
                                     <div class="detail-value">
                                         <?php 
