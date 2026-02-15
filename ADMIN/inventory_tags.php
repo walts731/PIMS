@@ -418,7 +418,6 @@ try {
                                     <th width="40">
                                         <input type="checkbox" id="selectAll" onchange="toggleAllCheckboxes()">
                                     </th>
-                                    <th>Inventory Tag</th>
                                     <th>Property No</th>
                                     <th>Description</th>
                                     <th>Category</th>
@@ -433,11 +432,6 @@ try {
                                     <tr>
                                         <td>
                                             <input type="checkbox" name="selected_tags[]" value="<?php echo $tag['id']; ?>" class="tag-checkbox">
-                                        </td>
-                                        <td>
-                                            <strong><?php echo htmlspecialchars($tag['inventory_tag']); ?></strong>
-                                            <br>
-                                            <small class="text-muted"><?php echo date('M d, Y', strtotime($tag['created_at'])); ?></small>
                                         </td>
                                         <td><?php echo htmlspecialchars($tag['property_no'] ?? 'N/A'); ?></td>
                                         <td>

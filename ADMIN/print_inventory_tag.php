@@ -415,7 +415,7 @@ $unserviceable_checked = ($tag['status'] === 'unserviceable' || $tag['status'] =
                             </div>
                         <?php endif; ?>
                         <br>
-                        <small>No. <?php echo htmlspecialchars($tag['inventory_tag']); ?></small>
+                        <small>No. <?php echo htmlspecialchars($tag['property_no'] ?? 'N/A'); ?></small>
                     </div>
                 </div>
             </div>
