@@ -43,7 +43,7 @@ try {
     $stmt->bind_param("i", $employee_id);
     $stmt->execute();
     $result = $stmt->get_result();
-    
+
     if ($employee = $result->fetch_assoc()) {
         $office_name = $employee['office_name'] ?? 'N/A';
     } else {
@@ -74,6 +74,7 @@ try {
                             LEFT JOIN asset_categories ac ON COALESCE(ai.category_id, a.asset_categories_id) = ac.id 
                             LEFT JOIN offices o ON ai.office_id = o.id 
                             WHERE ai.employee_id = ? 
+                            AND ai.status NOT IN ('unserviceable', 'red_tagged', 'disposed')
                             ORDER BY ai.created_at DESC");
     $stmt->bind_param("i", $employee_id);
     $stmt->execute();
@@ -85,27 +86,38 @@ try {
 }
 
 // Get status badge classes
-function getStatusBadgeClass($status, $type = 'employment') {
+function getStatusBadgeClass($status, $type = 'employment')
+{
     if ($type === 'employment') {
-        switch($status) {
-            case 'permanent': return 'status-permanent';
-            case 'contractual': return 'status-contractual';
-            case 'job_order': return 'status-job_order';
-            case 'resigned': return 'status-resigned';
-            case 'retired': return 'status-retired';
-            default: return 'status-permanent';
+        switch ($status) {
+            case 'permanent':
+                return 'status-permanent';
+            case 'contractual':
+                return 'status-contractual';
+            case 'job_order':
+                return 'status-job_order';
+            case 'resigned':
+                return 'status-resigned';
+            case 'retired':
+                return 'status-retired';
+            default:
+                return 'status-permanent';
         }
     } else {
-        switch($status) {
-            case 'cleared': return 'clearance-cleared';
-            case 'uncleared': return 'clearance-uncleared';
-            default: return 'clearance-uncleared';
+        switch ($status) {
+            case 'cleared':
+                return 'clearance-cleared';
+            case 'uncleared':
+                return 'clearance-uncleared';
+            default:
+                return 'clearance-uncleared';
         }
     }
 }
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -126,7 +138,7 @@ function getStatusBadgeClass($status, $type = 'employment') {
             min-height: 100vh;
             overflow-x: hidden;
         }
-        
+
         .view-card {
             background: white;
             border-radius: var(--border-radius-lg);
@@ -135,18 +147,18 @@ function getStatusBadgeClass($status, $type = 'employment') {
             border-left: 4px solid var(--primary-color);
             margin-bottom: 2rem;
         }
-        
+
         .info-item {
             display: flex;
             align-items: center;
             padding: 0.75rem 0;
             border-bottom: 1px solid #e9ecef;
         }
-        
+
         .info-item:last-child {
             border-bottom: none;
         }
-        
+
         .info-label {
             font-weight: 600;
             color: #495057;
@@ -155,27 +167,54 @@ function getStatusBadgeClass($status, $type = 'employment') {
             align-items: center;
             gap: 0.5rem;
         }
-        
+
         .info-value {
             color: #212529;
             flex: 1;
         }
-        
+
         .status-badge {
             padding: 0.25rem 0.75rem;
             border-radius: var(--border-radius-xl);
             font-size: 0.8rem;
             font-weight: 600;
         }
-        
-        .status-permanent { background: #d4edda; color: #155724; }
-        .status-contractual { background: #cce5ff; color: #004085; }
-        .status-job_order { background: #fff3cd; color: #856404; }
-        .status-resigned { background: #f8d7da; color: #721c24; }
-        .status-retired { background: #e2e3e5; color: #383d41; }
-        .clearance-cleared { background: #d4edda; color: #155724; }
-        .clearance-uncleared { background: #f8d7da; color: #721c24; }
-        
+
+        .status-permanent {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-contractual {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        .status-job_order {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-resigned {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-retired {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+
+        .clearance-cleared {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .clearance-uncleared {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
         .page-header {
             background: white;
             border-radius: var(--border-radius-xl);
@@ -184,7 +223,7 @@ function getStatusBadgeClass($status, $type = 'employment') {
             box-shadow: var(--shadow);
             border-left: 4px solid var(--primary-color);
         }
-        
+
         .employee-avatar {
             width: 120px;
             height: 120px;
@@ -198,8 +237,65 @@ function getStatusBadgeClass($status, $type = 'employment') {
             font-weight: 700;
             margin: 0 auto 1.5rem;
         }
+
+        .stats-card {
+            background: white;
+            border-radius: var(--border-radius-lg);
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--primary-color);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            height: 100%;
+        }
+
+        .stats-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .stats-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .stats-icon.total-assets {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .stats-icon.total-value {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            color: white;
+        }
+
+        .stats-icon.serviceable {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            color: white;
+        }
+
+        .stats-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 0.25rem;
+        }
+
+        .stats-label {
+            color: #6c757d;
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
     </style>
 </head>
+
 <body>
     <?php
     // Set page title for topbar
@@ -210,307 +306,309 @@ function getStatusBadgeClass($status, $type = 'employment') {
         <?php require_once 'includes/sidebar-toggle.php'; ?>
         <?php require_once 'includes/sidebar.php'; ?>
         <?php require_once 'includes/topbar.php'; ?>
-    
-    <!-- Main Content -->
-    <div class="main-content">
-        <!-- Page Header -->
-        <div class="page-header">
-            <div class="row align-items-center">
-                <div class="col-md-8">
-                    <nav aria-label="breadcrumb">
-                        <ol class="breadcrumb mb-2">
-                            <li class="breadcrumb-item"><a href="employees.php" class="text-decoration-none">Employees</a></li>
-                            <li class="breadcrumb-item active">View Employee</li>
-                        </ol>
-                    </nav>
-                    <h1 class="mb-2">
-                        <i class="bi bi-person-circle"></i> View Employee
-                    </h1>
-                    <p class="text-muted mb-0">Employee details and information</p>
-                </div>
-                <div class="col-md-4 text-md-end">
-                    <a href="employees.php" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left"></i> Back to Employees
-                    </a>
-                    <button class="btn btn-warning ms-2" onclick="editEmployee(<?php echo $employee['id']; ?>)">
-                        <i class="bi bi-pencil"></i> Edit Employee
-                    </button>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Employee Details -->
-        <div class="row">
-            <div class="col-md-4">
-                <div class="view-card text-center">
-                    <?php if (!empty($employee['profile_photo'])): ?>
-                        <img src="../<?php echo htmlspecialchars($employee['profile_photo']); ?>" alt="Profile Photo" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; margin: 0 auto 1.5rem;">
-                    <?php else: ?>
-                        <div class="employee-avatar">
-                            <?php echo strtoupper(substr($employee['firstname'], 0, 1) . substr($employee['lastname'], 0, 1)); ?>
-                        </div>
-                    <?php endif; ?>
-                    <h4 class="mb-1"><?php echo htmlspecialchars($employee['firstname'] . ' ' . $employee['lastname']); ?></h4>
-                    <p class="text-muted mb-3"><?php echo htmlspecialchars($employee['position'] ?? 'Not specified'); ?></p>
-                    <div class="d-flex justify-content-center gap-2">
-                        <span class="status-badge <?php echo getStatusBadgeClass($employee['employment_status'] ?? 'permanent', 'employment'); ?>">
-                            <?php echo ucfirst(str_replace('_', ' ', $employee['employment_status'] ?? 'permanent')); ?>
-                        </span>
-                        <span class="status-badge <?php echo getStatusBadgeClass($employee['computed_clearance_status'] ?? 'uncleared', 'clearance'); ?>">
-                            <?php echo ucfirst($employee['computed_clearance_status'] ?? 'uncleared'); ?>
-                        </span>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Page Header -->
+            <div class="page-header">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb mb-2">
+                                <li class="breadcrumb-item"><a href="employees.php" class="text-decoration-none">Employees</a></li>
+                                <li class="breadcrumb-item active">View Employee</li>
+                            </ol>
+                        </nav>
+                        <h1 class="mb-2">
+                            <i class="bi bi-person-circle"></i> View Employee
+                        </h1>
+                        <p class="text-muted mb-0">Employee details and information</p>
+                    </div>
+                    <div class="col-md-4 text-md-end">
+                        <a href="employees.php" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Back to Employees
+                        </a>
+                        <button class="btn btn-warning ms-2" onclick="editEmployee(<?php echo $employee['id']; ?>)">
+                            <i class="bi bi-pencil"></i> Edit Employee
+                        </button>
                     </div>
                 </div>
             </div>
-            
-            <div class="col-md-8">
-                <div class="view-card">
-                    <h5 class="mb-4"><i class="bi bi-person-badge"></i> Employee Information</h5>
-                    
-                    <div class="info-item">
-                        <div class="info-label">
-                            <i class="bi bi-hash"></i> Employee No.
-                        </div>
-                        <div class="info-value">
-                            <strong><?php echo htmlspecialchars($employee['employee_no'] ?? 'N/A'); ?></strong>
-                        </div>
-                    </div>
-                    
-                    <div class="info-item">
-                        <div class="info-label">
-                            <i class="bi bi-person"></i> Full Name
-                        </div>
-                        <div class="info-value">
-                            <?php echo htmlspecialchars($employee['firstname'] . ' ' . $employee['lastname']); ?>
-                        </div>
-                    </div>
-                    
-                    <div class="info-item">
-                        <div class="info-label">
-                            <i class="bi bi-envelope"></i> Email
-                        </div>
-                        <div class="info-value">
-                            <a href="mailto:<?php echo htmlspecialchars($employee['email']); ?>" class="text-decoration-none">
-                                <?php echo htmlspecialchars($employee['email']); ?>
-                            </a>
-                        </div>
-                    </div>
-                    
-                    <?php if (!empty($employee['phone'])): ?>
-                    <div class="info-item">
-                        <div class="info-label">
-                            <i class="bi bi-telephone"></i> Phone
-                        </div>
-                        <div class="info-value">
-                            <a href="tel:<?php echo htmlspecialchars($employee['phone']); ?>" class="text-decoration-none">
-                                <?php echo htmlspecialchars($employee['phone']); ?>
-                            </a>
-                        </div>
-                    </div>
-                    <?php endif; ?>
-                    
-                    <div class="info-item">
-                        <div class="info-label">
-                            <i class="bi bi-building"></i> Office
-                        </div>
-                        <div class="info-value">
-                            <?php echo htmlspecialchars($office_name); ?>
-                        </div>
-                    </div>
-                    
-                    <div class="info-item">
-                        <div class="info-label">
-                            <i class="bi bi-briefcase"></i> Position
-                        </div>
-                        <div class="info-value">
-                            <?php echo htmlspecialchars($employee['position'] ?? 'Not specified'); ?>
-                        </div>
-                    </div>
-                    
-                    <div class="info-item">
-                        <div class="info-label">
-                            <i class="bi bi-person-check"></i> Employment Status
-                        </div>
-                        <div class="info-value">
+
+            <!-- Employee Details -->
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="view-card text-center">
+                        <?php if (!empty($employee['profile_photo'])): ?>
+                            <img src="../<?php echo htmlspecialchars($employee['profile_photo']); ?>" alt="Profile Photo" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; margin: 0 auto 1.5rem;">
+                        <?php else: ?>
+                            <div class="employee-avatar">
+                                <?php echo strtoupper(substr($employee['firstname'], 0, 1) . substr($employee['lastname'], 0, 1)); ?>
+                            </div>
+                        <?php endif; ?>
+                        <h4 class="mb-1"><?php echo htmlspecialchars($employee['firstname'] . ' ' . $employee['lastname']); ?></h4>
+                        <p class="text-muted mb-3"><?php echo htmlspecialchars($employee['position'] ?? 'Not specified'); ?></p>
+                        <div class="d-flex justify-content-center gap-2">
                             <span class="status-badge <?php echo getStatusBadgeClass($employee['employment_status'] ?? 'permanent', 'employment'); ?>">
                                 <?php echo ucfirst(str_replace('_', ' ', $employee['employment_status'] ?? 'permanent')); ?>
                             </span>
-                        </div>
-                    </div>
-                    
-                    <div class="info-item">
-                        <div class="info-label">
-                            <i class="bi bi-shield-check"></i> Clearance Status
-                        </div>
-                        <div class="info-value">
                             <span class="status-badge <?php echo getStatusBadgeClass($employee['computed_clearance_status'] ?? 'uncleared', 'clearance'); ?>">
                                 <?php echo ucfirst($employee['computed_clearance_status'] ?? 'uncleared'); ?>
                             </span>
                         </div>
                     </div>
-                    
-                    <div class="info-item">
-                        <div class="info-label">
-                            <i class="bi bi-calendar-plus"></i> Date Added
-                        </div>
-                        <div class="info-value">
-                            <?php echo date('F d, Y', strtotime($employee['created_at'])); ?>
-                        </div>
-                    </div>
                 </div>
-            </div>
-        </div>
-        
-        <!-- Employee Assets -->
-        <div class="row mt-4">
-            <div class="col-12">
-                <div class="view-card">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h5 class="mb-0"><i class="bi bi-box-seam"></i> Assigned Assets</h5>
-                        <span class="badge bg-primary"><?php echo count($employee_assets); ?> Assets</span>
-                    </div>
-                    
-                    <?php if (!empty($employee_assets)): ?>
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Property No.</th>
-                                        <th>Inventory Tag</th>
-                                        <th>Description</th>
-                                        <th>Category</th>
-                                        <th>Office</th>
-                                        <th>Status</th>
-                                        <th>Value</th>
-                                        <th>Date Acquired</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($employee_assets as $asset): ?>
-                                        <tr>
-                                            <td><?php echo htmlspecialchars($asset['property_no'] ?? 'N/A'); ?></td>
-                                            <td>
-                                                <?php if (!empty($asset['inventory_tag'])): ?>
-                                                    <strong><?php echo htmlspecialchars($asset['inventory_tag']); ?></strong>
-                                                <?php else: ?>
-                                                    <span class="text-muted">No tag</span>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td>
-                                                <?php echo htmlspecialchars($asset['description']); ?>
-                                                <?php if (!empty($asset['asset_description'])): ?>
-                                                    <br><small class="text-muted"><?php echo htmlspecialchars($asset['asset_description']); ?></small>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-secondary">
-                                                    <?php echo htmlspecialchars($asset['category_code'] ?? 'N/A'); ?>
-                                                </span>
-                                                <br><small class="text-muted"><?php echo htmlspecialchars($asset['category_name'] ?? ''); ?></small>
-                                            </td>
-                                            <td><?php echo htmlspecialchars($asset['office_name'] ?? 'N/A'); ?></td>
-                                            <td>
-                                                <?php
-                                                $status_class = '';
-                                                switch ($asset['status']) {
-                                                    case 'serviceable':
-                                                        $status_class = 'bg-success';
-                                                        break;
-                                                    case 'unserviceable':
-                                                        $status_class = 'bg-danger';
-                                                        break;
-                                                    case 'in_use':
-                                                        $status_class = 'bg-primary';
-                                                        break;
-                                                    case 'available':
-                                                        $status_class = 'bg-secondary';
-                                                        break;
-                                                    default:
-                                                        $status_class = 'bg-warning';
-                                                }
-                                                ?>
-                                                <span class="badge <?php echo $status_class; ?>">
-                                                    <?php echo ucfirst(htmlspecialchars($asset['status'])); ?>
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <?php 
-                                                // Debug: Show available columns and value
-                                                if (isset($asset['unit_cost'])) {
-                                                    echo number_format($asset['unit_cost'], 2);
-                                                } elseif (isset($asset['value'])) {
-                                                    echo number_format($asset['value'], 2);
-                                                } else {
-                                                    echo '0.00';
-                                                    // Uncomment for debugging: echo '<pre>' . print_r($asset, true) . '</pre>';
-                                                }
-                                                ?>
-                                            </td>
-                                            <td><?php echo $asset['acquisition_date'] ? date('M d, Y', strtotime($asset['acquisition_date'])) : 'N/A'; ?></td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                        
-                        <div class="mt-3">
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <div class="text-center p-3 bg-light rounded">
-                                        <h6 class="text-muted mb-1">Total Assets</h6>
-                                        <h4 class="mb-0"><?php echo count($employee_assets); ?></h4>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="text-center p-3 bg-light rounded">
-                                        <h6 class="text-muted mb-1">Total Value</h6>
-                                        <h4 class="mb-0">
-                                            <?php 
-                                            $total_value = 0;
-                                            foreach ($employee_assets as $asset) {
-                                                if (isset($asset['unit_cost'])) {
-                                                    $total_value += $asset['unit_cost'];
-                                                } elseif (isset($asset['value'])) {
-                                                    $total_value += $asset['value'];
-                                                }
-                                            }
-                                            echo number_format($total_value, 2);
-                                            ?>
-                                        </h4>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="text-center p-3 bg-light rounded">
-                                        <h6 class="text-muted mb-1">Serviceable</h6>
-                                        <h4 class="mb-0">
-                                            <?php 
-                                            $serviceable_count = count(array_filter($employee_assets, function($asset) {
-                                                return $asset['status'] === 'serviceable';
-                                            }));
-                                            echo $serviceable_count;
-                                            ?>
-                                        </h4>
-                                    </div>
-                                </div>
+
+                <div class="col-md-8">
+                    <div class="view-card">
+                        <h5 class="mb-4"><i class="bi bi-person-badge"></i> Employee Information</h5>
+
+                        <div class="info-item">
+                            <div class="info-label">
+                                <i class="bi bi-hash"></i> Employee No.
+                            </div>
+                            <div class="info-value">
+                                <strong><?php echo htmlspecialchars($employee['employee_no'] ?? 'N/A'); ?></strong>
                             </div>
                         </div>
-                    <?php else: ?>
-                        <div class="text-center py-5">
-                            <i class="bi bi-box-seam fs-1 text-muted mb-3"></i>
-                            <h6 class="text-muted">No assets assigned to this employee</h6>
-                            <p class="text-muted">This employee currently has no assets assigned to them.</p>
+
+                        <div class="info-item">
+                            <div class="info-label">
+                                <i class="bi bi-person"></i> Full Name
+                            </div>
+                            <div class="info-value">
+                                <?php echo htmlspecialchars($employee['firstname'] . ' ' . $employee['lastname']); ?>
+                            </div>
                         </div>
-                    <?php endif; ?>
+
+                        <div class="info-item">
+                            <div class="info-label">
+                                <i class="bi bi-envelope"></i> Email
+                            </div>
+                            <div class="info-value">
+                                <a href="mailto:<?php echo htmlspecialchars($employee['email']); ?>" class="text-decoration-none">
+                                    <?php echo htmlspecialchars($employee['email']); ?>
+                                </a>
+                            </div>
+                        </div>
+
+                        <?php if (!empty($employee['phone'])): ?>
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="bi bi-telephone"></i> Phone
+                                </div>
+                                <div class="info-value">
+                                    <a href="tel:<?php echo htmlspecialchars($employee['phone']); ?>" class="text-decoration-none">
+                                        <?php echo htmlspecialchars($employee['phone']); ?>
+                                    </a>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+
+                        <div class="info-item">
+                            <div class="info-label">
+                                <i class="bi bi-building"></i> Office
+                            </div>
+                            <div class="info-value">
+                                <?php echo htmlspecialchars($office_name); ?>
+                            </div>
+                        </div>
+
+                        <div class="info-item">
+                            <div class="info-label">
+                                <i class="bi bi-briefcase"></i> Position
+                            </div>
+                            <div class="info-value">
+                                <?php echo htmlspecialchars($employee['position'] ?? 'Not specified'); ?>
+                            </div>
+                        </div>
+
+                        <div class="info-item">
+                            <div class="info-label">
+                                <i class="bi bi-person-check"></i> Employment Status
+                            </div>
+                            <div class="info-value">
+                                <span class="status-badge <?php echo getStatusBadgeClass($employee['employment_status'] ?? 'permanent', 'employment'); ?>">
+                                    <?php echo ucfirst(str_replace('_', ' ', $employee['employment_status'] ?? 'permanent')); ?>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="info-item">
+                            <div class="info-label">
+                                <i class="bi bi-shield-check"></i> Clearance Status
+                            </div>
+                            <div class="info-value">
+                                <span class="status-badge <?php echo getStatusBadgeClass($employee['computed_clearance_status'] ?? 'uncleared', 'clearance'); ?>">
+                                    <?php echo ucfirst($employee['computed_clearance_status'] ?? 'uncleared'); ?>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="info-item">
+                            <div class="info-label">
+                                <i class="bi bi-calendar-plus"></i> Date Added
+                            </div>
+                            <div class="info-value">
+                                <?php echo date('F d, Y', strtotime($employee['created_at'])); ?>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
+
+            <!-- Asset Statistics -->
+            <div class="row mt-4">
+                <div class="col-md-4">
+                    <div class="stats-card">
+                        <div class="stats-icon total-assets">
+                            <i class="bi bi-box-seam"></i>
+                        </div>
+                        <div class="stats-number"><?php echo count($employee_assets); ?></div>
+                        <div class="stats-label">Total Assets</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stats-card">
+                        <div class="stats-icon total-value">
+                            <i class="bi bi-currency-philippine-peso"></i>
+                        </div>
+                        <div class="stats-number">
+                            <?php
+                            $total_value = 0;
+                            foreach ($employee_assets as $asset) {
+                                if (isset($asset['unit_cost'])) {
+                                    $total_value += $asset['unit_cost'];
+                                } elseif (isset($asset['value'])) {
+                                    $total_value += $asset['value'];
+                                }
+                            }
+                            echo number_format($total_value, 2);
+                            ?>
+                        </div>
+                        <div class="stats-label">Total Value</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stats-card">
+                        <div class="stats-icon serviceable">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                        <div class="stats-number">
+                            <?php
+                            $serviceable_count = count(array_filter($employee_assets, function ($asset) {
+                                return $asset['status'] === 'serviceable';
+                            }));
+                            echo $serviceable_count;
+                            ?>
+                        </div>
+                        <div class="stats-label">Serviceable</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Employee Assets -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="view-card">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h5 class="mb-0"><i class="bi bi-box-seam"></i> Assigned Assets</h5>
+                            <span class="badge bg-primary"><?php echo count($employee_assets); ?> Assets</span>
+                        </div>
+
+                        <?php if (!empty($employee_assets)): ?>
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Property No.</th>
+                                            <th>Description</th>
+                                            <th>Category</th>
+                                            <th>Office</th>
+                                            <th>Status</th>
+                                            <th>Value</th>
+                                            <th>Date Acquired</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($employee_assets as $asset): ?>
+                                            <tr>
+                                                <td><?php echo htmlspecialchars($asset['property_no'] ?? 'N/A'); ?></td>
+                                                <td>
+                                                    <?php echo htmlspecialchars($asset['description']); ?>
+                                                    <?php if (!empty($asset['asset_description'])): ?>
+                                                        <br><small class="text-muted"><?php echo htmlspecialchars($asset['asset_description']); ?></small>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-secondary">
+                                                        <?php echo htmlspecialchars($asset['category_code'] ?? 'N/A'); ?>
+                                                    </span>
+                                                    <br><small class="text-muted"><?php echo htmlspecialchars($asset['category_name'] ?? ''); ?></small>
+                                                </td>
+                                                <td><?php echo htmlspecialchars($asset['office_name'] ?? 'N/A'); ?></td>
+                                                <td>
+                                                    <?php
+                                                    $status_class = '';
+                                                    switch ($asset['status']) {
+                                                        case 'serviceable':
+                                                            $status_class = 'bg-success';
+                                                            break;
+                                                        case 'unserviceable':
+                                                            $status_class = 'bg-danger';
+                                                            break;
+                                                        case 'in_use':
+                                                            $status_class = 'bg-primary';
+                                                            break;
+                                                        case 'available':
+                                                            $status_class = 'bg-secondary';
+                                                            break;
+                                                        default:
+                                                            $status_class = 'bg-warning';
+                                                    }
+                                                    ?>
+                                                    <span class="badge <?php echo $status_class; ?>">
+                                                        <?php echo ucfirst(htmlspecialchars($asset['status'])); ?>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <?php
+                                                    // Debug: Show available columns and value
+                                                    if (isset($asset['unit_cost'])) {
+                                                        echo number_format($asset['unit_cost'], 2);
+                                                    } elseif (isset($asset['value'])) {
+                                                        echo number_format($asset['value'], 2);
+                                                    } else {
+                                                        echo '0.00';
+                                                        // Uncomment for debugging: echo '<pre>' . print_r($asset, true) . '</pre>';
+                                                    }
+                                                    ?>
+                                                </td>
+                                                <td><?php echo $asset['acquisition_date'] ? date('M d, Y', strtotime($asset['acquisition_date'])) : 'N/A'; ?></td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+
+
+                        <?php else: ?>
+                            <div class="text-center py-5">
+                                <i class="bi bi-box-seam fs-1 text-muted mb-3"></i>
+                                <h6 class="text-muted">No assets assigned to this employee</h6>
+                                <p class="text-muted">This employee currently has no assets assigned to them.</p>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+
         </div>
-        
-    </div>
     </div> <!-- Close main-wrapper -->
-    
+
     <?php require_once 'includes/logout-modal.php'; ?>
     <?php require_once 'includes/change-password-modal.php'; ?>
-    
+
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- jQuery -->
@@ -523,4 +621,5 @@ function getStatusBadgeClass($status, $type = 'employment') {
         }
     </script>
 </body>
+
 </html>
