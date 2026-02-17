@@ -21,6 +21,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 // Get form data
 $item_id = intval($_POST['item_id']);
 $category_id = intval($_POST['category_id']);
+$subcategory_id = intval($_POST['subcategory_id'] ?? 0);
+$office_id = intval($_POST['office_id']);
 $property_no = trim($_POST['property_no']);
 $inventory_tag = trim($_POST['inventory_tag'] ?? '');
 $person_accountable = intval($_POST['person_accountable']);
@@ -88,7 +90,7 @@ if (isset($_FILES['asset_image']) && $_FILES['asset_image']['error'] === UPLOAD_
 }
 
 // Validate required fields
-if (empty($item_id) || empty($category_id) || empty($property_no) || empty($person_accountable) || empty($end_user) || empty($date_counted)) {
+if (empty($item_id) || empty($category_id) || empty($office_id) || empty($property_no) || empty($person_accountable) || empty($end_user) || empty($date_counted)) {
     $_SESSION['error'] = 'Please fill in all required fields';
     header('Location: create_tag.php?id=' . $item_id);
     exit();
@@ -112,6 +114,8 @@ try {
                    image = '$image_filename_safe',
                    employee_id = $person_accountable, 
                    category_id = $category_id,
+                   asset_subcategory_id = " . ($subcategory_id > 0 ? $subcategory_id : 'NULL') . ",
+                   office_id = $office_id,
                    end_user = '$end_user_safe',
                    status = 'serviceable',
                    last_updated = CURRENT_TIMESTAMP
@@ -187,10 +191,11 @@ try {
         $asset_id = $asset_row['asset_id'];
         $update_assets_sql = "UPDATE assets SET 
                               asset_categories_id = ?,
+                              office_id = ?,
                               updated_at = CURRENT_TIMESTAMP
                               WHERE id = ?";
         $update_assets_stmt = $conn->prepare($update_assets_sql);
-        $update_assets_stmt->bind_param("ii", $category_id, $asset_id);
+        $update_assets_stmt->bind_param("iii", $category_id, $office_id, $asset_id);
         $update_assets_stmt->execute();
     }
     

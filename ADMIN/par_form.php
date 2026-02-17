@@ -22,12 +22,30 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
 // Log page access
 logSystemAction($_SESSION['user_id'], 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php');
 
-// Get next PAR number - COMMENTED OUT FOR MANUAL INPUT
-// $next_par_no = getNextTagPreview('par_no');
-// if ($next_par_no === null) {
-//     $next_par_no = ''; // Fallback if no configuration exists
-// }
-$next_par_no = ''; // Empty for manual input
+// Get data for dropdowns
+$funds_result = $conn->query("SELECT fund_code, fund_name, fund_cluster FROM funds WHERE status = 'active' ORDER BY fund_code");
+$categories_result = $conn->query("SELECT category_code, category_name FROM asset_categories WHERE status = 'active' ORDER BY category_code");
+$subcategories_result = $conn->query("SELECT sc.sub_category_code, sc.sub_category_name, ac.category_code FROM asset_sub_categories sc JOIN asset_categories ac ON sc.asset_categories_id = ac.id WHERE sc.status = 'active' ORDER BY ac.category_code, sc.sub_category_code");
+$offices_result = $conn->query("SELECT office_code, office_name FROM offices WHERE status = 'active' ORDER BY office_code");
+
+// Get next series number for auto-increment
+$next_series = '01';
+$result = $conn->query("SELECT MAX(CAST(SUBSTRING(property_number, -4, 2) AS UNSIGNED)) as max_series FROM asset_items WHERE property_number LIKE CONCAT(YEAR(CURDATE()), '-%')");
+if ($result && $row = $result->fetch_assoc()) {
+    $max_series = $row['max_series'];
+    if ($max_series) {
+        $next_series = str_pad($max_series + 1, 2, '0', STR_PAD_LEFT);
+    }
+}
+
+// Form type options with codes
+$form_options = [
+    'PAR' => ['code' => '07', 'name' => 'Property Acknowledgment Receipt'],
+    'ICS' => ['code' => '04', 'name' => 'Inventory Custodian Slip'],
+    'RIS' => ['code' => '02', 'name' => 'Requisition and Issue Slip'],
+    'IIRUP' => ['code' => '06', 'name' => 'Inventory and Inspection Report'],
+    'ITR' => ['code' => '08', 'name' => 'Inventory Transfer Request']
+];
 
 // Get PAR configuration for JavaScript - COMMENTED OUT FOR MANUAL INPUT
 // $par_config = null;
@@ -221,6 +239,36 @@ if ($result && $row = $result->fetch_assoc()) {
             .no-print { display: none !important; }
             .form-card { box-shadow: none; }
         }
+        
+        .property-number-field {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .property-number-field input {
+            flex: 1;
+        }
+        
+        .property-number-field .btn {
+            flex-shrink: 0;
+        }
+        
+        .generator-modal .form-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .generator-modal .card {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+        }
+        
+        .generator-modal #propertyNumberPreview {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
     </style>
 </head>
 <body>
@@ -300,10 +348,10 @@ if ($result && $row = $result->fetch_assoc()) {
                                             <option value="">Select Office</option>
                                             <?php
                                             // Get offices from database
-                                            $offices_result = $conn->query("SELECT id, office_name FROM offices WHERE status = 'active' ORDER BY office_name");
+                                            $offices_result = $conn->query("SELECT office_code, office_name FROM offices WHERE status = 'active' ORDER BY office_code");
                                             if ($offices_result) {
                                                 while ($office = $offices_result->fetch_assoc()) {
-                                                    echo '<option value="' . htmlspecialchars($office['office_name']) . '">' . htmlspecialchars($office['office_name']) . '</option>';
+                                                    echo '<option value="' . htmlspecialchars($office['office_code']) . '">' . htmlspecialchars($office['office_name']) . '</option>';
                                                 }
                                             }
                                             ?>
@@ -358,7 +406,15 @@ if ($result && $row = $result->fetch_assoc()) {
                                                 </select>
                                             </td>
                                             <td><input type="text" class="form-control form-control-sm" name="description[]" required></td>
-                                            <td><input type="text" class="form-control form-control-sm" name="property_number[]" id="initialPropertyNumber" value="" placeholder="Enter property number manually"></td>
+                                            <td>
+                                                <div class="property-number-field">
+                                                    <input type="text" class="form-control form-control-sm" name="property_number[]" id="initialPropertyNumber" value="" readonly placeholder="Click 'Generate' to create property number">
+                                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="showPropertyNumberGenerator(this)" title="Generate Property Number">
+                                                        <i class="bi bi-gear"></i> Generate
+                                                    </button>
+                                                </div>
+                                                <small class="text-muted">Format: YEAR-FORM-FUND-CATEGORY-SUBCATEGORY+SERIES-OFFICE</small>
+                                            </td>
                                             <td><input type="date" class="form-control form-control-sm" name="date_acquired[]"></td>
                                             <td><input type="number" step="0.01" class="form-control form-control-sm" name="amount[]" required></td>
                                             <td><button type="button" class="btn btn-sm btn-danger" onclick="removeRow(this)"><i class="bi bi-trash"></i></button></td>
@@ -404,6 +460,127 @@ if ($result && $row = $result->fetch_assoc()) {
 
     <?php include 'includes/logout-modal.php'; ?>
     <?php include 'includes/change-password-modal.php'; ?>
+    
+    <!-- Property Number Generator Modal -->
+    <div class="modal fade generator-modal" id="propertyNumberGeneratorModal" tabindex="-1" aria-labelledby="propertyNumberGeneratorModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="propertyNumberGeneratorModalLabel">
+                        <i class="bi bi-gear"></i> Property Number Generator
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label"><strong>Form Type:</strong></label>
+                            <input type="text" class="form-control" id="formType" value="07" readonly>
+                            <small class="text-muted">Auto-detected: Property Acknowledgment Receipt</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label"><strong>Fund:</strong></label>
+                            <select class="form-select" id="fundSelect">
+                                <option value="">Select Fund</option>
+                                <?php 
+                                if ($funds_result) {
+                                    // Reset pointer to beginning
+                                    $funds_result->data_seek(0);
+                                    while ($fund = $funds_result->fetch_assoc()) {
+                                        // Extract numeric part from fund code (e.g., "05" from "GEN-2025")
+                                        preg_match('/(\d{2})$/', $fund['fund_code'], $matches);
+                                        $fund_code = isset($matches[1]) ? $matches[1] : '05';
+                                        echo '<option value="' . $fund_code . '">' . htmlspecialchars($fund['fund_name']) . ' (' . htmlspecialchars($fund['fund_code']) . ')</option>';
+                                    }
+                                }
+                                ?>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <label class="form-label"><strong>Asset Category:</strong></label>
+                            <select class="form-select" id="categorySelect">
+                                <option value="">Select Category</option>
+                                <?php 
+                                if ($categories_result) {
+                                    while ($category = $categories_result->fetch_assoc()) {
+                                        echo '<option value="' . htmlspecialchars($category['category_code']) . '">' . htmlspecialchars($category['category_name']) . '</option>';
+                                    }
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label"><strong>Asset Subcategory:</strong></label>
+                            <select class="form-select" id="subcategorySelect">
+                                <option value="">Select Subcategory</option>
+                                <?php 
+                                if ($subcategories_result) {
+                                    while ($subcategory = $subcategories_result->fetch_assoc()) {
+                                        echo '<option value="' . htmlspecialchars($subcategory['sub_category_code']) . '" data-category="' . htmlspecialchars($subcategory['category_code']) . '">' . htmlspecialchars($subcategory['sub_category_name']) . '</option>';
+                                    }
+                                }
+                                ?>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <label class="form-label"><strong>Series (Auto-increment):</strong></label>
+                            <input type="text" class="form-control" id="seriesInput" value="<?php echo $next_series; ?>" readonly>
+                            <small class="text-muted">Auto-generated next available series number</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label"><strong>Office:</strong></label>
+                            <select class="form-select" id="officeSelect">
+                                <option value="">Select Office</option>
+                                <?php 
+                                if ($offices_result) {
+                                    // Reset pointer to beginning
+                                    $offices_result->data_seek(0);
+                                    while ($office = $offices_result->fetch_assoc()) {
+                                        $selected = ($office['office_code'] == '01') ? 'selected' : '';
+                                        echo '<option value="' . htmlspecialchars($office['office_code']) . '" ' . $selected . '>' . htmlspecialchars($office['office_name']) . ' (' . htmlspecialchars($office['office_code']) . ')</option>';
+                                    }
+                                }
+                                ?>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="bi bi-eye"></i> Preview</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <h4 id="propertyNumberPreview" class="text-primary mb-0">-</h4>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <button type="button" class="btn btn-success" onclick="generatePropertyNumberPreview()">
+                                            <i class="bi bi-arrow-clockwise"></i> Generate
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="applyPropertyNumber()">
+                        <i class="bi bi-check-circle"></i> Apply Property Number
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <?php include 'includes/sidebar-scripts.php'; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -470,7 +647,11 @@ if ($result && $row = $result->fetch_assoc()) {
                 '<input type="number" class="form-control form-control-sm" name="quantity[]" required onchange="calculateAmount(this)">',
                 '<select class="form-select form-select-sm" name="unit[]" required>' + unitOptions + '</select>',
                 '<input type="text" class="form-control form-control-sm" name="description[]" required>',
-                '<input type="text" class="form-control form-control-sm" name="property_number[]" value="' + autoPropertyNumber + '" placeholder="Enter property number manually">',
+                '<div class="property-number-field">' +
+                '<input type="text" class="form-control form-control-sm" name="property_number[]" value="" readonly placeholder="Click Generate to create">' +
+                '<button type="button" class="btn btn-sm btn-outline-primary" onclick="showPropertyNumberGenerator(this)" title="Generate Property Number"><i class="bi bi-gear"></i> Generate</button>' +
+                '</div>' +
+                '<small class="text-muted">Format: YEAR-FORM-FUND-CATEGORY-SUBCATEGORY+SERIES-OFFICE</small>',
                 '<input type="date" class="form-control form-control-sm" name="date_acquired[]">',
                 '<input type="number" step="0.01" class="form-control form-control-sm" name="amount[]" required>',
                 '<button type="button" class="btn btn-sm btn-danger" onclick="removeRow(this)"><i class="bi bi-trash"></i></button>'
@@ -587,6 +768,123 @@ if ($result && $row = $result->fetch_assoc()) {
             // this.appendChild(incrementField);
             
             // No counter increment needed for manual input
+        });
+        
+        // Property Number Generator Functions
+        let currentPropertyField = null;
+        
+        function showPropertyNumberGenerator(button) {
+            currentPropertyField = button.closest('td').querySelector('input[name="property_number[]"]');
+            const modal = new bootstrap.Modal(document.getElementById('propertyNumberGeneratorModal'));
+            modal.show();
+            
+            // Clear previous values (except series)
+            clearGeneratorForm();
+            
+            // Get next available series number dynamically
+            getNextSeriesNumber();
+            
+            // Auto-generate initial preview
+            setTimeout(() => generatePropertyNumberPreview(), 100);
+        }
+        
+        function getNextSeriesNumber() {
+            fetch('../api/get_next_series.php', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.next_series) {
+                    document.getElementById('seriesInput').value = data.next_series;
+                    generatePropertyNumberPreview();
+                }
+            })
+            .catch(error => {
+                console.error('Error getting next series number:', error);
+                // Use fallback value from PHP
+                generatePropertyNumberPreview();
+            });
+        }
+        
+        function clearGeneratorForm() {
+            document.getElementById('fundSelect').value = '';
+            document.getElementById('categorySelect').value = '';
+            document.getElementById('subcategorySelect').value = '';
+            // Don't clear series - it's auto-incremented
+            // Don't clear office - keep default selection
+            // Don't clear formType - it's auto-detected and readonly
+            document.getElementById('propertyNumberPreview').textContent = '-';
+        }
+        
+        function generatePropertyNumberPreview() {
+            const year = new Date().getFullYear();
+            const formType = document.getElementById('formType').value || '07';
+            const fund = document.getElementById('fundSelect').value || '05';
+            const category = document.getElementById('categorySelect').value || '030';
+            const subcategory = document.getElementById('subcategorySelect').value || '01';
+            const series = document.getElementById('seriesInput').value || '<?php echo $next_series; ?>';
+            const office = document.getElementById('officeSelect').value || '01';
+            
+            // Build property number: YEAR-FORM-FUND-CATEGORY-SUBCATEGORY+SERIES-OFFICE
+            const propertyNumber = `${year}-${formType}-${fund}-${category}-${subcategory}${series}-${office}`;
+            
+            document.getElementById('propertyNumberPreview').textContent = propertyNumber;
+        }
+        
+        function applyPropertyNumber() {
+            const propertyNumber = document.getElementById('propertyNumberPreview').textContent;
+            
+            if (propertyNumber === '-') {
+                alert('Please generate a property number first.');
+                return;
+            }
+            
+            if (currentPropertyField) {
+                currentPropertyField.value = propertyNumber;
+                
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('propertyNumberGeneratorModal'));
+                modal.hide();
+            }
+        }
+        
+        // Auto-update preview when any field changes
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add event listeners for auto-preview
+            const fields = ['fundSelect', 'categorySelect', 'subcategorySelect', 'officeSelect'];
+            fields.forEach(fieldId => {
+                const element = document.getElementById(fieldId);
+                if (element) {
+                    element.addEventListener('change', generatePropertyNumberPreview);
+                    element.addEventListener('input', generatePropertyNumberPreview);
+                }
+            });
+            
+            // Filter subcategories based on category selection
+            document.getElementById('categorySelect').addEventListener('change', function() {
+                const selectedCategory = this.value;
+                const subcategorySelect = document.getElementById('subcategorySelect');
+                const options = subcategorySelect.querySelectorAll('option');
+                
+                options.forEach(option => {
+                    if (option.value === '') {
+                        option.style.display = 'block';
+                    } else {
+                        const optionCategory = option.getAttribute('data-category');
+                        option.style.display = (optionCategory === selectedCategory || selectedCategory === '') ? 'block' : 'none';
+                    }
+                });
+                
+                // Reset subcategory if it doesn't match the new category
+                if (subcategorySelect.value && subcategorySelect.options[subcategorySelect.selectedIndex].getAttribute('data-category') !== selectedCategory) {
+                    subcategorySelect.value = '';
+                }
+                
+                generatePropertyNumberPreview();
+            });
         });
     </script>
 </body>
