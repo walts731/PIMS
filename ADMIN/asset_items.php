@@ -313,6 +313,7 @@ $notag_items = count(array_filter($items, function($item) { return $item['status
                     <table class="table table-hover" id="assetItemsTable">
                         <thead class="table-light">
                             <tr>
+                                <th>Property No</th>
                                 <th>Description</th>
                                 <th>Status</th>
                                 <th>Value</th>
@@ -324,6 +325,7 @@ $notag_items = count(array_filter($items, function($item) { return $item['status
                         <tbody>
                             <?php foreach ($items as $item): ?>
                                 <tr>
+                                    <td><?php echo htmlspecialchars($item['property_no'] ?: 'N/A'); ?></td>
                                     <td><?php echo htmlspecialchars($item['description']); ?></td>
                                     <td>
                                         <?php
@@ -416,11 +418,15 @@ $notag_items = count(array_filter($items, function($item) { return $item['status
                 order: [[3, 'desc']], // Sort by Acquisition Date by default
                 columnDefs: [
                     {
-                        targets: 0, // Description column
+                        targets: 0, // Property No column
                         orderable: true
                     },
                     {
-                        targets: 1, // Status column
+                        targets: 1, // Description column
+                        orderable: true
+                    },
+                    {
+                        targets: 2, // Status column
                         orderable: true,
                         render: function(data, type, row) {
                             if (type === 'display') {
@@ -431,7 +437,7 @@ $notag_items = count(array_filter($items, function($item) { return $item['status
                         }
                     },
                     {
-                        targets: 2, // Value column
+                        targets: 3, // Value column
                         orderable: true,
                         render: function(data, type, row) {
                             if (type === 'sort' || type === 'type') {
@@ -442,7 +448,7 @@ $notag_items = count(array_filter($items, function($item) { return $item['status
                         }
                     },
                     {
-                        targets: 3, // Acquisition Date column
+                        targets: 4, // Acquisition Date column
                         orderable: true,
                         render: function(data, type, row) {
                             if (type === 'sort' || type === 'type') {
@@ -453,7 +459,7 @@ $notag_items = count(array_filter($items, function($item) { return $item['status
                         }
                     },
                     {
-                        targets: 4, // Last Updated column
+                        targets: 5, // Last Updated column
                         orderable: true,
                         render: function(data, type, row) {
                             if (type === 'sort' || type === 'type') {
@@ -490,9 +496,9 @@ $notag_items = count(array_filter($items, function($item) { return $item['status
             $('#statusFilter').on('change', function() {
                 const statusValue = this.value;
                 if (statusValue) {
-                    assetItemsTable.column(1).search(statusValue).draw();
+                    assetItemsTable.column(2).search(statusValue).draw();
                 } else {
-                    assetItemsTable.column(1).search('').draw();
+                    assetItemsTable.column(2).search('').draw();
                 }
             });
         });
@@ -501,15 +507,16 @@ $notag_items = count(array_filter($items, function($item) { return $item['status
         function exportAssetItems() {
             // Use DataTables export functionality
             const data = assetItemsTable.data().toArray();
-            let csv = 'Description,Status,Value,Acquisition Date,Last Updated\n';
+            let csv = 'Property No,Description,Status,Value,Acquisition Date,Last Updated\n';
             
             data.forEach(row => {
                 const rowData = [
-                    row[0], // Description
-                    row[1].replace(/<[^>]*>/g, '').trim(), // Status
-                    row[2].replace(/[^0-9.-]+/g, ''), // Value
-                    row[3], // Acquisition Date
-                    row[4]  // Last Updated
+                    row[0], // Property No
+                    row[1], // Description
+                    row[2].replace(/<[^>]*>/g, '').trim(), // Status
+                    row[3].replace(/[^0-9.-]+/g, ''), // Value
+                    row[4], // Acquisition Date
+                    row[5]  // Last Updated
                 ];
                 csv += rowData.map(cell => `"${cell.trim()}"`).join(',') + '\n';
             });
