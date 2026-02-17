@@ -46,6 +46,16 @@ $form_options = [
     'ITR' => ['code' => '08', 'name' => 'Inventory Transfer Request']
 ];
 
+// Get next ICS series number
+$next_ics_series = '01';
+$result = $conn->query("SELECT MAX(CAST(SUBSTRING(ics_no, -2, 2) AS UNSIGNED)) as max_series FROM ics_forms WHERE ics_no LIKE '%-I-%' AND ics_no REGEXP '-I-[0-9]{2}$'");
+if ($result && $row = $result->fetch_assoc()) {
+    $max_series = $row['max_series'];
+    if ($max_series) {
+        $next_ics_series = str_pad($max_series + 1, 2, '0', STR_PAD_LEFT);
+    }
+}
+
 // Get next ICS number - COMMENTED OUT FOR MANUAL INPUT
 // $next_ics_no = getNextTagPreview('ics_no');
 // if ($next_ics_no === null) {
@@ -292,8 +302,7 @@ if ($result && $row = $result->fetch_assoc()) {
                     <div style="text-align: center;">
                         <p style="margin: 0; font-size: 16px; font-weight: bold;">INVENTORY CUSTODIAN SLIP</p>
                         <p style="margin: 0; font-size: 12px;">MUNICIPALITY OF PILAR</p>
-                        <p style="margin: 0; font-size: 12px;">OMM</p>
-                        <p style="margin: 0; font-size: 12px;">OFFICE/LOCATION</p>
+                       
                     </div>
                 </div>
                 
@@ -320,8 +329,8 @@ if ($result && $row = $result->fetch_assoc()) {
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label"><strong>ICS No:</strong></label>
-                                    <input type="text" class="form-control" name="ics_no" id="ics_no" value="" placeholder="Enter ICS number manually">
-                                    <small class="text-muted">Enter ICS number manually.</small>
+                                    <input type="text" class="form-control" name="ics_no" id="ics_no" value="" readonly placeholder="Auto-generated when entity is selected">
+                                    <small class="text-muted">Format: EntityI-Year-Series (e.g., OMMI-26-01)</small>
                                 </div>
                             </div>
                             
@@ -658,6 +667,39 @@ if ($result && $row = $result->fetch_assoc()) {
                 
                 generatePropertyNumberPreview();
             });
+        });
+        
+        // Auto-generate ICS number when entity name is selected
+        function generateICSNumber() {
+            const entitySelect = document.querySelector('select[name="entity_name"]');
+            const icsNoField = document.getElementById('ics_no');
+            
+            if (entitySelect.value && icsNoField) {
+                // Get selected entity name from the option text
+                const selectedOption = entitySelect.options[entitySelect.selectedIndex];
+                const entityName = selectedOption.text.trim();
+                
+                // Get current year (last 2 digits)
+                const currentYear = new Date().getFullYear().toString().slice(-2);
+                
+                // Get next series from PHP
+                const nextSeries = '<?php echo $next_ics_series; ?>';
+                
+                // Generate ICS number: EntityI-Year-Series
+                const icsNumber = `${entityName}I-${currentYear}-${nextSeries}`;
+                
+                icsNoField.value = icsNumber;
+            } else {
+                icsNoField.value = '';
+            }
+        }
+        
+        // Add event listener to entity name dropdown
+        document.addEventListener('DOMContentLoaded', function() {
+            const entitySelect = document.querySelector('select[name="entity_name"]');
+            if (entitySelect) {
+                entitySelect.addEventListener('change', generateICSNumber);
+            }
         });
         
         function addICSRow() {
