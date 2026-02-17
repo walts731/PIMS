@@ -28,6 +28,16 @@ $categories_result = $conn->query("SELECT category_code, category_name FROM asse
 $subcategories_result = $conn->query("SELECT sc.sub_category_code, sc.sub_category_name, ac.category_code FROM asset_sub_categories sc JOIN asset_categories ac ON sc.asset_categories_id = ac.id WHERE sc.status = 'active' ORDER BY ac.category_code, sc.sub_category_code");
 $offices_result = $conn->query("SELECT office_code, office_name FROM offices WHERE status = 'active' ORDER BY office_code");
 
+// Get next PAR series number
+$next_par_series = '0001';
+$result = $conn->query("SELECT MAX(CAST(SUBSTRING(par_no, -4, 4) AS UNSIGNED)) as max_series FROM par_forms WHERE par_no LIKE '%P-%' AND par_no REGEXP 'P-[0-9]{4}-[0-9]{2}-[0-9]{4}$'");
+if ($result && $row = $result->fetch_assoc()) {
+    $max_series = $row['max_series'];
+    if ($max_series) {
+        $next_par_series = str_pad($max_series + 1, 4, '0', STR_PAD_LEFT);
+    }
+}
+
 // Get next series number for auto-increment
 $next_series = '01';
 $result = $conn->query("SELECT MAX(CAST(SUBSTRING(property_number, -4, 2) AS UNSIGNED)) as max_series FROM asset_items WHERE property_number LIKE CONCAT(YEAR(CURDATE()), '-%')");
@@ -373,8 +383,8 @@ if ($result && $row = $result->fetch_assoc()) {
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label"><strong>PAR No:</strong></label>
-                                <input type="text" class="form-control" name="par_no" id="par_no" value="" placeholder="Enter PAR number manually">
-                                <small class="text-muted">Enter PAR number manually.</small>
+                                <input type="text" class="form-control" name="par_no" id="par_no" value="" readonly placeholder="Auto-generated when office is selected">
+                                <small class="text-muted">Format: OfficeP-Year-Month-Series (e.g., OMMP-2026-02-0001)</small>
                             </div>
                         </div>
                         
@@ -850,6 +860,42 @@ if ($result && $row = $result->fetch_assoc()) {
                 modal.hide();
             }
         }
+        
+        // Auto-generate PAR number when office location is selected
+        function generatePARNumber() {
+            const officeSelect = document.querySelector('select[name="office_location"]');
+            const parNoField = document.getElementById('par_no');
+            
+            if (officeSelect.value && parNoField) {
+                // Get selected office name from option text
+                const selectedOption = officeSelect.options[officeSelect.selectedIndex];
+                const officeName = selectedOption.text.trim();
+                
+                // Get current year
+                const currentYear = new Date().getFullYear();
+                
+                // Get current month (2 digits)
+                const currentMonth = String(new Date().getMonth() + 1).padStart(2, '0');
+                
+                // Get next series from PHP
+                const nextSeries = '<?php echo $next_par_series; ?>';
+                
+                // Generate PAR number: OfficeP-Year-Month-Series
+                const parNumber = `${officeName}P-${currentYear}-${currentMonth}-${nextSeries}`;
+                
+                parNoField.value = parNumber;
+            } else {
+                parNoField.value = '';
+            }
+        }
+        
+        // Add event listener to office location dropdown
+        document.addEventListener('DOMContentLoaded', function() {
+            const officeSelect = document.querySelector('select[name="office_location"]');
+            if (officeSelect) {
+                officeSelect.addEventListener('change', generatePARNumber);
+            }
+        });
         
         // Auto-update preview when any field changes
         document.addEventListener('DOMContentLoaded', function() {
