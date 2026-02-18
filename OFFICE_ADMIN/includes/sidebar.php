@@ -2,7 +2,7 @@
 <nav class="sidebar" id="sidebar">
     <div class="sidebar-header">
         <div class="sidebar-brand">
-            <img src="../img/system_logo.png" alt="PIMS Logo" class="sidebar-logo">
+            <img src="../img/trans_logo.png" alt="PIMS Logo" class="sidebar-logo">
             <span class="sidebar-title">PIMS</span>
         </div>
         <!-- Sidebar Toggle Button -->
