@@ -426,10 +426,17 @@ if ($result && $row = $result->fetch_assoc()) {
                                                 <small class="text-muted">Format: YEAR-FORM-FUND-CATEGORY-SUBCATEGORY+SERIES-OFFICE</small>
                                             </td>
                                             <td><input type="date" class="form-control form-control-sm" name="date_acquired[]"></td>
-                                            <td><input type="number" step="0.01" class="form-control form-control-sm" name="amount[]" required></td>
+                                            <td><input type="number" step="0.01" class="form-control form-control-sm" name="amount[]" required onchange="updateGrandTotal()"></td>
                                             <td><button type="button" class="btn btn-sm btn-danger" onclick="removeRow(this)"><i class="bi bi-trash"></i></button></td>
                                         </tr>
                                     </tbody>
+                                    <tfoot>
+                                        <tr class="table-primary fw-bold">
+                                            <td colspan="5" class="text-end">Grand Total:</td>
+                                            <td id="grandTotal">0.00</td>
+                                            <td></td>
+                                        </tr>
+                                    </tfoot>
                                 </table>
                             </div>
                             <button type="button" class="btn btn-sm btn-secondary" onclick="addRow()">
@@ -482,6 +489,9 @@ if ($result && $row = $result->fetch_assoc()) {
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    <div class="alert alert-info" id="quantityInfo">
+                        <i class="bi bi-info-circle"></i> <span id="quantityText">Generating 1 property number</span>
+                    </div>
                     <div class="row">
                         <div class="col-md-6">
                             <label class="form-label"><strong>Form Type:</strong></label>
@@ -663,14 +673,17 @@ if ($result && $row = $result->fetch_assoc()) {
                 '</div>' +
                 '<small class="text-muted">Format: YEAR-FORM-FUND-CATEGORY-SUBCATEGORY+SERIES-OFFICE</small>',
                 '<input type="date" class="form-control form-control-sm" name="date_acquired[]">',
-                '<input type="number" step="0.01" class="form-control form-control-sm" name="amount[]" required>',
+                '<input type="number" step="0.01" class="form-control form-control-sm" name="amount[]" required onchange="updateGrandTotal()">',
                 '<button type="button" class="btn btn-sm btn-danger" onclick="removeRow(this)"><i class="bi bi-trash"></i></button>'
             ];
             
-            cells.forEach((cellHtml, index) => {
-                const cell = newRow.insertCell(index);
-                cell.innerHTML = cellHtml;
-            });
+            for (let i = 0; i < cells.length; i++) {
+                const cell = newRow.insertCell(i);
+                cell.innerHTML = cells[i];
+            }
+            
+            // Add amount listeners to the new row
+            addAmountListeners();
         }
         
         // Initialize the form with auto-generated property numbers - COMMENTED OUT FOR MANUAL INPUT
@@ -686,6 +699,8 @@ if ($result && $row = $result->fetch_assoc()) {
         // Initialize when document is ready
         document.addEventListener('DOMContentLoaded', function() {
             initializeForm();
+            addAmountListeners();
+            updateGrandTotal(); // Initialize grand total
         });
         
         function removeRow(button) {
@@ -694,8 +709,26 @@ if ($result && $row = $result->fetch_assoc()) {
             
             if (table.rows.length > 1) {
                 row.remove();
+                // Update grand total after removing row
+                updateGrandTotal();
             } else {
                 alert('At least one row is required');
+            }
+        }
+        
+        function updateGrandTotal() {
+            const amountInputs = document.querySelectorAll('input[name="amount[]"]');
+            let grandTotal = 0;
+            
+            amountInputs.forEach(input => {
+                const amount = parseFloat(input.value) || 0;
+                grandTotal += amount;
+            });
+            
+            // Update the grand total display
+            const grandTotalElement = document.getElementById('grandTotal');
+            if (grandTotalElement) {
+                grandTotalElement.textContent = grandTotal.toFixed(2);
             }
         }
         
@@ -715,6 +748,65 @@ if ($result && $row = $result->fetch_assoc()) {
             }
         }
         
+        // Function to format amount with .00
+        function formatAmount(input) {
+            let value = input.value.replace(/[^\d.]/g, '');
+            
+            // Remove multiple decimal points
+            const parts = value.split('.');
+            if (parts.length > 2) {
+                value = parts[0] + '.' + parts.slice(1).join('');
+            }
+            
+            // Format to 2 decimal places
+            if (value && !isNaN(value)) {
+                const numValue = parseFloat(value);
+                input.value = numValue.toFixed(2);
+            } else if (value === '') {
+                input.value = '';
+            }
+        }
+        
+        // Add event listeners to amount inputs
+        function addAmountListeners() {
+            const amountInputs = document.querySelectorAll('input[name="amount[]"]');
+            amountInputs.forEach(input => {
+                // Format on blur (when leaving the field)
+                input.addEventListener('blur', function() {
+                    formatAmount(this);
+                    updateGrandTotal();
+                });
+                
+                // Format on change
+                input.addEventListener('change', function() {
+                    formatAmount(this);
+                    updateGrandTotal();
+                });
+                
+                // Allow only numbers and decimal point during typing
+                input.addEventListener('input', function(e) {
+                    let value = e.target.value;
+                    // Allow only digits and one decimal point
+                    const cursorPos = e.target.selectionStart;
+                    const beforeCursor = value.substring(0, cursorPos);
+                    const afterCursor = value.substring(cursorPos);
+                    
+                    // Count decimal points before cursor
+                    const decimalPointsBefore = (beforeCursor.match(/\./g) || []).length;
+                    
+                    // If this is a decimal point and there's already one, prevent it
+                    if (e.data === '.' && decimalPointsBefore >= 1) {
+                        e.preventDefault();
+                        return;
+                    }
+                    
+                    // Remove non-numeric characters except decimal point
+                    value = value.replace(/[^\d.]/g, '');
+                    e.target.value = value;
+                });
+            });
+        }
+        
         function resetForm() {
             if (confirm('Are you sure you want to reset the form? All data will be lost.')) {
                 document.getElementById('parForm').reset();
@@ -722,6 +814,11 @@ if ($result && $row = $result->fetch_assoc()) {
                 const table = document.getElementById('itemsTable').getElementsByTagName('tbody')[0];
                 while (table.rows.length > 1) {
                     table.deleteRow(1);
+                }
+                // Reset grand total
+                const grandTotalElement = document.getElementById('grandTotal');
+                if (grandTotalElement) {
+                    grandTotalElement.textContent = '0.00';
                 }
             }
         }
@@ -782,11 +879,27 @@ if ($result && $row = $result->fetch_assoc()) {
         
         // Property Number Generator Functions
         let currentPropertyField = null;
+        let lastUsedSeries = 1; // Track the last used series number globally
         
         function showPropertyNumberGenerator(button) {
-            currentPropertyField = button.closest('td').querySelector('input[name="property_number[]"]');
+            currentPropertyField = button.closest('td').querySelector('input[name="property_number[]"], textarea[name="property_number[]"]');
+            const row = button.closest('tr');
+            const quantityInput = row.querySelector('input[name="quantity[]"]');
+            const quantity = parseInt(quantityInput.value) || 1;
+            
             const modal = new bootstrap.Modal(document.getElementById('propertyNumberGeneratorModal'));
             modal.show();
+            
+            // Store quantity in a global variable instead of modal dataset
+            window.currentQuantity = quantity;
+            
+            // Update quantity display
+            const quantityText = document.getElementById('quantityText');
+            if (quantity === 1) {
+                quantityText.textContent = 'Generating 1 property number';
+            } else {
+                quantityText.textContent = `Generating ${quantity} property numbers`;
+            }
             
             // Clear previous values (except series)
             clearGeneratorForm();
@@ -795,7 +908,9 @@ if ($result && $row = $result->fetch_assoc()) {
             getNextSeriesNumber();
             
             // Auto-generate initial preview
-            setTimeout(() => generatePropertyNumberPreview(), 100);
+            setTimeout(() => {
+                generatePropertyNumberPreview();
+            }, 100);
         }
         
         function getNextSeriesNumber() {
@@ -827,6 +942,8 @@ if ($result && $row = $result->fetch_assoc()) {
             // Don't clear office - keep default selection
             // Don't clear formType - it's auto-detected and readonly
             document.getElementById('propertyNumberPreview').textContent = '-';
+            document.getElementById('propertyNumberPreview').style.fontSize = '';
+            document.getElementById('propertyNumberPreview').style.lineHeight = '';
         }
         
         function generatePropertyNumberPreview() {
@@ -835,25 +952,87 @@ if ($result && $row = $result->fetch_assoc()) {
             const fund = document.getElementById('fundSelect').value || '05';
             const category = document.getElementById('categorySelect').value || '030';
             const subcategory = document.getElementById('subcategorySelect').value || '01';
-            const series = document.getElementById('seriesInput').value || '<?php echo $next_series; ?>';
+            const baseSeries = document.getElementById('seriesInput').value || '<?php echo $next_series; ?>';
             const office = document.getElementById('officeSelect').value || '01';
             
-            // Build property number: YEAR-FORM-FUND-CATEGORY-SUBCATEGORY+SERIES-OFFICE
-            const propertyNumber = `${year}-${formType}-${fund}-${category}-${subcategory}${series}-${office}`;
+            // Get quantity from global variable
+            const quantity = window.currentQuantity || 1;
             
-            document.getElementById('propertyNumberPreview').textContent = propertyNumber;
+            // Generate multiple property numbers using the global lastUsedSeries
+            const propertyNumbers = [];
+            for (let i = 0; i < quantity; i++) {
+                // Use the global lastUsedSeries to continue incrementing
+                const currentSeriesNumber = lastUsedSeries + i;
+                const currentSubcategorySeries = String(currentSeriesNumber).padStart(4, '0');
+                
+                const propertyNumber = `${year}-${formType}-${fund}-${category}-${currentSubcategorySeries}-${office}`;
+                propertyNumbers.push(propertyNumber);
+            }
+            
+            // Display in preview
+            const previewElement = document.getElementById('propertyNumberPreview');
+            if (quantity === 1) {
+                previewElement.textContent = propertyNumbers[0];
+            } else {
+                previewElement.innerHTML = propertyNumbers.join('<br>');
+                previewElement.style.fontSize = '14px';
+                previewElement.style.lineHeight = '1.4';
+            }
         }
         
         function applyPropertyNumber() {
-            const propertyNumber = document.getElementById('propertyNumberPreview').textContent;
+            const previewElement = document.getElementById('propertyNumberPreview');
+            const propertyNumbers = previewElement.innerHTML.split('<br>').filter(num => num.trim());
             
-            if (propertyNumber === '-') {
+            if (propertyNumbers.length === 0 || propertyNumbers[0] === '-') {
                 alert('Please generate a property number first.');
                 return;
             }
             
-            if (currentPropertyField) {
-                currentPropertyField.value = propertyNumber;
+            if (currentPropertyField && propertyNumbers.length > 0) {
+                if (propertyNumbers.length === 1) {
+                    // Single property number - keep as input
+                    currentPropertyField.value = propertyNumbers[0];
+                    currentPropertyField.style.height = 'auto';
+                    
+                    // Update lastUsedSeries
+                    const propNumParts = propertyNumbers[0].split('-');
+                    const seriesPart = propNumParts[4]; // Get the series part (0101, 0102, etc.)
+                    lastUsedSeries = parseInt(seriesPart) + 1;
+                } else {
+                    // Multiple property numbers - create a textarea for multi-line display
+                    const textarea = document.createElement('textarea');
+                    textarea.className = 'form-control form-control-sm';
+                    textarea.name = 'property_number[]';
+                    textarea.value = propertyNumbers.join('\n');
+                    textarea.style.height = (propertyNumbers.length * 30) + 'px';
+                    textarea.style.minHeight = '60px';
+                    textarea.style.resize = 'vertical';
+                    textarea.readOnly = true;
+                    
+                    // Replace the input with textarea
+                    const propertyNumberContainer = currentPropertyField.closest('.property-number-field');
+                    const inputContainer = propertyNumberContainer.querySelector('input[name="property_number[]"], textarea[name="property_number[]"]');
+                    inputContainer.parentNode.replaceChild(textarea, inputContainer);
+                    
+                    // Add the generate button and format text if not present
+                    if (!propertyNumberContainer.querySelector('button')) {
+                        propertyNumberContainer.innerHTML += 
+                            '<button type="button" class="btn btn-sm btn-outline-primary" onclick="showPropertyNumberGenerator(this)" title="Generate Property Number"><i class="bi bi-gear"></i> Generate</button>';
+                    }
+                    
+                    if (!propertyNumberContainer.nextElementSibling || !propertyNumberContainer.nextElementSibling.classList.contains('text-muted')) {
+                        const formatText = document.createElement('small');
+                        formatText.className = 'text-muted d-block mt-1';
+                        formatText.textContent = 'Format: YEAR-FORM-FUND-CATEGORY-SUBCATEGORY+SERIES-OFFICE';
+                        propertyNumberContainer.parentNode.insertBefore(formatText, propertyNumberContainer.nextSibling);
+                    }
+                    
+                    // Update lastUsedSeries to the next number after the last one
+                    const lastPropNumParts = propertyNumbers[propertyNumbers.length - 1].split('-');
+                    const lastSeriesPart = lastPropNumParts[4]; // Get the series part of the last property number
+                    lastUsedSeries = parseInt(lastSeriesPart) + 1;
+                }
                 
                 // Close modal
                 const modal = bootstrap.Modal.getInstance(document.getElementById('propertyNumberGeneratorModal'));

@@ -136,9 +136,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $unit = $conn->real_escape_string($units[$i]);
                     $status = 'no_tag';
                     $acquisition_date = !empty($date_acquired) ? "'$date_acquired'" : 'NULL';
+                    $unit_cost_value = !empty($unit_cost) ? $unit_cost : 'NULL';
                     
                     $sql = "INSERT INTO asset_items (asset_id, par_id, description, unit, status, value, acquisition_date, office_id, created_at, last_updated) 
-                           VALUES ($asset_id, $par_form_id, '$description', '$unit', '$status', $unit_cost, $acquisition_date, $office_id, NOW(), NOW())";
+                           VALUES ($asset_id, $par_form_id, '$description', '$unit', '$status', $unit_cost_value, $acquisition_date, $office_id, NOW(), NOW())";
                     
                     if (!$conn->query($sql)) {
                         throw new Exception('Failed to save asset item ' . $item_num . ': ' . $conn->error);

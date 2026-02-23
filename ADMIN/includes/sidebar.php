@@ -347,27 +347,7 @@ try {
                 </ul>
             </div>
         </div>
-        <a href="consumables.php" class="sidebar-nav-item <?php echo $current_page == 'consumables.php' ? 'active' : ''; ?>">
-            <i class="bi bi-archive"></i>
-            Consumables
-        </a>
-        <a href="fuel.php" class="sidebar-nav-item <?php echo $current_page == 'fuel.php' ? 'active' : ''; ?>">
-            <i class="bi bi-fuel-pump"></i>
-            Fuel Inventory
-        </a>
-        <a href="employees.php" class="sidebar-nav-item <?php echo $current_page == 'employees.php' ? 'active' : ''; ?>">
-            <i class="bi bi-people"></i>
-            Employees
-        </a>
-        <a href="property_card.php" class="sidebar-nav-item <?php echo $current_page == 'property_card.php' ? 'active' : ''; ?>">
-            <i class="bi bi-credit-card"></i>
-            Property Card
-        </a>
-        <a href="borrowing.php" class="sidebar-nav-item <?php echo $current_page == 'borrowing.php' ? 'active' : ''; ?>">
-            <i class="bi bi-arrow-left-right"></i>
-            Borrowing
-        </a>
-        <div class="sidebar-dropdown">
+         <div class="sidebar-dropdown">
             <button class="sidebar-dropdown-toggle <?php echo (in_array($current_page, ['par_form.php', 'ics_form.php', 'ris_form.php', 'iirup_form.php', 'itr_form.php'])) ? 'active' : ''; ?>" 
                     type="button" data-bs-toggle="collapse" data-bs-target="#formsDropdown" 
                     aria-expanded="<?php echo (in_array($current_page, ['par_form.php', 'ics_form.php', 'ris_form.php', 'iirup_form.php', 'itr_form.php'])) ? 'true' : 'false'; ?>">
@@ -407,6 +387,27 @@ try {
                 </ul>
             </div>
         </div>
+        <a href="consumables.php" class="sidebar-nav-item <?php echo $current_page == 'consumables.php' ? 'active' : ''; ?>">
+            <i class="bi bi-archive"></i>
+            Consumables
+        </a>
+        <a href="fuel.php" class="sidebar-nav-item <?php echo $current_page == 'fuel.php' ? 'active' : ''; ?>">
+            <i class="bi bi-fuel-pump"></i>
+            Fuel Inventory
+        </a>
+        <a href="employees.php" class="sidebar-nav-item <?php echo $current_page == 'employees.php' ? 'active' : ''; ?>">
+            <i class="bi bi-people"></i>
+            Employees
+        </a>
+        <a href="property_card.php" class="sidebar-nav-item <?php echo $current_page == 'property_card.php' ? 'active' : ''; ?>">
+            <i class="bi bi-credit-card"></i>
+            Property Card
+        </a>
+        <a href="borrowing.php" class="sidebar-nav-item <?php echo $current_page == 'borrowing.php' ? 'active' : ''; ?>">
+            <i class="bi bi-arrow-left-right"></i>
+            Borrowing
+        </a>
+       
         <a href="reports.php" class="sidebar-nav-item <?php echo $current_page == 'reports.php' ? 'active' : ''; ?>">
             <i class="bi bi-file-earmark-bar-graph"></i>
             Reports
