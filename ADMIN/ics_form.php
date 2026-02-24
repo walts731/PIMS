@@ -56,20 +56,28 @@ if ($result && $row = $result->fetch_assoc()) {
     }
 }
 
-// Get next ICS number - COMMENTED OUT FOR MANUAL INPUT
-// $next_ics_no = getNextTagPreview('ics_no');
-// if ($next_ics_no === null) {
-//     $next_ics_no = ''; // Fallback if no configuration exists
-// }
-$next_ics_no = ''; // Empty for manual input
+// Get next ICS number - ENABLED FOR AUTO-GENERATION
+$next_ics_no = getNextTagPreview('ics_no');
+if ($next_ics_no === null) {
+    // Fallback: generate simple ICS number with auto-increment
+    $current_year = date('Y');
+    $result = $conn->query("SELECT MAX(CAST(SUBSTRING(ics_no, -2, 2) AS UNSIGNED)) as max_series FROM ics_forms WHERE ics_no LIKE '%$current_year%' AND ics_no REGEXP '-[0-9]{2}$'");
+    $next_series = '01';
+    if ($result && $row = $result->fetch_assoc()) {
+        $max_series = $row['max_series'];
+        if ($max_series) {
+            $next_series = str_pad($max_series + 1, 2, '0', STR_PAD_LEFT);
+        }
+    }
+    $next_ics_no = "OMMI-$current_year-I-$next_series";
+}
 
-// Get ICS configuration for JavaScript - COMMENTED OUT FOR MANUAL INPUT
-// $ics_config = null;
-// $result = $conn->query("SELECT * FROM tag_formats WHERE tag_type = 'ics_no' AND status = 'active'");
-// if ($result && $row = $result->fetch_assoc()) {
-//     $ics_config = $row;
-// }
-$ics_config = null; // Disabled for manual input
+// Get ICS configuration for JavaScript - ENABLED FOR AUTO-GENERATION
+$ics_config = null;
+$result = $conn->query("SELECT * FROM tag_formats WHERE tag_type = 'ics_no' AND status = 'active'");
+if ($result && $row = $result->fetch_assoc()) {
+    $ics_config = $row;
+}
 
 // Get header image from forms table
 $header_image = '';
@@ -329,8 +337,8 @@ if ($result && $row = $result->fetch_assoc()) {
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label"><strong>ICS No:</strong></label>
-                                    <input type="text" class="form-control" name="ics_no" id="ics_no" value="" readonly placeholder="Auto-generated when entity is selected">
-                                    <small class="text-muted">Format: EntityI-Year-Series (e.g., OMMI-26-01)</small>
+                                    <input type="text" class="form-control" name="ics_no" id="ics_no" value="<?php echo htmlspecialchars($next_ics_no); ?>" readonly placeholder="Auto-generated when form is loaded">
+                                    <small class="text-muted">Auto-generated unique number (Format: OMMI-26-I-01)</small>
                                 </div>
                             </div>
                             
