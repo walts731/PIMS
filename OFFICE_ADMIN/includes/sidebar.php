@@ -5,6 +5,9 @@
             <img src="../img/trans_logo.png" alt="PIMS Logo" class="sidebar-logo">
             <span class="sidebar-title">PIMS</span>
         </div>
+        <button type="button" class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
+            <i class="bi bi-list"></i>
+        </button>
     </div>
     
     <ul class="sidebar-menu">
