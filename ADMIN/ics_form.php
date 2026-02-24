@@ -395,6 +395,14 @@ if ($result && $row = $result->fetch_assoc()) {
                                                 <td><button type="button" class="btn btn-sm btn-danger" onclick="removeICSRow(this)"><i class="bi bi-trash"></i></button></td>
                                             </tr>
                                         </tbody>
+                                        <tfoot>
+                                            <tr class="table-primary fw-bold">
+                                                <td colspan="3" class="text-end">Grand Total:</td>
+                                                <td id="grandTotal">0.00</td>
+                                                <td colspan="3"></td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
                                     </table>
                                 </div>
                                 <button type="button" class="btn btn-sm btn-secondary" onclick="addICSRow()">
@@ -708,6 +716,9 @@ if ($result && $row = $result->fetch_assoc()) {
             if (entitySelect) {
                 entitySelect.addEventListener('change', generateICSNumber);
             }
+            
+            // Initialize grand total
+            updateGrandTotal();
         });
         
         function addICSRow() {
@@ -753,6 +764,8 @@ if ($result && $row = $result->fetch_assoc()) {
             
             if (table.rows.length > 1) {
                 row.remove();
+                // Update grand total after removing row
+                updateGrandTotal();
                 // No renumbering needed since item numbers are now manual
             } else {
                 alert('At least one row is required');
@@ -788,6 +801,28 @@ if ($result && $row = $result->fetch_assoc()) {
             }
             
             row.querySelector('input[name="total_cost[]"]').value = totalCost;
+            
+            // Update grand total after calculating total cost
+            updateGrandTotal();
+        }
+        
+        function updateGrandTotal() {
+            const table = document.getElementById('icsItemsTable').getElementsByTagName('tbody')[0];
+            const rows = table.getElementsByTagName('tr');
+            let grandTotal = 0;
+            
+            for (let i = 0; i < rows.length; i++) {
+                const totalCostInput = rows[i].querySelector('input[name="total_cost[]"]');
+                if (totalCostInput && totalCostInput.value) {
+                    grandTotal += parseFloat(totalCostInput.value) || 0;
+                }
+            }
+            
+            // Update the grand total display
+            const grandTotalElement = document.getElementById('grandTotal');
+            if (grandTotalElement) {
+                grandTotalElement.textContent = grandTotal.toFixed(2);
+            }
         }
         
         function resetICSForm() {
@@ -802,6 +837,11 @@ if ($result && $row = $result->fetch_assoc()) {
                 const itemNoInput = firstRow.cells[5].querySelector('input[name="item_no[]"]');
                 if (itemNoInput) {
                     itemNoInput.value = '';
+                }
+                // Reset grand total
+                const grandTotalElement = document.getElementById('grandTotal');
+                if (grandTotalElement) {
+                    grandTotalElement.textContent = '0.00';
                 }
             }
         }
