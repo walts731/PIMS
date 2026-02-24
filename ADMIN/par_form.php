@@ -717,13 +717,22 @@ if ($result && $row = $result->fetch_assoc()) {
         }
         
         function updateGrandTotal() {
-            const amountInputs = document.querySelectorAll('input[name="amount[]"]');
+            const table = document.getElementById('itemsTable').getElementsByTagName('tbody')[0];
+            const rows = table.getElementsByTagName('tr');
             let grandTotal = 0;
             
-            amountInputs.forEach(input => {
-                const amount = parseFloat(input.value) || 0;
-                grandTotal += amount;
-            });
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const quantityInput = row.querySelector('input[name="quantity[]"]');
+                const amountInput = row.querySelector('input[name="amount[]"]');
+                
+                if (quantityInput && amountInput) {
+                    const quantity = parseFloat(quantityInput.value) || 0;
+                    const amount = parseFloat(amountInput.value) || 0;
+                    const rowTotal = quantity * amount;
+                    grandTotal += rowTotal;
+                }
+            }
             
             // Update the grand total display
             const grandTotalElement = document.getElementById('grandTotal');
@@ -733,18 +742,14 @@ if ($result && $row = $result->fetch_assoc()) {
         }
         
         function calculateAmount(input) {
-            // Since amount is now directly entered, we don't need to calculate it
-            // This function can be used for validation if needed
-            const row = input.closest('tr');
-            const quantity = row.querySelector('input[name="quantity[]"]').value || 0;
-            const amount = row.querySelector('input[name="amount[]"]').value || 0;
+            // This function is called when quantity changes
+            // Update grand total since quantity affects the total
+            updateGrandTotal();
             
-            // Optional: Validate that amount is reasonable
-            if (parseFloat(quantity) < 0) {
-                row.querySelector('input[name="quantity[]"]').value = 0;
-            }
-            if (parseFloat(amount) < 0) {
-                row.querySelector('input[name="amount[]"]').value = 0;
+            // Optional: Validate that quantity is reasonable
+            const quantity = parseFloat(input.value) || 0;
+            if (quantity < 0) {
+                input.value = 0;
             }
         }
         
