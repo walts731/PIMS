@@ -236,7 +236,7 @@ if ($result && $row = $result->fetch_assoc()) {
                     </div>
                     <div class="col-md-3">
                         <label class="form-label"><strong>RIS NO:</strong></label>
-                        <input type="text" class="form-control bg-light" name="ris_no" id="ris_no" value="<?php echo htmlspecialchars($next_ris_no); ?>" readonly>
+                        <input type="text" class="form-control" name="ris_no" id="ris_no" placeholder="Enter RIS number manually">
                     </div>
                     <div class="col-md-3">
                         <label class="form-label"><strong>DATE:</strong></label>
@@ -259,11 +259,11 @@ if ($result && $row = $result->fetch_assoc()) {
                     </div>
                     <div class="col-md-3">
                         <label class="form-label"><strong>Code:</strong></label>
-                        <input type="text" class="form-control bg-light" name="code" id="code" value="<?php echo htmlspecialchars($next_code); ?>" readonly>
+                        <input type="text" class="form-control" name="code" id="code" placeholder="Enter code manually">
                     </div>
                     <div class="col-md-3">
                         <label class="form-label"><strong>SAI NO.:</strong></label>
-                        <input type="text" class="form-control bg-light" name="sai_no" id="sai_no" value="<?php echo htmlspecialchars($next_sai_no); ?>" readonly>
+                        <input type="text" class="form-control" name="sai_no" id="sai_no" placeholder="Enter SAI number manually">
                     </div>
                     <div class="col-md-3">
                         <label class="form-label"><strong>Date:</strong></label>
@@ -322,6 +322,13 @@ if ($result && $row = $result->fetch_assoc()) {
                                                 <td><button type="button" class="btn btn-sm btn-danger" onclick="removeRISRow(this)"><i class="bi bi-trash"></i></button></td>
                                             </tr>
                                         </tbody>
+                                        <tfoot>
+                                            <tr class="table-primary fw-bold">
+                                                <td colspan="5" class="text-end">Grand Total:</td>
+                                                <td id="grandTotal">0.00</td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
                                     </table>
                                 </div>
                                 <button type="button" class="btn btn-sm btn-secondary" onclick="addRISRow()">
@@ -478,8 +485,26 @@ if ($result && $row = $result->fetch_assoc()) {
                 row.remove();
                 // Update stock numbers after removal
                 updateStockNumbers();
+                // Update grand total after removal
+                updateGrandTotal();
             } else {
                 alert('At least one row is required');
+            }
+        }
+        
+        function updateGrandTotal() {
+            const totalAmountInputs = document.querySelectorAll('input[name="total_amount[]"]');
+            let grandTotal = 0;
+            
+            totalAmountInputs.forEach(input => {
+                const total = parseFloat(input.value) || 0;
+                grandTotal += total;
+            });
+            
+            // Update the grand total display
+            const grandTotalElement = document.getElementById('grandTotal');
+            if (grandTotalElement) {
+                grandTotalElement.textContent = grandTotal.toFixed(2);
             }
         }
         
@@ -500,6 +525,9 @@ if ($result && $row = $result->fetch_assoc()) {
             
             const total = parseFloat(quantity) * parseFloat(price);
             totalAmount.value = total.toFixed(2);
+            
+            // Update grand total
+            updateGrandTotal();
         }
         
         function resetRISForm() {
@@ -511,130 +539,20 @@ if ($result && $row = $result->fetch_assoc()) {
                 }
                 // Reset stock numbers
                 updateStockNumbers();
+                // Reset grand total
+                updateGrandTotal();
             }
         }
         
-        // Generate new RIS number via AJAX
-        function generateNewRisNumber() {
-            <?php if ($ris_config): ?>
-            const components = <?php 
-                $components = json_decode($ris_config['format_components'], true);
-                if (is_string($components)) {
-                    $components = json_decode($components, true);
-                }
-                echo json_encode($components ?: []);
-            ?>;
-            const digits = <?php echo $ris_config['digits']; ?>;
-            const separator = '<?php echo $ris_config['separator']; ?>';
-            
-            fetch('../SYSTEM_ADMIN/tags.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: 'action=generate_preview&tag_type=ris_no&components=' + encodeURIComponent(JSON.stringify(components)) + '&digits=' + digits + '&separator=' + encodeURIComponent(separator)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.preview) {
-                    document.getElementById('ris_no').value = data.preview;
-                }
-            })
-            .catch(error => {
-                console.error('Error generating RIS number:', error);
-            });
-            <?php endif; ?>
-        }
-        
-        // Generate new SAI number via AJAX
-        function generateNewSaiNumber() {
-            <?php if ($sai_config): ?>
-            const components = <?php 
-                $components = json_decode($sai_config['format_components'], true);
-                if (is_string($components)) {
-                    $components = json_decode($components, true);
-                }
-                echo json_encode($components ?: []);
-            ?>;
-            const digits = <?php echo $sai_config['digits']; ?>;
-            const separator = '<?php echo $sai_config['separator']; ?>';
-            
-            fetch('../SYSTEM_ADMIN/tags.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: 'action=generate_preview&tag_type=sai_no&components=' + encodeURIComponent(JSON.stringify(components)) + '&digits=' + digits + '&separator=' + encodeURIComponent(separator)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.preview) {
-                    document.getElementById('sai_no').value = data.preview;
-                }
-            })
-            .catch(error => {
-                console.error('Error generating SAI number:', error);
-            });
-            <?php endif; ?>
-        }
-        
-        // Generate new Code via AJAX
-        function generateNewCode() {
-            <?php if ($code_config): ?>
-            const components = <?php 
-                $components = json_decode($code_config['format_components'], true);
-                if (is_string($components)) {
-                    $components = json_decode($components, true);
-                }
-                echo json_encode($components ?: []);
-            ?>;
-            const digits = <?php echo $code_config['digits']; ?>;
-            const separator = '<?php echo $code_config['separator']; ?>';
-            
-            fetch('../SYSTEM_ADMIN/tags.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: 'action=generate_preview&tag_type=code&components=' + encodeURIComponent(JSON.stringify(components)) + '&digits=' + digits + '&separator=' + encodeURIComponent(separator)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.preview) {
-                    document.getElementById('code').value = data.preview;
-                }
-            })
-            .catch(error => {
-                console.error('Error generating Code:', error);
-            });
-            <?php endif; ?>
-        }
-        
-        // Handle form submission to update counters
+        // Handle form submission
         document.getElementById('risForm').addEventListener('submit', function(e) {
-            // Increment counters for all auto-generated fields
-            const incrementRisField = document.createElement('input');
-            incrementRisField.type = 'hidden';
-            incrementRisField.name = 'increment_ris_counter';
-            incrementRisField.value = '1';
-            this.appendChild(incrementRisField);
-            
-            const incrementSaiField = document.createElement('input');
-            incrementSaiField.type = 'hidden';
-            incrementSaiField.name = 'increment_sai_counter';
-            incrementSaiField.value = '1';
-            this.appendChild(incrementSaiField);
-            
-            const incrementCodeField = document.createElement('input');
-            incrementCodeField.type = 'hidden';
-            incrementCodeField.name = 'increment_code_counter';
-            incrementCodeField.value = '1';
-            this.appendChild(incrementCodeField);
+            // No auto-increment needed for manual fields
         });
         
-        // Initialize stock numbers on page load
+        // Initialize stock numbers and grand total on page load
         document.addEventListener('DOMContentLoaded', function() {
             updateStockNumbers();
+            updateGrandTotal();
         });
         
     </script>
