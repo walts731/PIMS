@@ -121,7 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         logSystemAction($user['id'], 'login_success', 'authentication', "User logged in: {$user['first_name']} {$user['last_name']} ({$email}) with role: {$user['role']}");
                         
                         // Redirect based on role
-                        $allowed_roles = ['system_admin', 'admin', 'office_admin', 'user'];
+                        $allowed_roles = ['system_admin', 'admin', 'office_admin', 'user', 'main_user'];
                         if (in_array($user['role'], $allowed_roles)) {
                             switch ($user['role']) {
                                 case 'system_admin':
@@ -135,6 +135,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     break;
                                 case 'user':
                                     header('Location: USER/dashboard.php');
+                                    break;
+                                case 'main_user':
+                                    header('Location: MAIN_USER/dashboard.php');
                                     break;
                             }
                             exit();
