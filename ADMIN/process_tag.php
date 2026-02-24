@@ -191,11 +191,12 @@ try {
         $asset_id = $asset_row['asset_id'];
         $update_assets_sql = "UPDATE assets SET 
                               asset_categories_id = ?,
+                              asset_subcategory_id = ?,
                               office_id = ?,
                               updated_at = CURRENT_TIMESTAMP
                               WHERE id = ?";
         $update_assets_stmt = $conn->prepare($update_assets_sql);
-        $update_assets_stmt->bind_param("iii", $category_id, $office_id, $asset_id);
+        $update_assets_stmt->bind_param("iiii", $category_id, $subcategory_id, $office_id, $asset_id);
         $update_assets_stmt->execute();
     }
     
