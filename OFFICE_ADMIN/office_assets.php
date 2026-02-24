@@ -40,6 +40,7 @@ $page_title = 'Office Assets';
     <!-- Custom CSS -->
     <link href="../assets/css/index.css" rel="stylesheet">
     <link href="../assets/css/theme-custom.css" rel="stylesheet">
+    <link href="dashboard.css" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -240,19 +241,6 @@ $page_title = 'Office Assets';
             z-index: 1040;
         }
         
-        /* Remove scrollbar from sidebar */
-        .sidebar {
-            overflow: hidden;
-        }
-        
-        .sidebar * {
-            scrollbar-width: none; /* Firefox */
-        }
-        
-        .sidebar::-webkit-scrollbar {
-            display: none; /* Chrome, Safari, Edge */
-        }
-        
         /* Fix modal backdrop issues */
         .modal.show {
             display: block !important;
@@ -275,7 +263,6 @@ $page_title = 'Office Assets';
 <body>
 <!-- Main Content Wrapper -->
     <div class="main-wrapper" id="mainWrapper">
-        <?php require_once 'includes/sidebar-toggle.php'; ?>
         <?php require_once 'includes/sidebar.php'; ?>
         <?php require_once 'includes/topbar.php'; ?>
     
@@ -615,40 +602,6 @@ $page_title = 'Office Assets';
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     <script>
-        <?php require_once 'includes/sidebar-scripts.php'; ?>
-        
-        // Fix modal backdrop issues
-        document.addEventListener('DOMContentLoaded', function() {
-            const logoutModal = document.getElementById('logoutModal');
-            if (logoutModal) {
-                logoutModal.addEventListener('show.bs.modal', function () {
-                    // Ensure proper backdrop
-                    document.body.classList.add('modal-open');
-                });
-                
-                logoutModal.addEventListener('hidden.bs.modal', function () {
-                    // Clean up backdrop
-                    document.body.classList.remove('modal-open');
-                    const backdrop = document.querySelector('.modal-backdrop');
-                    if (backdrop) {
-                        backdrop.remove();
-                    }
-                });
-                
-                // Ensure cancel button works properly
-                const cancelButton = logoutModal.querySelector('[data-bs-dismiss="modal"]');
-                if (cancelButton) {
-                    cancelButton.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        const modal = bootstrap.Modal.getInstance(logoutModal);
-                        if (modal) {
-                            modal.hide();
-                        }
-                    });
-                }
-            }
-        });
-        
         // Initialize DataTable
         $(document).ready(function() {
             $('#assetsTable').DataTable({
@@ -697,5 +650,8 @@ $page_title = 'Office Assets';
             this.querySelector('form').reset();
         });
     </script>
+    
+    <!-- Sidebar Scripts -->
+    <script src="../assets/js/sidebar.js"></script>
 </body>
 </html>
