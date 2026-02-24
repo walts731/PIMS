@@ -570,9 +570,13 @@ if ($result && $row = $result->fetch_assoc()) {
     <script>
         // Property Number Generator Functions
         let currentPropertyField = null;
+        let lastUsedSeries = 1; // Track the last used series number globally
         
         function showPropertyNumberGenerator(button) {
-            currentPropertyField = button.closest('td').querySelector('input[name="item_no[]"]');
+            currentPropertyField = button.closest('td').querySelector('input[name="item_no[]"], textarea[name="item_no[]"]');
+            const row = button.closest('tr');
+            const quantityInput = row.querySelector('input[name="quantity[]"]');
+            const quantity = parseInt(quantityInput.value) || 1;
             const modal = new bootstrap.Modal(document.getElementById('propertyNumberGeneratorModal'));
             modal.show();
             
@@ -633,15 +637,58 @@ if ($result && $row = $result->fetch_assoc()) {
         }
         
         function applyPropertyNumber() {
-            const propertyNumber = document.getElementById('propertyNumberPreview').textContent;
+            const previewElement = document.getElementById('propertyNumberPreview');
+            const propertyNumbers = previewElement.innerHTML.split('<br>').filter(num => num.trim());
             
-            if (propertyNumber === '-') {
+            if (propertyNumbers.length === 0 || propertyNumbers[0] === '-') {
                 alert('Please generate a property number first.');
                 return;
             }
             
-            if (currentPropertyField) {
-                currentPropertyField.value = propertyNumber;
+            if (currentPropertyField && propertyNumbers.length > 0) {
+                if (propertyNumbers.length === 1) {
+                    // Single property number - keep as input
+                    currentPropertyField.value = propertyNumbers[0];
+                    currentPropertyField.style.height = 'auto';
+                    
+                    // Update lastUsedSeries
+                    const propNumParts = propertyNumbers[0].split('-');
+                    const seriesPart = propNumParts[4]; // Get the series part (0101, 0102, etc.)
+                    lastUsedSeries = parseInt(seriesPart) + 1;
+                } else {
+                    // Multiple property numbers - create a textarea for multi-line display
+                    const textarea = document.createElement('textarea');
+                    textarea.className = 'form-control form-control-sm';
+                    textarea.name = 'item_no[]';
+                    textarea.value = propertyNumbers.join('\n');
+                    textarea.style.height = (propertyNumbers.length * 30) + 'px';
+                    textarea.style.minHeight = '60px';
+                    textarea.style.resize = 'vertical';
+                    textarea.readOnly = true;
+                    
+                    // Replace the input with textarea
+                    const propertyNumberContainer = currentPropertyField.closest('.property-number-field');
+                    const inputContainer = propertyNumberContainer.querySelector('input[name="item_no[]"], textarea[name="item_no[]"]');
+                    inputContainer.parentNode.replaceChild(textarea, inputContainer);
+                    
+                    // Add the generate button and format text if not present
+                    if (!propertyNumberContainer.querySelector('button')) {
+                        propertyNumberContainer.innerHTML += 
+                            '<button type="button" class="btn btn-sm btn-outline-primary" onclick="showPropertyNumberGenerator(this)" title="Generate Property Number"><i class="bi bi-gear"></i> Generate</button>';
+                    }
+                    
+                    if (!propertyNumberContainer.nextElementSibling || !propertyNumberContainer.nextElementSibling.classList.contains('text-muted')) {
+                        const formatText = document.createElement('small');
+                        formatText.className = 'text-muted d-block mt-1';
+                        formatText.textContent = 'Format: YEAR-FORM-FUND-CATEGORY-SUBCATEGORY+SERIES-OFFICE';
+                        propertyNumberContainer.parentNode.insertBefore(formatText, propertyNumberContainer.nextSibling);
+                    }
+                    
+                    // Update lastUsedSeries to the next number after the last one
+                    const lastPropNumParts = propertyNumbers[propertyNumbers.length - 1].split('-');
+                    const lastSeriesPart = lastPropNumParts[4]; // Get the series part (0101, 0102, etc.)
+                    lastUsedSeries = parseInt(lastSeriesPart) + 1;
+                }
                 
                 // Close modal
                 const modal = bootstrap.Modal.getInstance(document.getElementById('propertyNumberGeneratorModal'));
