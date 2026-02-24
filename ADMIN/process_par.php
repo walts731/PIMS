@@ -135,6 +135,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     throw new Exception('Failed to save PAR item: ' . $item_stmt->error);
                 }
                 
+                // Parse property numbers - handle both single and multiple property numbers
+                $individual_property_numbers = [];
+                if (!empty($property_number)) {
+                    // Check if it's a textarea with multiple property numbers (newline-separated)
+                    if (strpos($property_number, "\n") !== false) {
+                        $individual_property_numbers = array_filter(array_map('trim', explode("\n", $property_number)));
+                    } else {
+                        // Single property number - we'll need to generate sequential numbers for each item
+                        $base_property_number = $property_number;
+                    }
+                }
+                
                 // Insert multiple asset items based on quantity
                 for ($item_num = 1; $item_num <= $quantity; $item_num++) {
                     $description = $conn->real_escape_string($descriptions[$i]);
@@ -150,7 +162,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         throw new Exception('Failed to save asset item ' . $item_num . ': ' . $conn->error);
                     }
                     
-                    // Get the asset_item_id for potential property number assignment
+                    // Get the asset_item_id for property number assignment
                     $asset_item_id = $conn->insert_id;
                     
                     // Log asset item creation in history
@@ -161,12 +173,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $history_stmt->execute();
                     $history_stmt->close();
                     
-                    // If property number is provided and this is the first item, assign it
-                    if (!empty($property_number) && $item_num == 1) {
-                        // Update the asset item with property number if the column exists
+                    // Assign property number to this asset item
+                    $item_property_number = null;
+                    if (!empty($individual_property_numbers)) {
+                        // Use pre-generated property numbers from textarea
+                        if (isset($individual_property_numbers[$item_num - 1])) {
+                            $item_property_number = $individual_property_numbers[$item_num - 1];
+                        }
+                    } elseif (!empty($base_property_number)) {
+                        // Generate sequential property numbers from base
+                        // Parse the base property number to extract components
+                        if (preg_match('/^(.*-)(\d+)(-[^-]+)$/', $base_property_number, $matches)) {
+                            $prefix = $matches[1];
+                            $series = intval($matches[2]);
+                            $suffix = $matches[3];
+                            $item_property_number = $prefix . str_pad($series + $item_num - 1, 4, '0', STR_PAD_LEFT) . $suffix;
+                        } else {
+                            // Fallback: just append item number
+                            $item_property_number = $base_property_number . '-' . str_pad($item_num, 2, '0', STR_PAD_LEFT);
+                        }
+                    }
+                    
+                    // Update the asset item with property number if assigned
+                    if (!empty($item_property_number)) {
                         $update_stmt = $conn->prepare("UPDATE asset_items SET property_no = ? WHERE id = ?");
                         if ($update_stmt) {
-                            $update_stmt->bind_param("si", $property_number, $asset_item_id);
+                            $update_stmt->bind_param("si", $item_property_number, $asset_item_id);
                             $update_stmt->execute();
                             $update_stmt->close();
                         }
