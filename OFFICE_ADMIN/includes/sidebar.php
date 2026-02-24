@@ -5,14 +5,10 @@
             <img src="../img/trans_logo.png" alt="PIMS Logo" class="sidebar-logo">
             <span class="sidebar-title">PIMS</span>
         </div>
-        <!-- Sidebar Toggle Button -->
-        <button class="sidebar-toggle" id="sidebarToggle">
-            <i class="bi bi-list"></i>
-        </button>
     </div>
     
     <ul class="sidebar-menu">
-        <li class="menu-item active">
+        <li class="menu-item">
             <a href="dashboard.php" class="menu-link">
                 <i class="bi bi-speedometer2"></i>
                 <span class="menu-text">Dashboard</span>

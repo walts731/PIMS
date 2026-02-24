@@ -19,243 +19,72 @@ if ($_SESSION['role'] !== 'office_admin' && $_SESSION['role'] !== 'admin' && $_S
     exit();
 }
 
-// Get user's office information from offices table
-$user_office_id = null;
-try {
-    // Fixed: Use correct column name 'office_id' from users table
-    $stmt = $conn->prepare("SELECT o.id FROM offices o WHERE o.id = (SELECT office_id FROM users WHERE id = ?)");
-    $stmt->bind_param("i", $_SESSION['user_id']);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    if ($result->num_rows > 0) {
-        $user_office_id = $result->fetch_assoc()['id'];
-    }
-    $stmt->close();
-} catch (Exception $e) {
-    error_log("Error getting user office: " . $e->getMessage());
-}
+// Set page title for topbar
+$page_title = 'Office Assets';
 
-// Debug: Let's see what's happening
-error_log("DEBUG: office_assets.php - user_id: " . ($_SESSION['user_id'] ?? 'NULL'));
-error_log("DEBUG: office_assets.php - user_office_id: " . ($user_office_id ?? 'NULL'));
-error_log("DEBUG: office_assets.php - session data: " . print_r($_SESSION, true));
-
-if (!$user_office_id) {
-    $message = 'Office ID not found in session. Please log in again.';
-    $message_type = 'danger';
-} else {
-
-// Handle form submissions
-$message = '';
-$message_type = '';
-
-// Add new asset
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_asset') {
-    $asset_name = trim($_POST['asset_name']);
-    $asset_type = $_POST['asset_type'];
-    $description = trim($_POST['description']);
-    $serial_number = trim($_POST['serial_number']);
-    $purchase_date = $_POST['purchase_date'];
-    $purchase_cost = $_POST['purchase_cost'];
-    $current_value = $_POST['current_value'];
-    $location = trim($_POST['location']);
-    $status = $_POST['status'];
-    $quantity = 1; // Default quantity for individual asset
-    
-    // Validation
-    if (empty($asset_name) || empty($asset_type) || empty($purchase_date)) {
-        $message = 'Asset name, type, and purchase date are required';
-        $message_type = 'danger';
-    } else {
-        try {
-            // Insert into assets table first to get the main asset record
-            $stmt = $conn->prepare("INSERT INTO assets (asset_categories_id, description, quantity, unit_cost, office_id, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())");
-            $stmt->bind_param("isdisi", $asset_type, $asset_name, 1, 0, $_SESSION['office_id'], $_SESSION['user_id']);
-            
-            if ($stmt->execute()) {
-                $main_asset_id = $conn->insert_id;
-                
-                // Now insert into asset_items table
-                $stmt2 = $conn->prepare("INSERT INTO asset_items (asset_id, description, quantity, unit, status, value, acquisition_date, office_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-                $stmt2->bind_param("isssdss", $main_asset_id, $description, $quantity, $unit, $status, $current_value, $purchase_date, $_SESSION['office_id']);
-                $stmt2->execute();
-                
-                // Log asset creation
-                logSystemAction($_SESSION['user_id'], 'create_asset', 'asset_items', "Created asset: {$asset_name} ({$serial_number})");
-                
-                $message = 'Asset added successfully';
-                $message_type = 'success';
-            } else {
-                $message = 'Error adding asset';
-                $message_type = 'danger';
-            }
-            $stmt->close();
-            if (isset($stmt2)) $stmt2->close();
-        } catch (Exception $e) {
-            $message = 'Database error: ' . $e->getMessage();
-            $message_type = 'danger';
-        }
-    }
-}
-
-// Edit asset
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'edit_asset') {
-    $asset_id = $_POST['asset_id'];
-    $asset_name = trim($_POST['asset_name']);
-    $asset_type = $_POST['asset_type'];
-    $description = trim($_POST['description']);
-    $serial_number = trim($_POST['serial_number']);
-    $purchase_date = $_POST['purchase_date'];
-    $purchase_cost = $_POST['purchase_cost'];
-    $current_value = $_POST['current_value'];
-    $location = trim($_POST['location']);
-    $status = $_POST['status'];
-    
-    // Validation
-    if (empty($asset_name) || empty($asset_type) || empty($purchase_date)) {
-        $message = 'Asset name, type, and purchase date are required';
-        $message_type = 'danger';
-    } else {
-        try {
-            // Update asset
-            $stmt = $conn->prepare("UPDATE assets SET asset_name = ?, asset_type = ?, description = ?, serial_number = ?, purchase_date = ?, purchase_cost = ?, current_value = ?, location = ?, status = ?, updated_by = ?, updated_at = NOW() WHERE id = ?");
-            $stmt->bind_param("sssssdssisi", $asset_name, $asset_type, $description, $serial_number, $purchase_date, $purchase_cost, $current_value, $location, $status, $_SESSION['user_id'], $asset_id);
-            
-            if ($stmt->execute()) {
-                // Log asset update
-                logSystemAction($_SESSION['user_id'], 'update_asset', 'assets', "Updated asset {$asset_id}: {$asset_name}");
-                
-                $message = 'Asset updated successfully';
-                $message_type = 'success';
-            } else {
-                $message = 'Error updating asset';
-                $message_type = 'danger';
-            }
-            $stmt->close();
-        } catch (Exception $e) {
-            $message = 'Database error: ' . $e->getMessage();
-            $message_type = 'danger';
-        }
-    }
-}
-
-// Get asset data for editing
-if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'get_asset') {
-    $asset_id = $_GET['asset_id'];
-    
-    try {
-        $stmt = $conn->prepare("SELECT ai.id, ai.description, ai.quantity, ai.unit, ai.status, ai.value, ai.acquisition_date, ac.name as category_name FROM asset_items ai LEFT JOIN assets a ON ai.asset_id = a.id LEFT JOIN asset_categories ac ON a.asset_categories_id = ac.id WHERE ai.id = ? AND ai.office_id = ?");
-        $stmt->bind_param("ii", $asset_id, $_SESSION['office_id']);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        
-        if ($result->num_rows > 0) {
-            $asset = $result->fetch_assoc();
-            header('Content-Type: application/json');
-            echo json_encode($asset);
-            exit();
-        } else {
-            echo json_encode(['error' => 'Asset not found']);
-            exit();
-        }
-        $stmt->close();
-    } catch (Exception $e) {
-        echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
-        exit();
-    }
-}
-
-// Delete asset
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_asset') {
-    $asset_id = $_POST['asset_id'];
-    
-    try {
-        // Get asset info before deletion for logging
-        $stmt = $conn->prepare("SELECT description FROM asset_items WHERE id = ? AND office_id = ?");
-        $stmt->bind_param("ii", $asset_id, $_SESSION['office_id']);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $asset = $result->fetch_assoc();
-        $stmt->close();
-        
-        if ($asset) {
-            // Delete asset
-            $stmt = $conn->prepare("DELETE FROM asset_items WHERE id = ? AND office_id = ?");
-            $stmt->bind_param("ii", $asset_id, $_SESSION['office_id']);
-            
-            if ($stmt->execute()) {
-                // Log asset deletion
-                logSystemAction($_SESSION['user_id'], 'delete_asset', 'asset_items', "Deleted asset: {$asset['description']}");
-                
-                $message = 'Asset deleted successfully';
-                $message_type = 'success';
-            } else {
-                $message = 'Error deleting asset';
-                $message_type = 'danger';
-            }
-            $stmt->close();
-        } else {
-            $message = 'Asset not found';
-            $message_type = 'danger';
-        }
-    } catch (Exception $e) {
-        $message = 'Database error: ' . $e->getMessage();
-        $message_type = 'danger';
-    }
-}
-}
-
-// Fetch assets for the current office
+// Get office-specific assets
 $assets = [];
-try {
-    $stmt = $conn->prepare("SELECT ai.id, ai.description, ai.quantity, ai.unit, ai.status, ai.value, ai.acquisition_date, ac.name as category_name FROM asset_items ai LEFT JOIN assets a ON ai.asset_id = a.id LEFT JOIN asset_categories ac ON a.asset_categories_id = ac.id WHERE ai.office_id = ? ORDER BY ai.acquisition_date DESC");
-    $stmt->bind_param("i", $user_office_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    while ($row = $result->fetch_assoc()) {
-        $assets[] = $row;
+$stats = [
+    'total_assets' => 0,
+    'total_value' => 0,
+    'in_maintenance' => 0,
+    'disposed' => 0
+];
+
+$user_office = $_SESSION['office'] ?? null;
+
+// Get office_id from office name
+$office_id = null;
+if ($user_office && $conn) {
+    try {
+        $office_query = "SELECT id FROM offices WHERE office_name = ? OR office_code = ?";
+        $office_stmt = $conn->prepare($office_query);
+        $office_stmt->bind_param("ss", $user_office, $user_office);
+        $office_stmt->execute();
+        $office_result = $office_stmt->get_result();
+        
+        if ($office_row = $office_result->fetch_assoc()) {
+            $office_id = $office_row['id'];
+        }
+        
+    } catch (Exception $e) {
+        error_log("Error getting office_id: " . $e->getMessage());
     }
-    $stmt->close();
-} catch (Exception $e) {
-    error_log("Error fetching assets: " . $e->getMessage());
 }
 
-// Get asset statistics
-$stats = [];
-try {
-    $stmt = $conn->prepare("SELECT COUNT(*) as total_assets, SUM(CASE WHEN status = 'available' THEN 1 ELSE 0 END) as active_assets, SUM(CASE WHEN status = 'maintenance' THEN 1 ELSE 0 END) as maintenance_assets, SUM(CASE WHEN status = 'disposed' THEN 1 ELSE 0 END) as disposed_assets FROM asset_items WHERE office_id = ?");
-    $stmt->bind_param("i", $user_office_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $asset_stats = $result->fetch_assoc();
-    $stats['total_assets'] = $asset_stats['total_assets'];
-    $stats['active_assets'] = $asset_stats['active_assets'];
-    $stats['maintenance_assets'] = $asset_stats['maintenance_assets'];
-    $stats['disposed_assets'] = $asset_stats['disposed_assets'];
-    $stmt->close();
-    
-    // Asset type distribution
-    $stmt = $conn->prepare("SELECT ac.name as category, COUNT(*) as count FROM asset_items ai LEFT JOIN assets a ON ai.asset_id = a.id LEFT JOIN asset_categories ac ON a.asset_categories_id = ac.id WHERE ai.office_id = ? GROUP BY ac.name");
-    $stmt->bind_param("i", $user_office_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $stats['types'] = [];
-    while ($row = $result->fetch_assoc()) {
-        $stats['types'][$row['category']] = $row['count'];
+if ($office_id && $conn) {
+    try {
+        // Fetch assets for this office
+        $query = "SELECT ai.*, ac.category_name, ac.category_code 
+                 FROM asset_items ai 
+                 LEFT JOIN asset_categories ac ON ai.asset_category_id = ac.id 
+                 WHERE ai.office_id = ? 
+                 ORDER BY ai.created_at DESC";
+        
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param("i", $office_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        while ($row = $result->fetch_assoc()) {
+            $assets[] = $row;
+            
+            // Calculate statistics
+            $stats['total_assets']++;
+            $stats['total_value'] += $row['value'] ?? 0;
+            
+            if ($row['status'] === 'maintenance' || $row['status'] === 'unserviceable') {
+                $stats['in_maintenance']++;
+            }
+            
+            if ($row['status'] === 'disposed') {
+                $stats['disposed']++;
+            }
+        }
+        
+    } catch (Exception $e) {
+        error_log("Error fetching assets: " . $e->getMessage());
     }
-    $stmt->close();
-    
-    // Total value calculation
-    $stmt = $conn->prepare("SELECT SUM(value) as total_value FROM asset_items WHERE office_id = ? AND status != 'disposed'");
-    $stmt->bind_param("i", $user_office_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $value_stats = $result->fetch_assoc();
-    $stats['total_value'] = $value_stats['total_value'] ?? 0;
-    $stmt->close();
-} catch (Exception $e) {
-    error_log("Error fetching asset stats: " . $e->getMessage());
 }
 ?>
 
@@ -276,8 +105,15 @@ try {
     <!-- Custom CSS -->
     <link href="../assets/css/index.css" rel="stylesheet">
     <link href="../assets/css/theme-custom.css" rel="stylesheet">
-    <link href="dashboard.css" rel="stylesheet">
+    <link href="dashboard.css?v=<?php echo time(); ?>" rel="stylesheet">
     <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #F7F3F3 0%, #C1EAF2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
         .page-header {
             background: white;
             border-radius: var(--border-radius-xl);
@@ -336,7 +172,7 @@ try {
             font-weight: 600;
         }
         
-        .status-active {
+        .status-available {
             background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
             color: white;
         }
@@ -470,19 +306,6 @@ try {
             z-index: 1040;
         }
         
-        /* Remove scrollbar from sidebar */
-        .sidebar {
-            overflow: hidden;
-        }
-        
-        .sidebar * {
-            scrollbar-width: none; /* Firefox */
-        }
-        
-        .sidebar::-webkit-scrollbar {
-            display: none; /* Chrome, Safari, Edge */
-        }
-        
         /* Fix modal backdrop issues */
         .modal.show {
             display: block !important;
@@ -500,16 +323,11 @@ try {
             z-index: 1061;
             position: relative;
         }
-    </link>
+    </style>
 </head>
 <body>
-    <?php
-// Set page title for topbar
-$page_title = 'Office Assets';
-?>
 <!-- Main Content Wrapper -->
     <div class="main-wrapper" id="mainWrapper">
-        <?php require_once 'includes/sidebar-toggle.php'; ?>
         <?php require_once 'includes/sidebar.php'; ?>
         <?php require_once 'includes/topbar.php'; ?>
     
@@ -532,26 +350,17 @@ $page_title = 'Office Assets';
             </div>
         </div>
         
-        <!-- Message Display -->
-        <?php if (!empty($message)): ?>
-            <div class="alert alert-<?php echo $message_type; ?> alert-dismissible fade show" role="alert">
-                <i class="bi bi-<?php echo $message_type === 'success' ? 'check-circle' : 'exclamation-triangle'; ?>"></i>
-                <?php echo htmlspecialchars($message); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        <?php endif; ?>
-        
         <!-- Asset Statistics -->
         <div class="row mb-4">
             <div class="col-lg-3 col-md-6">
                 <div class="stats-card">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <div class="stats-number"><?php echo $stats['total_assets'] ?? 0; ?></div>
+                            <div class="stats-number"><?php echo $stats['total_assets']; ?></div>
                             <div class="text-muted">Total Assets</div>
                             <small class="text-success">
                                 <i class="bi bi-arrow-up"></i> 
-                                <?php echo $stats['active_assets'] ?? 0; ?> active
+                                <?php echo $stats['total_assets'] - $stats['disposed']; ?> active
                             </small>
                         </div>
                         <div class="text-primary">
@@ -564,7 +373,7 @@ $page_title = 'Office Assets';
                 <div class="stats-card">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <div class="stats-number">₱<?php echo number_format($stats['total_value'] ?? 0, 2); ?></div>
+                            <div class="stats-number">₱<?php echo number_format($stats['total_value'], 2); ?></div>
                             <div class="text-muted">Total Value</div>
                             <small class="text-info">Current Assets</small>
                         </div>
@@ -578,7 +387,7 @@ $page_title = 'Office Assets';
                 <div class="stats-card">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <div class="stats-number"><?php echo $stats['maintenance_assets'] ?? 0; ?></div>
+                            <div class="stats-number"><?php echo $stats['in_maintenance']; ?></div>
                             <div class="text-muted">In Maintenance</div>
                             <small class="text-warning">Under Repair</small>
                         </div>
@@ -592,7 +401,7 @@ $page_title = 'Office Assets';
                 <div class="stats-card">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <div class="stats-number"><?php echo $stats['disposed_assets'] ?? 0; ?></div>
+                            <div class="stats-number"><?php echo $stats['disposed']; ?></div>
                             <div class="text-muted">Disposed</div>
                             <small class="text-danger">Written Off</small>
                         </div>
@@ -625,62 +434,19 @@ $page_title = 'Office Assets';
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php if (empty($assets)): ?>
+                                    <?php foreach ($assets as $asset): ?>
                                         <tr>
-                                            <td colspan="6" class="text-center py-5">
-                                                <i class="bi bi-box-seam fs-1 text-muted"></i>
-                                                <p class="text-muted mt-3">No assets found in the system</p>
+                                            <td><?php echo htmlspecialchars($asset['description']); ?></td>
+                                            <td><?php echo htmlspecialchars($asset['category_name'] ?? 'Uncategorized'); ?></td>
+                                            <td><?php echo ucfirst(str_replace('_', ' ', $asset['status'])); ?></td>
+                                            <td>₱<?php echo number_format($asset['value'] ?? 0, 2); ?></td>
+                                            <td><?php echo !empty($asset['acquisition_date']) ? date('M j, Y', strtotime($asset['acquisition_date'])) : 'Not set'; ?></td>
+                                            <td>
+                                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="editAsset(<?php echo $asset['id']; ?>)">Edit</button>
+                                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteAsset(<?php echo $asset['id']; ?>)">Delete</button>
                                             </td>
                                         </tr>
-                                    <?php else: ?>
-                                        <?php foreach ($assets as $asset): ?>
-                                            <tr>
-                                                <td>
-                                                    <div class="d-flex align-items-center">
-                                                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
-                                                            <i class="bi bi-box-seam fs-5"></i>
-                                                        </div>
-                                                        <div>
-                                                            <div class="fw-semibold"><?php echo htmlspecialchars($asset['description']); ?></div>
-                                                            <small class="text-muted">ID: <?php echo htmlspecialchars($asset['id']); ?></small>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <span class="type-badge type-<?php echo strtolower($asset['category_name']); ?>">
-                                                        <?php echo htmlspecialchars($asset['category_name']); ?>
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <span class="status-badge status-<?php echo $asset['status']; ?>">
-                                                        <?php echo ucfirst($asset['status']); ?>
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <strong>₱<?php echo number_format($asset['value'], 2); ?></strong>
-                                                    <?php if ($asset['quantity'] > 1): ?>
-                                                        <br><small class="text-muted">Qty: <?php echo $asset['quantity']; ?></small>
-                                                    <?php endif; ?>
-                                                </td>
-                                                <td>
-                                                    <small class="text-muted">
-                                                        <i class="bi bi-calendar"></i>
-                                                        <?php echo date('M j, Y', strtotime($asset['acquisition_date'])); ?>
-                                                    </small>
-                                                </td>
-                                                <td>
-                                                    <div class="btn-group" role="group">
-                                                        <button type="button" class="btn btn-sm btn-outline-warning action-btn" onclick="editAsset(<?php echo $asset['id']; ?>)" title="Edit Asset">
-                                                            <i class="bi bi-pencil"></i>
-                                                        </button>
-                                                        <button type="button" class="btn btn-sm btn-outline-danger action-btn" onclick="deleteAsset(<?php echo $asset['id']; ?>)" title="Delete Asset">
-                                                            <i class="bi bi-trash"></i>
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    <?php endif; ?>
+                                    <?php endforeach; ?>
                                 </tbody>
                             </table>
                         </div>
@@ -767,12 +533,17 @@ $page_title = 'Office Assets';
                             </div>
                         </div>
                         <div class="row">
-                            <div class="col-md-12">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="quantity" class="form-label">Quantity</label>
+                                    <input type="number" class="form-control" id="quantity" name="quantity" value="1" min="1" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="status" class="form-label">Status</label>
                                     <select class="form-control" id="status" name="status" required>
-                                        <option value="">Select Status</option>
-                                        <option value="active">Active</option>
+                                        <option value="available">Available</option>
                                         <option value="maintenance">Maintenance</option>
                                         <option value="disposed">Disposed</option>
                                     </select>
@@ -866,12 +637,17 @@ $page_title = 'Office Assets';
                             </div>
                         </div>
                         <div class="row">
-                            <div class="col-md-12">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="edit_quantity" class="form-label">Quantity</label>
+                                    <input type="number" class="form-control" id="edit_quantity" name="quantity" value="1" min="1" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="edit_status" class="form-label">Status</label>
                                     <select class="form-control" id="edit_status" name="status" required>
-                                        <option value="">Select Status</option>
-                                        <option value="active">Active</option>
+                                        <option value="available">Available</option>
                                         <option value="maintenance">Maintenance</option>
                                         <option value="disposed">Disposed</option>
                                     </select>
@@ -898,61 +674,19 @@ $page_title = 'Office Assets';
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     <script>
-        // Sidebar toggle functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            const sidebarToggle = document.getElementById('sidebarToggle');
-            const sidebar = document.getElementById('sidebar');
-            
-            if (sidebarToggle && sidebar) {
-                sidebarToggle.addEventListener('click', function() {
-                    sidebar.classList.toggle('show');
-                });
-            }
-        });
-        
-        // Fix modal backdrop issues
-        document.addEventListener('DOMContentLoaded', function() {
-            const logoutModal = document.getElementById('logoutModal');
-            if (logoutModal) {
-                logoutModal.addEventListener('show.bs.modal', function () {
-                    // Ensure proper backdrop
-                    document.body.classList.add('modal-open');
-                });
-                
-                logoutModal.addEventListener('hidden.bs.modal', function () {
-                    // Clean up backdrop
-                    document.body.classList.remove('modal-open');
-                    const backdrop = document.querySelector('.modal-backdrop');
-                    if (backdrop) {
-                        backdrop.remove();
-                    }
-                });
-                
-                // Ensure cancel button works properly
-                const cancelButton = logoutModal.querySelector('[data-bs-dismiss="modal"]');
-                if (cancelButton) {
-                    cancelButton.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        const modal = bootstrap.Modal.getInstance(logoutModal);
-                        if (modal) {
-                            modal.hide();
-                        }
-                    });
-                }
-            }
-        });
-        
         // Initialize DataTable
         $(document).ready(function() {
             $('#assetsTable').DataTable({
                 responsive: true,
                 pageLength: 10,
                 lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]],
-                order: [[0, 'asc']], // Sort by asset name ascending
+                order: [[4, 'desc']], // Sort by acquisition date descending
                 language: {
                     search: "Search assets:",
                     lengthMenu: "Show _MENU_ assets",
                     info: "Showing _START_ to _END_ of _TOTAL_ assets",
+                    emptyTable: "No assets found in your office",
+                    zeroRecords: "No matching assets found",
                     paginate: {
                         first: "First",
                         last: "Last",
@@ -965,59 +699,15 @@ $page_title = 'Office Assets';
         
         // Edit asset function
         function editAsset(assetId) {
-            // Fetch asset data
-            $.ajax({
-                url: 'office_assets.php?action=get_asset&asset_id=' + assetId,
-                method: 'GET',
-                dataType: 'json',
-                success: function(response) {
-                    if (response.error) {
-                        alert('Error: ' + response.error);
-                    } else {
-                        // Populate form fields
-                        $('#editAssetId').val(response.id);
-                        $('#edit_asset_name').val(response.asset_name);
-                        $('#edit_asset_type').val(response.asset_type);
-                        $('#edit_description').val(response.description);
-                        $('#edit_serial_number').val(response.serial_number);
-                        $('#edit_location').val(response.location);
-                        $('#edit_purchase_date').val(response.purchase_date);
-                        $('#edit_purchase_cost').val(response.purchase_cost);
-                        $('#edit_current_value').val(response.current_value);
-                        $('#edit_status').val(response.status);
-                        
-                        // Show modal
-                        $('#editAssetModal').modal('show');
-                    }
-                },
-                error: function() {
-                    alert('Error fetching asset data');
-                }
-            });
+            // This will be implemented when backend is added
+            console.log('Edit asset:', assetId);
         }
         
         // Delete asset function
         function deleteAsset(assetId) {
-            if (confirm('Are you sure you want to delete this asset? This action cannot be undone.')) {
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.style.display = 'none';
-                
-                const actionInput = document.createElement('input');
-                actionInput.type = 'hidden';
-                actionInput.name = 'action';
-                actionInput.value = 'delete_asset';
-                
-                const assetIdInput = document.createElement('input');
-                assetIdInput.type = 'hidden';
-                assetIdInput.name = 'asset_id';
-                assetIdInput.value = assetId;
-                
-                form.appendChild(actionInput);
-                form.appendChild(assetIdInput);
-                
-                document.body.appendChild(form);
-                form.submit();
+            if (confirm('Are you sure you want to delete this asset?')) {
+                // This will be implemented when backend is added
+                console.log('Delete asset:', assetId);
             }
         }
         
@@ -1030,27 +720,9 @@ $page_title = 'Office Assets';
         document.getElementById('editAssetModal').addEventListener('hidden.bs.modal', function () {
             this.querySelector('form').reset();
         });
-        
-        // Handle edit form submission
-        document.getElementById('editAssetForm').addEventListener('submit', function (e) {
-            e.preventDefault();
-            
-            const formData = new FormData(this);
-            
-            fetch('office_assets.php', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.text())
-            .then(html => {
-                // Reload page to show updated data
-                location.reload();
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error updating asset');
-            });
-        });
     </script>
+    
+    <!-- Sidebar Scripts -->
+    <script src="../assets/js/sidebar.js"></script>
 </body>
 </html>

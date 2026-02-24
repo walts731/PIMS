@@ -186,7 +186,7 @@ foreach ($defaults as $key => $value) {
     <!-- Custom CSS -->
     <link href="../assets/css/index.css" rel="stylesheet">
     <link href="../assets/css/theme-custom.css" rel="stylesheet">
-    <link href="dashboard.css" rel="stylesheet">
+    <link href="dashboard.css?v=<?php echo time(); ?>" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;

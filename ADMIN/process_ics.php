@@ -40,18 +40,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $useful_lives = $_POST['useful_life'] ?? [];
         
         // Validate required fields
-        if (empty($entity_name) || empty($fund_cluster) || empty($ics_no)) {
+        if (empty($entity_name) || empty($fund_cluster)) {
             throw new Exception('All required fields must be filled');
         }
         
-        // Check if we should increment ICS counter
-        if (isset($_POST['increment_ics_counter']) && $_POST['increment_ics_counter'] == '1') {
-            // Generate actual ICS number (this increments the counter)
-            $generated_ics_no = generateNextTag('ics_no');
-            if ($generated_ics_no !== null) {
-                $ics_no = $generated_ics_no;
-                logSystemAction($_SESSION['user_id'], 'ICS counter incremented', 'forms', "Generated ICS number: $ics_no");
+        // Auto-generate ICS number to prevent duplicates
+        $generated_ics_no = generateNextTag('ics_no');
+        if ($generated_ics_no !== null) {
+            $ics_no = $generated_ics_no;
+            logSystemAction($_SESSION['user_id'], 'ICS number auto-generated', 'forms', "Generated ICS number: $ics_no");
+        } else {
+            // Fallback: generate simple ICS number with auto-increment
+            $current_year = date('Y');
+            $result = $conn->query("SELECT MAX(CAST(SUBSTRING(ics_no, -2, 2) AS UNSIGNED)) as max_series FROM ics_forms WHERE ics_no LIKE '%$current_year%' AND ics_no REGEXP '-[0-9]{2}$'");
+            $next_series = '01';
+            if ($result && $row = $result->fetch_assoc()) {
+                $max_series = $row['max_series'];
+                if ($max_series) {
+                    $next_series = str_pad($max_series + 1, 2, '0', STR_PAD_LEFT);
+                }
             }
+            $ics_no = "OMMI-$current_year-I-$next_series";
+            logSystemAction($_SESSION['user_id'], 'ICS number generated (fallback)', 'forms', "Generated ICS number: $ics_no");
         }
         
         // Get office ID from entity name
@@ -110,6 +120,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Insert multiple asset items based on quantity
                 $asset_item_stmt = $conn->prepare("INSERT INTO asset_items (asset_id, ics_id, description, unit, status, value, acquisition_date, office_id, created_at, last_updated) VALUES (?, ?, ?, ?, 'no_tag', ?, CURDATE(), ?, NOW(), NOW())");
                 
+                // Parse property numbers - handle both single and multiple property numbers
+                $individual_property_numbers = [];
+                $base_property_number = null;
+                if (!empty($items[$i])) {
+                    // Check if it's a textarea with multiple property numbers (newline-separated)
+                    if (strpos($items[$i], "\n") !== false) {
+                        $individual_property_numbers = array_filter(array_map('trim', explode("\n", $items[$i])));
+                    } else {
+                        // Single property number - we'll need to generate sequential numbers for each item
+                        $base_property_number = $items[$i];
+                    }
+                }
+                
                 // Create individual asset items for each quantity
                 for ($item_num = 1; $item_num <= $quantity; $item_num++) {
                     // Debug: Log the values being inserted
@@ -131,6 +154,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $history_stmt->bind_param("isi", $asset_item_id, $ics_details, $_SESSION['user_id']);
                     $history_stmt->execute();
                     $history_stmt->close();
+                    
+                    // Assign property number to this asset item
+                    $item_property_number = null;
+                    if (!empty($individual_property_numbers)) {
+                        // Use pre-generated property numbers from textarea
+                        if (isset($individual_property_numbers[$item_num - 1])) {
+                            $item_property_number = $individual_property_numbers[$item_num - 1];
+                        }
+                    } elseif (!empty($base_property_number)) {
+                        // Generate sequential property numbers from base
+                        // Parse the base property number to extract components
+                        if (preg_match('/^(.*-)(\d+)(-[^-]+)$/', $base_property_number, $matches)) {
+                            $prefix = $matches[1];
+                            $series = intval($matches[2]);
+                            $suffix = $matches[3];
+                            $item_property_number = $prefix . str_pad($series + $item_num - 1, 4, '0', STR_PAD_LEFT) . $suffix;
+                        } else {
+                            // Fallback: just append item number
+                            $item_property_number = $base_property_number . '-' . str_pad($item_num, 2, '0', STR_PAD_LEFT);
+                        }
+                    }
+                    
+                    // Update the asset item with property number if assigned
+                    if (!empty($item_property_number)) {
+                        $update_stmt = $conn->prepare("UPDATE asset_items SET property_no = ? WHERE id = ?");
+                        if ($update_stmt) {
+                            $update_stmt->bind_param("si", $item_property_number, $asset_item_id);
+                            $update_stmt->execute();
+                            $update_stmt->close();
+                        }
+                    }
                 }
                 $asset_item_stmt->close();
             }

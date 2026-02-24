@@ -281,8 +281,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             } else {
                 // Insert new user
                 $password_hash = password_hash($password, PASSWORD_DEFAULT);
-                $stmt = $conn->prepare("INSERT INTO users (username, email, password_hash, role, first_name, last_name, office_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
-                $stmt->bind_param("ssssssi", $username, $email, $password_hash, $role, $first_name, $last_name, $office_id);
+                $stmt = $conn->prepare("INSERT INTO users (username, email, password_hash, role, first_name, last_name, office) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                $stmt->bind_param("sssssss", $username, $email, $password_hash, $role, $first_name, $last_name, $office_id);
                 
                 if ($stmt->execute()) {
                     // Log user creation

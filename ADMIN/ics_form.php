@@ -56,20 +56,28 @@ if ($result && $row = $result->fetch_assoc()) {
     }
 }
 
-// Get next ICS number - COMMENTED OUT FOR MANUAL INPUT
-// $next_ics_no = getNextTagPreview('ics_no');
-// if ($next_ics_no === null) {
-//     $next_ics_no = ''; // Fallback if no configuration exists
-// }
-$next_ics_no = ''; // Empty for manual input
+// Get next ICS number - ENABLED FOR AUTO-GENERATION
+$next_ics_no = getNextTagPreview('ics_no');
+if ($next_ics_no === null) {
+    // Fallback: generate simple ICS number with auto-increment
+    $current_year = date('Y');
+    $result = $conn->query("SELECT MAX(CAST(SUBSTRING(ics_no, -2, 2) AS UNSIGNED)) as max_series FROM ics_forms WHERE ics_no LIKE '%$current_year%' AND ics_no REGEXP '-[0-9]{2}$'");
+    $next_series = '01';
+    if ($result && $row = $result->fetch_assoc()) {
+        $max_series = $row['max_series'];
+        if ($max_series) {
+            $next_series = str_pad($max_series + 1, 2, '0', STR_PAD_LEFT);
+        }
+    }
+    $next_ics_no = "OMMI-$current_year-I-$next_series";
+}
 
-// Get ICS configuration for JavaScript - COMMENTED OUT FOR MANUAL INPUT
-// $ics_config = null;
-// $result = $conn->query("SELECT * FROM tag_formats WHERE tag_type = 'ics_no' AND status = 'active'");
-// if ($result && $row = $result->fetch_assoc()) {
-//     $ics_config = $row;
-// }
-$ics_config = null; // Disabled for manual input
+// Get ICS configuration for JavaScript - ENABLED FOR AUTO-GENERATION
+$ics_config = null;
+$result = $conn->query("SELECT * FROM tag_formats WHERE tag_type = 'ics_no' AND status = 'active'");
+if ($result && $row = $result->fetch_assoc()) {
+    $ics_config = $row;
+}
 
 // Get header image from forms table
 $header_image = '';
@@ -329,8 +337,8 @@ if ($result && $row = $result->fetch_assoc()) {
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label"><strong>ICS No:</strong></label>
-                                    <input type="text" class="form-control" name="ics_no" id="ics_no" value="" readonly placeholder="Auto-generated when entity is selected">
-                                    <small class="text-muted">Format: EntityI-Year-Series (e.g., OMMI-26-01)</small>
+                                    <input type="text" class="form-control" name="ics_no" id="ics_no" value="<?php echo htmlspecialchars($next_ics_no); ?>" readonly placeholder="Auto-generated when form is loaded">
+                                    <small class="text-muted">Auto-generated unique number (Format: OMMI-26-I-01)</small>
                                 </div>
                             </div>
                             
@@ -387,6 +395,14 @@ if ($result && $row = $result->fetch_assoc()) {
                                                 <td><button type="button" class="btn btn-sm btn-danger" onclick="removeICSRow(this)"><i class="bi bi-trash"></i></button></td>
                                             </tr>
                                         </tbody>
+                                        <tfoot>
+                                            <tr class="table-primary fw-bold">
+                                                <td colspan="3" class="text-end">Grand Total:</td>
+                                                <td id="grandTotal">0.00</td>
+                                                <td colspan="3"></td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
                                     </table>
                                 </div>
                                 <button type="button" class="btn btn-sm btn-secondary" onclick="addICSRow()">
@@ -554,9 +570,13 @@ if ($result && $row = $result->fetch_assoc()) {
     <script>
         // Property Number Generator Functions
         let currentPropertyField = null;
+        let lastUsedSeries = 1; // Track the last used series number globally
         
         function showPropertyNumberGenerator(button) {
-            currentPropertyField = button.closest('td').querySelector('input[name="item_no[]"]');
+            currentPropertyField = button.closest('td').querySelector('input[name="item_no[]"], textarea[name="item_no[]"]');
+            const row = button.closest('tr');
+            const quantityInput = row.querySelector('input[name="quantity[]"]');
+            const quantity = parseInt(quantityInput.value) || 1;
             const modal = new bootstrap.Modal(document.getElementById('propertyNumberGeneratorModal'));
             modal.show();
             
@@ -617,15 +637,58 @@ if ($result && $row = $result->fetch_assoc()) {
         }
         
         function applyPropertyNumber() {
-            const propertyNumber = document.getElementById('propertyNumberPreview').textContent;
+            const previewElement = document.getElementById('propertyNumberPreview');
+            const propertyNumbers = previewElement.innerHTML.split('<br>').filter(num => num.trim());
             
-            if (propertyNumber === '-') {
+            if (propertyNumbers.length === 0 || propertyNumbers[0] === '-') {
                 alert('Please generate a property number first.');
                 return;
             }
             
-            if (currentPropertyField) {
-                currentPropertyField.value = propertyNumber;
+            if (currentPropertyField && propertyNumbers.length > 0) {
+                if (propertyNumbers.length === 1) {
+                    // Single property number - keep as input
+                    currentPropertyField.value = propertyNumbers[0];
+                    currentPropertyField.style.height = 'auto';
+                    
+                    // Update lastUsedSeries
+                    const propNumParts = propertyNumbers[0].split('-');
+                    const seriesPart = propNumParts[4]; // Get the series part (0101, 0102, etc.)
+                    lastUsedSeries = parseInt(seriesPart) + 1;
+                } else {
+                    // Multiple property numbers - create a textarea for multi-line display
+                    const textarea = document.createElement('textarea');
+                    textarea.className = 'form-control form-control-sm';
+                    textarea.name = 'item_no[]';
+                    textarea.value = propertyNumbers.join('\n');
+                    textarea.style.height = (propertyNumbers.length * 30) + 'px';
+                    textarea.style.minHeight = '60px';
+                    textarea.style.resize = 'vertical';
+                    textarea.readOnly = true;
+                    
+                    // Replace the input with textarea
+                    const propertyNumberContainer = currentPropertyField.closest('.property-number-field');
+                    const inputContainer = propertyNumberContainer.querySelector('input[name="item_no[]"], textarea[name="item_no[]"]');
+                    inputContainer.parentNode.replaceChild(textarea, inputContainer);
+                    
+                    // Add the generate button and format text if not present
+                    if (!propertyNumberContainer.querySelector('button')) {
+                        propertyNumberContainer.innerHTML += 
+                            '<button type="button" class="btn btn-sm btn-outline-primary" onclick="showPropertyNumberGenerator(this)" title="Generate Property Number"><i class="bi bi-gear"></i> Generate</button>';
+                    }
+                    
+                    if (!propertyNumberContainer.nextElementSibling || !propertyNumberContainer.nextElementSibling.classList.contains('text-muted')) {
+                        const formatText = document.createElement('small');
+                        formatText.className = 'text-muted d-block mt-1';
+                        formatText.textContent = 'Format: YEAR-FORM-FUND-CATEGORY-SUBCATEGORY+SERIES-OFFICE';
+                        propertyNumberContainer.parentNode.insertBefore(formatText, propertyNumberContainer.nextSibling);
+                    }
+                    
+                    // Update lastUsedSeries to the next number after the last one
+                    const lastPropNumParts = propertyNumbers[propertyNumbers.length - 1].split('-');
+                    const lastSeriesPart = lastPropNumParts[4]; // Get the series part (0101, 0102, etc.)
+                    lastUsedSeries = parseInt(lastSeriesPart) + 1;
+                }
                 
                 // Close modal
                 const modal = bootstrap.Modal.getInstance(document.getElementById('propertyNumberGeneratorModal'));
@@ -700,6 +763,9 @@ if ($result && $row = $result->fetch_assoc()) {
             if (entitySelect) {
                 entitySelect.addEventListener('change', generateICSNumber);
             }
+            
+            // Initialize grand total
+            updateGrandTotal();
         });
         
         function addICSRow() {
@@ -745,6 +811,8 @@ if ($result && $row = $result->fetch_assoc()) {
             
             if (table.rows.length > 1) {
                 row.remove();
+                // Update grand total after removing row
+                updateGrandTotal();
                 // No renumbering needed since item numbers are now manual
             } else {
                 alert('At least one row is required');
@@ -780,6 +848,28 @@ if ($result && $row = $result->fetch_assoc()) {
             }
             
             row.querySelector('input[name="total_cost[]"]').value = totalCost;
+            
+            // Update grand total after calculating total cost
+            updateGrandTotal();
+        }
+        
+        function updateGrandTotal() {
+            const table = document.getElementById('icsItemsTable').getElementsByTagName('tbody')[0];
+            const rows = table.getElementsByTagName('tr');
+            let grandTotal = 0;
+            
+            for (let i = 0; i < rows.length; i++) {
+                const totalCostInput = rows[i].querySelector('input[name="total_cost[]"]');
+                if (totalCostInput && totalCostInput.value) {
+                    grandTotal += parseFloat(totalCostInput.value) || 0;
+                }
+            }
+            
+            // Update the grand total display
+            const grandTotalElement = document.getElementById('grandTotal');
+            if (grandTotalElement) {
+                grandTotalElement.textContent = grandTotal.toFixed(2);
+            }
         }
         
         function resetICSForm() {
@@ -794,6 +884,11 @@ if ($result && $row = $result->fetch_assoc()) {
                 const itemNoInput = firstRow.cells[5].querySelector('input[name="item_no[]"]');
                 if (itemNoInput) {
                     itemNoInput.value = '';
+                }
+                // Reset grand total
+                const grandTotalElement = document.getElementById('grandTotal');
+                if (grandTotalElement) {
+                    grandTotalElement.textContent = '0.00';
                 }
             }
         }
