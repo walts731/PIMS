@@ -8,7 +8,7 @@
     </div>
     
     <ul class="sidebar-menu">
-        <li class="menu-item active">
+        <li class="menu-item">
             <a href="dashboard.php" class="menu-link">
                 <i class="bi bi-speedometer2"></i>
                 <span class="menu-text">Dashboard</span>

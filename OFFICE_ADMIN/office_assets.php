@@ -21,6 +21,71 @@ if ($_SESSION['role'] !== 'office_admin' && $_SESSION['role'] !== 'admin' && $_S
 
 // Set page title for topbar
 $page_title = 'Office Assets';
+
+// Get office-specific assets
+$assets = [];
+$stats = [
+    'total_assets' => 0,
+    'total_value' => 0,
+    'in_maintenance' => 0,
+    'disposed' => 0
+];
+
+$user_office = $_SESSION['office'] ?? null;
+
+// Get office_id from office name
+$office_id = null;
+if ($user_office && $conn) {
+    try {
+        $office_query = "SELECT id FROM offices WHERE office_name = ? OR office_code = ?";
+        $office_stmt = $conn->prepare($office_query);
+        $office_stmt->bind_param("ss", $user_office, $user_office);
+        $office_stmt->execute();
+        $office_result = $office_stmt->get_result();
+        
+        if ($office_row = $office_result->fetch_assoc()) {
+            $office_id = $office_row['id'];
+        }
+        
+    } catch (Exception $e) {
+        error_log("Error getting office_id: " . $e->getMessage());
+    }
+}
+
+if ($office_id && $conn) {
+    try {
+        // Fetch assets for this office
+        $query = "SELECT ai.*, ac.category_name, ac.category_code 
+                 FROM asset_items ai 
+                 LEFT JOIN asset_categories ac ON ai.asset_category_id = ac.id 
+                 WHERE ai.office_id = ? 
+                 ORDER BY ai.created_at DESC";
+        
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param("i", $office_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        while ($row = $result->fetch_assoc()) {
+            $assets[] = $row;
+            
+            // Calculate statistics
+            $stats['total_assets']++;
+            $stats['total_value'] += $row['value'] ?? 0;
+            
+            if ($row['status'] === 'maintenance' || $row['status'] === 'unserviceable') {
+                $stats['in_maintenance']++;
+            }
+            
+            if ($row['status'] === 'disposed') {
+                $stats['disposed']++;
+            }
+        }
+        
+    } catch (Exception $e) {
+        error_log("Error fetching assets: " . $e->getMessage());
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -40,7 +105,7 @@ $page_title = 'Office Assets';
     <!-- Custom CSS -->
     <link href="../assets/css/index.css" rel="stylesheet">
     <link href="../assets/css/theme-custom.css" rel="stylesheet">
-    <link href="dashboard.css" rel="stylesheet">
+    <link href="dashboard.css?v=<?php echo time(); ?>" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -291,11 +356,11 @@ $page_title = 'Office Assets';
                 <div class="stats-card">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <div class="stats-number">0</div>
+                            <div class="stats-number"><?php echo $stats['total_assets']; ?></div>
                             <div class="text-muted">Total Assets</div>
                             <small class="text-success">
                                 <i class="bi bi-arrow-up"></i> 
-                                0 active
+                                <?php echo $stats['total_assets'] - $stats['disposed']; ?> active
                             </small>
                         </div>
                         <div class="text-primary">
@@ -308,7 +373,7 @@ $page_title = 'Office Assets';
                 <div class="stats-card">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <div class="stats-number">₱0.00</div>
+                            <div class="stats-number">₱<?php echo number_format($stats['total_value'], 2); ?></div>
                             <div class="text-muted">Total Value</div>
                             <small class="text-info">Current Assets</small>
                         </div>
@@ -322,7 +387,7 @@ $page_title = 'Office Assets';
                 <div class="stats-card">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <div class="stats-number">0</div>
+                            <div class="stats-number"><?php echo $stats['in_maintenance']; ?></div>
                             <div class="text-muted">In Maintenance</div>
                             <small class="text-warning">Under Repair</small>
                         </div>
@@ -336,7 +401,7 @@ $page_title = 'Office Assets';
                 <div class="stats-card">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <div class="stats-number">0</div>
+                            <div class="stats-number"><?php echo $stats['disposed']; ?></div>
                             <div class="text-muted">Disposed</div>
                             <small class="text-danger">Written Off</small>
                         </div>
@@ -369,12 +434,19 @@ $page_title = 'Office Assets';
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr>
-                                        <td colspan="6" class="text-center py-5">
-                                            <i class="bi bi-box-seam fs-1 text-muted"></i>
-                                            <p class="text-muted mt-3">No assets found in the system</p>
-                                        </td>
-                                    </tr>
+                                    <?php foreach ($assets as $asset): ?>
+                                        <tr>
+                                            <td><?php echo htmlspecialchars($asset['description']); ?></td>
+                                            <td><?php echo htmlspecialchars($asset['category_name'] ?? 'Uncategorized'); ?></td>
+                                            <td><?php echo ucfirst(str_replace('_', ' ', $asset['status'])); ?></td>
+                                            <td>₱<?php echo number_format($asset['value'] ?? 0, 2); ?></td>
+                                            <td><?php echo !empty($asset['acquisition_date']) ? date('M j, Y', strtotime($asset['acquisition_date'])) : 'Not set'; ?></td>
+                                            <td>
+                                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="editAsset(<?php echo $asset['id']; ?>)">Edit</button>
+                                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteAsset(<?php echo $asset['id']; ?>)">Delete</button>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
                                 </tbody>
                             </table>
                         </div>
@@ -609,13 +681,12 @@ $page_title = 'Office Assets';
                 pageLength: 10,
                 lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]],
                 order: [[4, 'desc']], // Sort by acquisition date descending
-                columnDefs: [
-                    { targets: 5, orderable: false } // Disable sorting on Actions column
-                ],
                 language: {
                     search: "Search assets:",
                     lengthMenu: "Show _MENU_ assets",
                     info: "Showing _START_ to _END_ of _TOTAL_ assets",
+                    emptyTable: "No assets found in your office",
+                    zeroRecords: "No matching assets found",
                     paginate: {
                         first: "First",
                         last: "Last",
