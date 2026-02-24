@@ -13,10 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     if (sidebarToggle && sidebar && mainWrapper) {
-        sidebarToggle.addEventListener('click', function(e) {
-            e.preventDefault();
-            console.log('Toggle clicked');
-            
+        function toggleSidebar() {
             sidebar.classList.toggle('collapsed');
             mainWrapper.classList.toggle('sidebar-collapsed');
             
@@ -25,7 +22,7 @@ document.addEventListener('DOMContentLoaded', function() {
             localStorage.setItem('sidebarCollapsed', isCollapsed);
             
             console.log('Sidebar is now collapsed:', isCollapsed);
-        });
+        }
         
         // Restore sidebar state from localStorage
         const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
