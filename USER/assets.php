@@ -65,7 +65,7 @@ if (!$conn || $conn->connect_error) {
         }
 
         if (!$user_office_id) {
-            $error = 'Office not assigned to your account. Please contact the administrator.';
+            $error = 'Office not assigned to your account. Please contact administrator.';
         } else {
             $sql = "SELECT 
                         a.id,
@@ -148,15 +148,14 @@ if (!$conn || $conn->connect_error) {
             <div class="section-card">
                 <div class="table-responsive">
                     <table class="table table-striped align-middle mb-0">
-                        <thead>
+                        <thead class="table-light">
                             <tr>
-                                <th>ID</th>
+                                <th>Property No</th>
                                 <th>Description</th>
-                                <th>Updated</th>
-                                <th class="text-end">Qty</th>
-                                <th class="text-end">Unit Cost</th>
-                                <th class="text-end">Items</th>
-                                <th class="text-end">Items Total Value</th>
+                                <th>Office</th>
+                                <th>Status</th>
+                                <th class="text-end">Value</th>
+                                <th>Last Updated</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -164,19 +163,50 @@ if (!$conn || $conn->connect_error) {
                             <?php if (!$error && !empty($assets)): ?>
                                 <?php foreach ($assets as $row): ?>
                                     <tr>
-                                        <td><?php echo (int)$row['id']; ?></td>
-                                        <td>
+                                        <td class="ps-3"><?php echo htmlspecialchars(($row['property_no'] ?? '') !== '' ? (string)$row['property_no'] : (($row['property_number'] ?? '') !== '' ? (string)$row['property_number'] : 'N/A')); ?></td>
+                                        <td class="ps-3">
                                             <div class="fw-semibold"><?php echo htmlspecialchars($row['description'] ?? ''); ?></div>
-                                            <div class="text-muted small">
-                                                <?php echo htmlspecialchars(($row['category_code'] ?? '') !== '' ? ($row['category_code'] . ' - ') : ''); ?><?php echo htmlspecialchars($row['category_name'] ?? ''); ?>
-                                            </div>
+                                            <div class="text-muted small"><?php echo htmlspecialchars($row['category_name'] ?? ''); ?></div>
                                         </td>
-                                        <td class="text-muted small"><?php echo htmlspecialchars($row['updated_at'] ?? ''); ?></td>
-                                        <td class="text-end"><?php echo number_format((float)($row['quantity'] ?? 0), 0); ?></td>
-                                        <td class="text-end"><?php echo number_format((float)($row['unit_cost'] ?? 0), 2); ?></td>
-                                        <td class="text-end"><?php echo number_format((int)($row['item_count'] ?? 0)); ?></td>
-                                        <td class="text-end"><?php echo number_format((float)($row['items_total_value'] ?? 0), 2); ?></td>
+                                        <td class="ps-3"><?php echo htmlspecialchars($row['office_name'] ?? ''); ?></td>
                                         <td>
+                                            <?php
+                                            $status = $row['status'] ?? '';
+                                            $status_class = '';
+                                            $display_status = '';
+                                            switch($status) {
+                                                case 'serviceable':
+                                                    $status_class = 'status-serviceable';
+                                                    $display_status = 'Serviceable';
+                                                    break;
+                                                case 'unserviceable':
+                                                    $status_class = 'status-unserviceable';
+                                                    $display_status = 'Unserviceable';
+                                                    break;
+                                                case 'red_tagged':
+                                                    $status_class = 'status-red-tagged';
+                                                    $display_status = 'Red-Tagged';
+                                                    break;
+                                                case 'borrowed':
+                                                    $status_class = 'status-borrowed';
+                                                    $display_status = 'Borrowed';
+                                                    break;
+                                                case 'no_tag':
+                                                    $status_class = 'status-no-tag';
+                                                    $display_status = 'No Tag';
+                                                    break;
+                                                default:
+                                                    $status_class = 'status-unknown';
+                                                    $display_status = ucfirst(str_replace('_', ' ', $status));
+                                            }
+                                            ?>
+                                            <span class="status-badge <?php echo $status_class; ?>">
+                                                <?php echo $display_status; ?>
+                                            </span>
+                                        </td>
+                                        <td class="text-end ps-3"><?php echo number_format((float)($row['value'] ?? 0), 2); ?></td>
+                                        <td class="text-muted small ps-3"><?php echo htmlspecialchars($row['updated_at'] ?? ''); ?></td>
+                                        <td class="ps-3">
                                             <a href="view_asset_items.php?asset_id=<?php echo (int)$row['id']; ?>" class="btn btn-sm btn-outline-info">
                                                 <i class="bi bi-eye"></i> View Items
                                             </a>
@@ -185,7 +215,7 @@ if (!$conn || $conn->connect_error) {
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="8" class="text-center text-muted py-4">No assets found.</td>
+                                    <td colspan="7" class="text-center text-muted py-4">No assets found.</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>
