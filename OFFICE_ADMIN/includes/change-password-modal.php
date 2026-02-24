@@ -11,7 +11,7 @@
                     <div class="mb-3">
                         <label for="current_password" class="form-label">Current Password</label>
                         <div class="input-group">
-                            <input type="password" class="form-control" id="current_password" name="current_password" required>
+                            <input type="password" class="form-control" id="current_password" name="current_password" required autocomplete="current-password">
                             <button class="btn btn-outline-secondary" type="button" id="toggleCurrentPassword">
                                 <i class="bi bi-eye"></i>
                             </button>
@@ -21,7 +21,7 @@
                     <div class="mb-3">
                         <label for="new_password" class="form-label">New Password</label>
                         <div class="input-group">
-                            <input type="password" class="form-control" id="new_password" name="new_password" required minlength="8">
+                            <input type="password" class="form-control" id="new_password" name="new_password" required minlength="8" autocomplete="new-password">
                             <button class="btn btn-outline-secondary" type="button" id="toggleNewPassword">
                                 <i class="bi bi-eye"></i>
                             </button>
@@ -32,7 +32,7 @@
                     <div class="mb-3">
                         <label for="confirm_password" class="form-label">Confirm New Password</label>
                         <div class="input-group">
-                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" required autocomplete="new-password">
                             <button class="btn btn-outline-secondary" type="button" id="toggleConfirmPassword">
                                 <i class="bi bi-eye"></i>
                             </button>

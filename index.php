@@ -112,10 +112,30 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $_SESSION['role'] = htmlspecialchars($user['role'], ENT_QUOTES, 'UTF-8');
                         $_SESSION['first_name'] = htmlspecialchars($user['first_name'], ENT_QUOTES, 'UTF-8');
                         $_SESSION['last_name'] = htmlspecialchars($user['last_name'], ENT_QUOTES, 'UTF-8');
+                        $_SESSION['office'] = htmlspecialchars($user['office'], ENT_QUOTES, 'UTF-8'); // Office name
+                        $_SESSION['office_id'] = null; // Will be set below if office exists
                         $_SESSION['logged_in'] = true;
                         $_SESSION['login_time'] = time();
                         $_SESSION['ip_address'] = $_SERVER['REMOTE_ADDR'];
                         $_SESSION['user_agent'] = $_SERVER['HTTP_USER_AGENT'];
+                        
+                        // Set office_id from office name if office exists
+                        if (!empty($user['office'])) {
+                            try {
+                                $office_query = "SELECT id FROM offices WHERE office_name = ? OR office_code = ?";
+                                $office_stmt = $conn->prepare($office_query);
+                                $office_stmt->bind_param("ss", $user['office'], $user['office']);
+                                $office_stmt->execute();
+                                $office_result = $office_stmt->get_result();
+                                
+                                if ($office_row = $office_result->fetch_assoc()) {
+                                    $_SESSION['office_id'] = $office_row['id'];
+                                }
+                                
+                            } catch (Exception $e) {
+                                error_log("Error setting office_id during login: " . $e->getMessage());
+                            }
+                        }
                         
                         // Log successful login
                         logSystemAction($user['id'], 'login_success', 'authentication', "User logged in: {$user['first_name']} {$user['last_name']} ({$email}) with role: {$user['role']}");
