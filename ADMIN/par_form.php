@@ -555,19 +555,8 @@ if ($result && $row = $result->fetch_assoc()) {
                         </div>
                         <div class="col-md-6">
                             <label class="form-label"><strong>Office:</strong></label>
-                            <select class="form-select" id="officeSelect">
-                                <option value="">Select Office</option>
-                                <?php 
-                                if ($offices_result) {
-                                    // Reset pointer to beginning
-                                    $offices_result->data_seek(0);
-                                    while ($office = $offices_result->fetch_assoc()) {
-                                        $selected = ($office['office_code'] == '01') ? 'selected' : '';
-                                        echo '<option value="' . htmlspecialchars($office['office_code']) . '" ' . $selected . '>' . htmlspecialchars($office['office_name']) . ' (' . htmlspecialchars($office['office_code']) . ')</option>';
-                                    }
-                                }
-                                ?>
-                            </select>
+                            <input type="text" class="form-control" id="selectedOfficeDisplay" readonly>
+                            <small class="text-muted">Based on selected Office/Location in form</small>
                         </div>
                     </div>
                     
@@ -884,7 +873,6 @@ if ($result && $row = $result->fetch_assoc()) {
         
         // Property Number Generator Functions
         let currentPropertyField = null;
-        let lastUsedSeries = 1; // Track the last used series number globally
         
         function showPropertyNumberGenerator(button) {
             currentPropertyField = button.closest('td').querySelector('input[name="property_number[]"], textarea[name="property_number[]"]');
@@ -919,7 +907,7 @@ if ($result && $row = $result->fetch_assoc()) {
         }
         
         function getNextSeriesNumber() {
-            fetch('../api/get_next_series.php', {
+            fetch('../api/get_next_par_series.php', {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -927,13 +915,13 @@ if ($result && $row = $result->fetch_assoc()) {
             })
             .then(response => response.json())
             .then(data => {
-                if (data.next_series) {
-                    document.getElementById('seriesInput').value = data.next_series;
+                if (data.success && data.next_par_series) {
+                    document.getElementById('seriesInput').value = data.next_par_series;
                     generatePropertyNumberPreview();
                 }
             })
             .catch(error => {
-                console.error('Error getting next series number:', error);
+                console.error('Error getting next PAR series number:', error);
                 // Use fallback value from PHP
                 generatePropertyNumberPreview();
             });
@@ -944,8 +932,10 @@ if ($result && $row = $result->fetch_assoc()) {
             document.getElementById('categorySelect').value = '';
             document.getElementById('subcategorySelect').value = '';
             // Don't clear series - it's auto-incremented
-            // Don't clear office - keep default selection
+            // Don't clear office - it's based on main form selection
             // Don't clear formType - it's auto-detected and readonly
+            
+            // Clear preview
             document.getElementById('propertyNumberPreview').textContent = '-';
             document.getElementById('propertyNumberPreview').style.fontSize = '';
             document.getElementById('propertyNumberPreview').style.lineHeight = '';
@@ -958,19 +948,29 @@ if ($result && $row = $result->fetch_assoc()) {
             const category = document.getElementById('categorySelect').value || '030';
             const subcategory = document.getElementById('subcategorySelect').value || '01';
             const baseSeries = document.getElementById('seriesInput').value || '<?php echo $next_series; ?>';
-            const office = document.getElementById('officeSelect').value || '01';
+            const office = document.querySelector('select[name="office_location"]').value || '01';
+            
+            // Update the office display
+            const officeDisplay = document.getElementById('selectedOfficeDisplay');
+            const officeOption = document.querySelector(`select[name="office_location"] option[value="${office}"]`);
+            if (officeDisplay && officeOption) {
+                officeDisplay.value = officeOption.textContent;
+            }
             
             // Get quantity from global variable
             const quantity = window.currentQuantity || 1;
             
-            // Generate multiple property numbers using the global lastUsedSeries
+            // Generate multiple property numbers using the PAR series as base
             const propertyNumbers = [];
             for (let i = 0; i < quantity; i++) {
-                // Use the global lastUsedSeries to continue incrementing
-                const currentSeriesNumber = lastUsedSeries + i;
-                const currentSubcategorySeries = String(currentSeriesNumber).padStart(4, '0');
+                // Use the PAR series number (2 digits) and combine with subcategory (no dash)
+                const currentSeriesNumber = parseInt(baseSeries) + i;
+                const currentSeries = String(currentSeriesNumber).padStart(2, '0');
                 
-                const propertyNumber = `${year}-${formType}-${fund}-${category}-${currentSubcategorySeries}-${office}`;
+                // Combine subcategory and series without dash
+                const subcategorySeries = subcategory + currentSeries;
+                
+                const propertyNumber = `${year}-${formType}-${fund}-${category}-${subcategorySeries}-${office}`;
                 propertyNumbers.push(propertyNumber);
             }
             
@@ -999,11 +999,6 @@ if ($result && $row = $result->fetch_assoc()) {
                     // Single property number - keep as input
                     currentPropertyField.value = propertyNumbers[0];
                     currentPropertyField.style.height = 'auto';
-                    
-                    // Update lastUsedSeries
-                    const propNumParts = propertyNumbers[0].split('-');
-                    const seriesPart = propNumParts[4]; // Get the series part (0101, 0102, etc.)
-                    lastUsedSeries = parseInt(seriesPart) + 1;
                 } else {
                     // Multiple property numbers - create a textarea for multi-line display
                     const textarea = document.createElement('textarea');
@@ -1020,7 +1015,7 @@ if ($result && $row = $result->fetch_assoc()) {
                     const inputContainer = propertyNumberContainer.querySelector('input[name="property_number[]"], textarea[name="property_number[]"]');
                     inputContainer.parentNode.replaceChild(textarea, inputContainer);
                     
-                    // Add the generate button and format text if not present
+                    // Add generate button and format text if not present
                     if (!propertyNumberContainer.querySelector('button')) {
                         propertyNumberContainer.innerHTML += 
                             '<button type="button" class="btn btn-sm btn-outline-primary" onclick="showPropertyNumberGenerator(this)" title="Generate Property Number"><i class="bi bi-gear"></i> Generate</button>';
@@ -1032,11 +1027,6 @@ if ($result && $row = $result->fetch_assoc()) {
                         formatText.textContent = 'Format: YEAR-FORM-FUND-CATEGORY-SUBCATEGORY+SERIES-OFFICE';
                         propertyNumberContainer.parentNode.insertBefore(formatText, propertyNumberContainer.nextSibling);
                     }
-                    
-                    // Update lastUsedSeries to the next number after the last one
-                    const lastPropNumParts = propertyNumbers[propertyNumbers.length - 1].split('-');
-                    const lastSeriesPart = lastPropNumParts[4]; // Get the series part of the last property number
-                    lastUsedSeries = parseInt(lastSeriesPart) + 1;
                 }
                 
                 // Close modal
@@ -1084,7 +1074,7 @@ if ($result && $row = $result->fetch_assoc()) {
         // Auto-update preview when any field changes
         document.addEventListener('DOMContentLoaded', function() {
             // Add event listeners for auto-preview
-            const fields = ['fundSelect', 'categorySelect', 'subcategorySelect', 'officeSelect'];
+            const fields = ['fundSelect', 'categorySelect', 'subcategorySelect'];
             fields.forEach(fieldId => {
                 const element = document.getElementById(fieldId);
                 if (element) {
@@ -1093,28 +1083,63 @@ if ($result && $row = $result->fetch_assoc()) {
                 }
             });
             
-            // Filter subcategories based on category selection
-            document.getElementById('categorySelect').addEventListener('change', function() {
-                const selectedCategory = this.value;
+            // Add event listener for main form's office location dropdown
+            const officeLocationSelect = document.querySelector('select[name="office_location"]');
+            if (officeLocationSelect) {
+                officeLocationSelect.addEventListener('change', generatePropertyNumberPreview);
+            }
+            
+            // Filter subcategories based on category selection - separate function
+            function setupSubcategoryFilter() {
+                const categorySelect = document.getElementById('categorySelect');
                 const subcategorySelect = document.getElementById('subcategorySelect');
-                const options = subcategorySelect.querySelectorAll('option');
                 
-                options.forEach(option => {
-                    if (option.value === '') {
-                        option.style.display = 'block';
-                    } else {
-                        const optionCategory = option.getAttribute('data-category');
-                        option.style.display = (optionCategory === selectedCategory || selectedCategory === '') ? 'block' : 'none';
-                    }
-                });
-                
-                // Reset subcategory if it doesn't match the new category
-                if (subcategorySelect.value && subcategorySelect.options[subcategorySelect.selectedIndex].getAttribute('data-category') !== selectedCategory) {
-                    subcategorySelect.value = '';
+                if (categorySelect && subcategorySelect) {
+                    // Remove existing listener to prevent duplicates
+                    const newCategorySelect = categorySelect.cloneNode(true);
+                    categorySelect.parentNode.replaceChild(newCategorySelect, categorySelect);
+                    
+                    // Add event listener for category change
+                    newCategorySelect.addEventListener('change', function() {
+                        const selectedCategory = this.value;
+                        const options = subcategorySelect.querySelectorAll('option');
+                        
+                        console.log('Category changed to:', selectedCategory); // Debug log
+                        
+                        options.forEach(option => {
+                            if (option.value === '') {
+                                option.style.display = 'block';
+                            } else {
+                                const optionCategory = option.getAttribute('data-category');
+                                const shouldShow = optionCategory === selectedCategory || selectedCategory === '';
+                                option.style.display = shouldShow ? 'block' : 'none';
+                                
+                                // Debug logging
+                                if (shouldShow && option.value) {
+                                    console.log('Showing subcategory:', option.value, 'Category:', optionCategory);
+                                }
+                            }
+                        });
+                        
+                        // Reset subcategory if it doesn't match the new category
+                        if (subcategorySelect.value && subcategorySelect.options[subcategorySelect.selectedIndex].getAttribute('data-category') !== selectedCategory) {
+                            console.log('Resetting subcategory - old category:', subcategorySelect.options[subcategorySelect.selectedIndex].getAttribute('data-category'), 'new category:', selectedCategory);
+                            subcategorySelect.value = '';
+                        }
+                        
+                        generatePropertyNumberPreview();
+                    });
+                    
+                    // Add event listener for subcategory change
+                    subcategorySelect.addEventListener('change', function() {
+                        console.log('Subcategory changed to:', this.value); // Debug log
+                        generatePropertyNumberPreview();
+                    });
                 }
-                
-                generatePropertyNumberPreview();
-            });
+            }
+            
+            // Initialize the subcategory filter
+            setupSubcategoryFilter();
         });
     </script>
 </body>
