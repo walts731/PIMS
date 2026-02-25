@@ -14,22 +14,20 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (sidebarToggle && sidebar && mainWrapper) {
         function toggleSidebar() {
-            sidebar.classList.toggle('collapsed');
-            mainWrapper.classList.toggle('sidebar-collapsed');
+            sidebar.classList.toggle('show');
             
             // Save sidebar state to localStorage
-            const isCollapsed = sidebar.classList.contains('collapsed');
-            localStorage.setItem('sidebarCollapsed', isCollapsed);
+            const isShown = sidebar.classList.contains('show');
+            localStorage.setItem('sidebarShown', isShown);
             
-            console.log('Sidebar is now collapsed:', isCollapsed);
+            console.log('Sidebar is now shown:', isShown);
         }
         
         // Restore sidebar state from localStorage
-        const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-        if (isCollapsed) {
-            sidebar.classList.add('collapsed');
-            mainWrapper.classList.add('sidebar-collapsed');
-            console.log('Sidebar restored as collapsed');
+        const isShown = localStorage.getItem('sidebarShown') === 'true';
+        if (isShown) {
+            sidebar.classList.add('show');
+            console.log('Sidebar restored as shown');
         }
     } else {
         console.error('Sidebar elements not found');
@@ -39,9 +37,8 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('click', function(e) {
         if (window.innerWidth <= 768 && sidebar && mainWrapper) {
             if (!sidebar.contains(e.target) && !sidebarToggle.contains(e.target)) {
-                sidebar.classList.add('collapsed');
-                mainWrapper.classList.add('sidebar-collapsed');
-                localStorage.setItem('sidebarCollapsed', 'true');
+                sidebar.classList.remove('show');
+                localStorage.setItem('sidebarShown', 'false');
             }
         }
     });
@@ -49,13 +46,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Handle responsive sidebar
     function handleResponsiveSidebar() {
         if (window.innerWidth <= 768 && sidebar && mainWrapper) {
-            sidebar.classList.add('collapsed');
-            mainWrapper.classList.add('sidebar-collapsed');
+            sidebar.classList.remove('show');
         } else if (window.innerWidth > 768 && sidebar && mainWrapper) {
-            const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-            if (!isCollapsed) {
-                sidebar.classList.remove('collapsed');
-                mainWrapper.classList.remove('sidebar-collapsed');
+            const isShown = localStorage.getItem('sidebarShown') === 'true';
+            if (isShown) {
+                sidebar.classList.add('show');
             }
         }
     }
