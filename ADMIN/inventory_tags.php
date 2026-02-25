@@ -36,6 +36,9 @@ $types = '';
 // Always filter for serviceable items only
 $where_conditions[] = "ai.status = 'serviceable'";
 
+// Only show items that have property numbers (required for inventory tags)
+$where_conditions[] = "ai.property_no IS NOT NULL AND ai.property_no != ''";
+
 if (!empty($search)) {
     $where_conditions[] = "(ai.inventory_tag LIKE ? OR ai.property_no LIKE ? OR a.description LIKE ? OR e.lastname LIKE ? OR e.firstname LIKE ?)";
     $search_param = "%$search%";
@@ -77,7 +80,7 @@ try {
             LEFT JOIN asset_categories ac ON COALESCE(ai.category_id, a.asset_categories_id) = ac.id 
             LEFT JOIN offices o ON ai.office_id = o.id 
             LEFT JOIN employees e ON ai.employee_id = e.id 
-            $where_clause AND ai.inventory_tag IS NOT NULL AND ai.inventory_tag != ''
+            $where_clause AND ai.property_no IS NOT NULL AND ai.property_no != ''
             ORDER BY ai.created_at DESC";
     
     $stmt = $conn->prepare($sql);
@@ -132,7 +135,7 @@ try {
                 COUNT(DISTINCT CASE WHEN ai.status = 'unserviceable' THEN ai.id END) as unserviceable,
                 COUNT(DISTINCT ai.office_id) as offices_with_tags
               FROM asset_items ai 
-              WHERE ai.inventory_tag IS NOT NULL AND ai.inventory_tag != '' AND ai.status = 'serviceable'";
+              WHERE ai.property_no IS NOT NULL AND ai.property_no != '' AND ai.status = 'serviceable'";
     $result = $conn->query($sql);
     if ($result) {
         $stats = $result->fetch_assoc();
@@ -336,7 +339,7 @@ try {
                     <h1 class="mb-2">
                         <i class="bi bi-tags"></i> Inventory Tags
                     </h1>
-                    <p class="text-muted mb-0">View and print inventory tags for all tagged assets</p>
+                    <p class="text-muted mb-0">View and print inventory tags for all serviceable assets with property numbers</p>
                 </div>
                 <div class="col-md-4 text-md-end">
                     <button type="button" class="btn btn-success" onclick="printSelectedTags()">
@@ -495,9 +498,9 @@ try {
                     <h5>No Inventory Tags Found</h5>
                     <p class="text-muted">
                         <?php if (!empty($search) || $office_filter > 0 || $category_filter > 0 || !empty($status_filter)): ?>
-                            No inventory tags match your search criteria. Try adjusting your filters.
+                            No serviceable assets with property numbers match your search criteria. Try adjusting your filters.
                         <?php else: ?>
-                            No inventory tags have been created yet. Start by creating tags for your assets.
+                            No serviceable assets with property numbers found. Assets need property numbers to generate inventory tags.
                         <?php endif; ?>
                     </p>
                     <?php if (!empty($search) || $office_filter > 0 || $category_filter > 0 || !empty($status_filter)): ?>
