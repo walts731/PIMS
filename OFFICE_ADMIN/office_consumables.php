@@ -577,7 +577,6 @@ $page_title = 'Office Consumables';
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
-    <?php require_once 'includes/sidebar-scripts.php'; ?>
     
     <script>
     // Initialize DataTable
@@ -751,5 +750,8 @@ $page_title = 'Office Consumables';
         }
     }
     </script>
+    
+    <!-- Sidebar Scripts -->
+    <script src="../assets/js/sidebar.js"></script>
 </body>
 </html>
