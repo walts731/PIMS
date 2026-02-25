@@ -38,7 +38,7 @@
             </a>
         </li>
         
-        <li class="menu-header">Forms & Documents</li>
+        <!-- <li class="menu-header">Forms & Documents</li>
         <li class="menu-item">
             <a href="par_forms.php" class="menu-link">
                 <i class="bi bi-file-earmark-text"></i>
@@ -56,7 +56,7 @@
                 <i class="bi bi-file-earmark-text"></i>
                 <span class="menu-text">RIS Forms</span>
             </a>
-        </li>
+        </li> -->
         
         <li class="menu-header">Reports</li>
         <li class="menu-item">

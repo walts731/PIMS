@@ -282,11 +282,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 // Insert new user
                 $password_hash = password_hash($password, PASSWORD_DEFAULT);
                 $stmt = $conn->prepare("INSERT INTO users (username, email, password_hash, role, first_name, last_name, office) VALUES (?, ?, ?, ?, ?, ?, ?)");
-                $stmt->bind_param("sssssss", $username, $email, $password_hash, $role, $first_name, $last_name, $office_id);
+                $stmt->bind_param("ssssssi", $username, $email, $password_hash, $role, $first_name, $last_name, $office_id);
                 
                 if ($stmt->execute()) {
                     // Log user creation
-                    logSystemAction($_SESSION['user_id'], 'create_user', 'users', "Created user: {$first_name} {$last_name} ({$email}) with role: {$role}, office_id: {$office_id}");
+                    logSystemAction($_SESSION['user_id'], 'create_user', 'users', "Created user: {$first_name} {$last_name} ({$email}) with role: {$role}, office: {$office_id}");
                     
                     // Send welcome email with credentials
                     $email_sent = sendWelcomeEmail($email, $first_name, $last_name, $username, $password);
