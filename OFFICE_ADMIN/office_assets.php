@@ -31,29 +31,16 @@ $stats = [
     'disposed' => 0
 ];
 
-$user_office = $_SESSION['office'] ?? null;
-
-// Get office_id from office name
-$office_id = null;
-if ($user_office && $conn) {
-    try {
-        $office_query = "SELECT id FROM offices WHERE office_name = ? OR office_code = ?";
-        $office_stmt = $conn->prepare($office_query);
-        $office_stmt->bind_param("ss", $user_office, $user_office);
-        $office_stmt->execute();
-        $office_result = $office_stmt->get_result();
-        
-        if ($office_row = $office_result->fetch_assoc()) {
-            $office_id = $office_row['id'];
-        }
-        
-    } catch (Exception $e) {
-        error_log("Error getting office_id: " . $e->getMessage());
-    }
-}
+// Use office_id directly from session
+$office_id = $_SESSION['office_id'] ?? null;
 
 if ($office_id && $conn) {
     try {
+        // Debug: Check session and office_id values
+        error_log("DEBUG: Session office_id = " . ($office_id ?? 'NULL'));
+        error_log("DEBUG: Session office = " . ($_SESSION['office'] ?? 'NOT SET'));
+        error_log("DEBUG: Session email = " . ($_SESSION['email'] ?? 'NOT SET'));
+        
         // Fetch assets for this office
         $query = "SELECT ai.*, ac.category_name, ac.category_code 
                  FROM asset_items ai 
@@ -65,6 +52,8 @@ if ($office_id && $conn) {
         $stmt->bind_param("i", $office_id);
         $stmt->execute();
         $result = $stmt->get_result();
+        
+        error_log("DEBUG: Query executed, rows found: " . $result->num_rows);
         
         while ($row = $result->fetch_assoc()) {
             $assets[] = $row;
