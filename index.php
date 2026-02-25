@@ -71,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         } else {
             try {
                 // Prepare and execute query with parameterized statements
-                $stmt = $conn->prepare("SELECT id, username, email, password_hash, role, first_name, last_name, is_active FROM users WHERE email = ? LIMIT 1");
+                $stmt = $conn->prepare("SELECT id, username, email, password_hash, role, first_name, last_name, is_active, office FROM users WHERE email = ? LIMIT 1");
                 
                 if ($stmt === false) {
                     throw new Exception("Database error. Please try again later.");
@@ -112,28 +112,28 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $_SESSION['role'] = htmlspecialchars($user['role'], ENT_QUOTES, 'UTF-8');
                         $_SESSION['first_name'] = htmlspecialchars($user['first_name'], ENT_QUOTES, 'UTF-8');
                         $_SESSION['last_name'] = htmlspecialchars($user['last_name'], ENT_QUOTES, 'UTF-8');
-                        $_SESSION['office'] = htmlspecialchars($user['office'], ENT_QUOTES, 'UTF-8'); // Office name
-                        $_SESSION['office_id'] = null; // Will be set below if office exists
+                        $_SESSION['office_id'] = $user['office']; // Office ID directly from users table
+                        $_SESSION['office'] = null; // Will be set below if office exists
                         $_SESSION['logged_in'] = true;
                         $_SESSION['login_time'] = time();
                         $_SESSION['ip_address'] = $_SERVER['REMOTE_ADDR'];
                         $_SESSION['user_agent'] = $_SERVER['HTTP_USER_AGENT'];
                         
-                        // Set office_id from office name if office exists
+                        // Set office name from office_id if office exists
                         if (!empty($user['office'])) {
                             try {
-                                $office_query = "SELECT id FROM offices WHERE office_name = ? OR office_code = ?";
+                                $office_query = "SELECT office_name FROM offices WHERE id = ?";
                                 $office_stmt = $conn->prepare($office_query);
-                                $office_stmt->bind_param("ss", $user['office'], $user['office']);
+                                $office_stmt->bind_param("i", $user['office']);
                                 $office_stmt->execute();
                                 $office_result = $office_stmt->get_result();
                                 
                                 if ($office_row = $office_result->fetch_assoc()) {
-                                    $_SESSION['office_id'] = $office_row['id'];
+                                    $_SESSION['office'] = $office_row['office_name'];
                                 }
                                 
                             } catch (Exception $e) {
-                                error_log("Error setting office_id during login: " . $e->getMessage());
+                                error_log("Error setting office name during login: " . $e->getMessage());
                             }
                         }
                         

@@ -39,19 +39,18 @@ body {
 .sidebar {
     position: fixed;
     top: 0;
-    left: 0;
+    left: -280px;
     width: 280px;
     height: 100vh;
     background: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%);
     z-index: 1000;
-    transition: transform 0.3s ease;
+    transition: left 0.3s ease-in-out;
     overflow-y: auto;
     box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-    transform: translateX(-100%);
 }
 
 .sidebar.show {
-    transform: translateX(0);
+    left: 0;
 }
 
 .sidebar-header {
@@ -341,11 +340,11 @@ nav.topbar,
     }
     
     .sidebar {
-        transform: translateX(-100%);
+        left: -280px;
     }
     
     .sidebar.show {
-        transform: translateX(0);
+        left: 0;
     }
     
     .sidebar-toggle {
@@ -355,11 +354,11 @@ nav.topbar,
 
 @media (min-width: 1025px) {
     .sidebar {
-        transform: translateX(-100%);
+        left: -280px;
     }
     
     .sidebar.show {
-        transform: translateX(0);
+        left: 0;
     }
     
     .main-content {
