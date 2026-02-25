@@ -38,6 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $property_numbers = $_POST['property_number'] ?? [];
         $dates_acquired = $_POST['date_acquired'] ?? [];
         $amounts = $_POST['amount'] ?? [];
+        $asset_ids = []; // Track created asset IDs for notifications
         
         // Validate required fields
         if (empty($entity_name) || empty($fund_cluster) || empty($par_no) || empty($office_location) || empty($received_by) || empty($issued_by)) {
@@ -127,6 +128,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 $asset_id = $asset_stmt->insert_id;
                 $asset_stmt->close();
+                
+                // Track asset ID for notifications
+                $asset_ids[] = $asset_id;
                 
                 // Now insert PAR item with the correct asset_id
                 $item_stmt->bind_param("iidssdsd", $par_form_id, $asset_id, $quantity, $units[$i], $descriptions[$i], $property_number, $date_acquired, $amount);
@@ -233,6 +237,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Set success message
         $_SESSION['success_message'] = "PAR form saved successfully! PAR Number: $par_no";
         
+        // Create notifications for MAIN_USER for each asset created
+        createMainUserNotificationsForPAR($descriptions, $asset_ids);
+        
         // Redirect back to the form
         header('Location: par_form.php');
         exit();
@@ -256,5 +263,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Not a POST request
     header('Location: par_form.php');
     exit();
+}
+
+// Function to create notifications for MAIN_USER when PAR assets are created
+function createMainUserNotificationsForPAR($descriptions, $asset_ids) {
+    global $conn;
+    
+    // Get all MAIN_USER users
+    $main_users_query = "SELECT id FROM users WHERE role = 'main_user' AND status = 'active'";
+    $main_users_result = $conn->query($main_users_query);
+    
+    if ($main_users_result && $main_users_result->num_rows > 0) {
+        while ($main_user = $main_users_result->fetch_assoc()) {
+            $user_id = $main_user['id'];
+            
+            // Create notification for each asset
+            foreach ($descriptions as $index => $description) {
+                if (!empty($description) && isset($asset_ids[$index])) {
+                    $asset_id = $asset_ids[$index];
+                    $title = "New Asset Added via PAR";
+                    $message = "A new asset '{$description}' has been added to the system via PAR form.";
+                    $type = "success";
+                    $related_id = $asset_id;
+                    $related_type = "asset";
+                    
+                    // Insert notification
+                    $sql = "INSERT INTO notifications (user_id, title, message, type, related_id, related_type, created_at) 
+                            VALUES (?, ?, ?, ?, ?, ?, NOW())";
+                    
+                    $stmt = $conn->prepare($sql);
+                    $stmt->bind_param('issssi', $user_id, $title, $message, $type, $related_id, $related_type);
+                    $stmt->execute();
+                }
+            }
+        }
+    }
 }
 ?>
