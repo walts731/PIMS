@@ -431,6 +431,9 @@ try {
     
     $_SESSION['success'] = 'Asset tag created successfully!';
     
+    // Create notification for MAIN_USER
+    createMainUserAssetTagNotification($item_id, $property_no);
+    
     // Redirect back to asset items page
     $redirect_sql = "SELECT asset_id FROM asset_items WHERE id = ?";
     $redirect_stmt = $conn->prepare($redirect_sql);
@@ -449,5 +452,50 @@ try {
     $_SESSION['error'] = 'Error creating tag: ' . $e->getMessage();
     header('Location: create_tag.php?id=' . $item_id);
     exit();
+}
+
+// Function to create notifications for MAIN_USER when asset tag is created
+function createMainUserAssetTagNotification($asset_item_id, $property_no) {
+    global $conn;
+    
+    // Get asset item details
+    $item_query = "SELECT ai.description, a.description as asset_description 
+                   FROM asset_items ai 
+                   LEFT JOIN assets a ON ai.asset_id = a.id 
+                   WHERE ai.id = ?";
+    $item_stmt = $conn->prepare($item_query);
+    $item_stmt->bind_param("i", $asset_item_id);
+    $item_stmt->execute();
+    $item_result = $item_stmt->get_result();
+    
+    if ($item_result && $item_row = $item_result->fetch_assoc()) {
+        $item_description = $item_row['description'];
+        $asset_description = $item_row['asset_description'];
+        
+        // Get all MAIN_USER users
+        $main_users_query = "SELECT id FROM users WHERE role = 'main_user' AND status = 'active'";
+        $main_users_result = $conn->query($main_users_query);
+        
+        if ($main_users_result && $main_users_result->num_rows > 0) {
+            while ($main_user = $main_users_result->fetch_assoc()) {
+                $user_id = $main_user['id'];
+                $title = "Asset Tag Created";
+                $message = "Asset '{$item_description}' has been tagged with property number: {$property_no}.";
+                $type = "success";
+                $related_id = $asset_item_id;
+                $related_type = "asset_item";
+                
+                // Insert notification
+                $sql = "INSERT INTO notifications (user_id, title, message, type, related_id, related_type, created_at) 
+                        VALUES (?, ?, ?, ?, ?, ?, NOW())";
+                
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param('issssi', $user_id, $title, $message, $type, $related_id, $related_type);
+                $stmt->execute();
+            }
+        }
+    }
+    
+    $item_stmt->close();
 }
 ?>
