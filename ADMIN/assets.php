@@ -182,6 +182,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                     $message_type = "success";
                     
                     logSystemAction($_SESSION['user_id'], 'asset_added', 'asset_management', "Added asset: {$description}");
+                    
+                    // Create notification for MAIN_USER
+                    createMainUserNotification($asset_id, $description);
                 } else {
                     throw new Exception("Failed to insert asset: " . $conn->error);
                 }
@@ -972,3 +975,33 @@ try {
     </script>
 </body>
 </html>
+
+<?php
+// Function to create notification for MAIN_USER when asset is added
+function createMainUserNotification($asset_id, $asset_description) {
+    global $conn;
+    
+    // Get all MAIN_USER users
+    $main_users_query = "SELECT id FROM users WHERE role = 'main_user' AND status = 'active'";
+    $main_users_result = $conn->query($main_users_query);
+    
+    if ($main_users_result && $main_users_result->num_rows > 0) {
+        while ($main_user = $main_users_result->fetch_assoc()) {
+            $user_id = $main_user['id'];
+            $title = "New Asset Added";
+            $message = "A new asset '{$asset_description}' has been added to the system.";
+            $type = "success";
+            $related_id = $asset_id;
+            $related_type = "asset";
+            
+            // Insert notification
+            $sql = "INSERT INTO notifications (user_id, title, message, type, related_id, related_type, created_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, NOW())";
+            
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param('issssi', $user_id, $title, $message, $type, $related_id, $related_type);
+            $stmt->execute();
+        }
+    }
+}
+?>

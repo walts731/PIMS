@@ -38,6 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $total_costs = $_POST['total_cost'] ?? [];
         $descriptions = $_POST['description'] ?? [];
         $useful_lives = $_POST['useful_life'] ?? [];
+        $asset_ids = []; // Track created asset IDs for notifications
         
         // Validate required fields
         if (empty($entity_name) || empty($fund_cluster)) {
@@ -116,6 +117,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 $asset_id = $asset_stmt->insert_id;
                 $asset_stmt->close();
+                
+                // Track asset ID for notifications
+                $asset_ids[] = $asset_id;
                 
                 // Insert multiple asset items based on quantity
                 $asset_item_stmt = $conn->prepare("INSERT INTO asset_items (asset_id, ics_id, description, unit, status, value, acquisition_date, office_id, created_at, last_updated) VALUES (?, ?, ?, ?, 'no_tag', ?, CURDATE(), ?, NOW(), NOW())");
@@ -200,6 +204,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Set success message
         $_SESSION['success_message'] = "ICS form saved successfully! ICS Number: $ics_no";
         
+        // Create notifications for MAIN_USER for each asset created
+        createMainUserNotificationsForICS($descriptions, $asset_ids);
+        
         // Redirect back to form
         header('Location: ics_form.php');
         exit();
@@ -223,5 +230,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Not a POST request
     header('Location: ics_form.php');
     exit();
+}
+
+// Function to create notifications for MAIN_USER when ICS assets are created
+function createMainUserNotificationsForICS($descriptions, $asset_ids) {
+    global $conn;
+    
+    // Get all MAIN_USER users
+    $main_users_query = "SELECT id FROM users WHERE role = 'main_user' AND status = 'active'";
+    $main_users_result = $conn->query($main_users_query);
+    
+    if ($main_users_result && $main_users_result->num_rows > 0) {
+        while ($main_user = $main_users_result->fetch_assoc()) {
+            $user_id = $main_user['id'];
+            
+            // Create notification for each asset
+            foreach ($descriptions as $index => $description) {
+                if (!empty($description) && isset($asset_ids[$index])) {
+                    $asset_id = $asset_ids[$index];
+                    $title = "New Asset Added via ICS";
+                    $message = "A new asset '{$description}' has been added to the system via ICS form.";
+                    $type = "success";
+                    $related_id = $asset_id;
+                    $related_type = "asset";
+                    
+                    // Insert notification
+                    $sql = "INSERT INTO notifications (user_id, title, message, type, related_id, related_type, created_at) 
+                            VALUES (?, ?, ?, ?, ?, ?, NOW())";
+                    
+                    $stmt = $conn->prepare($sql);
+                    $stmt->bind_param('issssi', $user_id, $title, $message, $type, $related_id, $related_type);
+                    $stmt->execute();
+                }
+            }
+        }
+    }
 }
 ?>
