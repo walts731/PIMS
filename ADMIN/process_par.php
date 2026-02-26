@@ -40,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $amounts = $_POST['amount'] ?? [];
         
         // Validate required fields
-        if (empty($entity_name) || empty($fund_cluster) || empty($par_no) || empty($office_location) || empty($received_by) || empty($issued_by)) {
+        if (empty($par_no) || empty($office_location) || empty($received_by) || empty($issued_by)) {
             throw new Exception('All required fields must be filled');
         }
         
@@ -153,10 +153,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $unit = $conn->real_escape_string($units[$i]);
                     $status = 'no_tag';
                     $acquisition_date_sql = !empty($date_acquired) ? "'$date_acquired'" : 'NULL';
-                    $unit_cost_sql = !empty($unit_cost) ? $unit_cost : 'NULL';
+                    // Use the exact total amount for each individual item (not divided)
+                    $value_sql = !empty($amount) ? $amount : 'NULL';
                     
                     $sql = "INSERT INTO asset_items (asset_id, par_id, description, unit, status, value, acquisition_date, office_id, created_at, last_updated) 
-                           VALUES ($asset_id, $par_form_id, '$description', '$unit', '$status', $unit_cost_sql, $acquisition_date_sql, $office_id, NOW(), NOW())";
+                           VALUES ($asset_id, $par_form_id, '$description', '$unit', '$status', $value_sql, $acquisition_date_sql, $office_id, NOW(), NOW())";
                     
                     if (!$conn->query($sql)) {
                         throw new Exception('Failed to save asset item ' . $item_num . ': ' . $conn->error);
