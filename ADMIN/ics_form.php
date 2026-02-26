@@ -318,22 +318,22 @@ if ($result && $row = $result->fetch_assoc()) {
                             <div class="row mb-3">
                                 <div class="col-md-4">
                                     <label class="form-label"><strong>Entity Name:</strong></label>
-                                    <select class="form-select" name="entity_name" required>
-                                        <option value="">Select Office</option>
+                                    <input type="text" class="form-control" name="entity_name" id="entityNameInput" list="entityNameList" placeholder="Type or select entity name">
+                                    <datalist id="entityNameList">
                                         <?php
-                                        // Get offices from database
-                                        $offices_result = $conn->query("SELECT office_code, office_name FROM offices WHERE status = 'active' ORDER BY office_code");
+                                        // Get offices from database for dropdown options
+                                        $offices_result = $conn->query("SELECT office_code, office_name FROM offices WHERE status = 'active' ORDER BY office_name");
                                         if ($offices_result) {
                                             while ($office = $offices_result->fetch_assoc()) {
-                                                echo '<option value="' . htmlspecialchars($office['office_code']) . '">' . htmlspecialchars($office['office_name']) . '</option>';
+                                                echo '<option value="' . htmlspecialchars($office['office_name']) . '">';
                                             }
                                         }
                                         ?>
-                                    </select>
+                                    </datalist>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label"><strong>Fund Cluster:</strong></label>
-                                    <input type="text" class="form-control" name="fund_cluster" required>
+                                    <input type="text" class="form-control" name="fund_cluster">
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label"><strong>ICS No:</strong></label>
@@ -732,15 +732,14 @@ if ($result && $row = $result->fetch_assoc()) {
             });
         });
         
-        // Auto-generate ICS number when entity name is selected
+        // Auto-generate ICS number when entity name is entered
         function generateICSNumber() {
-            const entitySelect = document.querySelector('select[name="entity_name"]');
+            const entityInput = document.querySelector('input[name="entity_name"]');
             const icsNoField = document.getElementById('ics_no');
             
-            if (entitySelect.value && icsNoField) {
-                // Get selected entity name from the option text
-                const selectedOption = entitySelect.options[entitySelect.selectedIndex];
-                const entityName = selectedOption.text.trim();
+            if (entityInput.value && icsNoField) {
+                // Get entity name from input field
+                const entityName = entityInput.value.trim();
                 
                 // Get current year (last 2 digits)
                 const currentYear = new Date().getFullYear().toString().slice(-2);
@@ -757,11 +756,12 @@ if ($result && $row = $result->fetch_assoc()) {
             }
         }
         
-        // Add event listener to entity name dropdown
+        // Add event listener to entity name input
         document.addEventListener('DOMContentLoaded', function() {
-            const entitySelect = document.querySelector('select[name="entity_name"]');
-            if (entitySelect) {
-                entitySelect.addEventListener('change', generateICSNumber);
+            const entityInput = document.querySelector('input[name="entity_name"]');
+            if (entityInput) {
+                entityInput.addEventListener('input', generateICSNumber);
+                entityInput.addEventListener('blur', generateICSNumber);
             }
             
             // Initialize grand total
