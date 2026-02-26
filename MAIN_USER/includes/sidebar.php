@@ -27,6 +27,15 @@ $current_page = basename($_SERVER['PHP_SELF']);
     color: white;
 }
 
+.sidebar-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
 .sidebar-nav {
     padding: 1rem 0;
 }
@@ -141,24 +150,24 @@ $current_page = basename($_SERVER['PHP_SELF']);
         padding: 1rem;
         max-height: calc(100vh - 60px);
     }
-
+    
     .navbar-brand {
         font-size: 1.2rem;
     }
-
+    
     .sidebar {
         width: 100%;
         left: -100%;
     }
-
+    
     .main-wrapper.sidebar-active {
         margin-left: 0;
     }
-
+    
     .navbar.sidebar-active {
         padding-left: 80px;
     }
-
+    
     .sidebar-toggle.sidebar-active {
         left: 20px;
     }
@@ -187,9 +196,13 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <i class="bi bi-box-seam"></i>
             Assets
         </a>
-        <a href="asset_items.php" class="sidebar-nav-item <?php echo $current_page == 'asset_items.php' ? 'active' : ''; ?>">
-            <i class="bi bi-collection"></i>
-            Asset Items
+        <a href="offices.php" class="sidebar-nav-item <?php echo $current_page == 'offices.php' ? 'active' : ''; ?>">
+            <i class="bi bi-building"></i>
+            Offices
+        </a>
+        <a href="scan_qr.php" class="sidebar-nav-item <?php echo $current_page == 'scan_qr.php' ? 'active' : ''; ?>">
+            <i class="bi bi-qr-code-scan"></i>
+            QR Scanner
         </a>
         <a href="#" class="sidebar-nav-item" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
             <i class="bi bi-key"></i>

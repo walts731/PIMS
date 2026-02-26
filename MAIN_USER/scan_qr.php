@@ -169,41 +169,47 @@ logSystemAction($_SESSION['user_id'], 'access', 'main_user_scan_qr', 'Main user 
             resultContainer.style.display = 'block';
             errorContainer.style.display = 'none';
 
-            // Try to find asset item by property number or QR code
-            fetch('search_handler.php?q=' + encodeURIComponent(decodedText))
-                .then(response => response.text())
-                .then(html => {
-                    // If we get a redirect, it means there's exactly one result
-                    if (html.includes('You are being redirected')) {
-                        // Extract the redirect URL
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(html, 'text/html');
-                        const meta = doc.querySelector('meta[http-equiv="refresh"]');
-                        if (meta) {
-                            const content = meta.getAttribute('content');
-                            const url = content.split('url=')[1];
-                            resultActions.innerHTML = `
-                                <a href="${url}" class="btn btn-primary">
-                                    <i class="bi bi-eye me-2"></i>View Asset Item
-                                </a>
-                            `;
-                        }
-                    } else {
-                        // Multiple results or no results
-                        resultActions.innerHTML = `
-                            <a href="search_handler.php?q=${encodeURIComponent(decodedText)}" class="btn btn-primary">
-                                <i class="bi bi-search me-2"></i>View Search Results
+            // Process QR code like admin version - direct redirect
+            try {
+                // Extract asset item ID from QR code
+                const assetItemId = decodedText.trim();
+                
+                // Validate that it's a numeric ID
+                if (!/^\d+$/.test(assetItemId)) {
+                    throw new Error('Invalid QR code format');
+                }
+                
+                console.log('Asset Item ID:', assetItemId);
+                
+                // Show loading state
+                resultActions.innerHTML = `
+                    <div class="d-flex align-items-center">
+                        <div class="spinner-border spinner-border-sm me-2" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <span>Processing QR code...</span>
+                    </div>
+                `;
+                
+                // Redirect to view_asset_item.php after a short delay
+                setTimeout(() => {
+                    window.location.href = `view_asset_item.php?id=${assetItemId}`;
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Error processing QR code:', error);
+                resultActions.innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Invalid QR code format. Please scan a valid asset QR code.
+                        <div class="mt-2">
+                            <a href="search_handler.php?q=${encodeURIComponent(decodedText)}" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-search me-2"></i>Search for this code
                             </a>
-                        `;
-                    }
-                })
-                .catch(err => {
-                    resultActions.innerHTML = `
-                        <a href="search_handler.php?q=${encodeURIComponent(decodedText)}" class="btn btn-primary">
-                            <i class="bi bi-search me-2"></i>View Search Results
-                        </a>
-                    `;
-                });
+                        </div>
+                    </div>
+                `;
+            }
         }
 
         function showError(message) {
