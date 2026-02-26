@@ -22,6 +22,10 @@ if ($_SESSION['role'] !== 'office_admin' && $_SESSION['role'] !== 'admin' && $_S
 // Set page title for topbar
 $page_title = 'Office Assets';
 
+// Handle filter parameters
+$category_filter = isset($_GET['category']) ? intval($_GET['category']) : 0;
+$status_filter = isset($_GET['status']) ? trim($_GET['status']) : '';
+
 // Get office-specific assets
 $assets = [];
 $stats = [
@@ -41,15 +45,35 @@ if ($office_id && $conn) {
         error_log("DEBUG: Session office = " . ($_SESSION['office'] ?? 'NOT SET'));
         error_log("DEBUG: Session email = " . ($_SESSION['email'] ?? 'NOT SET'));
         
-        // Fetch assets for this office
+        // Fetch assets for this office with filters
         $query = "SELECT ai.*, ac.category_name, ac.category_code 
                  FROM asset_items ai 
                  LEFT JOIN asset_categories ac ON ai.asset_category_id = ac.id 
-                 WHERE ai.office_id = ? 
-                 ORDER BY ai.created_at DESC";
+                 WHERE ai.office_id = ?";
+        
+        $params = [$office_id];
+        $types = 'i';
+        
+        if ($category_filter > 0) {
+            $query .= " AND ai.asset_category_id = ?";
+            $params[] = $category_filter;
+            $types .= 'i';
+        }
+        
+        if (!empty($status_filter)) {
+            $query .= " AND ai.status = ?";
+            $params[] = $status_filter;
+            $types .= 's';
+        }
+        
+        $query .= " ORDER BY ai.created_at DESC";
         
         $stmt = $conn->prepare($query);
-        $stmt->bind_param("i", $office_id);
+        if (!empty($params)) {
+            $stmt->bind_param($types, ...$params);
+        } else {
+            $stmt->bind_param("i", $office_id);
+        }
         $stmt->execute();
         $result = $stmt->get_result();
         
@@ -74,6 +98,19 @@ if ($office_id && $conn) {
     } catch (Exception $e) {
         error_log("Error fetching assets: " . $e->getMessage());
     }
+}
+
+// Get asset categories for dropdown filter
+$categories = [];
+try {
+    $result = $conn->query("SELECT id, description FROM asset_categories ORDER BY description");
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $categories[] = $row;
+        }
+    }
+} catch (Exception $e) {
+    error_log("Error fetching categories: " . $e->getMessage());
 }
 ?>
 
@@ -407,7 +444,36 @@ if ($office_id && $conn) {
             <div class="col-12">
                 <div class="card border-0 shadow-lg rounded-4">
                     <div class="card-header bg-primary text-white rounded-top-4">
-                        <h6 class="mb-0"><i class="bi bi-box-seam"></i> Office Assets Inventory</h6>
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <h6 class="mb-0"><i class="bi bi-box-seam"></i> Office Assets Inventory</h6>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="row g-2">
+                                    <div class="col-md-6">
+                                        <select class="form-select form-select-sm" id="categoryFilter">
+                                            <option value="">All Categories</option>
+                                            <?php foreach ($categories as $category): ?>
+                                                <option value="<?php echo $category['id']; ?>" <?php echo $category_filter == $category['id'] ? 'selected' : ''; ?>>
+                                                    <?php echo htmlspecialchars($category['description']); ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <select class="form-select form-select-sm" id="statusFilter">
+                                            <option value="">All Status</option>
+                                            <option value="available" <?php echo $status_filter == 'available' ? 'selected' : ''; ?>>Available</option>
+                                            <option value="in_use" <?php echo $status_filter == 'in_use' ? 'selected' : ''; ?>>In Use</option>
+                                            <option value="maintenance" <?php echo $status_filter == 'maintenance' ? 'selected' : ''; ?>>Maintenance</option>
+                                            <option value="unserviceable" <?php echo $status_filter == 'unserviceable' ? 'selected' : ''; ?>>Unserviceable</option>
+                                            <option value="disposed" <?php echo $status_filter == 'disposed' ? 'selected' : ''; ?>>Disposed</option>
+                                            <option value="no_tag" <?php echo $status_filter == 'no_tag' ? 'selected' : ''; ?>>No Tag</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
@@ -417,6 +483,7 @@ if ($office_id && $conn) {
                                         <th>Asset</th>
                                         <th>Category</th>
                                         <th>Status</th>
+                                        <th>Quantity</th>
                                         <th>Value</th>
                                         <th>Acquisition Date</th>
                                         <th>Actions</th>
@@ -428,6 +495,7 @@ if ($office_id && $conn) {
                                             <td><?php echo htmlspecialchars($asset['description']); ?></td>
                                             <td><?php echo htmlspecialchars($asset['category_name'] ?? 'Uncategorized'); ?></td>
                                             <td><?php echo ucfirst(str_replace('_', ' ', $asset['status'])); ?></td>
+                                            <td>1</td>
                                             <td>₱<?php echo number_format($asset['value'] ?? 0, 2); ?></td>
                                             <td><?php echo !empty($asset['acquisition_date']) ? date('M j, Y', strtotime($asset['acquisition_date'])) : 'Not set'; ?></td>
                                             <td>
@@ -669,7 +737,14 @@ if ($office_id && $conn) {
                 responsive: true,
                 pageLength: 10,
                 lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]],
-                order: [[4, 'desc']], // Sort by acquisition date descending
+                order: [[5, 'desc']], // Sort by acquisition date descending (new column index)
+                columnDefs: [
+                    {
+                        targets: -1, // Actions column (last column)
+                        orderable: false,
+                        searchable: false
+                    }
+                ],
                 language: {
                     search: "Search assets:",
                     lengthMenu: "Show _MENU_ assets",
@@ -683,6 +758,34 @@ if ($office_id && $conn) {
                         previous: "Previous"
                     }
                 }
+            });
+            
+            // Category filter - reload page with filter parameter
+            $('#categoryFilter').on('change', function() {
+                const categoryValue = this.value;
+                const currentUrl = new URL(window.location);
+                
+                if (categoryValue) {
+                    currentUrl.searchParams.set('category', categoryValue);
+                } else {
+                    currentUrl.searchParams.delete('category');
+                }
+                currentUrl.searchParams.delete('page'); // Reset pagination
+                window.location.href = currentUrl.toString();
+            });
+            
+            // Status filter - reload page with filter parameter
+            $('#statusFilter').on('change', function() {
+                const statusValue = this.value;
+                const currentUrl = new URL(window.location);
+                
+                if (statusValue) {
+                    currentUrl.searchParams.set('status', statusValue);
+                } else {
+                    currentUrl.searchParams.delete('status');
+                }
+                currentUrl.searchParams.delete('page'); // Reset pagination
+                window.location.href = currentUrl.toString();
             });
         });
         
