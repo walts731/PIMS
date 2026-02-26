@@ -9,9 +9,11 @@ $next_series = '01';
 $current_year = date('Y');
 
 // Query to get the maximum series number for the current year
-$query = "SELECT MAX(CAST(SUBSTRING(property_number, -4, 2) AS UNSIGNED)) as max_series 
+// Property number format: YYYY-FORMTYPE-FUND-CATEGORY-SUBCATEGORY+SERIES-OFFICE
+// We need to extract the SERIES part (last 2 digits of the subcategory+series combination)
+$query = "SELECT MAX(CAST(RIGHT(SUBSTRING_INDEX(SUBSTRING_INDEX(property_no, '-', -2), '-', 1), 2) AS UNSIGNED)) as max_series 
           FROM asset_items 
-          WHERE property_number LIKE ?";
+          WHERE property_no LIKE ?";
 
 $stmt = $conn->prepare($query);
 if ($stmt) {
