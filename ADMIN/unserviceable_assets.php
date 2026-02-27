@@ -26,8 +26,9 @@ $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 $office_filter = isset($_GET['office']) ? intval($_GET['office']) : '';
 $category_filter = isset($_GET['category']) ? intval($_GET['category']) : '';
 
-// Build query
-$where_conditions = ["ai.status = 'unserviceable'"];
+// Build query to include both main unserviceable assets and assets with unserviceable components
+$where_conditions = ["(ai.status = 'unserviceable' OR 
+                      (adc.monitor_status = 'unserviceable' OR adc.ups_status = 'unserviceable'))"];
 $params = [];
 $types = '';
 
@@ -57,11 +58,13 @@ $where_clause = "WHERE " . implode(" AND ", $where_conditions);
 // Get unserviceable assets
 $unserviceable_assets = [];
 $sql = "SELECT ai.*, ac.category_name, 
-               ac.category_code, o.office_name, e.firstname, e.lastname, e.position
+               ac.category_code, o.office_name, e.firstname, e.lastname, e.position,
+               adc.monitor_status, adc.ups_status, adc.monitor_name, adc.ups_name
         FROM asset_items ai 
         LEFT JOIN asset_categories ac ON ai.category_id = ac.id 
         LEFT JOIN offices o ON ai.office_id = o.id 
         LEFT JOIN employees e ON ai.employee_id = e.id 
+        LEFT JOIN asset_desktop_computers adc ON ai.id = adc.asset_item_id
         $where_clause 
         ORDER BY ai.last_updated DESC";
 
@@ -360,6 +363,15 @@ if ($categories_result) {
                                 <tr>
                                     <td>
                                         <strong><?php echo htmlspecialchars($asset['description']); ?></strong>
+                                        <?php 
+                                        // Show component details if components are unserviceable
+                                        if ($asset['monitor_status'] === 'unserviceable' && !empty($asset['monitor_name'])) {
+                                            echo '<br><small class="text-danger"><i class="bi bi-display"></i> Monitor: ' . htmlspecialchars($asset['monitor_name']) . '</small>';
+                                        }
+                                        if ($asset['ups_status'] === 'unserviceable' && !empty($asset['ups_name'])) {
+                                            echo '<br><small class="text-danger"><i class="bi bi-battery-charging"></i> UPS: ' . htmlspecialchars($asset['ups_name']) . '</small>';
+                                        }
+                                        ?>
                                         <?php if (!empty($asset['property_number'])): ?>
                                             <br><small class="text-muted">Property No: <?php echo htmlspecialchars($asset['property_number']); ?></small>
                                         <?php endif; ?>
@@ -374,9 +386,31 @@ if ($categories_result) {
                                         <?php endif; ?>
                                     </td>
                                     <td>
-                                        <span class="status-badge status-maintenance">
-                                            Unserviceable
-                                        </span>
+                                        <?php
+                                        // Determine what is unserviceable
+                                        $unserviceable_items = [];
+                                        
+                                        if ($asset['status'] === 'unserviceable') {
+                                            $unserviceable_items[] = 'Main Asset';
+                                        }
+                                        
+                                        if ($asset['monitor_status'] === 'unserviceable') {
+                                            $unserviceable_items[] = 'Monitor';
+                                        }
+                                        
+                                        if ($asset['ups_status'] === 'unserviceable') {
+                                            $unserviceable_items[] = 'UPS';
+                                        }
+                                        
+                                        if (!empty($unserviceable_items)) {
+                                            foreach ($unserviceable_items as $item) {
+                                                $badge_class = $item === 'Main Asset' ? 'status-unserviceable' : 'status-maintenance';
+                                                echo "<span class='status-badge $badge_class'>$item</span><br>";
+                                            }
+                                        } else {
+                                            echo "<span class='status-badge status-maintenance'>Unserviceable</span>";
+                                        }
+                                        ?>
                                     </td>
                                     <td class="text-value">₱<?php echo number_format($asset['value'], 2); ?></td>
                                     <td><?php echo htmlspecialchars($asset['office_name'] ?? 'N/A'); ?></td>
