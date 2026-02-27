@@ -462,22 +462,12 @@ $status_display = formatStatus($item['status']);
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <div class="detail-label">Asset Description</div>
-                                    <div class="detail-value"><?php echo htmlspecialchars($item['asset_description']); ?></div>
-                                </div>
-                                <div class="mb-3">
                                     <div class="detail-label">Category</div>
                                     <div class="detail-value"><?php echo htmlspecialchars($item['category_code'] . ' - ' . $item['category_name']); ?></div>
                                 </div>
                                 <div class="mb-3">
                                     <div class="detail-label">Unit</div>
                                     <div class="detail-value"><?php echo htmlspecialchars($item['unit']); ?></div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <div class="detail-label">Unit Cost</div>
-                                    <div class="detail-value">₱<?php echo number_format($item['unit_cost'], 2); ?></div>
                                 </div>
                             </div>
                         </div>
