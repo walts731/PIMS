@@ -43,6 +43,20 @@ if ($item_row = $item_result->fetch_assoc()) {
 }
 $item_stmt->close();
 
+// Get existing desktop computer data if it's a desktop computer
+$desktop_data = [];
+if ($item && $item['asset_subcategory_id']) {
+    $desktop_sql = "SELECT * FROM asset_desktop_computers WHERE asset_item_id = ?";
+    $desktop_stmt = $conn->prepare($desktop_sql);
+    $desktop_stmt->bind_param("i", $item_id);
+    $desktop_stmt->execute();
+    $desktop_result = $desktop_stmt->get_result();
+    if ($desktop_row = $desktop_result->fetch_assoc()) {
+        $desktop_data = $desktop_row;
+    }
+    $desktop_stmt->close();
+}
+
 if (!$item) {
     $_SESSION['error'] = 'Asset item not found';
     header('Location: asset_items.php');
@@ -550,9 +564,21 @@ $category_fields = [
                 'monitor_name': {'label': 'Monitor Name', 'type': 'text', 'required': false},
                 'monitor_model': {'label': 'Monitor Model', 'type': 'text', 'required': false},
                 'monitor_serial_number': {'label': 'Monitor Serial Number', 'type': 'text', 'required': false},
+                'monitor_status': {'label': 'Monitor Status', 'type': 'select', 'required': false, 'options': [
+                    {'value': 'serviceable', 'text': 'Serviceable'},
+                    {'value': 'unserviceable', 'text': 'Unserviceable'},
+                    {'value': 'red_tagged', 'text': 'Red Tagged'},
+                    {'value': 'no_tag', 'text': 'No Tag'}
+                ]},
                 'ups_name': {'label': 'UPS Name', 'type': 'text', 'required': false},
                 'ups_model': {'label': 'UPS Model', 'type': 'text', 'required': false},
-                'ups_serial_number': {'label': 'UPS Serial Number', 'type': 'text', 'required': false}
+                'ups_serial_number': {'label': 'UPS Serial Number', 'type': 'text', 'required': false},
+                'ups_status': {'label': 'UPS Status', 'type': 'select', 'required': false, 'options': [
+                    {'value': 'serviceable', 'text': 'Serviceable'},
+                    {'value': 'unserviceable', 'text': 'Unserviceable'},
+                    {'value': 'red_tagged', 'text': 'Red Tagged'},
+                    {'value': 'no_tag', 'text': 'No Tag'}
+                ]}
             }
         };
         
@@ -615,14 +641,31 @@ $category_fields = [
                 const isHalfWidth = ['text', 'number', 'date'].includes(fieldConfig.type);
                 const columnClass = isHalfWidth ? 'col-md-6' : 'col-md-12';
                 
-                fieldsHtml += `
+                let fieldHtml = '';
+                if (fieldConfig.type === 'select') {
+                    fieldHtml = `
                     <div class="${columnClass}">
                         <div class="mb-3">
                             <label for="${fieldName}" class="form-label">${fieldConfig.label} ${fieldConfig.required ? '<span class="required">*</span>' : ''}</label>
-                            <input type="${fieldConfig.type}" class="form-control" id="${fieldName}" name="${fieldName}" ${fieldConfig.required ? 'required' : ''}>
+                            <select class="form-select" id="${fieldName}" name="${fieldName}" ${fieldConfig.required ? 'required' : ''}>
+                                <option value="">Select Status</option>
+                                ${fieldConfig.options.map(option => `<option value="${option.value}" ${window.existingDesktopData && window.existingDesktopData[fieldName] === option.value ? 'selected' : ''}>${option.text}</option>`).join('')}
+                            </select>
                         </div>
                     </div>
-                `;
+                    `;
+                } else {
+                    fieldHtml = `
+                    <div class="${columnClass}">
+                        <div class="mb-3">
+                            <label for="${fieldName}" class="form-label">${fieldConfig.label} ${fieldConfig.required ? '<span class="required">*</span>' : ''}</label>
+                            <input type="${fieldConfig.type}" class="form-control" id="${fieldName}" name="${fieldName}" value="${window.existingDesktopData && window.existingDesktopData[fieldName] ? window.existingDesktopData[fieldName] : ''}" ${fieldConfig.required ? 'required' : ''}>
+                        </div>
+                    </div>
+                    `;
+                }
+                
+                fieldsHtml += fieldHtml;
                 
                 fieldCount++;
             }

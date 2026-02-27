@@ -26,8 +26,8 @@ $item_sql = "SELECT ai.*,
                    o.office_name,
                    comp.processor, comp.ram_capacity, comp.storage_type, comp.storage_capacity, 
                    comp.operating_system, comp.serial_number as computer_serial_number,
-                   desk.monitor_name, desk.monitor_model, desk.monitor_serial_number, 
-                   desk.ups_name, desk.ups_model, desk.ups_serial_number,
+                   desk.monitor_name, desk.monitor_model, desk.monitor_serial_number, desk.monitor_status,
+                   desk.ups_name, desk.ups_model, desk.ups_serial_number, desk.ups_status,
                    veh.brand as vehicle_brand, veh.model as vehicle_model, veh.plate_number, veh.color, veh.engine_number, veh.chassis_number, veh.year_manufactured,
                    furn.material, furn.dimensions as furniture_dimensions, furn.color as furniture_color, furn.manufacturer as furniture_manufacturer,
                    mach.machine_type, mach.manufacturer as machinery_manufacturer, mach.model_number, mach.capacity as machinery_capacity, mach.power_requirements, mach.serial_number as machinery_serial_number,
@@ -551,6 +551,11 @@ $status_display = formatStatus($item['status']);
                     <div class="detail-section">
                         <h5 class="mb-3"><i class="bi bi-display"></i> Desktop Computer Specifications</h5>
                         <div class="row">
+                            <?php 
+                            // Check if Monitor has any details specified
+                            $has_monitor_details = !empty($item['monitor_name']) || !empty($item['monitor_model']) || !empty($item['monitor_serial_number']);
+                            ?>
+                            <?php if ($has_monitor_details): ?>
                             <div class="col-md-6">
                                 <h6 class="text-muted mb-3">Monitor Details</h6>
                                 <div class="mb-3">
@@ -565,7 +570,44 @@ $status_display = formatStatus($item['status']);
                                     <div class="detail-label">Monitor Serial Number</div>
                                     <div class="detail-value"><?php echo $item['monitor_serial_number'] ? htmlspecialchars($item['monitor_serial_number']) : '<span class="text-muted">Not specified</span>'; ?></div>
                                 </div>
+                                <div class="mb-3">
+                                    <div class="detail-label">Monitor Status</div>
+                                    <div class="detail-value">
+                                        <?php 
+                                        if ($item['monitor_status']): ?>
+                                            <?php
+                                            $status_class = '';
+                                            switch ($item['monitor_status']) {
+                                                case 'serviceable':
+                                                    $status_class = 'status-serviceable';
+                                                    break;
+                                                case 'unserviceable':
+                                                    $status_class = 'status-unserviceable';
+                                                    break;
+                                                case 'red_tagged':
+                                                    $status_class = 'status-red-tagged';
+                                                    break;
+                                                case 'no_tag':
+                                                    $status_class = 'status-no-tag';
+                                                    break;
+                                            }
+                                            ?>
+                                            <span class="status-badge <?php echo $status_class; ?>">
+                                                <?php echo ucfirst(str_replace('_', ' ', $item['monitor_status'])); ?>
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="text-muted">Not specified</span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
                             </div>
+                            <?php endif; ?>
+                            
+                            <?php 
+                            // Check if UPS has any details specified
+                            $has_ups_details = !empty($item['ups_name']) || !empty($item['ups_model']) || !empty($item['ups_serial_number']);
+                            ?>
+                            <?php if ($has_ups_details): ?>
                             <div class="col-md-6">
                                 <h6 class="text-muted mb-3">UPS Details</h6>
                                 <div class="mb-3">
@@ -580,7 +622,47 @@ $status_display = formatStatus($item['status']);
                                     <div class="detail-label">UPS Serial Number</div>
                                     <div class="detail-value"><?php echo $item['ups_serial_number'] ? htmlspecialchars($item['ups_serial_number']) : '<span class="text-muted">Not specified</span>'; ?></div>
                                 </div>
+                                <div class="mb-3">
+                                    <div class="detail-label">UPS Status</div>
+                                    <div class="detail-value">
+                                        <?php 
+                                        if ($item['ups_status']): ?>
+                                            <?php
+                                            $status_class = '';
+                                            switch ($item['ups_status']) {
+                                                case 'serviceable':
+                                                    $status_class = 'status-serviceable';
+                                                    break;
+                                                case 'unserviceable':
+                                                    $status_class = 'status-unserviceable';
+                                                    break;
+                                                case 'red_tagged':
+                                                    $status_class = 'status-red-tagged';
+                                                    break;
+                                                case 'no_tag':
+                                                    $status_class = 'status-no-tag';
+                                                    break;
+                                            }
+                                            ?>
+                                            <span class="status-badge <?php echo $status_class; ?>">
+                                                <?php echo ucfirst(str_replace('_', ' ', $item['ups_status'])); ?>
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="text-muted">Not specified</span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
                             </div>
+                            <?php endif; ?>
+                            
+                            <?php if (!$has_monitor_details && !$has_ups_details): ?>
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    No monitor or UPS details specified for this desktop computer.
+                                </div>
+                            </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                     <?php endif; ?>

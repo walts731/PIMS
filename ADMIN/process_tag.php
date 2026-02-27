@@ -360,35 +360,43 @@ try {
             $ups_name = trim($_POST['ups_name'] ?? '');
             $ups_model = trim($_POST['ups_model'] ?? '');
             $ups_serial_number = trim($_POST['ups_serial_number'] ?? '');
+            $monitor_status = trim($_POST['monitor_status'] ?? 'serviceable');
+            $ups_status = trim($_POST['ups_status'] ?? 'serviceable');
             
             // Insert or update desktop computer-specific information
             $desktop_sql = "INSERT INTO asset_desktop_computers 
-                           (asset_item_id, monitor_name, monitor_model, monitor_serial_number, ups_name, ups_model, ups_serial_number, created_by, created_at)
-                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                           (asset_item_id, monitor_name, monitor_model, monitor_serial_number, monitor_status, ups_name, ups_model, ups_serial_number, ups_status, created_by, created_at)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                            ON DUPLICATE KEY UPDATE
                            monitor_name = VALUES(monitor_name),
                            monitor_model = VALUES(monitor_model),
                            monitor_serial_number = VALUES(monitor_serial_number),
+                           monitor_status = VALUES(monitor_status),
                            ups_name = VALUES(ups_name),
                            ups_model = VALUES(ups_model),
                            ups_serial_number = VALUES(ups_serial_number),
+                           ups_status = VALUES(ups_status),
                            updated_by = VALUES(created_by),
                            updated_at = CURRENT_TIMESTAMP";
             
             $desktop_stmt = $conn->prepare($desktop_sql);
-            $desktop_stmt->bind_param("issssssi", $item_id, $monitor_name, $monitor_model, $monitor_serial_number, $ups_name, $ups_model, $ups_serial_number, $_SESSION['user_id']);
+            $desktop_stmt->bind_param("issssssssi", $item_id, $monitor_name, $monitor_model, $monitor_serial_number, $monitor_status, $ups_name, $ups_model, $ups_serial_number, $ups_status, $_SESSION['user_id']);
             $desktop_stmt->execute();
             
             // Log desktop computer-specific field updates
             $desktop_details = sprintf(
-                "Desktop Computer specs saved - Monitor: %s %s (%s), UPS: %s %s (%s)",
+                "Desktop Computer specs saved - Monitor: %s %s (%s) - Status: %s, UPS: %s %s (%s) - Status: %s",
                 $monitor_name ?: 'Not specified',
                 $monitor_model ?: 'Not specified',
                 $monitor_serial_number ?: 'No serial',
+                $monitor_status ?: 'serviceable',
                 $ups_name ?: 'Not specified',
                 $ups_model ?: 'Not specified',
-                $ups_serial_number ?: 'No serial'
+                $ups_serial_number ?: 'No serial',
+                $ups_status ?: 'serviceable'
             );
+            
+            logSystemAction($_SESSION['user_id'], 'update', 'asset_desktop_computers', $desktop_details);
             
             $desktop_history_sql = "INSERT INTO asset_item_history (item_id, action, details, created_by, created_at) VALUES (?, 'Desktop Computer Specs Updated', ?, ?, CURRENT_TIMESTAMP)";
             $desktop_history_stmt = $conn->prepare($desktop_history_sql);
