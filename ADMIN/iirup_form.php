@@ -36,7 +36,8 @@ if (isset($_GET['auto_fill']) && $_GET['auto_fill'] === 'true') {
         'category_name' => $_GET['category_name'] ?? '',
         'category_code' => $_GET['category_code'] ?? '',
         'asset_description' => $_GET['asset_description'] ?? '',
-        'unit' => $_GET['unit'] ?? ''
+        'unit' => $_GET['unit'] ?? '',
+        'component_type' => $_GET['component_type'] ?? 'main_asset' // Track which component is being added
     ];
 }
 

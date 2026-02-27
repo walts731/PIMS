@@ -107,6 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         // Insert items into iirup_items table
         $asset_ids_to_update = [];
+        $component_updates = []; // Track component-specific updates
         
         foreach ($particulars as $index => $particular) {
             if (!empty($particular)) {
@@ -153,9 +154,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 $conn->query($item_sql);
                 
-                // Extract asset ID from property number field first, then from particulars
+                // Extract asset ID and component type from the data
                 $asset_id = null;
+                $component_type = null;
                 $property_no = $property_nos[$index] ?? '';
+                
+                // Try to extract component type from description or detect from auto-fill data
+                $component_type = null;
+                if (strpos($particular, 'Monitor - ') === 0) {
+                    $component_type = 'monitor';
+                    error_log("Detected monitor component from description: '$particular'");
+                } elseif (strpos($particular, 'UPS - ') === 0) {
+                    $component_type = 'ups';
+                    error_log("Detected UPS component from description: '$particular'");
+                } else {
+                    error_log("No component type detected from description: '$particular'");
+                }
                 
                 // First try to find asset by property number from the dedicated field
                 if (!empty($property_no)) {
@@ -167,14 +181,107 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $asset_id = extractAssetIdFromDescription($particular);
                 }
                 
+                // Debug logging
+                error_log("IIRUP Processing - Particular: '$particular', Component Type: " . ($component_type ?: 'none') . ", Asset ID: " . ($asset_id ?: 'none'));
+                
                 if ($asset_id) {
-                    $asset_ids_to_update[] = $asset_id;
+                    if ($component_type) {
+                        // This is a component, only add to component updates, not main asset updates
+                        $component_updates[] = [
+                            'asset_id' => $asset_id,
+                            'component_type' => $component_type
+                        ];
+                        error_log("Added to component updates: Asset ID $asset_id, Type: $component_type");
+                    } else {
+                        // This is a main asset, add to main asset updates
+                        $asset_ids_to_update[] = $asset_id;
+                        error_log("Added to main asset updates: Asset ID $asset_id");
+                    }
                 }
             }
         }
         
+        error_log("IIRUP Processing Summary - Main assets to update: " . count($asset_ids_to_update) . ", Component updates: " . count($component_updates));
+        error_log("Main asset IDs: " . implode(', ', $asset_ids_to_update));
+        
         // Update asset items status to unserviceable
+        error_log("About to process status updates. Main assets: " . count($asset_ids_to_update) . ", Components: " . count($component_updates));
+        
+        // Process component-specific updates first (if any)
+        if (!empty($component_updates)) {
+            error_log("Processing component updates only");
+            foreach ($component_updates as $component) {
+                $asset_id = $component['asset_id'];
+                $component_type = $component['component_type'];
+                
+                error_log("Processing component: Asset ID $asset_id, Type: $component_type");
+                
+                if ($component_type === 'monitor') {
+                    // First check if desktop computer record exists
+                    $check_sql = "SELECT id, monitor_status FROM asset_desktop_computers WHERE asset_item_id = $asset_id";
+                    $check_result = $conn->query($check_sql);
+                    
+                    if ($check_result && $check_result->num_rows > 0) {
+                        $current_status = $check_result->fetch_assoc()['monitor_status'];
+                        error_log("Found desktop computer record. Current monitor status: $current_status");
+                        
+                        // Update monitor status in asset_desktop_computers table
+                        $monitor_sql = "UPDATE asset_desktop_computers SET monitor_status = 'unserviceable' 
+                                      WHERE asset_item_id = $asset_id";
+                        error_log("Executing SQL: $monitor_sql");
+                        
+                        $result = $conn->query($monitor_sql);
+                        if ($result) {
+                            $affected_rows = $conn->affected_rows;
+                            error_log("Monitor status update executed. Affected rows: $affected_rows");
+                            if ($affected_rows > 0) {
+                                error_log("✓ Monitor status successfully updated to unserviceable for asset_id: $asset_id");
+                            } else {
+                                error_log("⚠ Monitor status update: No rows affected (may already be unserviceable)");
+                            }
+                        } else {
+                            error_log("✗ Monitor status update failed: " . $conn->error);
+                        }
+                    } else {
+                        error_log("✗ No desktop computer record found for asset_id: $asset_id");
+                    }
+                    
+                } elseif ($component_type === 'ups') {
+                    // First check if desktop computer record exists
+                    $check_sql = "SELECT id, ups_status FROM asset_desktop_computers WHERE asset_item_id = $asset_id";
+                    $check_result = $conn->query($check_sql);
+                    
+                    if ($check_result && $check_result->num_rows > 0) {
+                        $current_status = $check_result->fetch_assoc()['ups_status'];
+                        error_log("Found desktop computer record. Current UPS status: $current_status");
+                        
+                        // Update UPS status in asset_desktop_computers table
+                        $ups_sql = "UPDATE asset_desktop_computers SET ups_status = 'unserviceable' 
+                                  WHERE asset_item_id = $asset_id";
+                        error_log("Executing SQL: $ups_sql");
+                        
+                        $result = $conn->query($ups_sql);
+                        if ($result) {
+                            $affected_rows = $conn->affected_rows;
+                            error_log("UPS status update executed. Affected rows: $affected_rows");
+                            if ($affected_rows > 0) {
+                                error_log("✓ UPS status successfully updated to unserviceable for asset_id: $asset_id");
+                            } else {
+                                error_log("⚠ UPS status update: No rows affected (may already be unserviceable)");
+                            }
+                        } else {
+                            error_log("✗ UPS status update failed: " . $conn->error);
+                        }
+                    } else {
+                        error_log("✗ No desktop computer record found for asset_id: $asset_id");
+                    }
+                }
+            }
+        }
+        
+        // Process main asset updates only if there are main assets to update
         if (!empty($asset_ids_to_update)) {
+            error_log("Processing main asset updates");
             $unique_asset_ids = array_unique($asset_ids_to_update);
             
             if (!empty($unique_asset_ids)) {
@@ -206,32 +313,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     error_log("Assets already unserviceable: " . implode(', ', $already_unserviceable));
                 }
                 
-                    // Update only assets that can be changed to unserviceable
-                    if (!empty($assets_to_update)) {
-                        $update_ids_string = implode(',', $assets_to_update);
-                        $update_sql = "UPDATE asset_items SET status = 'unserviceable', last_updated = NOW() 
-                                      WHERE id IN ($update_ids_string)";
-                        
-                        $update_result = $conn->query($update_sql);
-                        $updated_count = $conn->affected_rows;
-                        
-                        error_log("Updated $updated_count asset items to unserviceable. IDs: " . implode(', ', $assets_to_update));
-                        
-                        // Record history for each updated asset
-                        foreach ($assets_to_update as $asset_id) {
-                            $history_sql = "INSERT INTO asset_item_history (item_id, action, old_value, new_value, created_by, created_at, details) 
-                                          VALUES (?, 'status_change', 'serviceable', 'unserviceable', ?, NOW(), 'Status changed via IIRUP Form: $form_number')";
-                            $history_stmt = $conn->prepare($history_sql);
-                            $history_stmt->bind_param("ii", $asset_id, $_SESSION['user_id']);
-                            $history_stmt->execute();
-                            $history_stmt->close();
-                        }
-                        
-                        // Log the action for audit trail
-                        logSystemAction($_SESSION['user_id'], 'Updated asset status to unserviceable', 'assets', 
-                                      'asset_ids: ' . implode(',', $assets_to_update) . ', form_id: ' . $form_id);
+                // Update only main assets that can be changed to unserviceable
+                if (!empty($assets_to_update)) {
+                    error_log("Processing " . count($assets_to_update) . " main asset updates");
+                    $update_ids_string = implode(',', $assets_to_update);
+                    $update_sql = "UPDATE asset_items SET status = 'unserviceable', last_updated = NOW() 
+                                  WHERE id IN ($update_ids_string)";
+                    
+                    $update_result = $conn->query($update_sql);
+                    $updated_count = $conn->affected_rows;
+                    
+                    error_log("Updated $updated_count asset items to unserviceable. IDs: " . implode(', ', $assets_to_update));
+                    
+                    // Record history for each updated asset
+                    foreach ($assets_to_update as $asset_id) {
+                        $history_sql = "INSERT INTO asset_item_history (item_id, action, old_value, new_value, created_by, created_at, details) 
+                                      VALUES (?, 'status_change', 'serviceable', 'unserviceable', ?, NOW(), 'Status changed via IIRUP Form: $form_number')";
+                        $history_stmt = $conn->prepare($history_sql);
+                        $history_stmt->bind_param("ii", $asset_id, $_SESSION['user_id']);
+                        $history_stmt->execute();
+                        $history_stmt->close();
                     }
+                    
+                    // Log the action for audit trail
+                    logSystemAction($_SESSION['user_id'], 'Updated asset status to unserviceable', 'assets', 
+                                  'asset_ids: ' . implode(',', $assets_to_update) . ', form_id: ' . $form_id);
+                } else {
+                    error_log("No main assets to update");
+                }
             }
+        } else {
+            error_log("No main assets to update - only components processed");
         }
         
         // Commit transaction
