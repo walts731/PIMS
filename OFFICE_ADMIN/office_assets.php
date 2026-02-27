@@ -499,8 +499,9 @@ try {
                                             <td>₱<?php echo number_format($asset['value'] ?? 0, 2); ?></td>
                                             <td><?php echo !empty($asset['acquisition_date']) ? date('M j, Y', strtotime($asset['acquisition_date'])) : 'Not set'; ?></td>
                                             <td>
-                                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="editAsset(<?php echo $asset['id']; ?>)">Edit</button>
-                                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteAsset(<?php echo $asset['id']; ?>)">Delete</button>
+                                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="editAsset(<?php echo $asset['id']; ?>)">
+                                                    <i class="bi bi-eye"></i> View
+                                                </button>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
@@ -793,14 +794,6 @@ try {
         function editAsset(assetId) {
             // This will be implemented when backend is added
             console.log('Edit asset:', assetId);
-        }
-        
-        // Delete asset function
-        function deleteAsset(assetId) {
-            if (confirm('Are you sure you want to delete this asset?')) {
-                // This will be implemented when backend is added
-                console.log('Delete asset:', assetId);
-            }
         }
         
         // Clear form on add modal close
