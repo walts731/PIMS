@@ -148,9 +148,10 @@ $category_fields = [
         'year_model' => ['label' => 'Year Model', 'type' => 'number', 'required' => false]
     ],
     '030' => [
-        'processor' => ['label' => 'Processor', 'type' => 'text', 'required' => true],
-        'ram' => ['label' => 'RAM (GB)', 'type' => 'text', 'required' => true],
-        'storage' => ['label' => 'Storage', 'type' => 'text', 'required' => true],
+        'processor' => ['label' => 'Processor', 'type' => 'text', 'required' => false],
+        'ram' => ['label' => 'RAM (GB)', 'type' => 'text', 'required' => false],
+        'storage' => ['label' => 'Storage', 'type' => 'text', 'required' => false],
+        'model' => ['label' => 'Model', 'type' => 'text', 'required' => false],
         'operating_system' => ['label' => 'Operating System', 'type' => 'text', 'required' => false],
         'serial_number' => ['label' => 'Serial Number', 'type' => 'text', 'required' => false]
     ],
@@ -446,17 +447,68 @@ $category_fields = [
                 <!-- Category-specific fields will be loaded here -->
                 <div id="categorySpecificFields"></div>
                 
+                <!-- Subcategory-specific fields will be loaded here -->
+                <div id="subcategorySpecificFields"></div>
+                
                 <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-md-12">
                         <div class="mb-3">
-                            <label for="asset_image" class="form-label">Asset Image</label>
-                            <input type="file" class="form-control" id="asset_image" name="asset_image" accept="image/*">
-                            <small class="form-text text-muted">Upload a clear image of the asset (JPG, PNG, GIF - Max 5MB)</small>
+                            <label for="asset_images" class="form-label">Asset Images</label>
+                            
+                            <?php
+                            // Display existing images if any
+                            $existing_images = [];
+                            if (!empty($item['image']) && $item['image'] !== 'NULL') {
+                                $decoded_images = json_decode($item['image'], true);
+                                if (is_array($decoded_images)) {
+                                    $existing_images = $decoded_images;
+                                } elseif (!empty($item['image'])) {
+                                    // Handle case where it's a single filename (not JSON)
+                                    $existing_images = [$item['image']];
+                                }
+                            }
+                            
+                            if (!empty($existing_images)) {
+                                echo '<div class="mb-3">';
+                                echo '<h6>Existing Images:</h6>';
+                                echo '<div class="row">';
+                                
+                                foreach ($existing_images as $index => $image) {
+                                    $image_path = '../uploads/asset_images/' . $image;
+                                    if (file_exists($image_path)) {
+                                        echo '<div class="col-md-3 mb-2 position-relative">';
+                                        echo '<div class="card">';
+                                        echo '<img src="' . $image_path . '" class="card-img-top" style="height: 150px; object-fit: cover;" alt="Asset Image">';
+                                        echo '<div class="card-body p-2">';
+                                        echo '<small class="text-muted d-block text-truncate">' . htmlspecialchars($image) . '</small>';
+                                        echo '</div>';
+                                        echo '<button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1" onclick="deleteImage(\'' . htmlspecialchars($image) . '\')" title="Delete image">';
+                                        echo '<i class="bi bi-trash"></i>';
+                                        echo '</button>';
+                                        echo '</div>';
+                                        echo '</div>';
+                                    }
+                                }
+                                
+                                echo '</div>';
+                                echo '<small class="text-info">Existing images will be preserved. New images will be added to the collection.</small>';
+                                echo '</div>';
+                            }
+                            ?>
+                            
+                            <input type="file" class="form-control" id="asset_images" name="asset_images[]" accept="image/*" multiple>
+                            <small class="form-text text-muted">Upload additional images of the asset (JPG, PNG, GIF - Max 5MB each, Max 5 files)</small>
                             <div id="imagePreview" class="mt-2"></div>
+                            
+                            <!-- Hidden field to store existing images for JavaScript -->
+                            <?php
+                            // Make sure $existing_images is available here
+                            if (!isset($existing_images)) {
+                                $existing_images = [];
+                            }
+                            ?>
+                            <input type="hidden" id="existingImagesData" value="<?php echo htmlspecialchars(json_encode($existing_images)); ?>">
                         </div>
-                    </div>
-                    <div class="col-md-6">
-                        <!-- Empty column for balance -->
                     </div>
                 </div>
                 
@@ -492,6 +544,18 @@ $category_fields = [
         // Category-specific fields configuration
         const categoryFields = <?php echo json_encode($category_fields); ?>;
         
+        // Subcategory-specific fields configuration
+        const subcategoryFields = {
+            '03': { // Desktop Computers
+                'monitor_name': {'label': 'Monitor Name', 'type': 'text', 'required': false},
+                'monitor_model': {'label': 'Monitor Model', 'type': 'text', 'required': false},
+                'monitor_serial_number': {'label': 'Monitor Serial Number', 'type': 'text', 'required': false},
+                'ups_name': {'label': 'UPS Name', 'type': 'text', 'required': false},
+                'ups_model': {'label': 'UPS Model', 'type': 'text', 'required': false},
+                'ups_serial_number': {'label': 'UPS Serial Number', 'type': 'text', 'required': false}
+            }
+        };
+        
         // Function to load category-specific fields
         function loadCategoryFields(categoryCode) {
             const container = document.getElementById('categorySpecificFields');
@@ -526,6 +590,48 @@ $category_fields = [
             container.innerHTML = fieldsHtml;
         }
         
+        // Function to load subcategory-specific fields
+        function loadSubcategoryFields(subcategoryCode) {
+            const container = document.getElementById('subcategorySpecificFields');
+            
+            // Debug logging
+            console.log('Loading subcategory fields for code:', subcategoryCode);
+            console.log('Available subcategory fields:', subcategoryFields);
+            
+            if (!subcategoryCode || !subcategoryFields[subcategoryCode]) {
+                console.log('No subcategory code or no fields found for:', subcategoryCode);
+                container.innerHTML = '';
+                return;
+            }
+            
+            let fieldsHtml = '<div class="category-fields"><h6 class="mb-3"><i class="bi bi-gear"></i> Desktop Computer Specific Fields</h6><div class="row">';
+            
+            const fields = subcategoryFields[subcategoryCode];
+            console.log('Fields to render:', fields);
+            
+            let fieldCount = 0;
+            
+            for (const [fieldName, fieldConfig] of Object.entries(fields)) {
+                const isHalfWidth = ['text', 'number', 'date'].includes(fieldConfig.type);
+                const columnClass = isHalfWidth ? 'col-md-6' : 'col-md-12';
+                
+                fieldsHtml += `
+                    <div class="${columnClass}">
+                        <div class="mb-3">
+                            <label for="${fieldName}" class="form-label">${fieldConfig.label} ${fieldConfig.required ? '<span class="required">*</span>' : ''}</label>
+                            <input type="${fieldConfig.type}" class="form-control" id="${fieldName}" name="${fieldName}" ${fieldConfig.required ? 'required' : ''}>
+                        </div>
+                    </div>
+                `;
+                
+                fieldCount++;
+            }
+            
+            fieldsHtml += '</div></div>';
+            console.log('Generated HTML:', fieldsHtml);
+            container.innerHTML = fieldsHtml;
+        }
+        
         // Function to get category name from code
         function getCategoryName(categoryCode) {
             const categoryNames = {
@@ -547,21 +653,27 @@ $category_fields = [
             if (!categoryId || categoryId <= 0) {
                 subcategorySelect.innerHTML = '<option value="">Select Subcategory</option>';
                 subcategorySelect.disabled = true;
+                // Clear subcategory-specific fields
+                loadSubcategoryFields('');
                 return;
             }
             
             fetch('../api/get_dropdown_data.php?action=get_subcategories&category_id=' + categoryId)
                 .then(response => response.json())
                 .then(data => {
+                    console.log('Subcategories loaded:', data);
                     if (data.success) {
                         subcategorySelect.innerHTML = '<option value="">Select Subcategory</option>';
                         data.subcategories.forEach(subcategory => {
                             const option = document.createElement('option');
                             option.value = subcategory.id;
                             option.textContent = subcategory.sub_category_code + ' - ' + subcategory.sub_category_name;
+                            option.setAttribute('data-subcategory-code', subcategory.sub_category_code);
+                            console.log('Adding subcategory option:', subcategory.sub_category_code, subcategory.sub_category_name);
                             subcategorySelect.appendChild(option);
                         });
                         subcategorySelect.disabled = false;
+                        console.log('Subcategories loaded successfully, dropdown enabled');
                     } else {
                         console.error('Error loading subcategories:', data.error);
                         subcategorySelect.innerHTML = '<option value="">Error loading subcategories</option>';
@@ -593,44 +705,205 @@ $category_fields = [
                 width: '100%'
             });
             
-            // Image preview functionality
-            $('#asset_image').on('change', function() {
-                const file = this.files[0];
+            // Add event listener for subcategory changes using Select2 event
+            $('#subcategory_id').on('change', function() {
+                console.log('Select2 change event triggered');
+                console.log('Selected value:', $(this).val());
+                
+                const selectedOption = this.options[this.selectedIndex];
+                console.log('Native selected option:', selectedOption);
+                
+                const subcategoryCode = selectedOption ? selectedOption.getAttribute('data-subcategory-code') : '';
+                console.log('Extracted subcategory code:', subcategoryCode);
+                console.log('All data attributes:', selectedOption ? selectedOption.dataset : 'No option selected');
+                
+                // Load subcategory-specific fields
+                loadSubcategoryFields(subcategoryCode);
+            });
+            
+            // Load fields for current subcategory on page load (with delay to ensure subcategories are loaded)
+            setTimeout(() => {
+                const subcategorySelect = document.getElementById('subcategory_id');
+                const currentSubcategoryOption = subcategorySelect.options[subcategorySelect.selectedIndex];
+                const currentSubcategoryCode = currentSubcategoryOption ? currentSubcategoryOption.getAttribute('data-subcategory-code') : '';
+                
+                console.log('Initial subcategory code:', currentSubcategoryCode);
+                loadSubcategoryFields(currentSubcategoryCode);
+            }, 500);
+            
+            // Image preview functionality - append new images to existing preview
+            $('#asset_images').on('change', function() {
                 const preview = $('#imagePreview');
                 
-                if (file) {
-                    // Check file size (5MB limit)
+                // Get existing images from hidden field
+                const existingImagesData = $('#existingImagesData').val();
+                console.log('Raw existing images data from hidden field:', existingImagesData);
+                
+                const existingImages = existingImagesData && existingImagesData !== '' && existingImagesData !== '[]' 
+                    ? JSON.parse(existingImagesData) 
+                    : [];
+                console.log('Parsed existing images:', existingImages);
+                console.log('Number of existing images:', existingImages.length);
+                
+                // Add new images being uploaded
+                const files = this.files;
+                console.log('New files selected:', files.length);
+                let validFiles = true;
+                
+                // Validate all files first
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    
+                    // Check file size
                     if (file.size > 5 * 1024 * 1024) {
-                        preview.html('<div class="alert alert-danger">File size must be less than 5MB</div>');
-                        this.value = '';
-                        return;
+                        preview.append('<div class="alert alert-danger">File size must be less than 5MB</div>');
+                        validFiles = false;
+                        break;
                     }
                     
                     // Check file type
                     if (!file.type.startsWith('image/')) {
-                        preview.html('<div class="alert alert-danger">Please select an image file</div>');
-                        this.value = '';
-                        return;
+                        preview.append('<div class="alert alert-danger">Only image files are allowed</div>');
+                        validFiles = false;
+                        break;
                     }
-                    
-                    // Show image preview
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
+                }
+                
+                // Check file count limit
+                if (files.length > 5) {
+                    preview.append('<div class="alert alert-danger">Maximum 5 files allowed</div>');
+                    validFiles = false;
+                }
+                
+                if (!validFiles) {
+                    this.value = '';
+                    return;
+                }
+                
+                // If no files selected, do nothing
+                if (files.length === 0) {
+                    return;
+                }
+                
+                // Create or ensure preview container exists
+                if (preview.find('.preview-container').length === 0) {
+                    // If this is the first time, create the container structure
+                    if (existingImages.length > 0) {
+                        // If there are existing images, add a separator
                         preview.html(`
-                            <div class="border rounded p-2">
-                                <img src="${e.target.result}" class="img-fluid" style="max-height: 200px;" alt="Asset image preview">
-                                <div class="mt-2">
-                                    <small class="text-muted">${file.name} (${(file.size / 1024).toFixed(2)} KB)</small>
+                            <div class="preview-container">
+                                <h6 class="mb-3">All Images</h6>
+                                <div class="row existing-images-row">
+                                </div>
+                                <hr class="my-3">
+                                <h6 class="mb-2">New Images Being Added:</h6>
+                                <div class="row new-images-row">
                                 </div>
                             </div>
                         `);
+                        
+                        // Add existing images to their row
+                        const existingRow = preview.find('.existing-images-row');
+                        existingImages.forEach(function(imageName) {
+                            const existingImageHtml = `
+                                <div class="col-md-3 mb-2">
+                                    <div class="card">
+                                        <img src="../uploads/asset_images/${imageName}" class="card-img-top" style="height: 150px; object-fit: cover;" alt="Existing Image">
+                                        <div class="card-body p-2">
+                                            <small class="text-muted d-block text-truncate">${imageName}</small>
+                                            <span class="badge bg-success">Existing</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                            existingRow.append(existingImageHtml);
+                        });
+                    } else {
+                        // No existing images, just create container for new images
+                        preview.html(`
+                            <div class="preview-container">
+                                <h6 class="mb-3">New Images Being Added:</h6>
+                                <div class="row new-images-row">
+                                </div>
+                            </div>
+                        `);
+                    }
+                }
+                
+                // Get the new images row
+                const newImagesRow = preview.find('.new-images-row');
+                
+                // Process and append new images
+                let processedCount = 0;
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const newImageHtml = `
+                            <div class="col-md-3 mb-2">
+                                <div class="card border-primary">
+                                    <img src="${e.target.result}" class="card-img-top" style="height: 150px; object-fit: cover;" alt="New Image">
+                                    <div class="card-body p-2">
+                                        <small class="text-muted d-block text-truncate">${file.name}</small>
+                                        <span class="badge bg-primary">New</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // Append the new image to the new images row
+                        newImagesRow.append(newImageHtml);
+                        processedCount++;
+                        
+                        console.log(`Processed ${processedCount} of ${files.length} new images`);
                     };
                     reader.readAsDataURL(file);
-                } else {
-                    preview.html('');
                 }
             });
             
+            // Function to delete an image
+            function deleteImage(imageFilename) {
+                if (!confirm('Are you sure you want to delete this image? This action cannot be undone.')) {
+                    return;
+                }
+                
+                $.ajax({
+                    url: 'delete_asset_image.php',
+                    method: 'POST',
+                    data: {
+                        item_id: <?php echo $item_id; ?>,
+                        image_filename: imageFilename
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            // Show success message
+                            const alertDiv = $('<div class="alert alert-success alert-dismissible fade show" role="alert">')
+                                .html('<i class="bi bi-check-circle-fill me-2"></i>' + response.message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>');
+                            $('.page-header').after(alertDiv);
+                            
+                            // Reload the page to update the image display
+                            setTimeout(function() {
+                                location.reload();
+                            }, 1500);
+                        } else {
+                            // Show error message
+                            const alertDiv = $('<div class="alert alert-danger alert-dismissible fade show" role="alert">')
+                                .html('<i class="bi bi-exclamation-triangle-fill me-2"></i>' + response.error + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>');
+                            $('.page-header').after(alertDiv);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        // Show error message
+                        const alertDiv = $('<div class="alert alert-danger alert-dismissible fade show" role="alert">')
+                            .html('<i class="bi bi-exclamation-triangle-fill me-2"></i>Error deleting image. Please try again.<button type="button" class="btn-close" data-bs-dismiss="alert"></button>');
+                        $('.page-header').after(alertDiv);
+                    }
+                });
+            }
+            
+            // Category change functionality
             const categorySelect = document.getElementById('category_id');
             
             // Load fields for current category on page load
@@ -644,11 +917,13 @@ $category_fields = [
                 loadSubcategories(selectedCategoryId);
             }
             
-            // Load fields and subcategories when category changes
+            // Event listener for category change
             categorySelect.addEventListener('change', function() {
                 const selectedOption = this.options[this.selectedIndex];
                 const categoryCode = selectedOption.getAttribute('data-category-code');
                 const categoryId = this.value;
+                
+                console.log('Category changed to:', categoryCode, 'ID:', categoryId);
                 
                 // Load category-specific fields
                 loadCategoryFields(categoryCode);
