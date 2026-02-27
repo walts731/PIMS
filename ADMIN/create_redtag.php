@@ -48,6 +48,17 @@ $acquisition_date = isset($_GET['acquisition_date']) ? htmlspecialchars($_GET['a
 $value = isset($_GET['value']) ? floatval($_GET['value']) : 0;
 $office_name = isset($_GET['office_name']) ? htmlspecialchars($_GET['office_name']) : '';
 
+// Get component information if provided
+$component_type = isset($_GET['component_type']) ? htmlspecialchars($_GET['component_type']) : 'main_asset';
+$component_description = isset($_GET['component_description']) ? htmlspecialchars($_GET['component_description']) : '';
+$component_value = isset($_GET['component_value']) ? floatval($_GET['component_value']) : 0;
+
+// Override main asset data with component data if component is specified
+if ($component_type !== 'main_asset' && !empty($component_description)) {
+    $description = $component_description;
+    $value = $component_value;
+}
+
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['generate_redtag'])) {
     $control_no = trim($_POST['control_no'] ?? '');
@@ -152,48 +163,83 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['generate_redtag'])) {
         
         $insert_stmt->close();
         
-        // Update asset_item status to 'red_tagged' if asset_item_id is provided
+        // Update status to 'red_tagged' if asset_item_id is provided
         if ($asset_item_id > 0) {
-            // Get current status before updating
-            $current_status_sql = "SELECT status FROM asset_items WHERE id = ?";
-            $current_status_stmt = $conn->prepare($current_status_sql);
-            $current_status_stmt->bind_param("i", $asset_item_id);
-            $current_status_stmt->execute();
-            $current_status_result = $current_status_stmt->get_result();
-            $old_status = 'unknown';
-            if ($current_status_row = $current_status_result->fetch_assoc()) {
-                $old_status = $current_status_row['status'];
+            // Check if this is a component or main asset
+            if ($component_type === 'monitor') {
+                // Update monitor status in asset_desktop_computers table
+                $current_status_sql = "SELECT monitor_status FROM asset_desktop_computers WHERE asset_item_id = ?";
+                $current_status_stmt = $conn->prepare($current_status_sql);
+                $current_status_stmt->bind_param("i", $asset_item_id);
+                $current_status_stmt->execute();
+                $current_status_result = $current_status_stmt->get_result();
+                $old_status = 'unknown';
+                if ($current_status_row = $current_status_result->fetch_assoc()) {
+                    $old_status = $current_status_row['monitor_status'];
+                }
+                $current_status_stmt->close();
+                
+                $update_sql = "UPDATE asset_desktop_computers SET monitor_status = 'red_tagged' WHERE asset_item_id = ?";
+                $update_stmt = $conn->prepare($update_sql);
+                $update_stmt->bind_param("i", $asset_item_id);
+                $update_stmt->execute();
+                $update_stmt->close();
+                
+                // Log the component status change
+                logSystemAction($_SESSION['user_id'], 'component_status_updated', 'inventory', "Monitor component for Asset ID {$asset_item_id} status changed from {$old_status} to red_tagged");
+                
+            } elseif ($component_type === 'ups') {
+                // Update UPS status in asset_desktop_computers table
+                $current_status_sql = "SELECT ups_status FROM asset_desktop_computers WHERE asset_item_id = ?";
+                $current_status_stmt = $conn->prepare($current_status_sql);
+                $current_status_stmt->bind_param("i", $asset_item_id);
+                $current_status_stmt->execute();
+                $current_status_result = $current_status_stmt->get_result();
+                $old_status = 'unknown';
+                if ($current_status_row = $current_status_result->fetch_assoc()) {
+                    $old_status = $current_status_row['ups_status'];
+                }
+                $current_status_stmt->close();
+                
+                $update_sql = "UPDATE asset_desktop_computers SET ups_status = 'red_tagged' WHERE asset_item_id = ?";
+                $update_stmt = $conn->prepare($update_sql);
+                $update_stmt->bind_param("i", $asset_item_id);
+                $update_stmt->execute();
+                $update_stmt->close();
+                
+                // Log the component status change
+                logSystemAction($_SESSION['user_id'], 'component_status_updated', 'inventory', "UPS component for Asset ID {$asset_item_id} status changed from {$old_status} to red_tagged");
+                
+            } else {
+                // Update main asset status (original logic)
+                $current_status_sql = "SELECT status FROM asset_items WHERE id = ?";
+                $current_status_stmt = $conn->prepare($current_status_sql);
+                $current_status_stmt->bind_param("i", $asset_item_id);
+                $current_status_stmt->execute();
+                $current_status_result = $current_status_stmt->get_result();
+                $old_status = 'unknown';
+                if ($current_status_row = $current_status_result->fetch_assoc()) {
+                    $old_status = $current_status_row['status'];
+                }
+                $current_status_stmt->close();
+                
+                $update_sql = "UPDATE asset_items SET status = 'red_tagged', last_updated = NOW() WHERE id = ?";
+                $update_stmt = $conn->prepare($update_sql);
+                $update_stmt->bind_param("i", $asset_item_id);
+                $update_stmt->execute();
+                $update_stmt->close();
+                
+                // Record history for the asset status change
+                $history_sql = "INSERT INTO asset_item_history (item_id, action, old_value, new_value, created_by, created_at, details) 
+                              VALUES (?, 'status_change', ?, 'red_tagged', ?, NOW(), 'Status changed via Red Tag: $control_no')";
+                $history_stmt = $conn->prepare($history_sql);
+                $history_stmt->bind_param("iss", $asset_item_id, $old_status, $_SESSION['user_id']);
+                $history_stmt->execute();
+                $history_stmt->close();
+                
+                // Log the asset status change
+                logSystemAction($_SESSION['user_id'], 'asset_status_updated', 'inventory', "Asset ID {$asset_item_id} status changed from {$old_status} to red_tagged");
             }
-            $current_status_stmt->close();
-            
-            $update_sql = "UPDATE asset_items SET status = 'red_tagged', last_updated = NOW() WHERE id = ?";
-            $update_stmt = $conn->prepare($update_sql);
-            if (!$update_stmt) {
-                throw new Exception("Update prepare failed: " . $conn->error);
-            }
-            
-            $update_bind = $update_stmt->bind_param("i", $asset_item_id);
-            if (!$update_bind) {
-                throw new Exception("Update bind failed: " . $update_stmt->error);
-            }
-            
-            $update_execute = $update_stmt->execute();
-            if (!$update_execute) {
-                throw new Exception("Update execute failed: " . $update_stmt->error);
-            }
-            
-            $update_stmt->close();
-            
-            // Record history for the asset status change
-            $history_sql = "INSERT INTO asset_item_history (item_id, action, old_value, new_value, created_by, created_at, details) 
-                          VALUES (?, 'status_change', ?, 'red_tagged', ?, NOW(), 'Status changed via Red Tag: $control_no')";
-            $history_stmt = $conn->prepare($history_sql);
-            $history_stmt->bind_param("iss", $asset_item_id, $old_status, $_SESSION['user_id']);
-            $history_stmt->execute();
-            $history_stmt->close();
-            
-            // Log the asset status change
-            logSystemAction($_SESSION['user_id'], 'asset_status_updated', 'inventory', "Asset ID {$asset_item_id} status changed from {$old_status} to red_tagged");
         }
         
         // Commit transaction
