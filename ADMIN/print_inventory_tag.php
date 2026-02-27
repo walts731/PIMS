@@ -44,13 +44,18 @@ try {
 $sql = "SELECT ai.*, 
                a.description as asset_description, a.unit_cost,
                ac.category_name, ac.category_code,
+               subcat.sub_category_name, subcat.sub_category_code,
                o.office_name, o.address,
-               e.employee_no, e.firstname, e.lastname, e.position
+               e.employee_no, e.firstname, e.lastname, e.position,
+               desk.monitor_name, desk.monitor_model, desk.monitor_serial_number, 
+               desk.ups_name, desk.ups_model, desk.ups_serial_number
         FROM asset_items ai 
         LEFT JOIN assets a ON ai.asset_id = a.id 
         LEFT JOIN asset_categories ac ON COALESCE(ai.category_id, a.asset_categories_id) = ac.id 
+        LEFT JOIN asset_sub_categories subcat ON ai.asset_subcategory_id = subcat.id
         LEFT JOIN offices o ON ai.office_id = o.id 
         LEFT JOIN employees e ON ai.employee_id = e.id 
+        LEFT JOIN asset_desktop_computers desk ON ai.id = desk.asset_item_id
         WHERE ai.id = ?";
 
 $stmt = $conn->prepare($sql);
@@ -141,6 +146,165 @@ if ($tag['firstname'] && $tag['lastname']) {
 // Status checkboxes
 $serviceable_checked = ($tag['status'] === 'serviceable') ? '☑' : '☐';
 $unserviceable_checked = ($tag['status'] === 'unserviceable' || $tag['status'] === 'red_tagged') ? '☑' : '☐';
+
+// Prepare stickers data
+$stickers = [];
+
+// Main asset sticker
+$stickers[] = [
+    'type' => 'main',
+    'description' => $tag['description'],
+    'model_no' => $model_no,
+    'serial_no' => $serial_no,
+    'property_no' => $tag['property_no'] ?? 'N/A',
+    'qr_code' => $tag['qr_code'] ?? null
+];
+
+// Additional stickers for Desktop Computers
+if ($tag['sub_category_name'] === 'Desktop Computers') {
+    // Monitor sticker
+    if (!empty($tag['monitor_name']) || !empty($tag['monitor_model'])) {
+        $monitor_desc = trim(($tag['monitor_name'] ?? '') . ' ' . ($tag['monitor_model'] ?? ''));
+        $stickers[] = [
+            'type' => 'monitor',
+            'description' => $monitor_desc ?: 'Monitor',
+            'model_no' => $tag['monitor_model'] ?? '',
+            'serial_no' => $tag['monitor_serial_number'] ?? '',
+            'property_no' => ($tag['property_no'] ?? 'N/A') . '-MON',
+            'qr_code' => $tag['qr_code'] ?? null // Use same QR code as main asset
+        ];
+    }
+    
+    // UPS sticker
+    if (!empty($tag['ups_name']) || !empty($tag['ups_model'])) {
+        $ups_desc = trim(($tag['ups_name'] ?? '') . ' ' . ($tag['ups_model'] ?? ''));
+        $stickers[] = [
+            'type' => 'ups',
+            'description' => $ups_desc ?: 'UPS',
+            'model_no' => $tag['ups_model'] ?? '',
+            'serial_no' => $tag['ups_serial_number'] ?? '',
+            'property_no' => ($tag['property_no'] ?? 'N/A') . '-UPS',
+            'qr_code' => $tag['qr_code'] ?? null // Use same QR code as main asset
+        ];
+    }
+}
+
+// Function to generate sticker HTML
+function generateStickerHTML($sticker, $tag, $system_settings, $serviceable_checked, $unserviceable_checked, $acquisition_date, $date_counted, $person_accountable, $unit_value) {
+    // Get logo path
+    $logo_path = '../img/trans_logo.png'; // default
+    if (!empty($system_settings['system_logo'])) {
+        if (file_exists('../' . $system_settings['system_logo'])) {
+            $logo_path = '../' . $system_settings['system_logo'];
+        } elseif (file_exists($system_settings['system_logo'])) {
+            $logo_path = $system_settings['system_logo'];
+        }
+    }
+    
+    $sticker_type_label = '';
+    if ($sticker['type'] === 'monitor') {
+        $sticker_type_label = ' - MONITOR';
+    } elseif ($sticker['type'] === 'ups') {
+        $sticker_type_label = ' - UPS';
+    }
+    
+    return '
+    <div class="tag-container" style="page-break-inside: avoid; margin-bottom: 20px;">
+        <div class="tag-header">
+            <div class="header-row">
+                <div class="seal">
+                    <img src="' . $logo_path . '" alt="LGU Logo" class="header-logo">
+                </div>
+                <div class="header-text">
+                    <h2>BAYAN NG PILAR' . $sticker_type_label . '</h2>
+                    <h3>LALAWIGAN NG SORSOGON</h3>
+                </div>
+                <div class="tag-number">
+                    ' . ($sticker['qr_code'] ? 
+                        '<img src="../uploads/qr_codes/' . htmlspecialchars($sticker['qr_code']) . '" alt="QR Code" class="tag-qr-code">' : 
+                        '<div class="qr-placeholder"><i class="bi bi-qr-code-scan"></i></div>'
+                    ) . '
+                    <br>
+                    <small>No. ' . htmlspecialchars($sticker['property_no']) . '</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tag-body">
+            <div class="field-row">
+                <div class="field-label">Office:</div>
+                <div class="field-value">' . htmlspecialchars($tag['office_name'] ?? '') . '</div>
+            </div>
+            
+            <div class="field-row">
+                <div class="field-label">Description:</div>
+                <div class="field-value">' . htmlspecialchars($sticker['description']) . '</div>
+            </div>
+            
+            <div class="two-column">
+                <div class="field-row">
+                    <div class="field-label">Model:</div>
+                    <div class="field-value">' . htmlspecialchars($sticker['model_no']) . '</div>
+                </div>
+                <div class="field-row">
+                    <div class="field-label">Serial:</div>
+                    <div class="field-value">' . htmlspecialchars($sticker['serial_no']) . '</div>
+                </div>
+            </div>
+            
+            <div class="checkbox-row">
+                <div class="checkbox-item">
+                    <div class="checkbox">' . $serviceable_checked . '</div>
+                    <div>Serviceable</div>
+                </div>
+                <div class="checkbox-item">
+                    <div class="checkbox">' . $unserviceable_checked . '</div>
+                    <div>Unserviceable</div>
+                </div>
+            </div>
+            
+            <div class="two-column">
+                <div class="field-row">
+                    <div class="field-label">Unit/Quantity:</div>
+                    <div class="field-value">' . htmlspecialchars($unit_value) . '</div>
+                </div>
+                <div class="field-row">
+                    <div class="field-label">Acquisition Date/Cost:</div>
+                    <div class="field-value">' . htmlspecialchars($acquisition_date) . ' / ' . htmlspecialchars($tag['unit_cost']) . '</div>
+                </div>
+            </div>
+            
+            <div class="field-row">
+                <div class="field-label">Accountable:</div>
+                <div class="field-value">' . htmlspecialchars($person_accountable) . '</div>
+            </div>
+            
+            <div class="two-column">
+                <div class="field-row">
+                    <div class="field-label">Date: (Acquired)</div>
+                    <div class="field-value">' . htmlspecialchars($acquisition_date) . '</div>
+                </div>
+                <div class="field-row">
+                    <div class="field-label">Date: (Counted)</div>
+                    <div class="field-value">' . htmlspecialchars($date_counted) . '</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="signature-section">
+            <div class="signature-row">
+                <div class="signature-box">
+                    <div class="signature-line"></div>
+                    <div class="signature-label">COA Representative</div>
+                </div>
+                <div class="signature-box">
+                    <div class="signature-line"></div>
+                    <div class="signature-label">Signature of the Inventory Committee</div>
+                </div>
+            </div>
+        </div>
+    </div>';
+}
 ?>
 
 <!DOCTYPE html>
@@ -171,10 +335,17 @@ $unserviceable_checked = ($tag['status'] === 'unserviceable' || $tag['status'] =
         
         .print-container {
             width: 100%;
-            max-width: 4in;
+            max-width: 8.5in;
             margin: 0 auto;
-            padding: 0;
+            padding: 20px;
             position: relative;
+        }
+        
+        .stickers-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: flex-start;
         }
         
         .tag-container {
@@ -186,6 +357,27 @@ $unserviceable_checked = ($tag['status'] === 'unserviceable' || $tag['status'] =
             page-break-inside: avoid;
             display: flex;
             flex-direction: column;
+            margin-bottom: 20px;
+        }
+        
+        @media print {
+            .stickers-wrapper {
+                display: block;
+                column-count: 2;
+                column-gap: 20px;
+            }
+            
+            .tag-container {
+                break-inside: avoid;
+                display: inline-block;
+                width: 100%;
+                margin-bottom: 0;
+                margin-top: 0;
+            }
+            
+            .tag-container:nth-child(even) {
+                break-before: column;
+            }
         }
         
         .tag-header {
@@ -383,116 +575,13 @@ $unserviceable_checked = ($tag['status'] === 'unserviceable' || $tag['status'] =
 </head>
 <body>
     <div class="print-container">
-        <div class="tag-container">
-            <div class="tag-header">
-                <div class="header-row">
-                    <div class="seal">
-                        <?php 
-                        $logo_path = '../img/trans_logo.png'; // default
-                        if (!empty($system_settings['system_logo'])) {
-                            if (file_exists('../' . $system_settings['system_logo'])) {
-                                $logo_path = '../' . $system_settings['system_logo'];
-                            } elseif (file_exists($system_settings['system_logo'])) {
-                                $logo_path = $system_settings['system_logo'];
-                            }
-                        }
-                        ?>
-                        <img src="<?php echo $logo_path; ?>" alt="LGU Logo" class="header-logo">
-                    </div>
-                    <div class="header-text">
-                        
-                        <h2>BAYAN NG PILAR</h2>
-                        <h3>LALAWIGAN NG SORSOGON</h3>
-                    </div>
-                    <div class="tag-number">
-                        <?php if (!empty($tag['qr_code'])): ?>
-                            <img src="../uploads/qr_codes/<?php echo htmlspecialchars($tag['qr_code']); ?>" 
-                                 alt="QR Code" 
-                                 class="tag-qr-code">
-                        <?php else: ?>
-                            <div class="qr-placeholder">
-                                <i class="bi bi-qr-code-scan"></i>
-                            </div>
-                        <?php endif; ?>
-                        <br>
-                        <small>No. <?php echo htmlspecialchars($tag['property_no'] ?? 'N/A'); ?></small>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="tag-body">
-                <div class="field-row">
-                    <div class="field-label">Office:</div>
-                    <div class="field-value"><?php echo htmlspecialchars($tag['office_name'] ?? ''); ?></div>
-                </div>
-                
-                <div class="field-row">
-                    <div class="field-label">Description:</div>
-                    <div class="field-value"><?php echo htmlspecialchars($tag['description']); ?></div>
-                </div>
-                
-                <div class="two-column">
-                    <div class="field-row">
-                        <div class="field-label">Model:</div>
-                        <div class="field-value"><?php echo htmlspecialchars($model_no); ?></div>
-                    </div>
-                    <div class="field-row">
-                        <div class="field-label">Serial:</div>
-                        <div class="field-value"><?php echo htmlspecialchars($serial_no); ?></div>
-                    </div>
-                </div>
-                
-                <div class="checkbox-row">
-                    <div class="checkbox-item">
-                        <div class="checkbox"><?php echo $serviceable_checked; ?></div>
-                        <div>Serviceable</div>
-                    </div>
-                    <div class="checkbox-item">
-                        <div class="checkbox"><?php echo $unserviceable_checked; ?></div>
-                        <div>Unserviceable</div>
-                    </div>
-                </div>
-                
-                <div class="two-column">
-                    <div class="field-row">
-                        <div class="field-label">Unit/Quantity:</div>
-                        <div class="field-value"><?php echo htmlspecialchars($unit_value); ?></div>
-                    </div>
-                    <div class="field-row">
-                        <div class="field-label">Acquisition Date/Cost:</div>
-                        <div class="field-value"><?php echo htmlspecialchars($acquisition_date); ?> / <?php echo htmlspecialchars($tag['unit_cost']); ?></div>
-                    </div>
-                </div>
-                
-                <div class="field-row">
-                    <div class="field-label">Accountable:</div>
-                    <div class="field-value"><?php echo htmlspecialchars($person_accountable); ?></div>
-                </div>
-                
-                <div class="two-column">
-                    <div class="field-row">
-                        <div class="field-label">Date: (Acquired)</div>
-                        <div class="field-value"><?php echo htmlspecialchars($acquisition_date); ?></div>
-                    </div>
-                    <div class="field-row">
-                        <div class="field-label">Date: (Counted)</div>
-                        <div class="field-value"><?php echo htmlspecialchars($date_counted); ?></div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="signature-section">
-                <div class="signature-row">
-                    <div class="signature-box">
-                        <div class="signature-line"></div>
-                        <div class="signature-label">COA Representative</div>
-                    </div>
-                    <div class="signature-box">
-                        <div class="signature-line"></div>
-                        <div class="signature-label">Signature of the Inventory Committee</div>
-                    </div>
-                </div>
-            </div>
+        <div class="stickers-wrapper">
+            <?php
+            // Generate HTML for each sticker
+            foreach ($stickers as $sticker) {
+                echo generateStickerHTML($sticker, $tag, $system_settings, $serviceable_checked, $unserviceable_checked, $acquisition_date, $date_counted, $person_accountable, $unit_value);
+            }
+            ?>
         </div>
     </div>
     
