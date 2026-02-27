@@ -59,7 +59,8 @@ $where_clause = "WHERE " . implode(" AND ", $where_conditions);
 $unserviceable_assets = [];
 $sql = "SELECT ai.*, ac.category_name, 
                ac.category_code, o.office_name, e.firstname, e.lastname, e.position,
-               adc.monitor_status, adc.ups_status, adc.monitor_name, adc.ups_name
+               adc.monitor_status, adc.ups_status, adc.monitor_name, adc.ups_name,
+               adc.monitor_value, adc.ups_value
         FROM asset_items ai 
         LEFT JOIN asset_categories ac ON ai.category_id = ac.id 
         LEFT JOIN offices o ON ai.office_id = o.id 
@@ -432,7 +433,34 @@ if ($categories_result) {
                                             <a href="view_asset_item.php?id=<?php echo $asset['id']; ?>" class="btn btn-outline-primary btn-action" title="View Details">
                                                 <i class="bi bi-eye"></i>
                                             </a>
-                                            <a href="create_redtag.php?asset_id=<?php echo $asset['id']; ?>&description=<?php echo urlencode($asset['description']); ?>&property_no=<?php echo urlencode($asset['property_number'] ?? ''); ?>&inventory_tag=<?php echo urlencode($asset['inventory_tag'] ?? ''); ?>&acquisition_date=<?php echo $asset['acquisition_date']; ?>&value=<?php echo $asset['value']; ?>&office_name=<?php echo urlencode($asset['office_name'] ?? ''); ?>" class="btn btn-outline-danger btn-action" title="Create Red Tag">
+                                            <a href="create_redtag.php?asset_id=<?php echo $asset['id']; ?>&description=<?php echo urlencode($asset['description']); ?>&property_no=<?php echo urlencode($asset['property_number'] ?? ''); ?>&inventory_tag=<?php echo urlencode($asset['inventory_tag'] ?? ''); ?>&acquisition_date=<?php echo $asset['acquisition_date']; ?>&value=<?php echo $asset['value']; ?>&office_name=<?php echo urlencode($asset['office_name'] ?? ''); ?>&component_type=<?php 
+                                                // Determine component type for red tag
+                                                if ($asset['monitor_status'] === 'unserviceable') {
+                                                    echo 'monitor';
+                                                } elseif ($asset['ups_status'] === 'unserviceable') {
+                                                    echo 'ups';
+                                                } else {
+                                                    echo 'main_asset';
+                                                }
+                                            ?>&component_description=<?php 
+                                                // Get component-specific description
+                                                if ($asset['monitor_status'] === 'unserviceable' && !empty($asset['monitor_name'])) {
+                                                    echo urlencode('Monitor - ' . $asset['monitor_name']);
+                                                } elseif ($asset['ups_status'] === 'unserviceable' && !empty($asset['ups_name'])) {
+                                                    echo urlencode('UPS - ' . $asset['ups_name']);
+                                                } else {
+                                                    echo urlencode($asset['description']);
+                                                }
+                                            ?>&component_value=<?php 
+                                                // Get component-specific value if available
+                                                if ($asset['monitor_status'] === 'unserviceable') {
+                                                    echo $asset['monitor_value'] ?: $asset['value'];
+                                                } elseif ($asset['ups_status'] === 'unserviceable') {
+                                                    echo $asset['ups_value'] ?: $asset['value'];
+                                                } else {
+                                                    echo $asset['value'];
+                                                }
+                                            ?>" class="btn btn-outline-danger btn-action" title="Create Red Tag">
                                                 <i class="bi bi-exclamation-triangle"></i>
                                             </a>
                                         </div>
