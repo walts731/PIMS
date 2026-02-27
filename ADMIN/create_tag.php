@@ -57,14 +57,6 @@ while ($category_row = $categories_result->fetch_assoc()) {
     $categories[] = $category_row;
 }
 
-// Get all offices for dropdown
-$offices = [];
-$offices_sql = "SELECT id, office_name, office_code FROM offices WHERE status = 'active' ORDER BY office_name";
-$offices_result = $conn->query($offices_sql);
-while ($office_row = $offices_result->fetch_assoc()) {
-    $offices[] = $office_row;
-}
-
 // Get subcategories for the selected category (if any)
 $subcategories = [];
 $selected_category_id = $item['category_id'] ?? 0;
@@ -407,15 +399,9 @@ $category_fields = [
                     </div>
                     <div class="col-md-4">
                         <div class="mb-3">
-                            <label for="office_id" class="form-label">Office <span class="required">*</span></label>
-                            <select class="form-select" id="office_id" name="office_id" required>
-                                <option value="">Select Office</option>
-                                <?php foreach ($offices as $office): ?>
-                                    <option value="<?php echo $office['id']; ?>" <?php echo ($office['id'] == $item['office_id']) ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($office['office_code'] . ' - ' . $office['office_name']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
+                            <label for="office_name" class="form-label">Office <span class="required">*</span></label>
+                            <input type="text" class="form-control" id="office_name" name="office_name" value="<?php echo htmlspecialchars($item['office_name'] ?? ''); ?>" placeholder="Enter office name" required>
+                            <small class="form-text text-muted">Enter the office name where this asset is located</small>
                         </div>
                     </div>
                 </div>
@@ -595,14 +581,6 @@ $category_fields = [
             $('#person_accountable').select2({
                 theme: 'bootstrap-5',
                 placeholder: 'Search and select employee...',
-                allowClear: true,
-                width: '100%'
-            });
-            
-            // Initialize Select2 for office dropdown
-            $('#office_id').select2({
-                theme: 'bootstrap-5',
-                placeholder: 'Search and select office...',
                 allowClear: true,
                 width: '100%'
             });

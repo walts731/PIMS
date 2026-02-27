@@ -22,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $item_id = intval($_POST['item_id']);
 $category_id = intval($_POST['category_id']);
 $subcategory_id = intval($_POST['subcategory_id'] ?? 0);
-$office_id = intval($_POST['office_id']);
+$office_name = trim($_POST['office_name'] ?? '');
 $property_no = trim($_POST['property_no']);
 $inventory_tag = trim($_POST['inventory_tag'] ?? '');
 $person_accountable = intval($_POST['person_accountable']);
@@ -90,7 +90,7 @@ if (isset($_FILES['asset_image']) && $_FILES['asset_image']['error'] === UPLOAD_
 }
 
 // Validate required fields
-if (empty($item_id) || empty($category_id) || empty($office_id) || empty($property_no) || empty($person_accountable) || empty($end_user) || empty($date_counted)) {
+if (empty($item_id) || empty($category_id) || empty($office_name) || empty($property_no) || empty($person_accountable) || empty($end_user) || empty($date_counted)) {
     $_SESSION['error'] = 'Please fill in all required fields';
     header('Location: create_tag.php?id=' . $item_id);
     exit();
@@ -100,12 +100,30 @@ try {
     // Start transaction
     $conn->begin_transaction();
     
+    // Check if office_name column exists in asset_items table, add if it doesn't
+    $check_column_sql = "SHOW COLUMNS FROM `asset_items` LIKE 'office_name'";
+    $column_result = $conn->query($check_column_sql);
+    
+    if ($column_result->num_rows == 0) {
+        // Add office_name column
+        $alter_sql = "ALTER TABLE `asset_items` ADD COLUMN `office_name` varchar(255) DEFAULT NULL AFTER `office_id`";
+        $conn->query($alter_sql);
+        
+        // Update existing records to copy office name from offices table
+        $update_sql = "UPDATE `asset_items` ai 
+                      LEFT JOIN `offices` o ON ai.office_id = o.id 
+                      SET ai.office_name = o.office_name 
+                      WHERE ai.office_id IS NOT NULL AND ai.office_name IS NULL";
+        $conn->query($update_sql);
+    }
+    
     // Update asset item with tag information using traditional SQL
     $property_no_safe = mysqli_real_escape_string($conn, $property_no);
     $inventory_tag_safe = !empty($inventory_tag) ? "'" . mysqli_real_escape_string($conn, $inventory_tag) . "'" : 'NULL';
     $date_counted_safe = mysqli_real_escape_string($conn, $date_counted);
     $image_filename_safe = mysqli_real_escape_string($conn, $image_filename);
     $end_user_safe = mysqli_real_escape_string($conn, $end_user);
+    $office_name_safe = mysqli_real_escape_string($conn, $office_name);
     
     $update_sql = "UPDATE asset_items SET 
                    property_no = '$property_no_safe', 
@@ -115,7 +133,7 @@ try {
                    employee_id = $person_accountable, 
                    category_id = $category_id,
                    asset_subcategory_id = " . ($subcategory_id > 0 ? $subcategory_id : 'NULL') . ",
-                   office_id = $office_id,
+                   office_name = '$office_name_safe',
                    end_user = '$end_user_safe',
                    status = 'serviceable',
                    last_updated = CURRENT_TIMESTAMP
@@ -189,6 +207,21 @@ try {
     
     if ($asset_row && $asset_row['asset_id']) {
         $asset_id = $asset_row['asset_id'];
+        
+        // Try to find office_id from offices table using office_name, or set to NULL
+        $office_id_for_assets = null;
+        if (!empty($office_name)) {
+            $find_office_sql = "SELECT id FROM offices WHERE office_name = ? LIMIT 1";
+            $find_office_stmt = $conn->prepare($find_office_sql);
+            $find_office_stmt->bind_param("s", $office_name);
+            $find_office_stmt->execute();
+            $office_result = $find_office_stmt->get_result();
+            if ($office_row = $office_result->fetch_assoc()) {
+                $office_id_for_assets = $office_row['id'];
+            }
+            $find_office_stmt->close();
+        }
+        
         $update_assets_sql = "UPDATE assets SET 
                               asset_categories_id = ?,
                               asset_subcategory_id = ?,
@@ -196,7 +229,7 @@ try {
                               updated_at = CURRENT_TIMESTAMP
                               WHERE id = ?";
         $update_assets_stmt = $conn->prepare($update_assets_sql);
-        $update_assets_stmt->bind_param("iiii", $category_id, $subcategory_id, $office_id, $asset_id);
+        $update_assets_stmt->bind_param("iiii", $category_id, $subcategory_id, $office_id_for_assets, $asset_id);
         $update_assets_stmt->execute();
     }
     
