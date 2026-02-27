@@ -1177,9 +1177,9 @@ $status_display = formatStatus($item['status']);
             // Prepare monitor data for IIRUP form
             const monitorData = {
                 id: <?php echo $item_id; ?>,
-                description: '<?php echo addslashes($item['monitor_name'] ?: 'Monitor - ' . $item['description']); ?>',
-                property_no: '<?php echo addslashes($item['monitor_property_no'] ?? ''); ?>',
-                inventory_tag: '<?php echo addslashes($item['monitor_inventory_tag'] ?? ''); ?>',
+                description: '<?php echo addslashes('Monitor - ' . ($item['monitor_name'] ?: $item['description'])); ?>',
+                property_no: '<?php echo addslashes($item['property_no'] ?? ''); ?>',
+                inventory_tag: '<?php echo addslashes($item['inventory_tag'] ?? ''); ?>',
                 acquisition_date: '<?php echo $item['acquisition_date']; ?>',
                 value: '<?php echo $item['monitor_value'] ?? $item['value']; ?>',
                 unit_cost: '<?php echo $item['monitor_unit_cost'] ?? $item['unit_cost']; ?>',
@@ -1187,7 +1187,8 @@ $status_display = formatStatus($item['status']);
                 category_name: 'Computer Equipment',
                 category_code: '030',
                 asset_description: '<?php echo addslashes($item['monitor_model'] ?: 'Monitor'); ?>',
-                unit: 'SET'
+                unit: 'SET',
+                component_type: 'monitor'
             };
             
             openIirupForm(monitorData);
@@ -1200,9 +1201,9 @@ $status_display = formatStatus($item['status']);
             // Prepare UPS data for IIRUP form
             const upsData = {
                 id: <?php echo $item_id; ?>,
-                description: '<?php echo addslashes($item['ups_name'] ?: 'UPS - ' . $item['description']); ?>',
-                property_no: '<?php echo addslashes($item['ups_property_no'] ?? ''); ?>',
-                inventory_tag: '<?php echo addslashes($item['ups_inventory_tag'] ?? ''); ?>',
+                description: '<?php echo addslashes('UPS - ' . ($item['ups_name'] ?: $item['description'])); ?>',
+                property_no: '<?php echo addslashes($item['property_no'] ?? ''); ?>',
+                inventory_tag: '<?php echo addslashes($item['inventory_tag'] ?? ''); ?>',
                 acquisition_date: '<?php echo $item['acquisition_date']; ?>',
                 value: '<?php echo $item['ups_value'] ?? $item['value']; ?>',
                 unit_cost: '<?php echo $item['ups_unit_cost'] ?? $item['unit_cost']; ?>',
@@ -1210,7 +1211,8 @@ $status_display = formatStatus($item['status']);
                 category_name: 'Computer Equipment',
                 category_code: '030',
                 asset_description: '<?php echo addslashes($item['ups_model'] ?: 'UPS'); ?>',
-                unit: 'SET'
+                unit: 'SET',
+                component_type: 'ups'
             };
             
             openIirupForm(upsData);
@@ -1231,6 +1233,7 @@ $status_display = formatStatus($item['status']);
             params.append('category_code', data.category_code);
             params.append('asset_description', data.asset_description);
             params.append('unit', data.unit);
+            params.append('component_type', data.component_type || 'main_asset');
             params.append('auto_fill', 'true');
             
             // Open IIRUP form with component data
