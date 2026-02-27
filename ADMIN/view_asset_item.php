@@ -22,9 +22,12 @@ $item = null;
 $item_sql = "SELECT ai.*, 
                    a.description as asset_description, a.unit, a.quantity as asset_quantity, a.unit_cost,
                    ac.category_name, ac.category_code,
+                   subcat.sub_category_name, subcat.sub_category_code,
                    o.office_name,
                    comp.processor, comp.ram_capacity, comp.storage_type, comp.storage_capacity, 
                    comp.operating_system, comp.serial_number as computer_serial_number,
+                   desk.monitor_name, desk.monitor_model, desk.monitor_serial_number, 
+                   desk.ups_name, desk.ups_model, desk.ups_serial_number,
                    veh.brand as vehicle_brand, veh.model as vehicle_model, veh.plate_number, veh.color, veh.engine_number, veh.chassis_number, veh.year_manufactured,
                    furn.material, furn.dimensions as furniture_dimensions, furn.color as furniture_color, furn.manufacturer as furniture_manufacturer,
                    mach.machine_type, mach.manufacturer as machinery_manufacturer, mach.model_number, mach.capacity as machinery_capacity, mach.power_requirements, mach.serial_number as machinery_serial_number,
@@ -37,8 +40,10 @@ $item_sql = "SELECT ai.*,
             FROM asset_items ai 
             LEFT JOIN assets a ON ai.asset_id = a.id 
             LEFT JOIN asset_categories ac ON a.asset_categories_id = ac.id 
+            LEFT JOIN asset_sub_categories subcat ON ai.asset_subcategory_id = subcat.id
             LEFT JOIN offices o ON ai.office_id = o.id 
             LEFT JOIN asset_computers comp ON ai.id = comp.asset_item_id
+            LEFT JOIN asset_desktop_computers desk ON ai.id = desk.asset_item_id
             LEFT JOIN asset_vehicles veh ON ai.id = veh.asset_item_id
             LEFT JOIN asset_furniture furn ON ai.id = furn.asset_item_id
             LEFT JOIN asset_machinery mach ON ai.id = mach.asset_item_id
@@ -62,6 +67,18 @@ if (!$item) {
     $_SESSION['error'] = 'Asset item not found';
     header('Location: asset_items.php');
     exit();
+}
+
+// Decode images from JSON if available
+$asset_images = [];
+if (!empty($item['image'])) {
+    $decoded_images = json_decode($item['image'], true);
+    if (is_array($decoded_images)) {
+        $asset_images = $decoded_images;
+    } elseif (!empty($item['image'])) {
+        // Handle case where it's a single filename (not JSON)
+        $asset_images = [$item['image']];
+    }
 }
 
 // Get asset ID for navigation
@@ -296,6 +313,54 @@ $status_display = formatStatus($item['status']);
         .no-image-placeholder svg {
             opacity: 0.5;
         }
+        
+        /* Carousel Styles */
+        .asset-carousel {
+            border-radius: var(--border-radius-md);
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .carousel-item img {
+            height: 300px;
+            object-fit: cover;
+            width: 100%;
+        }
+        
+        .carousel-control-prev,
+        .carousel-control-next {
+            width: 40px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 0;
+        }
+        
+        .carousel-control-prev {
+            left: 0;
+        }
+        
+        .carousel-control-next {
+            right: 0;
+        }
+        
+        .carousel-indicators [data-bs-target] {
+            background-color: #191BA9;
+        }
+        
+        .carousel-indicators .active {
+            background-color: #0d1a8a;
+        }
+        
+        .image-counter {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            z-index: 10;
+        }
     </style>
 </head>
 <body>
@@ -485,6 +550,45 @@ $status_display = formatStatus($item['status']);
                                 <div class="mb-3">
                                     <div class="detail-label">Storage Type</div>
                                     <div class="detail-value"><?php echo $item['storage_type'] ? htmlspecialchars(ucfirst($item['storage_type'])) : '<span class="text-muted">Not specified</span>'; ?></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                    
+                    <!-- Desktop Computers Specific Fields -->
+                    <?php if ($item['sub_category_name'] === 'Desktop Computers'): ?>
+                    <div class="detail-section">
+                        <h5 class="mb-3"><i class="bi bi-display"></i> Desktop Computer Specifications</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-muted mb-3">Monitor Details</h6>
+                                <div class="mb-3">
+                                    <div class="detail-label">Monitor Name</div>
+                                    <div class="detail-value"><?php echo $item['monitor_name'] ? htmlspecialchars($item['monitor_name']) : '<span class="text-muted">Not specified</span>'; ?></div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="detail-label">Monitor Model</div>
+                                    <div class="detail-value"><?php echo $item['monitor_model'] ? htmlspecialchars($item['monitor_model']) : '<span class="text-muted">Not specified</span>'; ?></div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="detail-label">Monitor Serial Number</div>
+                                    <div class="detail-value"><?php echo $item['monitor_serial_number'] ? htmlspecialchars($item['monitor_serial_number']) : '<span class="text-muted">Not specified</span>'; ?></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-muted mb-3">UPS Details</h6>
+                                <div class="mb-3">
+                                    <div class="detail-label">UPS Name</div>
+                                    <div class="detail-value"><?php echo $item['ups_name'] ? htmlspecialchars($item['ups_name']) : '<span class="text-muted">Not specified</span>'; ?></div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="detail-label">UPS Model</div>
+                                    <div class="detail-value"><?php echo $item['ups_model'] ? htmlspecialchars($item['ups_model']) : '<span class="text-muted">Not specified</span>'; ?></div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="detail-label">UPS Serial Number</div>
+                                    <div class="detail-value"><?php echo $item['ups_serial_number'] ? htmlspecialchars($item['ups_serial_number']) : '<span class="text-muted">Not specified</span>'; ?></div>
                                 </div>
                             </div>
                         </div>
@@ -695,34 +799,66 @@ $status_display = formatStatus($item['status']);
             
             <!-- Sidebar Column -->
             <div class="col-lg-4">
-                <!-- Asset Image -->
+                <!-- Asset Images Carousel -->
                 <div class="detail-card text-center">
-                    <h5 class="mb-3"><i class="bi bi-image"></i> Asset Image</h5>
-                    <div class="asset-image-container mb-3">
-                        <?php if (!empty($item['image'])): ?>
-                            <img src="../uploads/asset_images/<?php echo htmlspecialchars($item['image']); ?>" 
-                                 alt="Asset Image" 
-                                 class="img-fluid rounded shadow-sm"
-                                 style="max-height: 300px; width: auto; object-fit: cover;"
-                                 onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgdmlld0JveD0iMCAwIDMwMCAzMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIiBmaWxsPSIjRjVGNUY1Ii8+CjxwYXRoIGQ9Ik0xMjUgMTIwSDE3NVYxNzVIMTI1VjEyMFoiIGZpbGw9IiNEMUQ1REIiLz4KPHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEwIDIwQzEwIDIyLjIwOTEgMTEuNzkwOSAyNCAxNCAyNEgyNkMyOC4yMDkxIDI0IDMwIDIyLjIwOTEgMzAgMjBWMzBIMTBWMjBaTTEwIDEwQzEwIDEyLjIwOTEgMTEuNzkwOSAxNCAxNCAxNEgyNkMyOC4yMDkxIDE0IDMwIDEyLjIwOTEgMzAgMTBWMTBIMTBaIiBmaWxsPSIjRDRERDREIi8+Cjwvc3ZnPgo8L3N2Zz4K';">
-                            <div class="mt-2">
-                                <small class="text-muted">Image uploaded</small>
-                            </div>
-                        <?php else: ?>
-                            <div class="no-image-placeholder">
-                                <svg width="150" height="150" viewBox="0 0 150 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <rect width="150" height="150" fill="#F5F5F5"/>
-                                    <path d="M62.5 60H87.5V87.5H62.5V60Z" fill="#D1D5DB"/>
-                                    <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" x="55" y="55">
-                                        <path d="M10 20C10 22.2091 11.7909 24 14 24H26C28.2091 24 30 22.2091 30 20V30H10V20ZM10 10C10 12.2091 11.7909 14 14 14H26C28.2091 14 30 12.2091 30 10V10H10V10Z" fill="#D4D4D4"/>
-                                    </svg>
-                                </svg>
-                                <div class="mt-2">
-                                    <small class="text-muted">No image available</small>
+                    <h5 class="mb-3"><i class="bi bi-images"></i> Asset Images</h5>
+                    <?php if (!empty($asset_images)): ?>
+                        <div id="assetImageCarousel" class="carousel slide asset-carousel mb-3" data-bs-ride="carousel">
+                            <?php if (count($asset_images) > 1): ?>
+                                <div class="carousel-indicators">
+                                    <?php foreach ($asset_images as $index => $image): ?>
+                                        <button type="button" data-bs-target="#assetImageCarousel" data-bs-slide-to="<?php echo $index; ?>" class="<?php echo $index === 0 ? 'active' : ''; ?>" aria-current="<?php echo $index === 0 ? 'true' : 'false'; ?>" aria-label="Slide <?php echo $index + 1; ?>"></button>
+                                    <?php endforeach; ?>
                                 </div>
+                            <?php endif; ?>
+                            
+                            <div class="carousel-inner">
+                                <?php foreach ($asset_images as $index => $image): ?>
+                                    <div class="carousel-item <?php echo $index === 0 ? 'active' : ''; ?>">
+                                        <img src="../uploads/asset_images/<?php echo htmlspecialchars($image); ?>" 
+                                             class="d-block w-100" 
+                                             alt="Asset Image <?php echo $index + 1; ?>"
+                                             onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgdmlld0JveD0iMCAwIDMwMCAzMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIiBmaWxsPSIjRjVGNUY1Ii8+CjxwYXRoIGQ9Ik0xMjUgMTIwSDE3NVYxNzVIMTI1VjEyMFoiIGZpbGw9IiNEMUQ1REIiLz4KPHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEwIDIwQzEwIDIyLjIwOTEgMTEuNzkwOSAyNCAxNCAyNEgyNkMyOC4yMDkxIDI0IDMwIDIyLjIwOTEgMzAgMjBWMzBIMTBWMjBaTTEwIDEwQzEwIDEyLjIwOTEgMTEuNzkwOSAxNCAxNCAxNEgyNkMyOC4yMDkxIDE0IDMwIDEyLjIwOTEgMzAgMTBWMTBIMTBaIiBmaWxsPSIjRDRERDREIi8+Cjwvc3ZnPgo8L3N2Zz4K';">
+                                        <?php if (count($asset_images) > 1): ?>
+                                            <div class="image-counter"><?php echo ($index + 1) . ' / ' . count($asset_images); ?></div>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endforeach; ?>
                             </div>
-                        <?php endif; ?>
-                    </div>
+                            
+                            <?php if (count($asset_images) > 1): ?>
+                                <button class="carousel-control-prev" type="button" data-bs-target="#assetImageCarousel" data-bs-slide="prev">
+                                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                    <span class="visually-hidden">Previous</span>
+                                </button>
+                                <button class="carousel-control-next" type="button" data-bs-target="#assetImageCarousel" data-bs-slide="next">
+                                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                    <span class="visually-hidden">Next</span>
+                                </button>
+                            <?php endif; ?>
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                <?php echo count($asset_images); ?> image(s) available
+                                <?php if (count($asset_images) > 1): ?>
+                                    - Use arrows or dots to navigate
+                                <?php endif; ?>
+                            </small>
+                        </div>
+                    <?php else: ?>
+                        <div class="no-image-placeholder">
+                            <svg width="150" height="150" viewBox="0 0 150 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect width="150" height="150" fill="#F5F5F5"/>
+                                <path d="M62.5 60H87.5V87.5H62.5V60Z" fill="#D1D5DB"/>
+                                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" x="55" y="55">
+                                    <path d="M10 20C10 22.2091 11.7909 24 14 24H26C28.2091 24 30 22.2091 30 20V30H10V20ZM10 10C10 12.2091 11.7909 14 14 14H26C28.2091 14 30 12.2091 30 10V10H10V10Z" fill="#D4D4D4"/>
+                                </svg>
+                            </svg>
+                            <div class="mt-2">
+                                <small class="text-muted">No images available</small>
+                            </div>
+                        </div>
+                    <?php endif; ?>
                 </div>
                 
                 <!-- QR Code -->
