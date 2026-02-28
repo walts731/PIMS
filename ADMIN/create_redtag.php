@@ -144,14 +144,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['generate_redtag'])) {
         error_log("Red Tag Debug - Data: control_no=$control_no, red_tag_no=$red_tag_no, asset_item_id=$asset_item_id, office_id=$office_id");
         
         // Insert into red_tags table
-        $insert_sql = "INSERT INTO red_tags (control_no, red_tag_no, date_received, tagged_by, item_location, item_description, removal_reason, action, office_id, asset_item_id, created_by) 
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $insert_sql = "INSERT INTO red_tags (control_no, red_tag_no, date_received, tagged_by, item_location, item_description, removal_reason, action, office_id, asset_item_id, created_by, component_type, component_description) 
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $insert_stmt = $conn->prepare($insert_sql);
         if (!$insert_stmt) {
             throw new Exception("Prepare failed: " . $conn->error);
         }
         
-        $bind_result = $insert_stmt->bind_param("ssssssssiii", $control_no, $red_tag_no, $date_received, $tagged_by, $item_location, $item_description, $removal_reason, $action, $office_id, $asset_item_id, $_SESSION['user_id']);
+        $bind_result = $insert_stmt->bind_param("ssssssssiiiss", $control_no, $red_tag_no, $date_received, $tagged_by, $item_location, $item_description, $removal_reason, $action, $office_id, $asset_item_id, $_SESSION['user_id'], $component_type, $component_description);
         if (!$bind_result) {
             throw new Exception("Bind failed: " . $insert_stmt->error);
         }
