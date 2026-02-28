@@ -76,7 +76,31 @@ logSystemAction($_SESSION['user_id'], 'print', 'inventory_tag', "Printed invento
 // Get additional specific data based on category
 $model_no = '';
 $serial_no = '';
+
+// Calculate unit quantity based on how many asset items share the same asset_id
 $unit_value = 1;
+$unit_sets = 1;
+$asset_id = $tag['asset_id'] ?? '';
+
+if (!empty($asset_id)) {
+    // Get all asset items with this asset_id, ordered by ID
+    $items_sql = "SELECT id FROM asset_items WHERE asset_id = ? ORDER BY id";
+    $items_stmt = $conn->prepare($items_sql);
+    $items_stmt->bind_param("i", $asset_id);
+    $items_stmt->execute();
+    $items_result = $items_stmt->get_result();
+    
+    $all_items = [];
+    while ($row = $items_result->fetch_assoc()) {
+        $all_items[] = $row['id'];
+    }
+    $items_stmt->close();
+    
+    // Calculate current position and total
+    $unit_sets = count($all_items);
+    $current_position = array_search($tag_id, $all_items) + 1; // +1 because array is 0-indexed
+    $unit_value = $current_position;
+}
 
 if ($tag['category_code'] === '030') {
     // Computer Equipment
@@ -174,7 +198,7 @@ if ($tag['sub_category_name'] === 'Desktop Computers') {
             'qr_code' => $tag['qr_code'] ?? null // Use same QR code as main asset
         ];
     }
-    
+
     // UPS sticker
     if (!empty($tag['ups_name']) || !empty($tag['ups_model'])) {
         $ups_desc = trim(($tag['ups_name'] ?? '') . ' ' . ($tag['ups_model'] ?? ''));
@@ -190,7 +214,8 @@ if ($tag['sub_category_name'] === 'Desktop Computers') {
 }
 
 // Function to generate sticker HTML
-function generateStickerHTML($sticker, $tag, $system_settings, $serviceable_checked, $unserviceable_checked, $acquisition_date, $date_counted, $person_accountable, $unit_value) {
+function generateStickerHTML($sticker, $tag, $system_settings, $serviceable_checked, $unserviceable_checked, $acquisition_date, $date_counted, $person_accountable, $unit_value, $unit_sets)
+{
     // Get logo path
     $logo_path = '../img/trans_logo.png'; // default
     if (!empty($system_settings['system_logo'])) {
@@ -200,45 +225,50 @@ function generateStickerHTML($sticker, $tag, $system_settings, $serviceable_chec
             $logo_path = $system_settings['system_logo'];
         }
     }
-    
+
     $sticker_type_label = '';
     if ($sticker['type'] === 'monitor') {
         $sticker_type_label = ' - MONITOR';
     } elseif ($sticker['type'] === 'ups') {
         $sticker_type_label = ' - UPS';
     }
-    
+
     return '
     <div class="tag-container" style="page-break-inside: avoid; margin-bottom: 20px;">
         <div class="tag-header">
+        <div class="property">
+                <small>No. ' . htmlspecialchars($sticker['property_no']) . '</small>
+            </div>
             <div class="header-row">
                 <div class="seal">
                     <img src="' . $logo_path . '" alt="LGU Logo" class="header-logo">
                 </div>
                 <div class="header-text">
-                    <h2>BAYAN NG PILAR' . $sticker_type_label . '</h2>
+                    <h2>BAYAN NG PILAR</h2>
                     <h3>LALAWIGAN NG SORSOGON</h3>
                 </div>
                 <div class="tag-number">
-                    ' . ($sticker['qr_code'] ? 
-                        '<img src="../uploads/qr_codes/' . htmlspecialchars($sticker['qr_code']) . '" alt="QR Code" class="tag-qr-code">' : 
-                        '<div class="qr-placeholder"><i class="bi bi-qr-code-scan"></i></div>'
-                    ) . '
                     <br>
-                    <small>No. ' . htmlspecialchars($sticker['property_no']) . '</small>
+                    ' . ($sticker['qr_code'] ?
+        '<img src="../uploads/qr_codes/' . htmlspecialchars($sticker['qr_code']) . '" alt="QR Code" class="tag-qr-code">' :
+        '<div class="qr-placeholder"><i class="bi bi-qr-code-scan"></i></div>'
+    ) . '
                 </div>
+            </div>
+             <div class="field-row">
+                <div class=" office-name-field">' . htmlspecialchars($tag['office_name'] ?? '') . '</div>
+            </div>
+             <div class="field-row office-location-row">
+                <div class="field-label text-right">Office/Location:</div>
             </div>
         </div>
         
         <div class="tag-body">
-            <div class="field-row">
-                <div class="field-label">Office:</div>
-                <div class="field-value">' . htmlspecialchars($tag['office_name'] ?? '') . '</div>
-            </div>
+           
             
             <div class="field-row">
                 <div class="field-label">Description:</div>
-                <div class="field-value">' . htmlspecialchars($sticker['description']) . '</div>
+                <div class="field-value">' . htmlspecialchars($sticker['description']) . $sticker_type_label . '</div>
             </div>
             
             <div class="two-column">
@@ -266,7 +296,7 @@ function generateStickerHTML($sticker, $tag, $system_settings, $serviceable_chec
             <div class="two-column">
                 <div class="field-row">
                     <div class="field-label">Unit/Quantity:</div>
-                    <div class="field-value">' . htmlspecialchars($unit_value) . '</div>
+                    <div class="field-value">' . ($unit_sets > 1 ? htmlspecialchars($unit_value) . ' of ' . htmlspecialchars($unit_sets) . ' sets' : htmlspecialchars($unit_value)) . '</div>
                 </div>
                 <div class="field-row">
                     <div class="field-label">Acquisition Date/Cost:</div>
@@ -309,6 +339,7 @@ function generateStickerHTML($sticker, $tag, $system_settings, $serviceable_chec
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -318,13 +349,13 @@ function generateStickerHTML($sticker, $tag, $system_settings, $serviceable_chec
             size: Letter;
             margin: 0.5in;
         }
-        
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: 'Times New Roman', serif;
             font-size: 12px;
@@ -332,7 +363,7 @@ function generateStickerHTML($sticker, $tag, $system_settings, $serviceable_chec
             color: #000;
             background: white;
         }
-        
+
         .print-container {
             width: 100%;
             max-width: 8.5in;
@@ -340,33 +371,33 @@ function generateStickerHTML($sticker, $tag, $system_settings, $serviceable_chec
             padding: 20px;
             position: relative;
         }
-        
+
         .stickers-wrapper {
             display: flex;
             flex-wrap: wrap;
-            gap: 20px;
+            gap: 15px;
             justify-content: flex-start;
         }
-        
+
         .tag-container {
-            width: 4in;
-            height: 4in;
+            width: 3.5in;
+            height: 3in;
             border: 2px solid #000;
-            padding: 15px;
+            padding: 12px;
             background: white;
             page-break-inside: avoid;
             display: flex;
             flex-direction: column;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
-        
+
         @media print {
             .stickers-wrapper {
                 display: block;
                 column-count: 2;
-                column-gap: 20px;
+                column-gap: 15px;
             }
-            
+
             .tag-container {
                 break-inside: avoid;
                 display: inline-block;
@@ -374,217 +405,252 @@ function generateStickerHTML($sticker, $tag, $system_settings, $serviceable_chec
                 margin-bottom: 0;
                 margin-top: 0;
             }
-            
+
             .tag-container:nth-child(even) {
                 break-before: column;
             }
         }
-        
+
         .tag-header {
             text-align: center;
-            border-bottom: 2px solid #000;
             padding-bottom: 8px;
             margin-bottom: 10px;
         }
-        
+
+        .property {
+            text-align: right;
+            margin-top: 5px;
+            font-size: 8px;
+        }
+
         .header-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 5px;
         }
-        
+
         .seal {
-            width: 40px;
-            height: 40px;
+            width: 35px;
+            height: 35px;
             border: 2px solid #000;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 6px;
+            font-size: 5px;
             text-align: center;
             font-weight: bold;
+            flex-shrink: 0;
         }
-        
+
         .header-text {
-            flex: 1;
+            flex: 0.8;
             text-align: center;
-            margin: 0 10px;
+            margin: 0 8px 0 2px;
         }
-        
+
         .header-logo {
-            max-width: 36px;
-            max-height: 36px;
+            max-width: 31px;
+            max-height: 31px;
             border-radius: 50%;
             object-fit: contain;
         }
-        
+
         .header-text h2 {
             margin: 0;
-            font-size: 10px;
+            font-size: 9px;
             font-weight: bold;
             text-transform: uppercase;
         }
-        
+
         .header-text h3 {
             margin: 2px 0 0 0;
-            font-size: 8px;
+            font-size: 7px;
             font-weight: bold;
             text-transform: uppercase;
         }
-        
+
         .tag-number {
-            font-size: 12px;
+            font-size: 10px;
             font-weight: bold;
             text-align: right;
         }
-        
+
         .tag-qr-code {
-            width: 40px;
-            height: 40px;
+            width: 35px;
+            height: 35px;
             border: 1px solid #000;
-            border-radius: 4px;
             object-fit: contain;
         }
-        
+
         .qr-placeholder {
-            width: 40px;
-            height: 40px;
+            width: 35px;
+            height: 35px;
             border: 1px solid #000;
             border-radius: 4px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            font-size: 18px;
             color: #666;
         }
-        
+
         .tag-body {
             flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            font-size: 8px;
+            gap: 6px;
+            font-size: 7px;
         }
-        
+
         .field-row {
             display: flex;
             align-items: flex-start;
             gap: 5px;
         }
-        
+
         .field-label {
-            width: 70px;
+            width: 60px;
             font-weight: bold;
             flex-shrink: 0;
-            font-size: 7px;
+            font-size: 6px;
+            text-align: center;
         }
-        
+
+        .office-location-row {
+            justify-content: center;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
         .field-value {
             flex: 1;
             border-bottom: 1px solid #000;
-            min-height: 12px;
+            min-height: 8px;
             padding: 1px 2px;
-            font-size: 7px;
+            font-size: 6px;
+            width: fit-content;
+            max-width: 100%;
         }
-        
+
         .checkbox-row {
             display: flex;
             gap: 15px;
             margin-bottom: 5px;
         }
-        
+
         .checkbox-item {
             display: flex;
             align-items: center;
             gap: 3px;
         }
-        
+
         .checkbox {
-            font-size: 10px;
-            width: 12px;
-            height: 12px;
+            font-size: 9px;
+            width: 10px;
+            height: 10px;
             border: 1px solid #000;
             display: flex;
             align-items: center;
             justify-content: center;
         }
-        
+
         .two-column {
             display: flex;
             gap: 10px;
         }
-        
+
         .two-column .field-row {
             flex: 1;
         }
-        
+
         .signature-section {
             margin-top: auto;
             border-top: 1px solid #000;
-            padding-top: 8px;
+            padding-top: 6px;
         }
-        
+
         .signature-row {
             display: flex;
             justify-content: space-between;
             gap: 10px;
         }
-        
+
         .signature-box {
             flex: 1;
             text-align: center;
         }
-        
+
         .signature-line {
             border-bottom: 1px solid #000;
-            height: 15px;
-            margin-bottom: 3px;
+            height: 12px;
+            margin-bottom: 2px;
         }
-        
+
         .signature-label {
-            font-size: 6px;
+            font-size: 5px;
             font-style: italic;
         }
-        
-        @media print {
-            body {
-                margin: 0;
-                padding: 0;
-            }
-            
-            .print-container {
-                padding: 0;
-            }
-            
-            @page {
-                size: Letter;
-                margin: 0.5in;
-            }
-            
-            html {
-                overflow: hidden;
-            }
-            
-            header, nav, .no-print {
-                display: none !important;
-            }
+
+        .office-name-field {
+            text-decoration: underline;
+            font-weight: bold;
+            font-size: 8px;
+            color: #000;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            width: 200px;
+            height: 12px;
+            margin-bottom: 3px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 2px;
         }
-    </style>
+
+    @media print {
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        .print-container {
+            padding: 0;
+        }
+
+        @page {
+            size: Letter;
+            margin: 0.5in;
+        }
+
+        html {
+            overflow: hidden;
+        }
+
+        header,
+        nav,
+        .no-print {
+            display: none !important;
+        }
+    }
+</style>
 </head>
+
 <body>
     <div class="print-container">
         <div class="stickers-wrapper">
             <?php
             // Generate HTML for each sticker
             foreach ($stickers as $sticker) {
-                echo generateStickerHTML($sticker, $tag, $system_settings, $serviceable_checked, $unserviceable_checked, $acquisition_date, $date_counted, $person_accountable, $unit_value);
+                echo generateStickerHTML($sticker, $tag, $system_settings, $serviceable_checked, $unserviceable_checked, $acquisition_date, $date_counted, $person_accountable, $unit_value, $unit_sets);
             }
             ?>
         </div>
     </div>
-    
+
     <script>
         // Auto-print when page loads
         window.onload = function() {
@@ -592,11 +658,12 @@ function generateStickerHTML($sticker, $tag, $system_settings, $serviceable_chec
                 window.print();
             }, 500);
         };
-        
+
         // Close window after printing
         window.onafterprint = function() {
             window.close();
         };
     </script>
 </body>
+
 </html>
