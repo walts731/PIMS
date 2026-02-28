@@ -66,7 +66,7 @@ $fuel_types_result = $conn->query($fuel_types_query);
             <?php if ($fuel_in_result->num_rows > 0): ?>
                 <?php while ($transaction = $fuel_in_result->fetch_assoc()): ?>
                     <tr>
-                        <td><?php echo date('M j, Y H:i', strtotime($transaction['date_time'])); ?></td>
+                        <td><?php echo date('M j, Y g:i A', strtotime($transaction['date_time'])); ?></td>
                         <td>
                             <span class="fuel-type-badge fuel-type-<?php echo strtolower(htmlspecialchars($transaction['fuel_type_name'] ?? 'unknown')); ?>">
                                 <?php echo ucfirst(htmlspecialchars($transaction['fuel_type_name'] ?? 'Unknown')); ?>

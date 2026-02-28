@@ -369,7 +369,7 @@ function showEditTransactionForm($transaction_id) {
     <div class="alert alert-info">
         <h6>Transaction Details</h6>
         <p><strong>ID:</strong> <?php echo $transaction['id']; ?></p>
-        <p><strong>Date:</strong> <?php echo date('M j, Y H:i', strtotime($transaction['transaction_date'])); ?></p>
+        <p><strong>Date:</strong> <?php echo date('M j, Y g:i A', strtotime($transaction['transaction_date'])); ?></p>
         <p><strong>Type:</strong> <?php echo $transaction['transaction_type']; ?></p>
         <p><strong>Fuel Type:</strong> <?php echo ucfirst($transaction['fuel_type']); ?></p>
         <p><strong>Quantity:</strong> <?php echo number_format($transaction['quantity'], 2); ?> L</p>

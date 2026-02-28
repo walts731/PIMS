@@ -112,6 +112,47 @@ logSystemAction($_SESSION['user_id'], 'access', 'fuel_inventory', 'User accessed
             color: #adb5bd;
         }
         
+        /* Compact card styles */
+        .fuel-stats-card.compact {
+            padding: 0.75rem;
+            min-height: auto;
+        }
+        
+        .fuel-stats-card.compact .stats-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .fuel-stats-card.compact .stats-info {
+            flex: 1;
+        }
+        
+        .fuel-stats-card.compact .stats-value {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            line-height: 1.2;
+        }
+        
+        .fuel-stats-card.compact .stats-label {
+            font-size: 0.75rem;
+            margin-bottom: 0;
+            line-height: 1.2;
+        }
+        
+        .fuel-stats-card.compact .stats-detail {
+            font-size: 0.7rem;
+            white-space: nowrap;
+            text-align: right;
+        }
+        
+        .fuel-stats-card.compact.total .stats-detail {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+        
         .fuel-level-indicator {
             height: 8px;
             border-radius: 4px;
