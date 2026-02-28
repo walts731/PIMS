@@ -1093,22 +1093,42 @@ $status_display = formatStatus($item['status']);
                             </div>
                         </button>
                         
-                        <?php if ($item['sub_category_name'] === 'Desktop Computers' && $has_monitor_details): ?>
+                        <?php if ($item['sub_category_name'] === 'Desktop Computers' && $has_monitor_details && ($item['monitor_status'] === 'serviceable' || $item['monitor_status'] === null)): ?>
                         <button type="button" class="btn btn-outline-success btn-lg" onclick="addMonitorToIirup()">
                             <i class="bi bi-display"></i>
                             <div class="mt-2">
                                 <strong>Monitor</strong>
                                 <div class="small text-muted"><?php echo htmlspecialchars($item['monitor_name'] ?: 'Monitor'); ?></div>
+                                <div class="small text-success">Available for IIRUP</div>
+                            </div>
+                        </button>
+                        <?php elseif ($item['sub_category_name'] === 'Desktop Computers' && $has_monitor_details): ?>
+                        <button type="button" class="btn btn-outline-secondary btn-lg" disabled>
+                            <i class="bi bi-display"></i>
+                            <div class="mt-2">
+                                <strong>Monitor</strong>
+                                <div class="small text-muted"><?php echo htmlspecialchars($item['monitor_name'] ?: 'Monitor'); ?></div>
+                                <div class="small text-warning">Not available (<?php echo ucfirst(str_replace('_', ' ', $item['monitor_status'] ?: 'no_status')); ?>)</div>
                             </div>
                         </button>
                         <?php endif; ?>
                         
-                        <?php if ($item['sub_category_name'] === 'Desktop Computers' && $has_ups_details): ?>
+                        <?php if ($item['sub_category_name'] === 'Desktop Computers' && $has_ups_details && ($item['ups_status'] === 'serviceable' || $item['ups_status'] === null)): ?>
                         <button type="button" class="btn btn-outline-warning btn-lg" onclick="addUpsToIirup()">
                             <i class="bi bi-battery-charging"></i>
                             <div class="mt-2">
                                 <strong>UPS</strong>
                                 <div class="small text-muted"><?php echo htmlspecialchars($item['ups_name'] ?: 'UPS'); ?></div>
+                                <div class="small text-success">Available for IIRUP</div>
+                            </div>
+                        </button>
+                        <?php elseif ($item['sub_category_name'] === 'Desktop Computers' && $has_ups_details): ?>
+                        <button type="button" class="btn btn-outline-secondary btn-lg" disabled>
+                            <i class="bi bi-battery-charging"></i>
+                            <div class="mt-2">
+                                <strong>UPS</strong>
+                                <div class="small text-muted"><?php echo htmlspecialchars($item['ups_name'] ?: 'UPS'); ?></div>
+                                <div class="small text-warning">Not available (<?php echo ucfirst(str_replace('_', ' ', $item['ups_status'] ?: 'no_status')); ?>)</div>
                             </div>
                         </button>
                         <?php endif; ?>
