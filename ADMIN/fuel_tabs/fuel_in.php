@@ -60,7 +60,6 @@ $fuel_types_result = $conn->query($fuel_types_query);
                 <th>Supplier</th>
                 <th>Storage Location</th>
                 <th>Received By</th>
-                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -79,21 +78,11 @@ $fuel_types_result = $conn->query($fuel_types_query);
                         <td><?php echo htmlspecialchars($transaction['supplier_name'] ?? 'N/A'); ?></td>
                         <td><?php echo htmlspecialchars($transaction['storage_location'] ?? 'N/A'); ?></td>
                         <td><?php echo htmlspecialchars(($transaction['first_name'] ?? '') . ' ' . ($transaction['last_name'] ?? '')); ?></td>
-                        <td>
-                            <div class="table-actions">
-                                <button class="btn btn-outline-primary btn-sm" onclick="viewTransaction(<?php echo $transaction['id']; ?>)" title="View Details">
-                                    <i class="bi bi-eye"></i>
-                                </button>
-                                <button class="btn btn-outline-danger btn-sm" onclick="deleteTransaction(<?php echo $transaction['id']; ?>)" title="Delete">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </div>
-                        </td>
                     </tr>
                 <?php endwhile; ?>
             <?php else: ?>
                 <tr>
-                    <td colspan="9" class="text-center py-4">
+                    <td colspan="8" class="text-center py-4">
                         <div class="text-muted">
                             <i class="bi bi-arrow-down-circle" style="font-size: 3rem;"></i>
                             <p class="mt-2 mb-0">No fuel in transactions found</p>
