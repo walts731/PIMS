@@ -62,9 +62,7 @@ $employees_result = $conn->query($employees_query);
                 <th>Employee</th>
                 <th>Purpose</th>
                 <th>Vehicle/Equipment</th>
-                <th>Tank Number</th>
                 <th>Recorded By</th>
-                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -89,23 +87,12 @@ $employees_result = $conn->query($employees_query);
                         </td>
                         <td><?php echo htmlspecialchars($transaction['purpose']); ?></td>
                         <td><?php echo htmlspecialchars($transaction['vehicle_equipment'] ?? 'N/A'); ?></td>
-                        <td><?php echo htmlspecialchars($transaction['tank_number'] ?? 'N/A'); ?></td>
                         <td><?php echo htmlspecialchars($transaction['first_name'] . ' ' . $transaction['last_name']); ?></td>
-                        <td>
-                            <div class="table-actions">
-                                <button class="btn btn-outline-primary btn-sm" onclick="viewTransaction(<?php echo $transaction['id']; ?>)" title="View Details">
-                                    <i class="bi bi-eye"></i>
-                                </button>
-                                <button class="btn btn-outline-danger btn-sm" onclick="deleteTransaction(<?php echo $transaction['id']; ?>)" title="Delete">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </div>
-                        </td>
                     </tr>
                 <?php endwhile; ?>
             <?php else: ?>
                 <tr>
-                    <td colspan="9" class="text-center py-4">
+                    <td colspan="7" class="text-center py-4">
                         <div class="text-muted">
                             <i class="bi bi-arrow-up-circle" style="font-size: 3rem;"></i>
                             <p class="mt-2 mb-0">No fuel out transactions found</p>

@@ -69,7 +69,6 @@ $headers = [
     'Employee/Recipient',
     'Purpose/Source',
     'Supplier/Vehicle',
-    'Tank Number',
     'Odometer',
     'Recorded By',
     'Notes'
@@ -99,7 +98,6 @@ while ($transaction = $transactions_result->fetch_assoc()) {
         $transaction['transaction_type'] == 'IN' 
             ? 'N/A'
             : ($transaction['vehicle_equipment'] ?? 'N/A'),
-        $transaction['tank_number'] ?? 'N/A',
         $transaction['odometer_reading'] ? number_format($transaction['odometer_reading']) . ' ' . ($transaction['odometer_unit'] ?? '') : 'N/A',
         $transaction['first_name'] . ' ' . $transaction['last_name'],
         $transaction['notes'] ?? ''
@@ -113,7 +111,6 @@ fputcsv($output, []);
 fputcsv($output, ['SUMMARY REPORT']);
 fputcsv($output, ['Report Period:', $start_date . ' to ' . $end_date]);
 fputcsv($output, ['Fuel Type Filter:', $fuel_type_filter ?: 'All']);
-fputcsv($output, ['Tank Filter:', $tank_filter ?: 'All']);
 fputcsv($output, []);
 
 // Calculate summary
