@@ -974,9 +974,45 @@ $status_display = formatStatus($item['status']);
                             </button>
                         <?php elseif ($item['status'] === 'unserviceable'): ?>
                             <!-- Show Create Red Tag button for unserviceable assets -->
-                            <a href="create_redtag.php?asset_id=<?php echo $item['id']; ?>&description=<?php echo urlencode($item['description']); ?>&property_no=<?php echo urlencode($item['property_no'] ?? ''); ?>&inventory_tag=<?php echo urlencode($item['inventory_tag'] ?? ''); ?>&acquisition_date=<?php echo $item['acquisition_date']; ?>&value=<?php echo $item['value']; ?>&office_name=<?php echo urlencode($item['office_name'] ?? ''); ?>" class="btn btn-danger">
+                            <?php 
+                            // Check if multiple components are unserviceable
+                            $unserviceable_components = [];
+                            if ($item['status'] === 'unserviceable') {
+                                $unserviceable_components[] = 'main_asset';
+                            }
+                            if ($item['monitor_status'] === 'unserviceable') {
+                                $unserviceable_components[] = 'monitor';
+                            }
+                            if ($item['ups_status'] === 'unserviceable') {
+                                $unserviceable_components[] = 'ups';
+                            }
+                            
+                            $show_redtag_modal = count($unserviceable_components) > 1;
+                            ?>
+                            
+                            <?php if ($show_redtag_modal): ?>
+                            <!-- Show modal button when multiple components are unserviceable -->
+                            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#redtagComponentModal">
+                                <i class="bi bi-exclamation-triangle"></i> Create Red Tag
+                            </button>
+                            <?php else: ?>
+                            <!-- Show direct link when only one component is unserviceable -->
+                            <?php 
+                            $component_type = !empty($unserviceable_components) ? $unserviceable_components[0] : 'main_asset';
+                            $component_description = '';
+                            
+                            if ($component_type === 'monitor' && !empty($item['monitor_name'])) {
+                                $component_description = 'Monitor - ' . $item['monitor_name'];
+                            } elseif ($component_type === 'ups' && !empty($item['ups_name'])) {
+                                $component_description = 'UPS - ' . $item['ups_name'];
+                            } else {
+                                $component_description = $item['description'];
+                            }
+                            ?>
+                            <a href="create_redtag.php?asset_id=<?php echo $item['id']; ?>&description=<?php echo urlencode($component_description); ?>&property_no=<?php echo urlencode($item['property_no'] ?? ''); ?>&inventory_tag=<?php echo urlencode($item['inventory_tag'] ?? ''); ?>&acquisition_date=<?php echo $item['acquisition_date']; ?>&value=<?php echo $item['value']; ?>&office_name=<?php echo urlencode($item['office_name'] ?? ''); ?>&component_type=<?php echo $component_type; ?>&component_description=<?php echo urlencode($component_description); ?>" class="btn btn-danger">
                                 <i class="bi bi-exclamation-triangle"></i> Create Red Tag
                             </a>
+                            <?php endif; ?>
                         <?php else: ?>
                             <!-- No action buttons for other statuses -->
                             <div class="text-muted text-center">
@@ -1143,6 +1179,63 @@ $status_display = formatStatus($item['status']);
         </div>
     </div>
     
+    <!-- Red Tag Component Selection Modal -->
+    <div class="modal fade" id="redtagComponentModal" tabindex="-1" aria-labelledby="redtagComponentModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="redtagComponentModalLabel">
+                        <i class="bi bi-exclamation-triangle text-danger"></i> Select Component for Red Tag
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-3">Choose which component you want to create a red tag for:</p>
+                    
+                    <div class="d-grid gap-2">
+                        <?php if ($item['status'] === 'unserviceable'): ?>
+                        <button type="button" class="btn btn-outline-primary btn-lg" onclick="addAssetToRedtag()">
+                            <i class="bi bi-box-seam"></i>
+                            <div class="mt-2">
+                                <strong>Main Asset Item</strong>
+                                <div class="small text-muted"><?php echo htmlspecialchars($item['description']); ?></div>
+                                <div class="small text-danger">Unserviceable</div>
+                            </div>
+                        </button>
+                        <?php endif; ?>
+                        
+                        <?php if ($item['sub_category_name'] === 'Desktop Computers' && $has_monitor_details && $item['monitor_status'] === 'unserviceable'): ?>
+                        <button type="button" class="btn btn-outline-success btn-lg" onclick="addMonitorToRedtag()">
+                            <i class="bi bi-display"></i>
+                            <div class="mt-2">
+                                <strong>Monitor</strong>
+                                <div class="small text-muted"><?php echo htmlspecialchars($item['monitor_name'] ?: 'Monitor'); ?></div>
+                                <div class="small text-danger">Unserviceable</div>
+                            </div>
+                        </button>
+                        <?php endif; ?>
+                        
+                        <?php if ($item['sub_category_name'] === 'Desktop Computers' && $has_ups_details && $item['ups_status'] === 'unserviceable'): ?>
+                        <button type="button" class="btn btn-outline-warning btn-lg" onclick="addUpsToRedtag()">
+                            <i class="bi bi-battery-charging"></i>
+                            <div class="mt-2">
+                                <strong>UPS</strong>
+                                <div class="small text-muted"><?php echo htmlspecialchars($item['ups_name'] ?: 'UPS'); ?></div>
+                                <div class="small text-danger">Unserviceable</div>
+                            </div>
+                        </button>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <?php require_once 'includes/sidebar-scripts.php'; ?>
@@ -1289,6 +1382,101 @@ $status_display = formatStatus($item['status']);
             // Submit the form
             document.getElementById('disposeForm').submit();
         };
+        
+        // Red Tag component selection functions
+        function addAssetToRedtag() {
+            // Close the modal
+            bootstrap.Modal.getInstance(document.getElementById('redtagComponentModal')).hide();
+            
+            // Prepare main asset data for Red Tag form
+            const assetData = {
+                id: <?php echo $item_id; ?>,
+                description: '<?php echo addslashes($item['description']); ?>',
+                property_no: '<?php echo addslashes($item['property_no'] ?? ''); ?>',
+                inventory_tag: '<?php echo addslashes($item['inventory_tag'] ?? ''); ?>',
+                acquisition_date: '<?php echo $item['acquisition_date']; ?>',
+                value: '<?php echo $item['value']; ?>',
+                unit_cost: '<?php echo $item['unit_cost']; ?>',
+                office_name: '<?php echo addslashes($item['office_name'] ?? ''); ?>',
+                category_name: '<?php echo addslashes($item['category_name'] ?? ''); ?>',
+                category_code: '<?php echo addslashes($item['category_code'] ?? ''); ?>',
+                asset_description: '<?php echo addslashes($item['asset_description']); ?>',
+                unit: '<?php echo addslashes($item['unit']); ?>',
+                component_type: 'main_asset'
+            };
+            
+            openRedtagForm(assetData);
+        }
+        
+        function addMonitorToRedtag() {
+            // Close the modal
+            bootstrap.Modal.getInstance(document.getElementById('redtagComponentModal')).hide();
+            
+            // Prepare monitor data for Red Tag form
+            const monitorData = {
+                id: <?php echo $item_id; ?>,
+                description: '<?php echo addslashes('Monitor - ' . ($item['monitor_name'] ?: $item['description'])); ?>',
+                property_no: '<?php echo addslashes($item['property_no'] ?? ''); ?>',
+                inventory_tag: '<?php echo addslashes($item['inventory_tag'] ?? ''); ?>',
+                acquisition_date: '<?php echo $item['acquisition_date']; ?>',
+                value: '<?php echo $item['monitor_value'] ?? $item['value']; ?>',
+                unit_cost: '<?php echo $item['monitor_unit_cost'] ?? $item['unit_cost']; ?>',
+                office_name: '<?php echo addslashes($item['office_name'] ?? ''); ?>',
+                category_name: 'Computer Equipment',
+                category_code: '030',
+                asset_description: '<?php echo addslashes($item['monitor_model'] ?: 'Monitor'); ?>',
+                unit: 'SET',
+                component_type: 'monitor'
+            };
+            
+            openRedtagForm(monitorData);
+        }
+        
+        function addUpsToRedtag() {
+            // Close the modal
+            bootstrap.Modal.getInstance(document.getElementById('redtagComponentModal')).hide();
+            
+            // Prepare UPS data for Red Tag form
+            const upsData = {
+                id: <?php echo $item_id; ?>,
+                description: '<?php echo addslashes('UPS - ' . ($item['ups_name'] ?: $item['description'])); ?>',
+                property_no: '<?php echo addslashes($item['property_no'] ?? ''); ?>',
+                inventory_tag: '<?php echo addslashes($item['inventory_tag'] ?? ''); ?>',
+                acquisition_date: '<?php echo $item['acquisition_date']; ?>',
+                value: '<?php echo $item['ups_value'] ?? $item['value']; ?>',
+                unit_cost: '<?php echo $item['ups_unit_cost'] ?? $item['unit_cost']; ?>',
+                office_name: '<?php echo addslashes($item['office_name'] ?? ''); ?>',
+                category_name: 'Computer Equipment',
+                category_code: '030',
+                asset_description: '<?php echo addslashes($item['ups_model'] ?: 'UPS'); ?>',
+                unit: 'SET',
+                component_type: 'ups'
+            };
+            
+            openRedtagForm(upsData);
+        }
+        
+        function openRedtagForm(data) {
+            // Create URL with component data
+            const params = new URLSearchParams();
+            params.append('asset_id', data.id);
+            params.append('description', data.description);
+            params.append('property_no', data.property_no);
+            params.append('inventory_tag', data.inventory_tag);
+            params.append('acquisition_date', data.acquisition_date);
+            params.append('value', data.value);
+            params.append('unit_cost', data.unit_cost);
+            params.append('office_name', data.office_name);
+            params.append('category_name', data.category_name);
+            params.append('category_code', data.category_code);
+            params.append('asset_description', data.asset_description);
+            params.append('unit', data.unit);
+            params.append('component_type', data.component_type || 'main_asset');
+            params.append('auto_fill', 'true');
+            
+            // Open Red Tag form with component data
+            window.open('create_redtag.php?' + params.toString(), '_blank');
+        }
     </script>
 </body>
 </html>
