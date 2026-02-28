@@ -34,27 +34,29 @@ $fuel_types_result = $conn->query($fuel_types_query);
         $total_fuel += $stats['total_current'];
         $total_transactions += $stats['transaction_count'];
     ?>
-        <div class="col-md-4 mb-3">
-            <div class="fuel-stats-card <?php echo strtolower(htmlspecialchars($stats['fuel_type_name'])); ?>">
-                <div class="stats-icon">
-                    <i class="bi bi-fuel-pump"></i>
+        <div class="col-md-4 mb-2">
+            <div class="fuel-stats-card compact <?php echo strtolower(htmlspecialchars($stats['fuel_type_name'])); ?>">
+                <div class="stats-content">
+                    <div class="stats-info">
+                        <div class="stats-value"><?php echo number_format($stats['total_current'], 2); ?> L</div>
+                        <div class="stats-label"><?php echo ucfirst(htmlspecialchars($stats['fuel_type_name'])); ?> Stock</div>
+                    </div>
+                    <div class="stats-detail"><?php echo $stats['transaction_count']; ?> Transactions</div>
                 </div>
-                <div class="stats-value"><?php echo number_format($stats['total_current'], 2); ?> L</div>
-                <div class="stats-label"><?php echo ucfirst(htmlspecialchars($stats['fuel_type_name'])); ?> Stock</div>
-                <div class="stats-detail"><?php echo $stats['transaction_count']; ?> Transactions</div>
             </div>
         </div>
     <?php endwhile; ?>
     
     <?php $inventory_result->data_seek(0); ?>
-    <div class="col-md-4 mb-3">
-        <div class="fuel-stats-card">
-            <div class="stats-icon" style="background: var(--secondary-gradient); color: white;">
-                <i class="bi bi-archive"></i>
+    <div class="col-md-4 mb-2">
+        <div class="fuel-stats-card compact total">
+            <div class="stats-content">
+                <div class="stats-info">
+                    <div class="stats-value"><?php echo number_format($total_fuel, 2); ?> L</div>
+                    <div class="stats-label">Total Fuel Stock</div>
+                </div>
+                <div class="stats-detail">All Fuel Types</div>
             </div>
-            <div class="stats-value"><?php echo number_format($total_fuel, 2); ?> L</div>
-            <div class="stats-label">Total Fuel Stock</div>
-            <div class="stats-detail">All Fuel Types</div>
         </div>
     </div>
 </div>
@@ -63,10 +65,7 @@ $fuel_types_result = $conn->query($fuel_types_query);
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h4 class="mb-0">Fuel Inventory</h4>
     <div>
-        <button class="btn btn-primary btn-sm" onclick="showAddStockModal()">
-            <i class="bi bi-plus-circle"></i> Add Stock
-        </button>
-        <button class="btn btn-outline-secondary btn-sm ms-2" onclick="refreshInventory()">
+        <button class="btn btn-outline-secondary btn-sm" onclick="refreshInventory()">
             <i class="bi bi-arrow-clockwise"></i> Refresh
         </button>
     </div>
@@ -81,7 +80,6 @@ $fuel_types_result = $conn->query($fuel_types_query);
                 <th>Current Stock (L)</th>
                 <th>Last Updated</th>
                 <th>Status</th>
-                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -102,7 +100,7 @@ $fuel_types_result = $conn->query($fuel_types_query);
                             $last_update_query = "SELECT MAX(updated_at) as last_update FROM fuel_stock WHERE fuel_type_id = " . intval($fuel['id']);
                             $last_update_result = $conn->query($last_update_query);
                             $last_update = $last_update_result->fetch_assoc()['last_update'];
-                            echo $last_update ? date('M j, Y H:i', strtotime($last_update)) : 'Never';
+                            echo $last_update ? date('M j, Y g:i A', strtotime($last_update)) : 'Never';
                             ?>
                         </td>
                         <td>
@@ -117,16 +115,11 @@ $fuel_types_result = $conn->query($fuel_types_query);
                             }
                             ?>
                         </td>
-                        <td>
-                            <button class="btn btn-outline-primary btn-sm" onclick="viewStockHistory(<?php echo $fuel['id']; ?>)" title="View History">
-                                <i class="bi bi-eye"></i>
-                            </button>
-                        </td>
                     </tr>
                 <?php endwhile; ?>
             <?php else: ?>
                 <tr>
-                    <td colspan="5" class="text-center py-4">
+                    <td colspan="4" class="text-center py-4">
                         <div class="text-muted">
                             <i class="bi bi-fuel-pump" style="font-size: 3rem;"></i>
                             <p class="mt-2 mb-0">No fuel inventory found</p>

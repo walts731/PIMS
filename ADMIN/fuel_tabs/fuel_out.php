@@ -69,7 +69,7 @@ $employees_result = $conn->query($employees_query);
             <?php if ($fuel_out_result->num_rows > 0): ?>
                 <?php while ($transaction = $fuel_out_result->fetch_assoc()): ?>
                     <tr>
-                        <td><?php echo date('M j, Y H:i', strtotime($transaction['transaction_date'])); ?></td>
+                        <td><?php echo date('M j, Y g:i A', strtotime($transaction['transaction_date'])); ?></td>
                         <td>
                             <span class="fuel-type-badge fuel-type-<?php echo htmlspecialchars($transaction['fuel_type']); ?>">
                                 <?php echo ucfirst(htmlspecialchars($transaction['fuel_type'])); ?>
