@@ -284,12 +284,12 @@ function generateStickerHTML($sticker, $tag, $system_settings, $serviceable_chec
             
             <div class="checkbox-row">
                 <div class="checkbox-item">
+                    <div>Serviceable:</div>
                     <div class="checkbox">' . $serviceable_checked . '</div>
-                    <div>Serviceable</div>
                 </div>
                 <div class="checkbox-item">
+                    <div>Unserviceable:</div>
                     <div class="checkbox">' . $unserviceable_checked . '</div>
-                    <div>Unserviceable</div>
                 </div>
             </div>
             
@@ -300,7 +300,7 @@ function generateStickerHTML($sticker, $tag, $system_settings, $serviceable_chec
                 </div>
                 <div class="field-row">
                     <div class="field-label">Acquisition Date/Cost:</div>
-                    <div class="field-value">' . htmlspecialchars($acquisition_date) . ' / ' . htmlspecialchars($tag['unit_cost']) . '</div>
+                    <div class="field-value-no-border">' . htmlspecialchars($acquisition_date) . ' / ' . htmlspecialchars($tag['unit_cost']) . '</div>
                 </div>
             </div>
             
@@ -433,7 +433,6 @@ function generateStickerHTML($sticker, $tag, $system_settings, $serviceable_chec
         .seal {
             width: 35px;
             height: 35px;
-            border: 2px solid #000;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -480,14 +479,12 @@ function generateStickerHTML($sticker, $tag, $system_settings, $serviceable_chec
         .tag-qr-code {
             width: 35px;
             height: 35px;
-            border: 1px solid #000;
             object-fit: contain;
         }
 
         .qr-placeholder {
             width: 35px;
             height: 35px;
-            border: 1px solid #000;
             border-radius: 4px;
             display: flex;
             align-items: center;
@@ -515,7 +512,7 @@ function generateStickerHTML($sticker, $tag, $system_settings, $serviceable_chec
             font-weight: bold;
             flex-shrink: 0;
             font-size: 6px;
-            text-align: center;
+            text-align: left;
         }
 
         .office-location-row {
@@ -536,26 +533,44 @@ function generateStickerHTML($sticker, $tag, $system_settings, $serviceable_chec
             max-width: 100%;
         }
 
+        .field-value-no-border {
+            flex: 1;
+            min-height: 8px;
+            padding: 1px 2px;
+            font-size: 6px;
+            width: fit-content;
+            max-width: 100%;
+        }
+
         .checkbox-row {
             display: flex;
-            gap: 15px;
+            gap: 20px;
             margin-bottom: 5px;
         }
 
         .checkbox-item {
             display: flex;
             align-items: center;
-            gap: 3px;
+            gap: 50px;
         }
 
         .checkbox {
             font-size: 9px;
-            width: 10px;
-            height: 10px;
-            border: 1px solid #000;
             display: flex;
             align-items: center;
             justify-content: center;
+            position: relative;
+            flex-shrink: 0;
+        }
+        
+        .checkbox::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: -20px;
+            right: -20px;
+            height: 8px;
+            border-bottom: 1px solid #000;
         }
 
         .two-column {
@@ -634,6 +649,15 @@ function generateStickerHTML($sticker, $tag, $system_settings, $serviceable_chec
         nav,
         .no-print {
             display: none !important;
+        }
+        
+        .field-value-no-border {
+            flex: 1;
+            min-height: 8px;
+            padding: 1px 2px;
+            font-size: 6px;
+            width: fit-content;
+            max-width: 100%;
         }
     }
 </style>
