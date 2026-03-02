@@ -168,7 +168,7 @@ $fuel_types_result = $conn->query($fuel_types_query);
                         <?php while ($transaction = $transactions_result->fetch_assoc()): ?>
                             <tr>
                                 <td><?php echo date('M j, Y', strtotime($transaction['transaction_date'])); ?></td>
-                                <td><?php echo date('H:i', strtotime($transaction['transaction_date'])); ?></td>
+                                <td><?php echo date('g:i A', strtotime($transaction['transaction_date'])); ?></td>
                                 <td>
                                     <span class="badge bg-<?php echo $transaction['transaction_type'] == 'IN' ? 'success' : 'danger'; ?>">
                                         <?php echo $transaction['transaction_type']; ?>

@@ -375,11 +375,11 @@ if ($result && $row = $result->fetch_assoc()) {
                         <div class="row mb-3">
                             <div class="col-md-4">
                                 <label class="form-label"><strong>Entity Name:</strong></label>
-                                <input type="text" class="form-control" name="entity_name" required>
+                                <input type="text" class="form-control" name="entity_name">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label"><strong>Fund Cluster:</strong></label>
-                                <input type="text" class="form-control" name="fund_cluster" required>
+                                <input type="text" class="form-control" name="fund_cluster">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label"><strong>PAR No:</strong></label>
@@ -907,7 +907,7 @@ if ($result && $row = $result->fetch_assoc()) {
         }
         
         function getNextSeriesNumber() {
-            fetch('../api/get_next_par_series.php', {
+            fetch('../api/get_next_series.php', {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -915,13 +915,13 @@ if ($result && $row = $result->fetch_assoc()) {
             })
             .then(response => response.json())
             .then(data => {
-                if (data.success && data.next_par_series) {
-                    document.getElementById('seriesInput').value = data.next_par_series;
+                if (data.success && data.next_series) {
+                    document.getElementById('seriesInput').value = data.next_series;
                     generatePropertyNumberPreview();
                 }
             })
             .catch(error => {
-                console.error('Error getting next PAR series number:', error);
+                console.error('Error getting next property number series:', error);
                 // Use fallback value from PHP
                 generatePropertyNumberPreview();
             });

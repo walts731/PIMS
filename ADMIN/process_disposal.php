@@ -74,7 +74,7 @@ try {
         $stmt->close();
         
         // Check if action is disposal
-        if (strtolower($red_tag['action']) !== 'disposal') {
+        if (strtolower($red_tag['action']) !== 'disposal' && strtolower($red_tag['action']) !== 'dispose') {
             throw new Exception('This red tag is not marked for disposal.');
         }
         
@@ -94,17 +94,62 @@ try {
         
         // If there's an associated asset item, update its status
         if ($red_tag['asset_item_id']) {
-            $update_asset_sql = "UPDATE asset_items SET 
-                               status = 'disposed',
-                               disposal_date = ?,
-                               disposal_reason = ?,
-                               last_updated = CURRENT_TIMESTAMP
-                               WHERE id = ?";
-            
-            $stmt = $conn->prepare($update_asset_sql);
-            $stmt->bind_param("ssi", $disposal_date, $disposal_reason, $red_tag['asset_item_id']);
-            $stmt->execute();
-            $stmt->close();
+            // Check if this is a component disposal
+            if (isset($red_tag['component_type']) && $red_tag['component_type'] !== 'main_asset') {
+                // Update component status to disposed
+                if ($red_tag['component_type'] === 'monitor') {
+                    $update_component_sql = "UPDATE asset_desktop_computers SET 
+                                           monitor_status = 'disposed',
+                                           updated_at = CURRENT_TIMESTAMP
+                                           WHERE asset_item_id = ?";
+                    
+                    $stmt = $conn->prepare($update_component_sql);
+                    $stmt->bind_param("i", $red_tag['asset_item_id']);
+                    $stmt->execute();
+                    $stmt->close();
+                    
+                    // Log component disposal
+                    logSystemAction(
+                        $_SESSION['user_id'], 
+                        'dispose_component', 
+                        'red_tag', 
+                        "Disposed monitor component for asset ID {$red_tag['asset_item_id']} - {$red_tag['item_description']} (Reason: {$disposal_reason})"
+                    );
+                    
+                } elseif ($red_tag['component_type'] === 'ups') {
+                    $update_component_sql = "UPDATE asset_desktop_computers SET 
+                                           ups_status = 'disposed',
+                                           updated_at = CURRENT_TIMESTAMP
+                                           WHERE asset_item_id = ?";
+                    
+                    $stmt = $conn->prepare($update_component_sql);
+                    $stmt->bind_param("i", $red_tag['asset_item_id']);
+                    $stmt->execute();
+                    $stmt->close();
+                    
+                    // Log component disposal
+                    logSystemAction(
+                        $_SESSION['user_id'], 
+                        'dispose_component', 
+                        'red_tag', 
+                        "Disposed UPS component for asset ID {$red_tag['asset_item_id']} - {$red_tag['item_description']} (Reason: {$disposal_reason})"
+                    );
+                }
+                
+            } else {
+                // Update main asset status (original logic)
+                $update_asset_sql = "UPDATE asset_items SET 
+                                   status = 'disposed',
+                                   disposal_date = ?,
+                                   disposal_reason = ?,
+                                   last_updated = CURRENT_TIMESTAMP
+                                   WHERE id = ?";
+                
+                $stmt = $conn->prepare($update_asset_sql);
+                $stmt->bind_param("ssi", $disposal_date, $disposal_reason, $red_tag['asset_item_id']);
+                $stmt->execute();
+                $stmt->close();
+            }
         }
         
         // Log the disposal action
