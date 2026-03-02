@@ -387,6 +387,33 @@ try {
                 </ul>
             </div>
         </div>
+        <div class="sidebar-dropdown">
+            <button class="sidebar-dropdown-toggle <?php echo (in_array($current_page, ['infrastructure.php', 'software.php'])) ? 'active' : ''; ?>" 
+                    type="button" data-bs-toggle="collapse" data-bs-target="#resourcesDropdown" 
+                    aria-expanded="<?php echo (in_array($current_page, ['infrastructure.php', 'software.php'])) ? 'true' : 'false'; ?>">
+                <div>
+                    <i class="bi bi-folder"></i>
+                    Resources
+                </div>
+                <i class="bi bi-chevron-down"></i>
+            </button>
+            <div class="collapse <?php echo (in_array($current_page, ['infrastructure.php', 'software.php'])) ? 'show' : ''; ?>" id="resourcesDropdown">
+                <ul class="sidebar-dropdown-menu">
+                    <li>
+                        <a href="infrastructure.php" class="sidebar-dropdown-item <?php echo $current_page == 'infrastructure.php' ? 'active' : ''; ?>">
+                            <i class="bi bi-building"></i>
+                            Infrastructure
+                        </a>
+                    </li>
+                    <li>
+                        <a href="software.php" class="sidebar-dropdown-item <?php echo $current_page == 'software.php' ? 'active' : ''; ?>">
+                            <i class="bi bi-code-slash"></i>
+                            Software
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
         <a href="consumables.php" class="sidebar-nav-item <?php echo $current_page == 'consumables.php' ? 'active' : ''; ?>">
             <i class="bi bi-archive"></i>
             Consumables
@@ -395,6 +422,7 @@ try {
             <i class="bi bi-fuel-pump"></i>
             Fuel Inventory
         </a>
+        
         <a href="employees.php" class="sidebar-nav-item <?php echo $current_page == 'employees.php' ? 'active' : ''; ?>">
             <i class="bi bi-people"></i>
             Employees
@@ -407,6 +435,7 @@ try {
             <i class="bi bi-arrow-left-right"></i>
             Borrowing
         </a>
+        
        
         <a href="reports.php" class="sidebar-nav-item <?php echo $current_page == 'reports.php' ? 'active' : ''; ?>">
             <i class="bi bi-file-earmark-bar-graph"></i>

@@ -35,11 +35,13 @@ try {
     $sql = "SELECT h.*, 
                     fo.office_name as from_office_name, 
                     to_off.office_name as to_office_name,
-                    CONCAT(u.first_name, ' ', u.last_name) as released_by_name
+                    CONCAT(u.first_name, ' ', u.last_name) as released_by_name,
+                    c.units
              FROM consumable_release_history h
              LEFT JOIN offices fo ON h.from_office_id = fo.id
              LEFT JOIN offices to_off ON h.to_office_id = to_off.id
              LEFT JOIN users u ON h.released_by = u.id
+             LEFT JOIN consumables c ON h.consumable_id = c.id
              WHERE 1=1";
     
     $params = [];
@@ -370,6 +372,7 @@ try {
                             <th>Date</th>
                             <th>Description</th>
                             <th>Quantity</th>
+                            <th>Units</th>
                             <th>Unit Cost</th>
                             <th>Total Value</th>
                             <th>From Office</th>
@@ -386,6 +389,7 @@ try {
                                     <td><small><?php echo date('M j, Y H:i', strtotime($release['release_date'])); ?></small></td>
                                     <td><?php echo htmlspecialchars($release['description']); ?></td>
                                     <td><span class="quantity-badge"><?php echo $release['quantity_released']; ?></span></td>
+                                    <td><?php echo htmlspecialchars($release['units'] ?: 'N/A'); ?></td>
                                     <td><?php echo number_format($release['unit_cost'], 2); ?></td>
                                     <td><span class="value-badge"><?php echo number_format($release['total_value'], 2); ?></span></td>
                                     <td><?php echo htmlspecialchars($release['from_office_name']); ?></td>
@@ -397,7 +401,7 @@ try {
                             <?php endforeach; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="10" class="text-center text-muted py-4">
+                                <td colspan="11" class="text-center text-muted py-4">
                                     <i class="bi bi-clock-history fs-1"></i>
                                     <p class="mt-2">No release history found.</p>
                                 </td>
@@ -435,11 +439,11 @@ try {
             const params = new URLSearchParams(window.location.search);
             
             // Create CSV content
-            let csvContent = "Date,Description,Quantity,Unit Cost,Total Value,From Office,To Office,Released By,Received By,Notes\n";
+            let csvContent = "Date,Description,Quantity,Units,Unit Cost,Total Value,From Office,To Office,Released By,Received By,Notes\n";
             
             <?php if (!empty($release_history)): ?>
                 <?php foreach ($release_history as $release): ?>
-                    csvContent += "<?php echo date('Y-m-d H:i', strtotime($release['release_date'])); ?>","<?php echo addslashes($release['description']); ?>","<?php echo $release['quantity_released']; ?>","<?php echo $release['unit_cost']; ?>","<?php echo $release['total_value']; ?>","<?php echo addslashes($release['from_office_name']); ?>","<?php echo addslashes($release['to_office_name']); ?>","<?php echo addslashes($release['released_by_name']); ?>","<?php echo addslashes($release['received_by'] ?: 'Not specified'); ?>","<?php echo addslashes($release['notes'] ?: 'No notes'); ?>"\n";
+                    csvContent += "<?php echo date('Y-m-d H:i', strtotime($release['release_date'])); ?>","<?php echo addslashes($release['description']); ?>","<?php echo $release['quantity_released']; ?>","<?php echo addslashes($release['units'] ?: 'N/A'); ?>","<?php echo $release['unit_cost']; ?>","<?php echo $release['total_value']; ?>","<?php echo addslashes($release['from_office_name']); ?>","<?php echo addslashes($release['to_office_name']); ?>","<?php echo addslashes($release['released_by_name']); ?>","<?php echo addslashes($release['received_by'] ?: 'Not specified'); ?>","<?php echo addslashes($release['notes'] ?: 'No notes'); ?>"\n";
                 <?php endforeach; ?>
             <?php endif; ?>
             

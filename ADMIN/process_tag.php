@@ -22,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $item_id = intval($_POST['item_id']);
 $category_id = intval($_POST['category_id']);
 $subcategory_id = intval($_POST['subcategory_id'] ?? 0);
-$office_id = intval($_POST['office_id']);
+$office_name = trim($_POST['office_name'] ?? '');
 $property_no = trim($_POST['property_no']);
 $inventory_tag = trim($_POST['inventory_tag'] ?? '');
 $person_accountable = intval($_POST['person_accountable']);
@@ -50,47 +50,95 @@ if (isset($_POST['increment_property_counter']) && $_POST['increment_property_co
     }
 }
 
-// Handle image upload
-$image_filename = '';
-if (isset($_FILES['asset_image']) && $_FILES['asset_image']['error'] === UPLOAD_ERR_OK) {
-    $file = $_FILES['asset_image'];
-    
-    // Validate file
-    $allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-    $max_size = 5 * 1024 * 1024; // 5MB
-    
-    if (!in_array($file['type'], $allowed_types)) {
-        $_SESSION['error'] = 'Invalid file type. Only JPG, PNG, and GIF files are allowed.';
-        header('Location: create_tag.php?id=' . $item_id);
-        exit();
+// Handle multiple image uploads - append to existing images
+$image_filenames = [];
+$existing_images = [];
+
+// First, get existing images for this asset item
+$get_existing_images_sql = "SELECT image FROM asset_items WHERE id = ?";
+$get_existing_images_stmt = $conn->prepare($get_existing_images_sql);
+$get_existing_images_stmt->bind_param("i", $item_id);
+$get_existing_images_stmt->execute();
+$existing_images_result = $get_existing_images_stmt->get_result();
+if ($existing_row = $existing_images_result->fetch_assoc()) {
+    $existing_image_data = $existing_row['image'];
+    if (!empty($existing_image_data) && $existing_image_data !== 'NULL') {
+        $decoded_images = json_decode($existing_image_data, true);
+        if (is_array($decoded_images)) {
+            $existing_images = $decoded_images;
+        } elseif (!empty($existing_image_data)) {
+            // Handle case where it's a single filename (not JSON)
+            $existing_images = [$existing_image_data];
+        }
     }
+}
+$get_existing_images_stmt->close();
+
+if (isset($_FILES['asset_images']) && is_array($_FILES['asset_images']['name'])) {
+    $files = $_FILES['asset_images'];
     
-    if ($file['size'] > $max_size) {
-        $_SESSION['error'] = 'File size must be less than 5MB.';
-        header('Location: create_tag.php?id=' . $item_id);
-        exit();
-    }
-    
-    // Generate unique filename
-    $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-    $image_filename = 'asset_' . $item_id . '_' . time() . '.' . $extension;
-    $upload_path = '../uploads/asset_images/' . $image_filename;
-    
-    // Create directory if it doesn't exist
-    if (!is_dir('../uploads/asset_images/')) {
-        mkdir('../uploads/asset_images/', 0755, true);
-    }
-    
-    // Move uploaded file
-    if (!move_uploaded_file($file['tmp_name'], $upload_path)) {
-        $_SESSION['error'] = 'Error uploading image file.';
-        header('Location: create_tag.php?id=' . $item_id);
-        exit();
+    // Validate and process each file
+    foreach ($files['name'] as $key => $name) {
+        if ($files['error'][$key] === UPLOAD_ERR_OK) {
+            $file = [
+                'name' => $name,
+                'type' => $files['type'][$key],
+                'tmp_name' => $files['tmp_name'][$key],
+                'error' => $files['error'][$key],
+                'size' => $files['size'][$key]
+            ];
+            
+            // Validate file
+            $allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+            $max_size = 5 * 1024 * 1024; // 5MB per file
+            
+            if (!in_array($file['type'], $allowed_types)) {
+                $_SESSION['error'] = 'Invalid file type: ' . $file['name'] . '. Only JPG, PNG, and GIF files are allowed.';
+                header('Location: create_tag.php?id=' . $item_id);
+                exit();
+            }
+            
+            if ($file['size'] > $max_size) {
+                $_SESSION['error'] = 'File ' . $file['name'] . ' size must be less than 5MB.';
+                header('Location: create_tag.php?id=' . $item_id);
+                exit();
+            }
+            
+            // Generate unique filename
+            $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+            $image_filename = 'asset_' . $item_id . '_' . $key . '_' . time() . '.' . $extension;
+            $upload_path = '../uploads/asset_images/' . $image_filename;
+            
+            // Create directory if it doesn't exist
+            if (!is_dir('../uploads/asset_images/')) {
+                mkdir('../uploads/asset_images/', 0755, true);
+            }
+            
+            // Move uploaded file
+            if (move_uploaded_file($file['tmp_name'], $upload_path)) {
+                $image_filenames[] = $image_filename;
+            } else {
+                $_SESSION['error'] = 'Error uploading image file: ' . $file['name'];
+                header('Location: create_tag.php?id=' . $item_id);
+                exit();
+            }
+        }
     }
 }
 
+// Merge existing images with new ones
+$all_images = array_merge($existing_images, $image_filenames);
+
+// Remove duplicates and reindex array
+$all_images = array_values(array_unique($all_images));
+
+// If no images at all, keep empty array
+if (empty($all_images)) {
+    $all_images = [];
+}
+
 // Validate required fields
-if (empty($item_id) || empty($category_id) || empty($office_id) || empty($property_no) || empty($person_accountable) || empty($end_user) || empty($date_counted)) {
+if (empty($item_id) || empty($category_id) || empty($office_name) || empty($property_no) || empty($person_accountable) || empty($end_user) || empty($date_counted)) {
     $_SESSION['error'] = 'Please fill in all required fields';
     header('Location: create_tag.php?id=' . $item_id);
     exit();
@@ -100,12 +148,32 @@ try {
     // Start transaction
     $conn->begin_transaction();
     
+    // Check if office_name column exists in asset_items table, add if it doesn't
+    $check_column_sql = "SHOW COLUMNS FROM `asset_items` LIKE 'office_name'";
+    $column_result = $conn->query($check_column_sql);
+    
+    if ($column_result->num_rows == 0) {
+        // Add office_name column
+        $alter_sql = "ALTER TABLE `asset_items` ADD COLUMN `office_name` varchar(255) DEFAULT NULL AFTER `office_id`";
+        $conn->query($alter_sql);
+        
+        // Update existing records to copy office name from offices table
+        $update_sql = "UPDATE `asset_items` ai 
+                      LEFT JOIN `offices` o ON ai.office_id = o.id 
+                      SET ai.office_name = o.office_name 
+                      WHERE ai.office_id IS NOT NULL AND ai.office_name IS NULL";
+        $conn->query($update_sql);
+    }
+    
     // Update asset item with tag information using traditional SQL
     $property_no_safe = mysqli_real_escape_string($conn, $property_no);
     $inventory_tag_safe = !empty($inventory_tag) ? "'" . mysqli_real_escape_string($conn, $inventory_tag) . "'" : 'NULL';
     $date_counted_safe = mysqli_real_escape_string($conn, $date_counted);
-    $image_filename_safe = mysqli_real_escape_string($conn, $image_filename);
+    // Convert image filenames array to JSON for storage
+    $image_filename_json = !empty($all_images) ? json_encode($all_images) : 'NULL';
+    $image_filename_safe = mysqli_real_escape_string($conn, $image_filename_json);
     $end_user_safe = mysqli_real_escape_string($conn, $end_user);
+    $office_name_safe = mysqli_real_escape_string($conn, $office_name);
     
     $update_sql = "UPDATE asset_items SET 
                    property_no = '$property_no_safe', 
@@ -115,7 +183,7 @@ try {
                    employee_id = $person_accountable, 
                    category_id = $category_id,
                    asset_subcategory_id = " . ($subcategory_id > 0 ? $subcategory_id : 'NULL') . ",
-                   office_id = $office_id,
+                   office_name = '$office_name_safe',
                    end_user = '$end_user_safe',
                    status = 'serviceable',
                    last_updated = CURRENT_TIMESTAMP
@@ -189,6 +257,21 @@ try {
     
     if ($asset_row && $asset_row['asset_id']) {
         $asset_id = $asset_row['asset_id'];
+        
+        // Try to find office_id from offices table using office_name, or set to NULL
+        $office_id_for_assets = null;
+        if (!empty($office_name)) {
+            $find_office_sql = "SELECT id FROM offices WHERE office_name = ? LIMIT 1";
+            $find_office_stmt = $conn->prepare($find_office_sql);
+            $find_office_stmt->bind_param("s", $office_name);
+            $find_office_stmt->execute();
+            $office_result = $find_office_stmt->get_result();
+            if ($office_row = $office_result->fetch_assoc()) {
+                $office_id_for_assets = $office_row['id'];
+            }
+            $find_office_stmt->close();
+        }
+        
         $update_assets_sql = "UPDATE assets SET 
                               asset_categories_id = ?,
                               asset_subcategory_id = ?,
@@ -196,7 +279,7 @@ try {
                               updated_at = CURRENT_TIMESTAMP
                               WHERE id = ?";
         $update_assets_stmt = $conn->prepare($update_assets_sql);
-        $update_assets_stmt->bind_param("iiii", $category_id, $subcategory_id, $office_id, $asset_id);
+        $update_assets_stmt->bind_param("iiii", $category_id, $subcategory_id, $office_id_for_assets, $asset_id);
         $update_assets_stmt->execute();
     }
     
@@ -217,22 +300,32 @@ try {
     $category_result = $category_stmt->get_result();
     $category = $category_result->fetch_assoc();
     
+    // Get subcategory information for specific field handling
+    $subcategory_sql = "SELECT sub_category_name, sub_category_code FROM asset_sub_categories WHERE id = ?";
+    $subcategory_stmt = $conn->prepare($subcategory_sql);
+    $subcategory_stmt->bind_param("i", $subcategory_id);
+    $subcategory_stmt->execute();
+    $subcategory_result = $subcategory_stmt->get_result();
+    $subcategory = $subcategory_result->fetch_assoc();
+    
     // Handle category-specific fields
     if ($category && $category['category_code'] === '030') {
-        // Computer Equipment specific fields
         $processor = trim($_POST['processor'] ?? '');
-        $ram = trim($_POST['ram'] ?? '');
-        $storage = trim($_POST['storage'] ?? '');
+        $ram_capacity = trim($_POST['ram'] ?? '');  // Form field 'ram' maps to 'ram_capacity'
+        $storage_capacity = trim($_POST['storage'] ?? '');  // Form field 'storage' maps to 'storage_capacity'
+        $storage_type = 'ssd';  // Default storage type, could be made configurable
+        $model = trim($_POST['model'] ?? '');
         $operating_system = trim($_POST['operating_system'] ?? '');
         $serial_number = trim($_POST['serial_number'] ?? '');
         
-        // Insert or update computer-specific information
+        // Insert or update computer equipment-specific information
         $computer_sql = "INSERT INTO asset_computers 
-                       (asset_item_id, processor, ram_capacity, storage_capacity, operating_system, serial_number, created_by, created_at)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                       (asset_item_id, processor, ram_capacity, storage_type, storage_capacity, operating_system, serial_number, created_by, created_at)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                        ON DUPLICATE KEY UPDATE
                        processor = VALUES(processor),
                        ram_capacity = VALUES(ram_capacity),
+                       storage_type = VALUES(storage_type),
                        storage_capacity = VALUES(storage_capacity),
                        operating_system = VALUES(operating_system),
                        serial_number = VALUES(serial_number),
@@ -240,15 +333,16 @@ try {
                        updated_at = CURRENT_TIMESTAMP";
         
         $computer_stmt = $conn->prepare($computer_sql);
-        $computer_stmt->bind_param("isssssi", $item_id, $processor, $ram, $storage, $operating_system, $serial_number, $_SESSION['user_id']);
+        $computer_stmt->bind_param("issssssi", $item_id, $processor, $ram_capacity, $storage_type, $storage_capacity, $operating_system, $serial_number, $_SESSION['user_id']);
         $computer_stmt->execute();
         
-        // Log computer-specific field updates
+        // Log computer equipment-specific field updates
         $computer_details = sprintf(
-            "Computer Equipment specs saved - Processor: %s, RAM: %s, Storage: %s, OS: %s, Serial: %s",
+            "Computer Equipment specs saved - Processor: %s, RAM: %s, Storage: %s %s, OS: %s, Serial: %s",
             $processor ?: 'Not specified',
-            $ram ?: 'Not specified', 
-            $storage ?: 'Not specified',
+            $ram_capacity ?: 'Not specified',
+            $storage_capacity ?: 'Not specified',
+            $storage_type ?: 'Not specified',
             $operating_system ?: 'Not specified',
             $serial_number ?: 'Not specified'
         );
@@ -257,6 +351,58 @@ try {
         $computer_history_stmt = $conn->prepare($computer_history_sql);
         $computer_history_stmt->bind_param("isi", $item_id, $computer_details, $_SESSION['user_id']);
         $computer_history_stmt->execute();
+        
+        // Handle Desktop Computers subcategory-specific fields
+        if ($subcategory && $subcategory['sub_category_code'] === '03') {
+            $monitor_name = trim($_POST['monitor_name'] ?? '');
+            $monitor_model = trim($_POST['monitor_model'] ?? '');
+            $monitor_serial_number = trim($_POST['monitor_serial_number'] ?? '');
+            $ups_name = trim($_POST['ups_name'] ?? '');
+            $ups_model = trim($_POST['ups_model'] ?? '');
+            $ups_serial_number = trim($_POST['ups_serial_number'] ?? '');
+            $monitor_status = trim($_POST['monitor_status'] ?? 'serviceable');
+            $ups_status = trim($_POST['ups_status'] ?? 'serviceable');
+            
+            // Insert or update desktop computer-specific information
+            $desktop_sql = "INSERT INTO asset_desktop_computers 
+                           (asset_item_id, monitor_name, monitor_model, monitor_serial_number, monitor_status, ups_name, ups_model, ups_serial_number, ups_status, created_by, created_at)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                           ON DUPLICATE KEY UPDATE
+                           monitor_name = VALUES(monitor_name),
+                           monitor_model = VALUES(monitor_model),
+                           monitor_serial_number = VALUES(monitor_serial_number),
+                           monitor_status = VALUES(monitor_status),
+                           ups_name = VALUES(ups_name),
+                           ups_model = VALUES(ups_model),
+                           ups_serial_number = VALUES(ups_serial_number),
+                           ups_status = VALUES(ups_status),
+                           updated_by = VALUES(created_by),
+                           updated_at = CURRENT_TIMESTAMP";
+            
+            $desktop_stmt = $conn->prepare($desktop_sql);
+            $desktop_stmt->bind_param("issssssssi", $item_id, $monitor_name, $monitor_model, $monitor_serial_number, $monitor_status, $ups_name, $ups_model, $ups_serial_number, $ups_status, $_SESSION['user_id']);
+            $desktop_stmt->execute();
+            
+            // Log desktop computer-specific field updates
+            $desktop_details = sprintf(
+                "Desktop Computer specs saved - Monitor: %s %s (%s) - Status: %s, UPS: %s %s (%s) - Status: %s",
+                $monitor_name ?: 'Not specified',
+                $monitor_model ?: 'Not specified',
+                $monitor_serial_number ?: 'No serial',
+                $monitor_status ?: 'serviceable',
+                $ups_name ?: 'Not specified',
+                $ups_model ?: 'Not specified',
+                $ups_serial_number ?: 'No serial',
+                $ups_status ?: 'serviceable'
+            );
+            
+            logSystemAction($_SESSION['user_id'], 'update', 'asset_desktop_computers', $desktop_details);
+            
+            $desktop_history_sql = "INSERT INTO asset_item_history (item_id, action, details, created_by, created_at) VALUES (?, 'Desktop Computer Specs Updated', ?, ?, CURRENT_TIMESTAMP)";
+            $desktop_history_stmt = $conn->prepare($desktop_history_sql);
+            $desktop_history_stmt->bind_param("isi", $item_id, $desktop_details, $_SESSION['user_id']);
+            $desktop_history_stmt->execute();
+        }
     }
     elseif ($category && $category['category_code'] === '07') {
         // Vehicles specific fields
@@ -405,18 +551,17 @@ try {
     $employee_result = $employee_stmt->get_result();
     $employee = $employee_result->fetch_assoc();
     
-    // Log the tag creation action
-    $image_info = $image_filename ? " (Image: {$image_filename})" : " (No image)";
+    // Log the tag creation action with multiple images
+    $image_info = !empty($all_images) ? "Images: " . implode(', ', $all_images) : "No images";
     $log_details = sprintf(
-        "Created tag for item ID %d: Property No: %s, Inventory Tag: %s, Date Counted: %s, Category: %s, Person Accountable: %s (%s), End User: %s%s",
+        "Created tag for item ID %d: Property No: %s, Inventory Tag: %s, Date Counted: %s, Category: %s, Person Accountable: %s (%s), %s",
         $item_id,
         $property_no,
         $inventory_tag,
         $date_counted,
         $category ? $category['category_code'] . ' - ' . $category['category_name'] : 'Unknown',
         $employee ? $employee['employee_no'] : 'Unknown',
-        $employee ? $employee['lastname'] . ', ' . $employee['firstname'] : 'Unknown',
-        $end_user,
+        $employee ? $employee['firstname'] . ' ' . $employee['lastname'] : 'Unknown',
         $image_info
     );
     
@@ -473,7 +618,7 @@ function createMainUserAssetTagNotification($asset_item_id, $property_no) {
         $asset_description = $item_row['asset_description'];
         
         // Get all MAIN_USER users
-        $main_users_query = "SELECT id FROM users WHERE role = 'main_user' AND status = 'active'";
+        $main_users_query = "SELECT id FROM users WHERE role = 'main_user' AND is_active = 1";
         $main_users_result = $conn->query($main_users_query);
         
         if ($main_users_result && $main_users_result->num_rows > 0) {

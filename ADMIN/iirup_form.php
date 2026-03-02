@@ -36,7 +36,8 @@ if (isset($_GET['auto_fill']) && $_GET['auto_fill'] === 'true') {
         'category_name' => $_GET['category_name'] ?? '',
         'category_code' => $_GET['category_code'] ?? '',
         'asset_description' => $_GET['asset_description'] ?? '',
-        'unit' => $_GET['unit'] ?? ''
+        'unit' => $_GET['unit'] ?? '',
+        'component_type' => $_GET['component_type'] ?? 'main_asset' // Track which component is being added
     ];
 }
 
@@ -344,18 +345,7 @@ if ($result && $row = $result->fetch_assoc()) {
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label" style="font-weight: normal; margin-bottom: 5px;">Department/Office:</label>
-                                    <select class="form-control" name="department_office" required>
-                                        <option value="">Select Department/Office</option>
-                                        <?php
-                                        // Fetch offices from database
-                                        $offices_result = $conn->query("SELECT office_name FROM offices WHERE status = 'active' ORDER BY office_name");
-                                        if ($offices_result) {
-                                            while ($office = $offices_result->fetch_assoc()) {
-                                                echo '<option value="' . htmlspecialchars($office['office_name']) . '">' . htmlspecialchars($office['office_name']) . '</option>';
-                                            }
-                                        }
-                                        ?>
-                                    </select>
+                                    <input type="text" class="form-control" name="department_office" placeholder="Enter department/office name" required>
                                 </div>
                             </div>
                         </div>
@@ -690,7 +680,17 @@ if ($result && $row = $result->fetch_assoc()) {
         }
         <?php endif; ?>
     }
-    </script>
+    
+    // Auto-fill main department_office field if office_name is provided
+    <?php if (!empty($auto_fill_data['office_name'])): ?>
+    const mainDeptOfficeInput = document.querySelector('input[name="department_office"]');
+    if (mainDeptOfficeInput) {
+        mainDeptOfficeInput.value = '<?php echo addslashes($auto_fill_data['office_name']); ?>';
+        mainDeptOfficeInput.style.backgroundColor = '#e8f5e8';
+        mainDeptOfficeInput.style.border = '1px solid #28a745';
+    }
+    <?php endif; ?>
+</script>
     <?php endif; ?>
 </body>
 </html>

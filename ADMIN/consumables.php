@@ -30,14 +30,16 @@ $message_type = '';
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'add') {
     $description = trim($_POST['description'] ?? '');
     $quantity = intval($_POST['quantity'] ?? 0);
+    $units = trim($_POST['units'] ?? '');
     $unit_cost = floatval($_POST['unit_cost'] ?? 0);
     $reorder_level = intval($_POST['reorder_level'] ?? 10);
-    $office_id = intval($_POST['office_id'] ?? 0);
+    $for_office_id = intval($_POST['office_id'] ?? 0); // This will be for_office_id
+    $office_id = 3; // Always use Supply Office (ID = 3) for storage
     
     // Check if consumable with same description already exists in the same office
     $existing_consumable = null;
-    $check_stmt = $conn->prepare("SELECT id, quantity, unit_cost FROM consumables WHERE description = ? AND office_id = ?");
-    $check_stmt->bind_param("si", $description, $office_id);
+    $check_stmt = $conn->prepare("SELECT id, quantity, unit_cost FROM consumables WHERE description = ? AND office_id = ? AND for_office_id = ?");
+    $check_stmt->bind_param("sii", $description, $office_id, $for_office_id);
     $check_stmt->execute();
     $check_result = $check_stmt->get_result();
     if ($check_result->num_rows > 0) {
@@ -49,7 +51,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     if (empty($description)) {
         $message = "Consumable description is required.";
         $message_type = "danger";
-    } elseif ($office_id <= 0) {
+    } elseif (empty($units)) {
+        $message = "Units is required.";
+        $message_type = "danger";
+    } elseif ($for_office_id <= 0) {
         $message = "Please select an office.";
         $message_type = "danger";
     } elseif ($quantity <= 0) {
@@ -66,8 +71,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             if ($existing_consumable) {
                 // Update existing consumable quantity
                 $new_quantity = $existing_consumable['quantity'] + $quantity;
-                $update_stmt = $conn->prepare("UPDATE consumables SET quantity = ?, unit_cost = ?, reorder_level = ? WHERE id = ?");
-                $update_stmt->bind_param("iddi", $new_quantity, $unit_cost, $reorder_level, $existing_consumable['id']);
+                $update_stmt = $conn->prepare("UPDATE consumables SET quantity = ?, units = ?, unit_cost = ?, reorder_level = ?, for_office_id = ? WHERE id = ?");
+                $update_stmt->bind_param("isdiii", $new_quantity, $units, $unit_cost, $reorder_level, $for_office_id, $existing_consumable['id']);
                 
                 if ($update_stmt->execute()) {
                     $message = "Consumable quantity updated successfully! Added {$quantity} more items to existing consumable.";
@@ -79,8 +84,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                 $update_stmt->close();
             } else {
                 // Insert new consumable
-                $insert_stmt = $conn->prepare("INSERT INTO consumables (description, quantity, unit_cost, reorder_level, office_id) VALUES (?, ?, ?, ?, ?)");
-                $insert_stmt->bind_param("sidii", $description, $quantity, $unit_cost, $reorder_level, $office_id);
+                $insert_stmt = $conn->prepare("INSERT INTO consumables (description, quantity, units, unit_cost, reorder_level, office_id, for_office_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                $insert_stmt->bind_param("sisdiii", $description, $quantity, $units, $unit_cost, $reorder_level, $office_id, $for_office_id);
                 
                 if ($insert_stmt->execute()) {
                     $message = "Consumable added successfully!";
@@ -103,15 +108,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     $consumable_id = intval($_POST['consumable_id'] ?? 0);
     $description = trim($_POST['description'] ?? '');
     $quantity = intval($_POST['quantity'] ?? 0);
+    $units = trim($_POST['units'] ?? '');
     $unit_cost = floatval($_POST['unit_cost'] ?? 0);
     $reorder_level = intval($_POST['reorder_level'] ?? 10);
-    $office_id = intval($_POST['office_id'] ?? 0);
+    $for_office_id = intval($_POST['office_id'] ?? 0); // This will be for_office_id
+    $office_id = 3; // Always use Supply Office (ID = 3) for storage
     
     // Validation
     if (empty($description)) {
         $message = "Consumable description is required.";
         $message_type = "danger";
-    } elseif ($office_id <= 0) {
+    } elseif (empty($units)) {
+        $message = "Units is required.";
+        $message_type = "danger";
+    } elseif ($for_office_id <= 0) {
         $message = "Please select an office.";
         $message_type = "danger";
     } elseif ($quantity < 0) {
@@ -125,8 +135,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         $message_type = "danger";
     } else {
         try {
-            $update_stmt = $conn->prepare("UPDATE consumables SET description = ?, quantity = ?, unit_cost = ?, reorder_level = ?, office_id = ? WHERE id = ?");
-            $update_stmt->bind_param("sidiii", $description, $quantity, $unit_cost, $reorder_level, $office_id, $consumable_id);
+            $update_stmt = $conn->prepare("UPDATE consumables SET description = ?, quantity = ?, units = ?, unit_cost = ?, reorder_level = ?, for_office_id = ? WHERE id = ?");
+            $update_stmt->bind_param("sisdiii", $description, $quantity, $units, $unit_cost, $reorder_level, $for_office_id, $consumable_id);
             
             if ($update_stmt->execute()) {
                 $message = "Consumable updated successfully!";
@@ -189,7 +199,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['action']) && $_GET['acti
     
     if ($consumable_id > 0) {
         try {
-            $query = "SELECT id, description, quantity, reorder_level FROM consumables WHERE id = ?";
+            $query = "SELECT id, description, quantity, units, reorder_level FROM consumables WHERE id = ?";
             $stmt = $conn->prepare($query);
             $stmt->bind_param("i", $consumable_id);
             $stmt->execute();
@@ -527,6 +537,7 @@ try {
                         <tr>
                             <th>Description</th>
                             <th>Quantity</th>
+                            <th>Units</th>
                             <th>Unit Cost</th>
                             <th>Total Value</th>
                             <th>Reorder Level</th>
@@ -546,6 +557,7 @@ try {
                                         <?php endif; ?>
                                     </td>
                                     <td><?php echo $consumable['quantity']; ?></td>
+                                    <td><?php echo htmlspecialchars($consumable['units'] ?? 'N/A'); ?></td>
                                     <td><?php echo number_format($consumable['unit_cost'], 2); ?></td>
                                     <td class="text-value"><?php echo number_format($consumable['quantity'] * $consumable['unit_cost'], 2); ?></td>
                                     <td><?php echo $consumable['reorder_level']; ?></td>
@@ -569,7 +581,7 @@ try {
                             <?php endforeach; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="8" class="text-center text-muted py-4">
+                                <td colspan="9" class="text-center text-muted py-4">
                                     <i class="bi bi-inbox fs-1"></i>
                                     <p class="mt-2">No consumables found. Click "Add Consumable" to create your first consumable.</p>
                                 </td>
@@ -604,13 +616,41 @@ try {
                         </div>
                         
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="mb-3">
                                     <label class="form-label">Quantity *</label>
                                     <input type="number" class="form-control" name="quantity" min="1" required>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Units *</label>
+                                    <select class="form-select" name="units" required>
+                                        <option value="">Select Unit</option>
+                                        <option value="pcs">pcs</option>
+                                        <option value="sets">sets</option>
+                                        <option value="boxes">boxes</option>
+                                        <option value="packs">packs</option>
+                                        <option value="bottles">bottles</option>
+                                        <option value="liters">liters</option>
+                                        <option value="gallons">gallons</option>
+                                        <option value="kilograms">kilograms</option>
+                                        <option value="grams">grams</option>
+                                        <option value="meters">meters</option>
+                                        <option value="feet">feet</option>
+                                        <option value="inches">inches</option>
+                                        <option value="reams">reams</option>
+                                        <option value="dozens">dozens</option>
+                                        <option value="pairs">pairs</option>
+                                        <option value="rolls">rolls</option>
+                                        <option value="bags">bags</option>
+                                        <option value="cans">cans</option>
+                                        <option value="tubes">tubes</option>
+                                        <option value="units">units</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
                                 <div class="mb-3">
                                     <label class="form-label">Unit Cost *</label>
                                     <input type="number" class="form-control" name="unit_cost" step="0.01" min="0" required>
@@ -628,7 +668,7 @@ try {
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label class="form-label">Office *</label>
+                                    <label class="form-label">For Office *</label>
                                     <select class="form-select" name="office_id" required>
                                         <option value="">Select Office</option>
                                         <?php foreach ($offices as $office): ?>
@@ -637,6 +677,7 @@ try {
                                             </option>
                                         <?php endforeach; ?>
                                     </select>
+                                    <small class="text-muted">Items will be stored in Supply Office and assigned to this office</small>
                                 </div>
                             </div>
                         </div>
@@ -877,7 +918,7 @@ try {
             // Get current table data from DOM
             const table = document.getElementById('consumablesTable');
             const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
-            let csv = 'Description,Quantity,Unit Cost,Total Value,Reorder Level,Office,For Office\n';
+            let csv = 'Description,Quantity,Units,Unit Cost,Total Value,Reorder Level,Office,For Office\n';
             
             for (let i = 0; i < rows.length; i++) {
                 const cells = rows[i].getElementsByTagName('td');
@@ -885,11 +926,12 @@ try {
                     const rowData = [
                         cells[0].textContent.replace(/\s+/g, ' ').trim(), // Description
                         cells[1].textContent.trim(), // Quantity
-                        cells[2].textContent.trim(), // Unit Cost
-                        cells[3].textContent.replace(/[^0-9.-]+/g, '').trim(), // Total Value
-                        cells[4].textContent.trim(), // Reorder Level
-                        cells[5].textContent.trim(), // Office
-                        cells[6].textContent.trim()  // For Office
+                        cells[2].textContent.trim(), // Units
+                        cells[3].textContent.trim(), // Unit Cost
+                        cells[4].textContent.replace(/[^0-9.-]+/g, '').trim(), // Total Value
+                        cells[5].textContent.trim(), // Reorder Level
+                        cells[6].textContent.trim(), // Office
+                        cells[7].textContent.trim()  // For Office
                     ];
                     csv += rowData.map(cell => `"${cell}"`).join(',') + '\n';
                 }

@@ -199,6 +199,21 @@ if ($result && $row = $result->fetch_assoc()) {
             </div>
         </div>
 
+        <!-- Success/Error Messages -->
+        <?php if (isset($_SESSION['success_message'])): ?>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle-fill"></i> <?php echo htmlspecialchars($_SESSION['success_message']); unset($_SESSION['success_message']); ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
+        
+        <?php if (isset($_SESSION['error_message'])): ?>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill"></i> <?php echo htmlspecialchars($_SESSION['error_message']); unset($_SESSION['error_message']); ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
+
         <!-- RIS Form -->
         <div class="form-card">
             <div class="d-flex justify-content-between align-items-center mb-4">
@@ -228,11 +243,11 @@ if ($result && $row = $result->fetch_assoc()) {
                 <div class="row mb-3">
                     <div class="col-md-3">
                         <label class="form-label"><strong>DIVISION:</strong></label>
-                        <input type="text" class="form-control" name="division" required>
+                        <input type="text" class="form-control" name="division">
                     </div>
                     <div class="col-md-3">
                         <label class="form-label"><strong>Responsibility Center:</strong></label>
-                        <input type="text" class="form-control" name="responsibility_center" required>
+                        <input type="text" class="form-control" name="responsibility_center">
                     </div>
                     <div class="col-md-3">
                         <label class="form-label"><strong>RIS NO:</strong></label>
@@ -240,7 +255,7 @@ if ($result && $row = $result->fetch_assoc()) {
                     </div>
                     <div class="col-md-3">
                         <label class="form-label"><strong>DATE:</strong></label>
-                        <input type="date" class="form-control" name="date" required>
+                        <input type="date" class="form-control" name="date">
                     </div>
                 </div>
                 
@@ -267,7 +282,7 @@ if ($result && $row = $result->fetch_assoc()) {
                     </div>
                     <div class="col-md-3">
                         <label class="form-label"><strong>Date:</strong></label>
-                        <input type="date" class="form-control" name="date_2" required>
+                        <input type="date" class="form-control" name="date_2">
                     </div>
                 </div>
                             
@@ -546,7 +561,69 @@ if ($result && $row = $result->fetch_assoc()) {
         
         // Handle form submission
         document.getElementById('risForm').addEventListener('submit', function(e) {
-            // No auto-increment needed for manual fields
+            // Client-side validation before submission
+            const form = e.target;
+            
+            // Get field values with better error handling
+            const risNo = form.querySelector('[name="ris_no"]')?.value?.trim() || '';
+            const office = form.querySelector('[name="office"]')?.value || '';
+            const purpose = form.querySelector('[name="purpose"]')?.value?.trim() || '';
+            const requestedBy = form.querySelector('[name="requested_by"]')?.value?.trim() || '';
+            const requestedByPosition = form.querySelector('[name="requested_by_position"]')?.value?.trim() || '';
+            const approvedBy = form.querySelector('[name="approved_by"]')?.value?.trim() || '';
+            const approvedByPosition = form.querySelector('[name="approved_by_position"]')?.value?.trim() || '';
+            const issuedBy = form.querySelector('[name="issued_by"]')?.value?.trim() || '';
+            const issuedByPosition = form.querySelector('[name="issued_by_position"]')?.value?.trim() || '';
+            const receivedBy = form.querySelector('[name="received_by"]')?.value?.trim() || '';
+            const receivedByPosition = form.querySelector('[name="received_by_position"]')?.value?.trim() || '';
+            
+            // Debug: Log values to check
+            console.log('Validation Debug:', {
+                risNo, office, purpose, requestedBy, requestedByPosition,
+                approvedBy, approvedByPosition, issuedBy, issuedByPosition,
+                receivedBy, receivedByPosition
+            });
+            
+            // Check essential fields
+            const missingFields = [];
+            if (!risNo) missingFields.push('RIS No');
+            if (!office) missingFields.push('Office');
+            if (!purpose) missingFields.push('Purpose');
+            if (!requestedBy) missingFields.push('Requested By Name');
+            if (!requestedByPosition) missingFields.push('Requested By Position');
+            if (!approvedBy) missingFields.push('Approved By Name');
+            if (!approvedByPosition) missingFields.push('Approved By Position');
+            if (!issuedBy) missingFields.push('Issued By Name');
+            if (!issuedByPosition) missingFields.push('Issued By Position');
+            if (!receivedBy) missingFields.push('Received By Name');
+            if (!receivedByPosition) missingFields.push('Received By Position');
+            
+            if (missingFields.length > 0) {
+                e.preventDefault();
+                alert('Please fill in the following required fields:\n' + missingFields.join('\n'));
+                return false;
+            }
+            
+            // Check if at least one item is filled
+            const descriptions = form.querySelectorAll('[name="description[]"]');
+            const quantities = form.querySelectorAll('[name="quantity[]"]');
+            const units = form.querySelectorAll('[name="unit[]"]');
+            
+            let hasValidItem = false;
+            for (let i = 0; i < descriptions.length; i++) {
+                if (descriptions[i]?.value?.trim() && quantities[i]?.value && units[i]?.value) {
+                    hasValidItem = true;
+                    break;
+                }
+            }
+            
+            if (!hasValidItem) {
+                e.preventDefault();
+                alert('Please add at least one complete item with description, quantity, and unit.');
+                return false;
+            }
+            
+            console.log('Validation passed - submitting form');
         });
         
         // Initialize stock numbers and grand total on page load
