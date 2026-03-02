@@ -51,8 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 try {
                     // Check if asset exists and get available quantity
                     $asset_check = "SELECT ai.status, COALESCE(a.quantity, 1) as total_quantity,
-                                   (COALESCE(a.quantity, 1) - COALESCE((SELECT COUNT(*) FROM borrow_requests br 
-                                    WHERE br.asset_id = ai.id AND br.status IN ('pending', 'approved')), 0)) as available_quantity
+                                   COALESCE(a.quantity, 1) as available_quantity
                                    FROM asset_items ai
                                    LEFT JOIN assets a ON ai.asset_id = a.id
                                    WHERE ai.id = ?";
@@ -245,19 +244,11 @@ $other_offices = [];
 
 if ($office_id && $conn) {
     try {
-        // Debug: Check database connection and office_id
-        error_log("Database connection status: " . ($conn ? "OK" : "FAILED"));
-        error_log("Session office_id: " . $office_id);
-        error_log("Session user_id: " . ($_SESSION['user_id'] ?? 'NOT SET'));
-        error_log("Session role: " . ($_SESSION['role'] ?? 'NOT SET'));
-        
         // Get available assets from other offices
+        // Fixed query to properly join asset_items with assets table for quantity
         $assets_query = "SELECT ai.id, ai.description, ai.asset_code, ac.category_name, o.office_name, o.id as office_id,
                          COALESCE(a.quantity, 1) as total_quantity,
-                         (SELECT COUNT(*) FROM borrow_requests br 
-                          WHERE br.asset_id = ai.id AND br.status IN ('pending', 'approved')) as borrowed_quantity,
-                         (COALESCE(a.quantity, 1) - COALESCE((SELECT COUNT(*) FROM borrow_requests br 
-                          WHERE br.asset_id = ai.id AND br.status IN ('pending', 'approved')), 0)) as available_quantity
+                         COALESCE(a.quantity, 1) as available_quantity
                          FROM asset_items ai
                          LEFT JOIN asset_categories ac ON ai.asset_category_id = ac.id
                          LEFT JOIN assets a ON ai.asset_id = a.id
@@ -274,23 +265,39 @@ if ($office_id && $conn) {
         }
         
         // Get other offices
-        $offices_query = "SELECT id, office_name, office_code 
-                         FROM offices 
-                         WHERE id != ? AND status = 'active'
-                         ORDER BY office_name";
-        $stmt = $conn->prepare($offices_query);
-        $stmt->bind_param("i", $office_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        
-        // Debug: Log the current office_id and query results
-        error_log("Current office_id: " . $office_id);
-        error_log("Offices query: " . $offices_query);
-        error_log("Number of offices found: " . $result->num_rows);
-        
-        while ($row = $result->fetch_assoc()) {
-            $other_offices[] = $row;
-            error_log("Found office: " . print_r($row, true));
+        // First, try to get offices without borrow_requests dependency
+        try {
+            $offices_query = "SELECT id, office_name, office_code 
+                             FROM offices 
+                             WHERE status = 'active'
+                             ORDER BY office_name";
+            $stmt = $conn->prepare($offices_query);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            while ($row = $result->fetch_assoc()) {
+                // Exclude current office
+                if ($row['id'] != $office_id) {
+                    $other_offices[] = $row;
+                }
+            }
+        } catch (Exception $e) {
+            error_log("Error fetching offices: " . $e->getMessage());
+            // Fallback: try simpler query
+            try {
+                $offices_query = "SELECT id, office_name FROM offices ORDER BY office_name";
+                $stmt = $conn->prepare($offices_query);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                
+                while ($row = $result->fetch_assoc()) {
+                    if ($row['id'] != $office_id) {
+                        $other_offices[] = $row;
+                    }
+                }
+            } catch (Exception $e2) {
+                error_log("Fallback query also failed: " . $e2->getMessage());
+            }
         }
         
     } catch (Exception $e) {
