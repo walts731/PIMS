@@ -118,8 +118,12 @@ error_log("Red Tags table has data: " . $data_count . " rows");
 // Get red tags
 $red_tags = [];
 try {
-    // Simple query without JOINs to avoid foreign key issues
-    $sql = "SELECT * FROM red_tags rt ORDER BY rt.created_at DESC";
+    // Simple query with component information
+    $sql = "SELECT rt.*, 
+                   adc.monitor_status, adc.ups_status, adc.monitor_name, adc.ups_name
+            FROM red_tags rt 
+            LEFT JOIN asset_desktop_computers adc ON rt.asset_item_id = adc.asset_item_id
+            ORDER BY rt.created_at DESC";
     
     // Debug: Log the SQL query
     error_log("Red Tags SQL: " . $sql);
@@ -467,8 +471,18 @@ try {
                                     <td><?php echo htmlspecialchars($red_tag['red_tag_no']); ?></td>
                                     <td><?php echo date('M d, Y', strtotime($red_tag['date_received'])); ?></td>
                                     <td>
-                                        <?php echo htmlspecialchars(substr($red_tag['item_description'], 0, 50)); ?>
-                                        <?php if (strlen($red_tag['item_description']) > 50): ?>...<?php endif; ?>
+                                        <?php 
+                                        // Display component information if available
+                                        $description = $red_tag['item_description'];
+                                        if (isset($red_tag['component_type']) && $red_tag['component_type'] !== 'main_asset') {
+                                            if ($red_tag['component_type'] === 'monitor' && !empty($red_tag['monitor_name'])) {
+                                                $description .= ' | Monitor: ' . $red_tag['monitor_name'];
+                                            } elseif ($red_tag['component_type'] === 'ups' && !empty($red_tag['ups_name'])) {
+                                                $description .= ' | UPS: ' . $red_tag['ups_name'];
+                                            }
+                                        }
+                                        echo htmlspecialchars(substr($description, 0, 50));
+                                        if (strlen($description) > 50): ?>...<?php endif; ?>
                                     </td>
                                     <td><?php echo htmlspecialchars($red_tag['item_location']); ?></td>
                                     <td><?php echo htmlspecialchars($red_tag['action']); ?></td>
@@ -483,7 +497,7 @@ try {
                                             <a href="print_redtag.php?control_no=<?php echo urlencode($red_tag['control_no']); ?>" class="btn btn-outline-danger btn-sm" title="Print Red Tag" target="_blank">
                                                 <i class="bi bi-printer"></i>
                                             </a>
-                                            <?php if (strtolower($red_tag['action']) === 'disposal'): ?>
+                                            <?php if (strtolower($red_tag['action']) === 'disposal' || strtolower($red_tag['action']) === 'dispose'): ?>
                                                 <button type="button" class="btn btn-warning btn-sm" title="Dispose Item" data-bs-toggle="modal" data-bs-target="#disposeModal" 
                                                         onclick="setDisposalData(<?php echo $red_tag['id']; ?>, '<?php echo htmlspecialchars($red_tag['control_no']); ?>', '<?php echo htmlspecialchars($red_tag['item_description']); ?>')">
                                                     <i class="bi bi-trash"></i> Dispose
