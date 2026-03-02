@@ -109,6 +109,7 @@ logSystemAction($_SESSION['user_id'], 'access', 'main_user_scan_qr', 'Main user 
     <?php require_once 'includes/sidebar-scripts.php'; ?>
     <script>
         let html5QrCode = null;
+        let isScanning = false;
         const startButton = document.getElementById('startButton');
         const stopButton = document.getElementById('stopButton');
         const resultContainer = document.getElementById('result-container');
@@ -121,50 +122,114 @@ logSystemAction($_SESSION['user_id'], 'access', 'main_user_scan_qr', 'Main user 
         stopButton.addEventListener('click', stopScanner);
 
         function startScanner() {
+            if (isScanning) {
+                console.log('Scanner already running');
+                return;
+            }
+
+            // Clean up any existing scanner
+            cleanupScanner();
+            
+            isScanning = true;
             html5QrCode = new Html5Qrcode("qr-reader");
+            
             Html5Qrcode.getCameras().then(devices => {
                 if (devices && devices.length) {
-                    const cameraId = devices[0].id;
+                    // Try to get back camera first, then front camera
+                    const cameraId = devices.find(device => 
+                        device.label.toLowerCase().includes('back') || 
+                        device.label.toLowerCase().includes('environment')
+                    )?.id || devices[0].id;
+                    
+                    console.log('Using camera:', cameraId);
+                    
                     html5QrCode.start(
                         cameraId,
                         {
                             fps: 10,
-                            qrbox: { width: 250, height: 250 }
+                            qrbox: { width: 250, height: 250 },
+                            aspectRatio: 1.0
                         },
                         (decodedText, decodedResult) => {
                             onScanSuccess(decodedText);
                         },
                         (errorMessage) => {
-                            // Ignore scan errors
+                            // Only log serious errors, ignore scan errors
+                            if (errorMessage && !errorMessage.includes('No QR code found')) {
+                                console.warn('Scan error:', errorMessage);
+                            }
                         }
-                    ).catch(err => {
-                        showError('Unable to start camera: ' + err);
+                    ).then(() => {
+                        console.log('Scanner started successfully');
+                        startButton.classList.add('d-none');
+                        stopButton.classList.remove('d-none');
+                    }).catch(err => {
+                        console.error('Failed to start camera:', err);
+                        showError('Unable to start camera: ' + err.message);
+                        isScanning = false;
+                        startButton.classList.remove('d-none');
+                        stopButton.classList.add('d-none');
                     });
-                    startButton.classList.add('d-none');
-                    stopButton.classList.remove('d-none');
                 } else {
                     showError('No camera found on this device.');
+                    isScanning = false;
                 }
             }).catch(err => {
-                showError('Unable to access camera: ' + err);
+                console.error('Camera access error:', err);
+                showError('Unable to access camera: ' + err.message);
+                isScanning = false;
             });
         }
 
         function stopScanner() {
-            if (html5QrCode) {
-                html5QrCode.stop().then(() => {
-                    html5QrCode.clear();
-                    html5QrCode = null;
-                }).catch(err => {
-                    console.error('Failed to stop scanner:', err);
-                });
+            if (!isScanning || !html5QrCode) {
+                console.log('Scanner not running');
+                return;
             }
-            startButton.classList.remove('d-none');
-            stopButton.classList.add('d-none');
+
+            console.log('Stopping scanner...');
+            isScanning = false;
+            
+            html5QrCode.stop().then(() => {
+                console.log('Scanner stopped successfully');
+                html5QrCode.clear();
+                html5QrCode = null;
+                startButton.classList.remove('d-none');
+                stopButton.classList.add('d-none');
+            }).catch(err => {
+                console.error('Failed to stop scanner:', err);
+                // Force cleanup even if stop fails
+                cleanupScanner();
+                startButton.classList.remove('d-none');
+                stopButton.classList.add('d-none');
+            });
+        }
+
+        function cleanupScanner() {
+            if (html5QrCode) {
+                try {
+                    html5QrCode.stop().then(() => {
+                        html5QrCode.clear();
+                        html5QrCode = null;
+                    }).catch(() => {
+                        // Ignore stop errors during cleanup
+                        html5QrCode.clear();
+                        html5QrCode = null;
+                    });
+                } catch (err) {
+                    console.warn('Cleanup error:', err);
+                    html5QrCode = null;
+                }
+            }
+            isScanning = false;
         }
 
         function onScanSuccess(decodedText) {
+            console.log('QR Code detected:', decodedText);
+            
+            // Stop scanner immediately to prevent multiple scans
             stopScanner();
+            
             resultText.textContent = decodedText;
             resultContainer.style.display = 'block';
             errorContainer.style.display = 'none';
