@@ -9,7 +9,6 @@ CREATE TABLE IF NOT EXISTS `borrow_requests` (
     `requested_to_office` int(11) NOT NULL,
     `asset_id` int(11) NOT NULL,
     `quantity_requested` int(11) NOT NULL DEFAULT 1,
-    `quantity_approved` int(11) DEFAULT NULL,
     `purpose` text NOT NULL,
     `start_date` date NOT NULL,
     `end_date` date NOT NULL,
