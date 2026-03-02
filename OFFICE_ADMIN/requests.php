@@ -65,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     } else {
                         $asset_data = $asset_result->fetch_assoc();
                         
-                        if ($asset_data['status'] !== 'available') {
+                        if ($asset_data['status'] !== 'serviceable') {
                             $_SESSION['error'] = "Asset is not available";
                         } elseif ($quantity_requested > $asset_data['available_quantity']) {
                             $_SESSION['error'] = "Only {$asset_data['available_quantity']} units available. You requested {$quantity_requested}.";
@@ -179,13 +179,12 @@ $request_stats = [
 
 if ($office_id && $conn) {
     try {
-        // Incoming requests (other offices requesting from this office)
         $incoming_query = "SELECT br.*, u.first_name, u.last_name, u.email, 
                           o.office_name as requester_office, ai.description as asset_description,
-                          ai.asset_code, ac.category_name
+                          COALESCE(ai.property_number, ai.property_no) as asset_code, ac.category_name
                           FROM borrow_requests br
                           JOIN users u ON br.requested_by = u.id
-                          JOIN offices o ON u.office_id = o.id
+                          JOIN offices o ON br.requested_by_office = o.id
                           JOIN asset_items ai ON br.asset_id = ai.id
                           LEFT JOIN asset_categories ac ON ai.asset_category_id = ac.id
                           WHERE br.requested_to_office = ? 
@@ -207,15 +206,15 @@ if ($office_id && $conn) {
         }
         
         // Outgoing requests (this office requesting from other offices)
-        $outgoing_query = "SELECT br.*, u.first_name, u.last_name, u.email, 
+        $outgoing_query = "SELECT br.*, u.first_name, u.last_name, u.email,
                           o.office_name as approver_office, ai.description as asset_description,
-                          ai.asset_code, ac.category_name
+                          COALESCE(ai.property_number, ai.property_no) as asset_code, ac.category_name
                           FROM borrow_requests br
                           JOIN users u ON br.requested_by = u.id
                           JOIN offices o ON br.requested_to_office = o.id
                           JOIN asset_items ai ON br.asset_id = ai.id
                           LEFT JOIN asset_categories ac ON ai.asset_category_id = ac.id
-                          WHERE br.requested_by_office = ? 
+                          WHERE br.requested_by_office = ?
                           ORDER BY br.created_at DESC";
         $stmt = $conn->prepare($outgoing_query);
         $stmt->bind_param("i", $office_id);
@@ -230,6 +229,8 @@ if ($office_id && $conn) {
                 $request_stats['pending_outgoing']++;
             } elseif ($row['status'] === 'approved') {
                 $request_stats['approved_outgoing']++;
+            } elseif ($row['status'] === 'denied') {
+                $request_stats['denied_outgoing']++;
             }
         }
         
@@ -245,15 +246,14 @@ $other_offices = [];
 if ($office_id && $conn) {
     try {
         // Get available assets from other offices
-        // Fixed query to properly join asset_items with assets table for quantity
-        $assets_query = "SELECT ai.id, ai.description, ai.asset_code, ac.category_name, o.office_name, o.id as office_id,
+        $assets_query = "SELECT ai.id, ai.description, COALESCE(ai.property_number, ai.property_no) as asset_code, ac.category_name, o.office_name, o.id as office_id,
                          COALESCE(a.quantity, 1) as total_quantity,
                          COALESCE(a.quantity, 1) as available_quantity
                          FROM asset_items ai
                          LEFT JOIN asset_categories ac ON ai.asset_category_id = ac.id
                          LEFT JOIN assets a ON ai.asset_id = a.id
                          JOIN offices o ON ai.office_id = o.id
-                         WHERE ai.office_id != ? AND ai.status = 'available'
+                         WHERE ai.office_id != ? AND ai.status = 'serviceable'
                          ORDER BY o.office_name, ai.description";
         $stmt = $conn->prepare($assets_query);
         $stmt->bind_param("i", $office_id);
@@ -265,38 +265,18 @@ if ($office_id && $conn) {
         }
         
         // Get other offices
-        // First, try to get offices without borrow_requests dependency
-        try {
-            $offices_query = "SELECT id, office_name, office_code 
-                             FROM offices 
-                             WHERE status = 'active'
-                             ORDER BY office_name";
-            $stmt = $conn->prepare($offices_query);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            
-            while ($row = $result->fetch_assoc()) {
-                // Exclude current office
-                if ($row['id'] != $office_id) {
-                    $other_offices[] = $row;
-                }
-            }
-        } catch (Exception $e) {
-            error_log("Error fetching offices: " . $e->getMessage());
-            // Fallback: try simpler query
-            try {
-                $offices_query = "SELECT id, office_name FROM offices ORDER BY office_name";
-                $stmt = $conn->prepare($offices_query);
-                $stmt->execute();
-                $result = $stmt->get_result();
-                
-                while ($row = $result->fetch_assoc()) {
-                    if ($row['id'] != $office_id) {
-                        $other_offices[] = $row;
-                    }
-                }
-            } catch (Exception $e2) {
-                error_log("Fallback query also failed: " . $e2->getMessage());
+        $offices_query = "SELECT id, office_name, office_code 
+                         FROM offices 
+                         WHERE status = 'active'
+                         ORDER BY office_name";
+        $stmt = $conn->prepare($offices_query);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        while ($row = $result->fetch_assoc()) {
+            // Exclude current office
+            if ($row['id'] != $office_id) {
+                $other_offices[] = $row;
             }
         }
         
@@ -305,7 +285,6 @@ if ($office_id && $conn) {
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -849,11 +828,15 @@ if ($office_id && $conn) {
                                     <label for="requested_to_office" class="form-label">Request To Office <span class="text-danger">*</span></label>
                                     <select class="form-control" id="requested_to_office" name="requested_to_office" required>
                                         <option value="">Select Office</option>
-                                        <?php foreach ($other_offices as $office): ?>
-                                            <option value="<?php echo $office['id']; ?>">
-                                                <?php echo htmlspecialchars($office['office_name']); ?> (<?php echo htmlspecialchars($office['office_code']); ?>)
-                                            </option>
-                                        <?php endforeach; ?>
+                                        <?php if (!empty($other_offices)): ?>
+                                            <?php foreach ($other_offices as $office): ?>
+                                                <option value="<?php echo $office['id']; ?>">
+                                                    <?php echo htmlspecialchars($office['office_name']); ?> (<?php echo htmlspecialchars($office['office_code']); ?>)
+                                                </option>
+                                            <?php endforeach; ?>
+                                        <?php else: ?>
+                                            <option value="" disabled>No offices available</option>
+                                        <?php endif; ?>
                                     </select>
                                 </div>
                             </div>
