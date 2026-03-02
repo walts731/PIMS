@@ -115,6 +115,7 @@ $page_title = 'Asset Items - ' . htmlspecialchars($asset['description']);
             border-left: 4px solid var(--primary-color);
             transition: var(--transition);
             text-align: center;
+            margin-bottom: 1rem;
         }
         
         .stats-card:hover {
@@ -267,32 +268,32 @@ $page_title = 'Asset Items - ' . htmlspecialchars($asset['description']);
         </div>
 
         <!-- Statistics Cards -->
-        <div class="row mb-4">
-            <div class="col-lg-2 col-md-4 col-sm-6">
+        <div class="row mb-4 justify-content-center">
+            <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
                 <div class="stats-card">
                     <div class="stats-number"><?php echo $serviceable_items; ?></div>
                     <div class="stats-label"><i class="bi bi-check-circle"></i> Serviceable</div>
                 </div>
             </div>
-            <div class="col-lg-2 col-md-4 col-sm-6">
+            <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
                 <div class="stats-card">
                     <div class="stats-number"><?php echo $unserviceable_items; ?></div>
                     <div class="stats-label"><i class="bi bi-x-circle"></i> Unserviceable</div>
                 </div>
             </div>
-            <div class="col-lg-2 col-md-4 col-sm-6">
+            <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
                 <div class="stats-card">
                     <div class="stats-number"><?php echo $redtagged_items; ?></div>
                     <div class="stats-label"><i class="bi bi-exclamation-triangle"></i> Maintenance</div>
                 </div>
             </div>
-            <div class="col-lg-2 col-md-4 col-sm-6">
+            <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
                 <div class="stats-card">
                     <div class="stats-number"><?php echo $notag_items; ?></div>
                     <div class="stats-label"><i class="bi bi-dash-circle"></i> No Tag</div>
                 </div>
             </div>
-            <div class="col-lg-2 col-md-4 col-sm-6">
+            <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
                 <div class="stats-card">
                     <div class="stats-number"><?php echo $borrowed_items; ?></div>
                     <div class="stats-label"><i class="bi bi-arrow-left-right"></i> Disposed</div>
