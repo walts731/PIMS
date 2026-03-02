@@ -321,6 +321,21 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
                 </div>
             </div>
 
+            <!-- Success/Error Messages -->
+            <?php if (isset($_SESSION['success_message'])): ?>
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle-fill"></i> <?php echo htmlspecialchars($_SESSION['success_message']); unset($_SESSION['success_message']); ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php endif; ?>
+            
+            <?php if (isset($_SESSION['error_message'])): ?>
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill"></i> <?php echo htmlspecialchars($_SESSION['error_message']); unset($_SESSION['error_message']); ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php endif; ?>
+
             <!-- ITR Form -->
             <div class="form-card">
                 <div class="d-flex justify-content-between align-items-center mb-4">

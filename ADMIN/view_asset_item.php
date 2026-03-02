@@ -22,9 +22,12 @@ $item = null;
 $item_sql = "SELECT ai.*, 
                    a.description as asset_description, a.unit, a.quantity as asset_quantity, a.unit_cost,
                    ac.category_name, ac.category_code,
+                   subcat.sub_category_name, subcat.sub_category_code,
                    o.office_name,
                    comp.processor, comp.ram_capacity, comp.storage_type, comp.storage_capacity, 
                    comp.operating_system, comp.serial_number as computer_serial_number,
+                   desk.monitor_name, desk.monitor_model, desk.monitor_serial_number, desk.monitor_status,
+                   desk.ups_name, desk.ups_model, desk.ups_serial_number, desk.ups_status,
                    veh.brand as vehicle_brand, veh.model as vehicle_model, veh.plate_number, veh.color, veh.engine_number, veh.chassis_number, veh.year_manufactured,
                    furn.material, furn.dimensions as furniture_dimensions, furn.color as furniture_color, furn.manufacturer as furniture_manufacturer,
                    mach.machine_type, mach.manufacturer as machinery_manufacturer, mach.model_number, mach.capacity as machinery_capacity, mach.power_requirements, mach.serial_number as machinery_serial_number,
@@ -37,8 +40,10 @@ $item_sql = "SELECT ai.*,
             FROM asset_items ai 
             LEFT JOIN assets a ON ai.asset_id = a.id 
             LEFT JOIN asset_categories ac ON a.asset_categories_id = ac.id 
+            LEFT JOIN asset_sub_categories subcat ON ai.asset_subcategory_id = subcat.id
             LEFT JOIN offices o ON ai.office_id = o.id 
             LEFT JOIN asset_computers comp ON ai.id = comp.asset_item_id
+            LEFT JOIN asset_desktop_computers desk ON ai.id = desk.asset_item_id
             LEFT JOIN asset_vehicles veh ON ai.id = veh.asset_item_id
             LEFT JOIN asset_furniture furn ON ai.id = furn.asset_item_id
             LEFT JOIN asset_machinery mach ON ai.id = mach.asset_item_id
@@ -62,6 +67,18 @@ if (!$item) {
     $_SESSION['error'] = 'Asset item not found';
     header('Location: asset_items.php');
     exit();
+}
+
+// Decode images from JSON if available
+$asset_images = [];
+if (!empty($item['image'])) {
+    $decoded_images = json_decode($item['image'], true);
+    if (is_array($decoded_images)) {
+        $asset_images = $decoded_images;
+    } elseif (!empty($item['image'])) {
+        // Handle case where it's a single filename (not JSON)
+        $asset_images = [$item['image']];
+    }
 }
 
 // Get asset ID for navigation
@@ -296,6 +313,54 @@ $status_display = formatStatus($item['status']);
         .no-image-placeholder svg {
             opacity: 0.5;
         }
+        
+        /* Carousel Styles */
+        .asset-carousel {
+            border-radius: var(--border-radius-md);
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .carousel-item img {
+            height: 300px;
+            object-fit: cover;
+            width: 100%;
+        }
+        
+        .carousel-control-prev,
+        .carousel-control-next {
+            width: 40px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 0;
+        }
+        
+        .carousel-control-prev {
+            left: 0;
+        }
+        
+        .carousel-control-next {
+            right: 0;
+        }
+        
+        .carousel-indicators [data-bs-target] {
+            background-color: #191BA9;
+        }
+        
+        .carousel-indicators .active {
+            background-color: #0d1a8a;
+        }
+        
+        .image-counter {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            z-index: 10;
+        }
     </style>
 </head>
 <body>
@@ -397,22 +462,12 @@ $status_display = formatStatus($item['status']);
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <div class="detail-label">Asset Description</div>
-                                    <div class="detail-value"><?php echo htmlspecialchars($item['asset_description']); ?></div>
-                                </div>
-                                <div class="mb-3">
                                     <div class="detail-label">Category</div>
                                     <div class="detail-value"><?php echo htmlspecialchars($item['category_code'] . ' - ' . $item['category_name']); ?></div>
                                 </div>
                                 <div class="mb-3">
                                     <div class="detail-label">Unit</div>
                                     <div class="detail-value"><?php echo htmlspecialchars($item['unit']); ?></div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <div class="detail-label">Unit Cost</div>
-                                    <div class="detail-value">₱<?php echo number_format($item['unit_cost'], 2); ?></div>
                                 </div>
                             </div>
                         </div>
@@ -487,6 +542,127 @@ $status_display = formatStatus($item['status']);
                                     <div class="detail-value"><?php echo $item['storage_type'] ? htmlspecialchars(ucfirst($item['storage_type'])) : '<span class="text-muted">Not specified</span>'; ?></div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                    
+                    <!-- Desktop Computers Specific Fields -->
+                    <?php if ($item['sub_category_name'] === 'Desktop Computers'): ?>
+                    <div class="detail-section">
+                        <h5 class="mb-3"><i class="bi bi-display"></i> Desktop Computer Specifications</h5>
+                        <div class="row">
+                            <?php 
+                            // Check if Monitor has any details specified
+                            $has_monitor_details = !empty($item['monitor_name']) || !empty($item['monitor_model']) || !empty($item['monitor_serial_number']);
+                            ?>
+                            <?php if ($has_monitor_details): ?>
+                            <div class="col-md-6">
+                                <h6 class="text-muted mb-3">Monitor Details</h6>
+                                <div class="mb-3">
+                                    <div class="detail-label">Monitor Name</div>
+                                    <div class="detail-value"><?php echo $item['monitor_name'] ? htmlspecialchars($item['monitor_name']) : '<span class="text-muted">Not specified</span>'; ?></div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="detail-label">Monitor Model</div>
+                                    <div class="detail-value"><?php echo $item['monitor_model'] ? htmlspecialchars($item['monitor_model']) : '<span class="text-muted">Not specified</span>'; ?></div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="detail-label">Monitor Serial Number</div>
+                                    <div class="detail-value"><?php echo $item['monitor_serial_number'] ? htmlspecialchars($item['monitor_serial_number']) : '<span class="text-muted">Not specified</span>'; ?></div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="detail-label">Monitor Status</div>
+                                    <div class="detail-value">
+                                        <?php 
+                                        if ($item['monitor_status']): ?>
+                                            <?php
+                                            $status_class = '';
+                                            switch ($item['monitor_status']) {
+                                                case 'serviceable':
+                                                    $status_class = 'status-serviceable';
+                                                    break;
+                                                case 'unserviceable':
+                                                    $status_class = 'status-unserviceable';
+                                                    break;
+                                                case 'red_tagged':
+                                                    $status_class = 'status-red-tagged';
+                                                    break;
+                                                case 'no_tag':
+                                                    $status_class = 'status-no-tag';
+                                                    break;
+                                            }
+                                            ?>
+                                            <span class="status-badge <?php echo $status_class; ?>">
+                                                <?php echo ucfirst(str_replace('_', ' ', $item['monitor_status'])); ?>
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="text-muted">Not specified</span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+                            <?php endif; ?>
+                            
+                            <?php 
+                            // Check if UPS has any details specified
+                            $has_ups_details = !empty($item['ups_name']) || !empty($item['ups_model']) || !empty($item['ups_serial_number']);
+                            ?>
+                            <?php if ($has_ups_details): ?>
+                            <div class="col-md-6">
+                                <h6 class="text-muted mb-3">UPS Details</h6>
+                                <div class="mb-3">
+                                    <div class="detail-label">UPS Name</div>
+                                    <div class="detail-value"><?php echo $item['ups_name'] ? htmlspecialchars($item['ups_name']) : '<span class="text-muted">Not specified</span>'; ?></div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="detail-label">UPS Model</div>
+                                    <div class="detail-value"><?php echo $item['ups_model'] ? htmlspecialchars($item['ups_model']) : '<span class="text-muted">Not specified</span>'; ?></div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="detail-label">UPS Serial Number</div>
+                                    <div class="detail-value"><?php echo $item['ups_serial_number'] ? htmlspecialchars($item['ups_serial_number']) : '<span class="text-muted">Not specified</span>'; ?></div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="detail-label">UPS Status</div>
+                                    <div class="detail-value">
+                                        <?php 
+                                        if ($item['ups_status']): ?>
+                                            <?php
+                                            $status_class = '';
+                                            switch ($item['ups_status']) {
+                                                case 'serviceable':
+                                                    $status_class = 'status-serviceable';
+                                                    break;
+                                                case 'unserviceable':
+                                                    $status_class = 'status-unserviceable';
+                                                    break;
+                                                case 'red_tagged':
+                                                    $status_class = 'status-red-tagged';
+                                                    break;
+                                                case 'no_tag':
+                                                    $status_class = 'status-no-tag';
+                                                    break;
+                                            }
+                                            ?>
+                                            <span class="status-badge <?php echo $status_class; ?>">
+                                                <?php echo ucfirst(str_replace('_', ' ', $item['ups_status'])); ?>
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="text-muted">Not specified</span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+                            <?php endif; ?>
+                            
+                            <?php if (!$has_monitor_details && !$has_ups_details): ?>
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    No monitor or UPS details specified for this desktop computer.
+                                </div>
+                            </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                     <?php endif; ?>
@@ -695,34 +871,66 @@ $status_display = formatStatus($item['status']);
             
             <!-- Sidebar Column -->
             <div class="col-lg-4">
-                <!-- Asset Image -->
+                <!-- Asset Images Carousel -->
                 <div class="detail-card text-center">
-                    <h5 class="mb-3"><i class="bi bi-image"></i> Asset Image</h5>
-                    <div class="asset-image-container mb-3">
-                        <?php if (!empty($item['image'])): ?>
-                            <img src="../uploads/asset_images/<?php echo htmlspecialchars($item['image']); ?>" 
-                                 alt="Asset Image" 
-                                 class="img-fluid rounded shadow-sm"
-                                 style="max-height: 300px; width: auto; object-fit: cover;"
-                                 onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgdmlld0JveD0iMCAwIDMwMCAzMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIiBmaWxsPSIjRjVGNUY1Ii8+CjxwYXRoIGQ9Ik0xMjUgMTIwSDE3NVYxNzVIMTI1VjEyMFoiIGZpbGw9IiNEMUQ1REIiLz4KPHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEwIDIwQzEwIDIyLjIwOTEgMTEuNzkwOSAyNCAxNCAyNEgyNkMyOC4yMDkxIDI0IDMwIDIyLjIwOTEgMzAgMjBWMzBIMTBWMjBaTTEwIDEwQzEwIDEyLjIwOTEgMTEuNzkwOSAxNCAxNCAxNEgyNkMyOC4yMDkxIDE0IDMwIDEyLjIwOTEgMzAgMTBWMTBIMTBaIiBmaWxsPSIjRDRERDREIi8+Cjwvc3ZnPgo8L3N2Zz4K';">
-                            <div class="mt-2">
-                                <small class="text-muted">Image uploaded</small>
-                            </div>
-                        <?php else: ?>
-                            <div class="no-image-placeholder">
-                                <svg width="150" height="150" viewBox="0 0 150 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <rect width="150" height="150" fill="#F5F5F5"/>
-                                    <path d="M62.5 60H87.5V87.5H62.5V60Z" fill="#D1D5DB"/>
-                                    <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" x="55" y="55">
-                                        <path d="M10 20C10 22.2091 11.7909 24 14 24H26C28.2091 24 30 22.2091 30 20V30H10V20ZM10 10C10 12.2091 11.7909 14 14 14H26C28.2091 14 30 12.2091 30 10V10H10V10Z" fill="#D4D4D4"/>
-                                    </svg>
-                                </svg>
-                                <div class="mt-2">
-                                    <small class="text-muted">No image available</small>
+                    <h5 class="mb-3"><i class="bi bi-images"></i> Asset Images</h5>
+                    <?php if (!empty($asset_images)): ?>
+                        <div id="assetImageCarousel" class="carousel slide asset-carousel mb-3" data-bs-ride="carousel">
+                            <?php if (count($asset_images) > 1): ?>
+                                <div class="carousel-indicators">
+                                    <?php foreach ($asset_images as $index => $image): ?>
+                                        <button type="button" data-bs-target="#assetImageCarousel" data-bs-slide-to="<?php echo $index; ?>" class="<?php echo $index === 0 ? 'active' : ''; ?>" aria-current="<?php echo $index === 0 ? 'true' : 'false'; ?>" aria-label="Slide <?php echo $index + 1; ?>"></button>
+                                    <?php endforeach; ?>
                                 </div>
+                            <?php endif; ?>
+                            
+                            <div class="carousel-inner">
+                                <?php foreach ($asset_images as $index => $image): ?>
+                                    <div class="carousel-item <?php echo $index === 0 ? 'active' : ''; ?>">
+                                        <img src="../uploads/asset_images/<?php echo htmlspecialchars($image); ?>" 
+                                             class="d-block w-100" 
+                                             alt="Asset Image <?php echo $index + 1; ?>"
+                                             onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgdmlld0JveD0iMCAwIDMwMCAzMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIiBmaWxsPSIjRjVGNUY1Ii8+CjxwYXRoIGQ9Ik0xMjUgMTIwSDE3NVYxNzVIMTI1VjEyMFoiIGZpbGw9IiNEMUQ1REIiLz4KPHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEwIDIwQzEwIDIyLjIwOTEgMTEuNzkwOSAyNCAxNCAyNEgyNkMyOC4yMDkxIDI0IDMwIDIyLjIwOTEgMzAgMjBWMzBIMTBWMjBaTTEwIDEwQzEwIDEyLjIwOTEgMTEuNzkwOSAxNCAxNCAxNEgyNkMyOC4yMDkxIDE0IDMwIDEyLjIwOTEgMzAgMTBWMTBIMTBaIiBmaWxsPSIjRDRERDREIi8+Cjwvc3ZnPgo8L3N2Zz4K';">
+                                        <?php if (count($asset_images) > 1): ?>
+                                            <div class="image-counter"><?php echo ($index + 1) . ' / ' . count($asset_images); ?></div>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endforeach; ?>
                             </div>
-                        <?php endif; ?>
-                    </div>
+                            
+                            <?php if (count($asset_images) > 1): ?>
+                                <button class="carousel-control-prev" type="button" data-bs-target="#assetImageCarousel" data-bs-slide="prev">
+                                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                    <span class="visually-hidden">Previous</span>
+                                </button>
+                                <button class="carousel-control-next" type="button" data-bs-target="#assetImageCarousel" data-bs-slide="next">
+                                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                    <span class="visually-hidden">Next</span>
+                                </button>
+                            <?php endif; ?>
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                <?php echo count($asset_images); ?> image(s) available
+                                <?php if (count($asset_images) > 1): ?>
+                                    - Use arrows or dots to navigate
+                                <?php endif; ?>
+                            </small>
+                        </div>
+                    <?php else: ?>
+                        <div class="no-image-placeholder">
+                            <svg width="150" height="150" viewBox="0 0 150 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect width="150" height="150" fill="#F5F5F5"/>
+                                <path d="M62.5 60H87.5V87.5H62.5V60Z" fill="#D1D5DB"/>
+                                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" x="55" y="55">
+                                    <path d="M10 20C10 22.2091 11.7909 24 14 24H26C28.2091 24 30 22.2091 30 20V30H10V20ZM10 10C10 12.2091 11.7909 14 14 14H26C28.2091 14 30 12.2091 30 10V10H10V10Z" fill="#D4D4D4"/>
+                                </svg>
+                            </svg>
+                            <div class="mt-2">
+                                <small class="text-muted">No images available</small>
+                            </div>
+                        </div>
+                    <?php endif; ?>
                 </div>
                 
                 <!-- QR Code -->
@@ -766,9 +974,45 @@ $status_display = formatStatus($item['status']);
                             </button>
                         <?php elseif ($item['status'] === 'unserviceable'): ?>
                             <!-- Show Create Red Tag button for unserviceable assets -->
-                            <a href="create_redtag.php?asset_id=<?php echo $item['id']; ?>&description=<?php echo urlencode($item['description']); ?>&property_no=<?php echo urlencode($item['property_no'] ?? ''); ?>&inventory_tag=<?php echo urlencode($item['inventory_tag'] ?? ''); ?>&acquisition_date=<?php echo $item['acquisition_date']; ?>&value=<?php echo $item['value']; ?>&office_name=<?php echo urlencode($item['office_name'] ?? ''); ?>" class="btn btn-danger">
+                            <?php 
+                            // Check if multiple components are unserviceable
+                            $unserviceable_components = [];
+                            if ($item['status'] === 'unserviceable') {
+                                $unserviceable_components[] = 'main_asset';
+                            }
+                            if ($item['monitor_status'] === 'unserviceable') {
+                                $unserviceable_components[] = 'monitor';
+                            }
+                            if ($item['ups_status'] === 'unserviceable') {
+                                $unserviceable_components[] = 'ups';
+                            }
+                            
+                            $show_redtag_modal = count($unserviceable_components) > 1;
+                            ?>
+                            
+                            <?php if ($show_redtag_modal): ?>
+                            <!-- Show modal button when multiple components are unserviceable -->
+                            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#redtagComponentModal">
+                                <i class="bi bi-exclamation-triangle"></i> Create Red Tag
+                            </button>
+                            <?php else: ?>
+                            <!-- Show direct link when only one component is unserviceable -->
+                            <?php 
+                            $component_type = !empty($unserviceable_components) ? $unserviceable_components[0] : 'main_asset';
+                            $component_description = '';
+                            
+                            if ($component_type === 'monitor' && !empty($item['monitor_name'])) {
+                                $component_description = 'Monitor - ' . $item['monitor_name'];
+                            } elseif ($component_type === 'ups' && !empty($item['ups_name'])) {
+                                $component_description = 'UPS - ' . $item['ups_name'];
+                            } else {
+                                $component_description = $item['description'];
+                            }
+                            ?>
+                            <a href="create_redtag.php?asset_id=<?php echo $item['id']; ?>&description=<?php echo urlencode($component_description); ?>&property_no=<?php echo urlencode($item['property_no'] ?? ''); ?>&inventory_tag=<?php echo urlencode($item['inventory_tag'] ?? ''); ?>&acquisition_date=<?php echo $item['acquisition_date']; ?>&value=<?php echo $item['value']; ?>&office_name=<?php echo urlencode($item['office_name'] ?? ''); ?>&component_type=<?php echo $component_type; ?>&component_description=<?php echo urlencode($component_description); ?>" class="btn btn-danger">
                                 <i class="bi bi-exclamation-triangle"></i> Create Red Tag
                             </a>
+                            <?php endif; ?>
                         <?php else: ?>
                             <!-- No action buttons for other statuses -->
                             <div class="text-muted text-center">
@@ -863,6 +1107,135 @@ $status_display = formatStatus($item['status']);
         </div>
     </div>
     
+    <!-- IIRUP Component Selection Modal -->
+    <div class="modal fade" id="iirupComponentModal" tabindex="-1" aria-labelledby="iirupComponentModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="iirupComponentModalLabel">
+                        <i class="bi bi-file-earmark-text text-info"></i> Select Component for IIRUP Form
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-3">Choose which component you want to add to the IIRUP form:</p>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-outline-primary btn-lg" onclick="addAssetToIirup()">
+                            <i class="bi bi-box-seam"></i>
+                            <div class="mt-2">
+                                <strong>Main Asset Item</strong>
+                                <div class="small text-muted"><?php echo htmlspecialchars($item['description']); ?></div>
+                            </div>
+                        </button>
+                        
+                        <?php if ($item['sub_category_name'] === 'Desktop Computers' && $has_monitor_details && ($item['monitor_status'] === 'serviceable' || $item['monitor_status'] === null)): ?>
+                        <button type="button" class="btn btn-outline-success btn-lg" onclick="addMonitorToIirup()">
+                            <i class="bi bi-display"></i>
+                            <div class="mt-2">
+                                <strong>Monitor</strong>
+                                <div class="small text-muted"><?php echo htmlspecialchars($item['monitor_name'] ?: 'Monitor'); ?></div>
+                                <div class="small text-success">Available for IIRUP</div>
+                            </div>
+                        </button>
+                        <?php elseif ($item['sub_category_name'] === 'Desktop Computers' && $has_monitor_details): ?>
+                        <button type="button" class="btn btn-outline-secondary btn-lg" disabled>
+                            <i class="bi bi-display"></i>
+                            <div class="mt-2">
+                                <strong>Monitor</strong>
+                                <div class="small text-muted"><?php echo htmlspecialchars($item['monitor_name'] ?: 'Monitor'); ?></div>
+                                <div class="small text-warning">Not available (<?php echo ucfirst(str_replace('_', ' ', $item['monitor_status'] ?: 'no_status')); ?>)</div>
+                            </div>
+                        </button>
+                        <?php endif; ?>
+                        
+                        <?php if ($item['sub_category_name'] === 'Desktop Computers' && $has_ups_details && ($item['ups_status'] === 'serviceable' || $item['ups_status'] === null)): ?>
+                        <button type="button" class="btn btn-outline-warning btn-lg" onclick="addUpsToIirup()">
+                            <i class="bi bi-battery-charging"></i>
+                            <div class="mt-2">
+                                <strong>UPS</strong>
+                                <div class="small text-muted"><?php echo htmlspecialchars($item['ups_name'] ?: 'UPS'); ?></div>
+                                <div class="small text-success">Available for IIRUP</div>
+                            </div>
+                        </button>
+                        <?php elseif ($item['sub_category_name'] === 'Desktop Computers' && $has_ups_details): ?>
+                        <button type="button" class="btn btn-outline-secondary btn-lg" disabled>
+                            <i class="bi bi-battery-charging"></i>
+                            <div class="mt-2">
+                                <strong>UPS</strong>
+                                <div class="small text-muted"><?php echo htmlspecialchars($item['ups_name'] ?: 'UPS'); ?></div>
+                                <div class="small text-warning">Not available (<?php echo ucfirst(str_replace('_', ' ', $item['ups_status'] ?: 'no_status')); ?>)</div>
+                            </div>
+                        </button>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Red Tag Component Selection Modal -->
+    <div class="modal fade" id="redtagComponentModal" tabindex="-1" aria-labelledby="redtagComponentModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="redtagComponentModalLabel">
+                        <i class="bi bi-exclamation-triangle text-danger"></i> Select Component for Red Tag
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-3">Choose which component you want to create a red tag for:</p>
+                    
+                    <div class="d-grid gap-2">
+                        <?php if ($item['status'] === 'unserviceable'): ?>
+                        <button type="button" class="btn btn-outline-primary btn-lg" onclick="addAssetToRedtag()">
+                            <i class="bi bi-box-seam"></i>
+                            <div class="mt-2">
+                                <strong>Main Asset Item</strong>
+                                <div class="small text-muted"><?php echo htmlspecialchars($item['description']); ?></div>
+                                <div class="small text-danger">Unserviceable</div>
+                            </div>
+                        </button>
+                        <?php endif; ?>
+                        
+                        <?php if ($item['sub_category_name'] === 'Desktop Computers' && $has_monitor_details && $item['monitor_status'] === 'unserviceable'): ?>
+                        <button type="button" class="btn btn-outline-success btn-lg" onclick="addMonitorToRedtag()">
+                            <i class="bi bi-display"></i>
+                            <div class="mt-2">
+                                <strong>Monitor</strong>
+                                <div class="small text-muted"><?php echo htmlspecialchars($item['monitor_name'] ?: 'Monitor'); ?></div>
+                                <div class="small text-danger">Unserviceable</div>
+                            </div>
+                        </button>
+                        <?php endif; ?>
+                        
+                        <?php if ($item['sub_category_name'] === 'Desktop Computers' && $has_ups_details && $item['ups_status'] === 'unserviceable'): ?>
+                        <button type="button" class="btn btn-outline-warning btn-lg" onclick="addUpsToRedtag()">
+                            <i class="bi bi-battery-charging"></i>
+                            <div class="mt-2">
+                                <strong>UPS</strong>
+                                <div class="small text-muted"><?php echo htmlspecialchars($item['ups_name'] ?: 'UPS'); ?></div>
+                                <div class="small text-danger">Unserviceable</div>
+                            </div>
+                        </button>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <?php require_once 'includes/sidebar-scripts.php'; ?>
@@ -882,7 +1255,16 @@ $status_display = formatStatus($item['status']);
         }
         
         function addToIirup() {
-            // Prepare asset data for IIRUP form
+            // Show component selection modal
+            const modal = new bootstrap.Modal(document.getElementById('iirupComponentModal'));
+            modal.show();
+        }
+        
+        function addAssetToIirup() {
+            // Close the modal
+            bootstrap.Modal.getInstance(document.getElementById('iirupComponentModal')).hide();
+            
+            // Prepare main asset data for IIRUP form
             const assetData = {
                 id: <?php echo $item_id; ?>,
                 description: '<?php echo addslashes($item['description']); ?>',
@@ -898,23 +1280,76 @@ $status_display = formatStatus($item['status']);
                 unit: '<?php echo addslashes($item['unit']); ?>'
             };
             
-            // Create URL with asset data
+            openIirupForm(assetData);
+        }
+        
+        function addMonitorToIirup() {
+            // Close the modal
+            bootstrap.Modal.getInstance(document.getElementById('iirupComponentModal')).hide();
+            
+            // Prepare monitor data for IIRUP form
+            const monitorData = {
+                id: <?php echo $item_id; ?>,
+                description: '<?php echo addslashes('Monitor - ' . ($item['monitor_name'] ?: $item['description'])); ?>',
+                property_no: '<?php echo addslashes($item['property_no'] ?? ''); ?>',
+                inventory_tag: '<?php echo addslashes($item['inventory_tag'] ?? ''); ?>',
+                acquisition_date: '<?php echo $item['acquisition_date']; ?>',
+                value: '<?php echo $item['monitor_value'] ?? $item['value']; ?>',
+                unit_cost: '<?php echo $item['monitor_unit_cost'] ?? $item['unit_cost']; ?>',
+                office_name: '<?php echo addslashes($item['office_name'] ?? ''); ?>',
+                category_name: 'Computer Equipment',
+                category_code: '030',
+                asset_description: '<?php echo addslashes($item['monitor_model'] ?: 'Monitor'); ?>',
+                unit: 'SET',
+                component_type: 'monitor'
+            };
+            
+            openIirupForm(monitorData);
+        }
+        
+        function addUpsToIirup() {
+            // Close the modal
+            bootstrap.Modal.getInstance(document.getElementById('iirupComponentModal')).hide();
+            
+            // Prepare UPS data for IIRUP form
+            const upsData = {
+                id: <?php echo $item_id; ?>,
+                description: '<?php echo addslashes('UPS - ' . ($item['ups_name'] ?: $item['description'])); ?>',
+                property_no: '<?php echo addslashes($item['property_no'] ?? ''); ?>',
+                inventory_tag: '<?php echo addslashes($item['inventory_tag'] ?? ''); ?>',
+                acquisition_date: '<?php echo $item['acquisition_date']; ?>',
+                value: '<?php echo $item['ups_value'] ?? $item['value']; ?>',
+                unit_cost: '<?php echo $item['ups_unit_cost'] ?? $item['unit_cost']; ?>',
+                office_name: '<?php echo addslashes($item['office_name'] ?? ''); ?>',
+                category_name: 'Computer Equipment',
+                category_code: '030',
+                asset_description: '<?php echo addslashes($item['ups_model'] ?: 'UPS'); ?>',
+                unit: 'SET',
+                component_type: 'ups'
+            };
+            
+            openIirupForm(upsData);
+        }
+        
+        function openIirupForm(data) {
+            // Create URL with component data
             const params = new URLSearchParams();
-            params.append('asset_id', assetData.id);
-            params.append('description', assetData.description);
-            params.append('property_no', assetData.property_no);
-            params.append('inventory_tag', assetData.inventory_tag);
-            params.append('acquisition_date', assetData.acquisition_date);
-            params.append('value', assetData.value);
-            params.append('unit_cost', assetData.unit_cost);
-            params.append('office_name', assetData.office_name);
-            params.append('category_name', assetData.category_name);
-            params.append('category_code', assetData.category_code);
-            params.append('asset_description', assetData.asset_description);
-            params.append('unit', assetData.unit);
+            params.append('asset_id', data.id);
+            params.append('description', data.description);
+            params.append('property_no', data.property_no);
+            params.append('inventory_tag', data.inventory_tag);
+            params.append('acquisition_date', data.acquisition_date);
+            params.append('value', data.value);
+            params.append('unit_cost', data.unit_cost);
+            params.append('office_name', data.office_name);
+            params.append('category_name', data.category_name);
+            params.append('category_code', data.category_code);
+            params.append('asset_description', data.asset_description);
+            params.append('unit', data.unit);
+            params.append('component_type', data.component_type || 'main_asset');
             params.append('auto_fill', 'true');
             
-            // Open IIRUP form with asset data
+            // Open IIRUP form with component data
             window.open('iirup_form.php?' + params.toString(), '_blank');
         }
         
@@ -947,6 +1382,101 @@ $status_display = formatStatus($item['status']);
             // Submit the form
             document.getElementById('disposeForm').submit();
         };
+        
+        // Red Tag component selection functions
+        function addAssetToRedtag() {
+            // Close the modal
+            bootstrap.Modal.getInstance(document.getElementById('redtagComponentModal')).hide();
+            
+            // Prepare main asset data for Red Tag form
+            const assetData = {
+                id: <?php echo $item_id; ?>,
+                description: '<?php echo addslashes($item['description']); ?>',
+                property_no: '<?php echo addslashes($item['property_no'] ?? ''); ?>',
+                inventory_tag: '<?php echo addslashes($item['inventory_tag'] ?? ''); ?>',
+                acquisition_date: '<?php echo $item['acquisition_date']; ?>',
+                value: '<?php echo $item['value']; ?>',
+                unit_cost: '<?php echo $item['unit_cost']; ?>',
+                office_name: '<?php echo addslashes($item['office_name'] ?? ''); ?>',
+                category_name: '<?php echo addslashes($item['category_name'] ?? ''); ?>',
+                category_code: '<?php echo addslashes($item['category_code'] ?? ''); ?>',
+                asset_description: '<?php echo addslashes($item['asset_description']); ?>',
+                unit: '<?php echo addslashes($item['unit']); ?>',
+                component_type: 'main_asset'
+            };
+            
+            openRedtagForm(assetData);
+        }
+        
+        function addMonitorToRedtag() {
+            // Close the modal
+            bootstrap.Modal.getInstance(document.getElementById('redtagComponentModal')).hide();
+            
+            // Prepare monitor data for Red Tag form
+            const monitorData = {
+                id: <?php echo $item_id; ?>,
+                description: '<?php echo addslashes('Monitor - ' . ($item['monitor_name'] ?: $item['description'])); ?>',
+                property_no: '<?php echo addslashes($item['property_no'] ?? ''); ?>',
+                inventory_tag: '<?php echo addslashes($item['inventory_tag'] ?? ''); ?>',
+                acquisition_date: '<?php echo $item['acquisition_date']; ?>',
+                value: '<?php echo $item['monitor_value'] ?? $item['value']; ?>',
+                unit_cost: '<?php echo $item['monitor_unit_cost'] ?? $item['unit_cost']; ?>',
+                office_name: '<?php echo addslashes($item['office_name'] ?? ''); ?>',
+                category_name: 'Computer Equipment',
+                category_code: '030',
+                asset_description: '<?php echo addslashes($item['monitor_model'] ?: 'Monitor'); ?>',
+                unit: 'SET',
+                component_type: 'monitor'
+            };
+            
+            openRedtagForm(monitorData);
+        }
+        
+        function addUpsToRedtag() {
+            // Close the modal
+            bootstrap.Modal.getInstance(document.getElementById('redtagComponentModal')).hide();
+            
+            // Prepare UPS data for Red Tag form
+            const upsData = {
+                id: <?php echo $item_id; ?>,
+                description: '<?php echo addslashes('UPS - ' . ($item['ups_name'] ?: $item['description'])); ?>',
+                property_no: '<?php echo addslashes($item['property_no'] ?? ''); ?>',
+                inventory_tag: '<?php echo addslashes($item['inventory_tag'] ?? ''); ?>',
+                acquisition_date: '<?php echo $item['acquisition_date']; ?>',
+                value: '<?php echo $item['ups_value'] ?? $item['value']; ?>',
+                unit_cost: '<?php echo $item['ups_unit_cost'] ?? $item['unit_cost']; ?>',
+                office_name: '<?php echo addslashes($item['office_name'] ?? ''); ?>',
+                category_name: 'Computer Equipment',
+                category_code: '030',
+                asset_description: '<?php echo addslashes($item['ups_model'] ?: 'UPS'); ?>',
+                unit: 'SET',
+                component_type: 'ups'
+            };
+            
+            openRedtagForm(upsData);
+        }
+        
+        function openRedtagForm(data) {
+            // Create URL with component data
+            const params = new URLSearchParams();
+            params.append('asset_id', data.id);
+            params.append('description', data.description);
+            params.append('property_no', data.property_no);
+            params.append('inventory_tag', data.inventory_tag);
+            params.append('acquisition_date', data.acquisition_date);
+            params.append('value', data.value);
+            params.append('unit_cost', data.unit_cost);
+            params.append('office_name', data.office_name);
+            params.append('category_name', data.category_name);
+            params.append('category_code', data.category_code);
+            params.append('asset_description', data.asset_description);
+            params.append('unit', data.unit);
+            params.append('component_type', data.component_type || 'main_asset');
+            params.append('auto_fill', 'true');
+            
+            // Open Red Tag form with component data
+            window.open('create_redtag.php?' + params.toString(), '_blank');
+        }
     </script>
 </body>
 </html>

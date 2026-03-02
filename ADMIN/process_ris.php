@@ -52,10 +52,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $prices = $_POST['price'] ?? [];
         $total_amounts = $_POST['total_amount'] ?? [];
         
-        // Validate required fields
-        if (empty($division) || empty($responsibility_center) || empty($ris_no) || empty($date) || 
-            empty($office) || empty($code) || empty($sai_no) || empty($date_2) || empty($purpose)) {
-            throw new Exception('All required fields must be filled');
+        // Validate required fields - only validate essential fields
+        if (empty($ris_no) || empty($office) || empty($purpose) || 
+            empty($requested_by) || empty($requested_by_position) ||
+            empty($approved_by) || empty($approved_by_position) ||
+            empty($issued_by) || empty($issued_by_position) ||
+            empty($received_by) || empty($received_by_position)) {
+            throw new Exception('All required signature fields must be filled');
+        }
+        
+        // Validate items data
+        if (empty($descriptions) || empty($quantities) || empty($units)) {
+            throw new Exception('At least one item must be added with description, quantity, and unit');
+        }
+        
+        // Check if at least one item has valid data
+        $valid_items = 0;
+        for ($i = 0; $i < count($descriptions); $i++) {
+            if (!empty($descriptions[$i]) && !empty($quantities[$i]) && !empty($units[$i])) {
+                $valid_items++;
+            }
+        }
+        
+        if ($valid_items == 0) {
+            throw new Exception('At least one complete item must be added');
         }
         
         // Check if we should increment counters

@@ -752,7 +752,6 @@ function formatStatus($status) {
                         <thead>
                             <tr>
                                 <th>Property No</th>
-                                <th>Inventory Tag</th>
                                 <th>Description</th>
                                 <th>Category</th>
                                 <th>Office</th>
@@ -765,13 +764,12 @@ function formatStatus($status) {
                         <tbody>
                             <?php if (empty($data)): ?>
                                 <tr>
-                                    <td colspan="9" class="text-center text-muted">No assets found matching the criteria</td>
+                                    <td colspan="8" class="text-center text-muted">No assets found matching the criteria</td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($data as $item): ?>
                                     <tr>
                                         <td><?php echo htmlspecialchars($item['property_no'] ?? 'N/A'); ?></td>
-                                        <td><?php echo htmlspecialchars($item['inventory_tag'] ?? 'N/A'); ?></td>
                                         <td><?php echo htmlspecialchars($item['description']); ?></td>
                                         <td><?php echo htmlspecialchars($item['category_code'] ?? ''); ?></td>
                                         <td><?php echo htmlspecialchars($item['office_name'] ?? 'N/A'); ?></td>
