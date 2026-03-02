@@ -276,9 +276,18 @@ if (!$conn || $conn->connect_error) {
                                         <td class="text-end ps-3"><?php echo number_format((float)($row['item_value'] ?? 0), 2); ?></td>
                                         <td class="text-muted small ps-3"><?php echo htmlspecialchars($row['updated_at'] ?? ''); ?></td>
                                         <td class="ps-3">
-                                            <a href="view_asset_item.php?id=<?php echo (int)$row['item_id']; ?>" class="btn btn-sm btn-outline-info">
+                                            <a href="view_asset_item.php?id=<?php echo (int)$row['item_id']; ?>" class="btn btn-sm btn-outline-info me-1">
                                                 <i class="bi bi-eye"></i> View
                                             </a>
+                                            <?php if ($row['item_status'] === 'serviceable'): ?>
+                                                <button class="btn btn-sm btn-outline-warning" onclick="borrowItem(<?php echo (int)$row['item_id']; ?>)">
+                                                    <i class="bi bi-arrow-left-right"></i> Borrow
+                                                </button>
+                                            <?php elseif ($row['item_status'] === 'borrowed'): ?>
+                                                <button class="btn btn-sm btn-outline-success" onclick="returnItem(<?php echo (int)$row['item_id']; ?>)">
+                                                    <i class="bi bi-arrow-return-left"></i> Return
+                                                </button>
+                                            <?php endif; ?>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -329,6 +338,92 @@ if (!$conn || $conn->connect_error) {
             }
             if (statusFilter) {
                 statusFilter.addEventListener('change', applyFilters);
+            }
+
+            // Borrow item function
+            function borrowItem(itemId) {
+                if (confirm('Are you sure you want to borrow this item?')) {
+                    // Show loading state
+                    const button = event.target;
+                    const originalText = button.innerHTML;
+                    button.innerHTML = '<i class="bi bi-hourglass-split"></i> Processing...';
+                    button.disabled = true;
+
+                    // Create form data
+                    const formData = new FormData();
+                    formData.append('action', 'borrow');
+                    formData.append('item_id', itemId);
+                    formData.append('user_id', <?php echo (int)($_SESSION['user_id'] ?? 0); ?>);
+
+                    // Send request
+                    fetch('process_borrow.php', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('Item borrowed successfully!');
+                            // Reload page to show updated status
+                            window.location.reload();
+                        } else {
+                            alert('Error: ' + (data.message || 'Failed to borrow item'));
+                            // Restore button
+                            button.innerHTML = originalText;
+                            button.disabled = false;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred while borrowing the item.');
+                        // Restore button
+                        button.innerHTML = originalText;
+                        button.disabled = false;
+                    });
+                }
+            }
+
+            // Return item function
+            function returnItem(itemId) {
+                if (confirm('Are you sure you want to return this item?')) {
+                    // Show loading state
+                    const button = event.target;
+                    const originalText = button.innerHTML;
+                    button.innerHTML = '<i class="bi bi-hourglass-split"></i> Processing...';
+                    button.disabled = true;
+
+                    // Create form data
+                    const formData = new FormData();
+                    formData.append('action', 'return');
+                    formData.append('item_id', itemId);
+                    formData.append('user_id', <?php echo (int)($_SESSION['user_id'] ?? 0); ?>);
+
+                    // Send request
+                    fetch('process_borrow.php', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('Item returned successfully!');
+                            // Reload page to show updated status
+                            window.location.reload();
+                        } else {
+                            alert('Error: ' + (data.message || 'Failed to return item'));
+                            // Restore button
+                            button.innerHTML = originalText;
+                            button.disabled = false;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred while returning the item.');
+                        // Restore button
+                        button.innerHTML = originalText;
+                        button.disabled = false;
+                    });
+                }
             }
         });
     </script>
