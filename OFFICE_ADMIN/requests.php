@@ -245,6 +245,12 @@ $other_offices = [];
 
 if ($office_id && $conn) {
     try {
+        // Debug: Check database connection and office_id
+        error_log("Database connection status: " . ($conn ? "OK" : "FAILED"));
+        error_log("Session office_id: " . $office_id);
+        error_log("Session user_id: " . ($_SESSION['user_id'] ?? 'NOT SET'));
+        error_log("Session role: " . ($_SESSION['role'] ?? 'NOT SET'));
+        
         // Get available assets from other offices
         $assets_query = "SELECT ai.id, ai.description, ai.asset_code, ac.category_name, o.office_name, o.id as office_id,
                          COALESCE(a.quantity, 1) as total_quantity,
@@ -277,8 +283,14 @@ if ($office_id && $conn) {
         $stmt->execute();
         $result = $stmt->get_result();
         
+        // Debug: Log the current office_id and query results
+        error_log("Current office_id: " . $office_id);
+        error_log("Offices query: " . $offices_query);
+        error_log("Number of offices found: " . $result->num_rows);
+        
         while ($row = $result->fetch_assoc()) {
             $other_offices[] = $row;
+            error_log("Found office: " . print_r($row, true));
         }
         
     } catch (Exception $e) {
