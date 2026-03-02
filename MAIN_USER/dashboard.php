@@ -89,6 +89,40 @@ if (!$conn || $conn->connect_error) {
             }
         }
         $stats['status_distribution'] = $status_distribution;
+        
+        // Fuel Report Data
+        $fuel_report_query = "SELECT 
+                                COUNT(*) as total_fuel_records,
+                                SUM(liters) as total_liters,
+                                SUM(cost) as total_cost,
+                                AVG(cost_per_liter) as avg_cost_per_liter,
+                                MAX(date_filled) as last_fuel_date,
+                                COUNT(DISTINCT vehicle_id) as vehicles_used
+                            FROM fuel_records 
+                            WHERE date_filled >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+        $fuel_result = $conn->query($fuel_report_query);
+        if ($fuel_result) {
+            $stats['fuel_report'] = $fuel_result->fetch_assoc();
+        }
+        
+        $recent_fuel_query = "SELECT 
+                                fr.id,
+                                fr.liters,
+                                fr.cost,
+                                fr.date_filled,
+                                v.vehicle_name,
+                                v.plate_number
+                            FROM fuel_records fr
+                            LEFT JOIN vehicles v ON fr.vehicle_id = v.id
+                            ORDER BY fr.date_filled DESC
+                            LIMIT 3";
+        $recent_fuel_result = $conn->query($recent_fuel_query);
+        $stats['recent_fuel'] = [];
+        if ($recent_fuel_result) {
+            while ($row = $recent_fuel_result->fetch_assoc()) {
+                $stats['recent_fuel'][] = $row;
+            }
+        }
     } catch (Exception $e) {
         $stats['error'] = 'Error fetching dashboard data: ' . $e->getMessage();
         error_log('Main User Dashboard Error: ' . $e->getMessage());
@@ -134,6 +168,72 @@ $page_title = 'Main User Dashboard';
     <link href="../assets/css/index.css" rel="stylesheet">
     <link href="../assets/css/theme-custom.css" rel="stylesheet">
     <link href="../ADMIN/dashboard.css" rel="stylesheet">
+    <style>
+        .fuel-report-card {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 6px rgba(40, 167, 69, 0.1);
+        }
+        
+        .fuel-report-title {
+            font-size: 0.875rem;
+            opacity: 0.9;
+            margin-bottom: 0.5rem;
+        }
+        
+        .fuel-report-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+        
+        .fuel-report-subtitle {
+            font-size: 0.75rem;
+            opacity: 0.8;
+        }
+        
+        .fuel-item {
+            border-left: 3px solid #28a745;
+            padding: 0.75rem;
+            margin-bottom: 0.75rem;
+            background: #f8f9fa;
+            border-radius: 0 6px 6px 0;
+        }
+        
+        .fuel-vehicle {
+            font-weight: 600;
+            color: #191BA9;
+            font-size: 0.875rem;
+        }
+        
+        .fuel-details {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            margin-top: 0.25rem;
+        }
+        
+        .fuel-amount {
+            font-weight: 600;
+            color: #28a745;
+            font-size: 0.875rem;
+        }
+        
+        .fuel-cost {
+            font-weight: 600;
+            color: #dc3545;
+            font-size: 0.875rem;
+        }
+        
+        .fuel-date {
+            font-size: 0.75rem;
+            color: #6c757d;
+            text-align: right;
+        }
+    </style>
 </head>
 <body>
     <div class="main-wrapper" id="mainWrapper">
@@ -287,6 +387,78 @@ $page_title = 'Main User Dashboard';
                             <?php endforeach; ?>
                         <?php else: ?>
                             <div class="text-center text-muted py-3">No category data available.</div>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- Fuel Report Card -->
+                    <div class="section-card mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="section-title mb-0">
+                                <i class="bi bi-fuel-pump"></i> Fuel Report (30 Days)
+                            </div>
+                        </div>
+                        
+                        <?php if (isset($stats['fuel_report'])): ?>
+                            <div class="fuel-report-card">
+                                <div class="fuel-report-title">Total Fuel Consumption</div>
+                                <div class="fuel-report-value"><?php echo number_format((float)($stats['fuel_report']['total_liters'] ?? 0), 2); ?>L</div>
+                                <div class="fuel-report-subtitle">₱<?php echo number_format((float)($stats['fuel_report']['total_cost'] ?? 0), 2); ?> spent</div>
+                            </div>
+                            
+                            <div class="row g-2 mb-3">
+                                <div class="col-6">
+                                    <div class="text-center p-2 bg-light rounded">
+                                        <div class="fw-bold text-success"><?php echo number_format((float)($stats['fuel_report']['avg_cost_per_liter'] ?? 0), 2); ?></div>
+                                        <div class="small text-muted">Avg Cost/Liter</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center p-2 bg-light rounded">
+                                        <div class="fw-bold text-info"><?php echo (int)($stats['fuel_report']['vehicles_used'] ?? 0); ?></div>
+                                        <div class="small text-muted">Vehicles Used</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="text-center mb-3">
+                                <small class="text-muted">
+                                    Last fuel: <?php echo !empty($stats['fuel_report']['last_fuel_date']) ? date('M j, Y', strtotime($stats['fuel_report']['last_fuel_date'])) : 'No records'; ?>
+                                </small>
+                            </div>
+                            
+                            <div class="section-title mb-3">
+                                <i class="bi bi-clock-history"></i> Recent Fuel Records
+                            </div>
+                            
+                            <?php if (!empty($stats['recent_fuel'])): ?>
+                                <?php foreach ($stats['recent_fuel'] as $fuel): ?>
+                                    <div class="fuel-item">
+                                        <div class="fuel-vehicle">
+                                            <?php echo htmlspecialchars($fuel['vehicle_name'] ?? 'Unknown Vehicle'); ?>
+                                            <?php if (!empty($fuel['plate_number'])): ?>
+                                                <span class="text-muted">(<?php echo htmlspecialchars($fuel['plate_number']); ?>)</span>
+                                            <?php endif; ?>
+                                        </div>
+                                        <div class="fuel-details">
+                                            <div class="fuel-amount"><?php echo number_format((float)($fuel['liters'] ?? 0), 2); ?>L</div>
+                                            <div class="fuel-cost">₱<?php echo number_format((float)($fuel['cost'] ?? 0), 2); ?></div>
+                                        </div>
+                                        <div class="fuel-date">
+                                            <?php echo !empty($fuel['date_filled']) ? date('M j, Y', strtotime($fuel['date_filled'])) : ''; ?>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <div class="text-center text-muted py-3">
+                                    <i class="bi bi-fuel-pump" style="font-size: 1.5rem;"></i>
+                                    <div class="mt-2">No recent fuel records</div>
+                                </div>
+                            <?php endif; ?>
+                        <?php else: ?>
+                            <div class="text-center text-muted py-4">
+                                <i class="bi bi-fuel-pump" style="font-size: 2rem;"></i>
+                                <div class="mt-2">No fuel data available</div>
+                            </div>
                         <?php endif; ?>
                     </div>
 
