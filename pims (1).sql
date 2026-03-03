@@ -17,6 +17,9 @@ SET time_zone = "+00:00";
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
 /*!40101 SET NAMES utf8mb4 */;
 
+-- Disable foreign key checks to avoid errors during import
+SET FOREIGN_KEY_CHECKS = 0;
+
 --
 -- Database: `pims`
 --
@@ -8820,6 +8823,10 @@ ALTER TABLE `users`
 --
 ALTER TABLE `user_password_history`
   ADD CONSTRAINT `fk_password_history_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+-- Re-enable foreign key checks after all data is imported
+SET FOREIGN_KEY_CHECKS = 1;
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

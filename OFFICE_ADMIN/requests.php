@@ -70,18 +70,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         } elseif ($quantity_requested > $asset_data['available_quantity']) {
                             $_SESSION['error'] = "Only {$asset_data['available_quantity']} units available. You requested {$quantity_requested}.";
                         } else {
-                            // Insert new borrow request
-                            $insert_query = "INSERT INTO borrow_requests 
-                                             (requested_by, requested_by_office, requested_to_office, asset_id, quantity_requested, purpose, start_date, end_date) 
-                                             VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-                            $stmt = $conn->prepare($insert_query);
-                            $stmt->bind_param("iiisisss", $_SESSION['user_id'], $office_id, $requested_to_office, $asset_id, $quantity_requested, $purpose, $start_date, $end_date);
+                            // Debug: Check session values before insert
+                            $debug_user_id = $_SESSION['user_id'] ?? 'NOT_SET';
+                            $debug_office_id = $office_id ?? 'NOT_SET';
+                            
+                            // Verify user exists in database
+                            $user_verify = "SELECT id, username, is_active FROM users WHERE id = ?";
+                            $user_stmt = $conn->prepare($user_verify);
+                            $user_stmt->bind_param("i", $debug_user_id);
+                            $user_stmt->execute();
+                            $user_result = $user_stmt->get_result();
+                            
+                            if ($user_result->num_rows === 0) {
+                                $_SESSION['error'] = "Debug: User ID $debug_user_id not found in users table. Session may be corrupted.";
+                                error_log("User ID $debug_user_id from session not found in users table");
+                            } else {
+                                $user_data = $user_result->fetch_assoc();
+                                if ($user_data['is_active'] != 1) {
+                                    $_SESSION['error'] = "Debug: User account is not active (is_active: {$user_data['is_active']})";
+                                } else {
+                                    // Insert new borrow request
+                                    $insert_query = "INSERT INTO borrow_requests 
+                                                     (requested_by, requested_by_office, requested_to_office, asset_id, quantity_requested, purpose, start_date, end_date) 
+                                                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                                    $stmt = $conn->prepare($insert_query);
+                                    $stmt->bind_param("iiisisss", $_SESSION['user_id'], $office_id, $requested_to_office, $asset_id, $quantity_requested, $purpose, $start_date, $end_date);
                             
                             if ($stmt->execute()) {
                                 $_SESSION['success'] = "Borrow request for {$quantity_requested} unit(s) created successfully";
                                 logSystemAction($_SESSION['user_id'], 'create', 'borrow_request', "Created borrow request for {$quantity_requested} unit(s) of asset #$asset_id");
                             } else {
                                 $_SESSION['error'] = "Error creating borrow request";
+                            }
+                                }
                             }
                         }
                     }
