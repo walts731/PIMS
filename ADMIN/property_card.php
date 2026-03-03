@@ -62,7 +62,8 @@ if ($conn && !$conn->connect_error) {
                     ai.par_id,
                     ai.employee_id,
                     ai.office_id,
-                    COALESCE(ac.category_code, 'UNCAT') as asset_category,
+                    COALESCE(ac.category_name, 'Uncategorized') as asset_category,
+                    COALESCE(ac.category_code, 'UNCAT') as asset_category_code,
                     COALESCE(o1.office_name, o2.office_name, 'Unassigned') as office_name,
                     COALESCE(o1.office_code, o2.office_code, 'NONE') as office_code,
                     CONCAT(COALESCE(e.firstname, ''), ' ', COALESCE(e.lastname, '')) as employee_name,
@@ -505,7 +506,7 @@ if ($conn && !$conn->connect_error) {
                                         </select>
                                     </div>
                                 </th>
-                                <th colspan="6" class="text-end">
+                                <th colspan="5" class="text-end">
                                     <div class="d-flex gap-2 justify-content-end">
                                         <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearFilters()">
                                             <i class="bi bi-x-circle me-1"></i>Clear
@@ -520,9 +521,8 @@ if ($conn && !$conn->connect_error) {
                                 <th>Description</th>
                                 <th>Office</th>
                                 <th>Employee</th>
-                                <th>Receipt/Quantity</th>
-                                <th>Unit Cost</th>
-                                <th>Total Value</th>
+                                <th>Value</th>
+                                <th class="no-print">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -538,13 +538,19 @@ if ($conn && !$conn->connect_error) {
                                         <span class="property-no"><?php echo htmlspecialchars($item['property_no']); ?></span>
                                     </td>
                                     <td>
-                                        <span class="category-badge"><?php echo htmlspecialchars($item['asset_category']); ?></span>
+                                        <div>
+                                            <div class="category-badge"><?php echo htmlspecialchars($item['asset_category_code']); ?></div>
+                                            <small class="text-muted d-block mt-1"><?php echo htmlspecialchars($item['asset_category']); ?></small>
+                                        </div>
                                     </td>
                                     <td class="description-cell" title="<?php echo htmlspecialchars($item['description']); ?>">
                                         <?php echo htmlspecialchars($item['description']); ?>
                                     </td>
                                     <td>
-                                        <span class="office-code-only"><?php echo htmlspecialchars($item['office_code']); ?></span>
+                                        <div>
+                                            <div class="office-code-only"><?php echo htmlspecialchars($item['office_code']); ?></div>
+                                            <small class="text-muted d-block mt-1"><?php echo htmlspecialchars($item['office_name']); ?></small>
+                                        </div>
                                     </td>
                                     <td>
                                         <?php if ($item['employee_name']): ?>
@@ -556,15 +562,13 @@ if ($conn && !$conn->connect_error) {
                                             <span class="text-muted">Not assigned</span>
                                         <?php endif; ?>
                                     </td>
-                                    
-                                    <td>
-                                        <span class="quantity-badge">1</span>
-                                    </td>
                                     <td class="value-cell">
                                         ₱<?php echo number_format($item['value'], 2); ?>
                                     </td>
-                                    <td class="value-cell">
-                                        ₱<?php echo number_format($item['value'], 2); ?>
+                                    <td class="no-print">
+                                        <a href="view_asset_item.php?id=<?php echo $item['id']; ?>" class="btn btn-sm btn-outline-primary" title="View Asset Item">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
                                     </td>
                                 </tr>
                             <?php 
