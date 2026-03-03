@@ -26,13 +26,15 @@ $page_title = 'Office Assets';
 $category_filter = isset($_GET['category']) ? intval($_GET['category']) : 0;
 $status_filter = isset($_GET['status']) ? trim($_GET['status']) : '';
 
-// Get office-specific assets
+// Get office-specific assets using similar approach as ADMIN/assets.php
 $assets = [];
 $stats = [
     'total_assets' => 0,
+    'total_quantity' => 0,
     'total_value' => 0,
-    'in_maintenance' => 0,
-    'disposed' => 0
+    'serviceable_count' => 0,
+    'unserviceable_count' => 0,
+    'no_tag_count' => 0
 ];
 
 // Use office_id directly from session
@@ -45,28 +47,34 @@ if ($office_id && $conn) {
         error_log("DEBUG: Session office = " . ($_SESSION['office'] ?? 'NOT SET'));
         error_log("DEBUG: Session email = " . ($_SESSION['email'] ?? 'NOT SET'));
         
-        // Fetch assets for this office with filters
-        $query = "SELECT ai.*, ac.category_name, ac.category_code 
-                 FROM asset_items ai 
-                 LEFT JOIN asset_categories ac ON ai.asset_category_id = ac.id 
-                 WHERE ai.office_id = ?";
+        // Fetch assets for this office with filters using similar query as ADMIN
+        $query = "SELECT a.*, ac.category_name, ac.category_code, o.office_name,
+                       sc.sub_category_name, sc.sub_category_code,
+                       (SELECT ai.status FROM asset_items ai WHERE ai.asset_id = a.id GROUP BY ai.status ORDER BY COUNT(*) DESC LIMIT 1) as most_common_status,
+                       (SELECT COUNT(ai.id) FROM asset_items ai WHERE ai.asset_id = a.id) as total_quantity,
+                       (SELECT SUM(ai.value) FROM asset_items ai WHERE ai.asset_id = a.id) as total_value
+                FROM assets a 
+                LEFT JOIN asset_categories ac ON a.asset_categories_id = ac.id 
+                LEFT JOIN asset_sub_categories sc ON a.asset_subcategory_id = sc.id
+                LEFT JOIN offices o ON a.office_id = o.id 
+                WHERE a.office_id = ?";
         
         $params = [$office_id];
         $types = 'i';
         
         if ($category_filter > 0) {
-            $query .= " AND ai.asset_category_id = ?";
+            $query .= " AND a.asset_categories_id = ?";
             $params[] = $category_filter;
             $types .= 'i';
         }
         
         if (!empty($status_filter)) {
-            $query .= " AND ai.status = ?";
+            $query .= " AND EXISTS (SELECT 1 FROM asset_items ai WHERE ai.asset_id = a.id AND ai.status = ?)";
             $params[] = $status_filter;
             $types .= 's';
         }
         
-        $query .= " ORDER BY ai.created_at DESC";
+        $query .= " ORDER BY a.created_at DESC";
         
         $stmt = $conn->prepare($query);
         if (!empty($params)) {
@@ -84,15 +92,34 @@ if ($office_id && $conn) {
             
             // Calculate statistics
             $stats['total_assets']++;
-            $stats['total_value'] += $row['value'] ?? 0;
+            $stats['total_quantity'] += $row['total_quantity'] ?? 0;
+            $stats['total_value'] += $row['total_value'] ?? 0;
             
-            if ($row['status'] === 'maintenance' || $row['status'] === 'unserviceable') {
-                $stats['in_maintenance']++;
-            }
+            // Get detailed status counts
+            $status_query = "SELECT status, COUNT(*) as count FROM asset_items WHERE asset_id = ? GROUP BY status";
+            $status_stmt = $conn->prepare($status_query);
+            $status_stmt->bind_param("i", $row['id']);
+            $status_stmt->execute();
+            $status_result = $status_stmt->get_result();
             
-            if ($row['status'] === 'disposed') {
-                $stats['disposed']++;
+            while ($status_row = $status_result->fetch_assoc()) {
+                switch($status_row['status']) {
+                    case 'available':
+                    case 'serviceable':
+                        $stats['serviceable_count'] += $status_row['count'];
+                        break;
+                    case 'in_use':
+                    case 'maintenance':
+                    case 'unserviceable':
+                    case 'disposed':
+                        $stats['unserviceable_count'] += $status_row['count'];
+                        break;
+                    case 'no_tag':
+                        $stats['no_tag_count'] += $status_row['count'];
+                        break;
+                }
             }
+            $status_stmt->close();
         }
         
     } catch (Exception $e) {
@@ -149,99 +176,83 @@ try {
             border-left: 4px solid var(--primary-color);
         }
         
-        .asset-card {
-            background: white;
-            border-radius: var(--border-radius-lg);
-            box-shadow: var(--shadow);
-            transition: var(--transition);
-            border: 1px solid rgba(25, 27, 169, 0.1);
-            margin-bottom: 1rem;
-        }
-        
-        .asset-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
-        }
-        
-        .type-badge {
-            font-size: 0.75rem;
-            padding: 0.25rem 0.75rem;
-            border-radius: var(--border-radius-xl);
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-        
-        .type-electronics {
-            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-            color: white;
-        }
-        
-        .type-furniture {
-            background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%);
-            color: white;
-        }
-        
-        .type-vehicle {
-            background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
-            color: white;
-        }
-        
-        .type-equipment {
-            background: linear-gradient(135deg, #fd7e14 0%, #dc6502 100%);
-            color: white;
-        }
-        
-        .status-badge {
-            font-size: 0.75rem;
-            padding: 0.25rem 0.75rem;
-            border-radius: var(--border-radius-xl);
-            font-weight: 600;
-        }
-        
-        .status-available {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
-        }
-        
-        .status-maintenance {
-            background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
-            color: #212529;
-        }
-        
-        .status-disposed {
-            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-            color: white;
-        }
-        
-        .action-btn {
-            padding: 0.375rem 0.75rem;
-            border-radius: var(--border-radius);
-            font-size: 0.875rem;
-            transition: var(--transition);
-        }
-        
-        .action-btn:hover {
-            transform: translateY(-1px);
-        }
-        
-        .stats-card {
+        .table-container {
             background: white;
             border-radius: var(--border-radius-lg);
             padding: 1.5rem;
             box-shadow: var(--shadow);
-            border-left: 4px solid var(--primary-color);
+            margin-bottom: 2rem;
+        }
+        
+        .btn-action {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+            margin: 0 0.125rem;
+        }
+        
+        .category-badge {
+            background: var(--primary-color);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: var(--border-radius-xl);
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .subcategory-badge {
+            background: #6c757d;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: var(--border-radius-xl);
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .text-value {
+            font-weight: 600;
+            color: #191BA9;
+        }
+        
+        .modal-header {
+            background: var(--primary-gradient);
+            color: white;
+        }
+        
+        .form-label {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .table-hover tbody tr:hover {
+            background-color: rgba(25, 27, 169, 0.05);
+        }
+        
+        .stats-card {
+            background: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%);
+            color: white;
+            border-radius: var(--border-radius-lg);
+            padding: 1.5rem;
+            text-align: center;
             transition: var(--transition);
+            height: 100%;
         }
         
         .stats-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(25, 27, 169, 0.3);
         }
         
         .stats-number {
-            font-size: 2rem;
+            font-size: 1.2rem;
             font-weight: 700;
-            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+            word-wrap: break-word;
+            line-height: 1.2;
+        }
+        
+        .stats-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
         }
         
         .search-box {
@@ -373,63 +384,40 @@ try {
         
         <!-- Asset Statistics -->
         <div class="row mb-4">
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg-2 col-md-6">
                 <div class="stats-card">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="stats-number"><?php echo $stats['total_assets']; ?></div>
-                            <div class="text-muted">Total Assets</div>
-                            <small class="text-success">
-                                <i class="bi bi-arrow-up"></i> 
-                                <?php echo $stats['total_assets'] - $stats['disposed']; ?> active
-                            </small>
-                        </div>
-                        <div class="text-primary">
-                            <i class="bi bi-box-seam fs-1"></i>
-                        </div>
-                    </div>
+                    <div class="stats-number"><?php echo $stats['total_assets']; ?></div>
+                    <div class="stats-label"><i class="bi bi-box"></i> Total Assets</div>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg-2 col-md-6">
                 <div class="stats-card">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="stats-number">₱<?php echo number_format($stats['total_value'], 2); ?></div>
-                            <div class="text-muted">Total Value</div>
-                            <small class="text-info">Current Assets</small>
-                        </div>
-                        <div class="text-info">
-                            <i class="bi bi-currency-dollar fs-1"></i>
-                        </div>
-                    </div>
+                    <div class="stats-number"><?php echo $stats['total_quantity']; ?></div>
+                    <div class="stats-label"><i class="bi bi-box"></i> Total Items</div>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg-2 col-md-6">
                 <div class="stats-card">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="stats-number"><?php echo $stats['in_maintenance']; ?></div>
-                            <div class="text-muted">In Maintenance</div>
-                            <small class="text-warning">Under Repair</small>
-                        </div>
-                        <div class="text-warning">
-                            <i class="bi bi-tools fs-1"></i>
-                        </div>
-                    </div>
+                    <div class="stats-number"><?php echo $stats['serviceable_count']; ?></div>
+                    <div class="stats-label"><i class="bi bi-check-circle"></i> Serviceable</div>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg-2 col-md-6">
                 <div class="stats-card">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="stats-number"><?php echo $stats['disposed']; ?></div>
-                            <div class="text-muted">Disposed</div>
-                            <small class="text-danger">Written Off</small>
-                        </div>
-                        <div class="text-danger">
-                            <i class="bi bi-trash fs-1"></i>
-                        </div>
-                    </div>
+                    <div class="stats-number"><?php echo $stats['unserviceable_count']; ?></div>
+                    <div class="stats-label"><i class="bi bi-x-circle"></i> Unserviceable</div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-6">
+                <div class="stats-card">
+                    <div class="stats-number">₱<?php echo number_format($stats['total_value'], 2); ?></div>
+                    <div class="stats-label"><i class="bi bi-currency-dollar"></i> Total Value</div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-6">
+                <div class="stats-card">
+                    <div class="stats-number"><?php echo $stats['no_tag_count']; ?></div>
+                    <div class="stats-label"><i class="bi bi-x-circle"></i> No Tag</div>
                 </div>
             </div>
         </div>
@@ -475,31 +463,56 @@ try {
                             <table id="assetsTable" class="table table-hover">
                                 <thead>
                                     <tr>
-                                        <th>Asset</th>
                                         <th>Category</th>
-                                        <th>Status</th>
+                                        <th>Subcategory</th>
+                                        <th>Description</th>
                                         <th>Quantity</th>
-                                        <th>Value</th>
-                                        <th>Acquisition Date</th>
+                                        <th>Office</th>
+                                        <th>Created</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach ($assets as $asset): ?>
+                                    <?php if (!empty($assets)): ?>
+                                        <?php foreach ($assets as $asset): ?>
+                                            <tr>
+                                                <td>
+                                                    <span class="category-badge">
+                                                        <?php echo htmlspecialchars($asset['category_code'] ?? 'N/A'); ?>
+                                                    </span>
+                                                    <br>
+                                                    <small class="text-muted"><?php echo htmlspecialchars($asset['category_name'] ?? 'N/A'); ?></small>
+                                                </td>
+                                                <td>
+                                                    <?php if (!empty($asset['sub_category_code'])): ?>
+                                                        <span class="subcategory-badge">
+                                                            <?php echo htmlspecialchars($asset['sub_category_code']); ?>
+                                                        </span>
+                                                        <br>
+                                                        <small class="text-muted"><?php echo htmlspecialchars($asset['sub_category_name']); ?></small>
+                                                    <?php else: ?>
+                                                        <span class="text-muted">No subcategory</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td><?php echo htmlspecialchars($asset['description']); ?></td>
+                                                <td><?php echo $asset['quantity']; ?></td>
+                                                <td><?php echo htmlspecialchars($asset['office_name'] ?? 'N/A'); ?></td>
+                                                <td><small><?php echo date('M j, Y', strtotime($asset['created_at'])); ?></small></td>
+                                                <td>
+                                                    <a href="asset_items.php?asset_id=<?php echo $asset['id']; ?>" class="btn btn-sm btn-outline-info">
+                                                        <i class="bi bi-eye"></i> View Items
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
                                         <tr>
-                                            <td><?php echo htmlspecialchars($asset['description']); ?></td>
-                                            <td><?php echo htmlspecialchars($asset['category_name'] ?? 'Uncategorized'); ?></td>
-                                            <td><?php echo ucfirst(str_replace('_', ' ', $asset['status'])); ?></td>
-                                            <td>1</td>
-                                            <td>₱<?php echo number_format($asset['value'] ?? 0, 2); ?></td>
-                                            <td><?php echo !empty($asset['acquisition_date']) ? date('M j, Y', strtotime($asset['acquisition_date'])) : 'Not set'; ?></td>
-                                            <td>
-                                                <a href="asset_items.php?asset_id=<?php echo $asset['asset_id']; ?>" class="btn btn-sm btn-outline-primary">
-                                                    <i class="bi bi-eye"></i> View
-                                                </a>
+                                            <td colspan="7" class="text-center text-muted py-4">
+                                                <i class="bi bi-inbox fs-1"></i>
+                                                <p class="mt-2">No assets found in your office.</p>
                                             </td>
                                         </tr>
-                                    <?php endforeach; ?>
+                                    <?php endif; ?>
                                 </tbody>
                             </table>
                         </div>
@@ -628,28 +641,50 @@ try {
         $(document).ready(function() {
             $('#assetsTable').DataTable({
                 responsive: true,
-                pageLength: 10,
-                lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]],
-                order: [[5, 'desc']], // Sort by acquisition date descending (new column index)
+                pageLength: 25,
+                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                order: [[5, 'desc']], // Sort by Created date column (index 5) by default
                 columnDefs: [
+                    {
+                        targets: 0, // Category column
+                        orderable: true,
+                        render: function(data, type, row) {
+                            if (type === 'display') {
+                                return data;
+                            }
+                            return data.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+                        }
+                    },
+                    {
+                        targets: 5, // Created date column
+                        orderable: true,
+                        render: function(data, type, row) {
+                            if (type === 'sort' || type === 'type') {
+                                // Convert date string to timestamp for sorting
+                                return new Date(data).getTime();
+                            }
+                            return data;
+                        }
+                    },
                     {
                         targets: -1, // Actions column (last column)
                         orderable: false,
                         searchable: false
                     }
                 ],
+                dom: '<"row"<"col-md-6"l><"col-md-6 text-end"f>>rtip',
                 language: {
                     search: "Search assets:",
-                    lengthMenu: "Show _MENU_ assets",
+                    lengthMenu: "Show _MENU_ assets per page",
                     info: "Showing _START_ to _END_ of _TOTAL_ assets",
-                    emptyTable: "No assets found in your office",
-                    zeroRecords: "No matching assets found",
                     paginate: {
                         first: "First",
                         last: "Last",
                         next: "Next",
                         previous: "Previous"
-                    }
+                    },
+                    emptyTable: "No assets available",
+                    zeroRecords: "No matching assets found"
                 }
             });
             
