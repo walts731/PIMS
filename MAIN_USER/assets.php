@@ -156,6 +156,118 @@ if (!$conn || $conn->connect_error) {
         background: #e2e3e5;
         color: #383d41;
     }
+    
+    /* Mobile UI Fixes */
+    @media (max-width: 992px) {
+        .dashboard-header .row {
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .dashboard-header .col-md-4 {
+            text-align: left !important;
+        }
+        
+        .dashboard-header h1 {
+            font-size: 1.75rem;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .dashboard-header h1 {
+            font-size: 1.5rem;
+        }
+        
+        .dashboard-header p {
+            font-size: 0.9rem;
+        }
+        
+        .dashboard-header .d-flex {
+            flex-direction: column;
+            align-items: stretch !important;
+            gap: 0.5rem;
+        }
+        
+        .dashboard-header .d-inline-block {
+            width: 100% !important;
+            min-width: auto !important;
+        }
+        
+        .form-select-sm {
+            font-size: 0.85rem;
+        }
+        
+        .btn-sm {
+            font-size: 0.85rem;
+            padding: 0.5rem 1rem;
+        }
+        
+        .section-card {
+            margin-bottom: 1rem;
+        }
+        
+        .table-responsive {
+            font-size: 0.85rem;
+        }
+        
+        .table th {
+            font-size: 0.8rem;
+            padding: 0.5rem;
+        }
+        
+        .table td {
+            font-size: 0.8rem;
+            padding: 0.5rem;
+        }
+        
+        .status-badge {
+            font-size: 0.7rem;
+            padding: 0.25rem 0.5rem;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .dashboard-header h1 {
+            font-size: 1.25rem;
+        }
+        
+        .dashboard-header p {
+            font-size: 0.85rem;
+        }
+        
+        .btn-sm {
+            font-size: 0.8rem;
+            padding: 0.4rem 0.8rem;
+        }
+        
+        .form-select-sm {
+            font-size: 0.8rem;
+        }
+        
+        .table-responsive {
+            font-size: 0.75rem;
+        }
+        
+        .table th {
+            font-size: 0.75rem;
+            padding: 0.4rem;
+        }
+        
+        .table td {
+            font-size: 0.75rem;
+            padding: 0.4rem;
+        }
+        
+        .status-badge {
+            font-size: 0.65rem;
+            padding: 0.2rem 0.4rem;
+        }
+        
+        .btn-sm {
+            padding: 0.3rem 0.6rem;
+            font-size: 0.75rem;
+        }
+    }
     </style>
 </head>
 <body>
@@ -212,7 +324,7 @@ if (!$conn || $conn->connect_error) {
 
             <div class="section-card">
                 <div class="table-responsive">
-                    <table class="table table-striped align-middle mb-0">
+                    <table class="table table-striped align-middle mb-0" id="assetsTable">
                         <thead>
                             <tr>
                                 <th>Property No</th>
@@ -307,125 +419,127 @@ if (!$conn || $conn->connect_error) {
     <?php require_once 'includes/change-password-modal.php'; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     <?php require_once 'includes/sidebar-scripts.php'; ?>
     <script>
+        let assetsTable;
+        
         document.addEventListener('DOMContentLoaded', function() {
-            const officeFilter = document.getElementById('officeFilter');
-            const statusFilter = document.getElementById('statusFilter');
-
-            function applyFilters() {
-                const currentUrl = new URL(window.location.href);
-
-                const officeValue = parseInt(officeFilter.value || '0', 10);
-                if (officeValue > 0) {
-                    currentUrl.searchParams.set('office_id', String(officeValue));
-                } else {
-                    currentUrl.searchParams.delete('office_id');
+            // Initialize DataTable
+            assetsTable = $('#assetsTable').DataTable({
+                responsive: true,
+                pageLength: 25,
+                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                order: [[6, 'desc']], // Sort by Last Updated column (index 6) by default
+                columnDefs: [
+                    {
+                        targets: -1, // Actions column (last column)
+                        orderable: false,
+                        searchable: false
+                    }
+                ],
+                dom: '<"row"<"col-md-6"l><"col-md-6 text-end"f>>rtip',
+                language: {
+                    search: "Search assets:",
+                    lengthMenu: "Show _MENU_ assets per page",
+                    info: "Showing _START_ to _END_ of _TOTAL_ assets",
+                    paginate: {
+                        first: "First",
+                        last: "Last",
+                        next: "Next",
+                        previous: "Previous"
+                    },
+                    emptyTable: "No assets available",
+                    zeroRecords: "No matching assets found"
                 }
-
-                const statusValue = statusFilter.value || '';
-                if (statusValue) {
-                    currentUrl.searchParams.set('status', statusValue);
-                } else {
-                    currentUrl.searchParams.delete('status');
-                }
-
-                window.location.href = currentUrl.toString();
-            }
-
-            if (officeFilter) {
-                officeFilter.addEventListener('change', applyFilters);
-            }
-            if (statusFilter) {
-                statusFilter.addEventListener('change', applyFilters);
-            }
-
-            // Borrow item function
-            function borrowItem(itemId) {
-                if (confirm('Are you sure you want to borrow this item?')) {
-                    // Show loading state
-                    const button = event.target;
-                    const originalText = button.innerHTML;
-                    button.innerHTML = '<i class="bi bi-hourglass-split"></i> Processing...';
-                    button.disabled = true;
-
-                    // Create form data
-                    const formData = new FormData();
-                    formData.append('action', 'borrow');
-                    formData.append('item_id', itemId);
-                    formData.append('user_id', <?php echo (int)($_SESSION['user_id'] ?? 0); ?>);
-
-                    // Send request
-                    fetch('process_borrow.php', {
-                        method: 'POST',
-                        body: formData
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            alert('Item borrowed successfully!');
-                            // Reload page to show updated status
-                            window.location.reload();
-                        } else {
-                            alert('Error: ' + (data.message || 'Failed to borrow item'));
-                            // Restore button
-                            button.innerHTML = originalText;
-                            button.disabled = false;
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('An error occurred while borrowing the item.');
-                        // Restore button
-                        button.innerHTML = originalText;
-                        button.disabled = false;
-                    });
-                }
-            }
-
-            // Return item function
-            function returnItem(itemId) {
-                if (confirm('Are you sure you want to return this item?')) {
-                    // Show loading state
-                    const button = event.target;
-                    const originalText = button.innerHTML;
-                    button.innerHTML = '<i class="bi bi-hourglass-split"></i> Processing...';
-                    button.disabled = true;
-
-                    // Create form data
-                    const formData = new FormData();
-                    formData.append('action', 'return');
-                    formData.append('item_id', itemId);
-                    formData.append('user_id', <?php echo (int)($_SESSION['user_id'] ?? 0); ?>);
-
-                    // Send request
-                    fetch('process_borrow.php', {
-                        method: 'POST',
-                        body: formData
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            alert('Item returned successfully!');
-                            // Reload page to show updated status
-                            window.location.reload();
-                        } else {
-                            alert('Error: ' + (data.message || 'Failed to return item'));
-                            // Restore button
-                            button.innerHTML = originalText;
-                            button.disabled = false;
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('An error occurred while returning the item.');
-                        // Restore button
-                        button.innerHTML = originalText;
-                        button.disabled = false;
-                    });
-                }
-            }
+            });
         });
+
+        // Make functions global for onclick handlers
+        window.borrowItem = function(itemId) {
+            if (confirm('Are you sure you want to borrow this item?')) {
+                // Show loading state
+                const button = event.target;
+                const originalText = button.innerHTML;
+                button.innerHTML = '<i class="bi bi-hourglass-split"></i> Processing...';
+                button.disabled = true;
+
+                // Create form data
+                const formData = new FormData();
+                formData.append('action', 'borrow');
+                formData.append('item_id', itemId);
+                formData.append('user_id', <?php echo (int)($_SESSION['user_id'] ?? 0); ?>);
+
+                // Send request
+                fetch('process_borrow.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Item borrowed successfully!');
+                        // Reload page to show updated status
+                        window.location.reload();
+                    } else {
+                        alert('Error: ' + (data.message || 'Failed to borrow item'));
+                        // Restore button
+                        button.innerHTML = originalText;
+                        button.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while borrowing the item.');
+                    // Restore button
+                    button.innerHTML = originalText;
+                    button.disabled = false;
+                });
+            }
+        }
+
+        window.returnItem = function(itemId) {
+            if (confirm('Are you sure you want to return this item?')) {
+                // Show loading state
+                const button = event.target;
+                const originalText = button.innerHTML;
+                button.innerHTML = '<i class="bi bi-hourglass-split"></i> Processing...';
+                button.disabled = true;
+
+                // Create form data
+                const formData = new FormData();
+                formData.append('action', 'return');
+                formData.append('item_id', itemId);
+                formData.append('user_id', <?php echo (int)($_SESSION['user_id'] ?? 0); ?>);
+
+                // Send request
+                fetch('process_borrow.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Item returned successfully!');
+                        // Reload page to show updated status
+                        window.location.reload();
+                    } else {
+                        alert('Error: ' + (data.message || 'Failed to return item'));
+                        // Restore button
+                        button.innerHTML = originalText;
+                        button.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while returning the item.');
+                    // Restore button
+                    button.innerHTML = originalText;
+                    button.disabled = false;
+                });
+            }
+        }
     </script>
 </body>
 </html>

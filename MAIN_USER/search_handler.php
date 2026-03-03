@@ -31,24 +31,88 @@ if (!$conn || $conn->connect_error) {
     $error = 'Database connection failed.';
 } else {
     try {
-        $stmt = $conn->prepare("
-            SELECT ai.id, ai.description, ai.property_no, ai.property_number, ai.status, ai.value,
-                   a.description as asset_description,
-                   o.office_name
-            FROM asset_items ai
-            LEFT JOIN assets a ON ai.asset_id = a.id
-            LEFT JOIN offices o ON ai.office_id = o.id
-            WHERE (
-                ai.property_no LIKE ? OR
-                ai.property_number LIKE ? OR
-                ai.description LIKE ? OR
-                a.description LIKE ?
-            )
-            ORDER BY ai.last_updated DESC
-            LIMIT 20
-        ");
-        $likeQuery = "%{$query}%";
-        $stmt->bind_param('ssss', $likeQuery, $likeQuery, $likeQuery, $likeQuery);
+        // Check if query matches exact status values or office names
+        $query_lower = strtolower($query);
+        $status_exact_match = false;
+        
+        // First check if it's an exact status match
+        if (in_array($query_lower, ['serviceable', 'unserviceable', 'red_tagged', 'borrowed', 'no_tag', 'no tag', 'notag', 'no-tag'])) {
+            // Normalize status value to proper database format
+            $status_value = $query_lower;
+            if ($query_lower === 'no tag' || $query_lower === 'notag' || $query_lower === 'no-tag') {
+                $status_value = 'no_tag';
+            }
+            
+            // Exact status match - prioritize this
+            $stmt = $conn->prepare("
+                SELECT ai.id, ai.description, ai.property_no, ai.property_number, ai.status, ai.value,
+                       a.description as asset_description,
+                       o.office_name
+                FROM asset_items ai
+                LEFT JOIN assets a ON ai.asset_id = a.id
+                LEFT JOIN offices o ON ai.office_id = o.id
+                WHERE ai.status = ?
+                ORDER BY ai.last_updated DESC
+                LIMIT 20
+            ");
+            $stmt->bind_param('s', $status_value);
+        } else {
+            // Check if it's an office name match
+            $office_stmt = $conn->prepare("SELECT id, office_name FROM offices WHERE LOWER(office_name) LIKE ?");
+            $office_like = "%{$query_lower}%";
+            $office_stmt->bind_param('s', $office_like);
+            $office_stmt->execute();
+            $office_result = $office_stmt->get_result();
+            
+            if ($office_result->num_rows > 0) {
+                // Office match - search for assets in that office
+                $office_ids = [];
+                while ($office_row = $office_result->fetch_assoc()) {
+                    $office_ids[] = $office_row['id'];
+                }
+                $office_stmt->close();
+                
+                $placeholders = str_repeat('?,', count($office_ids) - 1) . '?';
+                $stmt = $conn->prepare("
+                    SELECT ai.id, ai.description, ai.property_no, ai.property_number, ai.status, ai.value,
+                           a.description as asset_description,
+                           o.office_name
+                    FROM asset_items ai
+                    LEFT JOIN assets a ON ai.asset_id = a.id
+                    LEFT JOIN offices o ON ai.office_id = o.id
+                    WHERE ai.office_id IN ($placeholders)
+                    ORDER BY ai.last_updated DESC
+                    LIMIT 20
+                ");
+                $stmt->bind_param(str_repeat('i', count($office_ids)), ...$office_ids);
+            } else {
+                $office_stmt->close();
+                // General search across all fields including status and office
+                $stmt = $conn->prepare("
+                    SELECT ai.id, ai.description, ai.property_no, ai.property_number, ai.status, ai.value,
+                           a.description as asset_description,
+                           o.office_name
+                    FROM asset_items ai
+                    LEFT JOIN assets a ON ai.asset_id = a.id
+                    LEFT JOIN offices o ON ai.office_id = o.id
+                    WHERE (
+                        ai.property_no LIKE ? OR
+                        ai.property_number LIKE ? OR
+                        ai.description LIKE ? OR
+                        a.description LIKE ? OR
+                        ai.status LIKE ? OR
+                        ai.status = ? OR
+                        o.office_name LIKE ?
+                    )
+                    ORDER BY ai.last_updated DESC
+                    LIMIT 20
+                ");
+                $likeQuery = "%{$query}%";
+                $no_tag_status = 'no_tag';
+                $stmt->bind_param('sssssss', $likeQuery, $likeQuery, $likeQuery, $likeQuery, $likeQuery, $no_tag_status, $likeQuery);
+            }
+        }
+        
         $stmt->execute();
         $result = $stmt->get_result();
         while ($row = $result->fetch_assoc()) {
