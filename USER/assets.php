@@ -204,7 +204,7 @@ if (!$conn || $conn->connect_error) {
                                                 <?php echo $display_status; ?>
                                             </span>
                                         </td>
-                                        <td class="text-end ps-3"><?php echo number_format((float)($row['value'] ?? 0), 2); ?></td>
+                                        <td class="text-end ps-3">₱0.00</td>
                                         <td class="text-muted small ps-3"><?php echo htmlspecialchars($row['updated_at'] ?? ''); ?></td>
                                         <td class="ps-3">
                                             <a href="view_asset_items.php?asset_id=<?php echo (int)$row['id']; ?>" class="btn btn-sm btn-outline-info">

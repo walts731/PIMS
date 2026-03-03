@@ -222,7 +222,7 @@ foreach ($stats['top_categories'] as $cat) {
                     <div class="stat-icon green">
                         <span style="font-size: 1.25rem; font-weight: 600;">₱</span>
                     </div>
-                    <div class="stat-value"><?php echo number_format($stats['total_value'], 2); ?></div>
+                    <div class="stat-value">₱0.00</div>
                     <div class="stat-label">Total Asset Value</div>
                     <div class="stat-sublabel">Your office only</div>
                 </div>
@@ -368,7 +368,7 @@ foreach ($stats['top_categories'] as $cat) {
                         </div>
                         <div class="col-12">
                             <div class="p-2 rounded" style="background: rgba(40, 167, 69, 0.05);">
-                                <div class="fw-bold text-success" style="font-size: 1.25rem;">PHP <?php echo number_format($stats['total_value'], 2); ?></div>
+                                <div class="fw-bold text-success" style="font-size: 1.25rem;">PHP 0.00</div>
                                 <div class="small text-muted">Total Value</div>
                             </div>
                         </div>

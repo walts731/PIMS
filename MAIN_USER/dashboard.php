@@ -90,14 +90,17 @@ if (!$conn || $conn->connect_error) {
         }
         $stats['status_distribution'] = $status_distribution;
         
-        // Fuel Report Data
         $fuel_report_query = "SELECT 
                                 COUNT(*) as total_fuel_records,
                                 SUM(liters) as total_liters,
                                 SUM(cost) as total_cost,
                                 AVG(cost_per_liter) as avg_cost_per_liter,
                                 MAX(date_filled) as last_fuel_date,
-                                COUNT(DISTINCT vehicle_id) as vehicles_used
+                                COUNT(DISTINCT vehicle_id) as vehicles_used,
+                                SUM(CASE WHEN transaction_type = 'fuel_in' THEN liters ELSE 0 END) as fuel_in_liters,
+                                SUM(CASE WHEN transaction_type = 'fuel_out' THEN liters ELSE 0 END) as fuel_out_liters,
+                                SUM(CASE WHEN transaction_type = 'fuel_in' THEN cost ELSE 0 END) as fuel_in_cost,
+                                SUM(CASE WHEN transaction_type = 'fuel_out' THEN cost ELSE 0 END) as fuel_out_cost
                             FROM fuel_records 
                             WHERE date_filled >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
         $fuel_result = $conn->query($fuel_report_query);
@@ -137,7 +140,9 @@ $defaults = [
     'total_offices' => 0,
     'top_categories' => [],
     'recent_items' => [],
-    'status_distribution' => []
+    'status_distribution' => [],
+    'fuel_report' => [],
+    'recent_fuel' => []
 ];
 foreach ($defaults as $key => $value) {
     if (!isset($stats[$key])) {
@@ -169,69 +174,49 @@ $page_title = 'Main User Dashboard';
     <link href="../assets/css/theme-custom.css" rel="stylesheet">
     <link href="../ADMIN/dashboard.css" rel="stylesheet">
     <style>
-        .fuel-report-card {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-            box-shadow: 0 4px 6px rgba(40, 167, 69, 0.1);
+        /* Mobile dashboard value styling */
+        @media (max-width: 768px) {
+            .stat-value {
+                font-size: 1.5rem !important;
+                line-height: 1.2 !important;
+            }
+            
+            .category-value {
+                font-size: 0.9rem !important;
+                font-weight: 600 !important;
+            }
+            
+            .fuel-report .fw-bold {
+                font-size: 0.85rem !important;
+            }
+            
+            .small.text-success,
+            .small.text-danger,
+            .small.text-primary {
+                font-size: 0.7rem !important;
+            }
         }
         
-        .fuel-report-title {
-            font-size: 0.875rem;
-            opacity: 0.9;
-            margin-bottom: 0.5rem;
-        }
-        
-        .fuel-report-value {
-            font-size: 1.75rem;
-            font-weight: 700;
-            margin-bottom: 0.25rem;
-        }
-        
-        .fuel-report-subtitle {
-            font-size: 0.75rem;
-            opacity: 0.8;
-        }
-        
-        .fuel-item {
-            border-left: 3px solid #28a745;
-            padding: 0.75rem;
-            margin-bottom: 0.75rem;
-            background: #f8f9fa;
-            border-radius: 0 6px 6px 0;
-        }
-        
-        .fuel-vehicle {
-            font-weight: 600;
-            color: #191BA9;
-            font-size: 0.875rem;
-        }
-        
-        .fuel-details {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-            margin-top: 0.25rem;
-        }
-        
-        .fuel-amount {
-            font-weight: 600;
-            color: #28a745;
-            font-size: 0.875rem;
-        }
-        
-        .fuel-cost {
-            font-weight: 600;
-            color: #dc3545;
-            font-size: 0.875rem;
-        }
-        
-        .fuel-date {
-            font-size: 0.75rem;
-            color: #6c757d;
-            text-align: right;
+        @media (max-width: 576px) {
+            .stat-value {
+                font-size: 1.25rem !important;
+                line-height: 1.1 !important;
+            }
+            
+            .category-value {
+                font-size: 0.8rem !important;
+                font-weight: 600 !important;
+            }
+            
+            .fuel-report .fw-bold {
+                font-size: 0.75rem !important;
+            }
+            
+            .small.text-success,
+            .small.text-danger,
+            .small.text-primary {
+                font-size: 0.65rem !important;
+            }
         }
     </style>
 </head>
@@ -390,68 +375,78 @@ $page_title = 'Main User Dashboard';
                         <?php endif; ?>
                     </div>
 
-                    <!-- Fuel Report Card -->
-                    <div class="section-card mb-4">
+                    <div class="section-card mb-4 fuel-report">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <div class="section-title mb-0">
                                 <i class="bi bi-fuel-pump"></i> Fuel Report (30 Days)
                             </div>
                         </div>
                         
-                        <?php if (isset($stats['fuel_report'])): ?>
-                            <div class="fuel-report-card">
-                                <div class="fuel-report-title">Total Fuel Consumption</div>
-                                <div class="fuel-report-value"><?php echo number_format((float)($stats['fuel_report']['total_liters'] ?? 0), 2); ?>L</div>
-                                <div class="fuel-report-subtitle">₱<?php echo number_format((float)($stats['fuel_report']['total_cost'] ?? 0), 2); ?> spent</div>
+                        <?php if (isset($stats['fuel_report']) && !empty($stats['fuel_report'])): ?>
+                            <div class="row g-2 mb-3">
+                                <div class="col-6">
+                                    <div class="text-center p-2 bg-success bg-opacity-10 rounded">
+                                        <div class="fw-bold text-success"><?php echo number_format((float)($stats['fuel_report']['fuel_in_liters'] ?? 0), 2); ?>L</div>
+                                        <div class="small text-muted">Fuel In</div>
+                                        <div class="small text-success">₱<?php echo number_format((float)($stats['fuel_report']['fuel_in_cost'] ?? 0), 2); ?></div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center p-2 bg-danger bg-opacity-10 rounded">
+                                        <div class="fw-bold text-danger"><?php echo number_format((float)($stats['fuel_report']['fuel_out_liters'] ?? 0), 2); ?>L</div>
+                                        <div class="small text-muted">Fuel Out</div>
+                                        <div class="small text-danger">₱<?php echo number_format((float)($stats['fuel_report']['fuel_out_cost'] ?? 0), 2); ?></div>
+                                    </div>
+                                </div>
                             </div>
                             
                             <div class="row g-2 mb-3">
                                 <div class="col-6">
                                     <div class="text-center p-2 bg-light rounded">
-                                        <div class="fw-bold text-success"><?php echo number_format((float)($stats['fuel_report']['avg_cost_per_liter'] ?? 0), 2); ?></div>
-                                        <div class="small text-muted">Avg Cost/Liter</div>
+                                        <div class="fw-bold text-info"><?php echo number_format((float)($stats['fuel_report']['avg_cost_per_liter'] ?? 0), 2); ?></div>
+                                        <div class="small text-muted">Avg Cost/L</div>
                                     </div>
                                 </div>
                                 <div class="col-6">
                                     <div class="text-center p-2 bg-light rounded">
-                                        <div class="fw-bold text-info"><?php echo (int)($stats['fuel_report']['vehicles_used'] ?? 0); ?></div>
-                                        <div class="small text-muted">Vehicles Used</div>
+                                        <div class="fw-bold text-primary"><?php echo (int)($stats['fuel_report']['vehicles_used'] ?? 0); ?></div>
+                                        <div class="small text-muted">Vehicles</div>
                                     </div>
                                 </div>
                             </div>
                             
+                            <div class="text-center p-2 bg-primary bg-opacity-10 rounded mb-3">
+                                <div class="fw-bold text-primary"><?php echo number_format((float)(($stats['fuel_report']['fuel_in_liters'] ?? 0) - ($stats['fuel_report']['fuel_out_liters'] ?? 0)), 2); ?>L</div>
+                                <div class="small text-muted">Net Balance</div>
+                                <div class="small text-primary">₱<?php echo number_format((float)(($stats['fuel_report']['fuel_in_cost'] ?? 0) - ($stats['fuel_report']['fuel_out_cost'] ?? 0)), 2); ?></div>
+                            </div>
+                            
                             <div class="text-center mb-3">
                                 <small class="text-muted">
-                                    Last fuel: <?php echo !empty($stats['fuel_report']['last_fuel_date']) ? date('M j, Y', strtotime($stats['fuel_report']['last_fuel_date'])) : 'No records'; ?>
+                                    Last: <?php echo !empty($stats['fuel_report']['last_fuel_date']) ? date('M j', strtotime($stats['fuel_report']['last_fuel_date'])) : 'No records'; ?>
                                 </small>
                             </div>
                             
-                            <div class="section-title mb-3">
-                                <i class="bi bi-clock-history"></i> Recent Fuel Records
+                            <div class="section-title mb-2">
+                                <i class="bi bi-clock-history"></i> Recent
                             </div>
                             
                             <?php if (!empty($stats['recent_fuel'])): ?>
                                 <?php foreach ($stats['recent_fuel'] as $fuel): ?>
-                                    <div class="fuel-item">
-                                        <div class="fuel-vehicle">
-                                            <?php echo htmlspecialchars($fuel['vehicle_name'] ?? 'Unknown Vehicle'); ?>
-                                            <?php if (!empty($fuel['plate_number'])): ?>
-                                                <span class="text-muted">(<?php echo htmlspecialchars($fuel['plate_number']); ?>)</span>
-                                            <?php endif; ?>
+                                    <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded mb-1">
+                                        <div>
+                                            <div class="fw-bold small"><?php echo htmlspecialchars($fuel['vehicle_name'] ?? 'Unknown'); ?></div>
+                                            <div class="small text-muted"><?php echo htmlspecialchars($fuel['plate_number'] ?? ''); ?></div>
                                         </div>
-                                        <div class="fuel-details">
-                                            <div class="fuel-amount"><?php echo number_format((float)($fuel['liters'] ?? 0), 2); ?>L</div>
-                                            <div class="fuel-cost">₱<?php echo number_format((float)($fuel['cost'] ?? 0), 2); ?></div>
-                                        </div>
-                                        <div class="fuel-date">
-                                            <?php echo !empty($fuel['date_filled']) ? date('M j, Y', strtotime($fuel['date_filled'])) : ''; ?>
+                                        <div class="text-end">
+                                            <div class="fw-bold small"><?php echo number_format((float)($fuel['liters'] ?? 0), 2); ?>L</div>
+                                            <div class="small text-muted">₱<?php echo number_format((float)($fuel['cost'] ?? 0), 2); ?></div>
                                         </div>
                                     </div>
                                 <?php endforeach; ?>
                             <?php else: ?>
-                                <div class="text-center text-muted py-3">
-                                    <i class="bi bi-fuel-pump" style="font-size: 1.5rem;"></i>
-                                    <div class="mt-2">No recent fuel records</div>
+                                <div class="text-center text-muted py-2">
+                                    <small>No recent fuel records</small>
                                 </div>
                             <?php endif; ?>
                         <?php else: ?>
