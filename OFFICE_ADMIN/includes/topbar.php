@@ -32,7 +32,7 @@
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationDropdown">
                 <li><h6 class="dropdown-header">Notifications</h6></li>
                 <li><a class="dropdown-item" href="#">New consumable request pending</a></li>
-                <li><a class="dropdown-item" href">Asset maintenance due</a></li>
+                <li><a class="dropdown-item" href="#">Asset maintenance due</a></li>
                 <li><a class="dropdown-item" href="#">Low stock alert</a></li>
                 <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item text-center" href="#">View all notifications</a></li>
@@ -100,6 +100,15 @@
     text-transform: uppercase;
 }
 
+/* Dropdown container fixes */
+.dropdown {
+    position: relative !important;
+}
+
+.dropdown.show .dropdown-menu {
+    display: block !important;
+}
+
 .navbar-dark .nav-link {
     color: rgba(255, 255, 255, 0.8) !important;
     transition: color 0.3s ease;
@@ -114,6 +123,8 @@
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
     border-radius: var(--border-radius);
     margin-top: 0.5rem;
+    z-index: 1050 !important;
+    position: absolute !important;
 }
 
 .dropdown-item {
@@ -222,30 +233,55 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Topbar loaded, checking dropdown functionality...');
     
-    // Check if Bootstrap is loaded
-    if (typeof bootstrap === 'undefined') {
-        console.error('Bootstrap is not loaded!');
-    } else {
-        console.log('Bootstrap is loaded successfully');
-    }
-    
-    // Check dropdown elements
-    const dropdowns = document.querySelectorAll('.dropdown');
-    console.log('Found dropdowns:', dropdowns.length);
-    
-    // Initialize dropdowns manually if needed
-    dropdowns.forEach(function(dropdown) {
-        const toggle = dropdown.querySelector('.dropdown-toggle');
-        if (toggle) {
-            console.log('Initializing dropdown for:', toggle);
-            try {
-                const dropdownInstance = new bootstrap.Dropdown(toggle);
-                console.log('Dropdown initialized successfully');
-            } catch (error) {
-                console.error('Error initializing dropdown:', error);
-            }
+    // Wait a bit for Bootstrap to fully initialize
+    setTimeout(function() {
+        // Check if Bootstrap is loaded
+        if (typeof bootstrap === 'undefined') {
+            console.error('Bootstrap is not loaded!');
+            return;
         }
-    });
+        console.log('Bootstrap is loaded successfully');
+        
+        // Check dropdown elements
+        const dropdowns = document.querySelectorAll('.dropdown');
+        console.log('Found dropdowns:', dropdowns.length);
+        
+        // Initialize dropdowns manually if needed
+        dropdowns.forEach(function(dropdown, index) {
+            const toggle = dropdown.querySelector('.dropdown-toggle');
+            if (toggle) {
+                console.log('Initializing dropdown', index + 1, 'for:', toggle);
+                try {
+                    // Destroy any existing instance first
+                    const existingInstance = bootstrap.Dropdown.getInstance(toggle);
+                    if (existingInstance) {
+                        existingInstance.dispose();
+                    }
+                    
+                    // Create new instance
+                    const dropdownInstance = new bootstrap.Dropdown(toggle);
+                    console.log('Dropdown', index + 1, 'initialized successfully');
+                    
+                    // Add click event listener for debugging
+                    toggle.addEventListener('click', function(e) {
+                        console.log('Dropdown', index + 1, 'clicked');
+                        e.preventDefault();
+                    });
+                    
+                } catch (error) {
+                    console.error('Error initializing dropdown', index + 1, ':', error);
+                }
+            }
+        });
+        
+        // Test dropdown functionality
+        console.log('Testing dropdown functionality...');
+        const firstDropdown = document.querySelector('.dropdown-toggle');
+        if (firstDropdown) {
+            console.log('First dropdown element:', firstDropdown);
+            console.log('Data attributes:', firstDropdown.dataset);
+        }
+    }, 100);
 });
 
 function confirmLogout() {

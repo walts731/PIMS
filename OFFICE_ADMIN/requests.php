@@ -30,6 +30,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     
     switch ($action) {
+        case 'create_request':
+            $asset_id = $_POST['asset_id'] ?? 0;
+            $requested_to_office = $_POST['requested_to_office'] ?? 0;
+            $quantity_requested = $_POST['quantity_requested'] ?? 1;
+            $purpose = $_POST['purpose'] ?? '';
+            $start_date = $_POST['start_date'] ?? '';
+            $end_date = $_POST['end_date'] ?? '';
+            
+            // Validation
+            if (empty($asset_id) || empty($requested_to_office) || empty($quantity_requested) || empty($purpose) || empty($start_date) || empty($end_date)) {
+                $_SESSION['error'] = "All fields are required";
+            } elseif ($start_date > $end_date) {
+                $_SESSION['error'] = "Start date cannot be after end date";
+            } elseif ($requested_to_office == $office_id) {
+                $_SESSION['error'] = "Cannot request assets from your own office";
+            } elseif ($quantity_requested < 1) {
+                $_SESSION['error'] = "Quantity must be at least 1";
+            } else {
+                try {
+                    // Check if asset exists and get available quantity
+                    $asset_check = "SELECT ai.status, COALESCE(a.quantity, 1) as total_quantity,
+                                   COALESCE(a.quantity, 1) as available_quantity
+                                   FROM asset_items ai
+                                   LEFT JOIN assets a ON ai.asset_id = a.id
+                                   WHERE ai.id = ?";
+                    $stmt = $conn->prepare($asset_check);
+                    $stmt->bind_param("i", $asset_id);
+                    $stmt->execute();
+                    $asset_result = $stmt->get_result();
+                    
+                    if ($asset_result->num_rows === 0) {
+                        $_SESSION['error'] = "Asset not found";
+                    } else {
+                        $asset_data = $asset_result->fetch_assoc();
+                        
+                        if ($asset_data['status'] !== 'serviceable') {
+                            $_SESSION['error'] = "Asset is not available";
+                        } elseif ($quantity_requested > $asset_data['available_quantity']) {
+                            $_SESSION['error'] = "Only {$asset_data['available_quantity']} units available. You requested {$quantity_requested}.";
+                        } else {
+                            // Insert new borrow request
+                            $insert_query = "INSERT INTO borrow_requests 
+                                             (requested_by, requested_by_office, requested_to_office, asset_id, quantity_requested, purpose, start_date, end_date) 
+                                             VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                            $stmt = $conn->prepare($insert_query);
+                            $stmt->bind_param("iiisisss", $_SESSION['user_id'], $office_id, $requested_to_office, $asset_id, $quantity_requested, $purpose, $start_date, $end_date);
+                            
+                            if ($stmt->execute()) {
+                                $_SESSION['success'] = "Borrow request for {$quantity_requested} unit(s) created successfully";
+                                logSystemAction($_SESSION['user_id'], 'create', 'borrow_request', "Created borrow request for {$quantity_requested} unit(s) of asset #$asset_id");
+                            } else {
+                                $_SESSION['error'] = "Error creating borrow request";
+                            }
+                        }
+                    }
+                } catch (Exception $e) {
+                    $_SESSION['error'] = "Database error: " . $e->getMessage();
+                }
+            }
+            break;
+            
         case 'approve_request':
             $request_id = $_POST['request_id'] ?? 0;
             $notes = $_POST['notes'] ?? '';
@@ -118,13 +179,12 @@ $request_stats = [
 
 if ($office_id && $conn) {
     try {
-        // Incoming requests (other offices requesting from this office)
         $incoming_query = "SELECT br.*, u.first_name, u.last_name, u.email, 
                           o.office_name as requester_office, ai.description as asset_description,
-                          ai.asset_code, ac.category_name
+                          COALESCE(ai.property_number, ai.property_no) as asset_code, ac.category_name
                           FROM borrow_requests br
                           JOIN users u ON br.requested_by = u.id
-                          JOIN offices o ON u.office_id = o.id
+                          JOIN offices o ON br.requested_by_office = o.id
                           JOIN asset_items ai ON br.asset_id = ai.id
                           LEFT JOIN asset_categories ac ON ai.asset_category_id = ac.id
                           WHERE br.requested_to_office = ? 
@@ -146,15 +206,15 @@ if ($office_id && $conn) {
         }
         
         // Outgoing requests (this office requesting from other offices)
-        $outgoing_query = "SELECT br.*, u.first_name, u.last_name, u.email, 
+        $outgoing_query = "SELECT br.*, u.first_name, u.last_name, u.email,
                           o.office_name as approver_office, ai.description as asset_description,
-                          ai.asset_code, ac.category_name
+                          COALESCE(ai.property_number, ai.property_no) as asset_code, ac.category_name
                           FROM borrow_requests br
                           JOIN users u ON br.requested_by = u.id
                           JOIN offices o ON br.requested_to_office = o.id
                           JOIN asset_items ai ON br.asset_id = ai.id
                           LEFT JOIN asset_categories ac ON ai.asset_category_id = ac.id
-                          WHERE br.requested_by_office = ? 
+                          WHERE br.requested_by_office = ?
                           ORDER BY br.created_at DESC";
         $stmt = $conn->prepare($outgoing_query);
         $stmt->bind_param("i", $office_id);
@@ -169,6 +229,8 @@ if ($office_id && $conn) {
                 $request_stats['pending_outgoing']++;
             } elseif ($row['status'] === 'approved') {
                 $request_stats['approved_outgoing']++;
+            } elseif ($row['status'] === 'denied') {
+                $request_stats['denied_outgoing']++;
             }
         }
         
@@ -176,8 +238,53 @@ if ($office_id && $conn) {
         error_log("Error fetching requests: " . $e->getMessage());
     }
 }
-?>
 
+// Fetch available assets and offices for new request form
+$available_assets = [];
+$other_offices = [];
+
+if ($office_id && $conn) {
+    try {
+        // Get available assets from other offices
+        $assets_query = "SELECT ai.id, ai.description, COALESCE(ai.property_number, ai.property_no) as asset_code, ac.category_name, o.office_name, o.id as office_id,
+                         COALESCE(a.quantity, 1) as total_quantity,
+                         COALESCE(a.quantity, 1) as available_quantity
+                         FROM asset_items ai
+                         LEFT JOIN asset_categories ac ON ai.asset_category_id = ac.id
+                         LEFT JOIN assets a ON ai.asset_id = a.id
+                         JOIN offices o ON ai.office_id = o.id
+                         WHERE ai.office_id != ? AND ai.status = 'serviceable'
+                         ORDER BY o.office_name, ai.description";
+        $stmt = $conn->prepare($assets_query);
+        $stmt->bind_param("i", $office_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        while ($row = $result->fetch_assoc()) {
+            $available_assets[] = $row;
+        }
+        
+        // Get other offices
+        $offices_query = "SELECT id, office_name, office_code 
+                         FROM offices 
+                         WHERE status = 'active'
+                         ORDER BY office_name";
+        $stmt = $conn->prepare($offices_query);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        while ($row = $result->fetch_assoc()) {
+            // Exclude current office
+            if ($row['id'] != $office_id) {
+                $other_offices[] = $row;
+            }
+        }
+        
+    } catch (Exception $e) {
+        error_log("Error fetching form data: " . $e->getMessage());
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -704,6 +811,94 @@ if ($office_id && $conn) {
         </div>
     </div>
     
+    <!-- New Request Modal -->
+    <div class="modal fade" id="newRequestModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="bi bi-plus-circle"></i> New Borrow Request</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="">
+                    <input type="hidden" name="action" value="create_request">
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="requested_to_office" class="form-label">Request To Office <span class="text-danger">*</span></label>
+                                    <select class="form-control" id="requested_to_office" name="requested_to_office" required>
+                                        <option value="">Select Office</option>
+                                        <?php if (!empty($other_offices)): ?>
+                                            <?php foreach ($other_offices as $office): ?>
+                                                <option value="<?php echo $office['id']; ?>">
+                                                    <?php echo htmlspecialchars($office['office_name']); ?> (<?php echo htmlspecialchars($office['office_code']); ?>)
+                                                </option>
+                                            <?php endforeach; ?>
+                                        <?php else: ?>
+                                            <option value="" disabled>No offices available</option>
+                                        <?php endif; ?>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="asset_id" class="form-label">Asset to Borrow <span class="text-danger">*</span></label>
+                                    <select class="form-control" id="asset_id" name="asset_id" required>
+                                        <option value="">Select Asset</option>
+                                        <?php foreach ($available_assets as $asset): ?>
+                                            <option value="<?php echo $asset['id']; ?>" data-office-id="<?php echo $asset['office_id']; ?>" data-available="<?php echo $asset['available_quantity']; ?>" data-total="<?php echo $asset['total_quantity']; ?>">
+                                                <?php echo htmlspecialchars($asset['description']); ?> (<?php echo htmlspecialchars($asset['asset_code']); ?>)
+                                                - <?php echo htmlspecialchars($asset['office_name']); ?>
+                                                <small class="text-muted">(<?php echo $asset['available_quantity']; ?> of <?php echo $asset['total_quantity']; ?> available)</small>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <small class="text-muted">Only available assets from other offices are shown</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="quantity_requested" class="form-label">Quantity <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" id="quantity_requested" name="quantity_requested" min="1" value="1" required>
+                                    <small class="text-muted" id="quantity_info">Select an asset to see available quantity</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="start_date" class="form-label">Start Date <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" id="start_date" name="start_date" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="end_date" class="form-label">End Date <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" id="end_date" name="end_date" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    <label for="purpose" class="form-label">Purpose of Borrowing <span class="text-danger">*</span></label>
+                                    <textarea class="form-control" id="purpose" name="purpose" rows="3" 
+                                            placeholder="Please describe the purpose for borrowing this asset..." required></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-send"></i> Submit Request
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
@@ -739,6 +934,99 @@ if ($office_id && $conn) {
                 // This would implement the cancellation logic
             }
         }
+        
+        // Set minimum date to today for date inputs
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date().toISOString().split('T')[0];
+            const startDateInput = document.getElementById('start_date');
+            const endDateInput = document.getElementById('end_date');
+            const quantityInput = document.getElementById('quantity_requested');
+            const quantityInfo = document.getElementById('quantity_info');
+            const assetSelect = document.getElementById('asset_id');
+            
+            if (startDateInput) {
+                startDateInput.min = today;
+            }
+            
+            if (endDateInput) {
+                endDateInput.min = today;
+            }
+            
+            // Ensure end date is after start date
+            if (startDateInput && endDateInput) {
+                startDateInput.addEventListener('change', function() {
+                    endDateInput.min = this.value;
+                    if (endDateInput.value && endDateInput.value < this.value) {
+                        endDateInput.value = this.value;
+                    }
+                });
+            }
+            
+            // Update quantity info when asset is selected
+            if (assetSelect && quantityInput && quantityInfo) {
+                assetSelect.addEventListener('change', function() {
+                    const selectedOption = this.options[this.selectedIndex];
+                    const availableQuantity = selectedOption.getAttribute('data-available');
+                    const totalQuantity = selectedOption.getAttribute('data-total');
+                    
+                    if (availableQuantity && totalQuantity) {
+                        quantityInfo.textContent = `${availableQuantity} of ${totalQuantity} units available`;
+                        quantityInput.max = availableQuantity;
+                        
+                        // Reset quantity if it exceeds available amount
+                        if (quantityInput.value > parseInt(availableQuantity)) {
+                            quantityInput.value = availableQuantity;
+                        }
+                    } else {
+                        quantityInfo.textContent = 'Select an asset to see available quantity';
+                        quantityInput.max = '';
+                    }
+                });
+                
+                // Validate quantity input
+                quantityInput.addEventListener('input', function() {
+                    const max = this.max;
+                    if (max && parseInt(this.value) > parseInt(max)) {
+                        this.value = max;
+                    }
+                });
+            }
+            
+            // Filter assets based on selected office
+            const officeSelect = document.getElementById('requested_to_office');
+            
+            if (officeSelect && assetSelect) {
+                officeSelect.addEventListener('change', function() {
+                    const selectedOfficeId = this.value;
+                    const options = assetSelect.querySelectorAll('option');
+                    
+                    options.forEach(option => {
+                        if (option.value === '') {
+                            option.style.display = 'block';
+                            return;
+                        }
+                        
+                        // Get office ID from asset option
+                        const assetOfficeId = option.getAttribute('data-office-id');
+                        if (selectedOfficeId === '' || assetOfficeId === selectedOfficeId) {
+                            option.style.display = 'block';
+                        } else {
+                            option.style.display = 'none';
+                        }
+                    });
+                    
+                    // Reset asset selection if it's no longer visible
+                    if (assetSelect.value) {
+                        const selectedOption = assetSelect.querySelector(`option[value="${assetSelect.value}"]`);
+                        if (selectedOption && selectedOption.style.display === 'none') {
+                            assetSelect.value = '';
+                            quantityInfo.textContent = 'Select an asset to see available quantity';
+                            quantityInput.max = '';
+                        }
+                    }
+                });
+            }
+        });
     </script>
     
     <!-- Sidebar Scripts -->

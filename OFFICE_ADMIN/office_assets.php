@@ -499,9 +499,9 @@ try {
                                             <td>₱<?php echo number_format($asset['value'] ?? 0, 2); ?></td>
                                             <td><?php echo !empty($asset['acquisition_date']) ? date('M j, Y', strtotime($asset['acquisition_date'])) : 'Not set'; ?></td>
                                             <td>
-                                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="editAsset(<?php echo $asset['id']; ?>)">
+                                                <a href="asset_items.php?asset_id=<?php echo $asset['asset_id']; ?>" class="btn btn-sm btn-outline-primary">
                                                     <i class="bi bi-eye"></i> View
-                                                </button>
+                                                </a>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
