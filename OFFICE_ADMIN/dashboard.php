@@ -77,18 +77,25 @@ if (!$conn || $conn->connect_error) {
             }
             
             // ===== PENDING REQUESTS =====
-            $requests_query = "SELECT 
-                COUNT(*) as pending_requests,
-                SUM(CASE WHEN request_type = 'consumable' THEN 1 ELSE 0 END) as consumable_requests,
-                SUM(CASE WHEN request_type = 'asset' THEN 1 ELSE 0 END) as asset_requests
-                FROM requests 
-                WHERE office_id = ? AND status = 'pending'";
-            $stmt = $conn->prepare($requests_query);
-            $stmt->bind_param("i", $user_office_id);
-            $stmt->execute();
-            $requests_result = $stmt->get_result();
-            if ($requests_result) {
-                $stats = array_merge($stats, $requests_result->fetch_assoc());
+            try {
+                $requests_query = "SELECT 
+                    COUNT(*) as pending_requests,
+                    SUM(CASE WHEN request_type = 'consumable' THEN 1 ELSE 0 END) as consumable_requests,
+                    SUM(CASE WHEN request_type = 'asset' THEN 1 ELSE 0 END) as asset_requests
+                    FROM requests 
+                    WHERE office_id = ? AND status = 'pending'";
+                $stmt = $conn->prepare($requests_query);
+                $stmt->bind_param("i", $user_office_id);
+                $stmt->execute();
+                $requests_result = $stmt->get_result();
+                if ($requests_result) {
+                    $stats = array_merge($stats, $requests_result->fetch_assoc());
+                }
+            } catch (Exception $e) {
+                // Table doesn't exist, set defaults
+                $stats['pending_requests'] = 0;
+                $stats['consumable_requests'] = 0;
+                $stats['asset_requests'] = 0;
             }
             
             // ===== OFFICE FORMS =====

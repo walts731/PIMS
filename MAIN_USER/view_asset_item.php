@@ -307,6 +307,124 @@ $page_title = 'Asset Item Details - ' . htmlspecialchars($item['description'] ??
             font-size: 0.85rem;
             color: #6c757d;
         }
+        
+        /* Mobile Responsive Styles */
+        @media (max-width: 768px) {
+            .page-header .row {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .page-header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .page-header .col-md-4 {
+                text-align: left !important;
+            }
+            
+            .detail-card {
+                margin-bottom: 1rem;
+            }
+            
+            .detail-section h5 {
+                font-size: 1.1rem;
+            }
+            
+            .detail-label {
+                font-size: 0.85rem;
+            }
+            
+            .detail-value {
+                font-size: 0.95rem;
+            }
+            
+            .text-value {
+                font-size: 1rem;
+            }
+            
+            .status-badge {
+                font-size: 0.75rem;
+                padding: 0.25rem 0.5rem;
+            }
+            
+            .asset-image-container img {
+                max-height: 200px !important;
+            }
+            
+            .qr-code img {
+                max-width: 120px !important;
+                max-height: 120px !important;
+            }
+            
+            .related-item {
+                padding: 0.5rem;
+            }
+            
+            .history-item {
+                padding-left: 0.75rem;
+                margin-bottom: 0.75rem;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .page-header h1 {
+                font-size: 1.25rem;
+            }
+            
+            .page-header p {
+                font-size: 0.9rem;
+            }
+            
+            .detail-section h5 {
+                font-size: 1rem;
+            }
+            
+            .detail-label {
+                font-size: 0.8rem;
+            }
+            
+            .detail-value {
+                font-size: 0.9rem;
+            }
+            
+            .text-value {
+                font-size: 0.95rem;
+            }
+            
+            .status-badge {
+                font-size: 0.7rem;
+                padding: 0.2rem 0.4rem;
+            }
+            
+            .btn-back {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.9rem;
+            }
+            
+            .asset-image-container img {
+                max-height: 150px !important;
+            }
+            
+            .qr-code img {
+                max-width: 100px !important;
+                max-height: 100px !important;
+            }
+            
+            .related-item {
+                padding: 0.4rem;
+                margin-bottom: 0.4rem;
+            }
+            
+            .history-item {
+                padding-left: 0.5rem;
+                margin-bottom: 0.5rem;
+            }
+            
+            .history-date {
+                font-size: 0.75rem;
+            }
+        }
     </style>
 </head>
 <body>
