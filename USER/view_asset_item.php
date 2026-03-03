@@ -303,7 +303,7 @@ $asset_id_for_nav = (int)($item['asset_id'] ?? 0);
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <div class="detail-label">Value</div>
-                                        <div class="detail-value text-value"><?php echo number_format((float)($item['value'] ?? 0), 2); ?></div>
+                                        <div class="detail-value text-value">₱0.00</div>
                                     </div>
                                     <div class="mb-3">
                                         <div class="detail-label">Acquisition Date</div>
@@ -341,7 +341,7 @@ $asset_id_for_nav = (int)($item['asset_id'] ?? 0);
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <div class="detail-label">Unit Cost</div>
-                                        <div class="detail-value"><?php echo number_format((float)($item['unit_cost'] ?? 0), 2); ?></div>
+                                        <div class="detail-value">₱0.00</div>
                                     </div>
                                 </div>
                             </div>
