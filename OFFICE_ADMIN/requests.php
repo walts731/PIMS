@@ -78,6 +78,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $stmt->bind_param("iiisisss", $_SESSION['user_id'], $office_id, $requested_to_office, $asset_id, $quantity_requested, $purpose, $start_date, $end_date);
                             
                             if ($stmt->execute()) {
+                                // Update asset status to pending when request is created
+                                $asset_update = "UPDATE asset_items SET status = 'pending' WHERE id = ?";
+                                $stmt2 = $conn->prepare($asset_update);
+                                $stmt2->bind_param("i", $asset_id);
+                                $stmt2->execute();
+                                
                                 $_SESSION['success'] = "Borrow request for {$quantity_requested} unit(s) created successfully";
                                 logSystemAction($_SESSION['user_id'], 'create', 'borrow_request', "Created borrow request for {$quantity_requested} unit(s) of asset #$asset_id");
                             } else {
@@ -105,6 +111,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->bind_param("isi", $_SESSION['user_id'], $notes, $request_id);
             
             if ($stmt->execute()) {
+                // Update asset status to in_use when request is approved
+                $asset_update = "UPDATE asset_items SET status = 'in_use' 
+                                WHERE id = (SELECT asset_id FROM borrow_requests WHERE id = ?)";
+                $stmt2 = $conn->prepare($asset_update);
+                $stmt2->bind_param("i", $request_id);
+                $stmt2->execute();
+                
                 $_SESSION['success'] = "Request approved successfully";
                 logSystemAction($_SESSION['user_id'], 'approve', 'borrow_request', "Approved borrow request #$request_id");
             } else {
@@ -126,6 +139,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->bind_param("isi", $_SESSION['user_id'], $reason, $request_id);
             
             if ($stmt->execute()) {
+                // Update asset status back to serviceable when request is denied
+                $asset_update = "UPDATE asset_items SET status = 'serviceable' 
+                                WHERE id = (SELECT asset_id FROM borrow_requests WHERE id = ?)";
+                $stmt2 = $conn->prepare($asset_update);
+                $stmt2->bind_param("i", $request_id);
+                $stmt2->execute();
+                
                 $_SESSION['success'] = "Request denied successfully";
                 logSystemAction($_SESSION['user_id'], 'deny', 'borrow_request', "Denied borrow request #$request_id");
             } else {
@@ -148,8 +168,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->bind_param("ssi", $condition, $notes, $request_id);
             
             if ($stmt->execute()) {
-                // Update asset status back to available
-                $asset_update = "UPDATE asset_items SET status = 'available' 
+                // Update asset status back to serviceable when returned
+                $asset_update = "UPDATE asset_items SET status = 'serviceable' 
                                 WHERE id = (SELECT asset_id FROM borrow_requests WHERE id = ?)";
                 $stmt2 = $conn->prepare($asset_update);
                 $stmt2->bind_param("i", $request_id);
