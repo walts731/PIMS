@@ -175,8 +175,8 @@ $notag_items = count(array_filter($items, fn($item) => ($item['status'] ?? '') =
                             </div>
                             <div class="col-md-6">
                                 <p><strong>Total Quantity:</strong> <?php echo htmlspecialchars((string)($asset['quantity'] ?? '')); ?></p>
-                                <p><strong>Unit Cost:</strong> <?php echo number_format((float)($asset['unit_cost'] ?? 0), 2); ?></p>
-                                <p><strong>Total Value:</strong> <?php echo number_format(((float)($asset['quantity'] ?? 0)) * ((float)($asset['unit_cost'] ?? 0)), 2); ?></p>
+                                <p><strong>Unit Cost:</strong> ₱0.00</p>
+                                <p><strong>Total Value:</strong> ₱0.00</p>
                             </div>
                         </div>
                     </div>
@@ -300,7 +300,7 @@ $notag_items = count(array_filter($items, fn($item) => ($item['status'] ?? '') =
                                                 <?php echo htmlspecialchars($display_status); ?>
                                             </span>
                                         </td>
-                                        <td class="text-value"><?php echo number_format((float)($item['value'] ?? 0), 2); ?></td>
+                                        <td class="text-value">₱0.00</td>
                                         <td>
                                             <?php
                                             $acq = $item['acquisition_date'] ?? null;

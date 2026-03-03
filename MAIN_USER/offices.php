@@ -275,7 +275,35 @@ if (!$conn || $conn->connect_error) {
         border-radius: 6px;
     }
     
+    /* Comprehensive Mobile UI Fixes */
+    @media (max-width: 992px) {
+        .dashboard-header .row {
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .dashboard-header .col-md-4 {
+            text-align: left !important;
+        }
+        
+        .dashboard-header h1 {
+            font-size: 1.75rem;
+        }
+        
+        .office-stats {
+            gap: 1rem;
+        }
+    }
+    
     @media (max-width: 768px) {
+        .dashboard-header h1 {
+            font-size: 1.5rem;
+        }
+        
+        .dashboard-header p {
+            font-size: 0.9rem;
+        }
+        
         .office-card {
             border-radius: 20px;
             box-shadow: 0 8px 32px rgba(0,0,0,0.12);
@@ -300,71 +328,47 @@ if (!$conn || $conn->connect_error) {
             width: 200%;
             height: 200%;
             background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-            animation: shimmer 3s ease-in-out infinite;
+            animation: float 6s ease-in-out infinite;
         }
         
-        @keyframes shimmer {
-            0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
-            50% { transform: translate(-50%, -50%) rotate(180deg); }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
         }
         
         .office-header h4 {
-            font-size: 1.3rem;
-            font-weight: 700;
+            font-size: 1.1rem;
             position: relative;
             z-index: 1;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
         
         .office-stats {
-            gap: 1.5rem;
+            gap: 1rem;
+            margin-top: 0.75rem;
             position: relative;
             z-index: 1;
         }
         
-        .stat-item {
-            min-width: 90px;
-            text-align: center;
-        }
-        
         .stat-value {
-            font-size: 1.8rem;
-            font-weight: 800;
-            display: block;
-            line-height: 1;
-            margin-bottom: 0.5rem;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            font-size: 1.25rem;
         }
         
         .stat-label {
-            font-size: 0.75rem;
-            opacity: 0.95;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-weight: 600;
+            font-size: 0.7rem;
         }
         
-        .office-details {
-            padding: 1.5rem;
-            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        .office-actions {
+            padding: 0.75rem 1rem;
         }
         
-        .status-badges {
-            margin-top: 1rem;
-            display: flex;
-            flex-wrap: wrap;
+        .office-actions .d-flex {
+            flex-direction: column;
             gap: 0.5rem;
         }
         
-        .status-badge {
-            font-size: 0.75rem;
-            padding: 0.4rem 0.8rem;
-            margin: 0.2rem;
-            border-radius: 25px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        .btn-sm {
+            font-size: 0.8rem;
+            padding: 0.5rem 1rem;
             border: none;
             position: relative;
             overflow: hidden;
@@ -681,7 +685,7 @@ if (!$conn || $conn->connect_error) {
                     <div class="col-md-4 text-md-end">
                         <div class="d-flex align-items-center justify-content-md-end gap-2 flex-wrap">
                             <div class="d-inline-block" style="min-width: 180px;">
-                                <select class="form-select form-select-sm" id="statusFilter">
+                                <select class="form-select form-select-sm" id="statusFilter" <?php echo $status_filter !== '' ? 'style="background-color: #28a745; color: white; border-color: #1e7e34; font-weight: bold;"' : ''; ?>>
                                     <option value="" <?php echo $status_filter === '' ? 'selected' : ''; ?>>All Statuses</option>
                                     <option value="serviceable" <?php echo $status_filter === 'serviceable' ? 'selected' : ''; ?>>Serviceable</option>
                                     <option value="unserviceable" <?php echo $status_filter === 'unserviceable' ? 'selected' : ''; ?>>Unserviceable</option>
@@ -691,7 +695,7 @@ if (!$conn || $conn->connect_error) {
                                 </select>
                             </div>
                             <div class="d-inline-block" style="min-width: 180px;">
-                                <select class="form-select form-select-sm" id="categoryFilter">
+                                <select class="form-select form-select-sm" id="categoryFilter" <?php echo $category_filter > 0 ? 'style="background-color: #007bff; color: white; border-color: #0056b3; font-weight: bold;"' : ''; ?>>
                                     <option value="0" <?php echo $category_filter === 0 ? 'selected' : ''; ?>>All Categories</option>
                                     <?php foreach ($categories as $category): ?>
                                         <option value="<?php echo (int)$category['id']; ?>" <?php echo $category_filter === (int)$category['id'] ? 'selected' : ''; ?>>
@@ -739,13 +743,12 @@ if (!$conn || $conn->connect_error) {
                     <div class="card-body">
                         <div class="table-responsive">
                             <table class="table table-sm table-hover">
-                                <thead>
+                                <thead class="table-light">
                                     <tr>
                                         <th>Property No</th>
                                         <th>Item Description</th>
                                         <th>Category</th>
                                         <th>Office</th>
-                                        <th>Value</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -757,13 +760,12 @@ if (!$conn || $conn->connect_error) {
                                                 <div>
                                                     <strong><?php echo htmlspecialchars($item['item_description'] ?? ''); ?></strong>
                                                     <?php if (!empty($item['asset_description'])): ?>
-                                                        <br><small class="text-muted"><?php echo htmlspecialchars($item['asset_description']); ?></small>
+                                                        <div class="text-muted small"><?php echo htmlspecialchars($item['asset_description'] ?? ''); ?></div>
                                                     <?php endif; ?>
                                                 </div>
                                             </td>
                                             <td><?php echo htmlspecialchars($item['category_name'] ?? ''); ?></td>
                                             <td><?php echo htmlspecialchars($item['office_name'] ?? ''); ?></td>
-                                            <td>₱<?php echo number_format((float)($item['item_value'] ?? 0), 2); ?></td>
                                             <td>
                                                 <a href="view_asset_item.php?id=<?php echo (int)$item['item_id']; ?>" class="btn btn-outline-info btn-sm me-1">
                                                     <i class="bi bi-eye"></i> View
@@ -794,10 +796,6 @@ if (!$conn || $conn->connect_error) {
                                             <span class="stat-value"><?php echo number_format((int)($office['total_assets'] ?? 0)); ?></span>
                                             <span class="stat-label">Total Assets</span>
                                         </div>
-                                        <div class="stat-item">
-                                            <span class="stat-value"><?php echo number_format((float)($office['total_value'] ?? 0), 0); ?></span>
-                                            <span class="stat-label">Total Value</span>
-                                        </div>
                                     </div>
                                 </div>
                                 
@@ -808,25 +806,21 @@ if (!$conn || $conn->connect_error) {
                                                 Serviceable: <?php echo (int)$office['serviceable_count']; ?>
                                             </span>
                                         <?php endif; ?>
-                                        
                                         <?php if (($office['unserviceable_count'] ?? 0) > 0): ?>
                                             <span class="status-badge status-unserviceable">
                                                 Unserviceable: <?php echo (int)$office['unserviceable_count']; ?>
                                             </span>
                                         <?php endif; ?>
-                                        
                                         <?php if (($office['red_tagged_count'] ?? 0) > 0): ?>
                                             <span class="status-badge status-red-tagged">
                                                 Red-Tagged: <?php echo (int)$office['red_tagged_count']; ?>
                                             </span>
                                         <?php endif; ?>
-                                        
                                         <?php if (($office['borrowed_count'] ?? 0) > 0): ?>
                                             <span class="status-badge status-borrowed">
                                                 Borrowed: <?php echo (int)$office['borrowed_count']; ?>
                                             </span>
                                         <?php endif; ?>
-                                        
                                         <?php if (($office['no_tag_count'] ?? 0) > 0): ?>
                                             <span class="status-badge status-no-tag">
                                                 No Tag: <?php echo (int)$office['no_tag_count']; ?>
