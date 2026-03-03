@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 03, 2026 at 03:27 AM
+-- Generation Time: Mar 03, 2026 at 04:24 AM
 -- Server version: 10.4.28-MariaDB
 -- PHP Version: 8.2.4
 
@@ -51,7 +51,8 @@ INSERT INTO `assets` (`id`, `asset_categories_id`, `asset_subcategory_id`, `desc
 (9, NULL, NULL, 'Laptop AMD Ryzen3', 'Units', 2, 34000.00, NULL, '2026-02-24 04:07:42', '2026-02-24 04:07:42'),
 (10, NULL, NULL, 'Laptop AMD Ryzen7', 'Units', 2, 28000.00, 4, '2026-02-25 14:51:45', '2026-02-25 14:51:45'),
 (11, NULL, NULL, 'Hilux Van ', 'Units', 2, 750000.00, 4, '2026-02-25 15:41:22', '2026-02-25 15:41:22'),
-(12, 2, 1, 'COMPUTER DESKTOP i7', 'Sets', 2, 37500.00, 4, '2026-02-27 10:38:03', '2026-02-27 10:46:57');
+(12, 2, 1, 'COMPUTER DESKTOP i7', 'Sets', 2, 37500.00, 4, '2026-02-27 10:38:03', '2026-02-27 10:46:57'),
+(13, 2, 1, 'desktop computer ', 'Sets', 2, 37500.00, 4, '2026-03-03 02:53:04', '2026-03-03 02:54:32');
 
 -- --------------------------------------------------------
 
@@ -179,7 +180,8 @@ CREATE TABLE `asset_computers` (
 INSERT INTO `asset_computers` (`id`, `asset_item_id`, `processor`, `ram_capacity`, `storage_type`, `storage_capacity`, `model`, `graphics_card`, `operating_system`, `mac_address`, `ip_address`, `serial_number`, `warranty_provider`, `warranty_expiry`, `purchase_date`, `last_service_date`, `condition_status`, `assigned_to`, `department`, `notes`, `created_at`, `updated_at`, `created_by`, `updated_by`) VALUES
 (1, 4, 'AMD Ryzen™ 5 7530U (6-core/12-thread, up to 4.5GHz)', '16GB LPDDR5-4800MHz ', 'hdd', '512GB SSD', NULL, NULL, 'Windows® 11 Home Single Language', NULL, NULL, '3474665876', NULL, NULL, NULL, NULL, 'good', NULL, NULL, NULL, '2026-02-24 01:40:04', '2026-02-24 01:40:04', 5, NULL),
 (2, 5, 'Apple M3 Chip (8-core CPU, 10-core GPU)', '16GB LPDDR5-4800MHz ', 'hdd', '2TB 7.2K RPM SATA 6G', NULL, NULL, 'Windows® 11 Home Single Language', NULL, NULL, '456733245hg4523', NULL, NULL, NULL, NULL, 'good', NULL, NULL, NULL, '2026-02-24 01:46:08', '2026-02-24 01:46:08', 5, NULL),
-(5, 15, '', '', 'ssd', '', NULL, NULL, '', NULL, NULL, '456733245hg45', NULL, NULL, NULL, NULL, 'good', NULL, NULL, NULL, '2026-02-27 10:46:57', '2026-02-27 10:46:57', 5, NULL);
+(5, 15, '', '', 'ssd', '', NULL, NULL, '', NULL, NULL, '456733245hg45', NULL, NULL, NULL, NULL, 'good', NULL, NULL, NULL, '2026-02-27 10:46:57', '2026-02-27 10:46:57', 5, NULL),
+(6, 26, '', '', 'ssd', '', NULL, NULL, '', NULL, NULL, 'abdc123', NULL, NULL, NULL, NULL, 'good', NULL, NULL, NULL, '2026-03-03 02:54:32', '2026-03-03 02:54:32', 5, NULL);
 
 -- --------------------------------------------------------
 
@@ -211,7 +213,8 @@ CREATE TABLE `asset_desktop_computers` (
 --
 
 INSERT INTO `asset_desktop_computers` (`id`, `asset_item_id`, `monitor_name`, `monitor_model`, `monitor_serial_number`, `monitor_status`, `ups_name`, `ups_model`, `ups_serial_number`, `ups_status`, `created_by`, `updated_by`, `created_at`, `updated_at`, `monitor_value`, `ups_value`) VALUES
-(2, 15, 'nvision', 'ghi678', 'jkl78945668', 'unserviceable', '', '', '', 'serviceable', 5, NULL, '2026-02-27 10:46:57', '2026-02-28 00:14:48', NULL, NULL);
+(2, 15, 'nvision', 'ghi678', 'jkl78945668', 'unserviceable', '', '', '', 'serviceable', 5, NULL, '2026-02-27 10:46:57', '2026-02-28 00:14:48', NULL, NULL),
+(3, 26, 'nvision', '535hjk76l;5', 'tdtduigdop', 'serviceable', '', '', '', '', 5, NULL, '2026-03-03 02:54:32', '2026-03-03 02:54:32', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -296,7 +299,9 @@ INSERT INTO `asset_items` (`id`, `asset_id`, `asset_subcategory_id`, `asset_cate
 (12, 11, NULL, NULL, NULL, NULL, NULL, NULL, 9, 'Hilux Van ', 'Units', NULL, '2026-07-05-070-0904-01', NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 750000.00, '2026-02-25', 4, 'OMM', '2026-02-25 15:41:22', '2026-02-27 10:41:36'),
 (13, 11, NULL, NULL, NULL, NULL, NULL, NULL, 9, 'Hilux Van ', 'Units', NULL, '2026-07-05-070-0905-01', NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 750000.00, '2026-02-25', 4, 'OMM', '2026-02-25 15:41:22', '2026-02-27 10:41:36'),
 (14, 12, 1, NULL, 6, 'Jack Robertson', 2, NULL, 10, 'COMPUTER DESKTOP i7', 'Sets', NULL, '2026-07-05-030-0306-01', NULL, '2026-02-27', '[\"asset_14_0_1772188896.jpg\",\"asset_14_1_1772188896.jpg\"]', 'qr_asset_14_1772188898.png', 'serviceable', NULL, NULL, 75000.00, '2026-02-27', 4, 'OMM', '2026-02-27 10:38:03', '2026-02-27 10:41:38'),
-(15, 12, 1, NULL, 6, 'Roberto Cruz', 2, NULL, 10, 'COMPUTER DESKTOP i7', 'Sets', NULL, '2026-07-05-030-0307-01', NULL, '2026-02-27', '[\"asset_15_0_1772189215.jpg\",\"asset_15_1_1772189215.jpg\"]', 'qr_asset_15_1772189217.png', 'unserviceable', NULL, NULL, 75000.00, '2026-02-27', 4, 'OMM', '2026-02-27 10:38:03', '2026-02-28 00:12:32');
+(15, 12, 1, NULL, 6, 'Roberto Cruz', 2, NULL, 10, 'COMPUTER DESKTOP i7', 'Sets', NULL, '2026-07-05-030-0307-01', NULL, '2026-02-27', '[\"asset_15_0_1772189215.jpg\",\"asset_15_1_1772189215.jpg\"]', 'qr_asset_15_1772189217.png', 'unserviceable', NULL, NULL, 75000.00, '2026-02-27', 4, 'OMM', '2026-02-27 10:38:03', '2026-02-28 00:12:32'),
+(26, 13, 1, NULL, 1, 'elton', 2, NULL, 11, 'desktop computer ', 'Sets', NULL, '2026-07-05-030-0308-01', NULL, '2026-03-03', 'NULL', 'qr_asset_26_1772506472.png', 'serviceable', NULL, NULL, 75000.00, NULL, 4, 'OMM', '2026-03-03 02:53:04', '2026-03-03 02:54:32'),
+(27, 13, NULL, NULL, NULL, NULL, NULL, NULL, 11, 'desktop computer ', 'Sets', NULL, '2026-07-05-030-0309-01', NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 75000.00, NULL, 4, NULL, '2026-03-03 02:53:04', '2026-03-03 02:53:04');
 
 --
 -- Triggers `asset_items`
@@ -375,7 +380,13 @@ INSERT INTO `asset_item_history` (`id`, `item_id`, `action`, `details`, `old_val
 (34, 15, 'status_change', 'Status changed via IIRUP Form: IIRUP-2026-1133', 'serviceable', 'unserviceable', 5, '2026-02-27 14:05:39'),
 (35, 15, 'status_change', 'Status changed via IIRUP Form: IIRUP-2026-6649', 'serviceable', 'unserviceable', 5, '2026-02-27 14:25:11'),
 (36, 15, 'status_change', 'Status changed via IIRUP Form: IIRUP-2026-7955', 'serviceable', 'unserviceable', 5, '2026-02-27 14:28:30'),
-(37, 15, 'status_change', 'Status changed via IIRUP Form: IIRUP-2026-9600', 'serviceable', 'unserviceable', 5, '2026-02-28 00:12:32');
+(37, 15, 'status_change', 'Status changed via IIRUP Form: IIRUP-2026-9600', 'serviceable', 'unserviceable', 5, '2026-02-28 00:12:32'),
+(38, 26, 'PAR Created', 'Created via PAR form OMMP-2026-03-0006 - Entity: lgupilar, Quantity: 2, Unit: Sets, Amount: ₱75,000.00', NULL, NULL, 5, '2026-03-03 02:53:04'),
+(39, 27, 'PAR Created', 'Created via PAR form OMMP-2026-03-0006 - Entity: lgupilar, Quantity: 2, Unit: Sets, Amount: ₱75,000.00', NULL, NULL, 5, '2026-03-03 02:53:04'),
+(40, 26, 'QR Code Generated', 'QR code generated for asset item: qr_asset_26_1772506472.png', NULL, NULL, 5, '2026-03-03 02:54:32'),
+(41, 26, 'Computer Specs Updated', 'Computer Equipment specs saved - Processor: Not specified, RAM: Not specified, Storage: Not specified ssd, OS: Not specified, Serial: abdc123', NULL, NULL, 5, '2026-03-03 02:54:32'),
+(42, 26, 'Desktop Computer Specs Updated', 'Desktop Computer specs saved - Monitor: nvision 535hjk76l;5 (tdtduigdop) - Status: serviceable, UPS: Not specified Not specified (No serial) - Status: serviceable', NULL, NULL, 5, '2026-03-03 02:54:32'),
+(43, 26, 'Tag Created', 'Created tag for item ID 26: Property No: 2026-07-05-030-0308-01, Inventory Tag: , Date Counted: 2026-03-03, Category: 030 - ITS, Person Accountable: EMP0001 (Juan Dela Cruz), No images', NULL, NULL, 5, '2026-03-03 02:54:32');
 
 -- --------------------------------------------------------
 
@@ -1862,7 +1873,8 @@ INSERT INTO `par_forms` (`id`, `entity_name`, `fund_cluster`, `par_no`, `office_
 (7, 'LGU PILAR', 'REGULAR AGENCY FUND', 'OMMP-2026-02-0002', '01', 'Leo Peterson', 'PROPERTY CUSTODIAN', '0000-00-00', 'LEO PETERSON', 'CLERK', '0000-00-00', NULL, 5, 5, '2026-02-24 01:38:03', '2026-02-24 01:38:03'),
 (8, 'LGU PILAR', 'COMPUTERIZATION', 'OMMP-2026-02-0003', '01', 'Leo Peterson', 'PROPERTY CUSTODIAN', '0000-00-00', 'LEO PETERSON', 'CLERK', '0000-00-00', NULL, 5, 5, '2026-02-25 14:51:45', '2026-02-25 14:51:45'),
 (9, 'LGU PILAR', 'REGULAR AGENCY FUND', 'OMMP-2026-02-0004', '01', 'Leo Peterson', 'PROPERTY CUSTODIAN', '0000-00-00', 'LEO PETERSON', 'CLERK', '0000-00-00', NULL, 5, 5, '2026-02-25 15:41:22', '2026-02-25 15:41:22'),
-(10, 'LGU PILAR/OMM', '', 'OMMP-2026-02-0005', '01', 'Leo Peterson', 'PROPERTY CUSTODIAN', '0000-00-00', 'LEO PETERSON', 'CLERK', '0000-00-00', NULL, 5, 5, '2026-02-27 10:38:03', '2026-02-27 10:38:03');
+(10, 'LGU PILAR/OMM', '', 'OMMP-2026-02-0005', '01', 'Leo Peterson', 'PROPERTY CUSTODIAN', '0000-00-00', 'LEO PETERSON', 'CLERK', '0000-00-00', NULL, 5, 5, '2026-02-27 10:38:03', '2026-02-27 10:38:03'),
+(11, 'lgupilar', 'gf', 'OMMP-2026-03-0006', '01', 'Leo Peterson', 'PROPERTY CUSTODIAN', '0000-00-00', 'LEO PETERSON', 'CLERK', '0000-00-00', NULL, 5, 5, '2026-03-03 02:53:04', '2026-03-03 02:53:04');
 
 -- --------------------------------------------------------
 
@@ -1893,7 +1905,8 @@ INSERT INTO `par_items` (`id`, `form_id`, `item_no`, `asset_id`, `quantity`, `un
 (7, 7, 1, 7, 2.00, 'Units', 'Laptop AMD Ryzen', '2026', '2026-02-24', NULL, 56000.00),
 (8, 8, 1, 10, 2.00, 'Units', 'Laptop AMD Ryzen7', '2026', NULL, NULL, 56000.00),
 (9, 9, 1, 11, 2.00, 'Units', 'Hilux Van ', '2026', '2026-02-25', NULL, 1500000.00),
-(10, 10, 1, 12, 2.00, 'Sets', 'COMPUTER DESKTOP i7', '2026', '2026-02-27', NULL, 75000.00);
+(10, 10, 1, 12, 2.00, 'Sets', 'COMPUTER DESKTOP i7', '2026', '2026-02-27', NULL, 75000.00),
+(11, 11, 1, 13, 2.00, 'Sets', 'desktop computer ', '2026', NULL, NULL, 75000.00);
 
 -- --------------------------------------------------------
 
@@ -7222,7 +7235,35 @@ INSERT INTO `system_logs` (`id`, `user_id`, `action`, `module`, `description`, `
 (5600, 17, 'create', 'borrow_request', 'Created borrow request for 1 unit(s) of asset #4', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-03 01:43:02'),
 (5601, 17, 'session_timeout', 'authentication', 'Session expired for user: joshua escano (joshuamarifrancis@gmail.com) after 3890 seconds', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-03 02:24:38'),
 (5602, 17, 'login_success', 'authentication', 'User logged in: joshua escano (joshuamarifrancis@gmail.com) with role: office_admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-03 02:24:51'),
-(5603, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-03 02:24:51');
+(5603, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-03 02:24:51'),
+(5604, 17, 'logout', 'authentication', 'User logged out: joshua escano (joshuamarifrancis@gmail.com) with role: office_admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-03 02:43:44'),
+(5605, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-03 02:44:02'),
+(5606, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-03 02:44:02'),
+(5607, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-03 02:44:06'),
+(5608, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-03 02:48:30'),
+(5609, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-03 02:48:33'),
+(5610, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-03 02:48:40'),
+(5611, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-03 02:48:45'),
+(5612, 5, 'logout', 'authentication', 'User logged out: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-03 02:49:58'),
+(5613, 17, 'login_success', 'authentication', 'User logged in: joshua escano (joshuamarifrancis@gmail.com) with role: office_admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-03 02:50:07'),
+(5614, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-03 02:50:07'),
+(5615, 17, 'logout', 'authentication', 'User logged out: joshua escano (joshuamarifrancis@gmail.com) with role: office_admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-03 02:51:00'),
+(5616, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-03 02:51:19'),
+(5617, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-03 02:51:19'),
+(5618, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-03 02:51:27'),
+(5619, 5, 'Created PAR form', 'forms', 'PAR No: OMMP-2026-03-0006, Entity: lgupilar', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-03 02:53:04'),
+(5620, 5, 'Failed to create PAR form', 'forms', 'Error: Unknown column \'status\' in \'where clause\'', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-03 02:53:04'),
+(5621, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-03 02:53:04'),
+(5622, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-03 02:53:09'),
+(5623, 5, 'Tag Form Data Received', 'forms', 'Item ID: 26, End User: \'elton\', Person Accountable: 1', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-03 02:54:31'),
+(5624, 5, 'Tag Update SQL Debug', 'forms', 'SQL: UPDATE asset_items SET \r\n                   property_no = \'2026-07-05-030-0308-01\', \r\n                   inventory_tag = NULL, \r\n                   date_counted = \'2026-03-03\',\r\n                   image = \'NULL\',\r\n                   employee_id = 1, \r\n                   category_id = 2,\r\n                   asset_subcategory_id = 1,\r\n                   office_name = \'OMM\',\r\n                   end_user = \'elton\',\r\n                   status = \'serviceable\',\r\n                   last_updated = CURRENT_TIMESTAMP\r\n                   WHERE id = 26', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-03 02:54:31'),
+(5625, 5, 'Tag Update Values Debug', 'forms', 'Values: property_no=\'2026-07-05-030-0308-01\', inventory_tag=\'\', date_counted=\'2026-03-03\', image=\'\', employee_id=1, category_id=2, end_user=\'elton\' (length: 5), item_id=26', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-03 02:54:31'),
+(5626, 5, 'Asset item updated successfully', 'assets', 'Item ID: 26, End User: elton, Rows affected: 1', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-03 02:54:31'),
+(5627, 5, 'update', 'asset_desktop_computers', 'Desktop Computer specs saved - Monitor: nvision 535hjk76l;5 (tdtduigdop) - Status: serviceable, UPS: Not specified Not specified (No serial) - Status: serviceable', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-03 02:54:32'),
+(5628, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-03 02:54:40'),
+(5629, 5, 'logout', 'authentication', 'User logged out: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-03 02:55:18'),
+(5630, 17, 'login_success', 'authentication', 'User logged in: joshua escano (joshuamarifrancis@gmail.com) with role: office_admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-03 02:55:32'),
+(5631, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-03 02:55:32');
 
 -- --------------------------------------------------------
 
@@ -7286,14 +7327,14 @@ CREATE TABLE `tag_formats` (
 --
 
 INSERT INTO `tag_formats` (`id`, `tag_type`, `format_components`, `auto_increment`, `digits`, `separator`, `current_number`, `status`, `created_by`, `updated_by`, `created_at`, `updated_at`) VALUES
-(1, 'property_no', '\"[{\\\"type\\\":\\\"year\\\"},{\\\"type\\\":\\\"form_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"text\\\",\\\"separator\\\":\\\"-\\\",\\\"value\\\":\\\"05\\\"},{\\\"type\\\":\\\"category_code\\\",\\\"separator\\\":\\\"-\\\"}]\"', 1, 2, '/', 13, 'active', 1, 1, '2026-01-08 04:12:14', '2026-02-27 10:38:03'),
+(1, 'property_no', '\"[{\\\"type\\\":\\\"year\\\"},{\\\"type\\\":\\\"form_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"text\\\",\\\"separator\\\":\\\"-\\\",\\\"value\\\":\\\"05\\\"},{\\\"type\\\":\\\"category_code\\\",\\\"separator\\\":\\\"-\\\"}]\"', 1, 2, '/', 14, 'active', 1, 1, '2026-01-08 04:12:14', '2026-03-03 02:53:04'),
 (2, 'ics_no', '\"[{\\\"type\\\":\\\"year\\\"},{\\\"type\\\":\\\"form_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"text\\\",\\\"separator\\\":\\\"-\\\",\\\"value\\\":\\\"05\\\"},{\\\"type\\\":\\\"category_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"sub_category_code\\\",\\\"separator\\\":\\\"-\\\"}]\"', 1, 2, '/', 20, 'active', 1, 1, '2026-01-09 09:25:27', '2026-02-24 04:07:42'),
 (3, 'itr_no', '\"[{\\\"type\\\":\\\"year\\\"},{\\\"type\\\":\\\"form_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"text\\\",\\\"separator\\\":\\\"-\\\",\\\"value\\\":\\\"05\\\"},{\\\"type\\\":\\\"category_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"sub_category_code\\\",\\\"separator\\\":\\\"-\\\"}]\"', 1, 2, '/', 15, 'active', 1, 1, '2026-01-09 09:30:48', '2026-02-13 17:06:05'),
 (4, 'par_no', '\"[{\\\"type\\\":\\\"year\\\"},{\\\"type\\\":\\\"form_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"text\\\",\\\"separator\\\":\\\"-\\\",\\\"value\\\":\\\"05\\\"},{\\\"type\\\":\\\"category_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"sub_category_code\\\",\\\"separator\\\":\\\"-\\\"}]\"', 1, 2, '/', 26, 'active', 1, 1, '2026-01-09 09:42:59', '2026-02-13 17:06:05'),
 (5, 'ris_no', '\"[{\\\"type\\\":\\\"year\\\"},{\\\"type\\\":\\\"form_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"text\\\",\\\"separator\\\":\\\"-\\\",\\\"value\\\":\\\"05\\\"},{\\\"type\\\":\\\"category_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"sub_category_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"digits\\\",\\\"separator\\\":\\\"-\\\",\\\"digits\\\":4}]\"', 1, 4, '/', 9, 'active', 1, 1, '2026-01-09 09:44:09', '2026-02-18 05:18:20'),
 (6, 'sai_no', '\"[{\\\"type\\\":\\\"year\\\"},{\\\"type\\\":\\\"form_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"text\\\",\\\"separator\\\":\\\"-\\\",\\\"value\\\":\\\"05\\\"},{\\\"type\\\":\\\"category_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"sub_category_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"digits\\\",\\\"separator\\\":\\\"-\\\",\\\"digits\\\":4}]\"', 1, 4, '/', 30, 'active', 1, 1, '2026-01-09 09:44:49', '2026-02-18 05:18:20'),
 (7, 'code', '\"[{\\\"type\\\":\\\"form_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"text\\\",\\\"separator\\\":\\\"-\\\",\\\"value\\\":\\\"05\\\"},{\\\"type\\\":\\\"category_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"sub_category_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"digits\\\",\\\"separator\\\":\\\"-\\\",\\\"digits\\\":4},{\\\"type\\\":\\\"month\\\",\\\"separator\\\":\\\"-\\\"}]\"', 1, 4, '/', 30, 'active', 1, 1, '2026-01-09 09:45:35', '2026-02-18 05:18:20'),
-(8, 'inventory_tag', '\"[{\\\"type\\\":\\\"year\\\"},{\\\"type\\\":\\\"form_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"text\\\",\\\"separator\\\":\\\"-\\\",\\\"value\\\":\\\"05\\\"},{\\\"type\\\":\\\"category_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"sub_category_code\\\",\\\"separator\\\":\\\"-\\\"}]\"', 1, 2, '/', 33, 'active', NULL, 5, '2026-01-23 02:53:48', '2026-02-27 10:46:57'),
+(8, 'inventory_tag', '\"[{\\\"type\\\":\\\"year\\\"},{\\\"type\\\":\\\"form_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"text\\\",\\\"separator\\\":\\\"-\\\",\\\"value\\\":\\\"05\\\"},{\\\"type\\\":\\\"category_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"sub_category_code\\\",\\\"separator\\\":\\\"-\\\"}]\"', 1, 2, '/', 34, 'active', NULL, 5, '2026-01-23 02:53:48', '2026-03-03 02:54:32'),
 (9, 'red_tag_control', '\"[{\\\"type\\\":\\\"year\\\"},{\\\"type\\\":\\\"form_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"text\\\",\\\"separator\\\":\\\"-\\\",\\\"value\\\":\\\"05\\\"},{\\\"type\\\":\\\"category_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"sub_category_code\\\",\\\"separator\\\":\\\"-\\\"}]\"', 1, 2, '/', 27, 'active', 1, 1, '2026-02-01 08:06:12', '2026-02-28 00:21:15'),
 (10, 'red_tag_no', '\"[{\\\"type\\\":\\\"year\\\"},{\\\"type\\\":\\\"form_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"text\\\",\\\"separator\\\":\\\"-\\\",\\\"value\\\":\\\"05\\\"},{\\\"type\\\":\\\"category_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"sub_category_code\\\",\\\"separator\\\":\\\"-\\\"}]\"', 1, 2, '/', 43, 'active', 1, 1, '2026-02-01 08:06:37', '2026-02-28 00:21:15');
 
@@ -8143,7 +8184,7 @@ ALTER TABLE `user_password_history`
 -- AUTO_INCREMENT for table `assets`
 --
 ALTER TABLE `assets`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `asset_buildings`
@@ -8161,13 +8202,13 @@ ALTER TABLE `asset_categories`
 -- AUTO_INCREMENT for table `asset_computers`
 --
 ALTER TABLE `asset_computers`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `asset_desktop_computers`
 --
 ALTER TABLE `asset_desktop_computers`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `asset_furniture`
@@ -8179,13 +8220,13 @@ ALTER TABLE `asset_furniture`
 -- AUTO_INCREMENT for table `asset_items`
 --
 ALTER TABLE `asset_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
 
 --
 -- AUTO_INCREMENT for table `asset_item_history`
 --
 ALTER TABLE `asset_item_history`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=44;
 
 --
 -- AUTO_INCREMENT for table `asset_land`
@@ -8431,13 +8472,13 @@ ALTER TABLE `par_form`
 -- AUTO_INCREMENT for table `par_forms`
 --
 ALTER TABLE `par_forms`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `par_items`
 --
 ALTER TABLE `par_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `password_policies`
@@ -8527,7 +8568,7 @@ ALTER TABLE `software`
 -- AUTO_INCREMENT for table `system_logs`
 --
 ALTER TABLE `system_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5604;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5632;
 
 --
 -- AUTO_INCREMENT for table `system_settings`
