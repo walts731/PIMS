@@ -242,13 +242,28 @@ if ($office_id && $conn) {
 // Fetch available assets and offices for new request form
 $available_assets = [];
 $other_offices = [];
+$asset_categories = [];
 
 if ($office_id && $conn) {
     try {
+        // Get asset categories
+        $categories_query = "SELECT id, category_name, category_code, description 
+                           FROM asset_categories 
+                           WHERE status = 'active'
+                           ORDER BY category_name";
+        $stmt = $conn->prepare($categories_query);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        while ($row = $result->fetch_assoc()) {
+            $asset_categories[] = $row;
+        }
+        
         // Get available assets from other offices
         $assets_query = "SELECT ai.id, ai.description, COALESCE(ai.property_number, ai.property_no) as asset_code, ac.category_name, o.office_name, o.id as office_id,
                          COALESCE(a.quantity, 1) as total_quantity,
-                         COALESCE(a.quantity, 1) as available_quantity
+                         COALESCE(a.quantity, 1) as available_quantity,
+                         ac.id as category_id
                          FROM asset_items ai
                          LEFT JOIN asset_categories ac ON ai.asset_category_id = ac.id
                          LEFT JOIN assets a ON ai.asset_id = a.id
@@ -842,11 +857,31 @@ if ($office_id && $conn) {
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
+                                    <label for="asset_category" class="form-label">Asset Category</label>
+                                    <select class="form-control" id="asset_category" name="asset_category">
+                                        <option value="">All Categories</option>
+                                        <?php if (!empty($asset_categories)): ?>
+                                            <?php foreach ($asset_categories as $category): ?>
+                                                <option value="<?php echo $category['id']; ?>">
+                                                    <?php echo htmlspecialchars($category['category_name']); ?> (<?php echo htmlspecialchars($category['category_code']); ?>)
+                                                </option>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </select>
+                                    <small class="text-muted">Filter assets by category</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
                                     <label for="asset_id" class="form-label">Asset to Borrow <span class="text-danger">*</span></label>
                                     <select class="form-control" id="asset_id" name="asset_id" required>
                                         <option value="">Select Asset</option>
                                         <?php foreach ($available_assets as $asset): ?>
-                                            <option value="<?php echo $asset['id']; ?>" data-office-id="<?php echo $asset['office_id']; ?>" data-available="<?php echo $asset['available_quantity']; ?>" data-total="<?php echo $asset['total_quantity']; ?>">
+                                            <option value="<?php echo $asset['id']; ?>" 
+                                                    data-office-id="<?php echo $asset['office_id']; ?>" 
+                                                    data-category-id="<?php echo $asset['category_id']; ?>"
+                                                    data-available="<?php echo $asset['available_quantity']; ?>" 
+                                                    data-total="<?php echo $asset['total_quantity']; ?>">
                                                 <?php echo htmlspecialchars($asset['description']); ?> (<?php echo htmlspecialchars($asset['asset_code']); ?>)
                                                 - <?php echo htmlspecialchars($asset['office_name']); ?>
                                                 <small class="text-muted">(<?php echo $asset['available_quantity']; ?> of <?php echo $asset['total_quantity']; ?> available)</small>
@@ -992,39 +1027,49 @@ if ($office_id && $conn) {
                 });
             }
             
-            // Filter assets based on selected office
+            // Filter assets based on selected office and category
             const officeSelect = document.getElementById('requested_to_office');
+            const categorySelect = document.getElementById('asset_category');
             
-            if (officeSelect && assetSelect) {
-                officeSelect.addEventListener('change', function() {
-                    const selectedOfficeId = this.value;
-                    const options = assetSelect.querySelectorAll('option');
+            function filterAssets() {
+                const selectedOfficeId = officeSelect.value;
+                const selectedCategoryId = categorySelect.value;
+                const options = assetSelect.querySelectorAll('option');
+                
+                options.forEach(option => {
+                    if (option.value === '') {
+                        option.style.display = 'block';
+                        return;
+                    }
                     
-                    options.forEach(option => {
-                        if (option.value === '') {
-                            option.style.display = 'block';
-                            return;
-                        }
-                        
-                        // Get office ID from asset option
-                        const assetOfficeId = option.getAttribute('data-office-id');
-                        if (selectedOfficeId === '' || assetOfficeId === selectedOfficeId) {
-                            option.style.display = 'block';
-                        } else {
-                            option.style.display = 'none';
-                        }
-                    });
+                    // Get office ID and category ID from asset option
+                    const assetOfficeId = option.getAttribute('data-office-id');
+                    const assetCategoryId = option.getAttribute('data-category-id');
                     
-                    // Reset asset selection if it's no longer visible
-                    if (assetSelect.value) {
-                        const selectedOption = assetSelect.querySelector(`option[value="${assetSelect.value}"]`);
-                        if (selectedOption && selectedOption.style.display === 'none') {
-                            assetSelect.value = '';
-                            quantityInfo.textContent = 'Select an asset to see available quantity';
-                            quantityInput.max = '';
-                        }
+                    const officeMatch = selectedOfficeId === '' || assetOfficeId === selectedOfficeId;
+                    const categoryMatch = selectedCategoryId === '' || assetCategoryId === selectedCategoryId;
+                    
+                    if (officeMatch && categoryMatch) {
+                        option.style.display = 'block';
+                    } else {
+                        option.style.display = 'none';
                     }
                 });
+                
+                // Reset asset selection if current selection is hidden
+                if (assetSelect.value && assetSelect.options[assetSelect.selectedIndex].style.display === 'none') {
+                    assetSelect.value = '';
+                    quantityInfo.textContent = 'Select an asset to see available quantity';
+                    quantityInput.max = '';
+                }
+            }
+            
+            if (officeSelect && assetSelect) {
+                officeSelect.addEventListener('change', filterAssets);
+            }
+            
+            if (categorySelect && assetSelect) {
+                categorySelect.addEventListener('change', filterAssets);
             }
         });
     </script>
