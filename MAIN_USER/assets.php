@@ -453,11 +453,6 @@ if (!$conn || $conn->connect_error) {
                                             <a href="view_asset_item.php?id=<?php echo (int)$row['item_id']; ?>" class="btn btn-sm btn-outline-info me-1">
                                                 <i class="bi bi-eye"></i> View
                                             </a>
-                                            <?php if ($row['item_status'] === 'borrowed'): ?>
-                                                <button class="btn btn-sm btn-outline-success" onclick="returnItem(<?php echo (int)$row['item_id']; ?>)">
-                                                    <i class="bi bi-arrow-return-left"></i> Return
-                                                </button>
-                                            <?php endif; ?>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>

@@ -695,11 +695,11 @@ if (!$conn || $conn->connect_error) {
                                 </select>
                             </div>
                             <div class="d-inline-block" style="min-width: 180px;">
-                                <select class="form-select form-select-sm" id="categoryFilter" <?php echo $category_filter > 0 ? 'style="background-color: #007bff; color: white; border-color: #0056b3; font-weight: bold;"' : ''; ?>>
-                                    <option value="0" <?php echo $category_filter === 0 ? 'selected' : ''; ?>>All Categories</option>
-                                    <?php foreach ($categories as $category): ?>
-                                        <option value="<?php echo (int)$category['id']; ?>" <?php echo $category_filter === (int)$category['id'] ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($category['category_name']); ?>
+                                <select class="form-select form-select-sm" id="officeFilter" <?php echo $office_filter > 0 ? 'style="background-color: #007bff; color: white; border-color: #0056b3; font-weight: bold;"' : ''; ?>>
+                                    <option value="0" <?php echo $office_filter === 0 ? 'selected' : ''; ?>>All Offices</option>
+                                    <?php foreach ($offices as $office): ?>
+                                        <option value="<?php echo (int)$office['id']; ?>" <?php echo $office_filter === (int)$office['id'] ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($office['office_name']); ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
@@ -784,7 +784,7 @@ if (!$conn || $conn->connect_error) {
                                     <a href="assets.php?office_id=<?php echo (int)$office['id']; ?>" class="btn btn-outline-info btn-sm me-2">
                                         <i class="bi bi-collection"></i> Asset Items
                                     </a>
-                                    <a href="assets.php?office=<?php echo urlencode($office['office_name']); ?>&status=borrowed" class="btn btn-outline-warning btn-sm">
+                                    <a href="assets.php?status=borrowed" class="btn btn-outline-warning btn-sm">
                                         <i class="bi bi-arrow-left-right"></i> Borrowed
                                     </a>
                                 </div>
@@ -823,30 +823,45 @@ if (!$conn || $conn->connect_error) {
                     currentUrl.searchParams.delete('status');
                 }
 
-                // Apply category filter
-                const categoryValue = parseInt(categoryFilter.value || '0', 10);
-                if (categoryValue > 0) {
-                    currentUrl.searchParams.set('category_id', String(categoryValue));
-                } else {
-                    currentUrl.searchParams.delete('category_id');
+                    // Apply category filter
+                    const categoryValue = parseInt(categoryFilter.value || '0', 10);
+                    if (categoryValue > 0) {
+                        currentUrl.searchParams.set('category_id', String(categoryValue));
+                    } else {
+                        currentUrl.searchParams.delete('category_id');
+                    }
+
+                    // Apply office filter
+                    const officeValue = parseInt(officeFilter.value || '0', 10);
+                    if (officeValue > 0) {
+                        currentUrl.searchParams.set('office_id', String(officeValue));
+                    } else {
+                        currentUrl.searchParams.delete('office_id');
+                    }
+
+                    window.location.href = currentUrl.toString();
                 }
 
-                window.location.href = currentUrl.toString();
-            }
+                // Add event listeners
+                if (statusFilter) {
+                    statusFilter.addEventListener('change', applyFilters);
+                }
+                if (categoryFilter) {
+                    categoryFilter.addEventListener('change', applyFilters);
+                }
+                if (officeFilter) {
+                    officeFilter.addEventListener('change', applyFilters);
+                }
 
-            // Add event listeners
-            if (statusFilter) {
-                statusFilter.addEventListener('change', applyFilters);
-            }
-            if (categoryFilter) {
-                categoryFilter.addEventListener('change', applyFilters);
-            }
-
-            // Add loading state to filter buttons
-            const filterButtons = document.querySelectorAll('.form-select');
-            filterButtons.forEach(button => {
-                button.addEventListener('change', function() {
-                    this.style.opacity = '0.7';
+                // Add loading state to filter buttons
+                const filterButtons = document.querySelectorAll('.form-select');
+                filterButtons.forEach(button => {
+                    button.addEventListener('change', function() {
+                        this.style.opacity = '0.7';
+                        setTimeout(() => {
+                            this.style.opacity = '1';
+                        }, 300);
+                    });
                     setTimeout(() => {
                         this.style.opacity = '1';
                     }, 300);
