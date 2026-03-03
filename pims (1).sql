@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 24, 2026 at 06:40 AM
+-- Generation Time: Mar 03, 2026 at 01:50 AM
 -- Server version: 10.6.15-MariaDB
 -- PHP Version: 8.2.12
 
@@ -48,7 +48,10 @@ INSERT INTO `assets` (`id`, `asset_categories_id`, `asset_subcategory_id`, `desc
 (6, NULL, NULL, 'Hilux Van (MR-2025-00033)', 'Units', 2, 1728282.00, 4, '2026-02-24 00:43:51', '2026-02-24 00:43:51'),
 (7, 2, 2, 'Laptop AMD Ryzen', 'Units', 2, 28000.00, 4, '2026-02-24 01:38:03', '2026-02-24 01:46:08'),
 (8, NULL, NULL, 'APC UPS', 'Units', 2, 500.00, NULL, '2026-02-24 03:22:29', '2026-02-24 03:22:29'),
-(9, NULL, NULL, 'Laptop AMD Ryzen3', 'Units', 2, 34000.00, NULL, '2026-02-24 04:07:42', '2026-02-24 04:07:42');
+(9, NULL, NULL, 'Laptop AMD Ryzen3', 'Units', 2, 34000.00, NULL, '2026-02-24 04:07:42', '2026-02-24 04:07:42'),
+(10, NULL, NULL, 'Laptop AMD Ryzen7', 'Units', 2, 28000.00, 4, '2026-02-25 14:51:45', '2026-02-25 14:51:45'),
+(11, NULL, NULL, 'Hilux Van ', 'Units', 2, 750000.00, 4, '2026-02-25 15:41:22', '2026-02-25 15:41:22'),
+(12, 2, 1, 'COMPUTER DESKTOP i7', 'Sets', 2, 37500.00, 4, '2026-02-27 10:38:03', '2026-02-27 10:46:57');
 
 -- --------------------------------------------------------
 
@@ -149,6 +152,7 @@ CREATE TABLE `asset_computers` (
   `ram_capacity` varchar(20) DEFAULT NULL,
   `storage_type` enum('hdd','ssd','hybrid') DEFAULT 'hdd',
   `storage_capacity` varchar(20) DEFAULT NULL,
+  `model` varchar(100) DEFAULT NULL,
   `graphics_card` varchar(100) DEFAULT NULL,
   `operating_system` varchar(100) DEFAULT NULL,
   `mac_address` varchar(17) DEFAULT NULL,
@@ -172,9 +176,42 @@ CREATE TABLE `asset_computers` (
 -- Dumping data for table `asset_computers`
 --
 
-INSERT INTO `asset_computers` (`id`, `asset_item_id`, `processor`, `ram_capacity`, `storage_type`, `storage_capacity`, `graphics_card`, `operating_system`, `mac_address`, `ip_address`, `serial_number`, `warranty_provider`, `warranty_expiry`, `purchase_date`, `last_service_date`, `condition_status`, `assigned_to`, `department`, `notes`, `created_at`, `updated_at`, `created_by`, `updated_by`) VALUES
-(1, 4, 'AMD Ryzen™ 5 7530U (6-core/12-thread, up to 4.5GHz)', '16GB LPDDR5-4800MHz ', 'hdd', '512GB SSD', NULL, 'Windows® 11 Home Single Language', NULL, NULL, '3474665876', NULL, NULL, NULL, NULL, 'good', NULL, NULL, NULL, '2026-02-24 01:40:04', '2026-02-24 01:40:04', 5, NULL),
-(2, 5, 'Apple M3 Chip (8-core CPU, 10-core GPU)', '16GB LPDDR5-4800MHz ', 'hdd', '2TB 7.2K RPM SATA 6G', NULL, 'Windows® 11 Home Single Language', NULL, NULL, '456733245hg4523', NULL, NULL, NULL, NULL, 'good', NULL, NULL, NULL, '2026-02-24 01:46:08', '2026-02-24 01:46:08', 5, NULL);
+INSERT INTO `asset_computers` (`id`, `asset_item_id`, `processor`, `ram_capacity`, `storage_type`, `storage_capacity`, `model`, `graphics_card`, `operating_system`, `mac_address`, `ip_address`, `serial_number`, `warranty_provider`, `warranty_expiry`, `purchase_date`, `last_service_date`, `condition_status`, `assigned_to`, `department`, `notes`, `created_at`, `updated_at`, `created_by`, `updated_by`) VALUES
+(1, 4, 'AMD Ryzen™ 5 7530U (6-core/12-thread, up to 4.5GHz)', '16GB LPDDR5-4800MHz ', 'hdd', '512GB SSD', NULL, NULL, 'Windows® 11 Home Single Language', NULL, NULL, '3474665876', NULL, NULL, NULL, NULL, 'good', NULL, NULL, NULL, '2026-02-24 01:40:04', '2026-02-24 01:40:04', 5, NULL),
+(2, 5, 'Apple M3 Chip (8-core CPU, 10-core GPU)', '16GB LPDDR5-4800MHz ', 'hdd', '2TB 7.2K RPM SATA 6G', NULL, NULL, 'Windows® 11 Home Single Language', NULL, NULL, '456733245hg4523', NULL, NULL, NULL, NULL, 'good', NULL, NULL, NULL, '2026-02-24 01:46:08', '2026-02-24 01:46:08', 5, NULL),
+(5, 15, '', '', 'ssd', '', NULL, NULL, '', NULL, NULL, '456733245hg45', NULL, NULL, NULL, NULL, 'good', NULL, NULL, NULL, '2026-02-27 10:46:57', '2026-02-27 10:46:57', 5, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `asset_desktop_computers`
+--
+
+CREATE TABLE `asset_desktop_computers` (
+  `id` int(11) NOT NULL,
+  `asset_item_id` int(11) NOT NULL,
+  `monitor_name` varchar(255) DEFAULT NULL,
+  `monitor_model` varchar(255) DEFAULT NULL,
+  `monitor_serial_number` varchar(255) DEFAULT NULL,
+  `monitor_status` enum('serviceable','unserviceable','red_tagged','no_tag','disposed') DEFAULT 'serviceable',
+  `ups_name` varchar(255) DEFAULT NULL,
+  `ups_model` varchar(255) DEFAULT NULL,
+  `ups_serial_number` varchar(255) DEFAULT NULL,
+  `ups_status` enum('serviceable','unserviceable','red_tagged','no_tag','disposed') DEFAULT 'serviceable',
+  `created_by` int(11) DEFAULT NULL,
+  `updated_by` int(11) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `monitor_value` decimal(10,2) DEFAULT NULL,
+  `ups_value` decimal(10,2) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `asset_desktop_computers`
+--
+
+INSERT INTO `asset_desktop_computers` (`id`, `asset_item_id`, `monitor_name`, `monitor_model`, `monitor_serial_number`, `monitor_status`, `ups_name`, `ups_model`, `ups_serial_number`, `ups_status`, `created_by`, `updated_by`, `created_at`, `updated_at`, `monitor_value`, `ups_value`) VALUES
+(2, 15, 'nvision', 'ghi678', 'jkl78945668', 'unserviceable', '', '', '', 'serviceable', 5, NULL, '2026-02-27 10:46:57', '2026-02-28 00:14:48', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -236,6 +273,7 @@ CREATE TABLE `asset_items` (
   `value` decimal(10,2) DEFAULT 0.00,
   `acquisition_date` date DEFAULT NULL,
   `office_id` int(11) DEFAULT NULL,
+  `office_name` varchar(255) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `last_updated` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -244,15 +282,21 @@ CREATE TABLE `asset_items` (
 -- Dumping data for table `asset_items`
 --
 
-INSERT INTO `asset_items` (`id`, `asset_id`, `asset_subcategory_id`, `asset_category_id`, `employee_id`, `end_user`, `category_id`, `ics_id`, `par_id`, `description`, `unit`, `property_number`, `property_no`, `inventory_tag`, `date_counted`, `image`, `qr_code`, `status`, `disposal_reason`, `disposal_date`, `value`, `acquisition_date`, `office_id`, `created_at`, `last_updated`) VALUES
-(2, 6, NULL, NULL, NULL, NULL, NULL, NULL, 6, 'Hilux Van (MR-2025-00033)', 'Units', NULL, '2026-07-05-030-0001-01\r\n2026-07-05-030-0002-01', NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 1728282.00, '2026-02-24', 4, '2026-02-24 00:43:51', '2026-02-24 00:43:51'),
-(3, 6, NULL, NULL, NULL, NULL, NULL, NULL, 6, 'Hilux Van (MR-2025-00033)', 'Units', NULL, NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 1728282.00, '2026-02-24', 4, '2026-02-24 00:43:51', '2026-02-24 00:43:51'),
-(4, 7, 2, NULL, 6, 'Jack Robertson', 2, NULL, 7, 'Laptop AMD Ryzen', 'Units', NULL, '2026-07-05-030-0001-01', NULL, '2026-02-24', '', NULL, 'serviceable', NULL, NULL, 28000.00, '2026-02-24', 4, '2026-02-24 01:38:03', '2026-02-24 01:39:53'),
-(5, 7, 2, NULL, 6, 'Angela Rizal', 2, NULL, 7, 'Laptop AMD Ryzen', 'Units', NULL, '2026-07-05-030-0002-01', NULL, '2026-02-24', '', 'qr_asset_5_1771897568.png', 'serviceable', NULL, NULL, 28000.00, '2026-02-24', 4, '2026-02-24 01:38:03', '2026-02-24 01:46:08'),
-(6, 8, NULL, NULL, NULL, NULL, NULL, 1, NULL, 'APC UPS', 'Units', NULL, NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 500.00, '2026-02-24', NULL, '2026-02-24 03:22:29', '2026-02-24 03:22:29'),
-(7, 8, NULL, NULL, NULL, NULL, NULL, 1, NULL, 'APC UPS', 'Units', NULL, NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 500.00, '2026-02-24', NULL, '2026-02-24 03:22:29', '2026-02-24 03:22:29'),
-(8, 9, NULL, NULL, NULL, NULL, NULL, 3, NULL, 'Laptop AMD Ryzen3', 'Units', NULL, '2026-04-05-030-0101-01', NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 34000.00, '2026-02-24', NULL, '2026-02-24 04:07:42', '2026-02-24 04:07:42'),
-(9, 9, NULL, NULL, NULL, NULL, NULL, 3, NULL, 'Laptop AMD Ryzen3', 'Units', NULL, '2026-04-05-030-0102-01', NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 34000.00, '2026-02-24', NULL, '2026-02-24 04:07:42', '2026-02-24 04:07:42');
+INSERT INTO `asset_items` (`id`, `asset_id`, `asset_subcategory_id`, `asset_category_id`, `employee_id`, `end_user`, `category_id`, `ics_id`, `par_id`, `description`, `unit`, `property_number`, `property_no`, `inventory_tag`, `date_counted`, `image`, `qr_code`, `status`, `disposal_reason`, `disposal_date`, `value`, `acquisition_date`, `office_id`, `office_name`, `created_at`, `last_updated`) VALUES
+(2, 6, NULL, NULL, NULL, NULL, NULL, NULL, 6, 'Hilux Van (MR-2025-00033)', 'Units', NULL, '2026-07-05-030-0001-01\r\n2026-07-05-030-0002-01', NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 1728282.00, '2026-02-24', 4, 'OMM', '2026-02-24 00:43:51', '2026-02-27 10:41:36'),
+(3, 6, NULL, NULL, NULL, NULL, NULL, NULL, 6, 'Hilux Van (MR-2025-00033)', 'Units', NULL, NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 1728282.00, '2026-02-24', 4, 'OMM', '2026-02-24 00:43:51', '2026-02-27 10:41:36'),
+(4, 7, 2, NULL, 6, 'Jack Robertson', 2, NULL, 7, 'Laptop AMD Ryzen', 'Units', NULL, '2026-07-05-030-0001-01', NULL, '2026-02-24', '', NULL, 'serviceable', NULL, NULL, 28000.00, '2026-02-24', 4, 'OMM', '2026-02-24 01:38:03', '2026-02-27 10:41:36'),
+(5, 7, 2, NULL, 6, 'Angela Rizal', 2, NULL, 7, 'Laptop AMD Ryzen', 'Units', NULL, '2026-07-05-030-0002-01', NULL, '2026-02-24', '', 'qr_asset_5_1771897568.png', 'serviceable', NULL, NULL, 28000.00, '2026-02-24', 4, 'OMM', '2026-02-24 01:38:03', '2026-02-27 10:41:36'),
+(6, 8, NULL, NULL, NULL, NULL, NULL, 1, NULL, 'APC UPS', 'Units', NULL, NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 500.00, '2026-02-24', NULL, NULL, '2026-02-24 03:22:29', '2026-02-24 03:22:29'),
+(7, 8, NULL, NULL, NULL, NULL, NULL, 1, NULL, 'APC UPS', 'Units', NULL, NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 500.00, '2026-02-24', NULL, NULL, '2026-02-24 03:22:29', '2026-02-24 03:22:29'),
+(8, 9, NULL, NULL, NULL, NULL, NULL, 3, NULL, 'Laptop AMD Ryzen3', 'Units', NULL, '2026-04-05-030-0101-01', NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 34000.00, '2026-02-24', NULL, NULL, '2026-02-24 04:07:42', '2026-02-24 04:07:42'),
+(9, 9, NULL, NULL, NULL, NULL, NULL, 3, NULL, 'Laptop AMD Ryzen3', 'Units', NULL, '2026-04-05-030-0102-01', NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 34000.00, '2026-02-24', NULL, NULL, '2026-02-24 04:07:42', '2026-02-24 04:07:42'),
+(10, 10, NULL, NULL, NULL, NULL, NULL, NULL, 8, 'Laptop AMD Ryzen7', 'Units', NULL, '2026-07-05-030-0001-03', NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 28000.00, NULL, 5, 'OVM', '2026-02-25 14:51:45', '2026-02-27 10:41:36'),
+(11, 10, NULL, NULL, NULL, NULL, NULL, NULL, 8, 'Laptop AMD Ryzen7', 'Units', NULL, '2026-07-05-030-0002-03', NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 28000.00, NULL, 5, 'OVM', '2026-02-25 14:51:45', '2026-02-27 10:41:36'),
+(12, 11, NULL, NULL, NULL, NULL, NULL, NULL, 9, 'Hilux Van ', 'Units', NULL, '2026-07-05-070-0904-01', NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 750000.00, '2026-02-25', 4, 'OMM', '2026-02-25 15:41:22', '2026-02-27 10:41:36'),
+(13, 11, NULL, NULL, NULL, NULL, NULL, NULL, 9, 'Hilux Van ', 'Units', NULL, '2026-07-05-070-0905-01', NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 750000.00, '2026-02-25', 4, 'OMM', '2026-02-25 15:41:22', '2026-02-27 10:41:36'),
+(14, 12, 1, NULL, 6, 'Jack Robertson', 2, NULL, 10, 'COMPUTER DESKTOP i7', 'Sets', NULL, '2026-07-05-030-0306-01', NULL, '2026-02-27', '[\"asset_14_0_1772188896.jpg\",\"asset_14_1_1772188896.jpg\"]', 'qr_asset_14_1772188898.png', 'serviceable', NULL, NULL, 75000.00, '2026-02-27', 4, 'OMM', '2026-02-27 10:38:03', '2026-02-27 10:41:38'),
+(15, 12, 1, NULL, 6, 'Roberto Cruz', 2, NULL, 10, 'COMPUTER DESKTOP i7', 'Sets', NULL, '2026-07-05-030-0307-01', NULL, '2026-02-27', '[\"asset_15_0_1772189215.jpg\",\"asset_15_1_1772189215.jpg\"]', 'qr_asset_15_1772189217.png', 'unserviceable', NULL, NULL, 75000.00, '2026-02-27', 4, 'OMM', '2026-02-27 10:38:03', '2026-02-28 00:12:32');
 
 --
 -- Triggers `asset_items`
@@ -312,7 +356,26 @@ INSERT INTO `asset_item_history` (`id`, `item_id`, `action`, `details`, `old_val
 (10, 6, 'ICS Created', 'Created via ICS form OMMI-26-01 - Entity: 01, Item No: 2026-04-05-030-0301-01, Quantity: 1, Unit: Units, Unit Cost: ₱500.00', NULL, NULL, 5, '2026-02-24 03:22:29'),
 (11, 7, 'ICS Created', 'Created via ICS form OMMI-26-01 - Entity: 01, Item No: 2026-04-05-030-0301-01, Quantity: 1, Unit: Units, Unit Cost: ₱500.00', NULL, NULL, 5, '2026-02-24 03:22:29'),
 (12, 8, 'ICS Created', 'Created via ICS form 2026/05 - Entity: 01, Item No: 2026-04-05-030-0101-01, Quantity: 1, Unit: Units, Unit Cost: ₱34,000.00', NULL, NULL, 5, '2026-02-24 04:07:42'),
-(13, 9, 'ICS Created', 'Created via ICS form 2026/05 - Entity: 01, Item No: 2026-04-05-030-0101-01, Quantity: 1, Unit: Units, Unit Cost: ₱34,000.00', NULL, NULL, 5, '2026-02-24 04:07:42');
+(13, 9, 'ICS Created', 'Created via ICS form 2026/05 - Entity: 01, Item No: 2026-04-05-030-0101-01, Quantity: 1, Unit: Units, Unit Cost: ₱34,000.00', NULL, NULL, 5, '2026-02-24 04:07:42'),
+(14, 10, 'PAR Created', 'Created via PAR form OMMP-2026-02-0003 - Entity: LGU PILAR, Quantity: 2, Unit: Units, Amount: ₱56,000.00', NULL, NULL, 5, '2026-02-25 14:51:45'),
+(15, 11, 'PAR Created', 'Created via PAR form OMMP-2026-02-0003 - Entity: LGU PILAR, Quantity: 2, Unit: Units, Amount: ₱56,000.00', NULL, NULL, 5, '2026-02-25 14:51:45'),
+(16, 12, 'PAR Created', 'Created via PAR form OMMP-2026-02-0004 - Entity: LGU PILAR, Quantity: 2, Unit: Units, Amount: ₱1,500,000.00', NULL, NULL, 5, '2026-02-25 15:41:22'),
+(17, 13, 'PAR Created', 'Created via PAR form OMMP-2026-02-0004 - Entity: LGU PILAR, Quantity: 2, Unit: Units, Amount: ₱1,500,000.00', NULL, NULL, 5, '2026-02-25 15:41:22'),
+(18, 14, 'PAR Created', 'Created via PAR form OMMP-2026-02-0005 - Entity: LGU PILAR/OMM, Quantity: 2, Unit: Sets, Amount: ₱75,000.00', NULL, NULL, 5, '2026-02-27 10:38:03'),
+(19, 15, 'PAR Created', 'Created via PAR form OMMP-2026-02-0005 - Entity: LGU PILAR/OMM, Quantity: 2, Unit: Sets, Amount: ₱75,000.00', NULL, NULL, 5, '2026-02-27 10:38:03'),
+(20, 14, 'QR Code Generated', 'QR code generated for asset item: qr_asset_14_1772188898.png', NULL, NULL, 5, '2026-02-27 10:41:38'),
+(26, 15, 'QR Code Generated', 'QR code generated for asset item: qr_asset_15_1772189217.png', NULL, NULL, 5, '2026-02-27 10:46:57'),
+(27, 15, 'Computer Specs Updated', 'Computer Equipment specs saved - Processor: Not specified, RAM: Not specified, Storage: Not specified ssd, OS: Not specified, Serial: 456733245hg45', NULL, NULL, 5, '2026-02-27 10:46:57'),
+(28, 15, 'Desktop Computer Specs Updated', 'Desktop Computer specs saved - Monitor: nvision ghi678 (jkl78945668), UPS: Not specified Not specified (No serial)', NULL, NULL, 5, '2026-02-27 10:46:57'),
+(29, 15, 'Tag Created', 'Created tag for item ID 15: Property No: 2026-07-05-030-0307-01, Inventory Tag: , Date Counted: 2026-02-27, Category: 030 - ITS, Person Accountable: EMP20260001 (Walton loneza), Images: asset_15_0_1772189215.jpg, asset_15_1_1772189215.jpg', NULL, NULL, 5, '2026-02-27 10:46:57'),
+(30, 15, 'status_change', 'Status changed via IIRUP Form: IIRUP-2026-5135', 'serviceable', 'unserviceable', 5, '2026-02-27 13:45:56'),
+(31, 15, 'status_change', 'Status changed via IIRUP Form: IIRUP-2026-5307', 'serviceable', 'unserviceable', 5, '2026-02-27 13:51:36'),
+(32, 15, 'status_change', 'Status changed via IIRUP Form: IIRUP-2026-5838', 'serviceable', 'unserviceable', 5, '2026-02-27 13:56:21'),
+(33, 15, 'status_change', 'Status changed via IIRUP Form: IIRUP-2026-3322', 'serviceable', 'unserviceable', 5, '2026-02-27 13:59:45'),
+(34, 15, 'status_change', 'Status changed via IIRUP Form: IIRUP-2026-1133', 'serviceable', 'unserviceable', 5, '2026-02-27 14:05:39'),
+(35, 15, 'status_change', 'Status changed via IIRUP Form: IIRUP-2026-6649', 'serviceable', 'unserviceable', 5, '2026-02-27 14:25:11'),
+(36, 15, 'status_change', 'Status changed via IIRUP Form: IIRUP-2026-7955', 'serviceable', 'unserviceable', 5, '2026-02-27 14:28:30'),
+(37, 15, 'status_change', 'Status changed via IIRUP Form: IIRUP-2026-9600', 'serviceable', 'unserviceable', 5, '2026-02-28 00:12:32');
 
 -- --------------------------------------------------------
 
@@ -578,6 +641,37 @@ CREATE TABLE `backup_execution_logs` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `borrow_requests`
+--
+
+CREATE TABLE `borrow_requests` (
+  `id` int(11) NOT NULL,
+  `requested_by` int(11) NOT NULL,
+  `requested_by_office` int(11) NOT NULL,
+  `requested_to_office` int(11) NOT NULL,
+  `asset_id` int(11) NOT NULL,
+  `quantity_requested` int(11) NOT NULL DEFAULT 1,
+  `quantity_approved` int(11) DEFAULT NULL,
+  `purpose` text NOT NULL,
+  `start_date` date NOT NULL,
+  `end_date` date NOT NULL,
+  `status` enum('pending','approved','denied','returned') NOT NULL DEFAULT 'pending',
+  `approved_by` int(11) DEFAULT NULL,
+  `approved_at` datetime DEFAULT NULL,
+  `approval_notes` text DEFAULT NULL,
+  `denied_by` int(11) DEFAULT NULL,
+  `denied_at` datetime DEFAULT NULL,
+  `denial_reason` text DEFAULT NULL,
+  `returned_at` datetime DEFAULT NULL,
+  `return_condition` enum('excellent','good','fair','poor') DEFAULT NULL,
+  `return_notes` text DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Table for managing asset borrow requests between offices';
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `consumables`
 --
 
@@ -585,8 +679,10 @@ CREATE TABLE `consumables` (
   `id` int(11) NOT NULL,
   `description` varchar(255) NOT NULL,
   `quantity` int(11) DEFAULT 0,
+  `units` varchar(50) NOT NULL DEFAULT 'pieces',
   `unit_cost` decimal(10,2) DEFAULT 0.00,
   `reorder_level` int(11) DEFAULT 10,
+  `unit` varchar(50) NOT NULL DEFAULT 'pcs',
   `office_id` int(11) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
@@ -597,20 +693,15 @@ CREATE TABLE `consumables` (
 -- Dumping data for table `consumables`
 --
 
-INSERT INTO `consumables` (`id`, `description`, `quantity`, `unit_cost`, `reorder_level`, `office_id`, `created_at`, `updated_at`, `for_office_id`) VALUES
-(2, 'UTP Connectors (RJ45 Cat6, 100pcs)', 2, 850.00, 1, 4, '2026-01-11 10:53:51', '2026-01-11 12:58:41', NULL),
-(3, 'UTP Cable (Cat6, 305m/Box)', 1, 6500.00, 0, 1, '2026-01-11 10:57:20', '2026-01-11 12:58:16', NULL),
-(4, 'wilkins distilled', 8, 56.00, 5, 4, '2026-02-12 03:27:53', '2026-02-14 13:42:41', NULL),
-(5, 'absolute pure', 40, 30.00, 10, 4, '2026-02-12 03:27:53', '2026-02-12 03:27:53', NULL),
-(6, 'wilkins distilled', 2, 56.00, 5, 1, '2026-02-14 13:42:41', '2026-02-14 13:42:41', NULL),
-(7, 'Drawing pencil', 50, 12.00, 10, 3, '2026-02-14 13:59:40', '2026-02-14 13:59:40', NULL),
-(11, 'tape', 50, 30.00, 10, 3, '2026-02-14 14:24:09', '2026-02-14 14:24:09', 3),
-(12, 'Ballpoint Pen (Black, 0.5mm)', 0, 12.00, 10, 3, '2026-02-14 14:25:49', '2026-02-14 14:57:02', 6),
-(13, 'Ballpoint Pen (Black, 0.5mm)', 100, 12.00, 10, 6, '2026-02-14 14:27:48', '2026-02-14 14:57:02', NULL),
-(14, 'Fastener, Metal (70mm prong)', 3, 95.00, 10, 3, '2026-02-14 15:02:27', '2026-02-14 15:02:46', 1),
-(15, 'Fastener, Metal (70mm prong)', 2, 95.00, 10, 1, '2026-02-14 15:02:46', '2026-02-14 15:02:46', NULL),
-(16, 'dishwashing', 0, 250.00, 10, 3, '2026-02-18 05:18:20', '2026-02-18 05:19:49', 1),
-(17, 'dishwashing', 10, 250.00, 10, 1, '2026-02-18 05:18:52', '2026-02-18 05:19:49', NULL);
+INSERT INTO `consumables` (`id`, `description`, `quantity`, `units`, `unit_cost`, `reorder_level`, `unit`, `office_id`, `created_at`, `updated_at`, `for_office_id`) VALUES
+(1, 'dishwashing', 0, 'pieces', 25.00, 10, 'pcs', 3, '2026-02-28 02:19:37', '2026-02-28 02:31:56', 1),
+(2, 'bond paper', 0, 'pieces', 25.00, 10, 'pcs', 3, '2026-02-28 02:28:25', '2026-02-28 02:33:23', 1),
+(3, 'bond paper', 40, 'pieces', 25.00, 10, 'pcs', 1, '2026-02-28 02:28:37', '2026-02-28 02:33:23', NULL),
+(4, 'bond paper', 0, 'reams', 250.00, 10, 'pcs', 3, '2026-02-28 02:30:21', '2026-02-28 02:35:47', 2),
+(5, 'bond paper', 100, 'pieces', 250.00, 10, 'pcs', 2, '2026-02-28 02:30:35', '2026-02-28 02:35:47', NULL),
+(6, 'dishwashing', 40, 'pieces', 25.00, 10, 'pcs', 1, '2026-02-28 02:31:32', '2026-02-28 02:31:56', NULL),
+(7, 'dishwashing liquid', 20, 'pieces', 25.00, 10, 'pcs', 3, '2026-03-02 01:03:41', '2026-03-02 01:04:20', 2),
+(8, 'dishwashing liquid', 30, 'pieces', 25.00, 10, 'pcs', 2, '2026-03-02 01:04:20', '2026-03-02 01:04:20', NULL);
 
 -- --------------------------------------------------------
 
@@ -644,7 +735,29 @@ INSERT INTO `consumable_release_history` (`id`, `consumable_id`, `description`, 
 (5, 12, 'Ballpoint Pen (Black, 0.5mm)', 10.00, 12.00, 120.00, 3, 6, 5, '0', '2026-02-14 14:57:02', '', '2026-02-14 14:57:02'),
 (7, 14, 'Fastener, Metal (70mm prong)', 2.00, 95.00, 190.00, 3, 1, 5, 'Leo Peterson', '2026-02-14 15:02:46', '', '2026-02-14 15:02:46'),
 (8, 16, 'dishwashing', 5.00, 250.00, 1250.00, 3, 1, 5, 'BENJAMIN THOMPSON', '2026-02-18 05:18:52', '', '2026-02-18 05:18:52'),
-(9, 16, 'dishwashing', 5.00, 250.00, 1250.00, 3, 1, 5, 'Leo Peterson', '2026-02-18 05:19:49', '', '2026-02-18 05:19:49');
+(9, 16, 'dishwashing', 5.00, 250.00, 1250.00, 3, 1, 5, 'Leo Peterson', '2026-02-18 05:19:49', '', '2026-02-18 05:19:49'),
+(10, 19, 'zonrox', 50.00, 50.00, 2500.00, 5, 1, 5, 'Madison Brooks', '2026-02-28 01:13:55', '', '2026-02-28 01:13:55'),
+(11, 19, 'zonrox', 100.00, 50.00, 5000.00, 5, 1, 5, 'Leo Peterson', '2026-02-28 01:14:52', '', '2026-02-28 01:14:52'),
+(12, 19, 'zonrox', 50.00, 50.00, 2500.00, 5, 1, 5, 'BENJAMIN THOMPSON', '2026-02-28 01:15:08', '', '2026-02-28 01:15:08'),
+(13, 20, 'surf', 30.00, 7.00, 210.00, 5, 5, 5, 'Mason Young', '2026-02-28 01:16:47', '', '2026-02-28 01:16:47'),
+(14, 20, 'surf', 30.00, 7.00, 210.00, 5, 5, 5, 'Mason Young', '2026-02-28 01:17:47', '', '2026-02-28 01:17:47'),
+(15, 21, 'glue', 10.00, 15.00, 150.00, 5, 1, 5, 'Mason Young', '2026-02-28 01:18:46', '', '2026-02-28 01:18:46'),
+(16, 21, 'glue', 20.00, 15.00, 300.00, 5, 1, 5, 'BENJAMIN THOMPSON', '2026-02-28 01:24:38', '', '2026-02-28 01:24:38'),
+(17, 21, 'glue', 20.00, 15.00, 300.00, 5, 1, 5, 'BENJAMIN THOMPSON', '2026-02-28 01:24:53', '', '2026-02-28 01:24:53'),
+(18, 21, 'glue', 10.00, 15.00, 150.00, 5, 1, 5, 'Leo Peterson', '2026-02-28 01:25:10', '', '2026-02-28 01:25:10'),
+(19, 21, 'glue', 10.00, 15.00, 150.00, 5, 1, 5, 'BENJAMIN THOMPSON', '2026-02-28 01:25:31', '', '2026-02-28 01:25:31'),
+(20, 7, 'Drawing pencil', 40.00, 12.00, 480.00, 3, 1, 5, 'BENJAMIN THOMPSON', '2026-02-28 01:29:03', '', '2026-02-28 01:29:03'),
+(21, 25, 'ballpen', 20.00, 50.00, 1000.00, 3, 6, 5, 'BENJAMIN THOMPSON', '2026-02-28 01:39:23', '', '2026-02-28 01:39:23'),
+(22, 25, 'ballpen', 20.00, 50.00, 1000.00, 3, 6, 5, 'BENJAMIN THOMPSON', '2026-02-28 01:40:08', '', '2026-02-28 01:40:08'),
+(23, 29, 'dishwashing', 30.00, 20.00, 600.00, 3, 2, 5, 'Lillian Foster', '2026-02-28 02:09:24', '', '2026-02-28 02:09:24'),
+(24, 2, 'bond paper', 10.00, 25.00, 250.00, 3, 1, 5, 'BENJAMIN THOMPSON', '2026-02-28 02:28:37', '', '2026-02-28 02:28:37'),
+(25, 4, 'bond paper', 20.00, 250.00, 5000.00, 3, 2, 5, 'Madison Brooks', '2026-02-28 02:30:35', '', '2026-02-28 02:30:35'),
+(26, 1, 'dishwashing', 20.00, 25.00, 500.00, 3, 1, 5, 'Lillian Foster', '2026-02-28 02:31:32', '', '2026-02-28 02:31:32'),
+(27, 1, 'dishwashing', 20.00, 25.00, 500.00, 3, 1, 5, 'Mason Young', '2026-02-28 02:31:56', '', '2026-02-28 02:31:56'),
+(28, 2, 'bond paper', 30.00, 25.00, 750.00, 3, 1, 5, 'Lillian Foster', '2026-02-28 02:33:23', '', '2026-02-28 02:33:23'),
+(29, 4, 'bond paper', 20.00, 250.00, 5000.00, 3, 2, 5, 'Madison Brooks', '2026-02-28 02:35:25', '', '2026-02-28 02:35:25'),
+(30, 4, 'bond paper', 60.00, 250.00, 15000.00, 3, 2, 5, 'Madison Brooks', '2026-02-28 02:35:47', '', '2026-02-28 02:35:47'),
+(31, 7, 'dishwashing liquid', 30.00, 25.00, 750.00, 3, 2, 17, 'Leo Peterson', '2026-03-02 01:04:20', '', '2026-03-02 01:04:20');
 
 -- --------------------------------------------------------
 
@@ -1209,6 +1322,25 @@ CREATE TABLE `iirup_forms` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `iirup_forms`
+--
+
+INSERT INTO `iirup_forms` (`id`, `form_number`, `as_of_year`, `accountable_officer`, `designation`, `department_office`, `accountable_officer_name`, `accountable_officer_designation`, `authorized_official_name`, `authorized_official_designation`, `inspection_officer_name`, `witness_name`, `status`, `total_items`, `created_by`, `updated_by`, `created_at`, `updated_at`) VALUES
+(1, 'IIRUP-2026-5135', 2026, 'WALTON LONEZA', 'SUPPLY OFFICE', 'OMASS', 'test', 'test', 'test', 'test', 'test', 'test', 'draft', 1, 5, 5, '2026-02-27 13:45:56', '2026-02-27 13:45:56'),
+(2, 'IIRUP-2026-5307', 2026, 'WALTON LONEZA', 'SUPPLY OFFICE', 'Supply Office', 'test', 'test', 'test', 'test', 'test', 'test', 'draft', 1, 5, 5, '2026-02-27 13:51:35', '2026-02-27 13:51:35'),
+(3, 'IIRUP-2026-5838', 2026, 'WALTON LONEZA', 'SUPPLY OFFICE', 'OMM', 'test', 'test', 'test', 'test', 'test', 'test', 'draft', 1, 5, 5, '2026-02-27 13:56:21', '2026-02-27 13:56:21'),
+(4, 'IIRUP-2026-3322', 2026, 'WALTON LONEZA', 'OFFICE', 'OMM', 'test', 'test', 'test', 'test', 'test', 'test', 'draft', 1, 5, 5, '2026-02-27 13:59:45', '2026-02-27 13:59:45'),
+(5, 'IIRUP-2026-1133', 2026, 'WALTON LONEZA', 'SUPPLY OFFICE', 'OMM', 'test', 'test', 'test', 'test', 'test', 'test', 'draft', 1, 5, 5, '2026-02-27 14:05:39', '2026-02-27 14:05:39'),
+(6, 'IIRUP-2026-0604', 2026, 'Test Officer', 'Test Designation', 'Test Office', 'Test Name', 'Test Designation', 'Test Auth', 'Test Auth Designation', 'Test Inspector', 'Test Witness', 'draft', 1, 1, 1, '2026-02-27 14:21:02', '2026-02-27 14:21:02'),
+(7, 'IIRUP-2026-3734', 2026, 'Test Officer', 'Test Designation', 'Test Office', 'Test Name', 'Test Designation', 'Test Auth', 'Test Auth Designation', 'Test Inspector', 'Test Witness', 'draft', 1, 1, 1, '2026-02-27 14:22:37', '2026-02-27 14:22:37'),
+(8, 'IIRUP-2026-6649', 2026, 'WALTON LONEZA', 'SUPPLY OFFICE', 'OMM', 'Test Name', 'Test Designation', 'Test Auth', 'Test Auth Designation', 'Test Inspector', 'Test Witness', 'draft', 1, 5, 5, '2026-02-27 14:25:11', '2026-02-27 14:25:11'),
+(9, 'IIRUP-2026-1682', 2026, 'Test Officer', 'Test Designation', 'Test Office', 'Test Name', 'Test Designation', 'Test Auth', 'Test Auth Designation', 'Test Inspector', 'Test Witness', 'draft', 1, 1, 1, '2026-02-27 14:27:21', '2026-02-27 14:27:21'),
+(10, 'IIRUP-2026-1726', 2026, 'Test Officer', 'Test Designation', 'Test Office', 'Test Name', 'Test Designation', 'Test Auth', 'Test Auth Designation', 'Test Inspector', 'Test Witness', 'draft', 1, 1, 1, '2026-02-27 14:27:50', '2026-02-27 14:27:50'),
+(11, 'IIRUP-2026-7955', 2026, 'WALTON LONEZA', 'SUPPLY OFFICE', 'OMM', 'Test Name', 'Test Designation', 'Test Auth', 'Test Auth Designation', 'Test Inspector', 'Test Witness', 'draft', 1, 5, 5, '2026-02-27 14:28:30', '2026-02-27 14:28:30'),
+(12, 'IIRUP-2026-9571', 2026, 'WALTON LONEZA', 'SUPPLY OFFICE', 'OMM', 'Test Name', 'Test Designation', 'Test Auth', 'Test Auth Designation', 'Test Inspector', 'Test Witness', 'draft', 1, 5, 5, '2026-02-27 14:32:38', '2026-02-27 14:32:38'),
+(13, 'IIRUP-2026-9600', 2026, 'WALTON LONEZA', 'Stock Room', 'OMM ', 'Test Name', 'Test Designation', 'Test Auth', 'Test Auth Designation', 'Test Inspector', 'Test Witness', 'draft', 1, 5, 5, '2026-02-28 00:12:32', '2026-02-28 00:12:32');
+
 -- --------------------------------------------------------
 
 --
@@ -1257,7 +1389,56 @@ INSERT INTO `iirup_items` (`id`, `form_id`, `date_acquired`, `particulars`, `pro
 (12, 13, NULL, 'Laptop for Field Ops (Ruggedized, i5)', 'prop-0034', 1.00, 27500.00, 27500.00, 0.00, 0.00, 0.00, '', 0.00, 0.00, 0.00, '', 0.00, 0.00, 0.00, '', 0.00, 'North District', '', NULL, 1, '2026-01-18 14:07:33', '2026-01-18 14:07:33'),
 (13, 15, '2026-01-28', 'Laptop AMD Ryzen', 'PAR-0108', 1.00, 13140.00, 13140.00, 0.00, 0.00, 0.00, 'unserviceable', 0.00, 0.00, 0.00, '', 0.00, 0.00, 0.00, '', 0.00, 'East District', '', NULL, 1, '2026-02-01 06:45:21', '2026-02-01 06:45:21'),
 (14, 15, NULL, 'Computer desktop i7', 'PN-2019-05-02-0001-0134', 1.00, 40000.00, 40000.00, 0.00, 0.00, 0.00, 'unserviceable', 0.00, 0.00, 0.00, '', 0.00, 0.00, 0.00, '', 0.00, 'Head Office', '', NULL, 2, '2026-02-01 06:45:21', '2026-02-01 06:45:21'),
-(16, 17, '2026-01-28', 'Laptop AMD Ryzen', 'PAR-0110', 1.00, 13140.00, 13140.00, 0.00, 0.00, 0.00, 'unserviceable', 0.00, 0.00, 0.00, '', 0.00, 0.00, 0.00, '', 0.00, 'East District', '', NULL, 1, '2026-02-04 23:55:27', '2026-02-04 23:55:27');
+(16, 17, '2026-01-28', 'Laptop AMD Ryzen', 'PAR-0110', 1.00, 13140.00, 13140.00, 0.00, 0.00, 0.00, 'unserviceable', 0.00, 0.00, 0.00, '', 0.00, 0.00, 0.00, '', 0.00, 'East District', '', NULL, 1, '2026-02-04 23:55:27', '2026-02-04 23:55:27'),
+(17, 1, '2026-02-27', 'nvision', '2026-07-05-030-0307-01', 1.00, 75000.00, 75000.00, 0.00, 0.00, 0.00, 'unserviceable', 0.00, 0.00, 0.00, '', 0.00, 0.00, 0.00, '', 0.00, 'OMM', '', NULL, 1, '2026-02-27 13:45:56', '2026-02-27 13:45:56'),
+(18, 2, '2026-02-27', 'nvision', '2026-07-05-030-0307-01', 1.00, 75000.00, 75000.00, 0.00, 0.00, 0.00, 'unserviceable', 0.00, 0.00, 0.00, '', 0.00, 0.00, 0.00, '', 0.00, 'OMM', '', NULL, 1, '2026-02-27 13:51:35', '2026-02-27 13:51:35'),
+(19, 3, '2026-02-27', 'nvision', '2026-07-05-030-0307-01', 1.00, 75000.00, 75000.00, 0.00, 0.00, 0.00, 'unserviceable', 0.00, 0.00, 0.00, '', 0.00, 0.00, 0.00, '', 0.00, 'OMM', '', NULL, 1, '2026-02-27 13:56:21', '2026-02-27 13:56:21'),
+(20, 4, '2026-02-27', 'nvision', '2026-07-05-030-0307-01', 1.00, 75000.00, 75000.00, 0.00, 0.00, 0.00, 'unserviceable', 0.00, 0.00, 0.00, '', 0.00, 0.00, 0.00, '', 0.00, 'OMM', '', NULL, 1, '2026-02-27 13:59:45', '2026-02-27 13:59:45'),
+(21, 5, '2026-02-27', 'nvision', '2026-07-05-030-0307-01', 1.00, 75000.00, 75000.00, 0.00, 0.00, 0.00, 'unserviceable', 0.00, 0.00, 0.00, '', 0.00, 0.00, 0.00, '', 0.00, 'OMM', '', NULL, 1, '2026-02-27 14:05:39', '2026-02-27 14:05:39'),
+(22, 6, '2026-01-01', 'Monitor - COMPUTER DESKTOP i7', '2026-07-05-030-0307-01', 1.00, 10000.00, 10000.00, 0.00, 0.00, 10000.00, 'Test remarks', 0.00, 0.00, 0.00, '0', 0.00, 0.00, 10000.00, '', 0.00, 'Test Office', '', '2026-01-01', 1, '2026-02-27 14:21:02', '2026-02-27 14:21:02'),
+(23, 7, '2026-01-01', 'Monitor - COMPUTER DESKTOP i7', '2026-07-05-030-0307-01', 1.00, 10000.00, 10000.00, 0.00, 0.00, 10000.00, 'Test remarks', 0.00, 0.00, 0.00, '0', 0.00, 0.00, 10000.00, '', 0.00, 'Test Office', '', '2026-01-01', 1, '2026-02-27 14:22:37', '2026-02-27 14:22:37'),
+(24, 8, '2026-02-27', 'nvision', '2026-07-05-030-0307-01', 1.00, 75000.00, 75000.00, 0.00, 0.00, 0.00, 'unserviceable', 0.00, 0.00, 0.00, '', 0.00, 0.00, 0.00, '', 0.00, 'OMM', '', NULL, 1, '2026-02-27 14:25:11', '2026-02-27 14:25:11'),
+(25, 9, '2026-01-01', 'Monitor - COMPUTER DESKTOP i7', '2026-07-05-030-0307-01', 1.00, 10000.00, 10000.00, 0.00, 0.00, 10000.00, 'Test remarks', 0.00, 0.00, 0.00, '0', 0.00, 0.00, 10000.00, '', 0.00, 'Test Office', '', '2026-01-01', 1, '2026-02-27 14:27:21', '2026-02-27 14:27:21'),
+(26, 10, '2026-01-01', 'Monitor - COMPUTER DESKTOP i7', '2026-07-05-030-0307-01', 1.00, 10000.00, 10000.00, 0.00, 0.00, 10000.00, 'Test remarks', 0.00, 0.00, 0.00, '0', 0.00, 0.00, 10000.00, '', 0.00, 'Test Office', '', '2026-01-01', 1, '2026-02-27 14:27:50', '2026-02-27 14:27:50'),
+(27, 11, '2026-02-27', 'nvision', '2026-07-05-030-0307-01', 1.00, 75000.00, 75000.00, 0.00, 0.00, 0.00, 'unserviceable', 0.00, 0.00, 0.00, '', 0.00, 0.00, 0.00, '', 0.00, 'OMM', '', NULL, 1, '2026-02-27 14:28:30', '2026-02-27 14:28:30'),
+(28, 12, '2026-02-27', 'Monitor - nvision', '2026-07-05-030-0307-01', 1.00, 75000.00, 75000.00, 0.00, 0.00, 0.00, 'unserviceable', 0.00, 0.00, 0.00, '', 0.00, 0.00, 0.00, '', 0.00, 'OMM', '', NULL, 1, '2026-02-27 14:32:38', '2026-02-27 14:32:38'),
+(29, 13, '2026-02-27', 'COMPUTER DESKTOP i7', '2026-07-05-030-0307-01', 1.00, 75000.00, 75000.00, 0.00, 0.00, 0.00, 'unserviceable', 0.00, 0.00, 0.00, '', 0.00, 0.00, 0.00, '', 0.00, 'OMM', '', NULL, 1, '2026-02-28 00:12:32', '2026-02-28 00:12:32');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `infrastructure`
+--
+
+CREATE TABLE `infrastructure` (
+  `id` int(11) NOT NULL,
+  `classification` varchar(100) NOT NULL COMMENT 'Classification/Type of infrastructure',
+  `item_description` text NOT NULL COMMENT 'Detailed description of the infrastructure item',
+  `nature_occupancy` varchar(100) DEFAULT NULL COMMENT 'Nature of occupancy',
+  `location` varchar(200) NOT NULL COMMENT 'Location of the infrastructure',
+  `date_constructed` date NOT NULL COMMENT 'Date when infrastructure was constructed',
+  `property_no` varchar(100) DEFAULT NULL COMMENT 'Property number or other reference',
+  `acquisition_cost` decimal(15,2) NOT NULL DEFAULT 0.00 COMMENT 'Acquisition cost of the infrastructure',
+  `market_value` decimal(15,2) DEFAULT 0.00 COMMENT 'Market or appraisal value',
+  `date_appraisal` date DEFAULT NULL COMMENT 'Date of appraisal',
+  `remarks` text DEFAULT NULL COMMENT 'Additional remarks or notes',
+  `additional_images` text DEFAULT NULL COMMENT 'JSON array of additional image filenames',
+  `created_by` int(11) NOT NULL COMMENT 'User ID who created the record',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_by` int(11) DEFAULT NULL COMMENT 'User ID who last updated the record',
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Infrastructure and building assets management';
+
+--
+-- Dumping data for table `infrastructure`
+--
+
+INSERT INTO `infrastructure` (`id`, `classification`, `item_description`, `nature_occupancy`, `location`, `date_constructed`, `property_no`, `acquisition_cost`, `market_value`, `date_appraisal`, `remarks`, `additional_images`, `created_by`, `created_at`, `updated_by`, `updated_at`) VALUES
+(1, 'Building', 'Main Municipal Hall', 'Government Office', 'Pilar Town Proper', '2010-05-15', 'PROP-001', 5000000.00, 7500000.00, '2024-01-15', 'Main government building housing various municipal offices', NULL, 1, '2026-03-01 05:55:12', NULL, NULL),
+(2, 'Building', 'Public Market Building', 'Commercial', 'Pilar Town Proper', '2015-08-20', 'PROP-002', 3500000.00, 4200000.00, '2024-02-10', 'Public market with 50 stalls for local vendors', NULL, 1, '2026-03-01 05:55:12', NULL, NULL),
+(3, 'Road', 'National Highway - Pilar Section', 'Transportation', 'Pilar', '2012-03-10', 'ROAD-001', 8000000.00, 9500000.00, '2024-01-20', '15 km national highway section passing through Pilar', NULL, 1, '2026-03-01 05:55:12', NULL, NULL),
+(4, 'Bridge', 'Pilar River Bridge', 'Transportation', 'Barangay San Antonio', '2018-11-25', 'BRIDGE-001', 2500000.00, 3000000.00, '2024-03-05', 'Concrete bridge connecting San Antonio to town proper', NULL, 1, '2026-03-01 05:55:12', NULL, NULL),
+(5, 'Building', 'Public Elementary School', 'Educational', 'Barangay San Isidro', '2016-06-30', 'PROP-003', 4200000.00, 5500000.00, '2024-02-15', 'Elementary school with 20 classrooms and facilities', NULL, 1, '2026-03-01 05:55:12', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -1640,7 +1821,10 @@ CREATE TABLE `par_forms` (
 
 INSERT INTO `par_forms` (`id`, `entity_name`, `fund_cluster`, `par_no`, `office_location`, `received_by_name`, `received_by_position`, `received_by_date`, `issued_by_name`, `issued_by_position`, `issued_by_date`, `remarks`, `created_by`, `updated_by`, `created_at`, `updated_at`) VALUES
 (6, 'LGU PILAR', 'COMPUTERIZATION', 'OMMP-2026-02-0001', '01', 'Leo Peterson', 'PROPERTY CUSTODIAN', '0000-00-00', 'LEO PETERSON', 'CLERK', '0000-00-00', NULL, 5, 5, '2026-02-24 00:43:51', '2026-02-24 00:43:51'),
-(7, 'LGU PILAR', 'REGULAR AGENCY FUND', 'OMMP-2026-02-0002', '01', 'Leo Peterson', 'PROPERTY CUSTODIAN', '0000-00-00', 'LEO PETERSON', 'CLERK', '0000-00-00', NULL, 5, 5, '2026-02-24 01:38:03', '2026-02-24 01:38:03');
+(7, 'LGU PILAR', 'REGULAR AGENCY FUND', 'OMMP-2026-02-0002', '01', 'Leo Peterson', 'PROPERTY CUSTODIAN', '0000-00-00', 'LEO PETERSON', 'CLERK', '0000-00-00', NULL, 5, 5, '2026-02-24 01:38:03', '2026-02-24 01:38:03'),
+(8, 'LGU PILAR', 'COMPUTERIZATION', 'OMMP-2026-02-0003', '01', 'Leo Peterson', 'PROPERTY CUSTODIAN', '0000-00-00', 'LEO PETERSON', 'CLERK', '0000-00-00', NULL, 5, 5, '2026-02-25 14:51:45', '2026-02-25 14:51:45'),
+(9, 'LGU PILAR', 'REGULAR AGENCY FUND', 'OMMP-2026-02-0004', '01', 'Leo Peterson', 'PROPERTY CUSTODIAN', '0000-00-00', 'LEO PETERSON', 'CLERK', '0000-00-00', NULL, 5, 5, '2026-02-25 15:41:22', '2026-02-25 15:41:22'),
+(10, 'LGU PILAR/OMM', '', 'OMMP-2026-02-0005', '01', 'Leo Peterson', 'PROPERTY CUSTODIAN', '0000-00-00', 'LEO PETERSON', 'CLERK', '0000-00-00', NULL, 5, 5, '2026-02-27 10:38:03', '2026-02-27 10:38:03');
 
 -- --------------------------------------------------------
 
@@ -1668,7 +1852,10 @@ CREATE TABLE `par_items` (
 
 INSERT INTO `par_items` (`id`, `form_id`, `item_no`, `asset_id`, `quantity`, `unit`, `description`, `property_number`, `date_acquired`, `unit_price`, `amount`) VALUES
 (6, 6, 1, 6, 2.00, 'Units', 'Hilux Van (MR-2025-00033)', '2026', '2026-02-24', NULL, 3456564.00),
-(7, 7, 1, 7, 2.00, 'Units', 'Laptop AMD Ryzen', '2026', '2026-02-24', NULL, 56000.00);
+(7, 7, 1, 7, 2.00, 'Units', 'Laptop AMD Ryzen', '2026', '2026-02-24', NULL, 56000.00),
+(8, 8, 1, 10, 2.00, 'Units', 'Laptop AMD Ryzen7', '2026', NULL, NULL, 56000.00),
+(9, 9, 1, 11, 2.00, 'Units', 'Hilux Van ', '2026', '2026-02-25', NULL, 1500000.00),
+(10, 10, 1, 12, 2.00, 'Sets', 'COMPUTER DESKTOP i7', '2026', '2026-02-27', NULL, 75000.00);
 
 -- --------------------------------------------------------
 
@@ -1803,17 +1990,21 @@ CREATE TABLE `red_tags` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `disposal_reason` text DEFAULT NULL,
   `disposal_date` date DEFAULT NULL,
-  `updated_by` int(11) DEFAULT NULL
+  `updated_by` int(11) DEFAULT NULL,
+  `component_type` enum('main_asset','monitor','ups') DEFAULT 'main_asset',
+  `component_description` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `red_tags`
 --
 
-INSERT INTO `red_tags` (`id`, `control_no`, `red_tag_no`, `date_received`, `tagged_by`, `item_location`, `item_description`, `removal_reason`, `action`, `office_id`, `asset_item_id`, `created_by`, `created_at`, `updated_at`, `disposal_reason`, `disposal_date`, `updated_by`) VALUES
-(1, 'PS-5S-02-F-13-13', 'CTRL-0017', '2026-02-01', 'walton loneza', 'Head Office', 'Computer desktop i7', 'broken', 'disposed', 1, 47, 5, '2026-02-01 09:23:51', '2026-02-15 02:14:12', 'broken', '2026-02-15', 5),
-(2, 'PS-5S-02-F-17-17', 'CTRL-0023', '2026-02-01', 'walton loneza', 'East District', 'Laptop AMD Ryzen', 'broken', 'repair', 4, 73, 5, '2026-02-01 10:14:04', '2026-02-01 10:14:04', NULL, NULL, NULL),
-(6, 'PS-5S-02-F-20-20', 'CTRL-0031', '2026-02-05', 'walton loneza', 'East District', 'Laptop AMD Ryzen', 'broken', 'repair', 4, 74, 5, '2026-02-05 00:03:51', '2026-02-05 00:03:51', NULL, NULL, NULL);
+INSERT INTO `red_tags` (`id`, `control_no`, `red_tag_no`, `date_received`, `tagged_by`, `item_location`, `item_description`, `removal_reason`, `action`, `office_id`, `asset_item_id`, `created_by`, `created_at`, `updated_at`, `disposal_reason`, `disposal_date`, `updated_by`, `component_type`, `component_description`) VALUES
+(1, 'PS-5S-02-F-13-13', 'CTRL-0017', '2026-02-01', 'walton loneza', 'Head Office', 'Computer desktop i7', 'broken', 'disposed', 1, 47, 5, '2026-02-01 09:23:51', '2026-02-15 02:14:12', 'broken', '2026-02-15', 5, 'main_asset', NULL),
+(2, 'PS-5S-02-F-17-17', 'CTRL-0023', '2026-02-01', 'walton loneza', 'East District', 'Laptop AMD Ryzen', 'broken', 'repair', 4, 73, 5, '2026-02-01 10:14:04', '2026-02-01 10:14:04', NULL, NULL, NULL, 'main_asset', NULL),
+(6, 'PS-5S-02-F-20-20', 'CTRL-0031', '2026-02-05', 'walton loneza', 'East District', 'Laptop AMD Ryzen', 'broken', 'repair', 4, 74, 5, '2026-02-05 00:03:51', '2026-02-05 00:03:51', NULL, NULL, NULL, 'main_asset', NULL),
+(7, '2026/05', '2026/05', '2026-02-28', 'walton loneza', 'OMM', 'Monitor - nvision', 'for disposal', 'disposed', 4, 15, 5, '2026-02-27 23:39:18', '2026-02-28 00:00:55', 'broken', '2026-02-28', 5, 'monitor', 'Monitor - nvision'),
+(8, 'TEST-001', 'RT-001', '2026-02-28', 'Test User', 'Test Office', 'Monitor - nvision', 'Test Reason', 'disposed', 1, 15, 1, '2026-02-27 23:45:32', '2026-02-27 23:45:32', 'Test disposal', '2026-02-28', 1, 'monitor', 'Monitor - nvision');
 
 -- --------------------------------------------------------
 
@@ -1856,7 +2047,9 @@ CREATE TABLE `ris_forms` (
 --
 
 INSERT INTO `ris_forms` (`id`, `ris_no`, `sai_no`, `code`, `division`, `office`, `responsibility_center`, `date`, `date_2`, `purpose`, `requested_by`, `requested_by_position`, `requested_date`, `approved_by`, `approved_by_position`, `approved_date`, `issued_by`, `issued_by_position`, `issued_date`, `received_by`, `received_by_position`, `received_date`, `status`, `total_amount`, `created_by`, `created_at`, `updated_at`) VALUES
-(1, '2026/05/0009', '2026/05/0030', '05/0030/02', 'Finance Division', 'OMASS', 'Budget and Accounting Section', '2026-02-18', '2026-02-18', 'for washing', 'LEO PETERSON', 'MAYOR', '0000-00-00', 'ELTON ESCANO', 'MAYOR', '0000-00-00', 'DANIEL ATLAS', 'CLERK', '0000-00-00', 'BENJAMIN THOMPSON', 'PROPERTY CUSTODIAN', '0000-00-00', 'draft', 2500.00, 5, '2026-02-18 05:18:20', '2026-02-18 05:18:20');
+(1, '2026/05/0009', '2026/05/0030', '05/0030/02', 'Finance Division', 'OMASS', 'Budget and Accounting Section', '2026-02-18', '2026-02-18', 'for washing', 'LEO PETERSON', 'MAYOR', '0000-00-00', 'ELTON ESCANO', 'MAYOR', '0000-00-00', 'DANIEL ATLAS', 'CLERK', '0000-00-00', 'BENJAMIN THOMPSON', 'PROPERTY CUSTODIAN', '0000-00-00', 'draft', 2500.00, 5, '2026-02-18 05:18:20', '2026-02-18 05:18:20'),
+(2, 'RIS-2025-000123', '', '', '', 'OMASS', '', '0000-00-00', '0000-00-00', 'for washing', 'LEO PETERSON', 'MAYOR', '0000-00-00', 'ELTON ESCANO', 'MAYOR', '0000-00-00', 'DANIEL ATLAS', 'CLERK', '0000-00-00', 'BENJAMIN THOMPSON', 'PROPERTY CUSTODIAN', '0000-00-00', 'draft', 1000.00, 5, '2026-02-28 02:19:37', '2026-02-28 02:19:37'),
+(4, 'RIS-2025-000134', '345224455', 'FUR-01034', '', 'OMBO', '', '2026-03-02', '2026-03-02', 'for ombo', 'LEO PETERSON', 'MAYOR', '0000-00-00', 'ELTON ESCANO', 'MAYOR', '0000-00-00', 'DANIEL ATLAS', 'CLERK', '0000-00-00', 'BENJAMIN THOMPSON', 'PROPERTY CUSTODIAN', '0000-00-00', 'draft', 1250.00, 17, '2026-03-02 01:03:41', '2026-03-02 01:03:41');
 
 -- --------------------------------------------------------
 
@@ -1882,7 +2075,9 @@ CREATE TABLE `ris_items` (
 --
 
 INSERT INTO `ris_items` (`id`, `ris_form_id`, `stock_no`, `unit`, `description`, `quantity`, `price`, `total_amount`, `created_at`, `updated_at`) VALUES
-(1, 1, 1, 'pcs', 'dishwashing', 10.00, 250.00, 2500.00, '2026-02-18 05:18:20', '2026-02-18 05:18:20');
+(1, 1, 1, 'pcs', 'dishwashing', 10.00, 250.00, 2500.00, '2026-02-18 05:18:20', '2026-02-18 05:18:20'),
+(2, 2, 1, 'pcs', 'dishwashing', 40.00, 25.00, 1000.00, '2026-02-28 02:19:37', '2026-02-28 02:19:37'),
+(3, 4, 1, 'pcs', 'dishwashing liquid', 50.00, 25.00, 1250.00, '2026-03-02 01:03:41', '2026-03-02 01:03:41');
 
 --
 -- Triggers `ris_items`
@@ -2224,7 +2419,19 @@ INSERT INTO `security_logs` (`id`, `event_type`, `description`, `severity`, `use
 (77, 'session_timeout', 'Session timeout for user: Walton Loneza (waltonloneza@gmail.com)', 'medium', 5, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-14 15:18:45'),
 (78, 'session_timeout', 'Session timeout for user: Walton Loneza (waltonloneza@gmail.com)', 'medium', 5, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-15 01:46:27'),
 (79, 'session_timeout', 'Session timeout for user: Walton Loneza (waltonloneza@gmail.com)', 'medium', 5, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-15 02:48:07'),
-(80, 'session_timeout', 'Session timeout for user: Walton Loneza (waltonloneza@gmail.com)', 'medium', 5, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-18 03:36:21');
+(80, 'session_timeout', 'Session timeout for user: Walton Loneza (waltonloneza@gmail.com)', 'medium', 5, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-18 03:36:21'),
+(81, 'session_timeout', 'Session timeout for user: Walton Loneza (waltonloneza@gmail.com)', 'medium', 5, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 01:14:08'),
+(82, 'session_timeout', 'Session timeout for user: Walton Loneza (waltonloneza@gmail.com)', 'medium', 5, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 06:37:00'),
+(83, 'session_timeout', 'Session timeout for user: Walton Loneza (waltonloneza@gmail.com)', 'medium', 5, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 10:25:14'),
+(84, 'session_timeout', 'Session timeout for user: Walton Loneza (waltonloneza@gmail.com)', 'medium', 5, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 13:28:25'),
+(85, 'session_timeout', 'Session timeout for user: Walton Loneza (waltonloneza@gmail.com)', 'medium', 5, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 14:34:50'),
+(86, 'session_timeout', 'Session timeout for user: Walton Loneza (waltonloneza@gmail.com)', 'medium', 5, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:29:48'),
+(87, 'session_timeout', 'Session timeout for user: Walton Loneza (waltonloneza@gmail.com)', 'medium', 5, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:33:46'),
+(88, 'session_timeout', 'Session timeout for user: Walton Loneza (waltonloneza@gmail.com)', 'medium', 5, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:34:14'),
+(89, 'session_timeout', 'Session timeout for user: Walton Loneza (waltonloneza@gmail.com)', 'medium', 5, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 04:02:01'),
+(90, 'session_timeout', 'Session timeout for user: Walton Loneza (waltonloneza@gmail.com)', 'medium', 5, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 14:48:32'),
+(91, 'session_timeout', 'Session timeout for user: Walton Loneza (waltonloneza@gmail.com)', 'medium', 17, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:21:01'),
+(92, 'session_timeout', 'Session timeout for user: Walton Loneza (waltonloneza@gmail.com)', 'medium', 17, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 01:55:22');
 
 -- --------------------------------------------------------
 
@@ -2244,6 +2451,50 @@ CREATE TABLE `security_metrics` (
   `audit_score` int(11) DEFAULT 0,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `software`
+--
+
+CREATE TABLE `software` (
+  `id` int(11) NOT NULL,
+  `software_name` varchar(200) NOT NULL COMMENT 'Name of the software',
+  `category` varchar(100) NOT NULL COMMENT 'Software category (OS, Office, Antivirus, etc.)',
+  `description` text DEFAULT NULL COMMENT 'Description of the software',
+  `vendor` varchar(100) NOT NULL COMMENT 'Software vendor/developer',
+  `version` varchar(50) DEFAULT NULL COMMENT 'Software version',
+  `license_type` varchar(50) NOT NULL COMMENT 'Type of license (Perpetual, Subscription, etc.)',
+  `license_key` text DEFAULT NULL COMMENT 'License key or serial number',
+  `purchase_date` date NOT NULL COMMENT 'Date of purchase',
+  `purchase_cost` decimal(15,2) NOT NULL DEFAULT 0.00 COMMENT 'Purchase cost of the software',
+  `renewal_date` date DEFAULT NULL COMMENT 'License renewal date',
+  `renewal_cost` decimal(15,2) DEFAULT 0.00 COMMENT 'Cost of license renewal',
+  `status` enum('active','inactive','expired','pending') NOT NULL DEFAULT 'active' COMMENT 'Current status of the software',
+  `assigned_to` varchar(200) DEFAULT NULL COMMENT 'Person or department assigned to',
+  `installation_date` date DEFAULT NULL COMMENT 'Date of installation',
+  `notes` text DEFAULT NULL COMMENT 'Additional notes about the software',
+  `files` text DEFAULT NULL COMMENT 'JSON array of uploaded files (license docs, installation files)',
+  `created_by` int(11) NOT NULL COMMENT 'User ID who created the record',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_by` int(11) DEFAULT NULL COMMENT 'User ID who last updated the record',
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Software licenses and installations management';
+
+--
+-- Dumping data for table `software`
+--
+
+INSERT INTO `software` (`id`, `software_name`, `category`, `description`, `vendor`, `version`, `license_type`, `license_key`, `purchase_date`, `purchase_cost`, `renewal_date`, `renewal_cost`, `status`, `assigned_to`, `installation_date`, `notes`, `files`, `created_by`, `created_at`, `updated_by`, `updated_at`) VALUES
+(1, 'Microsoft Office 365', 'Office Suite', 'Productivity suite with Word, Excel, PowerPoint, Outlook', 'Microsoft Corporation', '2023', 'Annual Subscription', 'XXXXX-XXXXX-XXXXX-XXXXX-XXXXX', '2024-01-15', 3500.00, '2025-01-15', 3500.00, 'active', 'Administration Office', '2024-01-20', 'Annual subscription for 10 users', NULL, 1, '2026-03-01 06:15:53', NULL, NULL),
+(2, 'Windows 11 Pro', 'Operating System', 'Professional operating system for workstations', 'Microsoft Corporation', '23H2', 'Perpetual', 'XXXXX-XXXXX-XXXXX-XXXXX-XXXXX', '2023-06-10', 8500.00, NULL, 0.00, 'active', 'IT Department', '2023-06-15', 'Volume license for 5 computers', NULL, 1, '2026-03-01 06:15:53', NULL, NULL),
+(3, 'Kaspersky Endpoint Security', 'Antivirus', 'Business antivirus and endpoint protection', 'Kaspersky Lab', '12.2', 'Annual Subscription', 'XXXXX-XXXXX-XXXXX-XXXXX-XXXXX', '2024-02-01', 2800.00, '2025-02-01', 2800.00, 'active', 'IT Department', '2024-02-05', 'Protects 15 endpoints', NULL, 1, '2026-03-01 06:15:53', NULL, NULL),
+(4, 'Adobe Creative Cloud', 'Design Software', 'Creative suite for graphic design and video editing', 'Adobe Inc.', '2024', 'Annual Subscription', 'XXXXX-XXXXX-XXXXX-XXXXX-XXXXX', '2023-12-01', 4200.00, '2024-12-01', 4200.00, 'active', 'Marketing Office', '2023-12-10', 'All apps plan for 2 users', NULL, 1, '2026-03-01 06:15:53', NULL, NULL),
+(5, 'MySQL Community Server', 'Database', 'Open-source relational database management system', 'Oracle Corporation', '8.0', 'Open Source', NULL, '2023-09-15', 0.00, NULL, 0.00, 'active', 'IT Department', '2023-09-20', 'Free community edition for web applications', NULL, 1, '2026-03-01 06:15:53', NULL, NULL),
+(6, 'QuickBooks Desktop', 'Accounting', 'Accounting software for small business financial management', 'Intuit Inc.', '2023', 'Perpetual', 'XXXXX-XXXXX-XXXXX-XXXXX-XXXXX', '2023-11-10', 15000.00, NULL, 0.00, 'active', 'Accounting Office', '2023-11-15', 'Single user license with payroll module', NULL, 1, '2026-03-01 06:15:53', NULL, NULL),
+(7, 'Visual Studio Professional', 'Development Tools', 'Integrated development environment for software development', 'Microsoft Corporation', '2022', 'Perpetual', 'XXXXX-XXXXX-XXXXX-XXXXX-XXXXX', '2023-08-20', 7500.00, NULL, 0.00, 'active', 'IT Department', '2023-08-25', 'Professional edition for 3 developers', NULL, 1, '2026-03-01 06:15:53', NULL, NULL),
+(8, 'Google Workspace', 'Office Suite', 'Cloud-based productivity and collaboration tools', 'Google LLC', '2024', 'Monthly Subscription', NULL, '2024-01-01', 1200.00, NULL, 0.00, 'active', 'All Departments', '2024-01-05', 'Business Standard plan for 20 users', NULL, 1, '2026-03-01 06:15:53', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -6190,7 +6441,739 @@ INSERT INTO `system_logs` (`id`, `user_id`, `action`, `module`, `description`, `
 (4856, 1, 'access', 'user_management', 'System admin accessed user management page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 05:24:27'),
 (4857, 1, 'access', 'user_management', 'System admin accessed user management page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 05:24:49'),
 (4858, 1, 'access', 'user_management', 'System admin accessed user management page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 05:27:57'),
-(4859, 1, 'create_user', 'users', 'Created user: John Patrick Jazareno (lgupilar.supplyroom@gmail.com) with role: admin, office_id: 3', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 05:27:57');
+(4859, 1, 'create_user', 'users', 'Created user: John Patrick Jazareno (lgupilar.supplyroom@gmail.com) with role: admin, office_id: 3', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-24 05:27:57'),
+(4860, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 01:20:48'),
+(4861, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 01:20:48'),
+(4862, 5, 'access', 'inventory_tags', 'Admin accessed inventory tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 01:20:54'),
+(4863, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 01:20:58'),
+(4864, 5, 'access', 'no_inventory_tag', 'Admin accessed no inventory tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 01:21:09'),
+(4865, 5, 'access', 'inventory_tags', 'Admin accessed inventory tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 01:21:12'),
+(4866, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 01:22:59'),
+(4867, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 01:23:26'),
+(4868, 5, 'access', 'inventory_tags', 'Admin accessed inventory tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 01:23:47'),
+(4869, 5, 'access', 'inventory_tags', 'Admin accessed inventory tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 01:23:51'),
+(4870, 5, 'access', 'inventory_tags', 'Admin accessed inventory tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 01:23:54'),
+(4871, 5, 'access', 'inventory_tags', 'Admin accessed inventory tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 01:23:57'),
+(4872, 5, 'Accessed Unserviceable Assets page', 'inventory', 'unserviceable_assets.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 01:24:03'),
+(4873, 5, 'access', 'no_inventory_tag', 'Admin accessed no inventory tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 01:24:06'),
+(4874, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 01:24:13'),
+(4875, 5, 'logout', 'authentication', 'User logged out: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 01:36:03'),
+(4876, 1, 'login_success', 'authentication', 'User logged in: System Administrator (admin@pims.com) with role: system_admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 01:36:16'),
+(4877, 1, 'access', 'dashboard', 'System admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 01:36:16'),
+(4878, 1, 'access', 'user_management', 'System admin accessed user management page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 01:36:22'),
+(4879, 1, 'access', 'user_management', 'System admin accessed user management page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 01:36:44'),
+(4880, 1, 'access', 'user_management', 'System admin accessed user management page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 01:41:01'),
+(4881, 1, 'create_user', 'users', 'Created user: John Patrick Jazareno (lgupilar.supplyroom@gmail.com) with role: admin, office: 3', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 01:41:01'),
+(4882, 1, 'login_failed', 'authentication', 'Invalid password for user: System Administrator (admin@pims.com)', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 08:31:38'),
+(4883, 1, 'login_success', 'authentication', 'User logged in: System Administrator (admin@pims.com) with role: system_admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 08:31:50'),
+(4884, 1, 'access', 'dashboard', 'System admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 08:31:50'),
+(4885, 1, 'access', 'user_management', 'System admin accessed user management page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 08:31:54'),
+(4886, 1, 'access', 'user_management', 'System admin accessed user management page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 08:32:11'),
+(4887, 1, 'login_success', 'authentication', 'User logged in: System Administrator (admin@pims.com) with role: system_admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 08:32:34'),
+(4888, 1, 'access', 'dashboard', 'System admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 08:32:34'),
+(4889, 1, 'access', 'user_management', 'System admin accessed user management page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 08:32:36'),
+(4890, 1, 'access', 'user_management', 'System admin accessed user management page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 08:32:49'),
+(4891, 1, 'access', 'user_management', 'System admin accessed user management page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 08:40:28'),
+(4892, 1, 'create_user', 'users', 'Created user: joshua escano (joshuamarifrancis@gmail.com) with role: admin, office: 5', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 08:40:28'),
+(4893, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:23:41'),
+(4894, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:23:42'),
+(4895, 5, 'access', 'property_card', 'User accessed Property Card page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:26:00'),
+(4896, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:29:30');
+INSERT INTO `system_logs` (`id`, `user_id`, `action`, `module`, `description`, `ip_address`, `user_agent`, `timestamp`) VALUES
+(4897, 5, 'access', 'no_inventory_tag', 'Admin accessed no inventory tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:29:46'),
+(4898, 5, 'access', 'inventory_tags', 'Admin accessed inventory tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:29:48'),
+(4899, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:29:57'),
+(4900, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:30:16'),
+(4901, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:30:52'),
+(4902, 5, 'access', 'inventory_tags', 'Admin accessed inventory tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:31:16'),
+(4903, 5, 'access', 'inventory_tags', 'Admin accessed inventory tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:41:30'),
+(4904, 5, 'logout', 'authentication', 'User logged out: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:41:59'),
+(4905, 17, 'login_success', 'authentication', 'User logged in: joshua escano (joshuamarifrancis@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:42:17'),
+(4906, 17, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:42:17'),
+(4907, 17, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:42:52'),
+(4908, 17, 'logout', 'authentication', 'User logged out: joshua escano (joshuamarifrancis@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:42:55'),
+(4909, 17, 'login_success', 'authentication', 'User logged in: joshua escano (joshuamarifrancis@gmail.com) with role: office_admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:43:07'),
+(4910, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:43:07'),
+(4911, 17, 'logout', 'authentication', 'User logged out: joshua escano (joshuamarifrancis@gmail.com) with role: office_admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:44:46'),
+(4912, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:45:04'),
+(4913, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:45:04'),
+(4914, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:50:34'),
+(4915, 5, 'Created PAR form', 'forms', 'PAR No: OMMP-2026-02-0003, Entity: LGU PILAR', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:51:45'),
+(4916, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:51:45'),
+(4917, 5, 'logout', 'authentication', 'User logged out: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:51:53'),
+(4918, 17, 'login_failed', 'authentication', 'Invalid password for user: joshua escano (joshuamarifrancis@gmail.com)', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:52:41'),
+(4919, 17, 'login_success', 'authentication', 'User logged in: joshua escano (joshuamarifrancis@gmail.com) with role: office_admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:52:55'),
+(4920, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:52:55'),
+(4921, 17, 'logout', 'authentication', 'User logged out: joshua escano (joshuamarifrancis@gmail.com) with role: office_admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:55:34'),
+(4922, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:55:45'),
+(4923, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:55:45'),
+(4924, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:55:48'),
+(4925, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:56:09'),
+(4926, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:56:34'),
+(4927, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:56:48'),
+(4928, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:57:35'),
+(4929, 5, 'logout', 'authentication', 'User logged out: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:57:39'),
+(4930, 17, 'login_success', 'authentication', 'User logged in: joshua escano (joshuamarifrancis@gmail.com) with role: office_admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:57:53'),
+(4931, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:57:53'),
+(4932, 17, 'logout', 'authentication', 'User logged out: joshua escano (joshuamarifrancis@gmail.com) with role: office_admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:59:01'),
+(4933, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:59:17'),
+(4934, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:59:17'),
+(4935, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:59:21'),
+(4936, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:59:27'),
+(4937, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 14:59:58'),
+(4938, 5, 'Accessed PAR Entries', 'forms', 'par_entries.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 15:06:14'),
+(4939, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 15:06:30'),
+(4940, 5, 'Accessed Requisition and Issue Slip Form', 'forms', 'ris_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 15:06:38'),
+(4941, 5, 'Accessed RIS Entries', 'forms', 'ris_entries.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 15:06:43'),
+(4942, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 15:06:51'),
+(4943, 5, 'access', 'no_inventory_tag', 'Admin accessed no inventory tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 15:08:11'),
+(4944, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 15:08:24'),
+(4945, 5, 'access', 'no_inventory_tag', 'Admin accessed no inventory tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 15:08:38'),
+(4946, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 15:09:39'),
+(4947, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 15:11:08'),
+(4948, 5, 'Accessed PAR Entries', 'forms', 'par_entries.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 15:12:44'),
+(4949, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 15:12:50'),
+(4950, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 15:13:07'),
+(4951, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 15:13:11'),
+(4952, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 15:13:38'),
+(4953, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 15:14:26'),
+(4954, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 15:16:33'),
+(4955, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 15:16:45'),
+(4956, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 15:16:46'),
+(4957, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 15:18:43'),
+(4958, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 15:18:52'),
+(4959, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 15:18:52'),
+(4960, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 15:18:53'),
+(4961, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 15:19:44'),
+(4962, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 15:19:44'),
+(4963, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 15:19:45'),
+(4964, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 15:19:45'),
+(4965, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 15:33:00'),
+(4966, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 15:33:00'),
+(4967, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 15:37:21'),
+(4968, 5, 'Created PAR form', 'forms', 'PAR No: OMMP-2026-02-0004, Entity: LGU PILAR', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 15:41:22'),
+(4969, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 15:41:22'),
+(4970, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 15:41:33'),
+(4971, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 15:43:37'),
+(4972, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 15:44:17'),
+(4973, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 15:48:08'),
+(4974, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 15:49:39'),
+(4975, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 00:10:44'),
+(4976, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 00:10:46'),
+(4977, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 00:11:00'),
+(4978, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 00:13:17'),
+(4979, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 00:24:06'),
+(4980, 5, 'Accessed Inventory Custodian Slip Form', 'forms', 'ics_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 00:25:04'),
+(4981, 5, 'Accessed Inventory Custodian Slip Form', 'forms', 'ics_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 00:28:54'),
+(4982, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 00:30:36'),
+(4983, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 00:30:39'),
+(4984, 5, 'access', 'property_card', 'User accessed Property Card page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 00:32:23'),
+(4985, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 00:32:28'),
+(4986, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 00:33:21'),
+(4987, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 00:33:25'),
+(4988, 5, 'Accessed Inventory Custodian Slip Form', 'forms', 'ics_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 00:33:41'),
+(4989, 5, 'Accessed Inventory Custodian Slip Form', 'forms', 'ics_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 00:34:20'),
+(4990, 5, 'Accessed Inventory Custodian Slip Form', 'forms', 'ics_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 00:34:56'),
+(4991, 5, 'Accessed Requisition and Issue Slip Form', 'forms', 'ris_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 00:36:32'),
+(4992, 5, 'Accessed Requisition and Issue Slip Form', 'forms', 'ris_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 00:39:05'),
+(4993, 5, 'Failed to create RIS form', 'forms', 'Error: All required fields must be filled', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 00:42:55'),
+(4994, 5, 'Accessed Requisition and Issue Slip Form', 'forms', 'ris_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 00:42:55'),
+(4995, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 00:43:00'),
+(4996, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 01:08:37'),
+(4997, 5, 'Accessed Requisition and Issue Slip Form', 'forms', 'ris_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 01:08:47'),
+(4998, 5, 'Failed to create RIS form', 'forms', 'Error: All required fields must be filled', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 01:09:14'),
+(4999, 5, 'Accessed Requisition and Issue Slip Form', 'forms', 'ris_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 01:09:14'),
+(5000, 5, 'session_timeout', 'authentication', 'Session expired for user: Walton Loneza (waltonloneza@gmail.com) after 3804 seconds', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 01:14:08'),
+(5001, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 01:14:19'),
+(5002, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 01:14:19'),
+(5003, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 01:14:27'),
+(5004, 5, 'Accessed Requisition and Issue Slip Form', 'forms', 'ris_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 01:14:33'),
+(5005, 5, 'Failed to create RIS form', 'forms', 'Error: All required fields must be filled', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 01:14:57'),
+(5006, 5, 'Accessed Requisition and Issue Slip Form', 'forms', 'ris_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 01:14:57'),
+(5007, 5, 'Accessed Requisition and Issue Slip Form', 'forms', 'ris_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 01:15:02'),
+(5008, 5, 'Accessed Requisition and Issue Slip Form', 'forms', 'ris_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 01:15:02'),
+(5009, 5, 'Accessed Requisition and Issue Slip Form', 'forms', 'ris_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 01:15:03'),
+(5010, 5, 'Accessed Requisition and Issue Slip Form', 'forms', 'ris_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 01:15:03'),
+(5011, 5, 'Failed to create RIS form', 'forms', 'Error: All required fields must be filled', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 01:15:23'),
+(5012, 5, 'Accessed Requisition and Issue Slip Form', 'forms', 'ris_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 01:15:23'),
+(5013, 5, 'Accessed Requisition and Issue Slip Form', 'forms', 'ris_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 01:17:40'),
+(5014, 5, 'Accessed Requisition and Issue Slip Form', 'forms', 'ris_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 01:17:40'),
+(5015, 5, 'Accessed Requisition and Issue Slip Form', 'forms', 'ris_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 01:17:41'),
+(5016, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 05:32:14'),
+(5017, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 05:32:15'),
+(5018, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 05:44:54'),
+(5019, 5, 'access', 'no_inventory_tag', 'Admin accessed no inventory tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 05:45:11'),
+(5020, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 06:01:06'),
+(5021, 5, 'access', 'no_inventory_tag', 'Admin accessed no inventory tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 06:01:09'),
+(5022, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 06:09:52'),
+(5023, 5, 'access', 'no_inventory_tag', 'Admin accessed no inventory tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 06:09:58'),
+(5024, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 06:17:55'),
+(5025, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 06:19:07'),
+(5026, 5, 'access', 'no_inventory_tag', 'Admin accessed no inventory tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 06:19:10'),
+(5027, 5, 'session_timeout', 'authentication', 'Session expired for user: Walton Loneza (waltonloneza@gmail.com) after 3886 seconds', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 06:37:00'),
+(5028, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 06:37:11'),
+(5029, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 06:37:11'),
+(5030, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 06:37:32'),
+(5031, 5, 'access', 'no_inventory_tag', 'Admin accessed no inventory tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 06:37:40'),
+(5032, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 07:08:49'),
+(5033, 5, 'access', 'no_inventory_tag', 'Admin accessed no inventory tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 07:08:52'),
+(5034, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 09:14:29'),
+(5035, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 09:14:30'),
+(5036, 5, 'access', 'no_inventory_tag', 'Admin accessed no inventory tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 09:21:57'),
+(5037, 5, 'session_timeout', 'authentication', 'Session expired for user: Walton Loneza (waltonloneza@gmail.com) after 4245 seconds', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 10:25:14'),
+(5038, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 10:25:27'),
+(5039, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 10:25:27'),
+(5040, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 10:36:35'),
+(5041, 5, 'access', 'no_inventory_tag', 'Admin accessed no inventory tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 10:36:44'),
+(5042, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 10:36:53'),
+(5043, 5, 'Created PAR form', 'forms', 'PAR No: OMMP-2026-02-0005, Entity: LGU PILAR/OMM', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 10:38:03'),
+(5044, 5, 'Failed to create PAR form', 'forms', 'Error: Unknown column \'status\' in \'where clause\'', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 10:38:03'),
+(5045, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 10:38:03'),
+(5046, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 10:38:10'),
+(5047, 5, 'Tag Form Data Received', 'forms', 'Item ID: 14, End User: \'Jack Robertson\', Person Accountable: 6', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 10:41:36'),
+(5048, 5, 'Tag Update SQL Debug', 'forms', 'SQL: UPDATE asset_items SET \r\n                   property_no = \'2026-07-05-030-0306-01\', \r\n                   inventory_tag = NULL, \r\n                   date_counted = \'2026-02-27\',\r\n                   image = \'[\\\"asset_14_0_1772188896.jpg\\\",\\\"asset_14_1_1772188896.jpg\\\"]\',\r\n                   employee_id = 6, \r\n                   category_id = 2,\r\n                   asset_subcategory_id = 1,\r\n                   office_name = \'OMM\',\r\n                   end_user = \'Jack Robertson\',\r\n                   status = \'serviceable\',\r\n                   last_updated = CURRENT_TIMESTAMP\r\n                   WHERE id = 14', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 10:41:36'),
+(5049, 5, 'Tag Update Values Debug', 'forms', 'Values: property_no=\'2026-07-05-030-0306-01\', inventory_tag=\'\', date_counted=\'2026-02-27\', image=\'asset_14_1_1772188896.jpg\', employee_id=6, category_id=2, end_user=\'Jack Robertson\' (length: 14), item_id=14', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 10:41:36'),
+(5050, 5, 'Asset item updated successfully', 'assets', 'Item ID: 14, End User: Jack Robertson, Rows affected: 1', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 10:41:36'),
+(5051, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 10:42:13'),
+(5052, 5, 'Tag Form Data Received', 'forms', 'Item ID: 15, End User: \'Roberto Cruz\', Person Accountable: 6', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 10:44:11'),
+(5056, 5, 'Tag Form Data Received', 'forms', 'Item ID: 15, End User: \'Roberto Cruz\', Person Accountable: 6', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 10:46:07'),
+(5060, 5, 'Tag Form Data Received', 'forms', 'Item ID: 15, End User: \'Roberto Cruz\', Person Accountable: 6', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 10:46:55'),
+(5061, 5, 'Tag Update SQL Debug', 'forms', 'SQL: UPDATE asset_items SET \r\n                   property_no = \'2026-07-05-030-0307-01\', \r\n                   inventory_tag = NULL, \r\n                   date_counted = \'2026-02-27\',\r\n                   image = \'[\\\"asset_15_0_1772189215.jpg\\\",\\\"asset_15_1_1772189215.jpg\\\"]\',\r\n                   employee_id = 6, \r\n                   category_id = 2,\r\n                   asset_subcategory_id = 1,\r\n                   office_name = \'OMM\',\r\n                   end_user = \'Roberto Cruz\',\r\n                   status = \'serviceable\',\r\n                   last_updated = CURRENT_TIMESTAMP\r\n                   WHERE id = 15', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 10:46:55'),
+(5062, 5, 'Tag Update Values Debug', 'forms', 'Values: property_no=\'2026-07-05-030-0307-01\', inventory_tag=\'\', date_counted=\'2026-02-27\', image=\'asset_15_1_1772189215.jpg\', employee_id=6, category_id=2, end_user=\'Roberto Cruz\' (length: 12), item_id=15', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 10:46:55'),
+(5063, 5, 'Asset item updated successfully', 'assets', 'Item ID: 15, End User: Roberto Cruz, Rows affected: 1', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 10:46:55'),
+(5064, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 10:47:15'),
+(5065, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 12:04:34'),
+(5066, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 12:04:34'),
+(5067, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 12:04:40'),
+(5068, 5, 'access', 'no_inventory_tag', 'Admin accessed no inventory tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 12:04:46'),
+(5069, 5, 'access', 'inventory_tags', 'Admin accessed inventory tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 12:04:53'),
+(5070, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 12:05:01'),
+(5071, 5, 'Accessed Inventory Custodian Slip Form', 'forms', 'ics_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 12:05:06'),
+(5072, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 12:05:23'),
+(5073, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 12:33:36'),
+(5074, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 12:34:04'),
+(5075, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 12:34:13'),
+(5076, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 12:56:06'),
+(5077, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 12:58:17'),
+(5078, 5, 'session_timeout', 'authentication', 'Session expired for user: Walton Loneza (waltonloneza@gmail.com) after 5031 seconds', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 13:28:25'),
+(5079, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 13:34:44'),
+(5080, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 13:34:44'),
+(5081, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 13:34:48'),
+(5082, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 13:34:52'),
+(5083, 5, 'Accessed Individual Item Request for User Property Form', 'forms', 'iirup_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 13:41:08'),
+(5084, 5, 'Accessed Individual Item Request for User Property Form', 'forms', 'iirup_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 13:44:59'),
+(5085, 5, 'Accessed Individual Item Request for User Property Form', 'forms', 'iirup_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 13:45:15'),
+(5086, 5, 'Updated asset status to unserviceable', 'assets', 'asset_ids: 15, form_id: 1', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 13:45:56'),
+(5087, 5, 'Created IIRUP Form', 'forms', 'form_id: 1, form_number: IIRUP-2026-5135', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 13:45:56'),
+(5088, 5, 'Accessed Individual Item Request for User Property Form', 'forms', 'iirup_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 13:45:56'),
+(5089, 5, 'Accessed Individual Item Request for User Property Form', 'forms', 'iirup_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 13:49:56'),
+(5090, 5, 'Accessed Individual Item Request for User Property Form', 'forms', 'iirup_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 13:51:20'),
+(5091, 5, 'Updated asset status to unserviceable', 'assets', 'asset_ids: 15, form_id: 2', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 13:51:36'),
+(5092, 5, 'Created IIRUP Form', 'forms', 'form_id: 2, form_number: IIRUP-2026-5307', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 13:51:36'),
+(5093, 5, 'Accessed Individual Item Request for User Property Form', 'forms', 'iirup_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 13:51:36'),
+(5094, 5, 'Accessed Individual Item Request for User Property Form', 'forms', 'iirup_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 13:56:05'),
+(5095, 5, 'Updated asset status to unserviceable', 'assets', 'asset_ids: 15, form_id: 3', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 13:56:21'),
+(5096, 5, 'Created IIRUP Form', 'forms', 'form_id: 3, form_number: IIRUP-2026-5838', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 13:56:21'),
+(5097, 5, 'Accessed Individual Item Request for User Property Form', 'forms', 'iirup_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 13:56:21'),
+(5098, 5, 'Accessed Individual Item Request for User Property Form', 'forms', 'iirup_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 13:59:36'),
+(5099, 5, 'Updated asset status to unserviceable', 'assets', 'asset_ids: 15, form_id: 4', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 13:59:45'),
+(5100, 5, 'Created IIRUP Form', 'forms', 'form_id: 4, form_number: IIRUP-2026-3322', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 13:59:45'),
+(5101, 5, 'Accessed Individual Item Request for User Property Form', 'forms', 'iirup_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 13:59:45'),
+(5102, 5, 'Accessed Individual Item Request for User Property Form', 'forms', 'iirup_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 14:05:32'),
+(5103, 5, 'Updated asset status to unserviceable', 'assets', 'asset_ids: 15, form_id: 5', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 14:05:39'),
+(5104, 5, 'Created IIRUP Form', 'forms', 'form_id: 5, form_number: IIRUP-2026-1133', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 14:05:39'),
+(5105, 5, 'Accessed Individual Item Request for User Property Form', 'forms', 'iirup_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 14:05:39'),
+(5106, 1, 'Created IIRUP Form', 'forms', 'form_id: 6, form_number: IIRUP-2026-0604', 'Unknown', 'Unknown', '2026-02-27 14:21:02'),
+(5107, 1, 'Created IIRUP Form', 'forms', 'form_id: 7, form_number: IIRUP-2026-3734', 'Unknown', 'Unknown', '2026-02-27 14:22:37'),
+(5108, 5, 'Accessed Individual Item Request for User Property Form', 'forms', 'iirup_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 14:25:03'),
+(5109, 5, 'Updated asset status to unserviceable', 'assets', 'asset_ids: 15, form_id: 8', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 14:25:11'),
+(5110, 5, 'Created IIRUP Form', 'forms', 'form_id: 8, form_number: IIRUP-2026-6649', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 14:25:11'),
+(5111, 5, 'Accessed Individual Item Request for User Property Form', 'forms', 'iirup_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 14:25:11'),
+(5112, 1, 'Created IIRUP Form', 'forms', 'form_id: 9, form_number: IIRUP-2026-1682', 'Unknown', 'Unknown', '2026-02-27 14:27:21'),
+(5113, 1, 'Created IIRUP Form', 'forms', 'form_id: 10, form_number: IIRUP-2026-1726', 'Unknown', 'Unknown', '2026-02-27 14:27:50'),
+(5114, 5, 'Accessed Individual Item Request for User Property Form', 'forms', 'iirup_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 14:28:23');
+INSERT INTO `system_logs` (`id`, `user_id`, `action`, `module`, `description`, `ip_address`, `user_agent`, `timestamp`) VALUES
+(5115, 5, 'Updated asset status to unserviceable', 'assets', 'asset_ids: 15, form_id: 11', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 14:28:30'),
+(5116, 5, 'Created IIRUP Form', 'forms', 'form_id: 11, form_number: IIRUP-2026-7955', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 14:28:30'),
+(5117, 5, 'Accessed Individual Item Request for User Property Form', 'forms', 'iirup_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 14:28:30'),
+(5118, 5, 'Accessed Individual Item Request for User Property Form', 'forms', 'iirup_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 14:32:30'),
+(5119, 5, 'Created IIRUP Form', 'forms', 'form_id: 12, form_number: IIRUP-2026-9571', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 14:32:38'),
+(5120, 5, 'Accessed Individual Item Request for User Property Form', 'forms', 'iirup_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 14:32:38'),
+(5121, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 14:33:30'),
+(5122, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 14:34:43'),
+(5123, 5, 'session_timeout', 'authentication', 'Session expired for user: Walton Loneza (waltonloneza@gmail.com) after 3606 seconds', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 14:34:50'),
+(5124, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 23:29:21'),
+(5125, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 23:29:21'),
+(5126, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 23:29:25'),
+(5127, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 23:29:36'),
+(5128, 5, 'Accessed Unserviceable Assets page', 'inventory', 'unserviceable_assets.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 23:29:56'),
+(5129, 5, 'Accessed Unserviceable Assets page', 'inventory', 'unserviceable_assets.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 23:30:00'),
+(5130, 5, 'Accessed Unserviceable Assets page', 'inventory', 'unserviceable_assets.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 23:32:42'),
+(5131, 5, 'Accessed Unserviceable Assets page', 'inventory', 'unserviceable_assets.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 23:32:51'),
+(5132, 5, 'Accessed Create Red Tag page', 'inventory', 'create_redtag.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 23:32:55'),
+(5133, 5, 'Accessed Create Red Tag page', 'inventory', 'create_redtag.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 23:37:16'),
+(5134, 5, 'Accessed Unserviceable Assets page', 'inventory', 'unserviceable_assets.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 23:37:20'),
+(5135, 5, 'Accessed Unserviceable Assets page', 'inventory', 'unserviceable_assets.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 23:38:26'),
+(5136, 5, 'Accessed Unserviceable Assets page', 'inventory', 'unserviceable_assets.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 23:38:31'),
+(5137, 5, 'Accessed Create Red Tag page', 'inventory', 'create_redtag.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 23:38:32'),
+(5138, 5, 'Accessed Create Red Tag page', 'inventory', 'create_redtag.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 23:39:18'),
+(5139, 5, 'component_status_updated', 'inventory', 'Monitor component for Asset ID 15 status changed from unserviceable to red_tagged', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 23:39:18'),
+(5140, 5, 'redtag_created', 'inventory', 'Created red tag 2026/05 for: Monitor - nvision', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 23:39:18'),
+(5141, 5, 'access', 'red_tags', 'Admin accessed red tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 23:39:29'),
+(5142, 5, 'access', 'red_tags', 'Admin accessed red tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 23:40:09'),
+(5143, 5, 'access', 'red_tags', 'Admin accessed red tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 23:47:33'),
+(5144, 5, 'access', 'red_tags', 'Admin accessed red tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 23:50:40'),
+(5145, 5, 'access', 'red_tags', 'Admin accessed red tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 23:50:53'),
+(5146, 5, 'access', 'red_tags', 'Admin accessed red tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 23:56:17'),
+(5147, 5, 'access', 'red_tags', 'Admin accessed red tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 23:56:23'),
+(5148, 5, 'access', 'red_tags', 'Admin accessed red tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 23:56:26'),
+(5149, 5, 'access', 'red_tags', 'Admin accessed red tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 23:56:36'),
+(5150, 1, 'dispose_component', 'red_tag', 'Disposed monitor component for asset ID 15 - Monitor - nvision (Reason: Test disposal from debug)', 'Unknown', 'Unknown', '2026-02-27 23:58:53'),
+(5151, 1, 'dispose', 'red_tag', 'Disposed red tag: 2026/05 - Monitor - nvision (Reason: Test disposal from debug)', 'Unknown', 'Unknown', '2026-02-27 23:58:53'),
+(5152, 5, 'access', 'red_tags', 'Admin accessed red tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:00:03'),
+(5153, 5, 'access', 'red_tags', 'Admin accessed red tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:00:49'),
+(5154, 5, 'dispose_component', 'red_tag', 'Disposed monitor component for asset ID 15 - Monitor - nvision (Reason: broken)', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:00:55'),
+(5155, 5, 'dispose', 'red_tag', 'Disposed red tag: 2026/05 - Monitor - nvision (Reason: broken)', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:00:55'),
+(5156, 5, 'access', 'red_tags', 'Admin accessed red tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:00:55'),
+(5157, 5, 'access', 'inventory_tags', 'Admin accessed inventory tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:01:17'),
+(5158, 5, 'Accessed Unserviceable Assets page', 'inventory', 'unserviceable_assets.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:01:21'),
+(5159, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:01:25'),
+(5160, 5, 'Accessed Individual Item Request for User Property Form', 'forms', 'iirup_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:04:40'),
+(5161, 5, 'Accessed Individual Item Request for User Property Form', 'forms', 'iirup_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:08:30'),
+(5162, 5, 'access', 'system_settings', 'Accessed system settings page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:09:45'),
+(5163, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:11:37'),
+(5164, 5, 'Accessed Individual Item Request for User Property Form', 'forms', 'iirup_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:11:45'),
+(5165, 5, 'Updated asset status to unserviceable', 'assets', 'asset_ids: 15, form_id: 13', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:12:32'),
+(5166, 5, 'Created IIRUP Form', 'forms', 'form_id: 13, form_number: IIRUP-2026-9600', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:12:32'),
+(5167, 5, 'Accessed Individual Item Request for User Property Form', 'forms', 'iirup_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:12:32'),
+(5168, 5, 'Accessed Create Red Tag page', 'inventory', 'create_redtag.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:15:03'),
+(5169, 5, 'Accessed Create Red Tag page', 'inventory', 'create_redtag.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:20:25'),
+(5170, 5, 'Accessed Create Red Tag page', 'inventory', 'create_redtag.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:20:57'),
+(5171, 5, 'Accessed Create Red Tag page', 'inventory', 'create_redtag.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:21:15'),
+(5172, 5, 'page_access', 'disposed_items', 'Accessed disposed items page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:22:01'),
+(5173, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:23:03'),
+(5174, 5, 'access', 'inventory_tags', 'Admin accessed inventory tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:23:11'),
+(5175, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:23:15'),
+(5176, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:23:38'),
+(5177, 5, 'access', 'fuel_inventory', 'User accessed fuel inventory page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:24:36'),
+(5178, 5, 'access', 'fuel_inventory', 'User accessed fuel inventory page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:24:59'),
+(5179, 5, 'access', 'fuel_inventory', 'User accessed fuel inventory page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:25:08'),
+(5180, 5, 'access', 'fuel_inventory', 'User accessed fuel inventory page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:28:53'),
+(5181, 5, 'session_timeout', 'authentication', 'Session expired for user: Walton Loneza (waltonloneza@gmail.com) after 3627 seconds', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:29:48'),
+(5182, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:30:32'),
+(5183, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:30:33'),
+(5184, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:30:36'),
+(5185, 5, 'access', 'fuel_inventory', 'User accessed fuel inventory page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:30:43'),
+(5186, 5, 'access', 'fuel_inventory', 'User accessed fuel inventory page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:30:46'),
+(5187, 5, 'access', 'fuel_inventory', 'User accessed fuel inventory page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:30:47'),
+(5188, 5, 'access', 'fuel_inventory', 'User accessed fuel inventory page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:31:11'),
+(5189, 5, 'access', 'fuel_inventory', 'User accessed fuel inventory page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:33:52'),
+(5190, 5, 'access', 'fuel_inventory', 'User accessed fuel inventory page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:34:02'),
+(5191, 5, 'access', 'fuel_inventory', 'User accessed fuel inventory page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:34:04'),
+(5192, 5, 'access', 'fuel_inventory', 'User accessed fuel inventory page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:42:44'),
+(5193, 5, 'access', 'fuel_inventory', 'User accessed fuel inventory page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:42:45'),
+(5194, 5, 'access', 'fuel_inventory', 'User accessed fuel inventory page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:42:46'),
+(5195, 5, 'access', 'fuel_inventory', 'User accessed fuel inventory page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:45:14'),
+(5196, 5, 'access', 'fuel_inventory', 'User accessed fuel inventory page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:45:50'),
+(5197, 5, 'access', 'fuel_inventory', 'User accessed fuel inventory page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:45:53'),
+(5198, 5, 'access', 'fuel_inventory', 'User accessed fuel inventory page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:47:39'),
+(5199, 5, 'access', 'fuel_inventory', 'User accessed fuel inventory page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:49:34'),
+(5200, 5, 'access', 'fuel_inventory', 'User accessed fuel inventory page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:55:17'),
+(5201, 5, 'access', 'fuel_inventory', 'User accessed fuel inventory page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:55:32'),
+(5202, 5, 'access', 'fuel_inventory', 'User accessed fuel inventory page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 00:55:37'),
+(5203, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:00:51'),
+(5204, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:04:42'),
+(5205, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:04:50'),
+(5206, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:04:59'),
+(5207, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:07:55'),
+(5208, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:08:33'),
+(5209, 5, 'consumable_added', 'consumable_management', 'Added consumable: zonrox', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:08:33'),
+(5210, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:12:24'),
+(5211, 5, 'consumable_added', 'consumable_management', 'Added consumable: zonrox', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:12:24'),
+(5212, 5, 'access', 'profile', 'Admin accessed profile page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:12:35'),
+(5213, 5, 'access', 'profile', 'Admin accessed profile page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:13:27'),
+(5214, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:13:31'),
+(5215, 5, 'consumable_quantity_updated', 'consumable_management', 'Updated quantity for existing consumable: zonrox', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:13:31'),
+(5216, 5, 'consumable_released', 'consumable_management', 'Released 50 \'zonrox\' from office ID 5 to OMASS. Updated existing consumable in target office. Remarks: No remarks', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:13:55'),
+(5217, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:13:55'),
+(5218, 5, 'consumable_quantity_updated', 'consumable_management', 'Updated quantity for existing consumable: zonrox', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:13:55'),
+(5219, 5, 'consumable_released', 'consumable_management', 'Released 100 \'zonrox\' from office ID 5 to OMASS. Updated existing consumable in target office. Remarks: No remarks', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:14:52'),
+(5220, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:14:52'),
+(5221, 5, 'consumable_quantity_updated', 'consumable_management', 'Updated quantity for existing consumable: zonrox', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:14:52'),
+(5222, 5, 'consumable_released', 'consumable_management', 'Released 50 \'zonrox\' from office ID 5 to OMASS. Updated existing consumable in target office. Remarks: No remarks', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:15:08'),
+(5223, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:15:08'),
+(5224, 5, 'consumable_quantity_updated', 'consumable_management', 'Updated quantity for existing consumable: zonrox', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:15:08'),
+(5225, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:15:44'),
+(5226, 5, 'consumable_added', 'consumable_management', 'Added consumable: surf', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:15:44'),
+(5227, 5, 'consumable_released', 'consumable_management', 'Released 30 \'surf\' from office ID 5 to OVM. Updated existing consumable in target office. Remarks: No remarks', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:16:47'),
+(5228, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:16:47'),
+(5229, 5, 'consumable_quantity_updated', 'consumable_management', 'Updated quantity for existing consumable: surf', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:16:47'),
+(5230, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:16:56'),
+(5231, 5, 'consumable_quantity_updated', 'consumable_management', 'Updated quantity for existing consumable: surf', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:16:56'),
+(5232, 5, 'consumable_released', 'consumable_management', 'Released 30 \'surf\' from office ID 5 to OVM. Updated existing consumable in target office. Remarks: No remarks', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:17:47'),
+(5233, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:17:47'),
+(5234, 5, 'consumable_quantity_updated', 'consumable_management', 'Updated quantity for existing consumable: surf', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:17:47'),
+(5235, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:17:59'),
+(5236, 5, 'consumable_quantity_updated', 'consumable_management', 'Updated quantity for existing consumable: surf', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:17:59'),
+(5237, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:18:30'),
+(5238, 5, 'consumable_added', 'consumable_management', 'Added consumable: glue', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:18:30'),
+(5239, 5, 'consumable_released', 'consumable_management', 'Released 10 \'glue\' from office ID 5 to OMASS. Created new consumable in target office. Remarks: No remarks', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:18:46'),
+(5240, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:18:46'),
+(5241, 5, 'consumable_quantity_updated', 'consumable_management', 'Updated quantity for existing consumable: glue', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:18:46'),
+(5242, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:21:44'),
+(5243, 5, 'consumable_quantity_updated', 'consumable_management', 'Updated quantity for existing consumable: glue', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:21:44'),
+(5244, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:24:25'),
+(5245, 5, 'consumable_quantity_updated', 'consumable_management', 'Updated quantity for existing consumable: glue', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:24:25'),
+(5246, 5, 'consumable_released', 'consumable_management', 'Released 20 \'glue\' from office ID 5 to OMASS. Updated existing consumable in target office. Remarks: No remarks', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:24:38'),
+(5247, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:24:38'),
+(5248, 5, 'consumable_quantity_updated', 'consumable_management', 'Updated quantity for existing consumable: glue', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:24:38'),
+(5249, 5, 'consumable_released', 'consumable_management', 'Released 20 \'glue\' from office ID 5 to OMASS. Updated existing consumable in target office. Remarks: No remarks', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:24:53'),
+(5250, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:24:53'),
+(5251, 5, 'consumable_quantity_updated', 'consumable_management', 'Updated quantity for existing consumable: glue', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:24:53'),
+(5252, 5, 'consumable_released', 'consumable_management', 'Released 10 \'glue\' from office ID 5 to OMASS. Updated existing consumable in target office. Remarks: No remarks', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:25:10'),
+(5253, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:25:10'),
+(5254, 5, 'consumable_quantity_updated', 'consumable_management', 'Updated quantity for existing consumable: glue', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:25:10'),
+(5255, 5, 'consumable_released', 'consumable_management', 'Released 10 \'glue\' from office ID 5 to OMASS. Updated existing consumable in target office. Remarks: No remarks', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:25:31'),
+(5256, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:25:31'),
+(5257, 5, 'consumable_quantity_updated', 'consumable_management', 'Updated quantity for existing consumable: glue', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:25:31'),
+(5258, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:28:25'),
+(5259, 5, 'consumable_quantity_updated', 'consumable_management', 'Updated quantity for existing consumable: glue', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:28:25'),
+(5260, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:28:34'),
+(5261, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:28:37'),
+(5262, 5, 'consumable_released', 'consumable_management', 'Released 40 \'Drawing pencil\' from office ID 3 to OMASS. Created new consumable in target office. Remarks: No remarks', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:29:03'),
+(5263, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:29:03'),
+(5264, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:29:58'),
+(5265, 5, 'consumable_added', 'consumable_management', 'Added consumable: Printer Epson', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:29:59'),
+(5266, 5, 'session_timeout', 'authentication', 'Session expired for user: Walton Loneza (waltonloneza@gmail.com) after 3794 seconds', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:33:46'),
+(5267, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:33:58'),
+(5268, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:33:58'),
+(5269, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:34:07'),
+(5270, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:34:24'),
+(5271, 5, 'consumable_added', 'consumable_management', 'Added consumable: ballpen', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:34:24'),
+(5272, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:38:11'),
+(5273, 5, 'consumable_quantity_updated', 'consumable_management', 'Updated quantity for existing consumable: ballpen', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:38:11'),
+(5274, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:38:50'),
+(5275, 5, 'consumable_added', 'consumable_management', 'Added consumable: ballpen', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:38:50'),
+(5276, 5, 'consumable_released', 'consumable_management', 'Released 20 \'ballpen\' from office ID 3 to OTOUR. Updated existing consumable in target office. Remarks: No remarks', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:39:23'),
+(5277, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:39:23'),
+(5278, 5, 'consumable_quantity_updated', 'consumable_management', 'Updated quantity for existing consumable: ballpen', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:39:23'),
+(5279, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:39:55'),
+(5280, 5, 'consumable_quantity_updated', 'consumable_management', 'Updated quantity for existing consumable: ballpen', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:39:55'),
+(5281, 5, 'consumable_released', 'consumable_management', 'Released 20 \'ballpen\' from office ID 3 to OTOUR. Updated existing consumable in target office. Remarks: No remarks', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:40:08'),
+(5282, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:40:08'),
+(5283, 5, 'consumable_quantity_updated', 'consumable_management', 'Updated quantity for existing consumable: ballpen', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:40:08'),
+(5284, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:57:19'),
+(5285, 5, 'consumable_quantity_updated', 'consumable_management', 'Updated quantity for existing consumable: ballpen', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:57:19'),
+(5286, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:57:52'),
+(5287, 5, 'consumable_added', 'consumable_management', 'Added consumable: zonrox', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 01:57:52'),
+(5288, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:03:21'),
+(5289, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:03:53'),
+(5290, 5, 'consumables_added', 'consumable_management', 'Added multiple consumables to office ID: 5, Purpose: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:03:53'),
+(5291, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:05:11'),
+(5292, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:05:14'),
+(5293, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:05:50'),
+(5294, 5, 'consumable_added', 'consumable_management', 'Added consumable: paper plate', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:05:50'),
+(5295, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:08:15'),
+(5296, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:08:38'),
+(5297, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:09:02'),
+(5298, 5, 'consumable_added', 'consumable_management', 'Added consumable: dishwashing', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:09:02'),
+(5299, 5, 'consumable_released', 'consumable_management', 'Released 30 \'dishwashing\' from office ID 3 to OMBO. Created new consumable in target office. Remarks: No remarks', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:09:24'),
+(5300, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:09:24'),
+(5301, 5, 'consumable_quantity_updated', 'consumable_management', 'Updated quantity for existing consumable: dishwashing', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:09:24'),
+(5302, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:13:33'),
+(5303, 5, 'consumable_quantity_updated', 'consumable_management', 'Updated quantity for existing consumable: dishwashing', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:13:33'),
+(5304, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:15:40'),
+(5305, 5, 'consumable_added', 'consumable_management', 'Added consumable: dishwashing', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:15:40'),
+(5306, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:17:13'),
+(5307, 5, 'consumable_quantity_updated', 'consumable_management', 'Updated quantity for existing consumable: dishwashing', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:17:13'),
+(5308, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:17:54'),
+(5309, 5, 'consumable_quantity_updated', 'consumable_management', 'Updated quantity for existing consumable: dishwashing', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:17:54'),
+(5310, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:18:09'),
+(5311, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:18:12'),
+(5312, 5, 'Accessed Requisition and Issue Slip Form', 'forms', 'ris_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:18:50'),
+(5313, 5, 'Created RIS form', 'forms', 'RIS No: RIS-2025-000123, Division: , Office: OMASS, Items added to Supply Office', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:19:37'),
+(5314, 5, 'Accessed Requisition and Issue Slip Form', 'forms', 'ris_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:19:37'),
+(5315, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:19:44'),
+(5316, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:26:30'),
+(5317, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:26:42'),
+(5318, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:27:45'),
+(5319, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:28:02'),
+(5320, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:28:25'),
+(5321, 5, 'consumable_added', 'consumable_management', 'Added consumable: bond paper', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:28:25'),
+(5322, 5, 'consumable_released', 'consumable_management', 'Released 10 \'bond paper\' from office ID 3 to OMASS. Created new consumable in target office. Remarks: No remarks', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:28:37'),
+(5323, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:28:37'),
+(5324, 5, 'consumable_quantity_updated', 'consumable_management', 'Updated quantity for existing consumable: bond paper', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:28:37'),
+(5325, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:29:53'),
+(5326, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:29:57'),
+(5327, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:30:21'),
+(5328, 5, 'consumable_added', 'consumable_management', 'Added consumable: bond paper', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:30:21');
+INSERT INTO `system_logs` (`id`, `user_id`, `action`, `module`, `description`, `ip_address`, `user_agent`, `timestamp`) VALUES
+(5329, 5, 'consumable_released', 'consumable_management', 'Released 20 \'bond paper\' from office ID 3 to OMBO. Created new consumable in target office. Remarks: No remarks', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:30:35'),
+(5330, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:30:35'),
+(5331, 5, 'consumable_quantity_updated', 'consumable_management', 'Updated quantity for existing consumable: bond paper', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:30:35'),
+(5332, 5, 'consumable_released', 'consumable_management', 'Released 20 \'dishwashing\' from office ID 3 to OMASS. Created new consumable in target office. Remarks: No remarks', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:31:32'),
+(5333, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:31:32'),
+(5334, 5, 'consumable_quantity_updated', 'consumable_management', 'Updated quantity for existing consumable: bond paper', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:31:32'),
+(5335, 5, 'consumable_released', 'consumable_management', 'Released 20 \'dishwashing\' from office ID 3 to OMASS. Updated existing consumable in target office. Remarks: No remarks', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:31:56'),
+(5336, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:31:56'),
+(5337, 5, 'consumable_quantity_updated', 'consumable_management', 'Updated quantity for existing consumable: bond paper', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:31:56'),
+(5338, 5, 'consumable_released', 'consumable_management', 'Released 30 \'bond paper\' from office ID 3 to OMASS. Updated existing consumable in target office. Remarks: No remarks', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:33:23'),
+(5339, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:33:23'),
+(5340, 5, 'consumable_quantity_updated', 'consumable_management', 'Updated quantity for existing consumable: bond paper', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:33:23'),
+(5341, 5, 'session_timeout', 'authentication', 'Session expired for user: Walton Loneza (waltonloneza@gmail.com) after 3616 seconds', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:34:14'),
+(5342, NULL, 'login_failed', 'authentication', 'User not found for email: waltonlonea@gmail.com', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:34:37'),
+(5343, 5, 'login_failed', 'authentication', 'Invalid password for user: Walton Loneza (waltonloneza@gmail.com)', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:34:50'),
+(5344, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:35:06'),
+(5345, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:35:06'),
+(5346, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:35:09'),
+(5347, 5, 'consumable_released', 'consumable_management', 'Released 20 \'bond paper\' from office ID 3 to OMBO. Updated existing consumable in target office. Remarks: No remarks', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:35:25'),
+(5348, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:35:25'),
+(5349, 5, 'consumable_released', 'consumable_management', 'Released 60 \'bond paper\' from office ID 3 to OMBO. Updated existing consumable in target office. Remarks: No remarks', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:35:47'),
+(5350, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:35:47'),
+(5351, 5, 'access', 'release_history', 'Admin accessed release history page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:36:04'),
+(5352, 5, 'access', 'release_history', 'Admin accessed release history page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:37:37'),
+(5353, 5, 'access', 'release_history', 'Admin accessed release history page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:41:18'),
+(5354, 5, 'access', 'no_inventory_tag', 'Admin accessed no inventory tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:41:52'),
+(5355, 5, 'access', 'inventory_tags', 'Admin accessed inventory tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:41:57'),
+(5356, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:41:59'),
+(5357, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:42:45'),
+(5358, 5, 'access', 'inventory_tags', 'Admin accessed inventory tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:43:23'),
+(5359, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:43:25'),
+(5360, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:43:36'),
+(5361, 5, 'access', 'no_inventory_tag', 'Admin accessed no inventory tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:43:39'),
+(5362, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:43:44'),
+(5363, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:43:54'),
+(5364, 5, 'access', 'inventory_tags', 'Admin accessed inventory tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:44:29'),
+(5365, 5, 'access', 'inventory_tags', 'Admin accessed inventory tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:45:07'),
+(5366, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:45:12'),
+(5367, 5, 'access', 'inventory_tags', 'Admin accessed inventory tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:45:21'),
+(5368, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:45:24'),
+(5369, 5, 'access', 'inventory_tags', 'Admin accessed inventory tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:46:00'),
+(5370, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:46:02'),
+(5371, 5, 'access', 'inventory_tags', 'Admin accessed inventory tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:47:11'),
+(5372, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:47:16'),
+(5373, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:49:20'),
+(5374, 5, 'access', 'inventory_tags', 'Admin accessed inventory tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:49:59'),
+(5375, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:50:05'),
+(5376, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:50:40'),
+(5377, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:51:09'),
+(5378, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:55:32'),
+(5379, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:56:24'),
+(5380, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 02:57:22'),
+(5381, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:00:30'),
+(5382, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:03:55'),
+(5383, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:04:54'),
+(5384, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:05:33'),
+(5385, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:08:40'),
+(5386, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:16:22'),
+(5387, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:17:20'),
+(5388, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:19:33'),
+(5389, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:22:32'),
+(5390, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:24:01'),
+(5391, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:25:22'),
+(5392, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:26:42'),
+(5393, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:27:28'),
+(5394, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:28:12'),
+(5395, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:29:17'),
+(5396, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:29:59'),
+(5397, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:31:59'),
+(5398, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:32:50'),
+(5399, 5, 'access', 'inventory_tags', 'Admin accessed inventory tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:33:18'),
+(5400, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:33:21'),
+(5401, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:34:35'),
+(5402, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:34:58'),
+(5403, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:35:22'),
+(5404, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:36:28'),
+(5405, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:40:17'),
+(5406, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:41:36'),
+(5407, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:43:07'),
+(5408, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:44:03'),
+(5409, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:45:17'),
+(5410, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:46:00'),
+(5411, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:47:01'),
+(5412, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:48:45'),
+(5413, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:49:03'),
+(5414, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:51:05'),
+(5415, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:51:28'),
+(5416, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:51:41'),
+(5417, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:53:26'),
+(5418, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:54:25'),
+(5419, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:54:52'),
+(5420, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:55:30'),
+(5421, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:56:34'),
+(5422, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:57:46'),
+(5423, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 03:59:00'),
+(5424, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 04:01:31'),
+(5425, 5, 'session_timeout', 'authentication', 'Session expired for user: Walton Loneza (waltonloneza@gmail.com) after 5215 seconds', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 04:02:01'),
+(5426, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 04:02:12'),
+(5427, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 04:02:12'),
+(5428, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 04:02:17'),
+(5429, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 04:21:14'),
+(5430, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 04:36:59'),
+(5431, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 13:22:49'),
+(5432, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 13:22:49'),
+(5433, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 13:22:54'),
+(5434, 5, 'access', 'inventory_tags', 'Admin accessed inventory tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 13:34:18'),
+(5435, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 13:34:20'),
+(5436, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 13:35:56'),
+(5437, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 13:37:03'),
+(5438, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 13:37:50'),
+(5439, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 13:38:02'),
+(5440, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 13:38:57'),
+(5441, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 13:40:01'),
+(5442, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 13:43:28'),
+(5443, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 13:45:17'),
+(5444, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 13:47:11'),
+(5445, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 13:47:21'),
+(5446, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 13:47:41'),
+(5447, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 13:47:51'),
+(5448, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 13:49:44'),
+(5449, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 13:51:34'),
+(5450, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 13:53:04'),
+(5451, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 13:53:32'),
+(5452, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 13:55:11'),
+(5453, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 13:55:47'),
+(5454, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 13:56:28'),
+(5455, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 13:56:35'),
+(5456, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 13:56:41'),
+(5457, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 13:57:58'),
+(5458, 5, 'access', 'inventory_tags', 'Admin accessed inventory tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 14:01:55'),
+(5459, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 14:01:57'),
+(5460, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 14:02:06'),
+(5461, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 14:03:17'),
+(5462, 5, 'access', 'inventory_tags', 'Admin accessed inventory tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 14:13:14'),
+(5463, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 14:13:17'),
+(5464, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 14:13:40'),
+(5465, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 14:13:59'),
+(5466, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 14:22:30'),
+(5467, 5, 'access', 'inventory_tags', 'Admin accessed inventory tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 14:22:45'),
+(5468, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 14:28:31'),
+(5469, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 14:46:07'),
+(5470, 5, 'session_timeout', 'authentication', 'Session expired for user: Walton Loneza (waltonloneza@gmail.com) after 5143 seconds', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 14:48:32'),
+(5471, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 14:48:45'),
+(5472, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 14:48:45'),
+(5473, 5, 'access', 'inventory_tags', 'Admin accessed inventory tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 14:48:50'),
+(5474, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 14:48:52'),
+(5475, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 14:50:49'),
+(5476, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-28 14:53:34'),
+(5477, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:03:39'),
+(5478, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:03:40'),
+(5479, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:04:03'),
+(5480, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:04:05'),
+(5481, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:04:08'),
+(5482, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:04:12'),
+(5483, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:04:13'),
+(5484, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:04:19'),
+(5485, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:04:21'),
+(5486, 5, 'access', 'fuel_inventory', 'User accessed fuel inventory page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:04:24'),
+(5487, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:04:28'),
+(5488, 5, 'access', 'fuel_inventory', 'User accessed fuel inventory page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:04:29'),
+(5489, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:04:38'),
+(5490, 5, 'access', 'inventory_tags', 'Admin accessed inventory tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:04:40'),
+(5491, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:04:43'),
+(5492, 5, 'reports_accessed', 'reports', 'Accessed reports page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:04:46'),
+(5493, 5, 'reports_accessed', 'reports', 'Accessed reports page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:22:59'),
+(5494, 5, 'reports_accessed', 'reports', 'Accessed reports page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:22:59'),
+(5495, 5, 'reports_accessed', 'reports', 'Accessed reports page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:23:02'),
+(5496, 5, 'reports_accessed', 'reports', 'Accessed reports page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:25:49'),
+(5497, 5, 'reports_accessed', 'reports', 'Accessed reports page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:26:11'),
+(5498, 5, 'reports_accessed', 'reports', 'Accessed reports page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:26:41'),
+(5499, 5, 'reports_accessed', 'reports', 'Accessed reports page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:26:49'),
+(5500, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:26:50'),
+(5501, 5, 'access', 'inventory_tags', 'Admin accessed inventory tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:26:51'),
+(5502, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:26:57'),
+(5503, 5, 'reports_accessed', 'reports', 'Accessed reports page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:26:58'),
+(5504, 5, 'reports_accessed', 'reports', 'Accessed reports page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:27:42'),
+(5505, 5, 'reports_accessed', 'reports', 'Accessed reports page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:27:56'),
+(5506, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:28:11'),
+(5507, 5, 'reports_accessed', 'reports', 'Accessed reports page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:29:31'),
+(5508, 5, 'reports_accessed', 'reports', 'Accessed reports page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:30:43'),
+(5509, 5, 'reports_accessed', 'reports', 'Accessed reports page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:30:58'),
+(5510, 5, 'reports_accessed', 'reports', 'Accessed reports page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:31:01'),
+(5511, 17, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:43:07'),
+(5512, 17, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:43:11'),
+(5513, 17, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:43:42'),
+(5514, 17, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:43:48'),
+(5515, 17, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:45:33'),
+(5516, 17, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:45:59'),
+(5517, 17, 'infrastructure_accessed', 'infrastructure', 'Accessed infrastructure page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:55:23'),
+(5518, 17, 'infrastructure_accessed', 'infrastructure', 'Accessed infrastructure page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 05:57:00'),
+(5519, 17, 'infrastructure_accessed', 'infrastructure', 'Accessed infrastructure page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:10:05'),
+(5520, 17, 'infrastructure_accessed', 'infrastructure', 'Accessed infrastructure page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:10:16'),
+(5521, 17, 'infrastructure_accessed', 'infrastructure', 'Accessed infrastructure page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:10:47'),
+(5522, 17, 'infrastructure_accessed', 'infrastructure', 'Accessed infrastructure page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:11:26'),
+(5523, 17, 'software_accessed', 'software', 'Accessed software page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:16:39'),
+(5524, 17, 'infrastructure_accessed', 'infrastructure', 'Accessed infrastructure page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:20:26'),
+(5525, 17, 'session_timeout', 'authentication', 'Session expired for user: Walton Loneza (waltonloneza@gmail.com) after 4642 seconds', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:21:01'),
+(5526, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:21:14'),
+(5527, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:21:14'),
+(5528, 5, 'access', 'property_card', 'User accessed Property Card page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:27:55'),
+(5529, 5, 'access', 'property_summary', 'User accessed Property Summary page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:27:59'),
+(5530, 5, 'access', 'property_card', 'User accessed Property Card page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:28:07'),
+(5531, 5, 'access', 'property_card', 'User accessed Property Card page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:30:42'),
+(5532, 5, 'access', 'property_card', 'User accessed Property Card page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:33:22'),
+(5533, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:34:24'),
+(5534, 5, 'access', 'property_card', 'User accessed Property Card page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:35:15'),
+(5535, 5, 'print', 'inventory_tag', 'Printed inventory tag: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:35:24'),
+(5536, 5, 'export_pdf', 'asset_items', 'Exported asset item PDF: ID 14 - COMPUTER DESKTOP i7', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:43:17'),
+(5537, 5, 'infrastructure_accessed', 'infrastructure', 'Accessed infrastructure page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:43:47'),
+(5538, 5, 'infrastructure_accessed', 'infrastructure', 'Accessed infrastructure page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:43:56'),
+(5539, 5, 'software_accessed', 'software', 'Accessed software page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:44:15'),
+(5540, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:44:25'),
+(5541, 5, 'access', 'fuel_inventory', 'User accessed fuel inventory page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:44:39'),
+(5542, 5, 'access', 'fuel_inventory', 'User accessed fuel inventory page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:44:50'),
+(5543, 5, 'access', 'fuel_inventory', 'User accessed fuel inventory page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:44:52'),
+(5544, 5, 'access', 'fuel_inventory', 'User accessed fuel inventory page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:44:54'),
+(5545, 5, 'Accessed Unserviceable Assets page', 'inventory', 'unserviceable_assets.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:45:25'),
+(5546, 5, 'access', 'red_tags', 'Admin accessed red tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:45:31'),
+(5547, 5, 'page_access', 'disposed_items', 'Accessed disposed items page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:45:35'),
+(5548, 5, 'page_access', 'disposed_items', 'Accessed disposed items page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:45:35'),
+(5549, 5, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:45:51'),
+(5550, 5, 'Accessed Inventory Custodian Slip Form', 'forms', 'ics_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:45:57'),
+(5551, 5, 'Accessed Requisition and Issue Slip Form', 'forms', 'ris_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:46:02'),
+(5552, 5, 'Accessed Individual Item Request for User Property Form', 'forms', 'iirup_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:46:13'),
+(5553, 5, 'Accessed Inventory Transfer Request Form', 'forms', 'itr_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:46:21'),
+(5554, 5, 'infrastructure_accessed', 'infrastructure', 'Accessed infrastructure page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:46:34'),
+(5555, 5, 'software_accessed', 'software', 'Accessed software page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:46:39');
+INSERT INTO `system_logs` (`id`, `user_id`, `action`, `module`, `description`, `ip_address`, `user_agent`, `timestamp`) VALUES
+(5556, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:46:44'),
+(5557, 5, 'access', 'fuel_inventory', 'User accessed fuel inventory page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:46:48'),
+(5558, 5, 'access', 'employees', 'Admin accessed employees page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:46:52'),
+(5559, 5, 'access', 'property_card', 'User accessed Property Card page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:46:57'),
+(5560, 5, 'access', 'property_card', 'User accessed Property Card page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:47:04'),
+(5561, 5, 'access', 'property_card', 'User accessed Property Card page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-01 06:47:09'),
+(5562, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 00:39:48'),
+(5563, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 00:39:51'),
+(5564, 5, 'access', 'property_card', 'User accessed Property Card page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 00:39:59'),
+(5565, 5, 'export', 'property_card_pdf', 'User exported Property Card to PDF', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 00:40:04'),
+(5566, 5, 'infrastructure_accessed', 'infrastructure', 'Accessed infrastructure page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 00:42:38'),
+(5567, 5, 'software_accessed', 'software', 'Accessed software page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 00:43:35'),
+(5568, 5, 'infrastructure_accessed', 'infrastructure', 'Accessed infrastructure page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 00:43:50'),
+(5569, 5, 'access', 'property_card', 'User accessed Property Card page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 00:43:55'),
+(5570, 17, 'access', 'property_card', 'User accessed Property Card page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 00:48:58'),
+(5571, 17, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 00:52:18'),
+(5572, 17, 'infrastructure_accessed', 'infrastructure', 'Accessed infrastructure page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 00:56:43'),
+(5573, 17, 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 00:56:56'),
+(5574, 17, 'Accessed Requisition and Issue Slip Form', 'forms', 'ris_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 00:57:04'),
+(5575, 17, 'Failed to create RIS form', 'forms', 'Error: Duplicate entry \'\' for key \'sai_no\'', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 01:02:20'),
+(5576, 17, 'Accessed Requisition and Issue Slip Form', 'forms', 'ris_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 01:02:20'),
+(5577, 17, 'Created RIS form', 'forms', 'RIS No: RIS-2025-000134, Division: , Office: OMBO, Items added to Supply Office', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 01:03:41'),
+(5578, 17, 'Accessed Requisition and Issue Slip Form', 'forms', 'ris_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 01:03:41'),
+(5579, 17, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 01:03:51'),
+(5580, 17, 'consumable_released', 'consumable_management', 'Released 30 \'dishwashing liquid\' from office ID 3 to OMBO. Created new consumable in target office. Remarks: No remarks', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 01:04:20'),
+(5581, 17, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 01:04:20'),
+(5582, 17, 'access', 'release_history', 'Admin accessed release history page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 01:04:34'),
+(5583, 17, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 01:04:46'),
+(5584, 17, 'access', 'fuel_inventory', 'User accessed fuel inventory page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 01:18:03'),
+(5585, 17, 'Accessed Individual Item Request for User Property Form', 'forms', 'iirup_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 01:31:21'),
+(5586, 17, 'access', 'fuel_inventory', 'User accessed fuel inventory page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 01:38:56'),
+(5587, 17, 'access', 'fuel_inventory', 'User accessed fuel inventory page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 01:38:59'),
+(5588, 17, 'session_timeout', 'authentication', 'Session expired for user: Walton Loneza (waltonloneza@gmail.com) after 4534 seconds', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 01:55:22'),
+(5589, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 01:55:33'),
+(5590, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 01:55:34'),
+(5591, 5, 'Accessed Requisition and Issue Slip Form', 'forms', 'ris_form.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 01:55:40'),
+(5592, 5, 'Accessed RIS Entries', 'forms', 'ris_entries.php', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 01:55:42'),
+(5593, 5, 'access', 'system_settings', 'Accessed system settings page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 02:03:37');
 
 -- --------------------------------------------------------
 
@@ -6254,16 +7237,16 @@ CREATE TABLE `tag_formats` (
 --
 
 INSERT INTO `tag_formats` (`id`, `tag_type`, `format_components`, `auto_increment`, `digits`, `separator`, `current_number`, `status`, `created_by`, `updated_by`, `created_at`, `updated_at`) VALUES
-(1, 'property_no', '\"[{\\\"type\\\":\\\"year\\\"},{\\\"type\\\":\\\"form_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"text\\\",\\\"separator\\\":\\\"-\\\",\\\"value\\\":\\\"05\\\"},{\\\"type\\\":\\\"category_code\\\",\\\"separator\\\":\\\"-\\\"}]\"', 1, 2, '/', 10, 'active', 1, 1, '2026-01-08 04:12:14', '2026-02-24 01:38:03'),
+(1, 'property_no', '\"[{\\\"type\\\":\\\"year\\\"},{\\\"type\\\":\\\"form_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"text\\\",\\\"separator\\\":\\\"-\\\",\\\"value\\\":\\\"05\\\"},{\\\"type\\\":\\\"category_code\\\",\\\"separator\\\":\\\"-\\\"}]\"', 1, 2, '/', 13, 'active', 1, 1, '2026-01-08 04:12:14', '2026-02-27 10:38:03'),
 (2, 'ics_no', '\"[{\\\"type\\\":\\\"year\\\"},{\\\"type\\\":\\\"form_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"text\\\",\\\"separator\\\":\\\"-\\\",\\\"value\\\":\\\"05\\\"},{\\\"type\\\":\\\"category_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"sub_category_code\\\",\\\"separator\\\":\\\"-\\\"}]\"', 1, 2, '/', 20, 'active', 1, 1, '2026-01-09 09:25:27', '2026-02-24 04:07:42'),
 (3, 'itr_no', '\"[{\\\"type\\\":\\\"year\\\"},{\\\"type\\\":\\\"form_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"text\\\",\\\"separator\\\":\\\"-\\\",\\\"value\\\":\\\"05\\\"},{\\\"type\\\":\\\"category_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"sub_category_code\\\",\\\"separator\\\":\\\"-\\\"}]\"', 1, 2, '/', 15, 'active', 1, 1, '2026-01-09 09:30:48', '2026-02-13 17:06:05'),
 (4, 'par_no', '\"[{\\\"type\\\":\\\"year\\\"},{\\\"type\\\":\\\"form_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"text\\\",\\\"separator\\\":\\\"-\\\",\\\"value\\\":\\\"05\\\"},{\\\"type\\\":\\\"category_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"sub_category_code\\\",\\\"separator\\\":\\\"-\\\"}]\"', 1, 2, '/', 26, 'active', 1, 1, '2026-01-09 09:42:59', '2026-02-13 17:06:05'),
 (5, 'ris_no', '\"[{\\\"type\\\":\\\"year\\\"},{\\\"type\\\":\\\"form_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"text\\\",\\\"separator\\\":\\\"-\\\",\\\"value\\\":\\\"05\\\"},{\\\"type\\\":\\\"category_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"sub_category_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"digits\\\",\\\"separator\\\":\\\"-\\\",\\\"digits\\\":4}]\"', 1, 4, '/', 9, 'active', 1, 1, '2026-01-09 09:44:09', '2026-02-18 05:18:20'),
 (6, 'sai_no', '\"[{\\\"type\\\":\\\"year\\\"},{\\\"type\\\":\\\"form_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"text\\\",\\\"separator\\\":\\\"-\\\",\\\"value\\\":\\\"05\\\"},{\\\"type\\\":\\\"category_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"sub_category_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"digits\\\",\\\"separator\\\":\\\"-\\\",\\\"digits\\\":4}]\"', 1, 4, '/', 30, 'active', 1, 1, '2026-01-09 09:44:49', '2026-02-18 05:18:20'),
 (7, 'code', '\"[{\\\"type\\\":\\\"form_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"text\\\",\\\"separator\\\":\\\"-\\\",\\\"value\\\":\\\"05\\\"},{\\\"type\\\":\\\"category_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"sub_category_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"digits\\\",\\\"separator\\\":\\\"-\\\",\\\"digits\\\":4},{\\\"type\\\":\\\"month\\\",\\\"separator\\\":\\\"-\\\"}]\"', 1, 4, '/', 30, 'active', 1, 1, '2026-01-09 09:45:35', '2026-02-18 05:18:20'),
-(8, 'inventory_tag', '\"[{\\\"type\\\":\\\"year\\\"},{\\\"type\\\":\\\"form_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"text\\\",\\\"separator\\\":\\\"-\\\",\\\"value\\\":\\\"05\\\"},{\\\"type\\\":\\\"category_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"sub_category_code\\\",\\\"separator\\\":\\\"-\\\"}]\"', 1, 2, '/', 31, 'active', NULL, 5, '2026-01-23 02:53:48', '2026-02-24 01:46:08'),
-(9, 'red_tag_control', '\"[{\\\"type\\\":\\\"year\\\"},{\\\"type\\\":\\\"form_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"text\\\",\\\"separator\\\":\\\"-\\\",\\\"value\\\":\\\"05\\\"},{\\\"type\\\":\\\"category_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"sub_category_code\\\",\\\"separator\\\":\\\"-\\\"}]\"', 1, 2, '/', 21, 'active', 1, 1, '2026-02-01 08:06:12', '2026-02-13 17:06:05'),
-(10, 'red_tag_no', '\"[{\\\"type\\\":\\\"year\\\"},{\\\"type\\\":\\\"form_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"text\\\",\\\"separator\\\":\\\"-\\\",\\\"value\\\":\\\"05\\\"},{\\\"type\\\":\\\"category_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"sub_category_code\\\",\\\"separator\\\":\\\"-\\\"}]\"', 1, 2, '/', 33, 'active', 1, 1, '2026-02-01 08:06:37', '2026-02-13 17:06:05');
+(8, 'inventory_tag', '\"[{\\\"type\\\":\\\"year\\\"},{\\\"type\\\":\\\"form_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"text\\\",\\\"separator\\\":\\\"-\\\",\\\"value\\\":\\\"05\\\"},{\\\"type\\\":\\\"category_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"sub_category_code\\\",\\\"separator\\\":\\\"-\\\"}]\"', 1, 2, '/', 33, 'active', NULL, 5, '2026-01-23 02:53:48', '2026-02-27 10:46:57'),
+(9, 'red_tag_control', '\"[{\\\"type\\\":\\\"year\\\"},{\\\"type\\\":\\\"form_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"text\\\",\\\"separator\\\":\\\"-\\\",\\\"value\\\":\\\"05\\\"},{\\\"type\\\":\\\"category_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"sub_category_code\\\",\\\"separator\\\":\\\"-\\\"}]\"', 1, 2, '/', 27, 'active', 1, 1, '2026-02-01 08:06:12', '2026-02-28 00:21:15'),
+(10, 'red_tag_no', '\"[{\\\"type\\\":\\\"year\\\"},{\\\"type\\\":\\\"form_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"text\\\",\\\"separator\\\":\\\"-\\\",\\\"value\\\":\\\"05\\\"},{\\\"type\\\":\\\"category_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"sub_category_code\\\",\\\"separator\\\":\\\"-\\\"}]\"', 1, 2, '/', 43, 'active', 1, 1, '2026-02-01 08:06:37', '2026-02-28 00:21:15');
 
 -- --------------------------------------------------------
 
@@ -6320,13 +7303,13 @@ CREATE TABLE `users` (
 
 INSERT INTO `users` (`id`, `username`, `email`, `phone`, `address`, `office`, `password_hash`, `role`, `first_name`, `last_name`, `is_active`, `created_at`, `updated_at`, `last_login`, `failed_login_attempts`, `is_locked`, `password_changed_at`, `must_change_password`) VALUES
 (1, 'system_admin', 'admin@pims.com', '', '', NULL, '$2y$10$sTwhCxd.JawevaKAgnfMaO1p.PJ34C9ROfU4nbTkmuHHdDOzcq/nm', 'system_admin', 'System', 'Administrator', 1, '2026-01-03 13:00:37', '2026-01-04 13:21:03', NULL, 0, 0, '2026-01-06 02:21:26', 0),
-(2, 'wjll2022-2920-98466@bicol-u.edu.ph', 'wjll2022-2920-98466@bicol-u.edu.ph', NULL, NULL, NULL, '$2y$10$0mPC7iEVtjGUOVHLqGdmNe5whIhEuPVQfmdliPsnSdupq20au5cl2', 'admin', 'Walton', 'loneza', 1, '2026-01-03 22:34:21', '2026-01-03 22:34:21', NULL, 0, 0, '2026-01-06 02:21:26', 0),
-(4, 'notlawsfinds@gmail.com', 'notlawsfinds@gmail.com', NULL, NULL, NULL, '$2y$10$ekzQ67QhSp7H3QhmLyjbxeUwgXPw4d35vEm0mlbQX98WGDJvVRkry', 'office_admin', 'Joshua ', 'Escano', 1, '2026-01-03 22:44:32', '2026-01-03 22:44:32', NULL, 0, 0, '2026-01-06 02:21:26', 0),
-(5, 'waltonloneza@gmail.com', 'waltonloneza@gmail.com', '', '', NULL, '$2y$10$2P2Q00QrNIcMU/paGbgE8u5.mBKaZqgZIf.wolQlRiPvnXx4/aydi', 'admin', 'Walton', 'Loneza', 1, '2026-01-03 22:49:38', '2026-01-28 06:37:17', NULL, 0, 0, '2026-01-06 02:21:26', 0),
-(11, 'waltielappy@gmail.com', 'waltielappy@gmail.com', NULL, NULL, NULL, '$2y$10$hO1CH2GRcHTr81fLfLGokOk6kTlm9zja8X4ipgsq3Pb1ffMFS5bmu', 'user', 'Elton John', 'Moises', 0, '2026-01-04 00:39:40', '2026-01-04 00:45:06', NULL, 0, 0, '2026-01-06 02:21:26', 0),
-(12, 'joshuamarifrancis@gmail.com', 'joshuamarifrancis@gmail.com', NULL, NULL, NULL, '$2y$10$CowQbiXUmW3JQNKT6OWyhOJJHq9ti3JWeuEY99k4mtqywO2PnWrA.', 'office_admin', 'Joshua', 'Esc', 1, '2026-02-10 13:02:45', '2026-02-10 13:02:45', NULL, 0, 0, '2026-02-10 13:02:45', 0),
-(13, 'ejbm2022-9110-55459@bicol-u.edu.ph', 'ejbm2022-9110-55459@bicol-u.edu.ph', NULL, NULL, NULL, '$2y$10$o54U6aFysIeH5wTqGKNiN.pYkUhYuvpyfdyNFerUZF/RSTbwg/RRa', 'user', 'Elton', 'Moises', 1, '2026-02-10 13:03:28', '2026-02-10 13:03:28', NULL, 0, 0, '2026-02-10 13:03:28', 0),
-(14, 'lgupilar.supplyroom@gmail.com', 'lgupilar.supplyroom@gmail.com', NULL, NULL, 3, '$2y$10$U/SF49GDnjdK3nhAHWcN3uxDdv05paw5qfR3uAKcMjMcuJMg8pzc6', 'admin', 'John Patrick', 'Jazareno', 1, '2026-02-24 05:27:57', '2026-02-24 05:27:57', NULL, 0, 0, '2026-02-24 05:27:57', 0);
+(2, 'wjll2022-2920-98466@bicol-u.edu.ph', 'wjll2022-2920-98466@bicol-u.edu.ph', NULL, NULL, 5, '$2y$10$0mPC7iEVtjGUOVHLqGdmNe5whIhEuPVQfmdliPsnSdupq20au5cl2', 'admin', 'Walton', 'loneza', 1, '2026-01-03 22:34:21', '2026-02-25 01:39:23', NULL, 0, 0, '2026-01-06 02:21:26', 0),
+(4, 'notlawsfinds@gmail.com', 'notlawsfinds@gmail.com', NULL, NULL, 2, '$2y$10$ekzQ67QhSp7H3QhmLyjbxeUwgXPw4d35vEm0mlbQX98WGDJvVRkry', 'office_admin', 'Joshua ', 'Escano', 1, '2026-01-03 22:44:32', '2026-02-25 01:39:20', NULL, 0, 0, '2026-01-06 02:21:26', 0),
+(5, 'waltonloneza@gmail.com', 'waltonloneza@gmail.com', '', '', 3, '$2y$10$2P2Q00QrNIcMU/paGbgE8u5.mBKaZqgZIf.wolQlRiPvnXx4/aydi', 'admin', 'Walton', 'Loneza', 1, '2026-01-03 22:49:38', '2026-02-28 01:13:24', NULL, 0, 0, '2026-01-06 02:21:26', 0),
+(11, 'waltielappy@gmail.com', 'waltielappy@gmail.com', NULL, NULL, 5, '$2y$10$hO1CH2GRcHTr81fLfLGokOk6kTlm9zja8X4ipgsq3Pb1ffMFS5bmu', 'user', 'Elton John', 'Moises', 0, '2026-01-04 00:39:40', '2026-02-25 01:39:12', NULL, 0, 0, '2026-01-06 02:21:26', 0),
+(13, 'ejbm2022-9110-55459@bicol-u.edu.ph', 'ejbm2022-9110-55459@bicol-u.edu.ph', NULL, NULL, 1, '$2y$10$o54U6aFysIeH5wTqGKNiN.pYkUhYuvpyfdyNFerUZF/RSTbwg/RRa', 'user', 'Elton', 'Moises', 1, '2026-02-10 13:03:28', '2026-02-25 01:39:01', NULL, 0, 0, '2026-02-10 13:03:28', 0),
+(16, 'lgupilar.supplyroom@gmail.com', 'lgupilar.supplyroom@gmail.com', NULL, NULL, 3, '$2y$10$w4FzikJXfEqNn5ulfCZkaejz9v8KEPz4NV7QYFa0F/g9JQDqoAMZa', 'admin', 'John Patrick', 'Jazareno', 1, '2026-02-25 01:41:01', '2026-02-25 01:41:01', NULL, 0, 0, '2026-02-25 01:41:01', 0),
+(17, 'joshuamarifrancis@gmail.com', 'joshuamarifrancis@gmail.com', NULL, NULL, 5, '$2y$10$mLtzMicopmz6FtuqgBzXEulfmAZGt5eCjPiBs47ZWwORY2njUv0yK', 'office_admin', 'joshua', 'escano', 1, '2026-02-25 08:40:28', '2026-02-25 14:42:48', NULL, 0, 0, '2026-02-25 08:40:28', 0);
 
 -- --------------------------------------------------------
 
@@ -6445,6 +7428,15 @@ ALTER TABLE `asset_computers`
   ADD KEY `idx_warranty_expiry` (`warranty_expiry`),
   ADD KEY `created_by` (`created_by`),
   ADD KEY `updated_by` (`updated_by`);
+
+--
+-- Indexes for table `asset_desktop_computers`
+--
+ALTER TABLE `asset_desktop_computers`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_asset_item` (`asset_item_id`),
+  ADD KEY `idx_monitor_status` (`monitor_status`),
+  ADD KEY `idx_ups_status` (`ups_status`);
 
 --
 -- Indexes for table `asset_furniture`
@@ -6568,6 +7560,24 @@ ALTER TABLE `backups`
 --
 ALTER TABLE `backup_execution_logs`
   ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `borrow_requests`
+--
+ALTER TABLE `borrow_requests`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_requested_by` (`requested_by`),
+  ADD KEY `idx_requested_by_office` (`requested_by_office`),
+  ADD KEY `idx_requested_to_office` (`requested_to_office`),
+  ADD KEY `idx_asset_id` (`asset_id`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_created_at` (`created_at`),
+  ADD KEY `idx_start_date` (`start_date`),
+  ADD KEY `idx_end_date` (`end_date`),
+  ADD KEY `fk_borrow_requests_approved_by` (`approved_by`),
+  ADD KEY `fk_borrow_requests_denied_by` (`denied_by`),
+  ADD KEY `idx_borrow_requests_composite` (`status`,`requested_to_office`,`created_at`),
+  ADD KEY `idx_borrow_requests_outgoing` (`status`,`requested_by_office`,`created_at`);
 
 --
 -- Indexes for table `consumables`
@@ -6750,6 +7760,16 @@ ALTER TABLE `iirup_items`
   ADD KEY `idx_property_no` (`property_no`),
   ADD KEY `idx_dept_office` (`dept_office`),
   ADD KEY `idx_item_order` (`item_order`);
+
+--
+-- Indexes for table `infrastructure`
+--
+ALTER TABLE `infrastructure`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_classification` (`classification`),
+  ADD KEY `idx_location` (`location`),
+  ADD KEY `idx_date_constructed` (`date_constructed`),
+  ADD KEY `idx_created_by` (`created_by`);
 
 --
 -- Indexes for table `inventory_tags`
@@ -6995,6 +8015,20 @@ ALTER TABLE `security_metrics`
   ADD KEY `idx_metric_date` (`metric_date`);
 
 --
+-- Indexes for table `software`
+--
+ALTER TABLE `software`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_software_name` (`software_name`),
+  ADD KEY `idx_category` (`category`),
+  ADD KEY `idx_vendor` (`vendor`),
+  ADD KEY `idx_license_type` (`license_type`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_purchase_date` (`purchase_date`),
+  ADD KEY `idx_renewal_date` (`renewal_date`),
+  ADD KEY `idx_created_by` (`created_by`);
+
+--
 -- Indexes for table `system_logs`
 --
 ALTER TABLE `system_logs`
@@ -7049,7 +8083,7 @@ ALTER TABLE `user_password_history`
 -- AUTO_INCREMENT for table `assets`
 --
 ALTER TABLE `assets`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `asset_buildings`
@@ -7067,6 +8101,12 @@ ALTER TABLE `asset_categories`
 -- AUTO_INCREMENT for table `asset_computers`
 --
 ALTER TABLE `asset_computers`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT for table `asset_desktop_computers`
+--
+ALTER TABLE `asset_desktop_computers`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
@@ -7079,13 +8119,13 @@ ALTER TABLE `asset_furniture`
 -- AUTO_INCREMENT for table `asset_items`
 --
 ALTER TABLE `asset_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT for table `asset_item_history`
 --
 ALTER TABLE `asset_item_history`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
 
 --
 -- AUTO_INCREMENT for table `asset_land`
@@ -7136,16 +8176,22 @@ ALTER TABLE `backup_execution_logs`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `borrow_requests`
+--
+ALTER TABLE `borrow_requests`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `consumables`
 --
 ALTER TABLE `consumables`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `consumable_release_history`
 --
 ALTER TABLE `consumable_release_history`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
 
 --
 -- AUTO_INCREMENT for table `employees`
@@ -7235,13 +8281,19 @@ ALTER TABLE `ics_items`
 -- AUTO_INCREMENT for table `iirup_forms`
 --
 ALTER TABLE `iirup_forms`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `iirup_items`
 --
 ALTER TABLE `iirup_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
+
+--
+-- AUTO_INCREMENT for table `infrastructure`
+--
+ALTER TABLE `infrastructure`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `inventory_tags`
@@ -7313,13 +8365,13 @@ ALTER TABLE `par_form`
 -- AUTO_INCREMENT for table `par_forms`
 --
 ALTER TABLE `par_forms`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `par_items`
 --
 ALTER TABLE `par_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `password_policies`
@@ -7349,19 +8401,19 @@ ALTER TABLE `products`
 -- AUTO_INCREMENT for table `red_tags`
 --
 ALTER TABLE `red_tags`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `ris_forms`
 --
 ALTER TABLE `ris_forms`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `ris_items`
 --
 ALTER TABLE `ris_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `role_permissions`
@@ -7391,7 +8443,7 @@ ALTER TABLE `security_audit_logs`
 -- AUTO_INCREMENT for table `security_logs`
 --
 ALTER TABLE `security_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=81;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=93;
 
 --
 -- AUTO_INCREMENT for table `security_metrics`
@@ -7400,10 +8452,16 @@ ALTER TABLE `security_metrics`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `software`
+--
+ALTER TABLE `software`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
 -- AUTO_INCREMENT for table `system_logs`
 --
 ALTER TABLE `system_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4860;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5594;
 
 --
 -- AUTO_INCREMENT for table `system_settings`
@@ -7427,7 +8485,7 @@ ALTER TABLE `thresholds`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT for table `user_password_history`
@@ -7468,6 +8526,12 @@ ALTER TABLE `asset_categories`
 ALTER TABLE `asset_computers`
   ADD CONSTRAINT `asset_computers_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `asset_computers_ibfk_3` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `asset_desktop_computers`
+--
+ALTER TABLE `asset_desktop_computers`
+  ADD CONSTRAINT `fk_desktop_computers_asset_item` FOREIGN KEY (`asset_item_id`) REFERENCES `asset_items` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `asset_furniture`
@@ -7548,6 +8612,17 @@ ALTER TABLE `asset_vehicles`
 --
 ALTER TABLE `backups`
   ADD CONSTRAINT `backups_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`);
+
+--
+-- Constraints for table `borrow_requests`
+--
+ALTER TABLE `borrow_requests`
+  ADD CONSTRAINT `fk_borrow_requests_approved_by` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_borrow_requests_asset_id` FOREIGN KEY (`asset_id`) REFERENCES `asset_items` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_borrow_requests_denied_by` FOREIGN KEY (`denied_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_borrow_requests_requested_by` FOREIGN KEY (`requested_by`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_borrow_requests_requested_by_office` FOREIGN KEY (`requested_by_office`) REFERENCES `offices` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_borrow_requests_requested_to_office` FOREIGN KEY (`requested_to_office`) REFERENCES `offices` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `consumables`
