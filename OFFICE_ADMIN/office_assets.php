@@ -410,12 +410,6 @@ try {
             </div>
             <div class="col-lg-2 col-md-6">
                 <div class="stats-card">
-                    <div class="stats-number">₱<?php echo number_format($stats['total_value'], 2); ?></div>
-                    <div class="stats-label"><i class="bi bi-currency-dollar"></i> Total Value</div>
-                </div>
-            </div>
-            <div class="col-lg-2 col-md-6">
-                <div class="stats-card">
                     <div class="stats-number"><?php echo $stats['no_tag_count']; ?></div>
                     <div class="stats-label"><i class="bi bi-x-circle"></i> No Tag</div>
                 </div>

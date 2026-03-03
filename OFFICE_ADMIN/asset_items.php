@@ -29,7 +29,7 @@ if ($asset_id === 0) {
 
 // Get asset details for this office
 $asset = null;
-$asset_sql = "SELECT a.*, ac.category_name, ac.category_code 
+$asset_sql = "SELECT a.*, ac.description as category_description, ac.category_code 
               FROM assets a 
               LEFT JOIN asset_categories ac ON a.asset_categories_id = ac.id 
               WHERE a.id = ? AND a.office_id = ?";
@@ -247,14 +247,11 @@ $page_title = 'Asset Items - ' . htmlspecialchars($asset['description']);
                     <h5 class="mb-3"><i class="bi bi-info-circle"></i> Asset Information</h5>
                     <div class="row">
                         <div class="col-md-6">
-                            <p><strong>Category:</strong> <?php echo htmlspecialchars($asset['category_name'] ?? 'Uncategorized'); ?></p>
+                            <p><strong>Category:</strong> <?php echo htmlspecialchars($asset['category_description'] ?? 'Uncategorized'); ?></p>
                             <p><strong>Unit:</strong> <?php echo htmlspecialchars($asset['unit']); ?></p>
                             <p><strong>Office:</strong> <?php echo htmlspecialchars($_SESSION['office']); ?></p>
                         </div>
                         <div class="col-md-6">
-                            <p><strong>Total Quantity:</strong> <?php echo $asset['quantity']; ?></p>
-                            <p><strong>Unit Cost:</strong> ₱<?php echo number_format($asset['unit_cost'], 2); ?></p>
-                            <p><strong>Total Value:</strong> ₱<?php echo number_format($asset['quantity'] * $asset['unit_cost'], 2); ?></p>
                         </div>
                     </div>
                 </div>
@@ -331,10 +328,8 @@ $page_title = 'Asset Items - ' . htmlspecialchars($asset['description']);
                                 <th>Property No</th>
                                 <th>Description</th>
                                 <th>Status</th>
-                                <th>Value</th>
                                 <th>Acquisition Date</th>
                                 <th>Last Updated</th>
-                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -372,20 +367,8 @@ $page_title = 'Asset Items - ' . htmlspecialchars($asset['description']);
                                             <?php echo isset($display_status) ? $display_status : ucfirst($item['status']); ?>
                                         </span>
                                     </td>
-                                    <td class="text-value">₱<?php echo number_format($item['value'], 2); ?></td>
                                     <td><?php echo date('M j, Y', strtotime($item['acquisition_date'])); ?></td>
                                     <td><?php echo date('M j, Y', strtotime($item['last_updated'])); ?></td>
-                                    <td>
-                                        <?php if ($item['status'] === 'no_tag'): ?>
-                                            <a href="create_tag.php?id=<?php echo $item['id']; ?>" class="btn btn-outline-warning btn-action" title="Create Tag">
-                                                <i class="bi bi-tag"></i>
-                                            </a>
-                                        <?php else: ?>
-                                            <a href="view_asset_item.php?id=<?php echo $item['id']; ?>" class="btn btn-outline-info btn-action" title="View Details">
-                                                <i class="bi bi-eye"></i>
-                                            </a>
-                                        <?php endif; ?>
-                                    </td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
@@ -451,18 +434,7 @@ $page_title = 'Asset Items - ' . htmlspecialchars($asset['description']);
                         }
                     },
                     {
-                        targets: 3, // Value column
-                        orderable: true,
-                        render: function(data, type, row) {
-                            if (type === 'sort' || type === 'type') {
-                                // Remove formatting and convert to number for sorting
-                                return parseFloat(data.replace(/[^0-9.-]+/g, ''));
-                            }
-                            return data;
-                        }
-                    },
-                    {
-                        targets: 4, // Acquisition Date column
+                        targets: 3, // Acquisition Date column
                         orderable: true,
                         render: function(data, type, row) {
                             if (type === 'sort' || type === 'type') {
@@ -473,7 +445,7 @@ $page_title = 'Asset Items - ' . htmlspecialchars($asset['description']);
                         }
                     },
                     {
-                        targets: 5, // Last Updated column
+                        targets: 4, // Last Updated column
                         orderable: true,
                         render: function(data, type, row) {
                             if (type === 'sort' || type === 'type') {
@@ -482,12 +454,6 @@ $page_title = 'Asset Items - ' . htmlspecialchars($asset['description']);
                             }
                             return data;
                         }
-                    },
-                    {
-                        targets: -1, // Actions column (last column)
-                        orderable: false,
-                        searchable: false,
-                        className: 'text-center'
                     }
                 ],
                 dom: '<"row"<"col-md-6"l><"col-md-6 text-end"f>>rtip',
@@ -521,16 +487,15 @@ $page_title = 'Asset Items - ' . htmlspecialchars($asset['description']);
         function exportAssetItems() {
             // Use DataTables export functionality
             const data = assetItemsTable.data().toArray();
-            let csv = 'Property No,Description,Status,Value,Acquisition Date,Last Updated\n';
+            let csv = 'Property No,Description,Status,Acquisition Date,Last Updated\n';
             
             data.forEach(row => {
                 const rowData = [
                     row[0], // Property No
                     row[1], // Description
                     row[2].replace(/<[^>]*>/g, '').trim(), // Status
-                    row[3].replace(/[^0-9.-]+/g, ''), // Value
-                    row[4], // Acquisition Date
-                    row[5]  // Last Updated
+                    row[3], // Acquisition Date
+                    row[4]  // Last Updated
                 ];
                 csv += rowData.map(cell => `"${cell.trim()}"`).join(',') + '\n';
             });
