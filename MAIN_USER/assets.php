@@ -22,6 +22,7 @@ $assets = [];
 $error = null;
 
 $office_filter = isset($_GET['office_id']) ? (int)$_GET['office_id'] : 0;
+$office_name_filter = isset($_GET['office']) ? trim((string)$_GET['office']) : '';
 $offices = [];
 
 $status_filter = isset($_GET['status']) ? trim((string)$_GET['status']) : '';
@@ -34,6 +35,15 @@ if (!$conn || $conn->connect_error) {
     $error = 'Database connection failed: ' . ($conn->connect_error ?? 'Unknown error');
 } else {
     try {
+        // Auto-fix borrowed status for approved borrow requests
+        $fix_sql = "
+            UPDATE asset_items ai 
+            JOIN borrow_requests br ON br.asset_id = ai.id 
+            SET ai.status = 'borrowed' 
+            WHERE br.status = 'approved' AND ai.status != 'borrowed'
+        ";
+        $conn->query($fix_sql);
+        
         $res = $conn->query("SELECT id, office_name FROM offices ORDER BY office_name ASC");
         if ($res) {
             while ($row = $res->fetch_assoc()) {
@@ -43,11 +53,11 @@ if (!$conn || $conn->connect_error) {
 
         $sql = "SELECT 
                     ai.id as item_id,
+                    ai.property_no,
                     ai.description as item_description,
                     ai.status as item_status,
                     ai.value as item_value,
-                    ai.acquisition_date,
-                    ai.property_no,
+                    ai.last_updated,
                     a.id,
                     a.description,
                     a.unit,
@@ -57,47 +67,74 @@ if (!$conn || $conn->connect_error) {
                     ac.category_name,
                     ac.category_code,
                     o.office_name,
-                    o.id as office_id
+                    o.id as office_id,
+                    br.id as borrow_request_id,
+                    br.start_date as borrowed_date,
+                    br.end_date as expected_return_date,
+                    br.returned_at as actual_return_date,
+                    br.purpose,
+                    br.status as borrow_status,
+                    br.approved_at,
+                    br.quantity_requested,
+                    br.requested_by_office as borrower_office_id,
+                    u.first_name as borrower_firstname,
+                    u.last_name as borrower_lastname
                 FROM asset_items ai
                 LEFT JOIN assets a ON ai.asset_id = a.id
                 LEFT JOIN asset_categories ac ON ac.id = a.asset_categories_id
-                LEFT JOIN offices o ON o.id = ai.office_id";
+                LEFT JOIN offices o ON o.id = ai.office_id
+                LEFT JOIN borrow_requests br ON br.asset_id = ai.id AND br.status = 'approved'
+                LEFT JOIN users u ON u.id = br.requested_by";
 
         $params = [];
         $types = '';
         $where_clauses = [];
 
         if ($status_filter !== '') {
-            $where_clauses[] = "ai.status = ?";
-            $params[] = $status_filter;
-            $types .= 's';
+            if ($status_filter === 'borrowed') {
+                // For borrowed status, filter by asset_items.status = 'borrowed'
+                $where_clauses[] = "ai.status = 'borrowed'";
+            } else {
+                $where_clauses[] = "ai.status = ?";
+                $params[] = $status_filter;
+                $types .= 's';
+            }
         }
 
         if ($office_filter > 0) {
             $where_clauses[] = "ai.office_id = ?";
             $params[] = $office_filter;
             $types .= 'i';
+        } elseif ($office_name_filter !== '') {
+            $where_clauses[] = "o.office_name = ?";
+            $params[] = $office_name_filter;
+            $types .= 's';
         }
 
         if (!empty($where_clauses)) {
             $sql .= " WHERE " . implode(' AND ', $where_clauses);
         }
 
-        $sql .= " ORDER BY ai.last_updated DESC";
+        // Group by office for per-office display
+        $sql .= " GROUP BY o.id, ai.id ORDER BY o.office_name ASC, ai.last_updated DESC";
 
         $stmt = $conn->prepare($sql);
         if (!$stmt) {
-            $error = 'Failed to prepare query.';
+            $error = 'Failed to prepare query: ' . $conn->error;
         } else {
             if (!empty($params)) {
                 $stmt->bind_param($types, ...$params);
             }
             $stmt->execute();
             $result = $stmt->get_result();
+            
+            // Get all assets (no office grouping)
+            $assets = [];
             while ($row = $result->fetch_assoc()) {
                 $assets[] = $row;
             }
             $stmt->close();
+            
         }
     } catch (Exception $e) {
         $error = 'Error loading assets: ' . $e->getMessage();
@@ -284,7 +321,27 @@ if (!$conn || $conn->connect_error) {
                         <h1 class="mb-1" style="font-weight: 700; color: #191BA9;">
                             <i class="bi bi-box-seam me-2"></i>Assets
                         </h1>
-                        <p class="text-muted mb-0">Viewing assets across all offices.</p>
+                        <p class="text-muted mb-0">
+                            <?php
+                            if (($office_filter > 0 || $office_name_filter !== '') && $status_filter !== '') {
+                                $office_display = '';
+                                if ($office_filter > 0) {
+                                    $office_display = isset($offices[array_search($office_filter, array_column($offices, 'id'))]['office_name']) ? htmlspecialchars($offices[array_search($office_filter, array_column($offices, 'id'))]['office_name']) : "Office " . $office_filter;
+                                } elseif ($office_name_filter !== '') {
+                                    $office_display = htmlspecialchars($office_name_filter);
+                                }
+                                echo "Viewing " . htmlspecialchars(ucfirst($status_filter)) . " assets of " . $office_display . ".";
+                            } elseif ($office_filter > 0) {
+                                echo "Viewing assets from " . (isset($offices[array_search($office_filter, array_column($offices, 'id'))]['office_name']) ? htmlspecialchars($offices[array_search($office_filter, array_column($offices, 'id'))]['office_name']) : "Office " . $office_filter) . ".";
+                            } elseif ($office_name_filter !== '') {
+                                echo "Viewing assets of " . htmlspecialchars($office_name_filter) . ".";
+                            } elseif ($status_filter !== '') {
+                                echo "Viewing " . htmlspecialchars(ucfirst($status_filter)) . " assets across all offices.";
+                            } else {
+                                echo "Viewing all assets in the system.";
+                            }
+                            ?>
+                        </p>
                         <?php if ($error): ?>
                             <div class="alert alert-warning mt-2 mb-0 py-2" role="alert">
                                 <i class="bi bi-exclamation-triangle me-1"></i>
@@ -295,28 +352,8 @@ if (!$conn || $conn->connect_error) {
                     <div class="col-md-4 text-md-end">
                         <div class="d-flex align-items-center justify-content-md-end gap-2 flex-wrap">
                             <a class="btn btn-outline-primary btn-sm" href="assets.php">
-                                <i class="bi bi-arrow-clockwise"></i> Refresh
+                                <i class="bi bi-arrow-clockwise me-1"></i> Refresh
                             </a>
-                            <div class="d-inline-block" style="min-width: 200px;">
-                                <select class="form-select form-select-sm" id="officeFilter">
-                                    <option value="0" <?php echo $office_filter === 0 ? 'selected' : ''; ?>>Asset of Offices</option>
-                                    <?php foreach ($offices as $office): ?>
-                                        <option value="<?php echo (int)$office['id']; ?>" <?php echo $office_filter === (int)$office['id'] ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($office['office_name']); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            <div class="d-inline-block" style="min-width: 180px;">
-                                <select class="form-select form-select-sm" id="statusFilter">
-                                    <option value="" <?php echo $status_filter === '' ? 'selected' : ''; ?>>All Statuses</option>
-                                    <option value="serviceable" <?php echo $status_filter === 'serviceable' ? 'selected' : ''; ?>>Serviceable</option>
-                                    <option value="unserviceable" <?php echo $status_filter === 'unserviceable' ? 'selected' : ''; ?>>Unserviceable</option>
-                                    <option value="red_tagged" <?php echo $status_filter === 'red_tagged' ? 'selected' : ''; ?>>Red-Tagged</option>
-                                    <option value="borrowed" <?php echo $status_filter === 'borrowed' ? 'selected' : ''; ?>>Borrowed</option>
-                                    <option value="no_tag" <?php echo $status_filter === 'no_tag' ? 'selected' : ''; ?>>No Tag</option>
-                                </select>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -332,6 +369,7 @@ if (!$conn || $conn->connect_error) {
                                 <th>Category</th>
                                 <th>Office</th>
                                 <th>Status</th>
+                                <th>Borrower</th>
                                 <th class="text-end">Value</th>
                                 <th>Last Updated</th>
                                 <th>Actions</th>
@@ -352,6 +390,7 @@ if (!$conn || $conn->connect_error) {
                                         <td class="ps-3"><?php echo htmlspecialchars($row['office_name'] ?? ''); ?></td>
                                         <td class="ps-3">
                                             <?php
+                                            // Show actual asset status
                                             $status = $row['item_status'] ?? '';
                                             $status_class = '';
                                             $display_status = '';
@@ -385,17 +424,36 @@ if (!$conn || $conn->connect_error) {
                                                 <?php echo $display_status; ?>
                                             </span>
                                         </td>
+                                        <td class="ps-3">
+                                            <?php if (!empty($row['borrow_request_id'])): ?>
+                                                <div>
+                                                    <strong><?php echo htmlspecialchars(($row['borrower_firstname'] ?? '') . ' ' . ($row['borrower_lastname'] ?? '')); ?></strong>
+                                                    <?php if (!empty($row['borrowed_date'])): ?>
+                                                        <div class="small text-info">Since: <?php echo date('M j, Y', strtotime($row['borrowed_date'])); ?></div>
+                                                    <?php endif; ?>
+                                                    <?php if (!empty($row['expected_return_date'])): ?>
+                                                        <div class="small text-warning">Due: <?php echo date('M j, Y', strtotime($row['expected_return_date'])); ?></div>
+                                                    <?php endif; ?>
+                                                    <?php if (!empty($row['quantity_requested']) && $row['quantity_requested'] > 1): ?>
+                                                        <div class="small text-primary">Qty: <?php echo (int)$row['quantity_requested']; ?></div>
+                                                    <?php endif; ?>
+                                                    <?php if (!empty($row['purpose'])): ?>
+                                                        <div class="small text-muted" style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="<?php echo htmlspecialchars($row['purpose']); ?>">
+                                                            <?php echo htmlspecialchars(substr($row['purpose'], 0, 30)) . (strlen($row['purpose']) > 30 ? '...' : ''); ?>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                </div>
+                                            <?php else: ?>
+                                                <span class="text-muted">-</span>
+                                            <?php endif; ?>
+                                        </td>
                                         <td class="text-end ps-3"><?php echo number_format((float)($row['item_value'] ?? 0), 2); ?></td>
                                         <td class="text-muted small ps-3"><?php echo htmlspecialchars($row['updated_at'] ?? ''); ?></td>
                                         <td class="ps-3">
                                             <a href="view_asset_item.php?id=<?php echo (int)$row['item_id']; ?>" class="btn btn-sm btn-outline-info me-1">
                                                 <i class="bi bi-eye"></i> View
                                             </a>
-                                            <?php if ($row['item_status'] === 'serviceable'): ?>
-                                                <button class="btn btn-sm btn-outline-warning" onclick="borrowItem(<?php echo (int)$row['item_id']; ?>)">
-                                                    <i class="bi bi-arrow-left-right"></i> Borrow
-                                                </button>
-                                            <?php elseif ($row['item_status'] === 'borrowed'): ?>
+                                            <?php if ($row['item_status'] === 'borrowed'): ?>
                                                 <button class="btn btn-sm btn-outline-success" onclick="returnItem(<?php echo (int)$row['item_id']; ?>)">
                                                     <i class="bi bi-arrow-return-left"></i> Return
                                                 </button>
@@ -405,7 +463,7 @@ if (!$conn || $conn->connect_error) {
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="8" class="text-center text-muted py-4">No assets found.</td>
+                                    <td colspan="9" class="text-center text-muted py-4">No assets found.</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>
@@ -423,6 +481,93 @@ if (!$conn || $conn->connect_error) {
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     <?php require_once 'includes/sidebar-scripts.php'; ?>
     <script>
+        function transferAssetToOMBO() {
+            if (confirm('Transfer asset 2026-07-05-030-0307-01 from OMM to OMBO office?')) {
+                fetch('transfer_asset_office.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'transfer_asset',
+                        property_no: '2026-07-05-030-0307-01',
+                        from_office: 'OMM',
+                        to_office: 'OMBO'
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('✅ ' + data.message);
+                        // Redirect to OMBO borrowed assets page
+                        window.location.href = 'assets.php?office=OMBO&status=borrowed';
+                    } else {
+                        alert('❌ Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while transferring the asset.');
+                });
+            }
+        }
+        
+        function transferAssetToOMM() {
+            if (confirm('Transfer asset 2026-07-05-030-0307-01 back to OMM office?')) {
+                fetch('transfer_asset_office.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'transfer_asset',
+                        property_no: '2026-07-05-030-0307-01',
+                        from_office: 'OMBO',
+                        to_office: 'OMM'
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('✅ ' + data.message);
+                        // Redirect to OMM borrowed assets page
+                        window.location.href = 'assets.php?office=OMM&status=borrowed';
+                    } else {
+                        alert('❌ Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while transferring the asset.');
+                });
+            }
+        }
+        
+        function fixBorrowedStatus() {
+            if (confirm('Update asset status to "borrowed" for all approved borrow requests?')) {
+                fetch('fix_borrowed_status_ajax.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({action: 'fix_borrowed_status'})
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('✅ ' + data.message + ' assets updated to "borrowed" status.');
+                        location.reload();
+                    } else {
+                        alert('❌ Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while fixing borrowed status.');
+                });
+            }
+        }
+        
         let assetsTable;
         
         document.addEventListener('DOMContentLoaded', function() {

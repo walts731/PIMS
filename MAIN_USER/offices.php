@@ -731,58 +731,6 @@ if (!$conn || $conn->connect_error) {
                 </div>
             <?php endif; ?>
 
-            <!-- Borrowed Items Section -->
-            <?php if (!empty($borrowed_items)): ?>
-                <div class="card mb-4">
-                    <div class="card-header bg-warning text-dark">
-                        <h5 class="mb-0">
-                            <i class="bi bi-arrow-left-right me-2"></i>
-                            Borrowed Items (<?php echo count($borrowed_items); ?>)
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-sm table-hover">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Property No</th>
-                                        <th>Item Description</th>
-                                        <th>Category</th>
-                                        <th>Office</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($borrowed_items as $item): ?>
-                                        <tr>
-                                            <td><?php echo htmlspecialchars($item['property_no'] ?? ''); ?></td>
-                                            <td>
-                                                <div>
-                                                    <strong><?php echo htmlspecialchars($item['item_description'] ?? ''); ?></strong>
-                                                    <?php if (!empty($item['asset_description'])): ?>
-                                                        <div class="text-muted small"><?php echo htmlspecialchars($item['asset_description'] ?? ''); ?></div>
-                                                    <?php endif; ?>
-                                                </div>
-                                            </td>
-                                            <td><?php echo htmlspecialchars($item['category_name'] ?? ''); ?></td>
-                                            <td><?php echo htmlspecialchars($item['office_name'] ?? ''); ?></td>
-                                            <td>
-                                                <a href="view_asset_item.php?id=<?php echo (int)$item['item_id']; ?>" class="btn btn-outline-info btn-sm me-1">
-                                                    <i class="bi bi-eye"></i> View
-                                                </a>
-                                                <button class="btn btn-outline-success btn-sm" onclick="returnItem(<?php echo (int)$item['item_id']; ?>)">
-                                                    <i class="bi bi-arrow-return-left"></i> Return
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            <?php endif; ?>
-
             <?php if (!$error && !empty($offices)): ?>
                 <div class="row">
                     <?php foreach ($offices as $office): ?>
@@ -836,7 +784,7 @@ if (!$conn || $conn->connect_error) {
                                     <a href="assets.php?office_id=<?php echo (int)$office['id']; ?>" class="btn btn-outline-info btn-sm me-2">
                                         <i class="bi bi-collection"></i> Asset Items
                                     </a>
-                                    <a href="assets.php?office_id=<?php echo (int)$office['id']; ?>&status=borrowed" class="btn btn-outline-warning btn-sm">
+                                    <a href="assets.php?office=<?php echo urlencode($office['office_name']); ?>&status=borrowed" class="btn btn-outline-warning btn-sm">
                                         <i class="bi bi-arrow-left-right"></i> Borrowed
                                     </a>
                                 </div>
