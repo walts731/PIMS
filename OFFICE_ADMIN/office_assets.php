@@ -368,11 +368,6 @@ try {
                     </h1>
                     <p class="text-muted mb-0">Manage office assets, equipment, and inventory</p>
                 </div>
-                <div class="col-md-4 text-md-end">
-                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addAssetModal">
-                        <i class="bi bi-plus-circle"></i> Add Asset
-                    </button>
-                </div>
             </div>
         </div>
         
@@ -516,109 +511,6 @@ try {
     
     <?php require_once 'includes/logout-modal.php'; ?>
     <?php require_once 'includes/change-password-modal.php'; ?>
-    
-    <!-- Add Asset Modal -->
-    <div class="modal fade" id="addAssetModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title"><i class="bi bi-plus-circle"></i> Add New Asset</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <form method="POST" action="">
-                    <input type="hidden" name="action" value="add_asset">
-                    <div class="modal-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="asset_name" class="form-label">Asset Name</label>
-                                    <input type="text" class="form-control" id="asset_name" name="asset_name" required>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="asset_type" class="form-label">Asset Type</label>
-                                    <select class="form-control" id="asset_type" name="asset_type" required>
-                                        <option value="">Select Type</option>
-                                        <option value="electronics">Electronics</option>
-                                        <option value="furniture">Furniture</option>
-                                        <option value="vehicle">Vehicle</option>
-                                        <option value="equipment">Equipment</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div class="mb-3">
-                                    <label for="description" class="form-label">Description</label>
-                                    <textarea class="form-control" id="description" name="description" rows="3"></textarea>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="serial_number" class="form-label">Serial Number</label>
-                                    <input type="text" class="form-control" id="serial_number" name="serial_number">
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="location" class="form-label">Location</label>
-                                    <input type="text" class="form-control" id="location" name="location" required>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    <label for="purchase_date" class="form-label">Purchase Date</label>
-                                    <input type="date" class="form-control" id="purchase_date" name="purchase_date" required>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    <label for="purchase_cost" class="form-label">Purchase Cost (₱)</label>
-                                    <input type="number" class="form-control" id="purchase_cost" name="purchase_cost" step="0.01" min="0" required>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    <label for="current_value" class="form-label">Current Value (₱)</label>
-                                    <input type="number" class="form-control" id="current_value" name="current_value" step="0.01" min="0" required>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="quantity" class="form-label">Quantity</label>
-                                    <input type="number" class="form-control" id="quantity" name="quantity" value="1" min="1" required>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="status" class="form-label">Status</label>
-                                    <select class="form-control" id="status" name="status" required>
-                                        <option value="available">Available</option>
-                                        <option value="maintenance">Maintenance</option>
-                                        <option value="disposed">Disposed</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-plus-circle"></i> Add Asset
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
     
     <!-- Edit Asset Modal -->
     <div class="modal fade" id="editAssetModal" tabindex="-1">
@@ -795,11 +687,6 @@ try {
             // This will be implemented when backend is added
             console.log('Edit asset:', assetId);
         }
-        
-        // Clear form on add modal close
-        document.getElementById('addAssetModal').addEventListener('hidden.bs.modal', function () {
-            this.querySelector('form').reset();
-        });
         
         // Clear form on edit modal close
         document.getElementById('editAssetModal').addEventListener('hidden.bs.modal', function () {
