@@ -31,6 +31,11 @@ if ($status_filter !== '' && !in_array($status_filter, $allowed_statuses, true))
     $status_filter = '';
 }
 
+$category_filter = isset($_GET['category_id']) ? (int)$_GET['category_id'] : 0;
+$categories = [];
+
+$search_filter = isset($_GET['search']) ? trim((string)$_GET['search']) : '';
+
 if (!$conn || $conn->connect_error) {
     $error = 'Database connection failed: ' . ($conn->connect_error ?? 'Unknown error');
 } else {
@@ -48,6 +53,14 @@ if (!$conn || $conn->connect_error) {
         if ($res) {
             while ($row = $res->fetch_assoc()) {
                 $offices[] = $row;
+            }
+        }
+        
+        // Get all categories
+        $category_result = $conn->query("SELECT id, category_name FROM asset_categories ORDER BY category_name ASC");
+        if ($category_result) {
+            while ($row = $category_result->fetch_assoc()) {
+                $categories[] = $row;
             }
         }
 
@@ -68,6 +81,8 @@ if (!$conn || $conn->connect_error) {
                     ac.category_code,
                     o.office_name,
                     o.id as office_id,
+                    borrower_office.office_name as borrower_office_name,
+                    borrower_office.id as borrower_office_id,
                     br.id as borrow_request_id,
                     br.start_date as borrowed_date,
                     br.end_date as expected_return_date,
@@ -76,7 +91,7 @@ if (!$conn || $conn->connect_error) {
                     br.status as borrow_status,
                     br.approved_at,
                     br.quantity_requested,
-                    br.requested_by_office as borrower_office_id,
+                    br.requested_by_office as borrower_office_id_ref,
                     u.first_name as borrower_firstname,
                     u.last_name as borrower_lastname
                 FROM asset_items ai
@@ -84,6 +99,7 @@ if (!$conn || $conn->connect_error) {
                 LEFT JOIN asset_categories ac ON ac.id = a.asset_categories_id
                 LEFT JOIN offices o ON o.id = ai.office_id
                 LEFT JOIN borrow_requests br ON br.asset_id = ai.id AND br.status = 'approved'
+                LEFT JOIN offices borrower_office ON borrower_office.id = br.requested_by_office
                 LEFT JOIN users u ON u.id = br.requested_by";
 
         $params = [];
@@ -102,13 +118,39 @@ if (!$conn || $conn->connect_error) {
         }
 
         if ($office_filter > 0) {
-            $where_clauses[] = "ai.office_id = ?";
+            if ($status_filter === 'borrowed') {
+                // For borrowed assets, filter by borrower office
+                $where_clauses[] = "borrower_office.id = ?";
+            } else {
+                // For other statuses, filter by owning office
+                $where_clauses[] = "ai.office_id = ?";
+            }
             $params[] = $office_filter;
             $types .= 'i';
         } elseif ($office_name_filter !== '') {
-            $where_clauses[] = "o.office_name = ?";
+            if ($status_filter === 'borrowed') {
+                // For borrowed assets, filter by borrower office name
+                $where_clauses[] = "borrower_office.office_name = ?";
+            } else {
+                // For other statuses, filter by owning office name
+                $where_clauses[] = "o.office_name = ?";
+            }
             $params[] = $office_name_filter;
             $types .= 's';
+        }
+        
+        if ($category_filter > 0) {
+            $where_clauses[] = "ac.id = ?";
+            $params[] = $category_filter;
+            $types .= 'i';
+        }
+        
+        if ($search_filter !== '') {
+            $where_clauses[] = "(ai.property_no LIKE ? OR ai.description LIKE ?)";
+            $search_param = '%' . $search_filter . '%';
+            $params[] = $search_param;
+            $params[] = $search_param;
+            $types .= 'ss';
         }
 
         if (!empty($where_clauses)) {
@@ -116,7 +158,13 @@ if (!$conn || $conn->connect_error) {
         }
 
         // Group by office for per-office display
-        $sql .= " GROUP BY o.id, ai.id ORDER BY o.office_name ASC, ai.last_updated DESC";
+        if ($status_filter === 'borrowed') {
+            // For borrowed assets, group and sort by borrower office
+            $sql .= " GROUP BY borrower_office.id, ai.id ORDER BY borrower_office.office_name ASC, ai.last_updated DESC";
+        } else {
+            // For other statuses, group and sort by owning office
+            $sql .= " GROUP BY o.id, ai.id ORDER BY o.office_name ASC, ai.last_updated DESC";
+        }
 
         $stmt = $conn->prepare($sql);
         if (!$stmt) {
@@ -193,7 +241,6 @@ if (!$conn || $conn->connect_error) {
         background: #e2e3e5;
         color: #383d41;
     }
-    
     /* Mobile UI Fixes */
     @media (max-width: 992px) {
         .dashboard-header .row {
@@ -323,23 +370,50 @@ if (!$conn || $conn->connect_error) {
                         </h1>
                         <p class="text-muted mb-0">
                             <?php
-                            if (($office_filter > 0 || $office_name_filter !== '') && $status_filter !== '') {
-                                $office_display = '';
-                                if ($office_filter > 0) {
-                                    $office_display = isset($offices[array_search($office_filter, array_column($offices, 'id'))]['office_name']) ? htmlspecialchars($offices[array_search($office_filter, array_column($offices, 'id'))]['office_name']) : "Office " . $office_filter;
-                                } elseif ($office_name_filter !== '') {
-                                    $office_display = htmlspecialchars($office_name_filter);
+                                if (($office_filter > 0 || $office_name_filter !== '') && $status_filter !== '' && $category_filter > 0) {
+                                    $office_display = '';
+                                    if ($office_filter > 0) {
+                                        $office_display = isset($offices[array_search($office_filter, array_column($offices, 'id'))]['office_name']) ? htmlspecialchars($offices[array_search($office_filter, array_column($offices, 'id'))]['office_name']) : "Office " . $office_filter;
+                                    } elseif ($office_name_filter !== '') {
+                                        $office_display = htmlspecialchars($office_name_filter);
+                                    }
+                                    $category_display = isset($categories[array_search($category_filter, array_column($categories, 'id'))]['category_name']) ? htmlspecialchars($categories[array_search($category_filter, array_column($categories, 'id'))]['category_name']) : "Category " . $category_filter;
+                                    $office_text = ($status_filter === 'borrowed') ? "borrowed by" : "of";
+                                    echo "Viewing " . htmlspecialchars(ucfirst($status_filter)) . " " . $category_display . " assets " . $office_text . " " . $office_display . ".";
+                                } elseif (($office_filter > 0 || $office_name_filter !== '') && $status_filter !== '') {
+                                    $office_display = '';
+                                    if ($office_filter > 0) {
+                                        $office_display = isset($offices[array_search($office_filter, array_column($offices, 'id'))]['office_name']) ? htmlspecialchars($offices[array_search($office_filter, array_column($offices, 'id'))]['office_name']) : "Office " . $office_filter;
+                                    } elseif ($office_name_filter !== '') {
+                                        $office_display = htmlspecialchars($office_name_filter);
+                                    }
+                                    $office_text = ($status_filter === 'borrowed') ? "borrowed by" : "of";
+                                    echo "Viewing " . htmlspecialchars(ucfirst($status_filter)) . " assets " . $office_text . " " . $office_display . ".";
+                                } elseif (($office_filter > 0 || $office_name_filter !== '') && $category_filter > 0) {
+                                    $office_display = '';
+                                    if ($office_filter > 0) {
+                                        $office_display = isset($offices[array_search($office_filter, array_column($offices, 'id'))]['office_name']) ? htmlspecialchars($offices[array_search($office_filter, array_column($offices, 'id'))]['office_name']) : "Office " . $office_filter;
+                                    } elseif ($office_name_filter !== '') {
+                                        $office_display = htmlspecialchars($office_name_filter);
+                                    }
+                                    $category_display = isset($categories[array_search($category_filter, array_column($categories, 'id'))]['category_name']) ? htmlspecialchars($categories[array_search($category_filter, array_column($categories, 'id'))]['category_name']) : "Category " . $category_filter;
+                                    echo "Viewing " . $category_display . " assets of " . $office_display . ".";
+                                } elseif ($office_filter > 0 || $office_name_filter !== '') {
+                                    $office_display = '';
+                                    if ($office_filter > 0) {
+                                        $office_display = isset($offices[array_search($office_filter, array_column($offices, 'id'))]['office_name']) ? htmlspecialchars($offices[array_search($office_filter, array_column($offices, 'id'))]['office_name']) : "Office " . $office_filter;
+                                    } elseif ($office_name_filter !== '') {
+                                        $office_display = htmlspecialchars($office_name_filter);
+                                    }
+                                    echo "Viewing assets of " . $office_display . ".";
+                                } elseif ($status_filter !== '' && $category_filter > 0) {
+                                    $category_display = isset($categories[array_search($category_filter, array_column($categories, 'id'))]['category_name']) ? htmlspecialchars($categories[array_search($category_filter, array_column($categories, 'id'))]['category_name']) : "Category " . $category_filter;
+                                    echo "Viewing " . $category_display . " assets across all offices.";
+                                } elseif ($status_filter !== '') {
+                                    echo "Viewing " . htmlspecialchars(ucfirst($status_filter)) . " assets across all offices.";
+                                } else {
+                                    echo "Viewing all assets in the system.";
                                 }
-                                echo "Viewing " . htmlspecialchars(ucfirst($status_filter)) . " assets of " . $office_display . ".";
-                            } elseif ($office_filter > 0) {
-                                echo "Viewing assets from " . (isset($offices[array_search($office_filter, array_column($offices, 'id'))]['office_name']) ? htmlspecialchars($offices[array_search($office_filter, array_column($offices, 'id'))]['office_name']) : "Office " . $office_filter) . ".";
-                            } elseif ($office_name_filter !== '') {
-                                echo "Viewing assets of " . htmlspecialchars($office_name_filter) . ".";
-                            } elseif ($status_filter !== '') {
-                                echo "Viewing " . htmlspecialchars(ucfirst($status_filter)) . " assets across all offices.";
-                            } else {
-                                echo "Viewing all assets in the system.";
-                            }
                             ?>
                         </p>
                         <?php if ($error): ?>
@@ -351,6 +425,16 @@ if (!$conn || $conn->connect_error) {
                     </div>
                     <div class="col-md-4 text-md-end">
                         <div class="d-flex align-items-center justify-content-md-end gap-2 flex-wrap">
+                            <div class="d-inline-block" style="min-width: 180px;">
+                                <select class="form-select form-select-sm" id="categoryFilter" <?php echo $category_filter > 0 ? 'style="background-color: #007bff; color: white; border-color: #0056b3; font-weight: bold;"' : ''; ?>>
+                                    <option value="0" <?php echo $category_filter === 0 ? 'selected' : ''; ?>>All Categories</option>
+                                    <?php foreach ($categories as $category): ?>
+                                        <option value="<?php echo (int)$category['id']; ?>" <?php echo $category_filter === (int)$category['id'] ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($category['category_name']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
                             <a class="btn btn-outline-primary btn-sm" href="assets.php">
                                 <i class="bi bi-arrow-clockwise me-1"></i> Refresh
                             </a>
@@ -387,7 +471,17 @@ if (!$conn || $conn->connect_error) {
                                         <td class="ps-3">
                                             <div class="text-muted small"><?php echo htmlspecialchars($row['category_name'] ?? ''); ?></div>
                                         </td>
-                                        <td class="ps-3"><?php echo htmlspecialchars($row['office_name'] ?? ''); ?></td>
+                                        <td class="ps-3">
+                                            <?php 
+                                            // Show borrower office for borrowed assets, otherwise show owning office
+                                            if (($row['item_status'] ?? '') === 'borrowed' && !empty($row['borrower_office_name'])) {
+                                                echo htmlspecialchars($row['borrower_office_name']);
+                                                echo ' <small class="text-muted">(from ' . htmlspecialchars($row['office_name'] ?? '') . ')</small>';
+                                            } else {
+                                                echo htmlspecialchars($row['office_name'] ?? '');
+                                            }
+                                            ?>
+                                        </td>
                                         <td class="ps-3">
                                             <?php
                                             // Show actual asset status
@@ -566,6 +660,8 @@ if (!$conn || $conn->connect_error) {
         let assetsTable;
         
         document.addEventListener('DOMContentLoaded', function() {
+            const categoryFilter = document.getElementById('categoryFilter');
+            
             // Initialize DataTable
             assetsTable = $('#assetsTable').DataTable({
                 responsive: true,
@@ -594,6 +690,22 @@ if (!$conn || $conn->connect_error) {
                     zeroRecords: "No matching assets found"
                 }
             });
+            
+            // Add category filter event listener
+            if (categoryFilter) {
+                categoryFilter.addEventListener('change', function() {
+                    const currentUrl = new URL(window.location.href);
+                    const categoryValue = parseInt(categoryFilter.value || '0', 10);
+                    
+                    if (categoryValue > 0) {
+                        currentUrl.searchParams.set('category_id', String(categoryValue));
+                    } else {
+                        currentUrl.searchParams.delete('category_id');
+                    }
+                    
+                    window.location.href = currentUrl.toString();
+                });
+            }
         });
 
         // Make functions global for onclick handlers

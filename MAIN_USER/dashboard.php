@@ -243,6 +243,18 @@ $page_title = 'Main User Dashboard';
                     </div>
                     <div class="col-md-4 text-md-end">
                         <div class="d-flex gap-2 justify-content-md-end">
+                            <div class="d-inline-block" style="min-width: 250px;">
+                                <form class="d-flex" action="search_handler.php" method="GET" id="dashboardSearchForm">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control form-control-sm" name="q" id="dashboardSearchInput"
+                                               placeholder="Search assets..." autocomplete="off"
+                                               value="<?php echo htmlspecialchars($_GET['q'] ?? ''); ?>">
+                                        <button class="btn btn-primary btn-sm" type="submit">
+                                            <i class="bi bi-search"></i>
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
                             <a class="btn btn-outline-primary btn-sm" href="dashboard.php">
                                 <i class="bi bi-arrow-clockwise"></i> Refresh
                             </a>
@@ -543,6 +555,55 @@ $page_title = 'Main User Dashboard';
                 }
             }
         });
+
+        // Dashboard search functionality
+        const dashboardSearchInput = document.getElementById('dashboardSearchInput');
+        const dashboardSearchForm = document.getElementById('dashboardSearchForm');
+
+        if (dashboardSearchInput && dashboardSearchForm) {
+            // Add search on Enter key
+            dashboardSearchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const searchValue = this.value.trim();
+                    if (searchValue) {
+                        window.location.href = `search_handler.php?q=${encodeURIComponent(searchValue)}`;
+                    }
+                }
+            });
+
+            // Add visual feedback for search input
+            dashboardSearchInput.addEventListener('input', function() {
+                if (this.value.trim()) {
+                    this.classList.add('search-active');
+                } else {
+                    this.classList.remove('search-active');
+                }
+            });
+
+            // Focus search input on Ctrl+K or Cmd+K
+            document.addEventListener('keydown', function(e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                    e.preventDefault();
+                    dashboardSearchInput.focus();
+                }
+            });
+        }
     </script>
+
+    <style>
+        #dashboardSearchInput.search-active {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+        
+        #dashboardSearchInput {
+            transition: all 0.2s ease;
+        }
+        
+        #dashboardSearchInput:focus {
+            transform: translateY(-1px);
+        }
+    </style>
 </body>
 </html>
