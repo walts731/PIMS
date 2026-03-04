@@ -98,24 +98,6 @@ if (!$conn || $conn->connect_error) {
                 $stats['asset_requests'] = 0;
             }
             
-            // ===== RECENT ACTIVITY =====
-            $recent_activity_query = "SELECT 
-                activity_type, description, created_at
-                FROM office_activity_log 
-                WHERE office_id = ? 
-                ORDER BY created_at DESC 
-                LIMIT 5";
-            $stmt = $conn->prepare($recent_activity_query);
-            $stmt->bind_param("i", $user_office_id);
-            $stmt->execute();
-            $recent_result = $stmt->get_result();
-            $stats['recent_activity'] = [];
-            if ($recent_result) {
-                while ($row = $recent_result->fetch_assoc()) {
-                    $stats['recent_activity'][] = $row;
-                }
-            }
-            
             // ===== LOW STOCK ITEMS =====
             $low_stock_query = "SELECT 
                 id, description, quantity, reorder_level, unit_cost
@@ -148,7 +130,7 @@ $defaults = [
     'total_consumable_value' => 0, 'low_stock_items' => 0, 'pending_requests' => 0,
     'consumable_requests' => 0, 'asset_requests' => 0, 'total_forms' => 0,
     'ics_forms' => 0, 'ris_forms' => 0,
-    'recent_activity' => [], 'low_stock_details' => []
+    'low_stock_details' => []
 ];
 
 foreach ($defaults as $key => $value) {
@@ -508,33 +490,6 @@ $page_title = 'Office Dashboard';
                             <div class="mt-2">All consumables are well stocked</div>
                         </div>
                     <?php endif; ?>
-                </div>
-            </div>
-            
-            <!-- Recent Activity -->
-            <div class="col-lg-6">
-                <div class="chart-card">
-                    <h6 class="mb-3"><i class="bi bi-clock-history"></i> Recent Activity</h6>
-                    <div class="activity-feed">
-                        <?php if (!empty($stats['recent_activity'])): ?>
-                            <?php foreach ($stats['recent_activity'] as $activity): ?>
-                                <div class="activity-item">
-                                    <div class="d-flex justify-content-between align-items-start">
-                                        <div>
-                                            <strong><?php echo htmlspecialchars($activity['activity_type']); ?></strong>
-                                            <div class="small text-muted"><?php echo htmlspecialchars($activity['description']); ?></div>
-                                        </div>
-                                        <small class="text-muted"><?php echo date('M j, H:i', strtotime($activity['created_at'])); ?></small>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <div class="text-center text-muted py-3">
-                                <i class="bi bi-clock" style="font-size: 2rem;"></i>
-                                <div class="mt-2">No recent activity</div>
-                            </div>
-                        <?php endif; ?>
-                    </div>
                 </div>
             </div>
         </div>
