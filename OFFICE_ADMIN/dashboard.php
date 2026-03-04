@@ -98,22 +98,6 @@ if (!$conn || $conn->connect_error) {
                 $stats['asset_requests'] = 0;
             }
             
-            // ===== OFFICE FORMS =====
-            $forms_query = "SELECT 
-                COUNT(*) as total_forms,
-                SUM(CASE WHEN form_type = 'PAR' THEN 1 ELSE 0 END) as par_forms,
-                SUM(CASE WHEN form_type = 'ICS' THEN 1 ELSE 0 END) as ics_forms,
-                SUM(CASE WHEN form_type = 'RIS' THEN 1 ELSE 0 END) as ris_forms
-                FROM office_forms 
-                WHERE office_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
-            $stmt = $conn->prepare($forms_query);
-            $stmt->bind_param("i", $user_office_id);
-            $stmt->execute();
-            $forms_result = $stmt->get_result();
-            if ($forms_result) {
-                $stats = array_merge($stats, $forms_result->fetch_assoc());
-            }
-            
             // ===== RECENT ACTIVITY =====
             $recent_activity_query = "SELECT 
                 activity_type, description, created_at
@@ -163,7 +147,7 @@ $defaults = [
     'total_office_value' => 0, 'office_consumables_count' => 0, 'total_consumable_quantity' => 0,
     'total_consumable_value' => 0, 'low_stock_items' => 0, 'pending_requests' => 0,
     'consumable_requests' => 0, 'asset_requests' => 0, 'total_forms' => 0,
-    'par_forms' => 0, 'ics_forms' => 0, 'ris_forms' => 0,
+    'ics_forms' => 0, 'ris_forms' => 0,
     'recent_activity' => [], 'low_stock_details' => []
 ];
 
