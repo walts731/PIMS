@@ -56,11 +56,14 @@ if (!$conn || $conn->connect_error) {
             }
         }
         
-        // Get all categories
-        $category_result = $conn->query("SELECT id, category_name FROM asset_categories ORDER BY category_name ASC");
+        // Get all categories - using the working implementation from assets_per_office.php
+        $category_query = "SELECT id, category_name FROM asset_categories ORDER BY category_name ASC";
+        $category_result = $conn->query($category_query);
+        
+        $categories = [];
         if ($category_result) {
-            while ($row = $category_result->fetch_assoc()) {
-                $categories[] = $row;
+            while ($category = $category_result->fetch_assoc()) {
+                $categories[] = $category;
             }
         }
 
@@ -426,7 +429,27 @@ if (!$conn || $conn->connect_error) {
                     <div class="col-md-4 text-md-end">
                         <div class="d-flex align-items-center justify-content-md-end gap-2 flex-wrap">
                             <div class="d-inline-block" style="min-width: 180px;">
-                                <select class="form-select form-select-sm" id="categoryFilter" <?php echo $category_filter > 0 ? 'style="background-color: #007bff; color: white; border-color: #0056b3; font-weight: bold;"' : ''; ?>>
+                                <select class="form-select form-select-sm" id="officeFilter">
+                                    <option value="0" <?php echo $office_filter === 0 ? 'selected' : ''; ?>>All Offices</option>
+                                    <?php foreach ($offices as $office): ?>
+                                        <option value="<?php echo (int)$office['id']; ?>" <?php echo $office_filter === (int)$office['id'] ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($office['office_name']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="d-inline-block" style="min-width: 180px;">
+                                <select class="form-select form-select-sm" id="statusFilter">
+                                    <option value="" <?php echo $status_filter === '' ? 'selected' : ''; ?>>All Statuses</option>
+                                    <option value="serviceable" <?php echo $status_filter === 'serviceable' ? 'selected' : ''; ?>>Serviceable</option>
+                                    <option value="unserviceable" <?php echo $status_filter === 'unserviceable' ? 'selected' : ''; ?>>Unserviceable</option>
+                                    <option value="red_tagged" <?php echo $status_filter === 'red_tagged' ? 'selected' : ''; ?>>Red-Tagged</option>
+                                    <option value="borrowed" <?php echo $status_filter === 'borrowed' ? 'selected' : ''; ?>>Borrowed</option>
+                                    <option value="no_tag" <?php echo $status_filter === 'no_tag' ? 'selected' : ''; ?>>No Tag</option>
+                                </select>
+                            </div>
+                            <div class="d-inline-block" style="min-width: 180px;">
+                                <select class="form-select form-select-sm" id="categoryFilter">
                                     <option value="0" <?php echo $category_filter === 0 ? 'selected' : ''; ?>>All Categories</option>
                                     <?php foreach ($categories as $category): ?>
                                         <option value="<?php echo (int)$category['id']; ?>" <?php echo $category_filter === (int)$category['id'] ? 'selected' : ''; ?>>
@@ -661,50 +684,48 @@ if (!$conn || $conn->connect_error) {
         
         document.addEventListener('DOMContentLoaded', function() {
             const categoryFilter = document.getElementById('categoryFilter');
+            const officeFilter = document.getElementById('officeFilter');
+            const statusFilter = document.getElementById('statusFilter');
             
-            // Initialize DataTable
-            assetsTable = $('#assetsTable').DataTable({
-                responsive: true,
-                pageLength: 25,
-                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
-                order: [[6, 'desc']], // Sort by Last Updated column (index 6) by default
-                columnDefs: [
-                    {
-                        targets: -1, // Actions column (last column)
-                        orderable: false,
-                        searchable: false
-                    }
-                ],
-                dom: '<"row"<"col-md-6"l><"col-md-6 text-end"f>>rtip',
-                language: {
-                    search: "Search assets:",
-                    lengthMenu: "Show _MENU_ assets per page",
-                    info: "Showing _START_ to _END_ of _TOTAL_ assets",
-                    paginate: {
-                        first: "First",
-                        last: "Last",
-                        next: "Next",
-                        previous: "Previous"
-                    },
-                    emptyTable: "No assets available",
-                    zeroRecords: "No matching assets found"
+            function applyFilters() {
+                const currentUrl = new URL(window.location.href);
+
+                // Apply office filter
+                const officeValue = parseInt(officeFilter.value || '0', 10);
+                if (officeValue > 0) {
+                    currentUrl.searchParams.set('office_id', String(officeValue));
+                } else {
+                    currentUrl.searchParams.delete('office_id');
                 }
-            });
-            
-            // Add category filter event listener
+
+                // Apply status filter
+                const statusValue = statusFilter.value || '';
+                if (statusValue) {
+                    currentUrl.searchParams.set('status', statusValue);
+                } else {
+                    currentUrl.searchParams.delete('status');
+                }
+
+                // Apply category filter
+                const categoryValue = parseInt(categoryFilter.value || '0', 10);
+                if (categoryValue > 0) {
+                    currentUrl.searchParams.set('category_id', String(categoryValue));
+                } else {
+                    currentUrl.searchParams.delete('category_id');
+                }
+
+                window.location.href = currentUrl.toString();
+            }
+
+            // Add event listeners
+            if (officeFilter) {
+                officeFilter.addEventListener('change', applyFilters);
+            }
+            if (statusFilter) {
+                statusFilter.addEventListener('change', applyFilters);
+            }
             if (categoryFilter) {
-                categoryFilter.addEventListener('change', function() {
-                    const currentUrl = new URL(window.location.href);
-                    const categoryValue = parseInt(categoryFilter.value || '0', 10);
-                    
-                    if (categoryValue > 0) {
-                        currentUrl.searchParams.set('category_id', String(categoryValue));
-                    } else {
-                        currentUrl.searchParams.delete('category_id');
-                    }
-                    
-                    window.location.href = currentUrl.toString();
-                });
+                categoryFilter.addEventListener('change', applyFilters);
             }
         });
 
