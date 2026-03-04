@@ -84,7 +84,7 @@
 
         <div class="nav-item dropdown">
 
-            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" id="userDropdown">
 
                 <div class="user-avatar me-3">
 
