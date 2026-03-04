@@ -47,7 +47,17 @@ if (!$conn || $conn->connect_error) {
             }
         }
         
-        // Get all offices with asset counts and filters
+        // Get all offices for dropdown (unfiltered)
+        $all_offices_query = "SELECT id, office_name FROM offices ORDER BY office_name ASC";
+        $all_offices_result = $conn->query($all_offices_query);
+        $all_offices = [];
+        if ($all_offices_result) {
+            while ($row = $all_offices_result->fetch_assoc()) {
+                $all_offices[] = $row;
+            }
+        }
+        
+        // Get all offices with asset counts and filters (for display)
         $office_query = "SELECT 
                             o.id,
                             o.office_name,
@@ -70,6 +80,12 @@ if (!$conn || $conn->connect_error) {
             $where_conditions[] = "ai.status = ?";
             $params[] = $status_filter;
             $types .= "s";
+        }
+        
+        if ($office_filter > 0) {
+            $where_conditions[] = "o.id = ?";
+            $params[] = $office_filter;
+            $types .= "i";
         }
         
         if ($category_filter > 0) {
@@ -685,7 +701,27 @@ if (!$conn || $conn->connect_error) {
                     <div class="col-md-4 text-md-end">
                         <div class="d-flex align-items-center justify-content-md-end gap-2 flex-wrap">
                             <div class="d-inline-block" style="min-width: 180px;">
-                                <select class="form-select form-select-sm" id="statusFilter" <?php echo $status_filter !== '' ? 'style="background-color: #28a745; color: white; border-color: #1e7e34; font-weight: bold;"' : ''; ?>>
+                                <select class="form-select form-select-sm" id="officeFilter" <?php echo $office_filter > 0 ? 'style="background-color: #007bff; color: white; border-color: #0056b3; font-weight: bold;"' : ''; ?>>
+                                    <?php if ($office_filter > 0): ?>
+                                        <?php foreach ($all_offices as $office): ?>
+                                            <?php if ($office_filter === (int)$office['id']): ?>
+                                                <option value="<?php echo (int)$office['id']; ?>" selected>
+                                                    <?php echo htmlspecialchars($office['office_name']); ?>
+                                                </option>
+                                            <?php endif; ?>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <option value="0" selected>All Offices</option>
+                                        <?php foreach ($all_offices as $office): ?>
+                                            <option value="<?php echo (int)$office['id']; ?>">
+                                                <?php echo htmlspecialchars($office['office_name']); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </select>
+                            </div>
+                            <div class="d-inline-block" style="min-width: 180px;">
+                                <select class="form-select form-select-sm" id="statusFilter" <?php echo $status_filter !== '' ? 'style="background-color: #007bff; color: white; border-color: #0056b3; font-weight: bold;"' : ''; ?>>
                                     <option value="" <?php echo $status_filter === '' ? 'selected' : ''; ?>>All Statuses</option>
                                     <option value="serviceable" <?php echo $status_filter === 'serviceable' ? 'selected' : ''; ?>>Serviceable</option>
                                     <option value="unserviceable" <?php echo $status_filter === 'unserviceable' ? 'selected' : ''; ?>>Unserviceable</option>
@@ -713,7 +749,7 @@ if (!$conn || $conn->connect_error) {
             </div>
 
             <!-- Filter Summary -->
-            <?php if ($status_filter !== '' || $category_filter > 0): ?>
+            <?php if ($status_filter !== '' || $category_filter > 0 || $office_filter > 0): ?>
                 <div class="alert alert-info mb-3" role="alert">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -725,60 +761,15 @@ if (!$conn || $conn->connect_error) {
                             <?php if ($category_filter > 0): ?>
                                 <span class="badge bg-info me-1">Category: <?php echo htmlspecialchars(array_column($categories, 'category_name', 'id')[$category_filter] ?? 'Unknown'); ?></span>
                             <?php endif; ?>
+                            <?php if ($office_filter > 0): ?>
+                                <?php $selected_office = array_filter($all_offices, function($office) use ($office_filter) { return $office['id'] == $office_filter; }); ?>
+                                <?php if (!empty($selected_office)): ?>
+                                    <?php $office_data = reset($selected_office); ?>
+                                    <span class="badge bg-primary me-1">Office: <?php echo htmlspecialchars($office_data['office_name']); ?></span>
+                                <?php endif; ?>
+                            <?php endif; ?>
                         </div>
                         <a href="offices.php" class="btn btn-sm btn-outline-secondary">Clear Filters</a>
-                    </div>
-                </div>
-            <?php endif; ?>
-
-            <!-- Borrowed Items Section -->
-            <?php if (!empty($borrowed_items)): ?>
-                <div class="card mb-4">
-                    <div class="card-header bg-warning text-dark">
-                        <h5 class="mb-0">
-                            <i class="bi bi-arrow-left-right me-2"></i>
-                            Borrowed Items (<?php echo count($borrowed_items); ?>)
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-sm table-hover">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Property No</th>
-                                        <th>Item Description</th>
-                                        <th>Category</th>
-                                        <th>Office</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($borrowed_items as $item): ?>
-                                        <tr>
-                                            <td><?php echo htmlspecialchars($item['property_no'] ?? ''); ?></td>
-                                            <td>
-                                                <div>
-                                                    <strong><?php echo htmlspecialchars($item['item_description'] ?? ''); ?></strong>
-                                                    <?php if (!empty($item['asset_description'])): ?>
-                                                        <div class="text-muted small"><?php echo htmlspecialchars($item['asset_description'] ?? ''); ?></div>
-                                                    <?php endif; ?>
-                                                </div>
-                                            </td>
-                                            <td><?php echo htmlspecialchars($item['category_name'] ?? ''); ?></td>
-                                            <td><?php echo htmlspecialchars($item['office_name'] ?? ''); ?></td>
-                                            <td>
-                                                <a href="view_asset_item.php?id=<?php echo (int)$item['item_id']; ?>" class="btn btn-outline-info btn-sm me-1">
-                                                    <i class="bi bi-eye"></i> View
-                                                </a>
-                                                <button class="btn btn-outline-success btn-sm" onclick="returnItem(<?php echo (int)$item['item_id']; ?>)">
-                                                    <i class="bi bi-arrow-return-left"></i> Return
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
                     </div>
                 </div>
             <?php endif; ?>
@@ -836,7 +827,7 @@ if (!$conn || $conn->connect_error) {
                                     <a href="assets.php?office_id=<?php echo (int)$office['id']; ?>" class="btn btn-outline-info btn-sm me-2">
                                         <i class="bi bi-collection"></i> Asset Items
                                     </a>
-                                    <a href="assets.php?office_id=<?php echo (int)$office['id']; ?>&status=borrowed" class="btn btn-outline-warning btn-sm">
+                                    <a href="assets.php?status=borrowed&office=<?php echo urlencode($office['office_name'] ?? ''); ?>" class="btn btn-outline-warning btn-sm">
                                         <i class="bi bi-arrow-left-right"></i> Borrowed
                                     </a>
                                 </div>
@@ -861,11 +852,20 @@ if (!$conn || $conn->connect_error) {
     <?php require_once 'includes/sidebar-scripts.php'; ?>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            const officeFilter = document.getElementById('officeFilter');
             const statusFilter = document.getElementById('statusFilter');
             const categoryFilter = document.getElementById('categoryFilter');
 
             function applyFilters() {
                 const currentUrl = new URL(window.location.href);
+
+                // Apply office filter
+                const officeValue = parseInt(officeFilter.value || '0', 10);
+                if (officeValue > 0) {
+                    currentUrl.searchParams.set('office_id', String(officeValue));
+                } else {
+                    currentUrl.searchParams.delete('office_id');
+                }
 
                 // Apply status filter
                 const statusValue = statusFilter.value || '';
@@ -887,23 +887,15 @@ if (!$conn || $conn->connect_error) {
             }
 
             // Add event listeners
+            if (officeFilter) {
+                officeFilter.addEventListener('change', applyFilters);
+            }
             if (statusFilter) {
                 statusFilter.addEventListener('change', applyFilters);
             }
             if (categoryFilter) {
                 categoryFilter.addEventListener('change', applyFilters);
             }
-
-            // Add loading state to filter buttons
-            const filterButtons = document.querySelectorAll('.form-select');
-            filterButtons.forEach(button => {
-                button.addEventListener('change', function() {
-                    this.style.opacity = '0.7';
-                    setTimeout(() => {
-                        this.style.opacity = '1';
-                    }, 300);
-                });
-            });
 
             // Return item function
             function returnItem(itemId) {

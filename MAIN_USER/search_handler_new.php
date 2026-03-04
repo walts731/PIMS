@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 session_start();
 require_once '../config.php';
 require_once '../includes/system_functions.php';
@@ -33,6 +33,7 @@ if (!$conn || $conn->connect_error) {
     try {
         // Check if query matches exact status values or office names
         $query_lower = strtolower($query);
+        $status_exact_match = false;
         
         // First check if it's an exact status match
         if (in_array($query_lower, ['serviceable', 'unserviceable', 'red_tagged', 'borrowed', 'no_tag', 'no tag', 'notag', 'no-tag'])) {
@@ -86,11 +87,20 @@ if (!$conn || $conn->connect_error) {
                 $stmt->bind_param(str_repeat('i', count($office_ids)), ...$office_ids);
             } else {
                 $office_stmt->close();
-                // Simple search - only show items containing the search term
+                // Simplified search with relevance scoring
                 $stmt = $conn->prepare("
                     SELECT ai.id, ai.description, ai.property_no, ai.property_number, ai.status, ai.value,
                            a.description as asset_description,
-                           o.office_name
+                           o.office_name,
+                           CASE 
+                               WHEN ai.description LIKE ? THEN 10
+                               WHEN a.description LIKE ? THEN 9
+                               WHEN ai.property_no LIKE ? THEN 8
+                               WHEN ai.property_number LIKE ? THEN 7
+                               WHEN ai.status LIKE ? THEN 3
+                               WHEN o.office_name LIKE ? THEN 2
+                               ELSE 1
+                           END as relevance_score
                     FROM asset_items ai
                     LEFT JOIN assets a ON ai.asset_id = a.id
                     LEFT JOIN offices o ON ai.office_id = o.id
@@ -100,25 +110,17 @@ if (!$conn || $conn->connect_error) {
                         ai.property_no LIKE ? OR
                         ai.property_number LIKE ? OR
                         ai.status LIKE ? OR
+                        ai.status = ? OR
                         o.office_name LIKE ?
                     )
-                    ORDER BY 
-                        CASE 
-                            WHEN ai.description LIKE ? THEN 1
-                            ELSE 2
-                        END,
-                        ai.last_updated DESC
+                    ORDER BY relevance_score DESC, ai.last_updated DESC
                     LIMIT 20
                 ");
-                $searchQuery = "%{$query}%";
-                $stmt->bind_param('sssssss',
-                    $searchQuery, // WHERE ai.description LIKE
-                    $searchQuery, // WHERE a.description LIKE
-                    $searchQuery, // WHERE ai.property_no LIKE
-                    $searchQuery, // WHERE ai.property_number LIKE
-                    $searchQuery, // WHERE ai.status LIKE
-                    $searchQuery, // WHERE o.office_name LIKE
-                    $query // ORDER BY CASE ai.description LIKE (exact)
+                $likeQuery = "%{$query}%";
+                $no_tag_status = 'no_tag';
+                $stmt->bind_param('ssssssssssssss', 
+                    $likeQuery, $likeQuery, $likeQuery, $likeQuery, $likeQuery, $likeQuery,
+                    $likeQuery, $likeQuery, $likeQuery, $likeQuery, $likeQuery, $no_tag_status, $likeQuery
                 );
             }
         }
@@ -240,3 +242,4 @@ if (count($results) === 1) {
     <?php require_once 'includes/sidebar-scripts.php'; ?>
 </body>
 </html>
+
