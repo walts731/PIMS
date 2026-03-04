@@ -432,26 +432,17 @@ $page_title = 'Office Dashboard';
         </div>
         
         <!-- Quick Actions -->
-        <div class="row mb-4">
+        <div class="row mb-4 justify-content-center">
             <div class="col-12">
                 <h5 class="mb-3">Quick Actions</h5>
             </div>
             <div class="col-md-3 col-sm-6 mb-3">
-                <a href="request_consumable.php" class="quick-action-card">
+                <a href="office_consumables.php" class="quick-action-card">
                     <div class="quick-action-icon">
                         <i class="bi bi-archive"></i>
                     </div>
-                    <div class="quick-action-title">Request Consumables</div>
-                    <div class="quick-action-desc">Submit new consumable request</div>
-                </a>
-            </div>
-            <div class="col-md-3 col-sm-6 mb-3">
-                <a href="create_par.php" class="quick-action-card">
-                    <div class="quick-action-icon">
-                        <i class="bi bi-file-earmark-text"></i>
-                    </div>
-                    <div class="quick-action-title">Create PAR Form</div>
-                    <div class="quick-action-desc">Property Acknowledgment Receipt</div>
+                    <div class="quick-action-title">Consumables</div>
+                    <div class="quick-action-desc">Track consumable usage</div>
                 </a>
             </div>
             <div class="col-md-3 col-sm-6 mb-3">
