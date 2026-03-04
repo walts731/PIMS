@@ -47,7 +47,17 @@ if (!$conn || $conn->connect_error) {
             }
         }
         
-        // Get all offices with asset counts and filters
+        // Get all offices for dropdown (unfiltered)
+        $all_offices_query = "SELECT id, office_name FROM offices ORDER BY office_name ASC";
+        $all_offices_result = $conn->query($all_offices_query);
+        $all_offices = [];
+        if ($all_offices_result) {
+            while ($row = $all_offices_result->fetch_assoc()) {
+                $all_offices[] = $row;
+            }
+        }
+        
+        // Get all offices with asset counts and filters (for display)
         $office_query = "SELECT 
                             o.id,
                             o.office_name,
@@ -70,6 +80,12 @@ if (!$conn || $conn->connect_error) {
             $where_conditions[] = "ai.status = ?";
             $params[] = $status_filter;
             $types .= "s";
+        }
+        
+        if ($office_filter > 0) {
+            $where_conditions[] = "o.id = ?";
+            $params[] = $office_filter;
+            $types .= "i";
         }
         
         if ($category_filter > 0) {
@@ -685,7 +701,27 @@ if (!$conn || $conn->connect_error) {
                     <div class="col-md-4 text-md-end">
                         <div class="d-flex align-items-center justify-content-md-end gap-2 flex-wrap">
                             <div class="d-inline-block" style="min-width: 180px;">
-                                <select class="form-select form-select-sm" id="statusFilter" <?php echo $status_filter !== '' ? 'style="background-color: #28a745; color: white; border-color: #1e7e34; font-weight: bold;"' : ''; ?>>
+                                <select class="form-select form-select-sm" id="officeFilter" <?php echo $office_filter > 0 ? 'style="background-color: #007bff; color: white; border-color: #0056b3; font-weight: bold;"' : ''; ?>>
+                                    <?php if ($office_filter > 0): ?>
+                                        <?php foreach ($all_offices as $office): ?>
+                                            <?php if ($office_filter === (int)$office['id']): ?>
+                                                <option value="<?php echo (int)$office['id']; ?>" selected>
+                                                    <?php echo htmlspecialchars($office['office_name']); ?>
+                                                </option>
+                                            <?php endif; ?>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <option value="0" selected>All Offices</option>
+                                        <?php foreach ($all_offices as $office): ?>
+                                            <option value="<?php echo (int)$office['id']; ?>">
+                                                <?php echo htmlspecialchars($office['office_name']); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </select>
+                            </div>
+                            <div class="d-inline-block" style="min-width: 180px;">
+                                <select class="form-select form-select-sm" id="statusFilter" <?php echo $status_filter !== '' ? 'style="background-color: #007bff; color: white; border-color: #0056b3; font-weight: bold;"' : ''; ?>>
                                     <option value="" <?php echo $status_filter === '' ? 'selected' : ''; ?>>All Statuses</option>
                                     <option value="serviceable" <?php echo $status_filter === 'serviceable' ? 'selected' : ''; ?>>Serviceable</option>
                                     <option value="unserviceable" <?php echo $status_filter === 'unserviceable' ? 'selected' : ''; ?>>Unserviceable</option>
@@ -695,11 +731,11 @@ if (!$conn || $conn->connect_error) {
                                 </select>
                             </div>
                             <div class="d-inline-block" style="min-width: 180px;">
-                                <select class="form-select form-select-sm" id="officeFilter" <?php echo $office_filter > 0 ? 'style="background-color: #007bff; color: white; border-color: #0056b3; font-weight: bold;"' : ''; ?>>
-                                    <option value="0" <?php echo $office_filter === 0 ? 'selected' : ''; ?>>All Offices</option>
-                                    <?php foreach ($offices as $office): ?>
-                                        <option value="<?php echo (int)$office['id']; ?>" <?php echo $office_filter === (int)$office['id'] ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($office['office_name']); ?>
+                                <select class="form-select form-select-sm" id="categoryFilter" <?php echo $category_filter > 0 ? 'style="background-color: #007bff; color: white; border-color: #0056b3; font-weight: bold;"' : ''; ?>>
+                                    <option value="0" <?php echo $category_filter === 0 ? 'selected' : ''; ?>>All Categories</option>
+                                    <?php foreach ($categories as $category): ?>
+                                        <option value="<?php echo (int)$category['id']; ?>" <?php echo $category_filter === (int)$category['id'] ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($category['category_name']); ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
@@ -713,7 +749,7 @@ if (!$conn || $conn->connect_error) {
             </div>
 
             <!-- Filter Summary -->
-            <?php if ($status_filter !== '' || $category_filter > 0): ?>
+            <?php if ($status_filter !== '' || $category_filter > 0 || $office_filter > 0): ?>
                 <div class="alert alert-info mb-3" role="alert">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -724,6 +760,13 @@ if (!$conn || $conn->connect_error) {
                             <?php endif; ?>
                             <?php if ($category_filter > 0): ?>
                                 <span class="badge bg-info me-1">Category: <?php echo htmlspecialchars(array_column($categories, 'category_name', 'id')[$category_filter] ?? 'Unknown'); ?></span>
+                            <?php endif; ?>
+                            <?php if ($office_filter > 0): ?>
+                                <?php $selected_office = array_filter($all_offices, function($office) use ($office_filter) { return $office['id'] == $office_filter; }); ?>
+                                <?php if (!empty($selected_office)): ?>
+                                    <?php $office_data = reset($selected_office); ?>
+                                    <span class="badge bg-primary me-1">Office: <?php echo htmlspecialchars($office_data['office_name']); ?></span>
+                                <?php endif; ?>
                             <?php endif; ?>
                         </div>
                         <a href="offices.php" class="btn btn-sm btn-outline-secondary">Clear Filters</a>
@@ -784,7 +827,7 @@ if (!$conn || $conn->connect_error) {
                                     <a href="assets.php?office_id=<?php echo (int)$office['id']; ?>" class="btn btn-outline-info btn-sm me-2">
                                         <i class="bi bi-collection"></i> Asset Items
                                     </a>
-                                    <a href="assets.php?status=borrowed" class="btn btn-outline-warning btn-sm">
+                                    <a href="assets.php?status=borrowed&office=<?php echo urlencode($office['office_name'] ?? ''); ?>" class="btn btn-outline-warning btn-sm">
                                         <i class="bi bi-arrow-left-right"></i> Borrowed
                                     </a>
                                 </div>
@@ -809,11 +852,20 @@ if (!$conn || $conn->connect_error) {
     <?php require_once 'includes/sidebar-scripts.php'; ?>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            const officeFilter = document.getElementById('officeFilter');
             const statusFilter = document.getElementById('statusFilter');
             const categoryFilter = document.getElementById('categoryFilter');
 
             function applyFilters() {
                 const currentUrl = new URL(window.location.href);
+
+                // Apply office filter
+                const officeValue = parseInt(officeFilter.value || '0', 10);
+                if (officeValue > 0) {
+                    currentUrl.searchParams.set('office_id', String(officeValue));
+                } else {
+                    currentUrl.searchParams.delete('office_id');
+                }
 
                 // Apply status filter
                 const statusValue = statusFilter.value || '';
@@ -823,50 +875,27 @@ if (!$conn || $conn->connect_error) {
                     currentUrl.searchParams.delete('status');
                 }
 
-                    // Apply category filter
-                    const categoryValue = parseInt(categoryFilter.value || '0', 10);
-                    if (categoryValue > 0) {
-                        currentUrl.searchParams.set('category_id', String(categoryValue));
-                    } else {
-                        currentUrl.searchParams.delete('category_id');
-                    }
-
-                    // Apply office filter
-                    const officeValue = parseInt(officeFilter.value || '0', 10);
-                    if (officeValue > 0) {
-                        currentUrl.searchParams.set('office_id', String(officeValue));
-                    } else {
-                        currentUrl.searchParams.delete('office_id');
-                    }
-
-                    window.location.href = currentUrl.toString();
+                // Apply category filter
+                const categoryValue = parseInt(categoryFilter.value || '0', 10);
+                if (categoryValue > 0) {
+                    currentUrl.searchParams.set('category_id', String(categoryValue));
+                } else {
+                    currentUrl.searchParams.delete('category_id');
                 }
 
-                // Add event listeners
-                if (statusFilter) {
-                    statusFilter.addEventListener('change', applyFilters);
-                }
-                if (categoryFilter) {
-                    categoryFilter.addEventListener('change', applyFilters);
-                }
-                if (officeFilter) {
-                    officeFilter.addEventListener('change', applyFilters);
-                }
+                window.location.href = currentUrl.toString();
+            }
 
-                // Add loading state to filter buttons
-                const filterButtons = document.querySelectorAll('.form-select');
-                filterButtons.forEach(button => {
-                    button.addEventListener('change', function() {
-                        this.style.opacity = '0.7';
-                        setTimeout(() => {
-                            this.style.opacity = '1';
-                        }, 300);
-                    });
-                    setTimeout(() => {
-                        this.style.opacity = '1';
-                    }, 300);
-                });
-            });
+            // Add event listeners
+            if (officeFilter) {
+                officeFilter.addEventListener('change', applyFilters);
+            }
+            if (statusFilter) {
+                statusFilter.addEventListener('change', applyFilters);
+            }
+            if (categoryFilter) {
+                categoryFilter.addEventListener('change', applyFilters);
+            }
 
             // Return item function
             function returnItem(itemId) {
