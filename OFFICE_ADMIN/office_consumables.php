@@ -300,8 +300,8 @@ $page_title = 'Office Consumables';
         </div>
         
         <!-- Statistics Cards -->
-        <div class="row mb-4">
-            <div class="col-md-3 mb-3">
+        <div class="row mb-4 justify-content-center">
+            <div class="col-md-4 mb-3">
                 <div class="stats-card">
                     <div class="d-flex align-items-center">
                         <div class="flex-grow-1">
@@ -314,20 +314,7 @@ $page_title = 'Office Consumables';
                     </div>
                 </div>
             </div>
-            <div class="col-md-3 mb-3">
-                <div class="stats-card">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-grow-1">
-                            <h6 class="text-muted mb-2">Total Value</h6>
-                            <div class="stats-number">₱<?php echo number_format($stats['total_value'], 2); ?></div>
-                        </div>
-                        <div class="ms-3">
-                            <i class="bi bi-currency-dollar text-success" style="font-size: 2rem;"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 mb-3">
+            <div class="col-md-4 mb-3">
                 <div class="stats-card">
                     <div class="d-flex align-items-center">
                         <div class="flex-grow-1">
@@ -340,7 +327,7 @@ $page_title = 'Office Consumables';
                     </div>
                 </div>
             </div>
-            <div class="col-md-3 mb-3">
+            <div class="col-md-4 mb-3">
                 <div class="stats-card">
                     <div class="d-flex align-items-center">
                         <div class="flex-grow-1">
@@ -363,11 +350,6 @@ $page_title = 'Office Consumables';
                         <h5 class="mb-0">
                             <i class="bi bi-list-ul"></i> Consumables Inventory
                         </h5>
-                    </div>
-                    <div class="col-md-6 text-md-end">
-                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addConsumableModal">
-                            <i class="bi bi-plus-circle"></i> Add Consumable
-                        </button>
                     </div>
                 </div>
             </div>
@@ -448,46 +430,6 @@ $page_title = 'Office Consumables';
             </div>
         </div>
     </div>
-    </div>
-
-    <!-- Add Consumable Modal -->
-    <div class="modal fade" id="addConsumableModal" tabindex="-1" aria-labelledby="addConsumableModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title" id="addConsumableModalLabel">
-                        <i class="bi bi-plus-circle"></i> Add New Consumable
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="addConsumableForm">
-                        <div class="mb-3">
-                            <label for="consumableDescription" class="form-label">Description</label>
-                            <input type="text" class="form-control" id="consumableDescription" name="description" required>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="consumableQuantity" class="form-label">Quantity</label>
-                                <input type="number" class="form-control" id="consumableQuantity" name="quantity" min="0" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="consumableUnitCost" class="form-label">Unit Cost</label>
-                                <input type="number" class="form-control" id="consumableUnitCost" name="unit_cost" min="0" step="0.01" required>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="consumableReorderLevel" class="form-label">Reorder Level</label>
-                            <input type="number" class="form-control" id="consumableReorderLevel" name="reorder_level" min="0" required>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="saveConsumable()">Save Consumable</button>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- Edit Consumable Modal -->
@@ -612,33 +554,6 @@ $page_title = 'Office Consumables';
         a.download = 'consumables_<?php echo date('Y-m-d'); ?>.csv';
         a.click();
         window.URL.revokeObjectURL(url);
-    }
-    
-    // Add consumable
-    function saveConsumable() {
-        const form = document.getElementById('addConsumableForm');
-        const formData = new FormData(form);
-        
-        // Add office_id
-        formData.append('office_id', <?php echo $office_id; ?>);
-        
-        fetch('api/add_consumable.php', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                bootstrap.Modal.getInstance(document.getElementById('addConsumableModal')).hide();
-                location.reload();
-            } else {
-                alert('Error: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred while adding the consumable.');
-        });
     }
     
     // Edit consumable
