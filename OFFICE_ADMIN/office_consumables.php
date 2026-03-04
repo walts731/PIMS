@@ -378,9 +378,6 @@ $page_title = 'Office Consumables';
                             <tr>
                                 <th>Description</th>
                                 <th>Quantity</th>
-                                <th>Unit Cost</th>
-                                <th>Total Value</th>
-                                <th>Reorder Level</th>
                                 <th>Status</th>
                                 <th>Actions</th>
                             </tr>
@@ -388,7 +385,7 @@ $page_title = 'Office Consumables';
                         <tbody>
                             <?php if (empty($consumables)): ?>
                             <tr>
-                                <td colspan="7" class="text-center text-muted py-4">
+                                <td colspan="4" class="text-center text-muted py-4">
                                     <i class="bi bi-inbox" style="font-size: 2rem;"></i>
                                     <p class="mt-2 mb-0">No consumables found in your office.</p>
                                     <small>Click "Add Consumable" to add your first item.</small>
@@ -409,11 +406,8 @@ $page_title = 'Office Consumables';
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="badge bg-info text-white"><?php echo $consumable['quantity']; ?></span>
+                                        <span class="badge bg-info text-white"><?php echo $consumable['quantity'] . ' ' . htmlspecialchars($consumable['units']); ?></span>
                                     </td>
-                                    <td>₱<?php echo number_format($consumable['unit_cost'], 2); ?></td>
-                                    <td>₱<?php echo number_format($consumable['quantity'] * $consumable['unit_cost'], 2); ?></td>
-                                    <td><?php echo $consumable['reorder_level']; ?></td>
                                     <td>
                                         <?php
                                         $stock_status = 'normal';
@@ -600,10 +594,10 @@ $page_title = 'Office Consumables';
     // Export data
     function exportData() {
         // Simple CSV export
-        let csv = 'Description,Quantity,Unit Cost,Total Value,Reorder Level,Status\n';
+        let csv = 'Description,Quantity,Status\n';
         
         <?php foreach ($consumables as $consumable): ?>
-        csv += '<?php echo addslashes($consumable['description']); ?>,<?php echo $consumable['quantity']; ?>,<?php echo $consumable['unit_cost']; ?>,<?php echo $consumable['quantity'] * $consumable['unit_cost']; ?>,<?php echo $consumable['reorder_level']; ?>,<?php 
+        csv += '<?php echo addslashes($consumable['description']); ?>,<?php echo $consumable['quantity']; ?>,<?php 
             $status = 'Normal';
             if ($consumable['quantity'] == 0) $status = 'Out of Stock';
             elseif ($consumable['quantity'] <= $consumable['reorder_level']) $status = 'Low Stock';
