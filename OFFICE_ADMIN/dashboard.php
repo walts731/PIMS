@@ -98,6 +98,57 @@ if (!$conn || $conn->connect_error) {
                 $stats['asset_requests'] = 0;
             }
             
+            // ===== BORROW REQUESTS =====
+            try {
+                // Incoming requests (other offices requesting from this office)
+                $incoming_requests_query = "SELECT 
+                    COUNT(*) as total_incoming_requests,
+                    SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_incoming_requests,
+                    SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved_incoming_requests,
+                    SUM(CASE WHEN status = 'denied' THEN 1 ELSE 0 END) as denied_incoming_requests,
+                    SUM(CASE WHEN status = 'returned' THEN 1 ELSE 0 END) as returned_incoming_requests
+                    FROM borrow_requests 
+                    WHERE requested_to_office = ?";
+                $stmt = $conn->prepare($incoming_requests_query);
+                $stmt->bind_param("i", $user_office_id);
+                $stmt->execute();
+                $incoming_result = $stmt->get_result();
+                if ($incoming_result) {
+                    $incoming_stats = $incoming_result->fetch_assoc();
+                    $stats = array_merge($stats, $incoming_stats);
+                }
+                
+                // Outgoing requests (this office requesting from other offices)
+                $outgoing_requests_query = "SELECT 
+                    COUNT(*) as total_outgoing_requests,
+                    SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_outgoing_requests,
+                    SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved_outgoing_requests,
+                    SUM(CASE WHEN status = 'denied' THEN 1 ELSE 0 END) as denied_outgoing_requests,
+                    SUM(CASE WHEN status = 'returned' THEN 1 ELSE 0 END) as returned_outgoing_requests
+                    FROM borrow_requests 
+                    WHERE requested_by_office = ?";
+                $stmt = $conn->prepare($outgoing_requests_query);
+                $stmt->bind_param("i", $user_office_id);
+                $stmt->execute();
+                $outgoing_result = $stmt->get_result();
+                if ($outgoing_result) {
+                    $outgoing_stats = $outgoing_result->fetch_assoc();
+                    $stats = array_merge($stats, $outgoing_stats);
+                }
+            } catch (Exception $e) {
+                // Table doesn't exist, set defaults
+                $stats['total_incoming_requests'] = 0;
+                $stats['pending_incoming_requests'] = 0;
+                $stats['approved_incoming_requests'] = 0;
+                $stats['denied_incoming_requests'] = 0;
+                $stats['returned_incoming_requests'] = 0;
+                $stats['total_outgoing_requests'] = 0;
+                $stats['pending_outgoing_requests'] = 0;
+                $stats['approved_outgoing_requests'] = 0;
+                $stats['denied_outgoing_requests'] = 0;
+                $stats['returned_outgoing_requests'] = 0;
+            }
+            
             // ===== LOW STOCK ITEMS =====
             $low_stock_query = "SELECT 
                 id, description, quantity, reorder_level, unit_cost
@@ -130,6 +181,10 @@ $defaults = [
     'total_consumable_value' => 0, 'low_stock_items' => 0, 'pending_requests' => 0,
     'consumable_requests' => 0, 'asset_requests' => 0, 'total_forms' => 0,
     'ics_forms' => 0, 'ris_forms' => 0,
+    'total_incoming_requests' => 0, 'pending_incoming_requests' => 0, 'approved_incoming_requests' => 0,
+    'denied_incoming_requests' => 0, 'returned_incoming_requests' => 0,
+    'total_outgoing_requests' => 0, 'pending_outgoing_requests' => 0, 'approved_outgoing_requests' => 0,
+    'denied_outgoing_requests' => 0, 'returned_outgoing_requests' => 0,
     'low_stock_details' => []
 ];
 
@@ -456,7 +511,15 @@ $page_title = 'Office Dashboard';
             <!-- Request Status Overview -->
             <div class="col-lg-4">
                 <div class="chart-card">
-                    <h6 class="mb-3"><i class="bi bi-send"></i> Request Status</h6>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="mb-0"><i class="bi bi-send"></i> Request Status</h6>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <input type="radio" class="btn-check" name="requestType" id="outgoingRequests" autocomplete="off" checked>
+                            <label class="btn btn-outline-primary btn-sm" for="outgoingRequests">Outgoing</label>
+                            <input type="radio" class="btn-check" name="requestType" id="incomingRequests" autocomplete="off">
+                            <label class="btn btn-outline-primary btn-sm" for="incomingRequests">Incoming</label>
+                        </div>
+                    </div>
                     <div class="chart-container">
                         <canvas id="requestStatusChart"></canvas>
                     </div>
@@ -549,16 +612,29 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Request Status Chart
     const requestStatusCtx = document.getElementById('requestStatusChart').getContext('2d');
-    new Chart(requestStatusCtx, {
+    
+    // Store both datasets
+    const outgoingData = {
+        labels: ['Pending', 'Approved', 'Denied', 'Returned'],
+        datasets: [{
+            data: [<?php echo $stats['pending_outgoing_requests']; ?>, <?php echo $stats['approved_outgoing_requests']; ?>, <?php echo $stats['denied_outgoing_requests']; ?>, <?php echo $stats['returned_outgoing_requests']; ?>],
+            backgroundColor: ['#ffc107', '#28a745', '#dc3545', '#6f42c1'],
+            borderWidth: 0
+        }]
+    };
+    
+    const incomingData = {
+        labels: ['Pending', 'Approved', 'Denied', 'Returned'],
+        datasets: [{
+            data: [<?php echo $stats['pending_incoming_requests']; ?>, <?php echo $stats['approved_incoming_requests']; ?>, <?php echo $stats['denied_incoming_requests']; ?>, <?php echo $stats['returned_incoming_requests']; ?>],
+            backgroundColor: ['#ffc107', '#28a745', '#dc3545', '#6f42c1'],
+            borderWidth: 0
+        }]
+    };
+    
+    let requestStatusChart = new Chart(requestStatusCtx, {
         type: 'pie',
-        data: {
-            labels: ['Pending', 'Approved', 'Rejected'],
-            datasets: [{
-                data: [<?php echo $stats['pending_requests']; ?>, 8, 2],
-                backgroundColor: ['#ffc107', '#28a745', '#dc3545'],
-                borderWidth: 0
-            }]
-        },
+        data: outgoingData, // Default to outgoing
         options: {
             responsive: true,
             maintainAspectRatio: false,
@@ -568,6 +644,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         }
+    });
+    
+    // Toggle functionality
+    document.querySelectorAll('input[name="requestType"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const selectedType = this.id;
+            const newData = selectedType === 'outgoingRequests' ? outgoingData : incomingData;
+            
+            requestStatusChart.data = newData;
+            requestStatusChart.update();
+        });
     });
 });
 
