@@ -437,9 +437,9 @@ $report_data['asset_stats']['total_asset_value'] = number_format($report_data['a
         </div>
         
         <!-- Overview Statistics -->
-        <div class="row mb-4">
+        <div class="row mb-4 justify-content-center">
             <!-- Request Statistics -->
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg-4 col-md-6">
                 <div class="stats-card">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
@@ -458,7 +458,7 @@ $report_data['asset_stats']['total_asset_value'] = number_format($report_data['a
             </div>
             
             <!-- Consumable Statistics -->
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg-4 col-md-6">
                 <div class="stats-card">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
@@ -477,7 +477,7 @@ $report_data['asset_stats']['total_asset_value'] = number_format($report_data['a
             </div>
             
             <!-- Asset Statistics -->
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg-4 col-md-6">
                 <div class="stats-card">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
@@ -490,25 +490,6 @@ $report_data['asset_stats']['total_asset_value'] = number_format($report_data['a
                         </div>
                         <div class="text-info">
                             <i class="bi bi-box-seam fs-1"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Total Value -->
-            <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <div class="stats-number">₱<?php echo $report_data['asset_stats']['total_asset_value']; ?></div>
-                            <div class="stats-label">Total Asset Value</div>
-                            <small class="text-success">
-                                <i class="bi bi-currency-dollar"></i> 
-                                Consumables: ₱<?php echo $report_data['consumable_stats']['total_value']; ?>
-                            </small>
-                        </div>
-                        <div class="text-success">
-                            <i class="bi bi-currency-dollar fs-1"></i>
                         </div>
                     </div>
                 </div>
