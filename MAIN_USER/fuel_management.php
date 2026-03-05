@@ -1,13 +1,815 @@
 <?php
 session_start();
 require_once '../config.php';
-require_once '../includes/system_functions.php';
 require_once '../includes/logger.php';
 
-checkSessionTimeout();
-
-if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+// Check if user is logged in
+if (!isset($_SESSION['user_id'])) {
     header('Location: ../index.php');
+    exit();
+}
+
+if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['system_admin', 'admin', 'main_user'], true)) {
+    header('Location: ../index.php');
+    exit();
+}
+
+logSystemAction($_SESSION['user_id'], 'access', 'main_user_fuel_management', 'Main user accessed fuel management front-end');
+
+$fuel_in_records = [];
+$fuel_out_records = [];
+$offices = [];
+$error = null;
+
+try {
+    // Get offices for dropdown
+    $office_sql = "SELECT id, office_name FROM offices ORDER BY office_name";
+    $office_result = $conn->query($office_sql);
+    if ($office_result) {
+        while ($row = $office_result->fetch_assoc()) {
+            $offices[] = $row;
+        }
+    }
+    
+    // Check which fuel tables exist
+    $fuel_tables = ['fuel_in', 'fuel_out', 'fuel_transactions'];
+    $existing_tables = [];
+    
+    foreach ($fuel_tables as $table) {
+        $check_table = $conn->query("SHOW TABLES LIKE '$table'");
+        if ($check_table && $check_table->num_rows > 0) {
+            $existing_tables[] = $table;
+        }
+    }
+    
+    if (empty($existing_tables)) {
+        $error = 'No fuel tables found. Please contact administrator to set up fuel management tables.';
+    } else {
+        // Get filter parameters
+        $date_from = isset($_GET['date_from']) ? trim((string)$_GET['date_from']) : date('Y-m-01');
+        $date_to = isset($_GET['date_to']) ? trim((string)$_GET['date_to']) : date('Y-m-d');
+        $office_filter = isset($_GET['office']) ? (int)$_GET['office'] : 0;
+        
+        // Get fuel IN records
+        if (in_array('fuel_in', $existing_tables)) {
+            $fuel_in_sql = "SELECT 
+                              id,
+                              date as fuel_date,
+                              quantity as fuel_quantity,
+                              fuel_type,
+                              vehicle_name,
+                              plate_number,
+                              odometer as odometer_reading,
+                              purpose,
+                              created_at,
+                              created_by
+                           FROM fuel_in 
+                           WHERE date BETWEEN ? AND ?
+                           ORDER BY date DESC";
+            
+            $fuel_in_stmt = $conn->prepare($fuel_in_sql);
+            if ($fuel_in_stmt) {
+                $fuel_in_stmt->bind_param('ss', $date_from, $date_to);
+                $fuel_in_stmt->execute();
+                $fuel_in_result = $fuel_in_stmt->get_result();
+                while ($row = $fuel_in_result->fetch_assoc()) {
+                    $fuel_in_records[] = $row;
+                }
+                $fuel_in_stmt->close();
+            }
+        }
+        
+        // Get fuel OUT records
+        if (in_array('fuel_out', $existing_tables)) {
+            $fuel_out_sql = "SELECT 
+                               id,
+                               date as fuel_date,
+                               quantity as fuel_quantity,
+                               fuel_type,
+                               vehicle_name,
+                               plate_number,
+                               odometer as odometer_reading,
+                               purpose,
+                               created_at,
+                               created_by
+                            FROM fuel_out 
+                            WHERE date BETWEEN ? AND ?
+                            ORDER BY date DESC";
+            
+            $fuel_out_stmt = $conn->prepare($fuel_out_sql);
+            if ($fuel_out_stmt) {
+                $fuel_out_stmt->bind_param('ss', $date_from, $date_to);
+                $fuel_out_stmt->execute();
+                $fuel_out_result = $fuel_out_stmt->get_result();
+                while ($row = $fuel_out_result->fetch_assoc()) {
+                    $fuel_out_records[] = $row;
+                }
+                $fuel_out_stmt->close();
+            }
+        }
+        
+        // If no fuel_in/fuel_out tables, get from fuel_transactions
+        if (empty($fuel_in_records) && empty($fuel_out_records) && in_array('fuel_transactions', $existing_tables)) {
+            // Get IN transactions
+            $in_sql = "SELECT 
+                          id,
+                          DATE(transaction_date) as fuel_date,
+                          quantity as fuel_quantity,
+                          fuel_type,
+                          supplier as vehicle_name,
+                          '' as plate_number,
+                          0 as odometer_reading,
+                          notes as purpose,
+                          created_at,
+                          user_id as created_by
+                       FROM fuel_transactions 
+                       WHERE transaction_type = 'IN' 
+                       AND DATE(transaction_date) BETWEEN ? AND ?
+                       ORDER BY transaction_date DESC";
+            
+            $in_stmt = $conn->prepare($in_sql);
+            if ($in_stmt) {
+                $in_stmt->bind_param('ss', $date_from, $date_to);
+                $in_stmt->execute();
+                $in_result = $in_stmt->get_result();
+                while ($row = $in_result->fetch_assoc()) {
+                    $fuel_in_records[] = $row;
+                }
+                $in_stmt->close();
+            }
+            
+            // Get OUT transactions
+            $out_sql = "SELECT 
+                           id,
+                           DATE(transaction_date) as fuel_date,
+                           quantity as fuel_quantity,
+                           fuel_type,
+                           vehicle_equipment as vehicle_name,
+                           '' as plate_number,
+                           odometer_reading,
+                           purpose,
+                           created_at,
+                           user_id as created_by
+                        FROM fuel_transactions 
+                        WHERE transaction_type = 'OUT' 
+                        AND DATE(transaction_date) BETWEEN ? AND ?
+                        ORDER BY transaction_date DESC";
+            
+            $out_stmt = $conn->prepare($out_sql);
+            if ($out_stmt) {
+                $out_stmt->bind_param('ss', $date_from, $date_to);
+                $out_stmt->execute();
+                $out_result = $out_stmt->get_result();
+                while ($row = $out_result->fetch_assoc()) {
+                    $fuel_out_records[] = $row;
+                }
+                $out_stmt->close();
+            }
+        }
+    }
+} catch (Exception $e) {
+    $error = 'Error loading fuel records: ' . $e->getMessage();
+    error_log('Main User Fuel Management Error: ' . $e->getMessage());
+}
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fuel Management - PIMS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        /* Global smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            height: 100vh;
+        }
+        .main-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            min-height: 100vh;
+            margin: 0;
+            padding: 2rem;
+            border-radius: 0;
+            animation: slideUp 0.8s ease-out;
+            overflow-y: auto;
+            height: 100vh;
+        }
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .header-section {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            animation: slideDown 0.6s ease-out 0.2s both;
+        }
+        .stats-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            animation: slideUp 0.6s ease-out 0.4s both;
+        }
+        .stats-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+        }
+        .filter-section {
+            background: white;
+            border-radius: 10px;
+            padding: 1rem;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+            margin-bottom: 1.5rem;
+            animation: slideUp 0.6s ease-out 0.6s both;
+        }
+        .filter-section h5 {
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+        .filter-section .form-label {
+            font-size: 0.875rem;
+            margin-bottom: 0.25rem;
+        }
+        .filter-section .form-control {
+            font-size: 0.875rem;
+            padding: 0.5rem;
+        }
+        .filter-section .btn {
+            font-size: 0.875rem;
+            padding: 0.5rem 1rem;
+        }
+        .table-container {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            animation: slideUp 0.6s ease-out 0.8s both;
+        }
+        .fuel-table {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .fuel-table thead {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        }
+        .fuel-table tbody tr {
+            animation: slideUp 0.4s ease-out;
+            transition: all 0.3s ease;
+        }
+        .fuel-table tbody tr:hover {
+            background-color: #f8f9fa;
+            transform: translateX(5px);
+        }
+        .badge-fuel-in {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+        }
+        .badge-fuel-out {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+        }
+        .fuel-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            animation: bounceIn 0.8s ease-out 0.5s both;
+        }
+        @keyframes bounceIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.05);
+            }
+            70% {
+                transform: scale(0.9);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        .fuel-in-icon {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+        }
+        .fuel-out-icon {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+        }
+        .btn-gradient {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            color: white;
+            padding: 0.75rem 2rem;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-gradient:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+        .alert {
+            animation: slideDown 0.5s ease-out;
+        }
+        .scroll-to-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        .scroll-to-top.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .scroll-to-top:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+        .scroll-to-bottom {
+            position: fixed;
+            top: 100px;
+            right: 30px;
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        .scroll-to-bottom.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .scroll-to-bottom:hover {
+            transform: translateY(3px);
+            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+        }
+        .scroll-indicator {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s ease;
+            z-index: 1001;
+        }
+    </style>
+</head>
+<body>
+    <?php include 'includes/topbar.php'; ?>
+    
+    <div class="main-container">
+        <!-- Header Section -->
+        <div class="header-section">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="mb-0">
+                        <i class="bi bi-fuel-pump me-3"></i>
+                        Fuel Management System
+                    </h1>
+                    <p class="mb-0 opacity-75">Track and monitor fuel IN and fuel OUT transactions</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <a href="dashboard.php" class="btn btn-light btn-lg">
+                        <i class="bi bi-house-door me-2"></i>
+                        Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+
+            <?php if ($error): ?>
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>Error:</strong> <?php echo htmlspecialchars($error); ?>
+                </div>
+            <?php endif; ?>
+
+            <!-- Statistics Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="stats-card h-100">
+                    <div class="d-flex align-items-center">
+                        <div class="fuel-icon fuel-in-icon me-3">
+                            <i class="bi bi-arrow-down-circle"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-2">Total Fuel IN</h6>
+                            <h3 class="mb-0 text-success">
+                                <?php echo number_format(array_sum(array_column($fuel_in_records, 'fuel_quantity')), 2); ?>
+                                <small>Liters</small>
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stats-card h-100">
+                    <div class="d-flex align-items-center">
+                        <div class="fuel-icon fuel-out-icon me-3">
+                            <i class="bi bi-arrow-up-circle"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-2">Total Fuel OUT</h6>
+                            <h3 class="mb-0 text-danger">
+                                <?php echo number_format(array_sum(array_column($fuel_out_records, 'fuel_quantity')), 2); ?>
+                                <small>Liters</small>
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stats-card h-100">
+                    <div class="d-flex align-items-center">
+                        <div class="fuel-icon me-3" style="background: linear-gradient(135deg, #17a2b8, #138496);">
+                            <i class="bi bi-calculator"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-2">Net Fuel Balance</h6>
+                            <h3 class="mb-0 text-primary">
+                                <?php 
+                                $net_fuel = array_sum(array_column($fuel_in_records, 'fuel_quantity')) - array_sum(array_column($fuel_out_records, 'fuel_quantity'));
+                                echo number_format($net_fuel, 2); 
+                                ?>
+                                <small>Liters</small>
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stats-card h-100">
+                    <div class="d-flex align-items-center">
+                        <div class="fuel-icon me-3" style="background: linear-gradient(135deg, #6f42c1, #0d6efd);">
+                            <i class="bi bi-list-check"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-2">Total Transactions</h6>
+                            <h3 class="mb-0 text-info">
+                                <?php echo count($fuel_in_records) + count($fuel_out_records); ?>
+                                <small>Records</small>
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+            <!-- Filter Section -->
+            <div class="filter-section">
+                <h5 class="mb-3">
+                    <i class="bi bi-funnel me-2"></i>
+                    Filter Transactions
+                </h5>
+                <form method="GET" class="row g-2 align-items-end">
+                    <div class="col-md-3">
+                        <label for="office" class="form-label fw-semibold">Office</label>
+                        <select class="form-select" id="office" name="office">
+                            <option value="0" <?php echo $office_filter === 0 ? 'selected' : ''; ?>>All Offices</option>
+                            <?php foreach ($offices as $office): ?>
+                                <option value="<?php echo (int)$office['id']; ?>" <?php echo $office_filter === (int)$office['id'] ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($office['office_name']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="date_from" class="form-label fw-semibold">From Date</label>
+                        <input type="date" class="form-control" id="date_from" name="date_from" value="<?php echo htmlspecialchars($date_from); ?>">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="date_to" class="form-label fw-semibold">To Date</label>
+                        <input type="date" class="form-control" id="date_to" name="date_to" value="<?php echo htmlspecialchars($date_to); ?>">
+                    </div>
+                    <div class="col-md-3">
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-gradient flex-fill">
+                                <i class="bi bi-funnel me-1"></i>
+                                Filter
+                            </button>
+                            <a href="fuel_management.php" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-clockwise me-1"></i>
+                                Reset
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Empty State Message -->
+            <?php if (empty($fuel_in_records) && empty($fuel_out_records)): ?>
+                <div class="text-center py-5">
+                    <i class="bi bi-fuel-pump text-muted" style="font-size: 4rem;"></i>
+                    <h4 class="text-muted mt-3">No Fuel Records Found</h4>
+                    <p class="text-muted">No fuel transactions found for the selected period and filters.</p>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <!-- Fuel IN Section - Moved to Bottom -->
+    <div class="container-fluid mt-4">
+        <div class="table-container">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="mb-0">
+                    <i class="bi bi-arrow-down-circle text-success me-2"></i>
+                    Fuel IN Records
+                    <span class="badge badge-fuel-in ms-2">
+                        <?php echo count($fuel_in_records); ?> Transactions
+                    </span>
+                </h4>
+            </div>
+            
+            <?php if (!empty($fuel_in_records)): ?>
+                <div class="table-responsive">
+                    <table class="table table-hover fuel-table">
+                        <thead>
+                            <tr>
+                                <th><i class="bi bi-calendar3 me-1"></i>Date</th>
+                                <th><i class="bi bi-truck me-1"></i>Vehicle</th>
+                                <th><i class="bi bi-upc me-1"></i>Plate</th>
+                                <th><i class="bi bi-droplet me-1"></i>Quantity (L)</th>
+                                <th><i class="bi bi-fuel-pump me-1"></i>Fuel Type</th>
+                                <th><i class="bi bi-chat-text me-1"></i>Purpose</th>
+                                <th><i class="bi bi-speedometer2 me-1"></i>Odometer</th>
+                                <th><i class="bi bi-person me-1"></i>Added By</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($fuel_in_records as $record): ?>
+                                <tr>
+                                    <td>
+                                        <strong><?php echo date('M d, Y', strtotime($record['fuel_date'])); ?></strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-success">
+                                            <?php echo htmlspecialchars($record['vehicle_name'] ?? 'Unknown'); ?>
+                                        </span>
+                                    </td>
+                                    <td><?php echo htmlspecialchars($record['plate_number'] ?? 'N/A'); ?></td>
+                                    <td>
+                                        <strong class="text-success">
+                                            <?php echo number_format($record['fuel_quantity'], 2); ?>
+                                        </strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info text-white">
+                                            <?php echo htmlspecialchars($record['fuel_type'] ?? ''); ?>
+                                        </span>
+                                    </td>
+                                    <td><?php echo htmlspecialchars($record['purpose'] ?? ''); ?></td>
+                                    <td><?php echo number_format($record['odometer_reading'] ?? 0); ?></td>
+                                    <td><?php echo htmlspecialchars($record['created_by'] ?? ''); ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php else: ?>
+                <div class="text-center py-5">
+                    <i class="bi bi-arrow-down-circle text-muted" style="font-size: 3rem;"></i>
+                    <h5 class="text-muted mt-3">No Fuel IN Records Found</h5>
+                    <p class="text-muted">No fuel IN transactions found for the selected period.</p>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <!-- Fuel OUT Section - Moved to Bottom -->
+    <div class="container-fluid mt-4">
+        <div class="table-container">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="mb-0">
+                    <i class="bi bi-arrow-up-circle text-danger me-2"></i>
+                    Fuel OUT Records
+                    <span class="badge badge-fuel-out ms-2">
+                        <?php echo count($fuel_out_records); ?> Transactions
+                    </span>
+                </h4>
+            </div>
+            
+            <?php if (!empty($fuel_out_records)): ?>
+                <div class="table-responsive">
+                    <table class="table table-hover fuel-table">
+                        <thead>
+                            <tr>
+                                <th><i class="bi bi-calendar3 me-1"></i>Date</th>
+                                <th><i class="bi bi-truck me-1"></i>Vehicle</th>
+                                <th><i class="bi bi-upc me-1"></i>Plate</th>
+                                <th><i class="bi bi-droplet me-1"></i>Quantity (L)</th>
+                                <th><i class="bi bi-fuel-pump me-1"></i>Fuel Type</th>
+                                <th><i class="bi bi-chat-text me-1"></i>Purpose</th>
+                                <th><i class="bi bi-speedometer2 me-1"></i>Odometer</th>
+                                <th><i class="bi bi-person me-1"></i>Added By</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($fuel_out_records as $record): ?>
+                                <tr>
+                                    <td>
+                                        <strong><?php echo date('M d, Y', strtotime($record['fuel_date'])); ?></strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-danger">
+                                            <?php echo htmlspecialchars($record['vehicle_name'] ?? 'Unknown'); ?>
+                                        </span>
+                                    </td>
+                                    <td><?php echo htmlspecialchars($record['plate_number'] ?? 'N/A'); ?></td>
+                                    <td>
+                                        <strong class="text-danger">
+                                            <?php echo number_format($record['fuel_quantity'], 2); ?>
+                                        </strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info text-white">
+                                            <?php echo htmlspecialchars($record['fuel_type'] ?? ''); ?>
+                                        </span>
+                                    </td>
+                                    <td><?php echo htmlspecialchars($record['purpose'] ?? ''); ?></td>
+                                    <td><?php echo number_format($record['odometer_reading'] ?? 0); ?></td>
+                                    <td><?php echo htmlspecialchars($record['created_by'] ?? ''); ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php else: ?>
+                <div class="text-center py-5">
+                    <i class="bi bi-arrow-up-circle text-muted" style="font-size: 3rem;"></i>
+                    <h5 class="text-muted mt-3">No Fuel OUT Records Found</h5>
+                    <p class="text-muted">No fuel OUT transactions found for the selected period.</p>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <!-- Fuel Transactions Table Section -->
+    <div class="container-fluid mt-4">
+        <div class="table-container">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="mb-0">
+                    <i class="bi bi-list-ul text-primary me-2"></i>
+                    All Fuel Transactions
+                    <span class="badge bg-primary text-white ms-2">
+                        <?php 
+                        $total_transactions = count($fuel_in_records) + count($fuel_out_records);
+                        echo $total_transactions; ?> 
+                        Records
+                    </span>
+                </h4>
+            </div>
+            
+            <?php if (!empty($fuel_in_records) || !empty($fuel_out_records)): ?>
+                <div class="table-responsive">
+                    <table class="table table-hover fuel-table">
+                        <thead>
+                            <tr>
+                                <th><i class="bi bi-calendar3 me-1"></i>Date</th>
+                                <th><i class="bi bi-arrow-up-down me-1"></i>Type</th>
+                                <th><i class="bi bi-truck me-1"></i>Vehicle</th>
+                                <th><i class="bi bi-upc me-1"></i>Plate</th>
+                                <th><i class="bi bi-droplet me-1"></i>Quantity (L)</th>
+                                <th><i class="bi bi-fuel-pump me-1"></i>Fuel Type</th>
+                                <th><i class="bi bi-chat-text me-1"></i>Purpose</th>
+                                <th><i class="bi bi-speedometer2 me-1"></i>Odometer</th>
+                                <th><i class="bi bi-person me-1"></i>Added By</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php 
+                            // Combine and sort all transactions
+                            $all_transactions = [];
+                            
+                            // Add fuel IN records
+                            foreach ($fuel_in_records as $record) {
+                                $all_transactions[] = array_merge($record, ['transaction_type' => 'IN', 'type_color' => 'success']);
+                            }
+                            
+                            // Add fuel OUT records
+                            foreach ($fuel_out_records as $record) {
+                                $all_transactions[] = array_merge($record, ['transaction_type' => 'OUT', 'type_color' => 'danger']);
+                            }
+                            
+                            // Sort by date
+                            usort($all_transactions, function($a, $b) {
+                                return strtotime($b['fuel_date']) - strtotime($a['fuel_date']);
+                            });
+                            
+                            foreach ($all_transactions as $record): 
+                            ?>
+                                <tr>
+                                    <td>
+                                        <strong><?php echo date('M d, Y', strtotime($record['fuel_date'])); ?></strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-<?php echo $record['type_color']; ?> text-white">
+                                            <?php echo $record['transaction_type']; ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-<?php echo $record['type_color']; ?>">
+                                            <?php echo htmlspecialchars($record['vehicle_name'] ?? 'Unknown'); ?>
+                                        </span>
+                                    </td>
+                                    <td><?php echo htmlspecialchars($record['plate_number'] ?? 'N/A'); ?></td>
+                                    <td>
+                                        <strong class="text-<?php echo $record['type_color']; ?>">
+                                            <?php echo number_format($record['fuel_quantity'], 2); ?>
+                                        </strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info text-white">
+                                            <?php echo htmlspecialchars($record['fuel_type'] ?? ''); ?>
+                                        </span>
+                                    </td>
+                                    <td><?php echo htmlspecialchars($record['purpose'] ?? ''); ?></td>
+                                    <td><?php echo number_format($record['odometer_reading'] ?? 0); ?></td>
+                                    <td><?php echo htmlspecialchars($record['created_by'] ?? ''); ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php else: ?>
+                <div class="text-center py-5">
+                    <i class="bi bi-list-ul text-muted" style="font-size: 3rem;"></i>
+                    <h5 class="text-muted mt-3">No Fuel Transactions Found</h5>
+                    <p class="text-muted">No fuel transactions found for the selected period and filters.</p>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
     exit();
 }
 
@@ -306,6 +1108,95 @@ if (!$conn || $conn->connect_error) {
                 console.log('View fuel record:', recordId);
             }
         });
+
+        // Scroll functionality
+        const scrollToTopBtn = document.getElementById('scrollToTop');
+        const scrollToBottomBtn = document.getElementById('scrollToBottom');
+        const scrollIndicator = document.getElementById('scrollIndicator');
+        
+        // Show/hide scroll buttons based on scroll position
+        window.addEventListener('scroll', function() {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const scrollPercent = (scrollTop / scrollHeight) * 100;
+            
+            // Update scroll indicator
+            scrollIndicator.style.transform = `scaleX(${scrollPercent / 100})`;
+            
+            // Show scroll to top button when scrolled down
+            if (scrollTop > 200) {
+                scrollToTopBtn.classList.add('show');
+            } else {
+                scrollToTopBtn.classList.remove('show');
+            }
+            
+            // Show scroll to bottom button when not at bottom
+            if (scrollTop < scrollHeight - 200) {
+                scrollToBottomBtn.classList.add('show');
+            } else {
+                scrollToBottomBtn.classList.remove('show');
+            }
+        });
+        
+        // Scroll to top functionality
+        scrollToTopBtn.addEventListener('click', function() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+        
+        // Scroll to bottom functionality
+        scrollToBottomBtn.addEventListener('click', function() {
+            window.scrollTo({
+                top: document.documentElement.scrollHeight,
+                behavior: 'smooth'
+            });
+        });
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Home key to scroll to top
+            if (e.key === 'Home' && !e.ctrlKey && !e.altKey && !e.shiftKey) {
+                e.preventDefault();
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            }
+            
+            // End key to scroll to bottom
+            if (e.key === 'End' && !e.ctrlKey && !e.altKey && !e.shiftKey) {
+                e.preventDefault();
+                window.scrollTo({
+                    top: document.documentElement.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }
+        });
+        
+        // Initialize scroll buttons on page load
+        window.addEventListener('load', function() {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            if (scrollTop > 200) {
+                scrollToTopBtn.classList.add('show');
+            }
+            if (scrollTop < document.documentElement.scrollHeight - 200) {
+                scrollToBottomBtn.classList.add('show');
+            }
+        });
     </script>
+
+    <!-- Scroll Buttons -->
+    <div class="scroll-to-top" id="scrollToTop" title="Scroll to Top">
+        <i class="bi bi-arrow-up"></i>
+    </div>
+    
+    <div class="scroll-to-bottom" id="scrollToBottom" title="Scroll to Bottom">
+        <i class="bi bi-arrow-down"></i>
+    </div>
+    
+    <!-- Scroll Progress Indicator -->
+    <div class="scroll-indicator" id="scrollIndicator"></div>
 </body>
 </html>
