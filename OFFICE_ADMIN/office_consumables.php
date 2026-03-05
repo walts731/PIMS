@@ -410,15 +410,15 @@ $page_title = 'Office Consumables';
                                     </td>
                                     <td>
                                         <div class="btn-group" role="group">
-                                            <button type="button" class="btn btn-sm btn-outline-primary action-btn" onclick="editConsumable(<?php echo $consumable['id']; ?>)">
-                                                <i class="bi bi-pencil"></i>
+                                            <button type="button" class="btn btn-sm btn-outline-primary action-btn" onclick="viewConsumable(<?php echo $consumable['id']; ?>)">
+                                                <i class="bi bi-eye"></i>
                                             </button>
-                                            <button type="button" class="btn btn-sm btn-outline-success action-btn" onclick="restockConsumable(<?php echo $consumable['id']; ?>)">
+                                            <!-- <button type="button" class="btn btn-sm btn-outline-success action-btn" onclick="restockConsumable(<?php echo $consumable['id']; ?>)">
                                                 <i class="bi bi-plus-circle"></i>
                                             </button>
                                             <button type="button" class="btn btn-sm btn-outline-danger action-btn" onclick="deleteConsumable(<?php echo $consumable['id']; ?>)">
                                                 <i class="bi bi-trash"></i>
-                                            </button>
+                                            </button> -->
                                         </div>
                                     </td>
                                 </tr>
@@ -432,42 +432,76 @@ $page_title = 'Office Consumables';
     </div>
     </div>
 
-    <!-- Edit Consumable Modal -->
-    <div class="modal fade" id="editConsumableModal" tabindex="-1" aria-labelledby="editConsumableModalLabel" aria-hidden="true">
+    <!-- View Consumable Modal -->
+    <div class="modal fade" id="viewConsumableModal" tabindex="-1" aria-labelledby="viewConsumableModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header bg-warning text-dark">
-                    <h5 class="modal-title" id="editConsumableModalLabel">
-                        <i class="bi bi-pencil"></i> Edit Consumable
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title" id="viewConsumableModalLabel">
+                        <i class="bi bi-eye"></i> Consumable Details
                     </h5>
-                    <button type="button" class="btn-close btn-close-dark" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="editConsumableForm">
-                        <input type="hidden" id="editConsumableId" name="id">
-                        <div class="mb-3">
-                            <label for="editConsumableDescription" class="form-label">Description</label>
-                            <input type="text" class="form-control" id="editConsumableDescription" name="description" required>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="editConsumableQuantity" class="form-label">Quantity</label>
-                                <input type="number" class="form-control" id="editConsumableQuantity" name="quantity" min="0" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="editConsumableUnitCost" class="form-label">Unit Cost</label>
-                                <input type="number" class="form-control" id="editConsumableUnitCost" name="unit_cost" min="0" step="0.01" required>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="info-card">
+                                <h6><i class="bi bi-box-seam"></i> Description</h6>
+                                <p id="viewDescription" class="info-value">-</p>
                             </div>
                         </div>
-                        <div class="mb-3">
-                            <label for="editConsumableReorderLevel" class="form-label">Reorder Level</label>
-                            <input type="number" class="form-control" id="editConsumableReorderLevel" name="reorder_level" min="0" required>
+                        <div class="col-md-6">
+                            <div class="info-card">
+                                <h6><i class="bi bi-tag"></i> Unit</h6>
+                                <p id="viewUnit" class="info-value">-</p>
+                            </div>
                         </div>
-                    </form>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="info-card">
+                                <h6><i class="bi bi-stack"></i> Quantity</h6>
+                                <p id="viewQuantity" class="info-value">-</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-card">
+                                <h6><i class="bi bi-currency-dollar"></i> Unit Cost</h6>
+                                <p id="viewUnitCost" class="info-value">-</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-card">
+                                <h6><i class="bi bi-exclamation-triangle"></i> Reorder Level</h6>
+                                <p id="viewReorderLevel" class="info-value">-</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-card">
+                                <h6><i class="bi bi-building"></i> Office</h6>
+                                <p id="viewOffice" class="info-value">-</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="info-card">
+                                <h6><i class="bi bi-calendar-plus"></i> Created Date</h6>
+                                <p id="viewCreatedAt" class="info-value">-</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-card">
+                                <h6><i class="bi bi-arrow-clockwise"></i> Last Updated</h6>
+                                <p id="viewUpdatedAt" class="info-value">-</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-warning" onclick="updateConsumable()">Update Consumable</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
@@ -556,44 +590,23 @@ $page_title = 'Office Consumables';
         window.URL.revokeObjectURL(url);
     }
     
-    // Edit consumable
-    function editConsumable(id) {
+    // View consumable
+    function viewConsumable(id) {
         // Find consumable data
         <?php foreach ($consumables as $consumable): ?>
         if (id === <?php echo $consumable['id']; ?>) {
-            document.getElementById('editConsumableId').value = <?php echo $consumable['id']; ?>;
-            document.getElementById('editConsumableDescription').value = '<?php echo addslashes($consumable['description']); ?>';
-            document.getElementById('editConsumableQuantity').value = <?php echo $consumable['quantity']; ?>;
-            document.getElementById('editConsumableUnitCost').value = <?php echo $consumable['unit_cost']; ?>;
-            document.getElementById('editConsumableReorderLevel').value = <?php echo $consumable['reorder_level']; ?>;
+            document.getElementById('viewDescription').textContent = '<?php echo addslashes($consumable['description']); ?>';
+            document.getElementById('viewUnit').textContent = '<?php echo addslashes($consumable['units'] ?? $consumable['unit'] ?? ''); ?>';
+            document.getElementById('viewQuantity').textContent = <?php echo $consumable['quantity']; ?>;
+            document.getElementById('viewUnitCost').textContent = '₱' + <?php echo $consumable['unit_cost']; ?>.toFixed(2);
+            document.getElementById('viewReorderLevel').textContent = <?php echo $consumable['reorder_level']; ?>;
+            document.getElementById('viewOffice').textContent = '<?php echo addslashes($consumable['office_name']); ?>';
+            document.getElementById('viewCreatedAt').textContent = '<?php echo date('M j, Y g:i A', strtotime($consumable['created_at'])); ?>';
+            document.getElementById('viewUpdatedAt').textContent = '<?php echo date('M j, Y g:i A', strtotime($consumable['updated_at'])); ?>';
             
-            new bootstrap.Modal(document.getElementById('editConsumableModal')).show();
+            new bootstrap.Modal(document.getElementById('viewConsumableModal')).show();
         }
         <?php endforeach; ?>
-    }
-    
-    // Update consumable
-    function updateConsumable() {
-        const form = document.getElementById('editConsumableForm');
-        const formData = new FormData(form);
-        
-        fetch('api/update_consumable.php', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                bootstrap.Modal.getInstance(document.getElementById('editConsumableModal')).hide();
-                location.reload();
-            } else {
-                alert('Error: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred while updating the consumable.');
-        });
     }
     
     // Restock consumable
