@@ -123,8 +123,8 @@ if ($office_id && $conn) {
         
         // Recent Activities
         $activity_query = "(SELECT 
-                            'Borrow Request' as activity_type,
-                            CONCAT('Request for asset #', asset_id, ' - ', status) as description,
+                            'Borrow Request' COLLATE utf8mb4_unicode_ci as activity_type,
+                            CONCAT('Request for asset #', asset_id, ' - ', status) COLLATE utf8mb4_unicode_ci as description,
                             created_at
                           FROM borrow_requests 
                           WHERE requested_to_office = ? OR requested_by_office = ?
@@ -132,8 +132,8 @@ if ($office_id && $conn) {
                           LIMIT 5)
                           UNION
                           (SELECT 
-                            'Consumable Release' as activity_type,
-                            CONCAT('Released ', quantity_released, ' units of ', description) as description,
+                            'Consumable Release' COLLATE utf8mb4_unicode_ci as activity_type,
+                            CONCAT('Released ', quantity_released, ' units of ', description) COLLATE utf8mb4_unicode_ci as description,
                             created_at
                           FROM consumable_release_history 
                           WHERE to_office_id = ? OR from_office_id = ?
@@ -195,21 +195,13 @@ if ($office_id && $conn) {
                          GROUP BY DATE(created_at)
                          ORDER BY date";
         
-        // Debug: Log the query and parameters
-        error_log("Trends Query: " . $trends_query);
-        error_log("Office ID: " . $office_id);
-        
         $stmt = $conn->prepare($trends_query);
         $stmt->bind_param("i", $office_id);
         $stmt->execute();
         $result = $stmt->get_result();
         
-        // Debug: Log the result
-        error_log("Trends Result Rows: " . $result->num_rows);
-        
         while ($row = $result->fetch_assoc()) {
             $report_data['request_trends'][] = $row;
-            error_log("Trends Row: " . json_encode($row));
         }
         
     } catch (Exception $e) {
@@ -525,14 +517,6 @@ $report_data['asset_stats']['total_asset_value'] = number_format($report_data['a
         
         <!-- Charts Row -->
         <div class="row mb-4">
-            <!-- Debug: Show Trends Data -->
-            <div class="col-12 mb-3">
-                <div class="alert alert-info">
-                    <strong>Debug - Request Trends Data:</strong>
-                    <pre><?php echo htmlspecialchars(json_encode($report_data['request_trends'], JSON_PRETTY_PRINT)); ?></pre>
-                </div>
-            </div>
-            
             <!-- Request Status Chart -->
             <div class="col-lg-4">
                 <div class="chart-card">
@@ -828,14 +812,6 @@ $report_data['asset_stats']['total_asset_value'] = number_format($report_data['a
             const weeklyLabels = <?php echo json_encode(array_column($report_data['request_trends'], 'date')); ?>;
             const weeklyRequests = <?php echo json_encode(array_column($report_data['request_trends'], 'requests_count')); ?>;
             const weeklyApproved = <?php echo json_encode(array_column($report_data['request_trends'], 'approved_count')); ?>;
-            
-            // Debug: Log the data to console
-            console.log('Weekly Trends Data:', {
-                labels: weeklyLabels,
-                requests: weeklyRequests,
-                approved: weeklyApproved,
-                rawData: <?php echo json_encode($report_data['request_trends']); ?>
-            });
             
             new Chart(weeklyTrendsCtx, {
                 type: 'bar',
