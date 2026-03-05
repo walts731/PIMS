@@ -6,6 +6,31 @@ require_once 'config.php';
 
 require_once 'includes/logger.php';
 
+// Check if user is already logged in - redirect to appropriate dashboard
+if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
+    // Redirect based on user role
+    if (isset($_SESSION['role'])) {
+        switch ($_SESSION['role']) {
+            case 'system_admin':
+                header('Location: SYSTEM_ADMIN/dashboard.php');
+                exit();
+            case 'admin':
+                header('Location: ADMIN/dashboard.php');
+                exit();
+            case 'office_admin':
+                header('Location: OFFICE_ADMIN/dashboard.php');
+                exit();
+            case 'user':
+                header('Location: USER/dashboard.php');
+                exit();
+            case 'main_user':
+                header('Location: MAIN_USER/dashboard.php');
+                exit();
+        }
+    }
+    exit();
+}
+
 if (!isset($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }

@@ -200,6 +200,10 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <i class="bi bi-building"></i>
             Offices
         </a>
+        <a href="fuel_management.php" class="sidebar-nav-item <?php echo $current_page == 'fuel_management.php' ? 'active' : ''; ?>">
+            <i class="bi bi-fuel-pump"></i>
+            Fuel Management
+        </a>
         <a href="scan_qr.php" class="sidebar-nav-item <?php echo $current_page == 'scan_qr.php' ? 'active' : ''; ?>">
             <i class="bi bi-qr-code-scan"></i>
             QR Scanner
