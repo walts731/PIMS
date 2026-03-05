@@ -237,7 +237,7 @@ function createMainUserNotificationsForICS($descriptions, $asset_ids) {
     global $conn;
     
     // Get all MAIN_USER users
-    $main_users_query = "SELECT id FROM users WHERE role = 'main_user' AND status = 'active'";
+    $main_users_query = "SELECT id FROM users WHERE role = 'main_user' AND is_active = 1";
     $main_users_result = $conn->query($main_users_query);
     
     if ($main_users_result && $main_users_result->num_rows > 0) {
