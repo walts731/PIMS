@@ -76,9 +76,14 @@ if (!$conn || $conn->connect_error) {
         $where_clauses = [];
 
         if ($status_filter !== '') {
-            $where_clauses[] = "ai.status = ?";
-            $params[] = $status_filter;
-            $types .= 's';
+            if ($status_filter === 'borrowed') {
+                // For borrowed status, filter by asset_items.status = 'borrowed'
+                $where_clauses[] = "ai.status = 'borrowed'";
+            } else {
+                $where_clauses[] = "ai.status = ?";
+                $params[] = $status_filter;
+                $types .= 's';
+            }
         }
 
         if ($office_filter > 0) {
@@ -115,6 +120,7 @@ $total_items = count($items);
 $serviceable_items = count(array_filter($items, fn($item) => ($item['status'] ?? '') === 'serviceable'));
 $unserviceable_items = count(array_filter($items, fn($item) => ($item['status'] ?? '') === 'unserviceable'));
 $redtagged_items = count(array_filter($items, fn($item) => ($item['status'] ?? '') === 'red_tagged'));
+$borrowed_items = count(array_filter($items, fn($item) => ($item['status'] ?? '') === 'borrowed'));
 ?>
 <!DOCTYPE html>
 <html lang="en">

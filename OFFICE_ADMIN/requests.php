@@ -78,6 +78,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $stmt->bind_param("iiisisss", $_SESSION['user_id'], $office_id, $requested_to_office, $asset_id, $quantity_requested, $purpose, $start_date, $end_date);
                             
                             if ($stmt->execute()) {
+                                // Update asset status to pending when request is created
+                                $asset_update = "UPDATE asset_items SET status = 'pending' WHERE id = ?";
+                                $stmt2 = $conn->prepare($asset_update);
+                                $stmt2->bind_param("i", $asset_id);
+                                $stmt2->execute();
+                                
                                 $_SESSION['success'] = "Borrow request for {$quantity_requested} unit(s) created successfully";
                                 logSystemAction($_SESSION['user_id'], 'create', 'borrow_request', "Created borrow request for {$quantity_requested} unit(s) of asset #$asset_id");
                             } else {
@@ -105,6 +111,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->bind_param("isi", $_SESSION['user_id'], $notes, $request_id);
             
             if ($stmt->execute()) {
+                // Update asset status to in_use when request is approved
+                $asset_update = "UPDATE asset_items SET status = 'in_use' 
+                                WHERE id = (SELECT asset_id FROM borrow_requests WHERE id = ?)";
+                $stmt2 = $conn->prepare($asset_update);
+                $stmt2->bind_param("i", $request_id);
+                $stmt2->execute();
+                
                 $_SESSION['success'] = "Request approved successfully";
                 logSystemAction($_SESSION['user_id'], 'approve', 'borrow_request', "Approved borrow request #$request_id");
             } else {
@@ -126,6 +139,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->bind_param("isi", $_SESSION['user_id'], $reason, $request_id);
             
             if ($stmt->execute()) {
+                // Update asset status back to serviceable when request is denied
+                $asset_update = "UPDATE asset_items SET status = 'serviceable' 
+                                WHERE id = (SELECT asset_id FROM borrow_requests WHERE id = ?)";
+                $stmt2 = $conn->prepare($asset_update);
+                $stmt2->bind_param("i", $request_id);
+                $stmt2->execute();
+                
                 $_SESSION['success'] = "Request denied successfully";
                 logSystemAction($_SESSION['user_id'], 'deny', 'borrow_request', "Denied borrow request #$request_id");
             } else {
@@ -148,8 +168,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->bind_param("ssi", $condition, $notes, $request_id);
             
             if ($stmt->execute()) {
-                // Update asset status back to available
-                $asset_update = "UPDATE asset_items SET status = 'available' 
+                // Update asset status back to serviceable when returned
+                $asset_update = "UPDATE asset_items SET status = 'serviceable' 
                                 WHERE id = (SELECT asset_id FROM borrow_requests WHERE id = ?)";
                 $stmt2 = $conn->prepare($asset_update);
                 $stmt2->bind_param("i", $request_id);
@@ -242,13 +262,28 @@ if ($office_id && $conn) {
 // Fetch available assets and offices for new request form
 $available_assets = [];
 $other_offices = [];
+$asset_categories = [];
 
 if ($office_id && $conn) {
     try {
+        // Get asset categories
+        $categories_query = "SELECT id, category_name, category_code, description 
+                           FROM asset_categories 
+                           WHERE status = 'active'
+                           ORDER BY category_name";
+        $stmt = $conn->prepare($categories_query);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        while ($row = $result->fetch_assoc()) {
+            $asset_categories[] = $row;
+        }
+        
         // Get available assets from other offices
         $assets_query = "SELECT ai.id, ai.description, COALESCE(ai.property_number, ai.property_no) as asset_code, ac.category_name, o.office_name, o.id as office_id,
                          COALESCE(a.quantity, 1) as total_quantity,
-                         COALESCE(a.quantity, 1) as available_quantity
+                         COALESCE(a.quantity, 1) as available_quantity,
+                         ac.id as category_id
                          FROM asset_items ai
                          LEFT JOIN asset_categories ac ON ai.asset_category_id = ac.id
                          LEFT JOIN assets a ON ai.asset_id = a.id
@@ -360,6 +395,11 @@ if ($office_id && $conn) {
             color: white;
         }
         
+        .status-cancelled {
+            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+            color: white;
+        }
+        
         .stats-card {
             background: white;
             border-radius: var(--border-radius-lg);
@@ -428,6 +468,80 @@ if ($office_id && $conn) {
             font-size: 4rem;
             color: #ddd;
             margin-bottom: 1rem;
+        }
+        
+        /* Timeline Styles */
+        .timeline {
+            position: relative;
+            padding-left: 40px;
+        }
+        
+        .timeline-item {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+        
+        .timeline-marker {
+            position: absolute;
+            left: -40px;
+            top: 0;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .timeline-marker.primary {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        }
+        
+        .timeline-marker.success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+        
+        .timeline-marker.danger {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        }
+        
+        .timeline-marker.info {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+        }
+        
+        .timeline-marker.secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #545b62 100%);
+        }
+        
+        .timeline-content {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            border-left: 3px solid #dee2e6;
+            transition: all 0.3s ease;
+        }
+        
+        .timeline-content:hover {
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transform: translateX(2px);
+        }
+        
+        .timeline-connector {
+            position: absolute;
+            left: -24px;
+            top: 32px;
+            width: 2px;
+            height: 20px;
+            background: linear-gradient(180deg, #dee2e6 0%, transparent 100%);
+        }
+        
+        .timeline-item:last-child .timeline-connector {
+            display: none;
         }
     </style>
 </head>
@@ -842,11 +956,31 @@ if ($office_id && $conn) {
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
+                                    <label for="asset_category" class="form-label">Asset Category</label>
+                                    <select class="form-control" id="asset_category" name="asset_category">
+                                        <option value="">All Categories</option>
+                                        <?php if (!empty($asset_categories)): ?>
+                                            <?php foreach ($asset_categories as $category): ?>
+                                                <option value="<?php echo $category['id']; ?>">
+                                                    <?php echo htmlspecialchars($category['category_name']); ?> (<?php echo htmlspecialchars($category['category_code']); ?>)
+                                                </option>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </select>
+                                    <small class="text-muted">Filter assets by category</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
                                     <label for="asset_id" class="form-label">Asset to Borrow <span class="text-danger">*</span></label>
                                     <select class="form-control" id="asset_id" name="asset_id" required>
                                         <option value="">Select Asset</option>
                                         <?php foreach ($available_assets as $asset): ?>
-                                            <option value="<?php echo $asset['id']; ?>" data-office-id="<?php echo $asset['office_id']; ?>" data-available="<?php echo $asset['available_quantity']; ?>" data-total="<?php echo $asset['total_quantity']; ?>">
+                                            <option value="<?php echo $asset['id']; ?>" 
+                                                    data-office-id="<?php echo $asset['office_id']; ?>" 
+                                                    data-category-id="<?php echo $asset['category_id']; ?>"
+                                                    data-available="<?php echo $asset['available_quantity']; ?>" 
+                                                    data-total="<?php echo $asset['total_quantity']; ?>">
                                                 <?php echo htmlspecialchars($asset['description']); ?> (<?php echo htmlspecialchars($asset['asset_code']); ?>)
                                                 - <?php echo htmlspecialchars($asset['office_name']); ?>
                                                 <small class="text-muted">(<?php echo $asset['available_quantity']; ?> of <?php echo $asset['total_quantity']; ?> available)</small>
@@ -899,6 +1033,24 @@ if ($office_id && $conn) {
         </div>
     </div>
     
+    <!-- Request Details Modal -->
+    <div class="modal fade" id="detailsModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title"><i class="bi bi-eye"></i> Request Details</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="detailsModalBody">
+                    <!-- Content will be populated dynamically -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
@@ -920,19 +1072,360 @@ if ($office_id && $conn) {
             new bootstrap.Modal(document.getElementById('returnModal')).show();
         }
         
-        // View Details (placeholder function)
+        // View Details
         function viewDetails(requestId) {
-            // This would open a detailed view modal
-            console.log('View details for request:', requestId);
-            alert('Detailed view would be implemented here');
+            fetch(`../api/get_request_details_simple.php?request_id=${requestId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert('Error: ' + data.error);
+                        return;
+                    }
+                    populateDetailsModal(data);
+                    new bootstrap.Modal(document.getElementById('detailsModal')).show();
+                })
+                .catch(error => {
+                    console.error('Error fetching request details:', error);
+                    alert('Error loading request details: ' + error.message);
+                });
         }
         
-        // Cancel Request (placeholder function)
+        // Cancel Request
         function cancelRequest(requestId) {
             if (confirm('Are you sure you want to cancel this request?')) {
-                console.log('Cancel request:', requestId);
-                // This would implement the cancellation logic
+                const formData = new FormData();
+                formData.append('request_id', requestId);
+                
+                fetch('../api/cancel_request.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Request cancelled successfully');
+                        // Reload the page to show updated status
+                        window.location.reload();
+                    } else {
+                        alert('Error cancelling request: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error cancelling request:', error);
+                    alert('Error cancelling request: ' + error.message);
+                });
             }
+        }
+        
+        // Populate Details Modal
+        function populateDetailsModal(data) {
+            const modalBody = document.getElementById('detailsModalBody');
+            
+            // Build lifecycle HTML
+            let lifecycleHtml = '';
+            if (data.lifecycle && data.lifecycle.events) {
+                data.lifecycle.events.forEach((event, index) => {
+                    const icon = getEventIcon(event.type);
+                    const color = getEventColor(event.type);
+                    const date = new Date(event.timestamp);
+                    const formattedDate = date.toLocaleDateString('en-US', { 
+                        year: 'numeric', 
+                        month: 'short', 
+                        day: 'numeric', 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    });
+                    
+                    lifecycleHtml += `
+                        <div class="timeline-item">
+                            <div class="timeline-marker ${color}">
+                                <i class="bi ${icon}"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <h6 class="mb-1">${event.title}</h6>
+                                <p class="mb-1 text-muted small">${event.description}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        ${event.user ? `<strong>${event.user}</strong><br><small class="text-muted">${event.user_email}</small><br><small class="text-info">${event.office}</small>` : ''}
+                                        ${event.notes ? `<br><small class="text-muted">Notes: ${event.notes}</small>` : ''}
+                                    </div>
+                                    <small class="text-muted">${formattedDate}</small>
+                                </div>
+                            </div>
+                        </div>
+                        ${index < data.lifecycle.events.length - 1 ? '<div class="timeline-connector"></div>' : ''}
+                    `;
+                });
+            }
+            
+            // Current status indicator with fallback
+            const currentStatus = (data.lifecycle && data.lifecycle.current_status) ? data.lifecycle.current_status : {
+                status: data.request.status,
+                title: ucfirst(data.request.status),
+                description: getStatusDescription(data.request.status),
+                timestamp: data.request.created_at
+            };
+            const statusBadge = getStatusBadge(currentStatus.status);
+            const statusDate = new Date(currentStatus.timestamp);
+            const formattedStatusDate = statusDate.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric', 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            
+            modalBody.innerHTML = `
+                <div class="row">
+                    <!-- Request Overview -->
+                    <div class="col-md-6">
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="bi bi-info-circle"></i> Request Overview</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Request ID:</strong></div>
+                                    <div class="col-sm-8">#${data.request.id}</div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Status:</strong></div>
+                                    <div class="col-sm-8">${statusBadge}</div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Quantity:</strong></div>
+                                    <div class="col-sm-8">${data.request.quantity_requested} unit(s)</div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Purpose:</strong></div>
+                                    <div class="col-sm-8">${data.request.purpose}</div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Duration:</strong></div>
+                                    <div class="col-sm-8">
+                                        From: ${new Date(data.request.start_date).toLocaleDateString()}<br>
+                                        To: ${new Date(data.request.end_date).toLocaleDateString()}
+                                    </div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Created:</strong></div>
+                                    <div class="col-sm-8">${new Date(data.request.created_at).toLocaleDateString()}</div>
+                                </div>
+                                ${data.request.approval_notes ? `
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Approval Notes:</strong></div>
+                                    <div class="col-sm-8">${data.request.approval_notes}</div>
+                                </div>
+                                ` : ''}
+                                ${data.request.denial_reason ? `
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Denial Reason:</strong></div>
+                                    <div class="col-sm-8">${data.request.denial_reason}</div>
+                                </div>
+                                ` : ''}
+                                ${data.request.return_condition ? `
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Return Condition:</strong></div>
+                                    <div class="col-sm-8">${data.request.return_condition}</div>
+                                </div>
+                                ` : ''}
+                                ${data.request.return_notes ? `
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Return Notes:</strong></div>
+                                    <div class="col-sm-8">${data.request.return_notes}</div>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Offices Information -->
+                    <div class="col-md-6">
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="bi bi-building"></i> Offices Involved</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <h6 class="text-primary"><i class="bi bi-arrow-right"></i> Requested From</h6>
+                                    <strong>${data.requester.office.name}</strong> (${data.requester.office.code})<br>
+                                    <small class="text-muted">${data.requester.name}</small><br>
+                                    <small class="text-muted">${data.requester.email}</small>
+                                </div>
+                                <div class="mb-3">
+                                    <h6 class="text-success"><i class="bi bi-arrow-left"></i> Requested To</h6>
+                                    <strong>${data.approver.office.name}</strong> (${data.approver.office.code})<br>
+                                    <small class="text-muted">${data.approver.name || 'N/A'}</small><br>
+                                    <small class="text-muted">${data.approver.email || 'N/A'}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <!-- Asset Information -->
+                    <div class="col-md-6">
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="bi bi-box-seam"></i> Asset Information</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Description:</strong></div>
+                                    <div class="col-sm-8">${data.asset.description}</div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Property No:</strong></div>
+                                    <div class="col-sm-8">${data.asset.code || 'N/A'}</div>
+                                </div>
+                                ${data.asset.serial_number ? `
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Serial No:</strong></div>
+                                    <div class="col-sm-8">${data.asset.serial_number}</div>
+                                </div>
+                                ` : ''}
+                                ${data.asset.model ? `
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Model:</strong></div>
+                                    <div class="col-sm-8">${data.asset.model}</div>
+                                </div>
+                                ` : ''}
+                                ${data.asset.brand ? `
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Brand:</strong></div>
+                                    <div class="col-sm-8">${data.asset.brand}</div>
+                                </div>
+                                ` : ''}
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Category:</strong></div>
+                                    <div class="col-sm-8">${data.asset.category.name || 'Uncategorized'}</div>
+                                </div>
+                                ${data.asset.unit ? `
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Unit:</strong></div>
+                                    <div class="col-sm-8">${data.asset.unit}</div>
+                                </div>
+                                ` : ''}
+                                ${data.asset.inventory_tag ? `
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Inventory Tag:</strong></div>
+                                    <div class="col-sm-8">${data.asset.inventory_tag}</div>
+                                </div>
+                                ` : ''}
+                                ${data.asset.unit_value && data.asset.unit_value > 0 ? `
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Unit Value:</strong></div>
+                                    <div class="col-sm-8">₱${parseFloat(data.asset.unit_value).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                                </div>
+                                ` : ''}
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Current Status:</strong></div>
+                                    <div class="col-sm-8">
+                                        <span class="badge bg-${getStatusColor(data.asset.status)}">${ucfirst(data.asset.status)}</span>
+                                    </div>
+                                </div>
+                                ${data.asset.date_acquired ? `
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Date Acquired:</strong></div>
+                                    <div class="col-sm-8">${new Date(data.asset.date_acquired).toLocaleDateString()}</div>
+                                </div>
+                                ` : ''}
+                                ${data.asset.end_user ? `
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>End User:</strong></div>
+                                    <div class="col-sm-8">${data.asset.end_user}</div>
+                                </div>
+                                ` : ''}
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Requested Quantity:</strong></div>
+                                    <div class="col-sm-8">${data.request.quantity_requested} unit(s)</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Request Lifecycle -->
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="bi bi-clock-history"></i> Request Lifecycle</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="timeline">
+                                    ${lifecycleHtml || '<p class="text-muted">No lifecycle events available</p>'}
+                                </div>
+                                <div class="mt-3 p-2 bg-light rounded">
+                                    <small class="text-muted">
+                                        <strong>Current Status:</strong> ${currentStatus.title}<br>
+                                        ${currentStatus.description}<br>
+                                        <em>Last updated: ${formattedStatusDate}</em>
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Helper functions
+        function getEventIcon(type) {
+            const icons = {
+                'created': 'bi-send',
+                'approved': 'bi-check-circle',
+                'denied': 'bi-x-circle',
+                'returned': 'bi-arrow-return-left'
+            };
+            return icons[type] || 'bi-circle';
+        }
+        
+        function getEventColor(type) {
+            const colors = {
+                'created': 'primary',
+                'approved': 'success',
+                'denied': 'danger',
+                'returned': 'info'
+            };
+            return colors[type] || 'secondary';
+        }
+        
+        function getStatusBadge(status) {
+            const badges = {
+                'pending': '<span class="badge bg-warning">Pending</span>',
+                'approved': '<span class="badge bg-success">Approved</span>',
+                'denied': '<span class="badge bg-danger">Denied</span>',
+                'returned': '<span class="badge bg-info">Returned</span>',
+                'cancelled': '<span class="badge bg-secondary">Cancelled</span>'
+            };
+            return badges[status] || '<span class="badge bg-secondary">Unknown</span>';
+        }
+        
+        function ucfirst(str) {
+            if (!str || typeof str !== 'string') return '';
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+        
+        function getStatusDescription(status) {
+            const descriptions = {
+                'pending': 'Request is awaiting approval',
+                'approved': 'Request has been approved and asset is in use',
+                'denied': 'Request has been denied',
+                'returned': 'Asset has been returned',
+                'cancelled': 'Request has been cancelled'
+            };
+            return descriptions[status] || 'Unknown status';
+        }
+        
+        function getStatusColor(status) {
+            const colors = {
+                'serviceable': 'success',
+                'in_use': 'primary',
+                'pending': 'warning',
+                'maintenance': 'danger',
+                'disposed': 'secondary'
+            };
+            return colors[status] || 'secondary';
         }
         
         // Set minimum date to today for date inputs
@@ -992,39 +1485,49 @@ if ($office_id && $conn) {
                 });
             }
             
-            // Filter assets based on selected office
+            // Filter assets based on selected office and category
             const officeSelect = document.getElementById('requested_to_office');
+            const categorySelect = document.getElementById('asset_category');
             
-            if (officeSelect && assetSelect) {
-                officeSelect.addEventListener('change', function() {
-                    const selectedOfficeId = this.value;
-                    const options = assetSelect.querySelectorAll('option');
+            function filterAssets() {
+                const selectedOfficeId = officeSelect.value;
+                const selectedCategoryId = categorySelect.value;
+                const options = assetSelect.querySelectorAll('option');
+                
+                options.forEach(option => {
+                    if (option.value === '') {
+                        option.style.display = 'block';
+                        return;
+                    }
                     
-                    options.forEach(option => {
-                        if (option.value === '') {
-                            option.style.display = 'block';
-                            return;
-                        }
-                        
-                        // Get office ID from asset option
-                        const assetOfficeId = option.getAttribute('data-office-id');
-                        if (selectedOfficeId === '' || assetOfficeId === selectedOfficeId) {
-                            option.style.display = 'block';
-                        } else {
-                            option.style.display = 'none';
-                        }
-                    });
+                    // Get office ID and category ID from asset option
+                    const assetOfficeId = option.getAttribute('data-office-id');
+                    const assetCategoryId = option.getAttribute('data-category-id');
                     
-                    // Reset asset selection if it's no longer visible
-                    if (assetSelect.value) {
-                        const selectedOption = assetSelect.querySelector(`option[value="${assetSelect.value}"]`);
-                        if (selectedOption && selectedOption.style.display === 'none') {
-                            assetSelect.value = '';
-                            quantityInfo.textContent = 'Select an asset to see available quantity';
-                            quantityInput.max = '';
-                        }
+                    const officeMatch = selectedOfficeId === '' || assetOfficeId === selectedOfficeId;
+                    const categoryMatch = selectedCategoryId === '' || assetCategoryId === selectedCategoryId;
+                    
+                    if (officeMatch && categoryMatch) {
+                        option.style.display = 'block';
+                    } else {
+                        option.style.display = 'none';
                     }
                 });
+                
+                // Reset asset selection if current selection is hidden
+                if (assetSelect.value && assetSelect.options[assetSelect.selectedIndex].style.display === 'none') {
+                    assetSelect.value = '';
+                    quantityInfo.textContent = 'Select an asset to see available quantity';
+                    quantityInput.max = '';
+                }
+            }
+            
+            if (officeSelect && assetSelect) {
+                officeSelect.addEventListener('change', filterAssets);
+            }
+            
+            if (categorySelect && assetSelect) {
+                categorySelect.addEventListener('change', filterAssets);
             }
         });
     </script>

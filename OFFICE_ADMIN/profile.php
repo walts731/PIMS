@@ -126,7 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
 // Get user profile data
 $user_data = null;
 try {
-    $stmt = $conn->prepare("SELECT u.*, o.office_name FROM users u LEFT JOIN offices o ON u.office_id = o.id WHERE u.id = ?");
+    $stmt = $conn->prepare("SELECT u.*, o.office_name FROM users u LEFT JOIN offices o ON u.office = o.id WHERE u.id = ?");
     $stmt->bind_param("i", $_SESSION['user_id']);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -160,7 +160,7 @@ try {
 
 // Get office-specific statistics
 $office_stats = [];
-if ($user_data['office_id']) {
+if ($user_data['office']) {
     try {
         $stmt = $conn->prepare("
             SELECT 
@@ -174,7 +174,7 @@ if ($user_data['office_id']) {
                 SELECT id, quantity, 'consumable' as type FROM consumables WHERE office_id = ?
             ) as combined
         ");
-        $stmt->bind_param("ii", $user_data['office_id'], $user_data['office_id']);
+        $stmt->bind_param("ii", $user_data['office'], $user_data['office']);
         $stmt->execute();
         $result = $stmt->get_result();
         $office_stats = $result->fetch_assoc();
