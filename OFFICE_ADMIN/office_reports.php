@@ -62,9 +62,9 @@ if ($office_id && $conn) {
                             SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_requests,
                             SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved_requests,
                             SUM(CASE WHEN status = 'denied' THEN 1 ELSE 0 END) as denied_requests,
-                            SUM(CASE WHEN status = 'completed' OR status = 'returned' THEN 1 ELSE 0 END) as completed_requests
-                         FROM requests 
-                         WHERE office_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+                            SUM(CASE WHEN status = 'returned' THEN 1 ELSE 0 END) as completed_requests
+                         FROM borrow_requests 
+                         WHERE requested_to_office = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
         $stmt = $conn->prepare($request_query);
         $stmt->bind_param("i", $office_id);
         $stmt->execute();
@@ -91,9 +91,9 @@ if ($office_id && $conn) {
         }
         
         // Monthly Consumable Usage
-        $usage_query = "SELECT SUM(quantity_used) as monthly_usage 
-                       FROM consumable_usage 
-                       WHERE office_id = ? AND usage_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+        $usage_query = "SELECT SUM(quantity_released) as monthly_usage 
+                       FROM consumable_release_history 
+                       WHERE to_office_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
         $stmt = $conn->prepare($usage_query);
         $stmt->bind_param("i", $office_id);
         $stmt->execute();
@@ -122,13 +122,27 @@ if ($office_id && $conn) {
         }
         
         // Recent Activities
-        $activity_query = "SELECT activity_type, description, created_at 
-                          FROM office_activity_log 
-                          WHERE office_id = ? 
+        $activity_query = "(SELECT 
+                            'Borrow Request' COLLATE utf8mb4_unicode_ci as activity_type,
+                            CONCAT('Request for asset #', asset_id, ' - ', status) COLLATE utf8mb4_unicode_ci as description,
+                            created_at
+                          FROM borrow_requests 
+                          WHERE requested_to_office = ? OR requested_by_office = ?
+                          ORDER BY created_at DESC 
+                          LIMIT 5)
+                          UNION
+                          (SELECT 
+                            'Consumable Release' COLLATE utf8mb4_unicode_ci as activity_type,
+                            CONCAT('Released ', quantity_released, ' units of ', description) COLLATE utf8mb4_unicode_ci as description,
+                            created_at
+                          FROM consumable_release_history 
+                          WHERE to_office_id = ? OR from_office_id = ?
+                          ORDER BY created_at DESC 
+                          LIMIT 5)
                           ORDER BY created_at DESC 
                           LIMIT 10";
         $stmt = $conn->prepare($activity_query);
-        $stmt->bind_param("i", $office_id);
+        $stmt->bind_param("iiii", $office_id, $office_id, $office_id, $office_id);
         $stmt->execute();
         $result = $stmt->get_result();
         while ($row = $result->fetch_assoc()) {
@@ -140,8 +154,8 @@ if ($office_id && $conn) {
                             DATE_FORMAT(created_at, '%Y-%m') as month,
                             COUNT(*) as requests_count,
                             SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved_count
-                         FROM requests 
-                         WHERE office_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
+                         FROM borrow_requests 
+                         WHERE requested_to_office = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
                          GROUP BY DATE_FORMAT(created_at, '%Y-%m')
                          ORDER BY month";
         $stmt = $conn->prepare($monthly_query);
@@ -155,16 +169,16 @@ if ($office_id && $conn) {
         // Top Consumables by Usage
         $top_consumables_query = "SELECT 
                                     c.description,
-                                    SUM(cu.quantity_used) as total_used,
+                                    SUM(crh.quantity_released) as total_used,
                                     c.unit
                                  FROM consumables c
-                                 LEFT JOIN consumable_usage cu ON c.id = cu.consumable_id
-                                 WHERE c.office_id = ? 
+                                 LEFT JOIN consumable_release_history crh ON c.id = crh.consumable_id
+                                 WHERE c.office_id = ? OR crh.to_office_id = ?
                                  GROUP BY c.id, c.description, c.unit
                                  ORDER BY total_used DESC
                                  LIMIT 5";
         $stmt = $conn->prepare($top_consumables_query);
-        $stmt->bind_param("i", $office_id);
+        $stmt->bind_param("ii", $office_id, $office_id);
         $stmt->execute();
         $result = $stmt->get_result();
         while ($row = $result->fetch_assoc()) {
@@ -176,14 +190,16 @@ if ($office_id && $conn) {
                             DATE(created_at) as date,
                             COUNT(*) as requests_count,
                             SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved_count
-                         FROM requests 
-                         WHERE office_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                         FROM borrow_requests 
+                         WHERE requested_by_office = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
                          GROUP BY DATE(created_at)
                          ORDER BY date";
+        
         $stmt = $conn->prepare($trends_query);
         $stmt->bind_param("i", $office_id);
         $stmt->execute();
         $result = $stmt->get_result();
+        
         while ($row = $result->fetch_assoc()) {
             $report_data['request_trends'][] = $row;
         }
@@ -421,9 +437,9 @@ $report_data['asset_stats']['total_asset_value'] = number_format($report_data['a
         </div>
         
         <!-- Overview Statistics -->
-        <div class="row mb-4">
+        <div class="row mb-4 justify-content-center">
             <!-- Request Statistics -->
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg-4 col-md-6">
                 <div class="stats-card">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
@@ -442,7 +458,7 @@ $report_data['asset_stats']['total_asset_value'] = number_format($report_data['a
             </div>
             
             <!-- Consumable Statistics -->
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg-4 col-md-6">
                 <div class="stats-card">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
@@ -461,7 +477,7 @@ $report_data['asset_stats']['total_asset_value'] = number_format($report_data['a
             </div>
             
             <!-- Asset Statistics -->
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg-4 col-md-6">
                 <div class="stats-card">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
@@ -474,25 +490,6 @@ $report_data['asset_stats']['total_asset_value'] = number_format($report_data['a
                         </div>
                         <div class="text-info">
                             <i class="bi bi-box-seam fs-1"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Total Value -->
-            <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <div class="stats-number">₱<?php echo $report_data['asset_stats']['total_asset_value']; ?></div>
-                            <div class="stats-label">Total Asset Value</div>
-                            <small class="text-success">
-                                <i class="bi bi-currency-dollar"></i> 
-                                Consumables: ₱<?php echo $report_data['consumable_stats']['total_value']; ?>
-                            </small>
-                        </div>
-                        <div class="text-success">
-                            <i class="bi bi-currency-dollar fs-1"></i>
                         </div>
                     </div>
                 </div>

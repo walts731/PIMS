@@ -98,38 +98,55 @@ if (!$conn || $conn->connect_error) {
                 $stats['asset_requests'] = 0;
             }
             
-            // ===== OFFICE FORMS =====
-            $forms_query = "SELECT 
-                COUNT(*) as total_forms,
-                SUM(CASE WHEN form_type = 'PAR' THEN 1 ELSE 0 END) as par_forms,
-                SUM(CASE WHEN form_type = 'ICS' THEN 1 ELSE 0 END) as ics_forms,
-                SUM(CASE WHEN form_type = 'RIS' THEN 1 ELSE 0 END) as ris_forms
-                FROM office_forms 
-                WHERE office_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
-            $stmt = $conn->prepare($forms_query);
-            $stmt->bind_param("i", $user_office_id);
-            $stmt->execute();
-            $forms_result = $stmt->get_result();
-            if ($forms_result) {
-                $stats = array_merge($stats, $forms_result->fetch_assoc());
-            }
-            
-            // ===== RECENT ACTIVITY =====
-            $recent_activity_query = "SELECT 
-                activity_type, description, created_at
-                FROM office_activity_log 
-                WHERE office_id = ? 
-                ORDER BY created_at DESC 
-                LIMIT 5";
-            $stmt = $conn->prepare($recent_activity_query);
-            $stmt->bind_param("i", $user_office_id);
-            $stmt->execute();
-            $recent_result = $stmt->get_result();
-            $stats['recent_activity'] = [];
-            if ($recent_result) {
-                while ($row = $recent_result->fetch_assoc()) {
-                    $stats['recent_activity'][] = $row;
+            // ===== BORROW REQUESTS =====
+            try {
+                // Incoming requests (other offices requesting from this office)
+                $incoming_requests_query = "SELECT 
+                    COUNT(*) as total_incoming_requests,
+                    SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_incoming_requests,
+                    SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved_incoming_requests,
+                    SUM(CASE WHEN status = 'denied' THEN 1 ELSE 0 END) as denied_incoming_requests,
+                    SUM(CASE WHEN status = 'returned' THEN 1 ELSE 0 END) as returned_incoming_requests
+                    FROM borrow_requests 
+                    WHERE requested_to_office = ?";
+                $stmt = $conn->prepare($incoming_requests_query);
+                $stmt->bind_param("i", $user_office_id);
+                $stmt->execute();
+                $incoming_result = $stmt->get_result();
+                if ($incoming_result) {
+                    $incoming_stats = $incoming_result->fetch_assoc();
+                    $stats = array_merge($stats, $incoming_stats);
                 }
+                
+                // Outgoing requests (this office requesting from other offices)
+                $outgoing_requests_query = "SELECT 
+                    COUNT(*) as total_outgoing_requests,
+                    SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_outgoing_requests,
+                    SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved_outgoing_requests,
+                    SUM(CASE WHEN status = 'denied' THEN 1 ELSE 0 END) as denied_outgoing_requests,
+                    SUM(CASE WHEN status = 'returned' THEN 1 ELSE 0 END) as returned_outgoing_requests
+                    FROM borrow_requests 
+                    WHERE requested_by_office = ?";
+                $stmt = $conn->prepare($outgoing_requests_query);
+                $stmt->bind_param("i", $user_office_id);
+                $stmt->execute();
+                $outgoing_result = $stmt->get_result();
+                if ($outgoing_result) {
+                    $outgoing_stats = $outgoing_result->fetch_assoc();
+                    $stats = array_merge($stats, $outgoing_stats);
+                }
+            } catch (Exception $e) {
+                // Table doesn't exist, set defaults
+                $stats['total_incoming_requests'] = 0;
+                $stats['pending_incoming_requests'] = 0;
+                $stats['approved_incoming_requests'] = 0;
+                $stats['denied_incoming_requests'] = 0;
+                $stats['returned_incoming_requests'] = 0;
+                $stats['total_outgoing_requests'] = 0;
+                $stats['pending_outgoing_requests'] = 0;
+                $stats['approved_outgoing_requests'] = 0;
+                $stats['denied_outgoing_requests'] = 0;
+                $stats['returned_outgoing_requests'] = 0;
             }
             
             // ===== LOW STOCK ITEMS =====
@@ -163,8 +180,12 @@ $defaults = [
     'total_office_value' => 0, 'office_consumables_count' => 0, 'total_consumable_quantity' => 0,
     'total_consumable_value' => 0, 'low_stock_items' => 0, 'pending_requests' => 0,
     'consumable_requests' => 0, 'asset_requests' => 0, 'total_forms' => 0,
-    'par_forms' => 0, 'ics_forms' => 0, 'ris_forms' => 0,
-    'recent_activity' => [], 'low_stock_details' => []
+    'ics_forms' => 0, 'ris_forms' => 0,
+    'total_incoming_requests' => 0, 'pending_incoming_requests' => 0, 'approved_incoming_requests' => 0,
+    'denied_incoming_requests' => 0, 'returned_incoming_requests' => 0,
+    'total_outgoing_requests' => 0, 'pending_outgoing_requests' => 0, 'approved_outgoing_requests' => 0,
+    'denied_outgoing_requests' => 0, 'returned_outgoing_requests' => 0,
+    'low_stock_details' => []
 ];
 
 foreach ($defaults as $key => $value) {
@@ -432,26 +453,17 @@ $page_title = 'Office Dashboard';
         </div>
         
         <!-- Quick Actions -->
-        <div class="row mb-4">
+        <div class="row mb-4 justify-content-center">
             <div class="col-12">
                 <h5 class="mb-3">Quick Actions</h5>
             </div>
             <div class="col-md-3 col-sm-6 mb-3">
-                <a href="request_consumable.php" class="quick-action-card">
+                <a href="office_consumables.php" class="quick-action-card">
                     <div class="quick-action-icon">
                         <i class="bi bi-archive"></i>
                     </div>
-                    <div class="quick-action-title">Request Consumables</div>
-                    <div class="quick-action-desc">Submit new consumable request</div>
-                </a>
-            </div>
-            <div class="col-md-3 col-sm-6 mb-3">
-                <a href="create_par.php" class="quick-action-card">
-                    <div class="quick-action-icon">
-                        <i class="bi bi-file-earmark-text"></i>
-                    </div>
-                    <div class="quick-action-title">Create PAR Form</div>
-                    <div class="quick-action-desc">Property Acknowledgment Receipt</div>
+                    <div class="quick-action-title">Consumables</div>
+                    <div class="quick-action-desc">Track consumable usage</div>
                 </a>
             </div>
             <div class="col-md-3 col-sm-6 mb-3">
@@ -499,7 +511,15 @@ $page_title = 'Office Dashboard';
             <!-- Request Status Overview -->
             <div class="col-lg-4">
                 <div class="chart-card">
-                    <h6 class="mb-3"><i class="bi bi-send"></i> Request Status</h6>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="mb-0"><i class="bi bi-send"></i> Request Status</h6>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <input type="radio" class="btn-check" name="requestType" id="outgoingRequests" autocomplete="off" checked>
+                            <label class="btn btn-outline-primary btn-sm" for="outgoingRequests">Outgoing</label>
+                            <input type="radio" class="btn-check" name="requestType" id="incomingRequests" autocomplete="off">
+                            <label class="btn btn-outline-primary btn-sm" for="incomingRequests">Incoming</label>
+                        </div>
+                    </div>
                     <div class="chart-container">
                         <canvas id="requestStatusChart"></canvas>
                     </div>
@@ -533,33 +553,6 @@ $page_title = 'Office Dashboard';
                             <div class="mt-2">All consumables are well stocked</div>
                         </div>
                     <?php endif; ?>
-                </div>
-            </div>
-            
-            <!-- Recent Activity -->
-            <div class="col-lg-6">
-                <div class="chart-card">
-                    <h6 class="mb-3"><i class="bi bi-clock-history"></i> Recent Activity</h6>
-                    <div class="activity-feed">
-                        <?php if (!empty($stats['recent_activity'])): ?>
-                            <?php foreach ($stats['recent_activity'] as $activity): ?>
-                                <div class="activity-item">
-                                    <div class="d-flex justify-content-between align-items-start">
-                                        <div>
-                                            <strong><?php echo htmlspecialchars($activity['activity_type']); ?></strong>
-                                            <div class="small text-muted"><?php echo htmlspecialchars($activity['description']); ?></div>
-                                        </div>
-                                        <small class="text-muted"><?php echo date('M j, H:i', strtotime($activity['created_at'])); ?></small>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <div class="text-center text-muted py-3">
-                                <i class="bi bi-clock" style="font-size: 2rem;"></i>
-                                <div class="mt-2">No recent activity</div>
-                            </div>
-                        <?php endif; ?>
-                    </div>
                 </div>
             </div>
         </div>
@@ -619,16 +612,29 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Request Status Chart
     const requestStatusCtx = document.getElementById('requestStatusChart').getContext('2d');
-    new Chart(requestStatusCtx, {
+    
+    // Store both datasets
+    const outgoingData = {
+        labels: ['Pending', 'Approved', 'Denied', 'Returned'],
+        datasets: [{
+            data: [<?php echo $stats['pending_outgoing_requests']; ?>, <?php echo $stats['approved_outgoing_requests']; ?>, <?php echo $stats['denied_outgoing_requests']; ?>, <?php echo $stats['returned_outgoing_requests']; ?>],
+            backgroundColor: ['#ffc107', '#28a745', '#dc3545', '#6f42c1'],
+            borderWidth: 0
+        }]
+    };
+    
+    const incomingData = {
+        labels: ['Pending', 'Approved', 'Denied', 'Returned'],
+        datasets: [{
+            data: [<?php echo $stats['pending_incoming_requests']; ?>, <?php echo $stats['approved_incoming_requests']; ?>, <?php echo $stats['denied_incoming_requests']; ?>, <?php echo $stats['returned_incoming_requests']; ?>],
+            backgroundColor: ['#ffc107', '#28a745', '#dc3545', '#6f42c1'],
+            borderWidth: 0
+        }]
+    };
+    
+    let requestStatusChart = new Chart(requestStatusCtx, {
         type: 'pie',
-        data: {
-            labels: ['Pending', 'Approved', 'Rejected'],
-            datasets: [{
-                data: [<?php echo $stats['pending_requests']; ?>, 8, 2],
-                backgroundColor: ['#ffc107', '#28a745', '#dc3545'],
-                borderWidth: 0
-            }]
-        },
+        data: outgoingData, // Default to outgoing
         options: {
             responsive: true,
             maintainAspectRatio: false,
@@ -638,6 +644,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         }
+    });
+    
+    // Toggle functionality
+    document.querySelectorAll('input[name="requestType"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const selectedType = this.id;
+            const newData = selectedType === 'outgoingRequests' ? outgoingData : incomingData;
+            
+            requestStatusChart.data = newData;
+            requestStatusChart.update();
+        });
     });
 });
 
