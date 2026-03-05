@@ -415,6 +415,9 @@ $page_title = 'Office Consumables';
                                             <button type="button" class="btn btn-sm btn-outline-primary action-btn" onclick="viewConsumable(<?php echo $consumable['id']; ?>)">
                                                 <i class="bi bi-eye"></i>
                                             </button>
+                                            <button type="button" class="btn btn-sm btn-outline-warning action-btn" onclick="consumeConsumable(<?php echo $consumable['id']; ?>)">
+                                                <i class="bi bi-dash-circle"></i>
+                                            </button>
                                             <!-- <button type="button" class="btn btn-sm btn-outline-success action-btn" onclick="restockConsumable(<?php echo $consumable['id']; ?>)">
                                                 <i class="bi bi-plus-circle"></i>
                                             </button>
@@ -492,6 +495,47 @@ $page_title = 'Office Consumables';
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Consume Consumable Modal -->
+    <div class="modal fade" id="consumeModal" tabindex="-1" aria-labelledby="consumeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title" id="consumeModalLabel">
+                        <i class="bi bi-dash-circle"></i> Consume Consumable
+                    </h5>
+                    <button type="button" class="btn-close btn-close-dark" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="consumeForm">
+                        <input type="hidden" id="consumeConsumableId" name="consumable_id">
+                        <div class="mb-3">
+                            <label for="consumeDescription" class="form-label">Description</label>
+                            <input type="text" class="form-control" id="consumeDescription" readonly>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="consumeCurrentQuantity" class="form-label">Current Quantity</label>
+                                <input type="number" class="form-control" id="consumeCurrentQuantity" readonly>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="consumeQuantity" class="form-label">Quantity to Consume</label>
+                                <input type="number" class="form-control" id="consumeQuantity" name="quantity" min="1" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="consumeNotes" class="form-label">Notes</label>
+                            <textarea class="form-control" id="consumeNotes" name="notes" rows="3" placeholder="Reason for consumption..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-warning" onclick="confirmConsume()">Consume</button>
                 </div>
             </div>
         </div>
@@ -603,6 +647,81 @@ $page_title = 'Office Consumables';
             modalInstance.show();
         }
         <?php endforeach; ?>
+    }
+    
+    // Consume consumable
+    function consumeConsumable(id) {
+        // Find consumable data
+        <?php foreach ($consumables as $consumable): ?>
+        if (id === <?php echo $consumable['id']; ?>) {
+            document.getElementById('consumeConsumableId').value = <?php echo $consumable['id']; ?>;
+            document.getElementById('consumeDescription').value = '<?php echo addslashes($consumable['description']); ?>';
+            document.getElementById('consumeCurrentQuantity').value = <?php echo $consumable['quantity']; ?>;
+            document.getElementById('consumeQuantity').value = '';
+            document.getElementById('consumeNotes').value = '';
+            
+            // Get or create modal instance
+            let modalElement = document.getElementById('consumeModal');
+            let modalInstance = bootstrap.Modal.getInstance(modalElement);
+            
+            if (!modalInstance) {
+                modalInstance = new bootstrap.Modal(modalElement);
+            }
+            
+            modalInstance.show();
+        }
+        <?php endforeach; ?>
+    }
+    
+    // Confirm consume
+    function confirmConsume() {
+        console.log('DEBUG: confirmConsume() called');
+        
+        const consumableId = document.getElementById('consumeConsumableId').value;
+        const quantity = document.getElementById('consumeQuantity').value;
+        const notes = document.getElementById('consumeNotes').value;
+        
+        console.log('DEBUG: Form data - ID:', consumableId, 'Quantity:', quantity, 'Notes:', notes);
+        
+        if (!quantity || quantity <= 0) {
+            console.log('DEBUG: Quantity validation failed');
+            alert('Please enter a valid quantity to consume.');
+            return;
+        }
+        
+        if (!confirm('Are you sure you want to consume this consumable? This will reduce the available quantity.')) {
+            console.log('DEBUG: User cancelled consumption');
+            return;
+        }
+        
+        console.log('DEBUG: Sending API request...');
+        
+        fetch('api/consume_consumable.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `consumable_id=${consumableId}&quantity=${quantity}&notes=${encodeURIComponent(notes)}`
+        })
+        .then(response => {
+            console.log('DEBUG: Raw response:', response);
+            return response.json();
+        })
+        .then(data => {
+            console.log('DEBUG: Parsed response:', data);
+            if (data.success) {
+                console.log('DEBUG: Consumption successful, hiding modal');
+                bootstrap.Modal.getInstance(document.getElementById('consumeModal')).hide();
+                location.reload();
+            } else {
+                console.log('DEBUG: Consumption failed:', data.message);
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('DEBUG: Fetch error:', error);
+            alert('An error occurred while consuming the consumable.');
+        });
     }
     
     // Restock consumable
