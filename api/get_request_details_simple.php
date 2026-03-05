@@ -210,6 +210,17 @@ try {
         ];
     }
     
+    // Cancellation event (if cancelled)
+    if ($request_data['status'] === 'cancelled') {
+        $lifecycle_events[] = [
+            'type' => 'cancelled',
+            'title' => 'Request Cancelled',
+            'description' => 'Request was cancelled',
+            'timestamp' => $request_data['updated_at'],
+            'status' => 'completed'
+        ];
+    }
+    
     // Current status indicator
     $current_status = [
         'status' => $request_data['status'],
@@ -261,6 +272,8 @@ function getStatusDescription($status) {
             return 'Request has been denied';
         case 'returned':
             return 'Asset has been returned';
+        case 'cancelled':
+            return 'Request has been cancelled';
         default:
             return 'Unknown status';
     }
@@ -277,6 +290,9 @@ function getLatestTimestamp($request_data) {
     }
     if ($request_data['returned_at']) {
         $timestamps[] = $request_data['returned_at'];
+    }
+    if ($request_data['status'] === 'cancelled' && $request_data['updated_at']) {
+        $timestamps[] = $request_data['updated_at'];
     }
     
     return max($timestamps);

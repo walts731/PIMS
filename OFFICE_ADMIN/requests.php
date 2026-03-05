@@ -395,6 +395,11 @@ if ($office_id && $conn) {
             color: white;
         }
         
+        .status-cancelled {
+            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+            color: white;
+        }
+        
         .stats-card {
             background: white;
             border-radius: var(--border-radius-lg);
@@ -1085,11 +1090,30 @@ if ($office_id && $conn) {
                 });
         }
         
-        // Cancel Request (placeholder function)
+        // Cancel Request
         function cancelRequest(requestId) {
             if (confirm('Are you sure you want to cancel this request?')) {
-                console.log('Cancel request:', requestId);
-                // This would implement the cancellation logic
+                const formData = new FormData();
+                formData.append('request_id', requestId);
+                
+                fetch('../api/cancel_request.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Request cancelled successfully');
+                        // Reload the page to show updated status
+                        window.location.reload();
+                    } else {
+                        alert('Error cancelling request: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error cancelling request:', error);
+                    alert('Error cancelling request: ' + error.message);
+                });
             }
         }
         
@@ -1371,7 +1395,8 @@ if ($office_id && $conn) {
                 'pending': '<span class="badge bg-warning">Pending</span>',
                 'approved': '<span class="badge bg-success">Approved</span>',
                 'denied': '<span class="badge bg-danger">Denied</span>',
-                'returned': '<span class="badge bg-info">Returned</span>'
+                'returned': '<span class="badge bg-info">Returned</span>',
+                'cancelled': '<span class="badge bg-secondary">Cancelled</span>'
             };
             return badges[status] || '<span class="badge bg-secondary">Unknown</span>';
         }
@@ -1386,7 +1411,8 @@ if ($office_id && $conn) {
                 'pending': 'Request is awaiting approval',
                 'approved': 'Request has been approved and asset is in use',
                 'denied': 'Request has been denied',
-                'returned': 'Asset has been returned'
+                'returned': 'Asset has been returned',
+                'cancelled': 'Request has been cancelled'
             };
             return descriptions[status] || 'Unknown status';
         }
