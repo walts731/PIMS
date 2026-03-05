@@ -62,9 +62,9 @@ if ($office_id && $conn) {
                             SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_requests,
                             SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved_requests,
                             SUM(CASE WHEN status = 'denied' THEN 1 ELSE 0 END) as denied_requests,
-                            SUM(CASE WHEN status = 'completed' OR status = 'returned' THEN 1 ELSE 0 END) as completed_requests
-                         FROM requests 
-                         WHERE office_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+                            SUM(CASE WHEN status = 'returned' THEN 1 ELSE 0 END) as completed_requests
+                         FROM borrow_requests 
+                         WHERE requested_to_office = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
         $stmt = $conn->prepare($request_query);
         $stmt->bind_param("i", $office_id);
         $stmt->execute();
@@ -91,9 +91,9 @@ if ($office_id && $conn) {
         }
         
         // Monthly Consumable Usage
-        $usage_query = "SELECT SUM(quantity_used) as monthly_usage 
-                       FROM consumable_usage 
-                       WHERE office_id = ? AND usage_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+        $usage_query = "SELECT SUM(quantity_released) as monthly_usage 
+                       FROM consumable_release_history 
+                       WHERE to_office_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
         $stmt = $conn->prepare($usage_query);
         $stmt->bind_param("i", $office_id);
         $stmt->execute();
@@ -122,13 +122,27 @@ if ($office_id && $conn) {
         }
         
         // Recent Activities
-        $activity_query = "SELECT activity_type, description, created_at 
-                          FROM office_activity_log 
-                          WHERE office_id = ? 
+        $activity_query = "(SELECT 
+                            'Borrow Request' as activity_type,
+                            CONCAT('Request for asset #', asset_id, ' - ', status) as description,
+                            created_at
+                          FROM borrow_requests 
+                          WHERE requested_to_office = ? OR requested_by_office = ?
+                          ORDER BY created_at DESC 
+                          LIMIT 5)
+                          UNION
+                          (SELECT 
+                            'Consumable Release' as activity_type,
+                            CONCAT('Released ', quantity_released, ' units of ', description) as description,
+                            created_at
+                          FROM consumable_release_history 
+                          WHERE to_office_id = ? OR from_office_id = ?
+                          ORDER BY created_at DESC 
+                          LIMIT 5)
                           ORDER BY created_at DESC 
                           LIMIT 10";
         $stmt = $conn->prepare($activity_query);
-        $stmt->bind_param("i", $office_id);
+        $stmt->bind_param("iiii", $office_id, $office_id, $office_id, $office_id);
         $stmt->execute();
         $result = $stmt->get_result();
         while ($row = $result->fetch_assoc()) {
@@ -140,8 +154,8 @@ if ($office_id && $conn) {
                             DATE_FORMAT(created_at, '%Y-%m') as month,
                             COUNT(*) as requests_count,
                             SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved_count
-                         FROM requests 
-                         WHERE office_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
+                         FROM borrow_requests 
+                         WHERE requested_to_office = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
                          GROUP BY DATE_FORMAT(created_at, '%Y-%m')
                          ORDER BY month";
         $stmt = $conn->prepare($monthly_query);
@@ -155,16 +169,16 @@ if ($office_id && $conn) {
         // Top Consumables by Usage
         $top_consumables_query = "SELECT 
                                     c.description,
-                                    SUM(cu.quantity_used) as total_used,
+                                    SUM(crh.quantity_released) as total_used,
                                     c.unit
                                  FROM consumables c
-                                 LEFT JOIN consumable_usage cu ON c.id = cu.consumable_id
-                                 WHERE c.office_id = ? 
+                                 LEFT JOIN consumable_release_history crh ON c.id = crh.consumable_id
+                                 WHERE c.office_id = ? OR crh.to_office_id = ?
                                  GROUP BY c.id, c.description, c.unit
                                  ORDER BY total_used DESC
                                  LIMIT 5";
         $stmt = $conn->prepare($top_consumables_query);
-        $stmt->bind_param("i", $office_id);
+        $stmt->bind_param("ii", $office_id, $office_id);
         $stmt->execute();
         $result = $stmt->get_result();
         while ($row = $result->fetch_assoc()) {
@@ -176,16 +190,26 @@ if ($office_id && $conn) {
                             DATE(created_at) as date,
                             COUNT(*) as requests_count,
                             SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved_count
-                         FROM requests 
-                         WHERE office_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                         FROM borrow_requests 
+                         WHERE requested_by_office = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
                          GROUP BY DATE(created_at)
                          ORDER BY date";
+        
+        // Debug: Log the query and parameters
+        error_log("Trends Query: " . $trends_query);
+        error_log("Office ID: " . $office_id);
+        
         $stmt = $conn->prepare($trends_query);
         $stmt->bind_param("i", $office_id);
         $stmt->execute();
         $result = $stmt->get_result();
+        
+        // Debug: Log the result
+        error_log("Trends Result Rows: " . $result->num_rows);
+        
         while ($row = $result->fetch_assoc()) {
             $report_data['request_trends'][] = $row;
+            error_log("Trends Row: " . json_encode($row));
         }
         
     } catch (Exception $e) {
@@ -501,6 +525,14 @@ $report_data['asset_stats']['total_asset_value'] = number_format($report_data['a
         
         <!-- Charts Row -->
         <div class="row mb-4">
+            <!-- Debug: Show Trends Data -->
+            <div class="col-12 mb-3">
+                <div class="alert alert-info">
+                    <strong>Debug - Request Trends Data:</strong>
+                    <pre><?php echo htmlspecialchars(json_encode($report_data['request_trends'], JSON_PRETTY_PRINT)); ?></pre>
+                </div>
+            </div>
+            
             <!-- Request Status Chart -->
             <div class="col-lg-4">
                 <div class="chart-card">
@@ -796,6 +828,14 @@ $report_data['asset_stats']['total_asset_value'] = number_format($report_data['a
             const weeklyLabels = <?php echo json_encode(array_column($report_data['request_trends'], 'date')); ?>;
             const weeklyRequests = <?php echo json_encode(array_column($report_data['request_trends'], 'requests_count')); ?>;
             const weeklyApproved = <?php echo json_encode(array_column($report_data['request_trends'], 'approved_count')); ?>;
+            
+            // Debug: Log the data to console
+            console.log('Weekly Trends Data:', {
+                labels: weeklyLabels,
+                requests: weeklyRequests,
+                approved: weeklyApproved,
+                rawData: <?php echo json_encode($report_data['request_trends']); ?>
+            });
             
             new Chart(weeklyTrendsCtx, {
                 type: 'bar',
