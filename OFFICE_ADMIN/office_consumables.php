@@ -42,11 +42,13 @@ if ($office_id && $conn) {
         error_log("DEBUG: Session email = " . ($_SESSION['email'] ?? 'NOT SET'));
         
         // Fetch consumables for this office
-        $query = "SELECT c.*, o.office_name 
+        $query = "SELECT c.*, o.office_name, 
+                        COALESCE(crh.release_date, c.created_at) as release_date
                  FROM consumables c 
                  LEFT JOIN offices o ON c.office_id = o.id 
+                 LEFT JOIN consumable_release_history crh ON c.id = crh.consumable_id 
                  WHERE c.office_id = ? 
-                 ORDER BY c.created_at DESC";
+                 ORDER BY COALESCE(crh.release_date, c.created_at) DESC";
         
         $stmt = $conn->prepare($query);
         $stmt->bind_param("i", $office_id);
@@ -459,25 +461,13 @@ $page_title = 'Office Consumables';
                     </div>
                     
                     <div class="row">
-                        <div class="col-md-3">
+                        <div class="col-md-6">
                             <div class="info-card">
                                 <h6><i class="bi bi-stack"></i> Quantity</h6>
                                 <p id="viewQuantity" class="info-value">-</p>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="info-card">
-                                <h6><i class="bi bi-currency-dollar"></i> Unit Cost</h6>
-                                <p id="viewUnitCost" class="info-value">-</p>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="info-card">
-                                <h6><i class="bi bi-exclamation-triangle"></i> Reorder Level</h6>
-                                <p id="viewReorderLevel" class="info-value">-</p>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
+                        <div class="col-md-6">
                             <div class="info-card">
                                 <h6><i class="bi bi-building"></i> Office</h6>
                                 <p id="viewOffice" class="info-value">-</p>
@@ -488,7 +478,7 @@ $page_title = 'Office Consumables';
                     <div class="row">
                         <div class="col-md-6">
                             <div class="info-card">
-                                <h6><i class="bi bi-calendar-plus"></i> Created Date</h6>
+                                <h6><i class="bi bi-calendar-plus"></i> Released to Office</h6>
                                 <p id="viewCreatedAt" class="info-value">-</p>
                             </div>
                         </div>
@@ -598,13 +588,19 @@ $page_title = 'Office Consumables';
             document.getElementById('viewDescription').textContent = '<?php echo addslashes($consumable['description']); ?>';
             document.getElementById('viewUnit').textContent = '<?php echo addslashes($consumable['units'] ?? $consumable['unit'] ?? ''); ?>';
             document.getElementById('viewQuantity').textContent = <?php echo $consumable['quantity']; ?>;
-            document.getElementById('viewUnitCost').textContent = '₱' + <?php echo $consumable['unit_cost']; ?>.toFixed(2);
-            document.getElementById('viewReorderLevel').textContent = <?php echo $consumable['reorder_level']; ?>;
             document.getElementById('viewOffice').textContent = '<?php echo addslashes($consumable['office_name']); ?>';
-            document.getElementById('viewCreatedAt').textContent = '<?php echo date('M j, Y g:i A', strtotime($consumable['created_at'])); ?>';
+            document.getElementById('viewCreatedAt').textContent = '<?php echo date('M j, Y g:i A', strtotime($consumable['release_date'])); ?>';
             document.getElementById('viewUpdatedAt').textContent = '<?php echo date('M j, Y g:i A', strtotime($consumable['updated_at'])); ?>';
             
-            new bootstrap.Modal(document.getElementById('viewConsumableModal')).show();
+            // Get or create modal instance
+            let modalElement = document.getElementById('viewConsumableModal');
+            let modalInstance = bootstrap.Modal.getInstance(modalElement);
+            
+            if (!modalInstance) {
+                modalInstance = new bootstrap.Modal(modalElement);
+            }
+            
+            modalInstance.show();
         }
         <?php endforeach; ?>
     }
