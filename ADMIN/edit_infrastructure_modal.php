@@ -171,28 +171,33 @@ document.getElementById('editInfrastructureForm').addEventListener('submit', fun
     
     fetch('process_infrastructure.php', {
         method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
         body: formData
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert('Infrastructure item updated successfully!');
+            // Close modal
             const modal = bootstrap.Modal.getInstance(document.getElementById('editInfrastructureModal'));
             if (modal) {
                 modal.hide();
             }
-            // Wait for modal to close before reloading
+            
+            // Redirect to the URL provided by server
             setTimeout(() => {
-                window.location.href = window.location.pathname.replace(/\/[^\/]*$/, '/infrastructure.php');
+                window.location.href = 'infrastructure.php';
             }, 300);
         } else {
             alert('Error updating infrastructure item: ' + data.message);
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
         }
     })
     .catch(error => {
+        console.error('Error:', error);
         alert('Error: ' + error.message);
-    })
-    .finally(() => {
         submitBtn.innerHTML = originalText;
         submitBtn.disabled = false;
     });
