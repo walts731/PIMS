@@ -177,8 +177,14 @@ document.getElementById('editInfrastructureForm').addEventListener('submit', fun
     .then(data => {
         if (data.success) {
             alert('Infrastructure item updated successfully!');
-            $('#editInfrastructureModal').modal('hide');
-            location.reload();
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editInfrastructureModal'));
+            if (modal) {
+                modal.hide();
+            }
+            // Wait for modal to close before reloading
+            setTimeout(() => {
+                window.location.href = window.location.pathname.replace(/\/[^\/]*$/, '/infrastructure.php');
+            }, 300);
         } else {
             alert('Error updating infrastructure item: ' + data.message);
         }

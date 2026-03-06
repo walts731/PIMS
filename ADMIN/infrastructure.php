@@ -1,4 +1,5 @@
 <?php
+ob_start();
 session_start();
 require_once '../config.php';
 require_once '../includes/logger.php';
@@ -11,6 +12,15 @@ if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['system_admin'
 
 // Log infrastructure page access
 logSystemAction($_SESSION['user_id'], 'infrastructure_accessed', 'infrastructure', 'Accessed infrastructure page');
+
+// Check for redirect and handle it
+if (isset($_SESSION['redirect_url'])) {
+    $redirect_url = $_SESSION['redirect_url'];
+    unset($_SESSION['redirect_url']);
+    error_log("Handling stored redirect: " . $redirect_url);
+    header("Location: " . $redirect_url);
+    exit();
+}
 
 // Get filter parameters
 $search = isset($_GET['search']) ? $_GET['search'] : '';
@@ -83,6 +93,9 @@ while ($row = $loc_result->fetch_assoc()) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     
+    // Debug: Log the form submission
+    error_log("Form submitted - Action: " . $action);
+    
     if ($action === 'add') {
         $classification = $_POST['classification'];
         $item_description = $_POST['item_description'];
@@ -126,7 +139,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $stmt->close();
         
-        header("Location: infrastructure.php");
+        // Ensure no output before redirect
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
+        
+        // Debug: Log before redirect
+        error_log("About to redirect to: " . $_SERVER['PHP_SELF']);
+        
+        // Use absolute URL for redirect
+        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https" : "http";
+        $host = $_SERVER['HTTP_HOST'];
+        $path = $_SERVER['PHP_SELF'];
+        $redirect_url = $protocol . "://" . $host . $path;
+        
+        error_log("Full redirect URL: " . $redirect_url);
+        
+        // Store redirect URL in session for fallback
+        $_SESSION['redirect_url'] = $redirect_url;
+        
+        header("Location: " . $redirect_url);
         exit();
     }
 }
@@ -141,6 +173,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>Infrastructure Management - PIMS</title>
+    <?php if (isset($_SESSION['success']) || isset($_SESSION['error'])): ?>
+    <script>
+    // Fallback redirect if header redirect fails
+    setTimeout(function() {
+        window.location.reload();
+    }, 1000);
+    </script>
+    <?php endif; ?>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css?v=<?php echo time(); ?>" rel="stylesheet">
     <!-- Bootstrap Icons -->
@@ -524,7 +564,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <h5 class="modal-title">Add Infrastructure Item</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form method="POST" action="infrastructure.php" enctype="multipart/form-data">
+                <form method="POST" action="infrastructure.php" enctype="multipart/form-data" id="addInfrastructureForm">
                     <div class="modal-body">
                         <input type="hidden" name="action" value="add">
                         <div class="row">
@@ -713,5 +753,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 });
         }
     </script>
+    
+    <script>
+    // Handle add infrastructure form submission
+    document.getElementById('addInfrastructureForm').addEventListener('submit', function(e) {
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        
+        submitBtn.innerHTML = '<i class="bi bi-spinner fa-spin"></i> Adding...';
+        submitBtn.disabled = true;
+        
+        // Let the form submit normally
+        setTimeout(() => {
+            this.submit();
+        }, 100);
+    });
+    </script>
 </body>
 </html>
+<?php ob_end_flush(); ?>
