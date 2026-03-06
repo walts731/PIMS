@@ -1,4 +1,29 @@
 <?php
+// Common units for dropdown (same as par_form.php)
+$common_units = [
+    'pc', 'pcs',
+    'piece', 'pieces',
+    'set', 'sets',
+    'unit', 'units',
+    'box', 'boxes',
+    'carton', 'cartons',
+    'pack', 'packs',
+    'package', 'packages',
+    'liter', 'liters',
+    'kilogram', 'kilograms',
+    'meter', 'meters',
+    'square_meter', 'square_meters',
+    'cubic_meter', 'cubic_meters',
+    'pair', 'pairs',
+    'dozen', 'dozens',
+    'roll', 'rolls',
+    'bottle', 'bottles',
+    'bag', 'bags',
+    'container', 'containers',
+    'ream', 'reams'
+];
+
+ob_start();
 session_start();
 require_once '../config.php';
 require_once '../includes/system_functions.php';
@@ -128,14 +153,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                             if (isset($property_numbers_array[$i - 1])) {
                                 $item_property_number = mysqli_real_escape_string($conn, $property_numbers_array[$i - 1]);
                                 
-                                // Update asset item with property number and status
-                                $update_sql = "UPDATE asset_items SET property_no = ?, status = 'serviceable' WHERE id = ?";
+                                // Update asset item with property number only (keep no_tag status)
+                                $update_sql = "UPDATE asset_items SET property_no = ? WHERE id = ?";
                                 $update_stmt = $conn->prepare($update_sql);
                                 if ($update_stmt) {
                                     $update_stmt->bind_param("si", $item_property_number, $asset_item_id);
                                     $update_stmt->execute();
                                     $update_stmt->close();
-                                    error_log("DEBUG: Updated item $asset_item_id with property number: $item_property_number");
+                                    error_log("DEBUG: Updated item $asset_item_id with property number: $item_property_number (status remains no_tag)");
                                 }
                             }
                         } else {
@@ -210,14 +235,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                             if (isset($property_numbers_array[$i - 1])) {
                                 $item_property_number = mysqli_real_escape_string($conn, $property_numbers_array[$i - 1]);
                                 
-                                // Update asset item with property number and status
-                                $update_sql = "UPDATE asset_items SET property_no = ?, status = 'serviceable' WHERE id = ?";
+                                // Update asset item with property number only (keep no_tag status)
+                                $update_sql = "UPDATE asset_items SET property_no = ? WHERE id = ?";
                                 $update_stmt = $conn->prepare($update_sql);
                                 if ($update_stmt) {
                                     $update_stmt->bind_param("si", $item_property_number, $asset_item_id);
                                     $update_stmt->execute();
                                     $update_stmt->close();
-                                    error_log("DEBUG: Updated new item $asset_item_id with property number: $item_property_number");
+                                    error_log("DEBUG: Updated new item $asset_item_id with property number: $item_property_number (status remains no_tag)");
                                 }
                             }
                         } else {
@@ -944,25 +969,11 @@ try {
                             <div class="col-md-4">
                                 <div class="mb-3">
                                     <label class="form-label">Unit *</label>
-                                    <select class="form-select" name="unit" required>
+                                    <select class="form-select" name="unit" id="assetUnitSelect" required>
                                         <option value="">Select Unit</option>
-                                        <option value="pcs">Pieces (pcs)</option>
-                                        <option value="units">Units</option>
-                                        <option value="sets">Sets</option>
-                                        <option value="boxes">Boxes</option>
-                                        <option value="packages">Packages</option>
-                                        <option value="liters">Liters</option>
-                                        <option value="kilograms">Kilograms (kg)</option>
-                                        <option value="meters">Meters (m)</option>
-                                        <option value="square_meters">Square Meters (m²)</option>
-                                        <option value="cubic_meters">Cubic Meters (m³)</option>
-                                        <option value="pairs">Pairs</option>
-                                        <option value="dozens">Dozens</option>
-                                        <option value="rolls">Rolls</option>
-                                        <option value="bottles">Bottles</option>
-                                        <option value="bags">Bags</option>
-                                        <option value="containers">Containers</option>
-                                        <option value="other">Other</option>
+                                        <?php foreach ($common_units as $unit): ?>
+                                            <option value="<?php echo htmlspecialchars($unit); ?>"><?php echo htmlspecialchars(ucfirst($unit)); ?></option>
+                                        <?php endforeach; ?>
                                     </select>
                                 </div>
                             </div>
@@ -1242,6 +1253,21 @@ try {
                 generatorCategorySelect.value = categoryCode;
             }
             
+            // Set form type based on unit cost
+            const unitCostInput = document.querySelector('input[name="unit_cost"]');
+            const formTypeInput = document.getElementById('assetFormType');
+            if (unitCostInput && formTypeInput) {
+                const unitCost = parseFloat(unitCostInput.value) || 0;
+                const formType = unitCost < 50000 ? '04' : '07';
+                formTypeInput.value = formType;
+                
+                // Update the description text
+                const formTypeDescription = formType === '04' ? 
+                    'Auto-detected: Request for Obligation (Below ₱50,000)' : 
+                    'Auto-detected: Property Acknowledgment Receipt (₱50,000 and above)';
+                formTypeInput.nextElementSibling.textContent = formTypeDescription;
+            }
+            
             // Get next series number
             getNextAssetSeriesNumber();
             
@@ -1436,6 +1462,98 @@ try {
                     }
                     generateAssetPropertyNumberPreview();
                 });
+            }
+        });
+        
+        // Auto-set unit based on quantity with pluralization (same as par_form.php)
+        function autoSetUnitBasedOnQuantity() {
+            const quantityInput = document.querySelector('input[name="quantity"]');
+            const unitSelect = document.getElementById('assetUnitSelect');
+            
+            if (!quantityInput || !unitSelect) return;
+            
+            const quantity = parseFloat(quantityInput.value) || 0;
+            if (quantity <= 0) return;
+            
+            const currentValue = unitSelect.value;
+            
+            // Handle pluralization for common units
+            const pluralMap = {
+                'pc': 'pcs',
+                'piece': 'pieces',
+                'set': 'sets',
+                'unit': 'units',
+                'box': 'boxes',
+                'carton': 'cartons',
+                'pack': 'packs',
+                'package': 'packages',
+                'liter': 'liters',
+                'kilogram': 'kilograms',
+                'meter': 'meters',
+                'square_meter': 'square_meters',
+                'cubic_meter': 'cubic_meters',
+                'pair': 'pairs',
+                'dozen': 'dozens',
+                'roll': 'rolls',
+                'bottle': 'bottles',
+                'bag': 'bags',
+                'container': 'containers',
+                'ream': 'reams'
+            };
+            
+            // Find the appropriate unit based on quantity
+            let targetUnit = '';
+            if (quantity === 1) {
+                // Use singular form
+                for (const [singular, plural] of Object.entries(pluralMap)) {
+                    if (currentValue === plural) {
+                        targetUnit = singular;
+                        break;
+                    } else if (currentValue === singular) {
+                        targetUnit = singular;
+                        break;
+                    }
+                }
+                // If no mapping found, keep current value
+                if (!targetUnit && currentValue) {
+                    targetUnit = currentValue;
+                }
+            } else if (quantity > 1) {
+                // Use plural form
+                for (const [singular, plural] of Object.entries(pluralMap)) {
+                    if (currentValue === singular) {
+                        targetUnit = plural;
+                        break;
+                    } else if (currentValue === plural) {
+                        targetUnit = plural;
+                        break;
+                    }
+                }
+                // If no mapping found, keep current value
+                if (!targetUnit && currentValue) {
+                    targetUnit = currentValue;
+                }
+            }
+            
+            // Set the unit if found
+            if (targetUnit) {
+                // Check if the target unit exists in the dropdown
+                const optionExists = Array.from(unitSelect.options).some(option => option.value === targetUnit);
+                if (optionExists) {
+                    unitSelect.value = targetUnit;
+                }
+            }
+        }
+        
+        // Add event listener for quantity change
+        document.addEventListener('DOMContentLoaded', function() {
+            const quantityInput = document.querySelector('input[name="quantity"]');
+            if (quantityInput) {
+                quantityInput.addEventListener('input', autoSetUnitBasedOnQuantity);
+                quantityInput.addEventListener('change', autoSetUnitBasedOnQuantity);
+                
+                // Set initial unit if quantity has a value
+                autoSetUnitBasedOnQuantity();
             }
         });
     </script>
