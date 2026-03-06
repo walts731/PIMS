@@ -88,34 +88,35 @@ if ($result && $row = $result->fetch_assoc()) {
 
 // Common units for dropdown
 $common_units = [
-    'Pieces',
-    'Sets',
-    'Units',
-    'Boxes',
-    'Cartons',
-    'Packs',
-    'Bottles',
-    'Liters',
-    'Gallons',
-    'Kilograms',
-    'Grams',
-    'Meters',
-    'Centimeters',
-    'Feet',
-    'Inches',
-    'Rolls',
-    'Bags',
-    'Canisters',
-    'Jars',
-    'Tubes',
-    'Pounds',
-    'Ounces',
-    'Dozens',
-    'Pairs',
-    'Reams',
-    'Cases',
-    'Barrels',
-    'Drums'
+    'pc', 'pcs',
+    'piece', 'pieces',
+    'set', 'sets',
+    'unit', 'units',
+    'box', 'boxes',
+    'carton', 'cartons',
+    'pack', 'packs',
+    'bottle', 'bottles',
+    'liter', 'liters',
+    'gallon', 'gallons',
+    'kilogram', 'kilograms',
+    'gram', 'grams',
+    'meter', 'meters',
+    'centimeter', 'centimeters',
+    'foot', 'feet',
+    'inch', 'inches',
+    'roll', 'rolls',
+    'bag', 'bags',
+    'canister', 'canisters',
+    'jar', 'jars',
+    'tube', 'tubes',
+    'pound', 'pounds',
+    'ounce', 'ounces',
+    'dozen', 'dozens',
+    'pair', 'pairs',
+    'ream', 'reams',
+    'case', 'cases',
+    'barrel', 'barrels',
+    'drum', 'drums'
 ];
 
 // Get offices for dropdown
@@ -853,6 +854,87 @@ if ($result && $row = $result->fetch_assoc()) {
             const unitCost = row.querySelector('input[name="unit_cost[]"]').value || 0;
             const totalCost = (parseFloat(quantity) * parseFloat(unitCost)).toFixed(2);
             
+            // Auto-set unit based on quantity with pluralization
+            const unitSelect = row.querySelector('select[name="unit[]"]');
+            if (unitSelect && quantity > 0) {
+                const currentValue = unitSelect.value;
+                
+                // Handle pluralization for common units
+                const pluralMap = {
+                    'pc': 'pcs',
+                    'piece': 'pieces',
+                    'set': 'sets',
+                    'box': 'boxes',
+                    'carton': 'cartons',
+                    'pack': 'packs',
+                    'bottle': 'bottles',
+                    'liter': 'liters',
+                    'gallon': 'gallons',
+                    'kilogram': 'kilograms',
+                    'gram': 'grams',
+                    'meter': 'meters',
+                    'centimeter': 'centimeters',
+                    'foot': 'feet',
+                    'inch': 'inches',
+                    'dozen': 'dozens',
+                    'pair': 'pairs',
+                    'roll': 'rolls',
+                    'bag': 'bags',
+                    'canister': 'canisters',
+                    'jar': 'jars',
+                    'tube': 'tubes',
+                    'ream': 'reams',
+                    'case': 'cases',
+                    'barrel': 'barrels',
+                    'drum': 'drums',
+                    'pound': 'pounds',
+                    'ounce': 'ounces'
+                };
+                
+                // Find the appropriate unit based on quantity
+                let targetUnit = '';
+                if (quantity === 1) {
+                    // Use singular form
+                    for (const [singular, plural] of Object.entries(pluralMap)) {
+                        if (currentValue === plural) {
+                            targetUnit = singular;
+                            break;
+                        } else if (currentValue === singular) {
+                            targetUnit = singular;
+                            break;
+                        }
+                    }
+                    // If no mapping found, keep current value
+                    if (!targetUnit && currentValue) {
+                        targetUnit = currentValue;
+                    }
+                } else if (quantity > 1) {
+                    // Use plural form
+                    for (const [singular, plural] of Object.entries(pluralMap)) {
+                        if (currentValue === singular) {
+                            targetUnit = plural;
+                            break;
+                        } else if (currentValue === plural) {
+                            targetUnit = plural;
+                            break;
+                        }
+                    }
+                    // If no mapping found, keep current value
+                    if (!targetUnit && currentValue) {
+                        targetUnit = currentValue;
+                    }
+                }
+                
+                // Set the unit if found
+                if (targetUnit) {
+                    // Check if the target unit exists in the dropdown
+                    const optionExists = Array.from(unitSelect.options).some(option => option.value === targetUnit);
+                    if (optionExists) {
+                        unitSelect.value = targetUnit;
+                    }
+                }
+            }
+            
             // Validate unit cost should be less than ₱50,000
             if (parseFloat(unitCost) > 50000) {
                 showToast('Unit cost must be less than ₱50,000. Please enter a valid amount.', 'danger');
@@ -1005,6 +1087,100 @@ if ($result && $row = $result->fetch_assoc()) {
             // TODO: Implement export functionality
             alert('Export functionality will be implemented');
         }
+        
+        // Initialize form with correct units
+        function initializeICSForm() {
+            // Set correct units for existing quantity inputs with pluralization
+            const quantityInputs = document.querySelectorAll('input[name="quantity[]"]');
+            quantityInputs.forEach(input => {
+                const quantity = parseFloat(input.value) || 0;
+                const row = input.closest('tr');
+                const unitSelect = row.querySelector('select[name="unit[]"]');
+                if (unitSelect && quantity > 0) {
+                    const currentValue = unitSelect.value;
+                    
+                    // Handle pluralization for common units
+                    const pluralMap = {
+                        'pc': 'pcs',
+                        'piece': 'pieces',
+                        'set': 'sets',
+                        'box': 'boxes',
+                        'carton': 'cartons',
+                        'pack': 'packs',
+                        'bottle': 'bottles',
+                        'liter': 'liters',
+                        'gallon': 'gallons',
+                        'kilogram': 'kilograms',
+                        'gram': 'grams',
+                        'meter': 'meters',
+                        'centimeter': 'centimeters',
+                        'foot': 'feet',
+                        'inch': 'inches',
+                        'dozen': 'dozens',
+                        'pair': 'pairs',
+                        'roll': 'rolls',
+                        'bag': 'bags',
+                        'canister': 'canisters',
+                        'jar': 'jars',
+                        'tube': 'tubes',
+                        'ream': 'reams',
+                        'case': 'cases',
+                        'barrel': 'barrels',
+                        'drum': 'drums',
+                        'pound': 'pounds',
+                        'ounce': 'ounces'
+                    };
+                    
+                    // Find the appropriate unit based on quantity
+                    let targetUnit = '';
+                    if (quantity === 1) {
+                        // Use singular form
+                        for (const [singular, plural] of Object.entries(pluralMap)) {
+                            if (currentValue === plural) {
+                                targetUnit = singular;
+                                break;
+                            } else if (currentValue === singular) {
+                                targetUnit = singular;
+                                break;
+                            }
+                        }
+                        // If no mapping found, keep current value
+                        if (!targetUnit && currentValue) {
+                            targetUnit = currentValue;
+                        }
+                    } else if (quantity > 1) {
+                        // Use plural form
+                        for (const [singular, plural] of Object.entries(pluralMap)) {
+                            if (currentValue === singular) {
+                                targetUnit = plural;
+                                break;
+                            } else if (currentValue === plural) {
+                                targetUnit = plural;
+                                break;
+                            }
+                        }
+                        // If no mapping found, keep current value
+                        if (!targetUnit && currentValue) {
+                            targetUnit = currentValue;
+                        }
+                    }
+                    
+                    // Set the unit if found
+                    if (targetUnit) {
+                        // Check if the target unit exists in the dropdown
+                        const optionExists = Array.from(unitSelect.options).some(option => option.value === targetUnit);
+                        if (optionExists) {
+                            unitSelect.value = targetUnit;
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Initialize when document is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeICSForm();
+        });
     </script>
 </body>
 </html>
