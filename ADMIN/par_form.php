@@ -591,6 +591,32 @@ if ($result && $row = $result->fetch_assoc()) {
         </div>
     </div>
     
+    <!-- Reset Confirmation Modal -->
+    <div class="modal fade" id="resetConfirmModal" tabindex="-1" aria-labelledby="resetConfirmModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="resetConfirmModalLabel">
+                        <i class="bi bi-exclamation-triangle text-warning"></i> Confirm Reset
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0"><strong>Are you sure you want to reset the form?</strong></p>
+                    <p class="text-muted mb-0">All data will be lost and cannot be recovered.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="confirmReset()">
+                        <i class="bi bi-arrow-clockwise"></i> Reset Form
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <?php include 'includes/sidebar-scripts.php'; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -962,18 +988,27 @@ if ($result && $row = $result->fetch_assoc()) {
         }
         
         function resetForm() {
-            if (confirm('Are you sure you want to reset the form? All data will be lost.')) {
-                document.getElementById('parForm').reset();
-                // Reset to single row
-                const table = document.getElementById('itemsTable').getElementsByTagName('tbody')[0];
-                while (table.rows.length > 1) {
-                    table.deleteRow(1);
-                }
-                // Reset grand total
-                const grandTotalElement = document.getElementById('grandTotal');
-                if (grandTotalElement) {
-                    grandTotalElement.textContent = '0.00';
-                }
+            // Show the confirmation modal instead of using confirm()
+            const modal = new bootstrap.Modal(document.getElementById('resetConfirmModal'));
+            modal.show();
+        }
+        
+        function confirmReset() {
+            // Close the modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('resetConfirmModal'));
+            modal.hide();
+            
+            // Perform the actual reset
+            document.getElementById('parForm').reset();
+            // Reset to single row
+            const table = document.getElementById('itemsTable').getElementsByTagName('tbody')[0];
+            while (table.rows.length > 1) {
+                table.deleteRow(1);
+            }
+            // Reset grand total
+            const grandTotalElement = document.getElementById('grandTotal');
+            if (grandTotalElement) {
+                grandTotalElement.textContent = '0.00';
             }
         }
         
