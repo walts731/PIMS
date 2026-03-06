@@ -16,14 +16,14 @@ if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['system_admin', '
     exit();
 }
 
-logSystemAction($_SESSION['user_id'], 'access', 'main_user_assets_per_office', 'Main user accessed assets per office');
+logSystemAction($_SESSION['user_id'], 'access', 'main_user_assets_per_branch', 'Main user accessed assets per branch');
 
-$offices = [];
-$assets_by_office = [];
+$branches = [];
+$assets_by_branch = [];
 $error = null;
 
 // Filter parameters
-$office_filter = isset($_GET['office_id']) ? (int)$_GET['office_id'] : 0;
+$branch_filter = isset($_GET['branch_id']) ? (int)$_GET['branch_id'] : 0;
 $status_filter = isset($_GET['status']) ? trim((string)$_GET['status']) : '';
 $category_filter = isset($_GET['category_id']) ? (int)$_GET['category_id'] : 0;
 
@@ -37,9 +37,9 @@ if (!$conn || $conn->connect_error) {
     $error = 'Database connection failed: ' . ($conn->connect_error ?? 'Unknown error');
 } else {
     try {
-        // Get all offices
-        $office_query = "SELECT id, office_name FROM offices ORDER BY office_name ASC";
-        $office_result = $conn->query($office_query);
+        // Get all branches
+        $branch_query = "SELECT id, office_name as branch_name FROM offices ORDER BY office_name ASC";
+        $branch_result = $conn->query($branch_query);
         
         // Get all categories
         $category_query = "SELECT id, category_name FROM asset_categories ORDER BY category_name ASC";
@@ -51,16 +51,16 @@ if (!$conn || $conn->connect_error) {
             }
         }
         
-        if ($office_result) {
-            while ($office = $office_result->fetch_assoc()) {
-                $offices[] = $office;
+        if ($branch_result) {
+            while ($branch = $branch_result->fetch_assoc()) {
+                $branches[] = $branch;
                 
-                // Apply office filter
-                if ($office_filter > 0 && $office['id'] != $office_filter) {
+                // Apply branch filter
+                if ($branch_filter > 0 && $branch['id'] != $branch_filter) {
                     continue;
                 }
                 
-                // Get assets for this office with filters
+                // Get assets for this branch with filters
                 $asset_query = "SELECT 
                                     ai.id as item_id,
                                     ai.description as item_description,
@@ -80,7 +80,7 @@ if (!$conn || $conn->connect_error) {
                                 LEFT JOIN asset_categories ac ON ac.id = a.asset_categories_id
                                 WHERE ai.office_id = ?";
                 
-                $params = [$office['id']];
+                $params = [$branch['id']];
                 $types = "i";
                 
                 // Apply status filter
@@ -103,13 +103,13 @@ if (!$conn || $conn->connect_error) {
                 if (!empty($params)) {
                     $asset_stmt->bind_param($types, ...$params);
                 } else {
-                    $asset_stmt->bind_param("i", $office['id']);
+                    $asset_stmt->bind_param("i", $branch['id']);
                 }
                 $asset_stmt->execute();
                 $asset_result = $asset_stmt->get_result();
                 
-                $assets_by_office[$office['id']] = [
-                    'office_name' => $office['office_name'],
+                $assets_by_branch[$branch['id']] = [
+                    'branch_name' => $branch['branch_name'],
                     'assets' => [],
                     'total_items' => 0,
                     'total_value' => 0,
@@ -123,14 +123,14 @@ if (!$conn || $conn->connect_error) {
                 ];
                 
                 while ($asset = $asset_result->fetch_assoc()) {
-                    $assets_by_office[$office['id']]['assets'][] = $asset;
-                    $assets_by_office[$office['id']]['total_items'] += $asset['total_items'];
-                    $assets_by_office[$office['id']]['total_value'] += $asset['total_value'];
+                    $assets_by_branch[$branch['id']]['assets'][] = $asset;
+                    $assets_by_branch[$branch['id']]['total_items'] += $asset['total_items'];
+                    $assets_by_branch[$branch['id']]['total_value'] += $asset['total_value'];
                     
                     // Count by status
                     $status = $asset['item_status'];
-                    if (isset($assets_by_office[$office['id']]['status_counts'][$status])) {
-                        $assets_by_office[$office['id']]['status_counts'][$status] += $asset['total_items'];
+                    if (isset($assets_by_branch[$branch['id']]['status_counts'][$status])) {
+                        $assets_by_branch[$branch['id']]['status_counts'][$status] += $asset['total_items'];
                     }
                 }
                 
@@ -139,8 +139,8 @@ if (!$conn || $conn->connect_error) {
         }
         
     } catch (Exception $e) {
-        $error = 'Error loading assets per office: ' . $e->getMessage();
-        error_log('Main User Assets Per Office Error: ' . $e->getMessage());
+        $error = 'Error loading assets per branch: ' . $e->getMessage();
+        error_log('Main User Assets Per Branch Error: ' . $e->getMessage());
     }
 }
 ?>
@@ -149,7 +149,7 @@ if (!$conn || $conn->connect_error) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Assets per Office - Main User | PIMS</title>
+    <title>Assets per Branch - Main User | PIMS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -157,7 +157,7 @@ if (!$conn || $conn->connect_error) {
     <link href="../assets/css/theme-custom.css" rel="stylesheet">
     <link href="../ADMIN/dashboard.css" rel="stylesheet">
     <style>
-    .office-card {
+    .branch-card {
         background: white;
         border-radius: 12px;
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -166,13 +166,13 @@ if (!$conn || $conn->connect_error) {
         transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
     
-    .office-card:hover {
+    .branch-card:hover {
         transform: translateY(-2px);
         box-shadow: 0 4px 16px rgba(0,0,0,0.15);
     }
     
-    .office-header {
-        background: var(--primary-gradient);
+    .branch-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         padding: 1.5rem;
         display: flex;
@@ -180,7 +180,7 @@ if (!$conn || $conn->connect_error) {
         align-items: center;
     }
     
-    .office-stats {
+    .branch-stats {
         display: flex;
         gap: 2rem;
     }
@@ -249,7 +249,7 @@ if (!$conn || $conn->connect_error) {
     </style>
 </head>
 <body>
-    <?php $page_title = 'Assets per Office'; ?>
+    <?php $page_title = 'Assets per Branch'; ?>
     <div class="main-wrapper" id="mainWrapper">
         <?php require_once 'includes/sidebar-toggle.php'; ?>
         <?php require_once 'includes/sidebar.php'; ?>
@@ -259,15 +259,13 @@ if (!$conn || $conn->connect_error) {
             <div class="dashboard-header">
                 <div class="row align-items-center">
                     <div class="col-md-8">
-                        <h1 class="mb-1" style="font-weight: 700; color: #191BA9;">
-                            <i class="bi bi-building me-2"></i>Assets per Office
-                            <?php if ($office_filter == 4): ?>
-                                <a href="branches.php" class="btn btn-outline-success btn-sm ms-3">
-                                    <i class="bi bi-diagram-3"></i> Branches
-                                </a>
-                            <?php endif; ?>
+                        <h1 class="mb-1" style="font-weight: 700; color: #667eea;">
+                            <i class="bi bi-diagram-3 me-2"></i>Assets per Branch
+                            <a href="branches.php" class="btn btn-outline-success btn-sm ms-3">
+                                <i class="bi bi-diagram-3"></i> Branches
+                            </a>
                         </h1>
-                        <p class="text-muted mb-0">Viewing assets organized by office location with filters.</p>
+                        <p class="text-muted mb-0">Viewing assets organized by branch location with filters.</p>
                         <?php if ($error): ?>
                             <div class="alert alert-warning mt-2 mb-0 py-2" role="alert">
                                 <i class="bi bi-exclamation-triangle me-1"></i>
@@ -277,15 +275,15 @@ if (!$conn || $conn->connect_error) {
                     </div>
                     <div class="col-md-4 text-md-end">
                         <div class="d-flex align-items-center justify-content-md-end gap-2 flex-wrap">
-                            <a class="btn btn-outline-primary btn-sm" href="assets_per_office.php">
+                            <a class="btn btn-outline-primary btn-sm" href="assets_per_branch.php">
                                 <i class="bi bi-arrow-clockwise"></i> Refresh
                             </a>
                             <div class="d-inline-block" style="min-width: 200px;">
-                                <select class="form-select form-select-sm" id="officeFilter">
-                                    <option value="0" <?php echo $office_filter === 0 ? 'selected' : ''; ?>>All Offices</option>
-                                    <?php foreach ($offices as $office): ?>
-                                        <option value="<?php echo (int)$office['id']; ?>" <?php echo $office_filter === (int)$office['id'] ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($office['office_name']); ?>
+                                <select class="form-select form-select-sm" id="branchFilter">
+                                    <option value="0" <?php echo $branch_filter === 0 ? 'selected' : ''; ?>>All Branches</option>
+                                    <?php foreach ($branches as $branch): ?>
+                                        <option value="<?php echo (int)$branch['id']; ?>" <?php echo $branch_filter === (int)$branch['id'] ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($branch['branch_name']); ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
@@ -316,14 +314,14 @@ if (!$conn || $conn->connect_error) {
             </div>
 
             <!-- Filter Summary -->
-            <?php if ($office_filter > 0 || $status_filter !== '' || $category_filter > 0): ?>
+            <?php if ($branch_filter > 0 || $status_filter !== '' || $category_filter > 0): ?>
                 <div class="alert alert-info mb-3" role="alert">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <i class="bi bi-funnel me-2"></i>
                             <strong>Active Filters:</strong>
-                            <?php if ($office_filter > 0): ?>
-                                <span class="badge bg-primary me-1">Office: <?php echo htmlspecialchars(array_column($offices, 'office_name', 'id')[$office_filter] ?? 'Unknown'); ?></span>
+                            <?php if ($branch_filter > 0): ?>
+                                <span class="badge bg-primary me-1">Branch: <?php echo htmlspecialchars(array_column($branches, 'branch_name', 'id')[$branch_filter] ?? 'Unknown'); ?></span>
                             <?php endif; ?>
                             <?php if ($status_filter !== ''): ?>
                                 <span class="badge bg-success me-1">Status: <?php echo ucfirst(str_replace('_', ' ', $status_filter)); ?></span>
@@ -332,59 +330,59 @@ if (!$conn || $conn->connect_error) {
                                 <span class="badge bg-info me-1">Category: <?php echo htmlspecialchars(array_column($categories, 'category_name', 'id')[$category_filter] ?? 'Unknown'); ?></span>
                             <?php endif; ?>
                         </div>
-                        <a href="assets_per_office.php" class="btn btn-sm btn-outline-secondary">Clear Filters</a>
+                        <a href="assets_per_branch.php" class="btn btn-sm btn-outline-secondary">Clear Filters</a>
                     </div>
                 </div>
             <?php endif; ?>
 
-            <?php if (!$error && !empty($assets_by_office)): ?>
-                <?php foreach ($assets_by_office as $office_id => $office_data): ?>
-                    <div class="office-card">
-                        <div class="office-header">
+            <?php if (!$error && !empty($assets_by_branch)): ?>
+                <?php foreach ($assets_by_branch as $branch_id => $branch_data): ?>
+                    <div class="branch-card">
+                        <div class="branch-header">
                             <div>
-                                <h4 class="mb-2"><?php echo htmlspecialchars($office_data['office_name']); ?></h4>
+                                <h4 class="mb-2"><?php echo htmlspecialchars($branch_data['branch_name']); ?></h4>
                                 <div class="status-summary">
-                                    <?php if ($office_data['status_counts']['serviceable'] > 0): ?>
+                                    <?php if ($branch_data['status_counts']['serviceable'] > 0): ?>
                                         <span class="status-badge status-serviceable">
-                                            Serviceable: <?php echo $office_data['status_counts']['serviceable']; ?>
+                                            Serviceable: <?php echo $branch_data['status_counts']['serviceable']; ?>
                                         </span>
                                     <?php endif; ?>
-                                    <?php if ($office_data['status_counts']['unserviceable'] > 0): ?>
+                                    <?php if ($branch_data['status_counts']['unserviceable'] > 0): ?>
                                         <span class="status-badge status-unserviceable">
-                                            Unserviceable: <?php echo $office_data['status_counts']['unserviceable']; ?>
+                                            Unserviceable: <?php echo $branch_data['status_counts']['unserviceable']; ?>
                                         </span>
                                     <?php endif; ?>
-                                    <?php if ($office_data['status_counts']['red_tagged'] > 0): ?>
+                                    <?php if ($branch_data['status_counts']['red_tagged'] > 0): ?>
                                         <span class="status-badge status-red-tagged">
-                                            Red-Tagged: <?php echo $office_data['status_counts']['red_tagged']; ?>
+                                            Red-Tagged: <?php echo $branch_data['status_counts']['red_tagged']; ?>
                                         </span>
                                     <?php endif; ?>
-                                    <?php if ($office_data['status_counts']['borrowed'] > 0): ?>
+                                    <?php if ($branch_data['status_counts']['borrowed'] > 0): ?>
                                         <span class="status-badge status-borrowed">
-                                            Borrowed: <?php echo $office_data['status_counts']['borrowed']; ?>
+                                            Borrowed: <?php echo $branch_data['status_counts']['borrowed']; ?>
                                         </span>
                                     <?php endif; ?>
-                                    <?php if ($office_data['status_counts']['no_tag'] > 0): ?>
+                                    <?php if ($branch_data['status_counts']['no_tag'] > 0): ?>
                                         <span class="status-badge status-no-tag">
-                                            No Tag: <?php echo $office_data['status_counts']['no_tag']; ?>
+                                            No Tag: <?php echo $branch_data['status_counts']['no_tag']; ?>
                                         </span>
                                     <?php endif; ?>
                                 </div>
                             </div>
-                            <div class="office-stats">
+                            <div class="branch-stats">
                                 <div class="stat-item">
-                                    <span class="stat-value"><?php echo number_format($office_data['total_items']); ?></span>
+                                    <span class="stat-value"><?php echo number_format($branch_data['total_items']); ?></span>
                                     <span class="stat-label">Total Items</span>
                                 </div>
                                 <div class="stat-item">
-                                    <span class="stat-value"><?php echo number_format($office_data['total_value'], 2); ?></span>
+                                    <span class="stat-value"><?php echo number_format($branch_data['total_value'], 2); ?></span>
                                     <span class="stat-label">Total Value</span>
                                 </div>
                             </div>
                         </div>
                         
                         <div class="asset-table">
-                            <?php if (!empty($office_data['assets'])): ?>
+                            <?php if (!empty($branch_data['assets'])): ?>
                                 <div class="table-responsive">
                                     <table class="table table-hover mb-0">
                                         <thead>
@@ -398,7 +396,7 @@ if (!$conn || $conn->connect_error) {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <?php foreach ($office_data['assets'] as $asset): ?>
+                                            <?php foreach ($branch_data['assets'] as $asset): ?>
                                                 <tr>
                                                     <td><?php echo htmlspecialchars($asset['property_no'] ?? 'N/A'); ?></td>
                                                     <td>
@@ -462,7 +460,7 @@ if (!$conn || $conn->connect_error) {
                             <?php else: ?>
                                 <div class="text-center text-muted py-4">
                                     <i class="bi bi-inbox" style="font-size: 2rem;"></i>
-                                    <p class="mt-2 mb-0">No assets found in this office.</p>
+                                    <p class="mt-2 mb-0">No assets found in this branch.</p>
                                 </div>
                             <?php endif; ?>
                         </div>
@@ -470,132 +468,52 @@ if (!$conn || $conn->connect_error) {
                 <?php endforeach; ?>
             <?php else: ?>
                 <div class="text-center text-muted py-5">
-                    <i class="bi bi-building" style="font-size: 3rem;"></i>
-                    <h4 class="mt-3">No Office Data Available</h4>
-                    <p>No assets or offices found in the system.</p>
+                    <i class="bi bi-diagram-3" style="font-size: 3rem;"></i>
+                    <h4 class="mt-3">No Branch Data Available</h4>
+                    <p>No assets or branches found in the system.</p>
                 </div>
             <?php endif; ?>
         </div>
     </div>
 
-    <?php require_once 'includes/logout-modal.php'; ?>
-    <?php require_once 'includes/change-password-modal.php'; ?>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <?php require_once 'includes/sidebar-scripts.php'; ?>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const officeFilter = document.getElementById('officeFilter');
-            const statusFilter = document.getElementById('statusFilter');
-            const categoryFilter = document.getElementById('categoryFilter');
-
-            function applyFilters() {
-                const currentUrl = new URL(window.location.href);
-
-                // Apply office filter
-                const officeValue = parseInt(officeFilter.value || '0', 10);
-                if (officeValue > 0) {
-                    currentUrl.searchParams.set('office_id', String(officeValue));
-                } else {
-                    currentUrl.searchParams.delete('office_id');
-                }
-
-                // Apply status filter
-                const statusValue = statusFilter.value || '';
-                if (statusValue) {
-                    currentUrl.searchParams.set('status', statusValue);
-                } else {
-                    currentUrl.searchParams.delete('status');
-                }
-
-                // Apply category filter
-                const categoryValue = parseInt(categoryFilter.value || '0', 10);
-                if (categoryValue > 0) {
-                    currentUrl.searchParams.set('category_id', String(categoryValue));
-                } else {
-                    currentUrl.searchParams.delete('category_id');
-                }
-
-                window.location.href = currentUrl.toString();
+        // Filter functionality
+        document.getElementById('branchFilter')?.addEventListener('change', function() {
+            const url = new URL(window.location);
+            if (this.value === '0') {
+                url.searchParams.delete('branch_id');
+            } else {
+                url.searchParams.set('branch_id', this.value);
             }
-
-            // Add event listeners
-            if (officeFilter) {
-                officeFilter.addEventListener('change', applyFilters);
-            }
-            if (statusFilter) {
-                statusFilter.addEventListener('change', applyFilters);
-            }
-            if (categoryFilter) {
-                categoryFilter.addEventListener('change', applyFilters);
-            }
-
-            // Add smooth scroll behavior
-            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-                anchor.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    const target = document.querySelector(this.getAttribute('href'));
-                    if (target) {
-                        target.scrollIntoView({
-                            behavior: 'smooth',
-                            block: 'start'
-                        });
-                    }
-                });
-            });
-
-            // Add loading state to filter buttons
-            const filterButtons = document.querySelectorAll('.form-select');
-            filterButtons.forEach(button => {
-                button.addEventListener('change', function() {
-                    this.style.opacity = '0.7';
-                    setTimeout(() => {
-                        this.style.opacity = '1';
-                    }, 300);
-                });
-            });
-
-            // Borrow item function
-            function borrowItem(itemId) {
-                if (confirm('Are you sure you want to borrow this item?')) {
-                    // Show loading state
-                    const button = event.target;
-                    const originalText = button.innerHTML;
-                    button.innerHTML = '<i class="bi bi-hourglass-split"></i> Processing...';
-                    button.disabled = true;
-
-                    // Create form data
-                    const formData = new FormData();
-                    formData.append('action', 'borrow');
-                    formData.append('item_id', itemId);
-                    formData.append('user_id', <?php echo (int)($_SESSION['user_id'] ?? 0); ?>);
-
-                    // Send request
-                    fetch('process_borrow.php', {
-                        method: 'POST',
-                        body: formData
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            alert('Item borrowed successfully!');
-                            // Reload page to show updated status
-                            window.location.reload();
-                        } else {
-                            alert('Error: ' + (data.message || 'Failed to borrow item'));
-                            // Restore button
-                            button.innerHTML = originalText;
-                            button.disabled = false;
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('An error occurred while borrowing the item.');
-                        // Restore button
-                        button.innerHTML = originalText;
-                        button.disabled = false;
-                    });
-                }
-            }
+            window.location.href = url.toString();
         });
+
+        document.getElementById('statusFilter')?.addEventListener('change', function() {
+            const url = new URL(window.location);
+            if (this.value === '') {
+                url.searchParams.delete('status');
+            } else {
+                url.searchParams.set('status', this.value);
+            }
+            window.location.href = url.toString();
+        });
+
+        document.getElementById('categoryFilter')?.addEventListener('change', function() {
+            const url = new URL(window.location);
+            if (this.value === '0') {
+                url.searchParams.delete('category_id');
+            } else {
+                url.searchParams.set('category_id', this.value);
+            }
+            window.location.href = url.toString();
+        });
+
+        function borrowItem(itemId) {
+            if (confirm('Are you sure you want to borrow this item?')) {
+                // Implement borrow functionality
+                window.location.href = 'borrow_item.php?id=' + itemId;
+            }
+        }
     </script>
+</body>
+</html>
