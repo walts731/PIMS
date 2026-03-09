@@ -1,15 +1,20 @@
 <?php
+// Start output buffering to catch any accidental output
+ob_start();
+
 session_start();
 require_once '../config.php';
 require_once '../includes/system_functions.php';
 
-// Enable error reporting for debugging
+// Disable error display to prevent HTML from corrupting JSON output
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
 
 // Check if user is logged in
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     http_response_code(401);
+    ob_clean();
     echo json_encode(['error' => 'Unauthorized']);
     exit();
 }
@@ -17,6 +22,7 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
 // Check if user has correct role
 if ($_SESSION['role'] !== 'office_admin') {
     http_response_code(403);
+    ob_clean();
     echo json_encode(['error' => 'Forbidden']);
     exit();
 }
@@ -26,6 +32,7 @@ $request_id = $_GET['request_id'] ?? 0;
 
 if (empty($request_id) || !is_numeric($request_id)) {
     http_response_code(400);
+    ob_clean();
     echo json_encode(['error' => 'Invalid request ID']);
     exit();
 }
@@ -43,6 +50,7 @@ try {
     
     if ($result->num_rows === 0) {
         http_response_code(404);
+        ob_clean();
         echo json_encode(['error' => 'Request not found']);
         exit();
     }
@@ -166,7 +174,10 @@ try {
                           ai.value as unit_value, 
                           ai.acquisition_date as date_acquired,
                           ai.unit, ai.inventory_tag,
-                          ai.end_user, ai.employee_id
+                          ai.end_user, ai.employee_id,
+                          ai.office_id, ai.office_name,
+                          ai.qr_code, ai.image,
+                          ai.date_counted, ai.last_updated
                           FROM asset_items ai
                           LEFT JOIN asset_categories ac ON ai.asset_category_id = ac.id
                           WHERE ai.id = ?";
@@ -188,6 +199,13 @@ try {
                 $asset_info['unit'] = $asset_data['unit'] ?? '';
                 $asset_info['inventory_tag'] = $asset_data['inventory_tag'] ?? '';
                 $asset_info['end_user'] = $asset_data['end_user'] ?? '';
+                $asset_info['employee_id'] = $asset_data['employee_id'] ?? '';
+                $asset_info['office_id'] = $asset_data['office_id'] ?? '';
+                $asset_info['office_name'] = $asset_data['office_name'] ?? '';
+                $asset_info['qr_code'] = $asset_data['qr_code'] ?? '';
+                $asset_info['image'] = $asset_data['image'] ?? '';
+                $asset_info['date_counted'] = $asset_data['date_counted'] ?? '';
+                $asset_info['last_updated'] = $asset_data['last_updated'] ?? '';
                 $asset_info['category'] = [
                     'name' => $asset_data['category_name'] ?? 'Uncategorized',
                     'code' => $asset_data['category_code'] ?? ''
@@ -312,11 +330,17 @@ try {
     ];
     
     header('Content-Type: application/json');
+    
+    // Clean any output buffer to ensure clean JSON
+    ob_clean();
     echo json_encode($response);
     
 } catch (Exception $e) {
     error_log("Error fetching request details: " . $e->getMessage());
     http_response_code(500);
+    
+    // Clean any output buffer to ensure clean JSON
+    ob_clean();
     echo json_encode(['error' => 'Internal server error: ' . $e->getMessage()]);
 }
 
