@@ -65,6 +65,13 @@ $notag_items = count(array_filter($items, function($item) { return $item['status
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Asset Items - <?php echo htmlspecialchars($asset['description']); ?> | PIMS</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="../favicon/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="../favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../favicon/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="../favicon/apple-touch-icon.png">
+    
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
@@ -74,139 +81,17 @@ $notag_items = count(array_filter($items, function($item) { return $item['status
     <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Custom CSS -->
-    <link href="../assets/css/index.css" rel="stylesheet">
-    <link href="../assets/css/theme-custom.css" rel="stylesheet">
+    <!-- Unified CSS -->
     <link href="assets/css/admin-unified.css" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #F7F3F3 0%, #C1EAF2 100%);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-        
-        .page-header {
-            background: white;
-            border-radius: var(--border-radius-xl);
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow);
-            border-left: 4px solid var(--primary-color);
-        }
-        
-        .stats-card {
-            background: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%);
-            color: white;
-            border-radius: var(--border-radius-lg);
-            padding: 1.5rem;
-            text-align: center;
-            transition: var(--transition);
-            height: 100%;
-        }
-        
-        .stats-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 25px rgba(25, 27, 169, 0.3);
-        }
-        
-        .stats-number {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-        }
-        
-        .stats-label {
-            font-size: 0.9rem;
-            opacity: 0.9;
-        }
-        
-        .table-container {
-            background: white;
-            border-radius: var(--border-radius-lg);
-            padding: 1.5rem;
-            box-shadow: var(--shadow);
-            margin-bottom: 2rem;
-        }
-        
-        .btn-action {
-            padding: 0.25rem 0.5rem;
-            font-size: 0.875rem;
-            margin: 0 0.125rem;
-        }
-        
-        .status-badge {
-            padding: 0.25rem 0.75rem;
-            border-radius: var(--border-radius-xl);
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-        
-        .status-serviceable { 
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%); 
-            color: white; 
-            border: 1px solid #20c997;
-        }
-        .status-unserviceable { 
-            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); 
-            color: white;
-            border: 1px solid #0056b3;
-        }
-        .status-red-tagged { 
-            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); 
-            color: white;
-            border: 1px solid #c82333;
-        }
-        .status-borrowed { 
-            background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%); 
-            color: #212529;
-            border: 1px solid #e0a800;
-        }
-        .status-notag { 
-            background: linear-gradient(135deg, #6c757d 0%, #545b62 100%); 
-            color: white;
-            border: 1px solid #545b62;
-        }
-        
-        .text-value {
-            font-weight: 600;
-            color: #191BA9;
-        }
-        
-        .table-hover tbody tr:hover {
-            background-color: rgba(25, 27, 169, 0.05);
-        }
-        
-        .btn-back {
-            background: var(--primary-gradient);
-            border: none;
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: var(--border-radius-lg);
-            transition: var(--transition);
-        }
-        
-        .btn-back:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(25, 27, 169, 0.3);
-            color: white;
-        }
-    </style>
 </head>
 <body>
-    <?php
-    // Set page title for topbar
-    $page_title = 'Asset Items - ' . htmlspecialchars($asset['description']);
-    ?>
-    <!-- Main Content Wrapper -->
+    <?php $page_title = 'Asset Items - ' . htmlspecialchars($asset['description']); ?>
     <div class="main-wrapper" id="mainWrapper">
         <?php require_once 'includes/sidebar-toggle.php'; ?>
         <?php require_once 'includes/sidebar.php'; ?>
         <?php require_once 'includes/topbar.php'; ?>
     
-    <!-- Main Content -->
     <div class="main-content">
-        <!-- Page Header -->
         <div class="page-header">
             <div class="row align-items-center">
                 <div class="col-md-8">
@@ -216,21 +101,24 @@ $notag_items = count(array_filter($items, function($item) { return $item['status
                     <p class="text-muted mb-0">Individual items for: <?php echo htmlspecialchars($asset['description']); ?></p>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <a href="assets.php" class="btn btn-back me-2">
-                        <i class="bi bi-arrow-left"></i> Back to Assets
-                    </a>
-                    <button class="btn btn-outline-success btn-sm" onclick="exportAssetItems()">
-                        <i class="bi bi-download"></i> Export
-                    </button>
+                    <div class="d-flex gap-2 justify-content-md-end">
+                        <a href="assets.php" class="btn btn-primary btn-sm">
+                            <i class="bi bi-arrow-left"></i> Back to Assets
+                        </a>
+                        <button class="btn btn-success btn-sm" onclick="exportAssetItems()">
+                            <i class="bi bi-download"></i> Export
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
         
-        <!-- Asset Details Card -->
-        <div class="table-container mb-4">
+        <div class="section-card mb-4">
+            <div class="section-title">
+                <i class="bi bi-info-circle"></i> Asset Information
+            </div>
             <div class="row">
                 <div class="col-md-8">
-                    <h5 class="mb-3"><i class="bi bi-info-circle"></i> Asset Information</h5>
                     <div class="row">
                         <div class="col-md-6">
                             <p><strong>Category:</strong> <?php echo htmlspecialchars($asset['category_code'] . ' - ' . $asset['category_name']); ?></p>
@@ -253,33 +141,32 @@ $notag_items = count(array_filter($items, function($item) { return $item['status
             </div>
         </div>
 
-        <!-- Statistics Cards -->
-        <div class="row mb-4">
-            <div class="col-lg-2 col-md-4 col-sm-6">
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
                 <div class="stats-card">
                     <div class="stats-number"><?php echo $serviceable_items; ?></div>
                     <div class="stats-label"><i class="bi bi-check-circle"></i> Serviceable</div>
                 </div>
             </div>
-            <div class="col-lg-2 col-md-4 col-sm-6">
+            <div class="col-6 col-md-3">
                 <div class="stats-card">
                     <div class="stats-number"><?php echo $unserviceable_items; ?></div>
                     <div class="stats-label"><i class="bi bi-x-circle"></i> Unserviceable</div>
                 </div>
             </div>
-            <div class="col-lg-2 col-md-4 col-sm-6">
+            <div class="col-6 col-md-3">
                 <div class="stats-card">
                     <div class="stats-number"><?php echo $redtagged_items; ?></div>
                     <div class="stats-label"><i class="bi bi-exclamation-triangle"></i> Red-Tagged</div>
                 </div>
             </div>
-            <div class="col-lg-2 col-md-4 col-sm-6">
+            <div class="col-6 col-md-3">
                 <div class="stats-card">
                     <div class="stats-number"><?php echo $notag_items; ?></div>
                     <div class="stats-label"><i class="bi bi-dash-circle"></i> No Tag</div>
                 </div>
             </div>
-            <div class="col-lg-2 col-md-4 col-sm-6">
+            <div class="col-6 col-md-3">
                 <div class="stats-card">
                     <div class="stats-number"><?php echo $borrowed_items; ?></div>
                     <div class="stats-label"><i class="bi bi-arrow-left-right"></i> Borrowed</div>
@@ -287,24 +174,21 @@ $notag_items = count(array_filter($items, function($item) { return $item['status
             </div>
         </div>
 
-        <!-- Items Table -->
-        <div class="table-container">
+        <div class="section-card mb-4">
+            <div class="section-title">
+                <i class="bi bi-list-ul"></i> Individual Asset Items
+            </div>
             <div class="row mb-3">
                 <div class="col-md-6">
-                    <h5 class="mb-0"><i class="bi bi-list-ul"></i> Individual Asset Items</h5>
-                </div>
-                <div class="col-md-6">
-                    <div class="row g-2">
-                        <div class="col-md-6">
-                            <select class="form-select form-select-sm" id="statusFilter">
-                                <option value="">All Statuses</option>
-                                <option value="Serviceable">Serviceable</option>
-                                <option value="Unserviceable">Unserviceable</option>
-                                <option value="Red-Tagged">Red-Tagged</option>
-                                <option value="Borrowed">Borrowed</option>
-                                <option value="No Tag">No Tag</option>
-                            </select>
-                        </div>
+                    <div class="d-flex gap-2 align-items-center">
+                        <select class="form-select form-select-sm" id="statusFilter" style="width: auto;">
+                            <option value="">All Statuses</option>
+                            <option value="Serviceable">Serviceable</option>
+                            <option value="Unserviceable">Unserviceable</option>
+                            <option value="Red-Tagged">Red-Tagged</option>
+                            <option value="Borrowed">Borrowed</option>
+                            <option value="No Tag">No Tag</option>
+                        </select>
                     </div>
                 </div>
             </div>
@@ -377,16 +261,17 @@ $notag_items = count(array_filter($items, function($item) { return $item['status
                         </tbody>
                     </table>
                 <?php else: ?>
-                    <div class="text-center py-5">
-                        <i class="bi bi-inbox fs-1 text-muted"></i>
-                        <p class="mt-3 text-muted">No individual items found for this asset.</p>
+                    <div class="empty-state">
+                        <i class="bi bi-inbox"></i>
+                        <h4>No Items Found</h4>
+                        <p class="text-muted">No individual items found for this asset.</p>
                     </div>
                 <?php endif; ?>
             </div>
         </div>
         
     </div>
-    </div> <!-- Close main wrapper -->
+    </div>
     
     <?php require_once 'includes/logout-modal.php'; ?>
     <?php require_once 'includes/change-password-modal.php'; ?>

@@ -18,6 +18,7 @@ function exportData() {
             total_items: totalItems,
             serviceable: serviceableItems,
             in_use: 0,
+            red_tagged: 0,
             maintenance: 0,
             value: totalValue
         },
@@ -39,7 +40,7 @@ function exportData() {
     let csv = 'Category,Metric,Value\n';
     csv += `Assets,Total Items,${data.assets.total_items}\n`;
     csv += `Assets,Serviceable,${data.assets.serviceable}\n`;
-    csv += `Assets,In Use,${data.assets.in_use}\n`;
+    csv += `Assets,Red Tagged,${data.assets.red_tagged}\n`;
     csv += `Assets,Value,${data.assets.value}\n`;
     csv += `Forms,Total Count,${data.forms.total}\n`;
     csv += `Forms,Total Value,${data.forms.value}\n`;
@@ -86,12 +87,31 @@ try {
         
         console.log('Initializing charts...');
         
-        // Get chart data from the page
-        const serviceableCount = parseInt(document.querySelector('.text-success')?.textContent?.replace(/,/g, '') || 0);
-        const unserviceableCount = parseInt(document.querySelector('.text-danger')?.textContent?.replace(/,/g, '') || 0);
+        // Get chart data from the page - more specific selectors
+        const assetStatusSection = document.querySelector('#assetStatusChart').closest('.section-card');
+        const serviceableCount = parseInt(assetStatusSection.querySelector('.text-success')?.textContent?.replace(/,/g, '') || 0);
+        const redTaggedCount = parseInt(Array.from(assetStatusSection.querySelectorAll('.text-danger'))[0]?.textContent?.replace(/,/g, '') || 0);
+        const maintenanceCount = parseInt(assetStatusSection.querySelector('.text-warning')?.textContent?.replace(/,/g, '') || 0);
+        const borrowedCount = parseInt(Array.from(assetStatusSection.querySelectorAll('.text-primary'))[0]?.textContent?.replace(/,/g, '') || 0);
+        const disposedCount = parseInt(Array.from(assetStatusSection.querySelectorAll('.text-danger'))[1]?.textContent?.replace(/,/g, '') || 0);
+        const unserviceableCount = parseInt(assetStatusSection.querySelector('.text-secondary')?.textContent?.replace(/,/g, '') || 0);
+        
+        // Ensure all segments are visible by using minimum values for zero counts
+        const chartData = [
+            serviceableCount || 0.01,
+            redTaggedCount || 0.01,
+            maintenanceCount || 0.01,
+            borrowedCount || 0.01,
+            disposedCount || 0.01,
+            unserviceableCount || 0.01
+        ];
         
         console.log('Asset Status Data:', {
             serviceable: serviceableCount,
+            red_tagged: redTaggedCount,
+            maintenance: maintenanceCount,
+            borrowed: borrowedCount,
+            disposed: disposedCount,
             unserviceable: unserviceableCount
         });
         
@@ -99,15 +119,16 @@ try {
         const assetStatusChart = new Chart(assetStatusCtx, {
             type: 'doughnut',
             data: {
-                labels: ['Serviceable', 'Unserviceable'],
+                labels: ['Serviceable', 'Red Tagged', 'Maintenance', 'Borrowed', 'Disposed', 'Unserviceable'],
                 datasets: [{
-                    data: [
-                        serviceableCount,
-                        unserviceableCount
-                    ],
+                    data: chartData,
                     backgroundColor: [
-                        '#28a745',
-                        '#dc3545'
+                        '#28a745',  // Green for Serviceable
+                        '#dc3545',  // Red for Red Tagged
+                        '#ffc107',  // Yellow for Maintenance
+                        '#6f42c1',  // Purple for Borrowed
+                        '#fd7e14',  // Orange for Disposed
+                        '#6c757d'   // Gray for Unserviceable
                     ],
                     borderWidth: 0,
                     hoverOffset: 4
@@ -125,8 +146,9 @@ try {
                         callbacks: {
                             label: function(context) {
                                 const label = context.label || '';
-                                const value = context.parsed || 0;
-                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const originalValues = [serviceableCount, redTaggedCount, maintenanceCount, borrowedCount, disposedCount, unserviceableCount];
+                                const value = originalValues[context.dataIndex] || 0;
+                                const total = originalValues.reduce((a, b) => a + b, 0);
                                 const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
                                 return `${label}: ${value} (${percentage}%)`;
                             }
