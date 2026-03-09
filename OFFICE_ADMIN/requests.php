@@ -624,7 +624,7 @@ if ($office_id && $conn) {
         <?php endif; ?>
         
         <!-- Request Statistics -->
-        <div class="row mb-4">
+        <div class="row mb-4 justify-content-center">
             <div class="col-lg-3 col-md-6">
                 <div class="stats-card">
                     <div class="d-flex justify-content-between align-items-center">
@@ -639,21 +639,7 @@ if ($office_id && $conn) {
                     </div>
                 </div>
             </div>
-            <div class="col-lg-2 col-md-6">
-                <div class="stats-card">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="stats-number"><?php echo $request_stats['approved_incoming']; ?></div>
-                            <div class="text-muted">Approved Incoming</div>
-                            <small class="text-success">Ready for pickup</small>
-                        </div>
-                        <div class="text-success">
-                            <i class="bi bi-check-circle fs-1"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-2 col-md-6">
+            <div class="col-lg-3 col-md-6">
                 <div class="stats-card">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -681,21 +667,7 @@ if ($office_id && $conn) {
                     </div>
                 </div>
             </div>
-            <div class="col-lg-2 col-md-6">
-                <div class="stats-card">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="stats-number"><?php echo $request_stats['approved_outgoing']; ?></div>
-                            <div class="text-muted">Approved Outgoing</div>
-                            <small class="text-primary">Ready for pickup</small>
-                        </div>
-                        <div class="text-primary">
-                            <i class="bi bi-box-seam fs-1"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-2 col-md-6">
+            <div class="col-lg-3 col-md-6">
                 <div class="stats-card">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
