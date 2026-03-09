@@ -13,6 +13,12 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     exit();
 }
 
+// Check for export request
+if (isset($_GET['export']) && $_GET['export'] == '1') {
+    exportInventoryData();
+    exit;
+}
+
 // Check if user has correct role
 if ($_SESSION['role'] !== 'office_admin') {
     header('Location: ../index.php');
@@ -204,6 +210,128 @@ foreach ($defaults as $key => $value) {
     if (!isset($inventory_data[$key])) {
         $inventory_data[$key] = is_array($value) ? $value : $value;
     }
+}
+
+// Export Inventory Data Function
+function exportInventoryData() {
+    global $conn, $user_office_id;
+    
+    // Get current filters
+    $filters = [
+        'status' => $_GET['status'] ?? 'all',
+        'category' => $_GET['category'] ?? 'all',
+        'search' => $_GET['search'] ?? '',
+        'date_from' => $_GET['date_from'] ?? '',
+        'date_to' => $_GET['date_to'] ?? ''
+    ];
+    
+    // Get filtered data (reuse existing logic)
+    $asset_query = "SELECT 
+        ai.id,
+        ai.description,
+        ai.property_number,
+        ai.inventory_tag,
+        ai.status,
+        ai.acquisition_date,
+        ai.last_updated,
+        ai.end_user,
+        ac.category_name,
+        subcat.sub_category_name,
+        o.office_name,
+        CONCAT(e.firstname, ' ', e.lastname) as employee_name
+        FROM asset_items ai
+        LEFT JOIN asset_categories ac ON ai.asset_category_id = ac.id
+        LEFT JOIN asset_sub_categories subcat ON ai.asset_subcategory_id = subcat.id
+        LEFT JOIN offices o ON ai.office_id = o.id
+        LEFT JOIN employees e ON ai.employee_id = e.id
+        WHERE ai.office_id = ?";
+    
+    $params = [$user_office_id];
+    $types = "i";
+    
+    // Apply filters
+    if ($filters['status'] !== 'all') {
+        $asset_query .= " AND ai.status = ?";
+        $params[] = $filters['status'];
+        $types .= "s";
+    }
+    
+    if ($filters['category'] !== 'all') {
+        $asset_query .= " AND ai.asset_category_id = ?";
+        $params[] = $filters['category'];
+        $types .= "i";
+    }
+    
+    if (!empty($filters['search'])) {
+        $asset_query .= " AND (ai.description LIKE ? OR ai.property_number LIKE ? OR ai.inventory_tag LIKE ?)";
+        $search_term = "%" . $filters['search'] . "%";
+        $params[] = $search_term;
+        $params[] = $search_term;
+        $params[] = $search_term;
+        $types .= "sss";
+    }
+    
+    if (!empty($filters['date_from']) && !empty($filters['date_to'])) {
+        $asset_query .= " AND ai.acquisition_date BETWEEN ? AND ?";
+        $params[] = $filters['date_from'];
+        $params[] = $filters['date_to'];
+        $types .= "ss";
+    }
+    
+    $asset_query .= " ORDER BY ai.last_updated DESC";
+    
+    $stmt = $conn->prepare($asset_query);
+    if ($stmt) {
+        $stmt->bind_param($types, ...$params);
+        $stmt->execute();
+        $asset_result = $stmt->get_result();
+        $assets = $asset_result->fetch_all(MYSQLI_ASSOC);
+    }
+    
+    // Set headers for CSV download
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename=inventory_report_' . date('Y-m-d') . '.csv');
+    
+    // Create file pointer
+    $output = fopen('php://output', 'w');
+    
+    // Add BOM for UTF-8
+    fwrite($output, "\xEF\xBB\xBF");
+    
+    // CSV headers
+    fputcsv($output, [
+        'ID',
+        'Description',
+        'Property Number',
+        'Inventory Tag',
+        'Status',
+        'User',
+        'Category',
+        'Subcategory',
+        'Office',
+        'Acquisition Date',
+        'Last Updated'
+    ]);
+    
+    // CSV data
+    foreach ($assets as $asset) {
+        fputcsv($output, [
+            $asset['id'],
+            $asset['description'],
+            $asset['property_number'] ?? 'N/A',
+            $asset['inventory_tag'] ?? 'N/A',
+            $asset['status'],
+            $asset['end_user'] ?? $asset['employee_name'] ?? 'N/A',
+            $asset['category_name'] ?? 'N/A',
+            $asset['sub_category_name'] ?? 'N/A',
+            $asset['office_name'] ?? 'N/A',
+            $asset['acquisition_date'] ?? 'N/A',
+            date('M d, Y', strtotime($asset['last_updated']))
+        ]);
+    }
+    
+    fclose($output);
+    exit;
 }
 ?>
 
@@ -436,28 +564,22 @@ foreach ($defaults as $key => $value) {
         
         <!-- Inventory Summary Cards -->
         <div class="row mb-4">
-            <div class="col-lg-3 col-md-6 mb-3">
+            <div class="col-lg-4 col-md-6 mb-3">
                 <div class="inventory-summary-card">
                     <div class="summary-number"><?php echo $inventory_data['summary']['total_assets']; ?></div>
                     <div class="summary-label"><i class="bi bi-box-seam"></i> Total Assets</div>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6 mb-3">
+            <div class="col-lg-4 col-md-6 mb-3">
                 <div class="inventory-summary-card">
                     <div class="summary-number"><?php echo $inventory_data['summary']['functional_assets']; ?></div>
                     <div class="summary-label"><i class="bi bi-check-circle"></i> Functional Assets</div>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6 mb-3">
+            <div class="col-lg-4 col-md-6 mb-3">
                 <div class="inventory-summary-card">
                     <div class="summary-number"><?php echo $inventory_data['summary']['total_consumables']; ?></div>
                     <div class="summary-label"><i class="bi bi-archive"></i> Consumables</div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6 mb-3">
-                <div class="inventory-summary-card">
-                    <div class="summary-number">₱<?php echo number_format($inventory_data['summary']['total_asset_value'] + $inventory_data['summary']['total_consumable_value'], 0); ?></div>
-                    <div class="summary-label"><i class="bi bi-currency-dollar"></i> Total Value</div>
                 </div>
             </div>
         </div>
@@ -553,7 +675,6 @@ foreach ($defaults as $key => $value) {
                                     <th>Property No.</th>
                                     <th>Inventory Tag</th>
                                     <th>Status</th>
-                                    <th>Value</th>
                                     <th>User</th>
                                     <th>Category</th>
                                     <th>Last Updated</th>
@@ -572,7 +693,6 @@ foreach ($defaults as $key => $value) {
                                                     <?php echo htmlspecialchars($asset['status']); ?>
                                                 </span>
                                             </td>
-                                            <td>₱<?php echo number_format($asset['value'], 2); ?></td>
                                             <td><?php echo htmlspecialchars($asset['end_user'] ?? $asset['employee_name'] ?? 'N/A'); ?></td>
                                             <td><?php echo htmlspecialchars($asset['category_name'] ?? 'N/A'); ?></td>
                                             <td><?php echo date('M d, Y', strtotime($asset['last_updated'])); ?></td>
@@ -580,7 +700,7 @@ foreach ($defaults as $key => $value) {
                                     <?php endforeach; ?>
                                 <?php else: ?>
                                     <tr>
-                                        <td colspan="9" class="text-center text-muted">No assets found</td>
+                                        <td colspan="8" class="text-center text-muted">No assets found</td>
                                     </tr>
                                 <?php endif; ?>
                             </tbody>
