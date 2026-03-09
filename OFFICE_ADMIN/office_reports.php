@@ -149,17 +149,21 @@ if ($office_id && $conn) {
             $report_data['recent_activities'][] = $row;
         }
         
-        // Monthly Data for Charts (Last 6 months)
+        // Monthly Data for Charts (Last 6 months) - Enhanced with both incoming and outgoing requests
         $monthly_query = "SELECT 
                             DATE_FORMAT(created_at, '%Y-%m') as month,
-                            COUNT(*) as requests_count,
-                            SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved_count
+                            COUNT(*) as total_requests,
+                            SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved_count,
+                            SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_count,
+                            SUM(CASE WHEN status = 'denied' THEN 1 ELSE 0 END) as denied_count,
+                            SUM(CASE WHEN status = 'returned' THEN 1 ELSE 0 END) as completed_count
                          FROM borrow_requests 
-                         WHERE requested_to_office = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
+                         WHERE (requested_to_office = ? OR requested_by_office = ?) 
+                         AND created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
                          GROUP BY DATE_FORMAT(created_at, '%Y-%m')
                          ORDER BY month";
         $stmt = $conn->prepare($monthly_query);
-        $stmt->bind_param("i", $office_id);
+        $stmt->bind_param("ii", $office_id, $office_id);
         $stmt->execute();
         $result = $stmt->get_result();
         while ($row = $result->fetch_assoc()) {
@@ -694,11 +698,14 @@ $report_data['asset_stats']['total_asset_value'] = number_format($report_data['a
                 }
             });
             
-            // Monthly Trends Chart
+            // Monthly Trends Chart - Enhanced with multiple datasets
             const monthlyTrendsCtx = document.getElementById('monthlyTrendsChart').getContext('2d');
             const monthlyLabels = <?php echo json_encode(array_column($report_data['monthly_data'], 'month')); ?>;
-            const monthlyRequests = <?php echo json_encode(array_column($report_data['monthly_data'], 'requests_count')); ?>;
+            const monthlyTotal = <?php echo json_encode(array_column($report_data['monthly_data'], 'total_requests')); ?>;
             const monthlyApproved = <?php echo json_encode(array_column($report_data['monthly_data'], 'approved_count')); ?>;
+            const monthlyPending = <?php echo json_encode(array_column($report_data['monthly_data'], 'pending_count')); ?>;
+            const monthlyDenied = <?php echo json_encode(array_column($report_data['monthly_data'], 'denied_count')); ?>;
+            const monthlyCompleted = <?php echo json_encode(array_column($report_data['monthly_data'], 'completed_count')); ?>;
             
             new Chart(monthlyTrendsCtx, {
                 type: 'line',
@@ -709,24 +716,90 @@ $report_data['asset_stats']['total_asset_value'] = number_format($report_data['a
                     }),
                     datasets: [{
                         label: 'Total Requests',
-                        data: monthlyRequests,
+                        data: monthlyTotal,
                         borderColor: '#5CC2F2',
                         backgroundColor: 'rgba(92, 194, 242, 0.1)',
-                        tension: 0.4
+                        tension: 0.4,
+                        borderWidth: 2
                     }, {
                         label: 'Approved',
                         data: monthlyApproved,
                         borderColor: '#28a745',
                         backgroundColor: 'rgba(40, 167, 69, 0.1)',
-                        tension: 0.4
+                        tension: 0.4,
+                        borderWidth: 2
+                    }, {
+                        label: 'Pending',
+                        data: monthlyPending,
+                        borderColor: '#ffc107',
+                        backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                        tension: 0.4,
+                        borderWidth: 2
+                    }, {
+                        label: 'Denied',
+                        data: monthlyDenied,
+                        borderColor: '#dc3545',
+                        backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                        tension: 0.4,
+                        borderWidth: 2
+                    }, {
+                        label: 'Completed',
+                        data: monthlyCompleted,
+                        borderColor: '#6f42c1',
+                        backgroundColor: 'rgba(111, 66, 193, 0.1)',
+                        tension: 0.4,
+                        borderWidth: 2
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
                     plugins: {
                         legend: {
-                            position: 'bottom'
+                            position: 'bottom',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 15
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            padding: 12,
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            borderColor: '#ddd',
+                            borderWidth: 1,
+                            displayColors: true,
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y + ' requests';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1,
+                                callback: function(value) {
+                                    if (Math.floor(value) === value) {
+                                        return value;
+                                    }
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
                         }
                     }
                 }
