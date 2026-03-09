@@ -111,8 +111,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->bind_param("isi", $_SESSION['user_id'], $notes, $request_id);
             
             if ($stmt->execute()) {
-                // Update asset status to in_use when request is approved
-                $asset_update = "UPDATE asset_items SET status = 'in_use' 
+                // Update asset status to pending when request is approved (awaiting pickup)
+                $asset_update = "UPDATE asset_items SET status = 'pending' 
                                 WHERE id = (SELECT asset_id FROM borrow_requests WHERE id = ?)";
                 $stmt2 = $conn->prepare($asset_update);
                 $stmt2->bind_param("i", $request_id);
@@ -163,7 +163,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                              returned_at = NOW(), 
                              return_condition = ?, 
                              return_notes = ? 
-                             WHERE id = ? AND status = 'approved'";
+                             WHERE id = ? AND status IN ('approved', 'borrowed')";
             $stmt = $conn->prepare($update_query);
             $stmt->bind_param("ssi", $condition, $notes, $request_id);
             
@@ -181,6 +181,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['error'] = "Error returning asset";
             }
             break;
+            
+        case 'mark_borrowed':
+            $request_id = $_POST['request_id'] ?? 0;
+            
+            $update_query = "UPDATE borrow_requests SET 
+                             status = 'borrowed', 
+                             borrowed_at = NOW() 
+                             WHERE id = ? AND status = 'approved'";
+            $stmt = $conn->prepare($update_query);
+            $stmt->bind_param("i", $request_id);
+            
+            if ($stmt->execute()) {
+                // Update asset status to in_use when asset is borrowed
+                $asset_update = "UPDATE asset_items SET status = 'in_use' 
+                                WHERE id = (SELECT asset_id FROM borrow_requests WHERE id = ?)";
+                $stmt2 = $conn->prepare($asset_update);
+                $stmt2->bind_param("i", $request_id);
+                $stmt2->execute();
+                
+                $_SESSION['success'] = "Asset marked as borrowed successfully";
+                logSystemAction($_SESSION['user_id'], 'borrow', 'borrow_request', "Marked asset as borrowed for request #$request_id");
+            } else {
+                $_SESSION['error'] = "Error marking asset as borrowed";
+            }
+            break;
     }
     
     header('Location: requests.php');
@@ -193,8 +218,10 @@ $outgoing_requests = [];
 $request_stats = [
     'pending_incoming' => 0,
     'approved_incoming' => 0,
+    'borrowed_incoming' => 0,
     'pending_outgoing' => 0,
-    'approved_outgoing' => 0
+    'approved_outgoing' => 0,
+    'borrowed_outgoing' => 0
 ];
 
 if ($office_id && $conn) {
@@ -222,6 +249,8 @@ if ($office_id && $conn) {
                 $request_stats['pending_incoming']++;
             } elseif ($row['status'] === 'approved') {
                 $request_stats['approved_incoming']++;
+            } elseif ($row['status'] === 'borrowed') {
+                $request_stats['borrowed_incoming']++;
             }
         }
         
@@ -249,6 +278,8 @@ if ($office_id && $conn) {
                 $request_stats['pending_outgoing']++;
             } elseif ($row['status'] === 'approved') {
                 $request_stats['approved_outgoing']++;
+            } elseif ($row['status'] === 'borrowed') {
+                $request_stats['borrowed_outgoing']++;
             } elseif ($row['status'] === 'denied') {
                 $request_stats['denied_outgoing']++;
             }
@@ -397,6 +428,11 @@ if ($office_id && $conn) {
         
         .status-cancelled {
             background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+            color: white;
+        }
+        
+        .status-borrowed {
+            background: linear-gradient(135deg, #fd7e14 0%, #e55a00 100%);
             color: white;
         }
         
@@ -603,16 +639,30 @@ if ($office_id && $conn) {
                     </div>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg-2 col-md-6">
                 <div class="stats-card">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <div class="stats-number"><?php echo $request_stats['approved_incoming']; ?></div>
                             <div class="text-muted">Approved Incoming</div>
-                            <small class="text-success">Active borrows</small>
+                            <small class="text-success">Ready for pickup</small>
                         </div>
                         <div class="text-success">
                             <i class="bi bi-check-circle fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-6">
+                <div class="stats-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="stats-number"><?php echo $request_stats['borrowed_incoming']; ?></div>
+                            <div class="text-muted">Borrowed Incoming</div>
+                            <small class="text-warning">Currently borrowed</small>
+                        </div>
+                        <div class="text-warning">
+                            <i class="bi bi-box-seam fs-1"></i>
                         </div>
                     </div>
                 </div>
@@ -631,16 +681,30 @@ if ($office_id && $conn) {
                     </div>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg-2 col-md-6">
                 <div class="stats-card">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <div class="stats-number"><?php echo $request_stats['approved_outgoing']; ?></div>
                             <div class="text-muted">Approved Outgoing</div>
-                            <small class="text-primary">Your active borrows</small>
+                            <small class="text-primary">Ready for pickup</small>
                         </div>
                         <div class="text-primary">
                             <i class="bi bi-box-seam fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-6">
+                <div class="stats-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="stats-number"><?php echo $request_stats['borrowed_outgoing']; ?></div>
+                            <div class="text-muted">Borrowed Outgoing</div>
+                            <small class="text-info">Currently borrowed</small>
+                        </div>
+                        <div class="text-info">
+                            <i class="bi bi-check2-square fs-1"></i>
                         </div>
                     </div>
                 </div>
@@ -727,6 +791,15 @@ if ($office_id && $conn) {
                                                             <i class="bi bi-x-circle"></i> Deny
                                                         </button>
                                                     <?php elseif ($request['status'] === 'approved'): ?>
+                                                        <button class="btn btn-sm btn-warning action-btn" 
+                                                                onclick="markBorrowed(<?php echo $request['id']; ?>)">
+                                                            <i class="bi bi-hand-index"></i> Mark Borrowed
+                                                        </button>
+                                                        <button class="btn btn-sm btn-primary action-btn" 
+                                                                onclick="returnAsset(<?php echo $request['id']; ?>)">
+                                                            <i class="bi bi-arrow-return-left"></i> Return
+                                                        </button>
+                                                    <?php elseif ($request['status'] === 'borrowed'): ?>
                                                         <button class="btn btn-sm btn-primary action-btn" 
                                                                 onclick="returnAsset(<?php echo $request['id']; ?>)">
                                                             <i class="bi bi-arrow-return-left"></i> Return
@@ -1072,6 +1145,29 @@ if ($office_id && $conn) {
             new bootstrap.Modal(document.getElementById('returnModal')).show();
         }
         
+        // Mark Borrowed
+        function markBorrowed(requestId) {
+            if (confirm('Are you sure you want to mark this asset as borrowed? This means the borrower has picked up the asset.')) {
+                const formData = new FormData();
+                formData.append('action', 'mark_borrowed');
+                formData.append('request_id', requestId);
+                
+                fetch('requests.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.text())
+                .then(data => {
+                    // Reload the page to show updated status
+                    window.location.reload();
+                })
+                .catch(error => {
+                    console.error('Error marking as borrowed:', error);
+                    alert('Error marking as borrowed: ' + error.message);
+                });
+            }
+        }
+        
         // View Details
         function viewDetails(requestId) {
             fetch(`../api/get_request_details_simple.php?request_id=${requestId}`)
@@ -1257,6 +1353,19 @@ if ($office_id && $conn) {
                                     <strong>${data.approver.office.name}</strong> (${data.approver.office.code})<br>
                                     <small class="text-muted">${data.approver.name || 'N/A'}</small><br>
                                     <small class="text-muted">${data.approver.email || 'N/A'}</small>
+                                    ${data.approver.office.users && data.approver.office.users.length > 0 ? `
+                                        <div class="mt-2">
+                                            <small class="text-info"><strong>Office Users:</strong></small>
+                                            <div class="mt-1" style="max-height: 120px; overflow-y: auto;">
+                                                ${data.approver.office.users.map(user => 
+                                                    `<div class="small text-muted border-bottom pb-1 mb-1">
+                                                        <strong>${user.name}</strong><br>
+                                                        <small class="text-muted">${user.email}</small>
+                                                    </div>`
+                                                ).join('')}
+                                            </div>
+                                        </div>
+                                    ` : ''}
                                 </div>
                             </div>
                         </div>
@@ -1374,6 +1483,7 @@ if ($office_id && $conn) {
             const icons = {
                 'created': 'bi-send',
                 'approved': 'bi-check-circle',
+                'borrowed': 'bi-hand-index',
                 'denied': 'bi-x-circle',
                 'returned': 'bi-arrow-return-left'
             };
@@ -1384,6 +1494,7 @@ if ($office_id && $conn) {
             const colors = {
                 'created': 'primary',
                 'approved': 'success',
+                'borrowed': 'warning',
                 'denied': 'danger',
                 'returned': 'info'
             };
@@ -1394,6 +1505,7 @@ if ($office_id && $conn) {
             const badges = {
                 'pending': '<span class="badge bg-warning">Pending</span>',
                 'approved': '<span class="badge bg-success">Approved</span>',
+                'borrowed': '<span class="badge bg-warning">Borrowed</span>',
                 'denied': '<span class="badge bg-danger">Denied</span>',
                 'returned': '<span class="badge bg-info">Returned</span>',
                 'cancelled': '<span class="badge bg-secondary">Cancelled</span>'
@@ -1409,7 +1521,8 @@ if ($office_id && $conn) {
         function getStatusDescription(status) {
             const descriptions = {
                 'pending': 'Request is awaiting approval',
-                'approved': 'Request has been approved and asset is in use',
+                'approved': 'Request has been approved and ready for pickup',
+                'borrowed': 'Asset has been picked up and is in use',
                 'denied': 'Request has been denied',
                 'returned': 'Asset has been returned',
                 'cancelled': 'Request has been cancelled'

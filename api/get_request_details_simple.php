@@ -105,6 +105,50 @@ try {
                 $office_data = $office_result->fetch_assoc();
                 $approver_info['office']['name'] = $office_data['office_name'];
                 $approver_info['office']['code'] = $office_data['office_code'];
+                
+                // If this is OMM office, get all OMM users
+                if ($request_data['requested_to_office'] == 4) { // OMM office ID
+                    $omm_users_query = "SELECT first_name, last_name, email FROM users WHERE office = 4 AND is_active = 1 ORDER BY first_name, last_name";
+                    $omm_users_stmt = $conn->prepare($omm_users_query);
+                    $omm_users_stmt->execute();
+                    $omm_users_result = $omm_users_stmt->get_result();
+                    
+                    $omm_users = [];
+                    while ($user_row = $omm_users_result->fetch_assoc()) {
+                        $omm_users[] = [
+                            'name' => $user_row['first_name'] . ' ' . $user_row['last_name'],
+                            'email' => $user_row['email']
+                        ];
+                    }
+                    $approver_info['office']['users'] = $omm_users;
+                }
+                
+                // Get the office admin who performed the action (approved/denied)
+                if ($request_data['approved_by']) {
+                    $admin_query = "SELECT first_name, last_name, email FROM users WHERE id = ?";
+                    $admin_stmt = $conn->prepare($admin_query);
+                    $admin_stmt->bind_param("i", $request_data['approved_by']);
+                    $admin_stmt->execute();
+                    $admin_result = $admin_stmt->get_result();
+                    
+                    if ($admin_result->num_rows > 0) {
+                        $admin_data = $admin_result->fetch_assoc();
+                        $approver_info['name'] = $admin_data['first_name'] . ' ' . $admin_data['last_name'];
+                        $approver_info['email'] = $admin_data['email'];
+                    }
+                } elseif ($request_data['denied_by']) {
+                    $admin_query = "SELECT first_name, last_name, email FROM users WHERE id = ?";
+                    $admin_stmt = $conn->prepare($admin_query);
+                    $admin_stmt->bind_param("i", $request_data['denied_by']);
+                    $admin_stmt->execute();
+                    $admin_result = $admin_stmt->get_result();
+                    
+                    if ($admin_result->num_rows > 0) {
+                        $admin_data = $admin_result->fetch_assoc();
+                        $approver_info['name'] = $admin_data['first_name'] . ' ' . $admin_data['last_name'];
+                        $approver_info['email'] = $admin_data['email'];
+                    }
+                }
             }
         }
     } catch (Exception $e) {
@@ -180,6 +224,20 @@ try {
             'user_email' => $approver_info['email'],
             'office' => $approver_info['office']['name'],
             'timestamp' => $request_data['approved_at'],
+            'status' => 'completed'
+        ];
+    }
+    
+    // Borrowed event (if borrowed)
+    if ($request_data['borrowed_at']) {
+        $lifecycle_events[] = [
+            'type' => 'borrowed',
+            'title' => 'Asset Borrowed',
+            'description' => 'Asset was picked up by the borrower',
+            'user' => $requester_info['name'],
+            'user_email' => $requester_info['email'],
+            'office' => $requester_info['office']['name'],
+            'timestamp' => $request_data['borrowed_at'],
             'status' => 'completed'
         ];
     }
@@ -284,6 +342,9 @@ function getLatestTimestamp($request_data) {
     
     if ($request_data['approved_at']) {
         $timestamps[] = $request_data['approved_at'];
+    }
+    if ($request_data['borrowed_at']) {
+        $timestamps[] = $request_data['borrowed_at'];
     }
     if ($request_data['denied_at']) {
         $timestamps[] = $request_data['denied_at'];
