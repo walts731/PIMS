@@ -276,9 +276,9 @@ if ($result && $row = $result->fetch_assoc()) {
             <div class="row align-items-center">
                 <div class="col-md-8">
                     <h1 class="mb-2">
-                        <i class="bi bi-file-earmark-text"></i> Individual Item Request for User Property
+                        <i class="bi bi-file-earmark-text"></i> Inventory and Inspection Report of Unserviceable Property
                     </h1>
-                    <p class="text-muted mb-0">Manage Individual Item Request for User Property forms</p>
+                    <p class="text-muted mb-0">Manage Inventory and Inspection Report of Unserviceable Property forms</p>
                 </div>
                 <div class="col-md-4 text-md-end">
                     <a href="iirup_entries.php" class="btn btn-outline-secondary btn-sm">
