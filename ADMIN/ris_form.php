@@ -308,26 +308,48 @@ if ($result && $row = $result->fetch_assoc()) {
                                                 <td>
                                                     <select class="form-control form-control-sm" name="unit[]" required>
                                                         <option value="">Select Unit</option>
+                                                        <option value="pc">pc</option>
                                                         <option value="pcs">pcs</option>
+                                                        <option value="piece">piece</option>
+                                                        <option value="pieces">pieces</option>
+                                                        <option value="set">set</option>
                                                         <option value="sets">sets</option>
-                                                        <option value="boxes">boxes</option>
-                                                        <option value="packs">packs</option>
-                                                        <option value="bottles">bottles</option>
-                                                        <option value="liters">liters</option>
-                                                        <option value="gallons">gallons</option>
-                                                        <option value="kilograms">kilograms</option>
-                                                        <option value="grams">grams</option>
-                                                        <option value="meters">meters</option>
-                                                        <option value="feet">feet</option>
-                                                        <option value="inches">inches</option>
-                                                        <option value="reams">reams</option>
-                                                        <option value="dozens">dozens</option>
-                                                        <option value="pairs">pairs</option>
-                                                        <option value="rolls">rolls</option>
-                                                        <option value="bags">bags</option>
-                                                        <option value="cans">cans</option>
-                                                        <option value="tubes">tubes</option>
+                                                        <option value="unit">unit</option>
                                                         <option value="units">units</option>
+                                                        <option value="box">box</option>
+                                                        <option value="boxes">boxes</option>
+                                                        <option value="pack">pack</option>
+                                                        <option value="packs">packs</option>
+                                                        <option value="bottle">bottle</option>
+                                                        <option value="bottles">bottles</option>
+                                                        <option value="liter">liter</option>
+                                                        <option value="liters">liters</option>
+                                                        <option value="gallon">gallon</option>
+                                                        <option value="gallons">gallons</option>
+                                                        <option value="kilogram">kilogram</option>
+                                                        <option value="kilograms">kilograms</option>
+                                                        <option value="gram">gram</option>
+                                                        <option value="grams">grams</option>
+                                                        <option value="meter">meter</option>
+                                                        <option value="meters">meters</option>
+                                                        <option value="foot">foot</option>
+                                                        <option value="feet">feet</option>
+                                                        <option value="inch">inch</option>
+                                                        <option value="inches">inches</option>
+                                                        <option value="ream">ream</option>
+                                                        <option value="reams">reams</option>
+                                                        <option value="dozen">dozen</option>
+                                                        <option value="dozens">dozens</option>
+                                                        <option value="pair">pair</option>
+                                                        <option value="pairs">pairs</option>
+                                                        <option value="roll">roll</option>
+                                                        <option value="rolls">rolls</option>
+                                                        <option value="bag">bag</option>
+                                                        <option value="bags">bags</option>
+                                                        <option value="can">can</option>
+                                                        <option value="cans">cans</option>
+                                                        <option value="tube">tube</option>
+                                                        <option value="tubes">tubes</option>
                                                     </select>
                                                 </td>
                                                 <td><input type="text" class="form-control form-control-sm" name="description[]" required></td>
@@ -468,9 +490,9 @@ if ($result && $row = $result->fetch_assoc()) {
             const newRow = table.insertRow();
             
             const units = [
-                'pcs', 'sets', 'boxes', 'packs', 'bottles', 'liters', 'gallons', 
-                'kilograms', 'grams', 'meters', 'feet', 'inches', 'reams', 
-                'dozens', 'pairs', 'rolls', 'bags', 'cans', 'tubes', 'units'
+                'pc', 'pcs', 'piece', 'pieces', 'set', 'sets', 'unit', 'units', 'box', 'boxes', 'packs', 'pack', 'bottles', 'bottle', 'liters', 'liter', 'gallons', 'gallon', 
+                'kilograms', 'kilogram', 'grams', 'gram', 'meters', 'meter', 'feet', 'foot', 'inches', 'inch', 'reams', 'ream', 
+                'dozens', 'dozen', 'pairs', 'pair', 'rolls', 'roll', 'bags', 'bag', 'cans', 'can', 'tubes', 'tube', 'units'
             ].map(unit => `<option value="${unit}">${unit}</option>`).join('');
             
             const cells = [
@@ -537,6 +559,89 @@ if ($result && $row = $result->fetch_assoc()) {
             const quantity = row.querySelector('input[name="quantity[]"]').value || 0;
             const price = row.querySelector('input[name="price[]"]').value || 0;
             const totalAmount = row.querySelector('input[name="total_amount[]"]');
+            
+            // Auto-set unit based on quantity with pluralization
+            const unitSelect = row.querySelector('select[name="unit[]"]');
+            if (unitSelect && quantity > 0) {
+                const currentValue = unitSelect.value;
+                
+                // Handle pluralization for common units
+                const pluralMap = {
+                    'pc': 'pcs',
+                    'piece': 'pieces',
+                    'set': 'sets',
+                    'box': 'boxes',
+                    'carton': 'cartons',
+                    'pack': 'packs',
+                    'bottle': 'bottles',
+                    'liter': 'liters',
+                    'gallon': 'gallons',
+                    'kilogram': 'kilograms',
+                    'gram': 'grams',
+                    'meter': 'meters',
+                    'centimeter': 'centimeters',
+                    'foot': 'feet',
+                    'inch': 'inches',
+                    'dozen': 'dozens',
+                    'pair': 'pairs',
+                    'roll': 'rolls',
+                    'bag': 'bags',
+                    'canister': 'canisters',
+                    'jar': 'jars',
+                    'tube': 'tubes',
+                    'ream': 'reams',
+                    'case': 'cases',
+                    'barrel': 'barrels',
+                    'drum': 'drums',
+                    'pound': 'pounds',
+                    'ounce': 'ounces',
+                    'unit': 'units',
+                    'can': 'cans'
+                };
+                
+                // Find the appropriate unit based on quantity
+                let targetUnit = '';
+                if (quantity === 1) {
+                    // Use singular form
+                    for (const [singular, plural] of Object.entries(pluralMap)) {
+                        if (currentValue === plural) {
+                            targetUnit = singular;
+                            break;
+                        } else if (currentValue === singular) {
+                            targetUnit = singular;
+                            break;
+                        }
+                    }
+                    // If no mapping found, keep current value
+                    if (!targetUnit && currentValue) {
+                        targetUnit = currentValue;
+                    }
+                } else if (quantity > 1) {
+                    // Use plural form
+                    for (const [singular, plural] of Object.entries(pluralMap)) {
+                        if (currentValue === singular) {
+                            targetUnit = plural;
+                            break;
+                        } else if (currentValue === plural) {
+                            targetUnit = plural;
+                            break;
+                        }
+                    }
+                    // If no mapping found, keep current value
+                    if (!targetUnit && currentValue) {
+                        targetUnit = currentValue;
+                    }
+                }
+                
+                // Set the unit if found
+                if (targetUnit) {
+                    // Check if the target unit exists in the dropdown
+                    const optionExists = Array.from(unitSelect.options).some(option => option.value === targetUnit);
+                    if (optionExists) {
+                        unitSelect.value = targetUnit;
+                    }
+                }
+            }
             
             const total = parseFloat(quantity) * parseFloat(price);
             totalAmount.value = total.toFixed(2);
@@ -630,6 +735,94 @@ if ($result && $row = $result->fetch_assoc()) {
         document.addEventListener('DOMContentLoaded', function() {
             updateStockNumbers();
             updateGrandTotal();
+            
+            // Set correct units for existing quantity inputs with pluralization
+            const quantityInputs = document.querySelectorAll('input[name="quantity[]"]');
+            quantityInputs.forEach(input => {
+                const quantity = parseFloat(input.value) || 0;
+                const row = input.closest('tr');
+                const unitSelect = row.querySelector('select[name="unit[]"]');
+                if (unitSelect && quantity > 0) {
+                    const currentValue = unitSelect.value;
+                    
+                    // Handle pluralization for common units
+                    const pluralMap = {
+                        'pc': 'pcs',
+                        'piece': 'pieces',
+                        'set': 'sets',
+                        'box': 'boxes',
+                        'carton': 'cartons',
+                        'pack': 'packs',
+                        'bottle': 'bottles',
+                        'liter': 'liters',
+                        'gallon': 'gallons',
+                        'kilogram': 'kilograms',
+                        'gram': 'grams',
+                        'meter': 'meters',
+                        'centimeter': 'centimeters',
+                        'foot': 'feet',
+                        'inch': 'inches',
+                        'dozen': 'dozens',
+                        'pair': 'pairs',
+                        'roll': 'rolls',
+                        'bag': 'bags',
+                        'canister': 'canisters',
+                        'jar': 'jars',
+                        'tube': 'tubes',
+                        'ream': 'reams',
+                        'case': 'cases',
+                        'barrel': 'barrels',
+                        'drum': 'drums',
+                        'pound': 'pounds',
+                        'ounce': 'ounces',
+                        'unit': 'units',
+                        'can': 'cans'
+                    };
+                    
+                    // Find the appropriate unit based on quantity
+                    let targetUnit = '';
+                    if (quantity === 1) {
+                        // Use singular form
+                        for (const [singular, plural] of Object.entries(pluralMap)) {
+                            if (currentValue === plural) {
+                                targetUnit = singular;
+                                break;
+                            } else if (currentValue === singular) {
+                                targetUnit = singular;
+                                break;
+                            }
+                        }
+                        // If no mapping found, keep current value
+                        if (!targetUnit && currentValue) {
+                            targetUnit = currentValue;
+                        }
+                    } else if (quantity > 1) {
+                        // Use plural form
+                        for (const [singular, plural] of Object.entries(pluralMap)) {
+                            if (currentValue === singular) {
+                                targetUnit = plural;
+                                break;
+                            } else if (currentValue === plural) {
+                                targetUnit = plural;
+                                break;
+                            }
+                        }
+                        // If no mapping found, keep current value
+                        if (!targetUnit && currentValue) {
+                            targetUnit = currentValue;
+                        }
+                    }
+                    
+                    // Set the unit if found
+                    if (targetUnit) {
+                        // Check if the target unit exists in the dropdown
+                        const optionExists = Array.from(unitSelect.options).some(option => option.value === targetUnit);
+                        if (optionExists) {
+                            unitSelect.value = targetUnit;
+                        }
+                    }
+                }
+            });
         });
         
     </script>

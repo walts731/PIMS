@@ -199,6 +199,24 @@ if (!$conn || $conn->connect_error) {
         box-shadow: 0 4px 16px rgba(0,0,0,0.15);
     }
     
+    .office-card-link {
+        display: block;
+        color: inherit;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+    
+    .office-card-link:hover {
+        color: inherit;
+        text-decoration: none;
+        transform: scale(1.02);
+    }
+    
+    .office-card-link:hover .office-card {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    }
+    
     .office-header {
         background: var(--primary-gradient);
         color: white;
@@ -778,60 +796,56 @@ if (!$conn || $conn->connect_error) {
                 <div class="row">
                     <?php foreach ($offices as $office): ?>
                         <div class="col-lg-6 col-xl-4">
-                            <div class="office-card">
-                                <div class="office-header">
-                                    <h4><?php echo htmlspecialchars($office['office_name'] ?? ''); ?></h4>
-                                    
-                                    <div class="office-stats">
-                                        <div class="stat-item">
-                                            <span class="stat-value"><?php echo number_format((int)($office['total_assets'] ?? 0)); ?></span>
-                                            <span class="stat-label">Total Assets</span>
+                            <a href="assets_per_office.php?office_id=<?php echo (int)$office['id']; ?>" class="text-decoration-none office-card-link">
+                                <div class="office-card">
+                                    <div class="office-header">
+                                        <h4><?php echo htmlspecialchars($office['office_name'] ?? ''); ?></h4>
+                                        
+                                        <div class="office-stats">
+                                            <div class="stat-item">
+                                                <span class="stat-value"><?php echo number_format((int)($office['total_assets'] ?? 0)); ?></span>
+                                                <span class="stat-label">Total Assets</span>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                
-                                <div class="office-details">
-                                    <div class="status-badges">
-                                        <?php if (($office['serviceable_count'] ?? 0) > 0): ?>
-                                            <span class="status-badge status-serviceable">
-                                                Serviceable: <?php echo (int)$office['serviceable_count']; ?>
-                                            </span>
-                                        <?php endif; ?>
-                                        <?php if (($office['unserviceable_count'] ?? 0) > 0): ?>
-                                            <span class="status-badge status-unserviceable">
-                                                Unserviceable: <?php echo (int)$office['unserviceable_count']; ?>
-                                            </span>
-                                        <?php endif; ?>
-                                        <?php if (($office['red_tagged_count'] ?? 0) > 0): ?>
-                                            <span class="status-badge status-red-tagged">
-                                                Red-Tagged: <?php echo (int)$office['red_tagged_count']; ?>
-                                            </span>
-                                        <?php endif; ?>
-                                        <?php if (($office['borrowed_count'] ?? 0) > 0): ?>
-                                            <span class="status-badge status-borrowed">
-                                                Borrowed: <?php echo (int)$office['borrowed_count']; ?>
-                                            </span>
-                                        <?php endif; ?>
-                                        <?php if (($office['no_tag_count'] ?? 0) > 0): ?>
-                                            <span class="status-badge status-no-tag">
-                                                No Tag: <?php echo (int)$office['no_tag_count']; ?>
-                                            </span>
-                                        <?php endif; ?>
+                                    
+                                    <div class="office-details">
+                                        <div class="status-badges">
+                                            <?php if (($office['serviceable_count'] ?? 0) > 0): ?>
+                                                <span class="status-badge status-serviceable">
+                                                    Serviceable: <?php echo (int)$office['serviceable_count']; ?>
+                                                </span>
+                                            <?php endif; ?>
+                                            <?php if (($office['unserviceable_count'] ?? 0) > 0): ?>
+                                                <span class="status-badge status-unserviceable">
+                                                    Unserviceable: <?php echo (int)$office['unserviceable_count']; ?>
+                                                </span>
+                                            <?php endif; ?>
+                                            <?php if (($office['red_tagged_count'] ?? 0) > 0): ?>
+                                                <span class="status-badge status-red-tagged">
+                                                    Red-Tagged: <?php echo (int)$office['red_tagged_count']; ?>
+                                                </span>
+                                            <?php endif; ?>
+                                            <?php if (($office['borrowed_count'] ?? 0) > 0): ?>
+                                                <span class="status-badge status-borrowed">
+                                                    Borrowed: <?php echo (int)$office['borrowed_count']; ?>
+                                                </span>
+                                            <?php endif; ?>
+                                            <?php if (($office['no_tag_count'] ?? 0) > 0): ?>
+                                                <span class="status-badge status-no-tag">
+                                                    No Tag: <?php echo (int)$office['no_tag_count']; ?>
+                                                </span>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="office-actions">
+                                        <span class="text-primary small">
+                                            <i class="bi bi-arrow-right-circle"></i> Click to view details
+                                        </span>
                                     </div>
                                 </div>
-                                
-                                <div class="office-actions">
-                                    <a href="assets_per_office.php?office_id=<?php echo (int)$office['id']; ?>" class="btn btn-outline-primary btn-sm me-2">
-                                        <i class="bi bi-box-seam"></i> View Assets
-                                    </a>
-                                    <a href="assets.php?office_id=<?php echo (int)$office['id']; ?>" class="btn btn-outline-info btn-sm me-2">
-                                        <i class="bi bi-collection"></i> Asset Items
-                                    </a>
-                                    <a href="assets.php?status=borrowed&office=<?php echo urlencode($office['office_name'] ?? ''); ?>" class="btn btn-outline-warning btn-sm">
-                                        <i class="bi bi-arrow-left-right"></i> Borrowed
-                                    </a>
-                                </div>
-                            </div>
+                            </a>
                         </div>
                     <?php endforeach; ?>
                 </div>

@@ -228,8 +228,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($has_property_numbers) {
             // Update the property number counter
             $update_counter = $conn->prepare("UPDATE tag_formats SET current_number = current_number + 1 WHERE tag_type = 'property_no' AND status = 'active'");
-            $update_counter->execute();
-            $update_counter->close();
+            if ($update_counter) {
+                if (!$update_counter->execute()) {
+                    error_log("Failed to update property number counter: " . $update_counter->error);
+                    // Don't throw exception here, just log the error as it's not critical
+                }
+                $update_counter->close();
+            } else {
+                error_log("Failed to prepare property number counter update: " . $conn->error);
+            }
         }
         
         // Log the action
@@ -271,7 +278,7 @@ function createMainUserNotificationsForPAR($descriptions, $asset_ids) {
     global $conn;
     
     // Get all MAIN_USER users
-    $main_users_query = "SELECT id FROM users WHERE role = 'main_user' AND status = 'active'";
+    $main_users_query = "SELECT id FROM users WHERE role = 'main_user' AND is_active = 1";
     $main_users_result = $conn->query($main_users_query);
     
     if ($main_users_result && $main_users_result->num_rows > 0) {

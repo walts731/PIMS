@@ -1,4 +1,29 @@
 <?php
+// Common units for dropdown (same as par_form.php)
+$common_units = [
+    'pc', 'pcs',
+    'piece', 'pieces',
+    'set', 'sets',
+    'unit', 'units',
+    'box', 'boxes',
+    'carton', 'cartons',
+    'pack', 'packs',
+    'package', 'packages',
+    'liter', 'liters',
+    'kilogram', 'kilograms',
+    'meter', 'meters',
+    'square_meter', 'square_meters',
+    'cubic_meter', 'cubic_meters',
+    'pair', 'pairs',
+    'dozen', 'dozens',
+    'roll', 'rolls',
+    'bottle', 'bottles',
+    'bag', 'bags',
+    'container', 'containers',
+    'ream', 'reams'
+];
+
+ob_start();
 session_start();
 require_once '../config.php';
 require_once '../includes/system_functions.php';
@@ -38,6 +63,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     $unit = trim($_POST['unit'] ?? '');
     $unit_cost = floatval($_POST['unit_cost'] ?? 0);
     $office_id = intval($_POST['office_id'] ?? 0);
+    $asset_subcategory_id = trim($_POST['asset_subcategory_id'] ?? '');
+    $property_numbers = trim($_POST['property_numbers'] ?? '');
+    
+    // Parse property numbers into array
+    $property_numbers_array = [];
+    if (!empty($property_numbers)) {
+        $property_numbers_array = array_map('trim', explode("\n", $property_numbers));
+        $property_numbers_array = array_filter($property_numbers_array, function($num) {
+            return !empty($num);
+        });
+    }
     
     // Get category code for specific data handling
     $category_code = '';
@@ -103,12 +139,30 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                         $item_status = 'no_tag';
                         $acquisition_date = date('Y-m-d');
                         
+                        // First create asset item without property number (like PAR)
                         $item_sql = "INSERT INTO asset_items (asset_id, description, status, value, acquisition_date, office_id) 
                                      VALUES ('$asset_id', '$item_description', '$item_status', '$unit_cost', '$acquisition_date', '$office_id')";
                         error_log("DEBUG: Item SQL: " . $item_sql);
                         
                         if ($conn->query($item_sql)) {
-                            error_log("DEBUG: Successfully created item $i with ID: " . $conn->insert_id);
+                            $asset_item_id = $conn->insert_id;
+                            error_log("DEBUG: Successfully created item $i with ID: " . $asset_item_id);
+                            
+                            // Then assign property number if available (like PAR)
+                            $item_property_number = '';
+                            if (isset($property_numbers_array[$i - 1])) {
+                                $item_property_number = mysqli_real_escape_string($conn, $property_numbers_array[$i - 1]);
+                                
+                                // Update asset item with property number only (keep no_tag status)
+                                $update_sql = "UPDATE asset_items SET property_no = ? WHERE id = ?";
+                                $update_stmt = $conn->prepare($update_sql);
+                                if ($update_stmt) {
+                                    $update_stmt->bind_param("si", $item_property_number, $asset_item_id);
+                                    $update_stmt->execute();
+                                    $update_stmt->close();
+                                    error_log("DEBUG: Updated item $asset_item_id with property number: $item_property_number (status remains no_tag)");
+                                }
+                            }
                         } else {
                             error_log("DEBUG: Failed to create item $i - Error: " . $conn->error);
                         }
@@ -167,12 +221,30 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                         $item_status = 'no_tag';
                         $acquisition_date = date('Y-m-d');
                         
+                        // First create asset item without property number (like PAR)
                         $item_sql = "INSERT INTO asset_items (asset_id, description, status, value, acquisition_date, office_id) 
                                      VALUES ('$asset_id', '$item_description', '$item_status', '$unit_cost', '$acquisition_date', '$office_id')";
                         error_log("DEBUG: New Item SQL: " . $item_sql);
                         
                         if ($conn->query($item_sql)) {
-                            error_log("DEBUG: Successfully created new item $i with ID: " . $conn->insert_id);
+                            $asset_item_id = $conn->insert_id;
+                            error_log("DEBUG: Successfully created new item $i with ID: " . $asset_item_id);
+                            
+                            // Then assign property number if available (like PAR)
+                            $item_property_number = '';
+                            if (isset($property_numbers_array[$i - 1])) {
+                                $item_property_number = mysqli_real_escape_string($conn, $property_numbers_array[$i - 1]);
+                                
+                                // Update asset item with property number only (keep no_tag status)
+                                $update_sql = "UPDATE asset_items SET property_no = ? WHERE id = ?";
+                                $update_stmt = $conn->prepare($update_sql);
+                                if ($update_stmt) {
+                                    $update_stmt->bind_param("si", $item_property_number, $asset_item_id);
+                                    $update_stmt->execute();
+                                    $update_stmt->close();
+                                    error_log("DEBUG: Updated new item $asset_item_id with property number: $item_property_number (status remains no_tag)");
+                                }
+                            }
                         } else {
                             error_log("DEBUG: Failed to create new item $i - Error: " . $conn->error);
                         }
@@ -348,7 +420,7 @@ if ($category_filter > 0) {
 // Get offices for dropdown
 $offices = [];
 try {
-    $result = $conn->query("SELECT id, office_name FROM offices WHERE status = 'active' ORDER BY office_name");
+    $result = $conn->query("SELECT id, office_name, office_code FROM offices WHERE status = 'active' ORDER BY office_name");
     if ($result) {
         while ($row = $result->fetch_assoc()) {
             $offices[] = $row;
@@ -493,6 +565,45 @@ try {
         
         .table-hover tbody tr:hover {
             background-color: rgba(25, 27, 169, 0.05);
+        }
+        
+        .property-number-field {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .property-number-field input {
+            flex: 1;
+        }
+        
+        .property-number-field .btn {
+            flex-shrink: 0;
+        }
+        
+        .generator-modal .form-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .generator-modal .card {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+        }
+        
+        .generator-modal #assetPropertyNumberPreview {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        
+        /* Ensure Property Number Generator Modal appears above Add Asset Modal */
+        #assetPropertyNumberGeneratorModal {
+            z-index: 1060 !important;
+        }
+        
+        #addAssetModal {
+            z-index: 1055 !important;
         }
     </style>
 </head>
@@ -679,6 +790,130 @@ try {
     <?php require_once 'includes/logout-modal.php'; ?>
     <?php require_once 'includes/change-password-modal.php'; ?>
     
+    <!-- Asset Property Number Generator Modal -->
+    <div class="modal fade generator-modal" id="assetPropertyNumberGeneratorModal" tabindex="-1" aria-labelledby="assetPropertyNumberGeneratorModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="assetPropertyNumberGeneratorModalLabel">
+                        <i class="bi bi-gear"></i> Property Number Generator
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info" id="assetQuantityInfo">
+                        <i class="bi bi-info-circle"></i> <span id="assetQuantityText">Generating property numbers for asset quantity</span>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label"><strong>Form Type:</strong></label>
+                            <input type="text" class="form-control" id="assetFormType" value="07" readonly>
+                            <small class="text-muted">Auto-detected: Property Acknowledgment Receipt</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label"><strong>Fund:</strong></label>
+                            <select class="form-select" id="assetFundSelect">
+                                <option value="">Select Fund</option>
+                                <?php 
+                                // Get funds for dropdown
+                                $funds_result = $conn->query("SELECT fund_code, fund_name, fund_cluster FROM funds WHERE status = 'active' ORDER BY fund_code");
+                                if ($funds_result) {
+                                    while ($fund = $funds_result->fetch_assoc()) {
+                                        // Extract numeric part from fund code (e.g., "05" from "GEN-2025")
+                                        preg_match('/(\d{2})$/', $fund['fund_code'], $matches);
+                                        $fund_code = isset($matches[1]) ? $matches[1] : '05';
+                                        echo '<option value="' . $fund_code . '">' . htmlspecialchars($fund['fund_name']) . ' (' . htmlspecialchars($fund['fund_code']) . ')</option>';
+                                    }
+                                }
+                                ?>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <label class="form-label"><strong>Asset Category:</strong></label>
+                            <select class="form-select" id="assetCategorySelectGen">
+                                <option value="">Select Category</option>
+                                <?php 
+                                // Reset pointer and get categories for generator
+                                $categories_result = $conn->query("SELECT category_code, category_name FROM asset_categories WHERE status = 'active' ORDER BY category_code");
+                                if ($categories_result) {
+                                    while ($category = $categories_result->fetch_assoc()) {
+                                        echo '<option value="' . htmlspecialchars($category['category_code']) . '">' . htmlspecialchars($category['category_name']) . '</option>';
+                                    }
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label"><strong>Asset Subcategory:</strong></label>
+                            <select class="form-select" id="assetSubcategorySelectGen">
+                                <option value="">Select Subcategory</option>
+                                <?php 
+                                // Reset and fetch subcategories again for generator
+                                $subcategories_result_gen = $conn->query("SELECT sc.sub_category_code, sc.sub_category_name, ac.category_code FROM asset_sub_categories sc JOIN asset_categories ac ON sc.asset_categories_id = ac.id WHERE sc.status = 'active' ORDER BY ac.category_code, sc.sub_category_code");
+                                if ($subcategories_result_gen) {
+                                    while ($subcategory = $subcategories_result_gen->fetch_assoc()) {
+                                        echo '<option value="' . htmlspecialchars($subcategory['sub_category_code']) . '" data-category="' . htmlspecialchars($subcategory['category_code']) . '">' . htmlspecialchars($subcategory['sub_category_name']) . '</option>';
+                                    }
+                                }
+                                ?>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <label class="form-label"><strong>Quantity:</strong></label>
+                            <input type="number" class="form-control" id="assetQuantityInput" min="1" value="1" onchange="updateAssetQuantityInfo()">
+                            <small class="text-muted">Number of property numbers to generate</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label"><strong>Office:</strong></label>
+                            <input type="text" class="form-control" id="assetSelectedOfficeDisplay" readonly>
+                            <small class="text-muted">Based on selected Office in form</small>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-12">
+                            <label class="form-label"><strong>Series (Auto-increment):</strong></label>
+                            <input type="text" class="form-control" id="assetSeriesInput" value="<?php echo $next_series ?? '01'; ?>" readonly>
+                            <small class="text-muted">Auto-generated next available series number</small>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="bi bi-eye"></i> Preview</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <h4 id="assetPropertyNumberPreview" class="text-primary mb-0">-</h4>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <button type="button" class="btn btn-success" onclick="generateAssetPropertyNumberPreview()">
+                                            <i class="bi bi-arrow-clockwise"></i> Generate
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="applyAssetPropertyNumber()">
+                        <i class="bi bi-check-circle"></i> Apply Property Numbers
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Add Asset Modal -->
     <div class="modal fade" id="addAssetModal" tabindex="-1">
         <div class="modal-dialog">
@@ -693,13 +928,29 @@ try {
                         
                         <div class="mb-3">
                             <label class="form-label">Category *</label>
-                            <select class="form-select" name="asset_categories_id" required>
+                            <select class="form-select" name="asset_categories_id" id="assetCategorySelect" required>
                                 <option value="">Select Category</option>
                                 <?php foreach ($categories as $category): ?>
-                                    <option value="<?php echo $category['id']; ?>">
+                                    <option value="<?php echo $category['id']; ?>" data-category-code="<?php echo htmlspecialchars($category['category_code']); ?>">
                                         <?php echo htmlspecialchars($category['category_code'] . ' - ' . $category['category_name']); ?>
                                     </option>
                                 <?php endforeach; ?>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Subcategory</label>
+                            <select class="form-select" name="asset_subcategory_id" id="assetSubcategorySelect">
+                                <option value="">Select Subcategory</option>
+                                <?php 
+                                // Get all subcategories for generator
+                                $all_subcategories_result = $conn->query("SELECT sc.sub_category_code, sc.sub_category_name, ac.category_code, ac.id as category_id FROM asset_sub_categories sc JOIN asset_categories ac ON sc.asset_categories_id = ac.id WHERE sc.status = 'active' ORDER BY ac.category_code, sc.sub_category_code");
+                                if ($all_subcategories_result) {
+                                    while ($subcategory = $all_subcategories_result->fetch_assoc()) {
+                                        echo '<option value="' . htmlspecialchars($subcategory['sub_category_code']) . '" data-category="' . htmlspecialchars($subcategory['category_code']) . '" data-category-id="' . $subcategory['category_id'] . '">' . htmlspecialchars($subcategory['sub_category_name']) . '</option>';
+                                    }
+                                }
+                                ?>
                             </select>
                         </div>
                         
@@ -718,25 +969,11 @@ try {
                             <div class="col-md-4">
                                 <div class="mb-3">
                                     <label class="form-label">Unit *</label>
-                                    <select class="form-select" name="unit" required>
+                                    <select class="form-select" name="unit" id="assetUnitSelect" required>
                                         <option value="">Select Unit</option>
-                                        <option value="pcs">Pieces (pcs)</option>
-                                        <option value="units">Units</option>
-                                        <option value="sets">Sets</option>
-                                        <option value="boxes">Boxes</option>
-                                        <option value="packages">Packages</option>
-                                        <option value="liters">Liters</option>
-                                        <option value="kilograms">Kilograms (kg)</option>
-                                        <option value="meters">Meters (m)</option>
-                                        <option value="square_meters">Square Meters (m²)</option>
-                                        <option value="cubic_meters">Cubic Meters (m³)</option>
-                                        <option value="pairs">Pairs</option>
-                                        <option value="dozens">Dozens</option>
-                                        <option value="rolls">Rolls</option>
-                                        <option value="bottles">Bottles</option>
-                                        <option value="bags">Bags</option>
-                                        <option value="containers">Containers</option>
-                                        <option value="other">Other</option>
+                                        <?php foreach ($common_units as $unit): ?>
+                                            <option value="<?php echo htmlspecialchars($unit); ?>"><?php echo htmlspecialchars(ucfirst($unit)); ?></option>
+                                        <?php endforeach; ?>
                                     </select>
                                 </div>
                             </div>
@@ -750,14 +987,25 @@ try {
                         
                         <div class="mb-3">
                             <label class="form-label">Office *</label>
-                            <select class="form-select" name="office_id" required>
+                            <select class="form-select" name="office_id" id="assetOfficeSelect" required>
                                 <option value="">Select Office</option>
                                 <?php foreach ($offices as $office): ?>
-                                    <option value="<?php echo $office['id']; ?>">
+                                    <option value="<?php echo $office['id']; ?>" data-office-code="<?php echo htmlspecialchars($office['office_code']); ?>">
                                         <?php echo htmlspecialchars($office['office_name']); ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Property Numbers</label>
+                            <div class="property-number-field">
+                                <textarea class="form-control" name="property_numbers" id="assetPropertyNumbers" rows="3" readonly placeholder="Click 'Generate Property Numbers' to create property numbers"></textarea>
+                                <button type="button" class="btn btn-outline-primary mt-2" onclick="showAssetPropertyNumberGenerator()" title="Generate Property Numbers">
+                                    <i class="bi bi-gear"></i> Generate Property Numbers
+                                </button>
+                            </div>
+                            <small class="text-muted">Format: YEAR-FORM-FUND-CATEGORY-SUBCATEGORY+SERIES-OFFICE</small>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -972,6 +1220,342 @@ try {
             a.click();
             window.URL.revokeObjectURL(url);
         }
+        
+        // Asset Property Number Generator Functions
+        function showAssetPropertyNumberGenerator() {
+            // Close any open modals first
+            const addAssetModal = bootstrap.Modal.getInstance(document.getElementById('addAssetModal'));
+            if (addAssetModal) {
+                addAssetModal.hide();
+            }
+            
+            const quantityInput = document.querySelector('input[name="quantity"]');
+            const quantity = parseInt(quantityInput.value) || 1;
+            
+            // Set quantity in generator
+            document.getElementById('assetQuantityInput').value = quantity;
+            updateAssetQuantityInfo();
+            
+            // Get selected office and update display
+            const officeSelect = document.getElementById('assetOfficeSelect');
+            const officeOption = officeSelect.options[officeSelect.selectedIndex];
+            const officeDisplay = document.getElementById('assetSelectedOfficeDisplay');
+            if (officeDisplay && officeOption) {
+                officeDisplay.value = officeOption.textContent;
+            }
+            
+            // Get selected category and update generator
+            const categorySelect = document.getElementById('assetCategorySelect');
+            const categoryOption = categorySelect.options[categorySelect.selectedIndex];
+            const categoryCode = categoryOption ? categoryOption.getAttribute('data-category-code') : '';
+            const generatorCategorySelect = document.getElementById('assetCategorySelectGen');
+            if (categoryCode && generatorCategorySelect) {
+                generatorCategorySelect.value = categoryCode;
+            }
+            
+            // Set form type based on unit cost
+            const unitCostInput = document.querySelector('input[name="unit_cost"]');
+            const formTypeInput = document.getElementById('assetFormType');
+            if (unitCostInput && formTypeInput) {
+                const unitCost = parseFloat(unitCostInput.value) || 0;
+                const formType = unitCost < 50000 ? '04' : '07';
+                formTypeInput.value = formType;
+                
+                // Update the description text
+                const formTypeDescription = formType === '04' ? 
+                    'Auto-detected: Request for Obligation (Below ₱50,000)' : 
+                    'Auto-detected: Property Acknowledgment Receipt (₱50,000 and above)';
+                formTypeInput.nextElementSibling.textContent = formTypeDescription;
+            }
+            
+            // Get next series number
+            getNextAssetSeriesNumber();
+            
+            // Show modal with higher z-index handling
+            const modal = new bootstrap.Modal(document.getElementById('assetPropertyNumberGeneratorModal'), {
+                backdrop: true,
+                keyboard: true
+            });
+            
+            // Ensure proper modal stacking
+            document.getElementById('assetPropertyNumberGeneratorModal').style.zIndex = '1060';
+            
+            modal.show();
+            
+            // Auto-generate initial preview after a short delay
+            setTimeout(() => {
+                generateAssetPropertyNumberPreview();
+            }, 100);
+        }
+        
+        function updateAssetQuantityInfo() {
+            const quantity = parseInt(document.getElementById('assetQuantityInput').value) || 1;
+            const quantityText = document.getElementById('assetQuantityText');
+            if (quantity === 1) {
+                quantityText.textContent = 'Generating 1 property number';
+            } else {
+                quantityText.textContent = `Generating ${quantity} property numbers`;
+            }
+        }
+        
+        function getNextAssetSeriesNumber() {
+            fetch('../api/get_next_series.php', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.next_series) {
+                    document.getElementById('assetSeriesInput').value = data.next_series;
+                    generateAssetPropertyNumberPreview();
+                }
+            })
+            .catch(error => {
+                console.error('Error getting next property number series:', error);
+                generateAssetPropertyNumberPreview();
+            });
+        }
+        
+        function generateAssetPropertyNumberPreview() {
+            const year = new Date().getFullYear();
+            const formType = document.getElementById('assetFormType').value || '07';
+            const fund = document.getElementById('assetFundSelect').value || '05';
+            const category = document.getElementById('assetCategorySelectGen').value || '030';
+            const subcategory = document.getElementById('assetSubcategorySelectGen').value || '01';
+            const baseSeries = document.getElementById('assetSeriesInput').value || '01';
+            const quantity = parseInt(document.getElementById('assetQuantityInput').value) || 1;
+            
+            // Get office code from main form
+            const officeSelect = document.getElementById('assetOfficeSelect');
+            const officeOption = officeSelect.options[officeSelect.selectedIndex];
+            const officeCode = officeOption ? officeOption.getAttribute('data-office-code') : '01';
+            
+            // Update office display
+            const officeDisplay = document.getElementById('assetSelectedOfficeDisplay');
+            if (officeDisplay && officeOption) {
+                officeDisplay.value = officeOption.textContent;
+            }
+            
+            // Generate multiple property numbers
+            const propertyNumbers = [];
+            for (let i = 0; i < quantity; i++) {
+                const currentSeriesNumber = parseInt(baseSeries) + i;
+                const currentSeries = String(currentSeriesNumber).padStart(2, '0');
+                
+                // Combine subcategory and series without dash
+                const subcategorySeries = subcategory + currentSeries;
+                
+                const propertyNumber = `${year}-${formType}-${fund}-${category}-${subcategorySeries}-${officeCode}`;
+                propertyNumbers.push(propertyNumber);
+            }
+            
+            // Display in preview
+            const previewElement = document.getElementById('assetPropertyNumberPreview');
+            if (quantity === 1) {
+                previewElement.textContent = propertyNumbers[0];
+            } else {
+                previewElement.innerHTML = propertyNumbers.join('<br>');
+                previewElement.style.fontSize = '14px';
+                previewElement.style.lineHeight = '1.4';
+            }
+        }
+        
+        function applyAssetPropertyNumber() {
+            const previewElement = document.getElementById('assetPropertyNumberPreview');
+            const propertyNumbers = previewElement.innerHTML.split('<br>').filter(num => num.trim());
+            
+            if (propertyNumbers.length === 0 || propertyNumbers[0] === '-') {
+                alert('Please generate property numbers first.');
+                return;
+            }
+            
+            const propertyNumbersField = document.getElementById('assetPropertyNumbers');
+            if (propertyNumbersField && propertyNumbers.length > 0) {
+                propertyNumbersField.value = propertyNumbers.join('\n');
+                
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('assetPropertyNumberGeneratorModal'));
+                modal.hide();
+            }
+        }
+        
+        // Setup subcategory filtering for asset generator
+        document.addEventListener('DOMContentLoaded', function() {
+            // Category/subcategory filtering for the main form
+            const assetCategorySelect = document.getElementById('assetCategorySelect');
+            const assetSubcategorySelect = document.getElementById('assetSubcategorySelect');
+            
+            if (assetCategorySelect && assetSubcategorySelect) {
+                assetCategorySelect.addEventListener('change', function() {
+                    const selectedCategoryCode = this.options[this.selectedIndex].getAttribute('data-category-code');
+                    const options = assetSubcategorySelect.querySelectorAll('option');
+                    
+                    options.forEach(option => {
+                        if (option.value === '') {
+                            option.style.display = 'block';
+                        } else {
+                            const optionCategory = option.getAttribute('data-category');
+                            const shouldShow = optionCategory === selectedCategoryCode || selectedCategoryCode === '';
+                            option.style.display = shouldShow ? 'block' : 'none';
+                        }
+                    });
+                    
+                    // Reset subcategory if it doesn't match the new category
+                    if (assetSubcategorySelect.value && assetSubcategorySelect.options[assetSubcategorySelect.selectedIndex].getAttribute('data-category') !== selectedCategoryCode) {
+                        assetSubcategorySelect.value = '';
+                    }
+                });
+            }
+            
+            // Category/subcategory filtering for the generator
+            const generatorCategorySelect = document.getElementById('assetCategorySelectGen');
+            const generatorSubcategorySelect = document.getElementById('assetSubcategorySelectGen');
+            
+            if (generatorCategorySelect && generatorSubcategorySelect) {
+                generatorCategorySelect.addEventListener('change', function() {
+                    const selectedCategory = this.value;
+                    const options = generatorSubcategorySelect.querySelectorAll('option');
+                    
+                    options.forEach(option => {
+                        if (option.value === '') {
+                            option.style.display = 'block';
+                        } else {
+                            const optionCategory = option.getAttribute('data-category');
+                            const shouldShow = optionCategory === selectedCategory || selectedCategory === '';
+                            option.style.display = shouldShow ? 'block' : 'none';
+                        }
+                    });
+                    
+                    // Reset subcategory if it doesn't match the new category
+                    if (generatorSubcategorySelect.value && generatorSubcategorySelect.options[generatorSubcategorySelect.selectedIndex].getAttribute('data-category') !== selectedCategory) {
+                        generatorSubcategorySelect.value = '';
+                    }
+                    
+                    generateAssetPropertyNumberPreview();
+                });
+                
+                generatorSubcategorySelect.addEventListener('change', function() {
+                    generateAssetPropertyNumberPreview();
+                });
+            }
+            
+            // Auto-update preview when any field changes
+            const fields = ['assetFundSelect', 'assetCategorySelectGen', 'assetSubcategorySelectGen', 'assetQuantityInput'];
+            fields.forEach(fieldId => {
+                const element = document.getElementById(fieldId);
+                if (element) {
+                    element.addEventListener('change', generateAssetPropertyNumberPreview);
+                    element.addEventListener('input', generateAssetPropertyNumberPreview);
+                }
+            });
+            
+            // Update office display when office changes
+            const assetOfficeSelect = document.getElementById('assetOfficeSelect');
+            if (assetOfficeSelect) {
+                assetOfficeSelect.addEventListener('change', function() {
+                    const officeOption = this.options[this.selectedIndex];
+                    const officeDisplay = document.getElementById('assetSelectedOfficeDisplay');
+                    if (officeDisplay && officeOption) {
+                        officeDisplay.value = officeOption.textContent;
+                    }
+                    generateAssetPropertyNumberPreview();
+                });
+            }
+        });
+        
+        // Auto-set unit based on quantity with pluralization (same as par_form.php)
+        function autoSetUnitBasedOnQuantity() {
+            const quantityInput = document.querySelector('input[name="quantity"]');
+            const unitSelect = document.getElementById('assetUnitSelect');
+            
+            if (!quantityInput || !unitSelect) return;
+            
+            const quantity = parseFloat(quantityInput.value) || 0;
+            if (quantity <= 0) return;
+            
+            const currentValue = unitSelect.value;
+            
+            // Handle pluralization for common units
+            const pluralMap = {
+                'pc': 'pcs',
+                'piece': 'pieces',
+                'set': 'sets',
+                'unit': 'units',
+                'box': 'boxes',
+                'carton': 'cartons',
+                'pack': 'packs',
+                'package': 'packages',
+                'liter': 'liters',
+                'kilogram': 'kilograms',
+                'meter': 'meters',
+                'square_meter': 'square_meters',
+                'cubic_meter': 'cubic_meters',
+                'pair': 'pairs',
+                'dozen': 'dozens',
+                'roll': 'rolls',
+                'bottle': 'bottles',
+                'bag': 'bags',
+                'container': 'containers',
+                'ream': 'reams'
+            };
+            
+            // Find the appropriate unit based on quantity
+            let targetUnit = '';
+            if (quantity === 1) {
+                // Use singular form
+                for (const [singular, plural] of Object.entries(pluralMap)) {
+                    if (currentValue === plural) {
+                        targetUnit = singular;
+                        break;
+                    } else if (currentValue === singular) {
+                        targetUnit = singular;
+                        break;
+                    }
+                }
+                // If no mapping found, keep current value
+                if (!targetUnit && currentValue) {
+                    targetUnit = currentValue;
+                }
+            } else if (quantity > 1) {
+                // Use plural form
+                for (const [singular, plural] of Object.entries(pluralMap)) {
+                    if (currentValue === singular) {
+                        targetUnit = plural;
+                        break;
+                    } else if (currentValue === plural) {
+                        targetUnit = plural;
+                        break;
+                    }
+                }
+                // If no mapping found, keep current value
+                if (!targetUnit && currentValue) {
+                    targetUnit = currentValue;
+                }
+            }
+            
+            // Set the unit if found
+            if (targetUnit) {
+                // Check if the target unit exists in the dropdown
+                const optionExists = Array.from(unitSelect.options).some(option => option.value === targetUnit);
+                if (optionExists) {
+                    unitSelect.value = targetUnit;
+                }
+            }
+        }
+        
+        // Add event listener for quantity change
+        document.addEventListener('DOMContentLoaded', function() {
+            const quantityInput = document.querySelector('input[name="quantity"]');
+            if (quantityInput) {
+                quantityInput.addEventListener('input', autoSetUnitBasedOnQuantity);
+                quantityInput.addEventListener('change', autoSetUnitBasedOnQuantity);
+                
+                // Set initial unit if quantity has a value
+                autoSetUnitBasedOnQuantity();
+            }
+        });
     </script>
 </body>
 </html>
@@ -982,7 +1566,7 @@ function createMainUserNotification($asset_id, $asset_description) {
     global $conn;
     
     // Get all MAIN_USER users
-    $main_users_query = "SELECT id FROM users WHERE role = 'main_user' AND status = 'active'";
+    $main_users_query = "SELECT id FROM users WHERE role = 'main_user' AND is_active = 1";
     $main_users_result = $conn->query($main_users_query);
     
     if ($main_users_result && $main_users_result->num_rows > 0) {
