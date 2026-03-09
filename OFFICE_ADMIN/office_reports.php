@@ -56,17 +56,20 @@ $report_data = [
 
 if ($office_id && $conn) {
     try {
-        // Request Statistics
+        // Request Statistics - Enhanced with comprehensive status breakdown
         $request_query = "SELECT 
                             COUNT(*) as total_requests,
                             SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_requests,
                             SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved_requests,
                             SUM(CASE WHEN status = 'denied' THEN 1 ELSE 0 END) as denied_requests,
-                            SUM(CASE WHEN status = 'returned' THEN 1 ELSE 0 END) as completed_requests
+                            SUM(CASE WHEN status = 'returned' THEN 1 ELSE 0 END) as returned_requests,
+                            SUM(CASE WHEN status = 'borrowed' THEN 1 ELSE 0 END) as borrowed_requests,
+                            SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled_requests
                          FROM borrow_requests 
-                         WHERE requested_to_office = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+                         WHERE (requested_to_office = ? OR requested_by_office = ?) 
+                         AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
         $stmt = $conn->prepare($request_query);
-        $stmt->bind_param("i", $office_id);
+        $stmt->bind_param("ii", $office_id, $office_id);
         $stmt->execute();
         $result = $stmt->get_result();
         if ($result) {
@@ -676,21 +679,32 @@ $report_data['asset_stats']['total_asset_value'] = number_format($report_data['a
     <script>
         // Initialize Charts
         document.addEventListener('DOMContentLoaded', function() {
-            // Request Status Chart
+            // Request Status Chart - Enhanced with comprehensive status breakdown
             const requestStatusCtx = document.getElementById('requestStatusChart').getContext('2d');
             new Chart(requestStatusCtx, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Pending', 'Approved', 'Denied', 'Completed'],
+                    labels: ['Pending', 'Approved', 'Denied', 'Returned', 'Borrowed', 'Cancelled'],
                     datasets: [{
                         data: [
                             <?php echo $report_data['request_stats']['pending_requests']; ?>,
                             <?php echo $report_data['request_stats']['approved_requests']; ?>,
                             <?php echo $report_data['request_stats']['denied_requests']; ?>,
-                            <?php echo $report_data['request_stats']['completed_requests']; ?>
+                            <?php echo $report_data['request_stats']['returned_requests']; ?>,
+                            <?php echo $report_data['request_stats']['borrowed_requests']; ?>,
+                            <?php echo $report_data['request_stats']['cancelled_requests']; ?>
                         ],
-                        backgroundColor: ['#ffc107', '#28a745', '#dc3545', '#6f42c1'],
-                        borderWidth: 0
+                        backgroundColor: [
+                            '#ffc107', // Pending - Yellow
+                            '#28a745', // Approved - Green
+                            '#dc3545', // Denied - Red
+                            '#6f42c1', // Returned - Purple
+                            '#17a2b8', // Borrowed - Blue
+                            '#6c757d'  // Cancelled - Gray
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#fff',
+                        hoverOffset: 8
                     }]
                 },
                 options: {
@@ -698,8 +712,38 @@ $report_data['asset_stats']['total_asset_value'] = number_format($report_data['a
                     maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            position: 'bottom'
+                            position: 'bottom',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 15,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            padding: 12,
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            borderColor: '#ddd',
+                            borderWidth: 1,
+                            displayColors: true,
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = total > 0 ? ((context.parsed / total) * 100).toFixed(1) : 0;
+                                    return context.label + ': ' + context.parsed + ' (' + percentage + '%)';
+                                }
+                            }
                         }
+                    },
+                    cutout: '60%',
+                    animation: {
+                        animateRotate: true,
+                        animateScale: true,
+                        duration: 1000,
+                        easing: 'easeInOutQuart'
                     }
                 }
             });
