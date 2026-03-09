@@ -425,29 +425,23 @@ $page_title = 'Office Dashboard';
         </div>
         
         <!-- Office Overview Cards -->
-        <div class="row mb-4">
-            <div class="col-lg-3 col-md-6">
+        <div class="row mb-4 justify-content-center">
+            <div class="col-lg-4 col-md-6">
                 <div class="office-metric-card">
                     <div class="office-metric-number"><?php echo $stats['total_office_items']; ?></div>
                     <div class="office-metric-label"><i class="bi bi-box-seam"></i> Office Assets</div>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg-4 col-md-6">
                 <div class="office-metric-card">
                     <div class="office-metric-number"><?php echo $stats['office_consumables_count']; ?></div>
                     <div class="office-metric-label"><i class="bi bi-archive"></i> Consumables</div>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg-4 col-md-6">
                 <div class="office-metric-card">
                     <div class="office-metric-number"><?php echo $stats['pending_requests']; ?></div>
                     <div class="office-metric-label"><i class="bi bi-send"></i> Pending Requests</div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="office-metric-card">
-                    <div class="office-metric-number">₱<?php echo number_format($stats['total_office_value'], 0); ?></div>
-                    <div class="office-metric-label"><i class="bi bi-currency-dollar"></i> Asset Value</div>
                 </div>
             </div>
         </div>
