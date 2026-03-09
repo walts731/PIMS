@@ -1171,7 +1171,18 @@ if ($office_id && $conn) {
         // View Details
         function viewDetails(requestId) {
             fetch(`../api/get_request_details_simple.php?request_id=${requestId}`)
-                .then(response => response.json())
+                .then(response => {
+                    // Check if response is actually JSON
+                    const contentType = response.headers.get('content-type');
+                    if (!contentType || !contentType.includes('application/json')) {
+                        // Clone response to read it as text for debugging
+                        return response.clone().text().then(text => {
+                            console.error('Expected JSON but got:', text.substring(0, 200));
+                            throw new Error('Server returned non-JSON response. Check console for details.');
+                        });
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     if (data.error) {
                         alert('Error: ' + data.error);
@@ -1380,9 +1391,10 @@ if ($office_id && $conn) {
                                 <h6 class="mb-0"><i class="bi bi-box-seam"></i> Asset Information</h6>
                             </div>
                             <div class="card-body">
+                                ${data.asset ? `
                                 <div class="row mb-2">
                                     <div class="col-sm-4"><strong>Description:</strong></div>
-                                    <div class="col-sm-8">${data.asset.description}</div>
+                                    <div class="col-sm-8">${data.asset.description || 'N/A'}</div>
                                 </div>
                                 <div class="row mb-2">
                                     <div class="col-sm-4"><strong>Property No:</strong></div>
@@ -1408,14 +1420,12 @@ if ($office_id && $conn) {
                                 ` : ''}
                                 <div class="row mb-2">
                                     <div class="col-sm-4"><strong>Category:</strong></div>
-                                    <div class="col-sm-8">${data.asset.category.name || 'Uncategorized'}</div>
+                                    <div class="col-sm-8">${data.asset.category.name || 'Uncategorized'} (${data.asset.category.code || 'N/A'})</div>
                                 </div>
-                                ${data.asset.unit ? `
                                 <div class="row mb-2">
                                     <div class="col-sm-4"><strong>Unit:</strong></div>
-                                    <div class="col-sm-8">${data.asset.unit}</div>
+                                    <div class="col-sm-8">${data.asset.unit || 'N/A'}</div>
                                 </div>
-                                ` : ''}
                                 ${data.asset.inventory_tag ? `
                                 <div class="row mb-2">
                                     <div class="col-sm-4"><strong>Inventory Tag:</strong></div>
@@ -1431,7 +1441,7 @@ if ($office_id && $conn) {
                                 <div class="row mb-2">
                                     <div class="col-sm-4"><strong>Current Status:</strong></div>
                                     <div class="col-sm-8">
-                                        <span class="badge bg-${getStatusColor(data.asset.status)}">${ucfirst(data.asset.status)}</span>
+                                        <span class="badge bg-${getStatusColor(data.asset.status || 'unknown')}">${ucfirst((data.asset.status || 'unknown').replace('_', ' '))}</span>
                                     </div>
                                 </div>
                                 ${data.asset.date_acquired ? `
@@ -1442,14 +1452,60 @@ if ($office_id && $conn) {
                                 ` : ''}
                                 ${data.asset.end_user ? `
                                 <div class="row mb-2">
-                                    <div class="col-sm-4"><strong>End User:</strong></div>
+                                    <div class="col-sm-4"><strong>Current End User:</strong></div>
                                     <div class="col-sm-8">${data.asset.end_user}</div>
+                                </div>
+                                ` : ''}
+                                ${data.asset.employee_id ? `
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Employee ID:</strong></div>
+                                    <div class="col-sm-8">${data.asset.employee_id}</div>
+                                </div>
+                                ` : ''}
+                                ${data.asset.office_name ? `
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Asset Office:</strong></div>
+                                    <div class="col-sm-8">${data.asset.office_name}</div>
+                                </div>
+                                ` : ''}
+                                ${data.asset.date_counted ? `
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Last Counted:</strong></div>
+                                    <div class="col-sm-8">${new Date(data.asset.date_counted).toLocaleDateString()}</div>
+                                </div>
+                                ` : ''}
+                                ${data.asset.last_updated ? `
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Last Updated:</strong></div>
+                                    <div class="col-sm-8">${new Date(data.asset.last_updated).toLocaleDateString()}</div>
+                                </div>
+                                ` : ''}
+                                ${data.asset.qr_code ? `
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>QR Code:</strong></div>
+                                    <div class="col-sm-8">
+                                        <small class="text-muted">Generated</small>
+                                        ${data.asset.qr_code && data.asset.qr_code.endsWith('.png') ? `<br><img src="../${data.asset.qr_code}" alt="QR Code" style="max-width: 100px; height: auto;">` : ''}
+                                    </div>
+                                </div>
+                                ` : ''}
+                                ${data.asset.image ? `
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Asset Image:</strong></div>
+                                    <div class="col-sm-8">
+                                        <img src="../${data.asset.image}" alt="Asset Image" style="max-width: 150px; height: auto; border-radius: 4px;">
+                                    </div>
                                 </div>
                                 ` : ''}
                                 <div class="row mb-2">
                                     <div class="col-sm-4"><strong>Requested Quantity:</strong></div>
                                     <div class="col-sm-8">${data.request.quantity_requested} unit(s)</div>
                                 </div>
+                                ` : `
+                                <div class="alert alert-warning">
+                                    <i class="bi bi-exclamation-triangle"></i> Asset information not available
+                                </div>
+                                `}
                             </div>
                         </div>
                     </div>
@@ -1534,9 +1590,13 @@ if ($office_id && $conn) {
             const colors = {
                 'serviceable': 'success',
                 'in_use': 'primary',
-                'pending': 'warning',
-                'maintenance': 'danger',
-                'disposed': 'secondary'
+                'available': 'info',
+                'maintenance': 'warning',
+                'disposed': 'secondary',
+                'unserviceable': 'danger',
+                'no_tag': 'secondary',
+                'pending_tag': 'warning',
+                'red_tagged': 'danger'
             };
             return colors[status] || 'secondary';
         }
