@@ -449,12 +449,12 @@ $total_forms_value = $stats['par_value'] + $stats['ics_value'] + $stats['ris_val
                 </a>
             </div>
             <div class="col-6 col-md-4 col-lg-2">
-                <a href="asset_items.php" class="module-card">
+                <a href="borrowing.php" class="module-card">
                     <div class="module-icon green">
-                        <i class="bi bi-collection"></i>
+                        <i class="bi bi-arrow-left-right"></i>
                     </div>
-                    <div class="module-title">Asset Items</div>
-                    <div class="module-desc">Track items</div>
+                    <div class="module-title">Borrowing</div>
+                    <div class="module-desc">Asset borrowing</div>
                 </a>
             </div>
             <div class="col-6 col-md-4 col-lg-2">

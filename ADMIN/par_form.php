@@ -115,29 +115,30 @@ $initial_property_number = ''; // Empty for manual input
 
 // Common units for dropdown
 $common_units = [
-    'Pieces',
-    'Sets',
-    'Units',
-    'Boxes',
-    'Cartons',
-    'Packs',
-    'Bottles',
-    'Liters',
-    'Gallons',
-    'Kilograms',
-    'Grams',
-    'Meters',
-    'Centimeters',
-    'Feet',
-    'Inches',
-    'Dozens',
-    'Pairs',
-    'Rolls',
-    'Bags',
-    'Canisters',
-    'Jars',
-    'Tubes',
-    'Reams'
+    'pc', 'pcs',
+    'piece', 'pieces',
+    'set', 'sets',
+    'unit', 'units',
+    'box', 'boxes',
+    'carton', 'cartons',
+    'pack', 'packs',
+    'bottle', 'bottles',
+    'liter', 'liters',
+    'gallon', 'gallons',
+    'kilogram', 'kilograms',
+    'gram', 'grams',
+    'meter', 'meters',
+    'centimeter', 'centimeters',
+    'foot', 'feet',
+    'inch', 'inches',
+    'dozen', 'dozens',
+    'pair', 'pairs',
+    'roll', 'rolls',
+    'bag', 'bags',
+    'canister', 'canisters',
+    'jar', 'jars',
+    'tube', 'tubes',
+    'ream', 'reams'
 ];
 
 // Get header image from forms table
@@ -590,6 +591,32 @@ if ($result && $row = $result->fetch_assoc()) {
         </div>
     </div>
     
+    <!-- Reset Confirmation Modal -->
+    <div class="modal fade" id="resetConfirmModal" tabindex="-1" aria-labelledby="resetConfirmModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="resetConfirmModalLabel">
+                        <i class="bi bi-exclamation-triangle text-warning"></i> Confirm Reset
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0"><strong>Are you sure you want to reset the form?</strong></p>
+                    <p class="text-muted mb-0">All data will be lost and cannot be recovered.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="confirmReset()">
+                        <i class="bi bi-arrow-clockwise"></i> Reset Form
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <?php include 'includes/sidebar-scripts.php'; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -683,6 +710,87 @@ if ($result && $row = $result->fetch_assoc()) {
             //     initialPropertyField.value = generatePropertyNumber();
             // }
             // No initialization needed for manual input
+            
+            // Set correct units for existing quantity inputs with pluralization
+            const quantityInputs = document.querySelectorAll('input[name="quantity[]"]');
+            quantityInputs.forEach(input => {
+                const quantity = parseFloat(input.value) || 0;
+                const row = input.closest('tr');
+                const unitSelect = row.querySelector('select[name="unit[]"]');
+                if (unitSelect && quantity > 0) {
+                    const currentValue = unitSelect.value;
+                    
+                    // Handle pluralization for common units
+                    const pluralMap = {
+                        'pc': 'pcs',
+                        'piece': 'pieces',
+                        'set': 'sets',
+                        'box': 'boxes',
+                        'carton': 'cartons',
+                        'pack': 'packs',
+                        'bottle': 'bottles',
+                        'liter': 'liters',
+                        'gallon': 'gallons',
+                        'kilogram': 'kilograms',
+                        'gram': 'grams',
+                        'meter': 'meters',
+                        'centimeter': 'centimeters',
+                        'foot': 'feet',
+                        'inch': 'inches',
+                        'dozen': 'dozens',
+                        'pair': 'pairs',
+                        'roll': 'rolls',
+                        'bag': 'bags',
+                        'canister': 'canisters',
+                        'jar': 'jars',
+                        'tube': 'tubes',
+                        'ream': 'reams'
+                    };
+                    
+                    // Find the appropriate unit based on quantity
+                    let targetUnit = '';
+                    if (quantity === 1) {
+                        // Use singular form
+                        for (const [singular, plural] of Object.entries(pluralMap)) {
+                            if (currentValue === plural) {
+                                targetUnit = singular;
+                                break;
+                            } else if (currentValue === singular) {
+                                targetUnit = singular;
+                                break;
+                            }
+                        }
+                        // If no mapping found, keep current value
+                        if (!targetUnit && currentValue) {
+                            targetUnit = currentValue;
+                        }
+                    } else if (quantity > 1) {
+                        // Use plural form
+                        for (const [singular, plural] of Object.entries(pluralMap)) {
+                            if (currentValue === singular) {
+                                targetUnit = plural;
+                                break;
+                            } else if (currentValue === plural) {
+                                targetUnit = plural;
+                                break;
+                            }
+                        }
+                        // If no mapping found, keep current value
+                        if (!targetUnit && currentValue) {
+                            targetUnit = currentValue;
+                        }
+                    }
+                    
+                    // Set the unit if found
+                    if (targetUnit) {
+                        // Check if the target unit exists in the dropdown
+                        const optionExists = Array.from(unitSelect.options).some(option => option.value === targetUnit);
+                        if (optionExists) {
+                            unitSelect.value = targetUnit;
+                        }
+                    }
+                }
+            });
         }
         
         // Initialize when document is ready
@@ -735,10 +843,88 @@ if ($result && $row = $result->fetch_assoc()) {
             // Update grand total since quantity affects the total
             updateGrandTotal();
             
-            // Optional: Validate that quantity is reasonable
+            // Get the quantity value
             const quantity = parseFloat(input.value) || 0;
             if (quantity < 0) {
                 input.value = 0;
+                return;
+            }
+            
+            // Auto-set unit based on quantity with pluralization
+            const row = input.closest('tr');
+            const unitSelect = row.querySelector('select[name="unit[]"]');
+            if (unitSelect && quantity > 0) {
+                const currentValue = unitSelect.value;
+                
+                // Handle pluralization for common units
+                const pluralMap = {
+                    'pc': 'pcs',
+                    'piece': 'pieces',
+                    'set': 'sets',
+                    'box': 'boxes',
+                    'carton': 'cartons',
+                    'pack': 'packs',
+                    'bottle': 'bottles',
+                    'liter': 'liters',
+                    'gallon': 'gallons',
+                    'kilogram': 'kilograms',
+                    'gram': 'grams',
+                    'meter': 'meters',
+                    'centimeter': 'centimeters',
+                    'foot': 'feet',
+                    'inch': 'inches',
+                    'dozen': 'dozens',
+                    'pair': 'pairs',
+                    'roll': 'rolls',
+                    'bag': 'bags',
+                    'canister': 'canisters',
+                    'jar': 'jars',
+                    'tube': 'tubes',
+                    'ream': 'reams'
+                };
+                
+                // Find the singular form and set appropriate unit
+                let targetUnit = '';
+                if (quantity === 1) {
+                    // Use singular form
+                    for (const [singular, plural] of Object.entries(pluralMap)) {
+                        if (currentValue === plural) {
+                            targetUnit = singular;
+                            break;
+                        } else if (currentValue === singular) {
+                            targetUnit = singular;
+                            break;
+                        }
+                    }
+                    // If no mapping found, keep current value
+                    if (!targetUnit && currentValue) {
+                        targetUnit = currentValue;
+                    }
+                } else if (quantity > 1) {
+                    // Use plural form
+                    for (const [singular, plural] of Object.entries(pluralMap)) {
+                        if (currentValue === singular) {
+                            targetUnit = plural;
+                            break;
+                        } else if (currentValue === plural) {
+                            targetUnit = plural;
+                            break;
+                        }
+                    }
+                    // If no mapping found, keep current value
+                    if (!targetUnit && currentValue) {
+                        targetUnit = currentValue;
+                    }
+                }
+                
+                // Set the unit if found
+                if (targetUnit) {
+                    // Check if the target unit exists in the dropdown
+                    const optionExists = Array.from(unitSelect.options).some(option => option.value === targetUnit);
+                    if (optionExists) {
+                        unitSelect.value = targetUnit;
+                    }
+                }
             }
         }
         
@@ -802,18 +988,27 @@ if ($result && $row = $result->fetch_assoc()) {
         }
         
         function resetForm() {
-            if (confirm('Are you sure you want to reset the form? All data will be lost.')) {
-                document.getElementById('parForm').reset();
-                // Reset to single row
-                const table = document.getElementById('itemsTable').getElementsByTagName('tbody')[0];
-                while (table.rows.length > 1) {
-                    table.deleteRow(1);
-                }
-                // Reset grand total
-                const grandTotalElement = document.getElementById('grandTotal');
-                if (grandTotalElement) {
-                    grandTotalElement.textContent = '0.00';
-                }
+            // Show the confirmation modal instead of using confirm()
+            const modal = new bootstrap.Modal(document.getElementById('resetConfirmModal'));
+            modal.show();
+        }
+        
+        function confirmReset() {
+            // Close the modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('resetConfirmModal'));
+            modal.hide();
+            
+            // Perform the actual reset
+            document.getElementById('parForm').reset();
+            // Reset to single row
+            const table = document.getElementById('itemsTable').getElementsByTagName('tbody')[0];
+            while (table.rows.length > 1) {
+                table.deleteRow(1);
+            }
+            // Reset grand total
+            const grandTotalElement = document.getElementById('grandTotal');
+            if (grandTotalElement) {
+                grandTotalElement.textContent = '0.00';
             }
         }
         

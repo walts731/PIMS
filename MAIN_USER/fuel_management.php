@@ -18,6 +18,7 @@ logSystemAction($_SESSION['user_id'], 'access', 'main_user_fuel_management', 'Ma
 
 $fuel_in_records = [];
 $fuel_out_records = [];
+$fuel_inventory_records = [];
 $offices = [];
 $error = null;
 
@@ -32,13 +33,72 @@ try {
     }
     
     // Check which fuel tables exist
-    $fuel_tables = ['fuel_in', 'fuel_out', 'fuel_transactions'];
+    $fuel_tables = ['fuel_in', 'fuel_out', 'fuel_transactions', 'fuel_inventory'];
     $existing_tables = [];
     
     foreach ($fuel_tables as $table) {
         $check_table = $conn->query("SHOW TABLES LIKE '$table'");
         if ($check_table && $check_table->num_rows > 0) {
             $existing_tables[] = $table;
+        }
+    }
+    
+    // Get fuel inventory data
+    if (in_array('fuel_inventory', $existing_tables)) {
+        $inventory_sql = "SELECT 
+                            id,
+                            tank_number,
+                            fuel_type,
+                            capacity,
+                            current_level,
+                            location,
+                            status,
+                            last_updated,
+                            created_at,
+                            updated_by
+                         FROM fuel_inventory 
+                         ORDER BY fuel_type, tank_number";
+        $inventory_result = $conn->query($inventory_sql);
+        if ($inventory_result) {
+            while ($row = $inventory_result->fetch_assoc()) {
+                $fuel_inventory_records[] = $row;
+            }
+        }
+    }
+    
+    // Get total fuel IN from entire database (like admin)
+    $total_fuel_in_all = 0;
+    $total_fuel_out_all = 0;
+    
+    if (in_array('fuel_in', $existing_tables)) {
+        $total_in_query = "SELECT SUM(quantity) as total FROM fuel_in";
+        $total_in_result = $conn->query($total_in_query);
+        if ($total_in_result && $row = $total_in_result->fetch_assoc()) {
+            $total_fuel_in_all = $row['total'] ?? 0;
+        }
+    }
+    
+    if (empty($total_fuel_in_all) && in_array('fuel_transactions', $existing_tables)) {
+        $total_in_trans_query = "SELECT SUM(quantity) as total FROM fuel_transactions WHERE transaction_type = 'IN'";
+        $total_in_trans_result = $conn->query($total_in_trans_query);
+        if ($total_in_trans_result && $row = $total_in_trans_result->fetch_assoc()) {
+            $total_fuel_in_all = $row['total'] ?? 0;
+        }
+    }
+    
+    if (in_array('fuel_out', $existing_tables)) {
+        $total_out_query = "SELECT SUM(fo_liters) as total FROM fuel_out";
+        $total_out_result = $conn->query($total_out_query);
+        if ($total_out_result && $row = $total_out_result->fetch_assoc()) {
+            $total_fuel_out_all = $row['total'] ?? 0;
+        }
+    }
+    
+    if (empty($total_fuel_out_all) && in_array('fuel_transactions', $existing_tables)) {
+        $total_out_trans_query = "SELECT SUM(quantity) as total FROM fuel_transactions WHERE transaction_type = 'OUT'";
+        $total_out_trans_result = $conn->query($total_out_trans_query);
+        if ($total_out_trans_result && $row = $total_out_trans_result->fetch_assoc()) {
+            $total_fuel_out_all = $row['total'] ?? 0;
         }
     }
     
@@ -83,18 +143,18 @@ try {
         if (in_array('fuel_out', $existing_tables)) {
             $fuel_out_sql = "SELECT 
                                id,
-                               date as fuel_date,
-                               quantity as fuel_quantity,
-                               fuel_type,
-                               vehicle_name,
-                               plate_number,
-                               odometer as odometer_reading,
-                               purpose,
+                               fo_date as fuel_date,
+                               fo_liters as fuel_quantity,
+                               fo_fuel_type as fuel_type,
+                               fo_vehicle_type as vehicle_name,
+                               fo_plate_no as plate_number,
+                               0 as odometer_reading,
+                               fo_request as purpose,
                                created_at,
                                created_by
                             FROM fuel_out 
-                            WHERE date BETWEEN ? AND ?
-                            ORDER BY date DESC";
+                            WHERE fo_date BETWEEN ? AND ?
+                            ORDER BY fo_date DESC";
             
             $fuel_out_stmt = $conn->prepare($fuel_out_sql);
             if ($fuel_out_stmt) {
@@ -350,6 +410,14 @@ try {
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
         }
+        .clickable-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .clickable-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
         .alert {
             animation: slideDown 0.5s ease-out;
         }
@@ -454,71 +522,108 @@ try {
             <!-- Statistics Cards -->
         <div class="row mb-4">
             <div class="col-md-3 mb-3">
-                <div class="stats-card h-100">
-                    <div class="d-flex align-items-center">
-                        <div class="fuel-icon fuel-in-icon me-3">
-                            <i class="bi bi-arrow-down-circle"></i>
-                        </div>
-                        <div>
-                            <h6 class="text-muted mb-2">Total Fuel IN</h6>
-                            <h3 class="mb-0 text-success">
-                                <?php echo number_format(array_sum(array_column($fuel_in_records, 'fuel_quantity')), 2); ?>
-                                <small>Liters</small>
-                            </h3>
+                <a href="fuel_in.php" class="text-decoration-none">
+                    <div class="stats-card h-100 clickable-card">
+                        <div class="d-flex align-items-center">
+                            <div class="fuel-icon fuel-in-icon me-3">
+                                <i class="bi bi-arrow-down-circle"></i>
+                            </div>
+                            <div>
+                                <h6 class="text-muted mb-2">Total Fuel IN</h6>
+                                <h3 class="mb-0 text-success">
+                                    <?php 
+                                    echo number_format($total_fuel_in_all, 2); ?>
+                                    <small>Liters</small>
+                                </h3>
+                                <small class="text-muted">All Time Total</small>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </a>
             </div>
+            
             <div class="col-md-3 mb-3">
-                <div class="stats-card h-100">
-                    <div class="d-flex align-items-center">
-                        <div class="fuel-icon fuel-out-icon me-3">
-                            <i class="bi bi-arrow-up-circle"></i>
-                        </div>
-                        <div>
-                            <h6 class="text-muted mb-2">Total Fuel OUT</h6>
-                            <h3 class="mb-0 text-danger">
-                                <?php echo number_format(array_sum(array_column($fuel_out_records, 'fuel_quantity')), 2); ?>
-                                <small>Liters</small>
-                            </h3>
+                <a href="fuel_out.php" class="text-decoration-none">
+                    <div class="stats-card h-100 clickable-card">
+                        <div class="d-flex align-items-center">
+                            <div class="fuel-icon fuel-out-icon me-3">
+                                <i class="bi bi-arrow-up-circle"></i>
+                            </div>
+                            <div>
+                                <h6 class="text-muted mb-2">Total Fuel OUT</h6>
+                                <h3 class="mb-0 text-danger">
+                                    <?php 
+                                    echo number_format($total_fuel_out_all, 2); ?>
+                                    <small>Liters</small>
+                                </h3>
+                                <small class="text-muted">All Time Total</small>
+                                <!-- Debug Info (remove in production) -->
+                                <?php if (isset($_GET['debug'])): ?>
+                                <br><small class="text-info">Debug: Tables=<?php echo implode(',', $existing_tables); ?> Total=<?php echo $total_fuel_out_all; ?></small>
+                                <?php endif; ?>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </a>
             </div>
+            
             <div class="col-md-3 mb-3">
-                <div class="stats-card h-100">
-                    <div class="d-flex align-items-center">
-                        <div class="fuel-icon me-3" style="background: linear-gradient(135deg, #17a2b8, #138496);">
-                            <i class="bi bi-calculator"></i>
-                        </div>
-                        <div>
-                            <h6 class="text-muted mb-2">Net Fuel Balance</h6>
-                            <h3 class="mb-0 text-primary">
-                                <?php 
-                                $net_fuel = array_sum(array_column($fuel_in_records, 'fuel_quantity')) - array_sum(array_column($fuel_out_records, 'fuel_quantity'));
-                                echo number_format($net_fuel, 2); 
-                                ?>
-                                <small>Liters</small>
-                            </h3>
+                <a href="fuel_balance.php" class="text-decoration-none">
+                    <div class="stats-card h-100 clickable-card">
+                        <div class="d-flex align-items-center">
+                            <div class="fuel-icon me-3" style="background: linear-gradient(135deg, #17a2b8, #138496);">
+                                <i class="bi bi-calculator"></i>
+                            </div>
+                            <div>
+                                <h6 class="text-muted mb-2">Net Fuel Balance</h6>
+                                <h3 class="mb-0 text-primary">
+                                    <?php 
+                                    $net_fuel = $total_fuel_in_all - $total_fuel_out_all;
+                                    echo number_format($net_fuel, 2); 
+                                    ?>
+                                    <small>Liters</small>
+                                </h3>
+                                <small class="text-muted">
+                                    <?php 
+                                    if ($net_fuel > 0) {
+                                        echo 'Positive Balance';
+                                    } elseif ($net_fuel < 0) {
+                                        echo 'Negative Balance';
+                                    } else {
+                                        echo 'Balanced';
+                                    }
+                                    ?>
+                                </small>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </a>
             </div>
+            
             <div class="col-md-3 mb-3">
-                <div class="stats-card h-100">
-                    <div class="d-flex align-items-center">
-                        <div class="fuel-icon me-3" style="background: linear-gradient(135deg, #6f42c1, #0d6efd);">
-                            <i class="bi bi-list-check"></i>
-                        </div>
-                        <div>
-                            <h6 class="text-muted mb-2">Total Transactions</h6>
-                            <h3 class="mb-0 text-info">
-                                <?php echo count($fuel_in_records) + count($fuel_out_records); ?>
-                                <small>Records</small>
-                            </h3>
+                <a href="fuel_transactions.php" class="text-decoration-none">
+                    <div class="stats-card h-100 clickable-card">
+                        <div class="d-flex align-items-center">
+                            <div class="fuel-icon me-3" style="background: linear-gradient(135deg, #6f42c1, #0d6efd);">
+                                <i class="bi bi-list-check"></i>
+                            </div>
+                            <div>
+                                <h6 class="text-muted mb-2">Total Transactions</h6>
+                                <h3 class="mb-0 text-info">
+                                    <?php 
+                                    $total_transactions = count($fuel_in_records) + count($fuel_out_records);
+                                    echo $total_transactions; ?>
+                                    <small>Records</small>
+                                </h3>
+                                <small class="text-muted">
+                                    <?php 
+                                    $total_current_fuel = array_sum(array_column($fuel_inventory_records, 'current_level'));
+                                    echo number_format($total_current_fuel, 2); ?> L Available
+                                </small>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </a>
             </div>
         </div>
 
@@ -561,6 +666,138 @@ try {
                         </div>
                     </div>
                 </form>
+            </div>
+
+            <!-- Fuel Inventory Section -->
+            <div class="table-container">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="mb-0">
+                        <i class="bi bi-droplet-half text-info me-2"></i>
+                        Fuel Inventory Status
+                        <span class="badge bg-info text-white ms-2">
+                            <?php echo count($fuel_inventory_records); ?> Tanks
+                        </span>
+                    </h4>
+                </div>
+                
+                <?php if (!empty($fuel_inventory_records)): ?>
+                    <div class="table-responsive">
+                        <table class="table table-hover fuel-table">
+                            <thead>
+                                <tr>
+                                    <th><i class="bi bi-hash me-1"></i>Tank Number</th>
+                                    <th><i class="bi bi-fuel-pump me-1"></i>Fuel Type</th>
+                                    <th><i class="bi bi-database me-1"></i>Capacity (L)</th>
+                                    <th><i class="bi bi-speedometer2 me-1"></i>Current Level (L)</th>
+                                    <th><i class="bi bi-percent me-1"></i>Fill Level</th>
+                                    <th><i class="bi bi-geo-alt me-1"></i>Location</th>
+                                    <th><i class="bi bi-toggle-on me-1"></i>Status</th>
+                                    <th><i class="bi bi-clock me-1"></i>Last Updated</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($fuel_inventory_records as $tank): 
+                                    $fill_percentage = ($tank['capacity'] > 0) ? ($tank['current_level'] / $tank['capacity']) * 100 : 0;
+                                    $status_color = $tank['status'] === 'active' ? 'success' : ($tank['status'] === 'maintenance' ? 'warning' : 'secondary');
+                                    $fuel_type_color = $tank['fuel_type'] === 'diesel' ? 'warning' : ($tank['fuel_type'] === 'gasoline' ? 'info' : 'primary');
+                                ?>
+                                    <tr>
+                                        <td>
+                                            <strong><?php echo htmlspecialchars($tank['tank_number']); ?></strong>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-<?php echo $fuel_type_color; ?> text-white">
+                                                <?php echo strtoupper(htmlspecialchars($tank['fuel_type'])); ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <strong><?php echo number_format($tank['capacity'], 2); ?></strong>
+                                        </td>
+                                        <td>
+                                            <strong class="text-<?php echo $fill_percentage > 30 ? 'success' : ($fill_percentage > 15 ? 'warning' : 'danger'); ?>">
+                                                <?php echo number_format($tank['current_level'], 2); ?>
+                                            </strong>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="progress me-2" style="width: 100px; height: 20px;">
+                                                    <div class="progress-bar bg-<?php echo $fill_percentage > 30 ? 'success' : ($fill_percentage > 15 ? 'warning' : 'danger'); ?>" 
+                                                         style="width: <?php echo min(100, $fill_percentage); ?>%">
+                                                    </div>
+                                                </div>
+                                                <small><?php echo number_format($fill_percentage, 1); ?>%</small>
+                                            </div>
+                                        </td>
+                                        <td><?php echo htmlspecialchars($tank['location'] ?? 'N/A'); ?></td>
+                                        <td>
+                                            <span class="badge bg-<?php echo $status_color; ?> text-white">
+                                                <?php echo ucfirst(htmlspecialchars($tank['status'])); ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <small><?php echo date('M d, Y H:i', strtotime($tank['last_updated'])); ?></small>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Inventory Summary -->
+                    <div class="row mt-3">
+                        <div class="col-md-3">
+                            <div class="card border-info">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title text-info">Total Capacity</h6>
+                                    <h5 class="card-text">
+                                        <?php echo number_format(array_sum(array_column($fuel_inventory_records, 'capacity')), 2); ?> L
+                                    </h5>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-success">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title text-success">Current Fuel</h6>
+                                    <h5 class="card-text">
+                                        <?php echo number_format(array_sum(array_column($fuel_inventory_records, 'current_level')), 2); ?> L
+                                    </h5>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-warning">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title text-warning">Available Space</h6>
+                                    <h5 class="card-text">
+                                        <?php 
+                                        $total_capacity = array_sum(array_column($fuel_inventory_records, 'capacity'));
+                                        $total_current = array_sum(array_column($fuel_inventory_records, 'current_level'));
+                                        echo number_format($total_capacity - $total_current, 2); ?> L
+                                    </h5>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-primary">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title text-primary">Average Fill</h6>
+                                    <h5 class="card-text">
+                                        <?php 
+                                        $avg_fill = $total_capacity > 0 ? ($total_current / $total_capacity) * 100 : 0;
+                                        echo number_format($avg_fill, 1); ?>%
+                                    </h5>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <?php else: ?>
+                    <div class="text-center py-5">
+                        <i class="bi bi-droplet-half text-muted" style="font-size: 3rem;"></i>
+                        <h5 class="text-muted mt-3">No Fuel Inventory Data</h5>
+                        <p class="text-muted">No fuel tanks found in the inventory system.</p>
+                    </div>
+                <?php endif; ?>
             </div>
 
             <!-- Empty State Message -->

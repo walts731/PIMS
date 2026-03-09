@@ -157,17 +157,17 @@ $category_fields = [
         'model' => ['label' => 'Model', 'type' => 'text', 'required' => true],
         'plate_number' => ['label' => 'Plate Number', 'type' => 'text', 'required' => true],
         'color' => ['label' => 'Color', 'type' => 'text', 'required' => false],
-        'engine_number' => ['label' => 'Engine Number', 'type' => 'text', 'required' => false],
-        'chassis_number' => ['label' => 'Chassis Number', 'type' => 'text', 'required' => false],
+        'engine_number' => ['label' => 'Engine Number', 'type' => 'text', 'required' => true],
+        'chassis_number' => ['label' => 'Chassis Number', 'type' => 'text', 'required' => true],
         'year_model' => ['label' => 'Year Model', 'type' => 'number', 'required' => false]
     ],
     '030' => [
         'processor' => ['label' => 'Processor', 'type' => 'text', 'required' => false],
         'ram' => ['label' => 'RAM (GB)', 'type' => 'text', 'required' => false],
         'storage' => ['label' => 'Storage', 'type' => 'text', 'required' => false],
-        'model' => ['label' => 'Model', 'type' => 'text', 'required' => false],
+        'model' => ['label' => 'Model', 'type' => 'text', 'required' => true],
         'operating_system' => ['label' => 'Operating System', 'type' => 'text', 'required' => false],
-        'serial_number' => ['label' => 'Serial Number', 'type' => 'text', 'required' => false]
+        'serial_number' => ['label' => 'Serial Number', 'type' => 'text', 'required' => true]
     ],
     '02' => [
         'material' => ['label' => 'Material', 'type' => 'text', 'required' => true],
@@ -180,12 +180,12 @@ $category_fields = [
         'model' => ['label' => 'Model', 'type' => 'text', 'required' => true],
         'capacity' => ['label' => 'Capacity', 'type' => 'text', 'required' => false],
         'power_rating' => ['label' => 'Power Rating', 'type' => 'text', 'required' => false],
-        'serial_number' => ['label' => 'Serial Number', 'type' => 'text', 'required' => false]
+        'serial_number' => ['label' => 'Serial Number', 'type' => 'text', 'required' => true]
     ],
     '05' => [
         'brand' => ['label' => 'Brand', 'type' => 'text', 'required' => true],
-        'model' => ['label' => 'Model', 'type' => 'text', 'required' => false],
-        'serial_number' => ['label' => 'Serial Number', 'type' => 'text', 'required' => false]
+        'model' => ['label' => 'Model', 'type' => 'text', 'required' => true],
+        'serial_number' => ['label' => 'Serial Number', 'type' => 'text', 'required' => true]
     ],
     '06' => [
         'software_name' => ['label' => 'Software Name', 'type' => 'text', 'required' => true],

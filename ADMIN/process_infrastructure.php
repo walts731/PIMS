@@ -65,7 +65,16 @@ try {
             
             if ($stmt->execute()) {
                 logSystemAction($_SESSION['user_id'], 'infrastructure_updated', 'infrastructure', "Updated infrastructure: $item_description (ID: $id)");
-                echo json_encode(['success' => true, 'message' => 'Infrastructure item updated successfully']);
+                
+                // Check if this is an AJAX request
+                if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+                    echo json_encode(['success' => true, 'message' => 'Infrastructure item updated successfully', 'redirect' => 'infrastructure.php']);
+                } else {
+                    // Regular form submission - redirect directly
+                    $_SESSION['success_message'] = 'Infrastructure item updated successfully';
+                    header('Location: infrastructure.php');
+                    exit();
+                }
             } else {
                 echo json_encode(['success' => false, 'message' => 'Failed to update infrastructure item']);
             }

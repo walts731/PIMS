@@ -153,7 +153,15 @@ if ($result && $row = $result->fetch_assoc()) {
                     <p class="text-muted mb-0">View and manage Property Acknowledgment Receipt entries</p>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <input type="text" class="form-control" id="searchInput" placeholder="Search PAR forms..." style="margin-bottom: 10px;">
+                    <div class="input-group mb-3" style="width: 100%;">
+                        <input type="text" class="form-control" id="searchInput" placeholder="Search PAR forms..." onkeypress="handleSearchKeyPress(event)" oninput="toggleClearButton()">
+                        <button class="btn btn-outline-secondary" type="button" id="clearSearchBtn" onclick="clearSearch()" style="display: none;" title="Clear search">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                        <button class="btn btn-outline-secondary" type="button" onclick="searchPARForms()">
+                            <i class="bi bi-search"></i> Search
+                        </button>
+                    </div>
                     <div>
                         <a href="par_form.php" class="btn btn-primary">
                             <i class="bi bi-plus-circle"></i> New PAR
@@ -292,28 +300,150 @@ if ($result && $row = $result->fetch_assoc()) {
         }
         
         function searchPARForms() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
             const parCards = document.querySelectorAll('.par-card');
+            let visibleCount = 0;
             
             parCards.forEach(card => {
-                const text = card.textContent.toLowerCase();
-                const parNumber = card.querySelector('.par-number')?.textContent.toLowerCase() || '';
+                // Get specific fields for more targeted search
+                const parNumberElement = card.querySelector('.par-number');
+                const parNumber = parNumberElement ? parNumberElement.textContent.toLowerCase() : '';
                 const entityName = card.querySelector('h5')?.textContent.toLowerCase() || '';
-                const fundCluster = card.querySelector('.text-muted')?.textContent.toLowerCase() || '';
                 
-                // Check if search term matches any field
-                const matches = text.includes(searchTerm) || 
-                               parNumber.includes(searchTerm) || 
-                               entityName.includes(searchTerm) || 
-                               fundCluster.includes(searchTerm);
+                // More specific selectors for fund cluster
+                const fundClusterElement = card.querySelector('.bi-cash-stack')?.parentElement;
+                const fundCluster = fundClusterElement ? fundClusterElement.textContent.toLowerCase() : '';
+                
+                // More specific selectors for received by and issued by
+                const receivedByNameElement = card.querySelector('.col-md-6:nth-child(1) p:nth-child(2)');
+                const receivedByName = receivedByNameElement ? receivedByNameElement.textContent.toLowerCase() : '';
+                
+                const issuedByNameElement = card.querySelector('.col-md-6:nth-child(2) p:nth-child(2)');
+                const issuedByName = issuedByNameElement ? issuedByNameElement.textContent.toLowerCase() : '';
+                
+                // Office location (optional)
+                const officeElement = card.querySelector('.bi-geo-alt')?.parentElement;
+                const office = officeElement ? officeElement.textContent.toLowerCase() : '';
+                
+                // Date element
+                const dateElement = card.querySelector('.bi-calendar')?.parentElement;
+                const date = dateElement ? dateElement.textContent.toLowerCase() : '';
+                
+                // Prioritize PAR number matching - exact match gets highest priority
+                let matches = false;
+                
+                if (searchTerm === '') {
+                    matches = true;
+                } else if (parNumber.includes(searchTerm)) {
+                    // PAR number match - prioritize this
+                    matches = true;
+                    // Highlight the PAR number if it's a close match
+                    if (searchTerm.length >= 3) {
+                        parNumberElement.style.backgroundColor = '#fff3cd';
+                        parNumberElement.style.borderRadius = '4px';
+                        parNumberElement.style.padding = '2px 6px';
+                    }
+                } else {
+                    // Check other fields
+                    const otherFields = [
+                        entityName,
+                        fundCluster,
+                        receivedByName,
+                        issuedByName,
+                        office,
+                        date
+                    ];
+                    
+                    matches = otherFields.some(field => field.includes(searchTerm));
+                }
                 
                 // Show/hide card based on search
-                if (matches || searchTerm === '') {
+                if (matches) {
                     card.style.display = 'block';
+                    visibleCount++;
                 } else {
                     card.style.display = 'none';
+                    // Reset highlight
+                    const parNumberElement = card.querySelector('.par-number');
+                    if (parNumberElement) {
+                        parNumberElement.style.backgroundColor = '';
+                        parNumberElement.style.borderRadius = '';
+                        parNumberElement.style.padding = '';
+                    }
                 }
             });
+            
+            // Show/hide "no results" message
+            showNoResultsMessage(visibleCount === 0 && searchTerm !== '');
+        }
+        
+        function toggleClearButton() {
+            const searchInput = document.getElementById('searchInput');
+            const clearBtn = document.getElementById('clearSearchBtn');
+            
+            // Show clear button if there's text, hide if empty
+            if (searchInput.value.trim()) {
+                clearBtn.style.display = 'block';
+            } else {
+                clearBtn.style.display = 'none';
+                // Trigger search to show all results when cleared
+                searchPARForms();
+            }
+        }
+        
+        function handleSearchKeyPress(event) {
+            // Trigger search when Enter key is pressed
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                searchPARForms();
+            }
+        }
+        
+        function showNoResultsMessage(show) {
+            // Remove existing no results message if present
+            const existingMessage = document.getElementById('noResultsMessage');
+            if (existingMessage) {
+                existingMessage.remove();
+            }
+            
+            if (show) {
+                const noResultsHtml = `
+                    <div id="noResultsMessage" class="col-12">
+                        <div class="text-center py-5">
+                            <i class="bi bi-search display-1 text-muted"></i>
+                            <h4 class="mt-3 text-muted">No Results Found</h4>
+                            <p class="text-muted">Try searching by PAR number, entity name, or other details.</p>
+                            <button class="btn btn-outline-secondary" onclick="clearSearch()">
+                                <i class="bi bi-x-circle"></i> Clear Search
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                // Insert after the statistics row
+                const statsRow = document.querySelector('.row.mb-4');
+                if (statsRow) {
+                    statsRow.insertAdjacentHTML('afterend', noResultsHtml);
+                }
+            }
+        }
+        
+        function clearSearch() {
+            const searchInput = document.getElementById('searchInput');
+            const clearBtn = document.getElementById('clearSearchBtn');
+            
+            searchInput.value = '';
+            clearBtn.style.display = 'none';
+            
+            // Remove all highlights
+            const parNumbers = document.querySelectorAll('.par-number');
+            parNumbers.forEach(element => {
+                element.style.backgroundColor = '';
+                element.style.borderRadius = '';
+                element.style.padding = '';
+            });
+            
+            searchPARForms();
         }
         
         // Add search on input change

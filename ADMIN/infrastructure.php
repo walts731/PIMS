@@ -1,4 +1,5 @@
 <?php
+ob_start();
 session_start();
 require_once '../config.php';
 require_once '../includes/logger.php';
@@ -11,6 +12,15 @@ if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['system_admin'
 
 // Log infrastructure page access
 logSystemAction($_SESSION['user_id'], 'infrastructure_accessed', 'infrastructure', 'Accessed infrastructure page');
+
+// Check for redirect and handle it
+if (isset($_SESSION['redirect_url'])) {
+    $redirect_url = $_SESSION['redirect_url'];
+    unset($_SESSION['redirect_url']);
+    error_log("Handling stored redirect: " . $redirect_url);
+    header("Location: " . $redirect_url);
+    exit();
+}
 
 // Get filter parameters
 $search = isset($_GET['search']) ? $_GET['search'] : '';
@@ -25,7 +35,10 @@ $types = '';
 if (!empty($search)) {
     $where_conditions[] = "(item_description LIKE ? OR property_no LIKE ? OR location LIKE ? OR remarks LIKE ?)";
     $search_param = '%' . $search . '%';
-    $params = array_fill(0, 4, $search_param);
+    $params[] = $search_param;
+    $params[] = $search_param;
+    $params[] = $search_param;
+    $params[] = $search_param;
     $types = 'ssss';
 }
 
@@ -83,6 +96,9 @@ while ($row = $loc_result->fetch_assoc()) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     
+    // Debug: Log the form submission
+    error_log("Form submitted - Action: " . $action);
+    
     if ($action === 'add') {
         $classification = $_POST['classification'];
         $item_description = $_POST['item_description'];
@@ -126,7 +142,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $stmt->close();
         
-        header("Location: infrastructure.php");
+        // Ensure no output before redirect
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
+        
+        // Debug: Log before redirect
+        error_log("About to redirect to: " . $_SERVER['PHP_SELF']);
+        
+        // Use absolute URL for redirect
+        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https" : "http";
+        $host = $_SERVER['HTTP_HOST'];
+        $path = $_SERVER['PHP_SELF'];
+        $redirect_url = $protocol . "://" . $host . $path;
+        
+        error_log("Full redirect URL: " . $redirect_url);
+        
+        // Store redirect URL in session for fallback
+        $_SESSION['redirect_url'] = $redirect_url;
+        
+        header("Location: " . $redirect_url);
         exit();
     }
 }
@@ -141,6 +176,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>Infrastructure Management - PIMS</title>
+    <?php if (isset($_SESSION['success']) || isset($_SESSION['error'])): ?>
+    <script>
+    // Fallback redirect if header redirect fails
+    setTimeout(function() {
+        window.location.reload();
+    }, 1000);
+    </script>
+    <?php endif; ?>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css?v=<?php echo time(); ?>" rel="stylesheet">
     <!-- Bootstrap Icons -->
@@ -376,6 +419,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
         
+        <!-- Active Filters Display -->
+        <?php if (!empty($search) || !empty($classification_filter) || !empty($location_filter)): ?>
+            <div class="alert alert-info alert-dismissible fade show" role="alert">
+                <strong>Active Filters:</strong>
+                <?php if (!empty($search)): ?>
+                    Search: "<?php echo htmlspecialchars($search); ?>"
+                <?php endif; ?>
+                <?php if (!empty($classification_filter)): ?>
+                    Classification: <?php echo htmlspecialchars($classification_filter); ?>
+                <?php endif; ?>
+                <?php if (!empty($location_filter)): ?>
+                    Location: <?php echo htmlspecialchars($location_filter); ?>
+                <?php endif; ?>
+                <a href="infrastructure.php" class="btn btn-sm btn-outline-secondary ms-2">
+                    <i class="bi bi-x-circle"></i> Clear All
+                </a>
+            </div>
+        <?php endif; ?>
+        
+        <!-- Success/Error Messages -->
+        <?php if (isset($_SESSION['success_message'])): ?>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle"></i> <?php echo htmlspecialchars($_SESSION['success_message']); ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <?php unset($_SESSION['success_message']); ?>
+        <?php endif; ?>
+        
+        <?php if (isset($_SESSION['error_message'])): ?>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle"></i> <?php echo htmlspecialchars($_SESSION['error_message']); ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <?php unset($_SESSION['error_message']); ?>
+        <?php endif; ?>
+        
         <!-- Statistics Cards -->
         <div class="row mb-4">
             <div class="col-md-3">
@@ -411,11 +490,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="row">
                     <div class="col-md-4">
                         <label class="form-label">Search</label>
-                        <input type="text" name="search" class="form-control" value="<?php echo htmlspecialchars($search); ?>" placeholder="Search description, property no, location...">
+                        <input type="text" name="search" class="form-control" value="<?php echo htmlspecialchars($search); ?>" placeholder="Search description, property no, location..." id="searchInput">
                     </div>
                     <div class="col-md-3">
                         <label class="form-label">Classification</label>
-                        <select name="classification" class="form-select">
+                        <select name="classification" class="form-select" onchange="this.form.submit()">
                             <option value="">All Classifications</option>
                             <?php foreach ($classifications as $classification): ?>
                                 <option value="<?php echo htmlspecialchars($classification); ?>" <?php echo $classification_filter === $classification ? 'selected' : ''; ?>>
@@ -426,7 +505,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                     <div class="col-md-3">
                         <label class="form-label">Location</label>
-                        <select name="location" class="form-select">
+                        <select name="location" class="form-select" onchange="this.form.submit()">
                             <option value="">All Locations</option>
                             <?php foreach ($locations as $location): ?>
                                 <option value="<?php echo htmlspecialchars($location); ?>" <?php echo $location_filter === $location ? 'selected' : ''; ?>>
@@ -436,16 +515,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </select>
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label">&nbsp;</label>
-                        <div>
-                            <button type="submit" class="btn btn-primary w-100">
-                                <i class="bi bi-search"></i> Search
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div class="row mt-3">
-                    <div class="col-12">
                         <a href="infrastructure.php" class="btn btn-outline-secondary">
                             <i class="bi bi-x-circle"></i> Clear Filters
                         </a>
@@ -456,6 +525,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <!-- Infrastructure Table -->
         <div class="infrastructure-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">Infrastructure Items (<?php echo $total_count; ?> found)</h5>
+                <?php if (!empty($search) || !empty($classification_filter) || !empty($location_filter)): ?>
+                    <small class="text-muted">Filtered results</small>
+                <?php endif; ?>
+            </div>
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
                     <thead>
@@ -468,14 +543,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <th>Property No.</th>
                             <th>Acquisition Cost</th>
                             <th>Market Value</th>
-                            <th>Images</th>
                             <th class="no-print">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if (empty($infrastructure_data)): ?>
                             <tr>
-                                <td colspan="9" class="text-center text-muted">No infrastructure items found</td>
+                                <td colspan="8" class="text-center text-muted">No infrastructure items found</td>
                             </tr>
                         <?php else: ?>
                             <?php foreach ($infrastructure_data as $item): ?>
@@ -488,16 +562,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <td><?php echo htmlspecialchars($item['property_no']); ?></td>
                                     <td>₱<?php echo number_format($item['acquisition_cost'], 2); ?></td>
                                     <td>₱<?php echo number_format($item['market_value'], 2); ?></td>
-                                    <td>
-                                        <?php 
-                                        $images = json_decode($item['additional_images'] ?? '[]', true);
-                                        if (!empty($images)) {
-                                            echo '<img src="../uploads/infrastructure/' . htmlspecialchars($images[0]) . '" class="image-preview" alt="Infrastructure image">';
-                                        } else {
-                                            echo '<span class="text-muted">No images</span>';
-                                        }
-                                        ?>
-                                    </td>
                                     <td class="no-print">
                                         <button class="btn btn-sm btn-outline-primary" onclick="viewInfrastructure(<?php echo $item['id']; ?>)">
                                             <i class="bi bi-eye"></i>
@@ -524,7 +588,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <h5 class="modal-title">Add Infrastructure Item</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form method="POST" action="infrastructure.php" enctype="multipart/form-data">
+                <form method="POST" action="infrastructure.php" enctype="multipart/form-data" id="addInfrastructureForm">
                     <div class="modal-body">
                         <input type="hidden" name="action" value="add">
                         <div class="row">
@@ -713,5 +777,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 });
         }
     </script>
+    
+    <script>
+    // Handle add infrastructure form submission
+    document.getElementById('addInfrastructureForm').addEventListener('submit', function(e) {
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        
+        submitBtn.innerHTML = '<i class="bi bi-spinner fa-spin"></i> Adding...';
+        submitBtn.disabled = true;
+        
+        // Let the form submit normally
+        setTimeout(() => {
+            this.submit();
+        }, 100);
+    });
+    
+    // Auto-search functionality with debounce
+    let searchTimeout;
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                const value = this.value;
+                
+                // Debounce search - wait 500ms after user stops typing
+                searchTimeout = setTimeout(function() {
+                    // Submit form if search has 2+ characters or is empty
+                    if (value.length >= 2 || value.length === 0) {
+                        document.querySelector('form').submit();
+                    }
+                }, 500);
+            });
+            
+            // Also search on Enter key
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    clearTimeout(searchTimeout);
+                    document.querySelector('form').submit();
+                }
+            });
+        }
+    });
+    </script>
 </body>
 </html>
+<?php ob_end_flush(); ?>

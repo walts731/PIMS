@@ -397,6 +397,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
         
+        <!-- Active Filters Display -->
+        <?php if (!empty($search) || !empty($category_filter) || !empty($license_filter) || !empty($status_filter)): ?>
+            <div class="alert alert-info alert-dismissible fade show" role="alert">
+                <strong>Active Filters:</strong>
+                <?php if (!empty($search)): ?>
+                    Search: "<?php echo htmlspecialchars($search); ?>"
+                <?php endif; ?>
+                <?php if (!empty($category_filter)): ?>
+                    Category: <?php echo htmlspecialchars($category_filter); ?>
+                <?php endif; ?>
+                <?php if (!empty($license_filter)): ?>
+                    License Type: <?php echo htmlspecialchars($license_filter); ?>
+                <?php endif; ?>
+                <?php if (!empty($status_filter)): ?>
+                    Status: <?php echo htmlspecialchars($status_filter); ?>
+                <?php endif; ?>
+                <a href="software.php" class="btn btn-sm btn-outline-secondary ms-2">
+                    <i class="bi bi-x-circle"></i> Clear All
+                </a>
+            </div>
+        <?php endif; ?>
+        
         <!-- Statistics Cards -->
         <div class="row mb-4">
             <div class="col-md-3">
@@ -436,13 +458,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <h5 class="mb-3"><i class="bi bi-funnel"></i> Filters</h5>
             <form method="GET" action="software.php">
                 <div class="row">
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <label class="form-label">Search</label>
-                        <input type="text" name="search" class="form-control" value="<?php echo htmlspecialchars($search); ?>" placeholder="Search software, vendor, license key...">
+                        <input type="text" name="search" class="form-control" value="<?php echo htmlspecialchars($search); ?>" placeholder="Search software, vendor, license key..." id="searchInput">
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label class="form-label">Category</label>
-                        <select name="category" class="form-select">
+                        <select name="category" class="form-select" onchange="this.form.submit()">
                             <option value="">All Categories</option>
                             <?php foreach ($categories as $category): ?>
                                 <option value="<?php echo htmlspecialchars($category); ?>" <?php echo $category_filter === $category ? 'selected' : ''; ?>>
@@ -453,7 +475,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">License Type</label>
-                        <select name="license" class="form-select">
+                        <select name="license" class="form-select" onchange="this.form.submit()">
                             <option value="">All Types</option>
                             <?php foreach ($license_types as $license): ?>
                                 <option value="<?php echo htmlspecialchars($license); ?>" <?php echo $license_filter === $license ? 'selected' : ''; ?>>
@@ -464,7 +486,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">Status</label>
-                        <select name="status" class="form-select">
+                        <select name="status" class="form-select" onchange="this.form.submit()">
                             <option value="">All Status</option>
                             <option value="active" <?php echo $status_filter === 'active' ? 'selected' : ''; ?>>Active</option>
                             <option value="inactive" <?php echo $status_filter === 'inactive' ? 'selected' : ''; ?>>Inactive</option>
@@ -473,16 +495,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </select>
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label">&nbsp;</label>
-                        <div>
-                            <button type="submit" class="btn btn-primary w-100">
-                                <i class="bi bi-search"></i> Search
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div class="row mt-3">
-                    <div class="col-12">
                         <a href="software.php" class="btn btn-outline-secondary">
                             <i class="bi bi-x-circle"></i> Clear Filters
                         </a>
@@ -493,6 +505,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <!-- Software Table -->
         <div class="software-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">Software Items (<?php echo $total_count; ?> found)</h5>
+                <?php if (!empty($search) || !empty($category_filter) || !empty($license_filter) || !empty($status_filter)): ?>
+                    <small class="text-muted">Filtered results</small>
+                <?php endif; ?>
+            </div>
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
                     <thead>
