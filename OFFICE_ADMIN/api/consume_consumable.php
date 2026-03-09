@@ -35,6 +35,9 @@ if (!$configLoaded) {
     exit();
 }
 
+// Load notification functions
+require_once __DIR__ . '/../includes/notification_functions.php';
+
 // Debug: Log that we're proceeding with the script
 error_log("DEBUG: Proceeding with consumable API logic");
 
@@ -129,6 +132,23 @@ try {
     error_log("DEBUG: Consumable API - Committing transaction");
     $conn->commit();
     error_log("DEBUG: Consumable API - Transaction committed successfully");
+    
+    // Create notification for consumption
+    createConsumptionNotification($_SESSION['office_id'], $consumable_id, $consumable['description'], $quantity, $new_quantity);
+    
+    // Check if this created a low stock situation
+    if ($new_quantity <= 0) {
+        // Get reorder level to check if we need a low stock alert
+        $reorder_stmt = $conn->prepare("SELECT reorder_level FROM consumables WHERE id = ?");
+        $reorder_stmt->bind_param("i", $consumable_id);
+        $reorder_stmt->execute();
+        $reorder_result = $reorder_stmt->get_result();
+        $reorder_data = $reorder_result->fetch_assoc();
+        
+        if ($new_quantity <= $reorder_data['reorder_level']) {
+            createLowStockNotification($_SESSION['office_id'], $consumable_id, $consumable['description'], $new_quantity, $reorder_data['reorder_level']);
+        }
+    }
     
     echo json_encode([
         'success' => true, 
