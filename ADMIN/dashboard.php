@@ -399,9 +399,7 @@ $total_forms_value = $stats['par_value'] + $stats['ics_value'] + $stats['ris_val
         console.log('Chart.js version:', typeof Chart !== 'undefined' ? Chart.version : 'Not loaded');
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="../assets/css/index.css" rel="stylesheet">
-    <link href="../assets/css/theme-custom.css" rel="stylesheet">
-    <link href="dashboard.css" rel="stylesheet">
+    <link href="assets/css/admin-unified.css" rel="stylesheet">
 </head>
 <body>
     <?php $page_title = 'Admin Dashboard'; ?>
@@ -411,11 +409,11 @@ $total_forms_value = $stats['par_value'] + $stats['ics_value'] + $stats['ris_val
         <?php require_once 'includes/topbar.php'; ?>
     
     <div class="main-content">
-        <div class="dashboard-header">
+        <div class="page-header">
             <div class="row align-items-center">
                 <div class="col-md-8">
-                    <h1 class="mb-1" style="font-weight: 700; color: #191BA9;">
-                        <i class="bi bi-grid-1x2-fill me-2"></i>Admin Dashboard
+                    <h1 class="mb-2">
+                        <i class="bi bi-grid-1x2-fill"></i> Admin Dashboard
                     </h1>
                     <p class="text-muted mb-0">Welcome back! Here's an overview of your property inventory system.</p>
                     <?php if (isset($stats['error'])): ?>
@@ -497,43 +495,27 @@ $total_forms_value = $stats['par_value'] + $stats['ics_value'] + $stats['ris_val
         
         <div class="row g-3 mb-4">
             <div class="col-6 col-md-3">
-                <div class="stat-card">
-                    <div class="stat-icon blue">
-                        <i class="bi bi-box-seam"></i>
-                    </div>
-                    <div class="stat-value"><?php echo number_format($stats['total_items']); ?></div>
-                    <div class="stat-label">Total Asset Items</div>
-                    <div class="stat-sublabel"><?php echo number_format($stats['serviceable_items']); ?> serviceable</div>
+                <div class="stats-card">
+                    <div class="stats-number"><?php echo number_format($stats['total_items']); ?></div>
+                    <div class="stats-label"><i class="bi bi-box-seam"></i> Total Asset Items</div>
                 </div>
             </div>
             <div class="col-6 col-md-3">
-                <div class="stat-card">
-                    <div class="stat-icon green">
-                        <span style="font-size: 1.25rem; font-weight: 600;">₱</span>
-                    </div>
-                    <div class="stat-value"><?php echo number_format($stats['total_value'], 2); ?></div>
-                    <div class="stat-label">Total Asset Value</div>
-                    <div class="stat-sublabel">Across all categories</div>
+                <div class="stats-card">
+                    <div class="stats-number">₱<?php echo number_format($stats['total_value'], 2); ?></div>
+                    <div class="stats-label"><i class="bi bi-currency-dollar"></i> Total Asset Value</div>
                 </div>
             </div>
             <div class="col-6 col-md-3">
-                <div class="stat-card">
-                    <div class="stat-icon purple">
-                        <i class="bi bi-file-earmark-text"></i>
-                    </div>
-                    <div class="stat-value"><?php echo number_format($total_forms); ?></div>
-                    <div class="stat-label">Total Forms</div>
-                    <div class="stat-sublabel">PAR, ICS, RIS, ITR, IIRUP</div>
+                <div class="stats-card">
+                    <div class="stats-number"><?php echo number_format($total_forms); ?></div>
+                    <div class="stats-label"><i class="bi bi-file-earmark-text"></i> Total Forms</div>
                 </div>
             </div>
             <div class="col-6 col-md-3">
-                <div class="stat-card">
-                    <div class="stat-icon orange">
-                        <i class="bi bi-fuel-pump"></i>
-                    </div>
-                    <div class="stat-value"><?php echo number_format($stats['total_fuel_stock'], 0); ?></div>
-                    <div class="stat-label">Fuel Stock (L)</div>
-                    <div class="stat-sublabel"><?php echo $stats['fuel_types_count']; ?> fuel types</div>
+                <div class="stats-card">
+                    <div class="stats-number"><?php echo number_format($stats['total_fuel_stock'], 0); ?></div>
+                    <div class="stats-label"><i class="bi bi-fuel-pump"></i> Fuel Stock (L)</div>
                 </div>
             </div>
         </div>
@@ -784,7 +766,7 @@ $total_forms_value = $stats['par_value'] + $stats['ics_value'] + $stats['ris_val
                                 }
                         ?>
                             <div class="activity-item">
-                                <div class="activity-icon <?php echo $activity['icon_class']; ?>" style="background: rgba(25, 27, 169, 0.1); color: #191BA9;">
+                                <div class="activity-icon <?php echo $activity['icon_class']; ?>">
                                     <i class="bi <?php echo $activity['icon']; ?>"></i>
                                 </div>
                                 <div class="activity-content">
@@ -883,27 +865,27 @@ $total_forms_value = $stats['par_value'] + $stats['ics_value'] + $stats['ris_val
                     </div>
                     <div class="row text-center g-2">
                         <div class="col-6">
-                            <div class="p-2 rounded" style="background: rgba(25, 27, 169, 0.05);">
-                                <div class="fw-bold" style="color: #191BA9; font-size: 1.25rem;"><?php echo number_format($stats['office_count']); ?></div>
-                                <div class="small text-muted">Offices</div>
+                            <div class="overview-card primary">
+                                <div class="overview-number"><?php echo number_format($stats['office_count']); ?></div>
+                                <div class="overview-label">Offices</div>
                             </div>
                         </div>
                         <div class="col-6">
-                            <div class="p-2 rounded" style="background: rgba(40, 167, 69, 0.05);">
-                                <div class="fw-bold text-success" style="font-size: 1.25rem;"><?php echo number_format($stats['active_employees']); ?></div>
-                                <div class="small text-muted">Employees</div>
+                            <div class="overview-card success">
+                                <div class="overview-number"><?php echo number_format($stats['active_employees']); ?></div>
+                                <div class="overview-label">Employees</div>
                             </div>
                         </div>
                         <div class="col-6">
-                            <div class="p-2 rounded" style="background: rgba(253, 126, 20, 0.05);">
-                                <div class="fw-bold" style="color: #fd7e14; font-size: 1.25rem;"><?php echo number_format($stats['active_tags']); ?></div>
-                                <div class="small text-muted">Active Tags</div>
+                            <div class="overview-card warning">
+                                <div class="overview-number"><?php echo number_format($stats['active_tags']); ?></div>
+                                <div class="overview-label">Active Tags</div>
                             </div>
                         </div>
                         <div class="col-6">
-                            <div class="p-2 rounded" style="background: rgba(220, 53, 69, 0.05);">
-                                <div class="fw-bold text-danger" style="font-size: 1.25rem;"><?php echo number_format($stats['today_transactions']); ?></div>
-                                <div class="small text-muted">Fuel Today</div>
+                            <div class="overview-card danger">
+                                <div class="overview-number"><?php echo number_format($stats['today_transactions']); ?></div>
+                                <div class="overview-label">Fuel Today</div>
                             </div>
                         </div>
                     </div>
