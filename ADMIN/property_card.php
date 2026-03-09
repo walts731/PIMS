@@ -128,283 +128,7 @@ if ($conn && !$conn->connect_error) {
     <link href="../assets/css/theme-custom.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css">
-    <style>
-        :root {
-            --primary-gradient: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%);
-            --border-radius: 12px;
-            --transition: all 0.3s ease;
-            --shadow: 0 2px 12px rgba(0,0,0,0.08);
-            --shadow-lg: 0 4px 20px rgba(0,0,0,0.15);
-        }
-        
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #F7F3F3 0%, #C1EAF2 100%);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-        
-        .page-header {
-            background: white;
-            border-radius: 16px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-            border-left: 4px solid #191BA9;
-        }
-        
-        .property-card-table {
-            background: white;
-            border-radius: 16px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-        }
-        
-        .table-custom {
-            border-collapse: separate;
-            border-spacing: 0;
-        }
-        
-        .table-custom thead th {
-            background: transparent;
-            color: #212529;
-            font-weight: 600;
-            border: none;
-            padding: 1rem 0.75rem;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .table-custom thead th:first-child {
-            border-top-left-radius: 12px;
-        }
-        
-        .table-custom thead th:last-child {
-            border-top-right-radius: 12px;
-        }
-        
-        .table-custom tbody td {
-            padding: 0.875rem 0.75rem;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-            vertical-align: middle;
-            font-size: 0.9rem;
-        }
-        
-        .table-custom tbody tr:hover {
-            background: rgba(25, 27, 169, 0.02);
-        }
-        
-        .property-no {
-            font-weight: 600;
-            color: #191BA9;
-            font-family: 'Courier New', monospace;
-        }
-        
-        .par-reference {
-            background: rgba(25, 27, 169, 0.1);
-            color: #191BA9;
-            padding: 0.25rem 0.5rem;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            font-weight: 500;
-        }
-        
-        .employee-info {
-            display: flex;
-            flex-direction: column;
-            gap: 0.25rem;
-        }
-        
-        .office-code-only {
-            background: rgba(25, 27, 169, 0.1);
-            color: #191BA9;
-            padding: 0.25rem 0.5rem;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            font-family: 'Courier New', monospace;
-            display: inline-block;
-        }
-        
-        .employee-name {
-            font-weight: 500;
-            color: #212529;
-        }
-        
-        .employee-no {
-            font-size: 0.8rem;
-            color: #6c757d;
-        }
-        
-        .quantity-badge {
-            background: rgba(40, 167, 69, 0.1);
-            color: #28a745;
-            padding: 0.25rem 0.5rem;
-            border-radius: 12px;
-            font-weight: 600;
-            text-align: center;
-            min-width: 40px;
-        }
-        
-        .value-cell {
-            font-weight: 600;
-            color: #212529;
-            text-align: right;
-        }
-        
-        .balance-qty {
-            font-weight: 600;
-            color: #fd7e14;
-            text-align: center;
-        }
-        
-        .category-badge {
-            background: rgba(25, 27, 169, 0.1);
-            color: #191BA9;
-            padding: 0.25rem 0.5rem;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            display: inline-block;
-            white-space: nowrap;
-        }
-        
-        .date-cell {
-            font-size: 0.85rem;
-            color: #6c757d;
-            white-space: nowrap;
-        }
-        
-        .description-cell {
-            max-width: 200px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        
-        .description-cell:hover {
-            white-space: normal;
-            overflow: visible;
-            text-overflow: initial;
-        }
-        
-        .filter-section {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border: 1px solid #dee2e6;
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-        
-        .filter-badge {
-            background: rgba(25, 27, 169, 0.1);
-            color: #191BA9;
-            padding: 0.25rem 0.5rem;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            font-weight: 500;
-        }
-        
-        .filter-row {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border-bottom: 2px solid #dee2e6;
-        }
-        
-        .filter-row th {
-            border-bottom: none;
-            padding: 0.75rem;
-            vertical-align: middle;
-        }
-        
-        .filter-row .form-label {
-            color: #495057;
-            font-size: 0.875rem;
-        }
-        
-        .stats-row {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-            flex-wrap: wrap;
-        }
-        
-        .stat-card {
-            background: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%);
-            color: white;
-            padding: 1rem 1.5rem;
-            border-radius: 12px;
-            flex: 1;
-            min-width: 150px;
-        }
-        
-        .stat-value {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 0.25rem;
-        }
-        
-        .stat-label {
-            font-size: 0.8rem;
-            opacity: 0.9;
-        }
-        
-        .export-btn {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            border: none;
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-        
-        .export-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
-            color: white;
-        }
-        
-        .btn-group .btn {
-            border-radius: 8px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            border: none;
-            margin: 0 2px;
-        }
-        
-        .btn-group .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-        
-        .btn-group .btn-info:hover {
-            box-shadow: 0 4px 12px rgba(13, 202, 240, 0.3);
-        }
-        
-        .btn-group .btn-success:hover {
-            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
-        }
-        
-        .btn-group .btn-danger:hover {
-            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
-        }
-        
-        @media (max-width: 768px) {
-            .table-custom {
-                font-size: 0.8rem;
-            }
-            
-            .table-custom thead th,
-            .table-custom tbody td {
-                padding: 0.5rem 0.25rem;
-            }
-            
-            .description-cell {
-                max-width: 100px;
-            }
-        }
-    </style>
+    <link href="assets/css/admin-unified.css" rel="stylesheet">
 </head>
 <body>
     <?php $page_title = 'Property Card'; ?>
@@ -453,67 +177,75 @@ if ($conn && !$conn->connect_error) {
                 </div>
             </div>
         <?php else: ?>
-            <!-- Statistics Row -->
-            <div class="stats-row">
-                <div class="stat-card">
-                    <div class="stat-value"><?php echo count($asset_items); ?></div>
-                    <div class="stat-label">Total Items</div>
+            <!-- Statistics Cards -->
+            <div class="row mb-4">
+                <div class="col-lg-4 col-md-6">
+                    <div class="stats-card">
+                        <div class="stats-number"><?php echo count($asset_items); ?></div>
+                        <div class="stats-label"><i class="bi bi-box"></i> Total Items</div>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-value"><?php echo number_format(array_sum(array_column($asset_items, 'value')), 2); ?></div>
-                    <div class="stat-label">Total Value (₱)</div>
+                <div class="col-lg-4 col-md-6">
+                    <div class="stats-card">
+                        <div class="stats-number">₱<?php echo number_format(array_sum(array_column($asset_items, 'value')), 2); ?></div>
+                        <div class="stats-label"><i class="bi bi-currency-dollar"></i> Total Value</div>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-value"><?php echo count(array_unique(array_column($asset_items, 'par_id'))); ?></div>
-                    <div class="stat-label">PAR Forms</div>
+                <div class="col-lg-4 col-md-6">
+                    <div class="stats-card">
+                        <div class="stats-number"><?php echo count(array_unique(array_column($asset_items, 'par_id'))); ?></div>
+                        <div class="stats-label"><i class="bi bi-file-text"></i> PAR Forms</div>
+                    </div>
                 </div>
             </div>
             
-            <div class="property-card-table">
+            <!-- Filter Section -->
+            <div class="table-container mb-3">
+                <div class="row align-items-center">
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-center gap-2">
+                            <label for="categoryFilter" class="form-label mb-0 fw-semibold">
+                                <i class="bi bi-tags me-1"></i>Category
+                            </label>
+                            <select class="form-select form-select-sm" style="width: auto;" id="categoryFilter" name="category" onchange="autoFilter()">
+                                <option value="">All Categories</option>
+                                <?php foreach ($categories as $category): ?>
+                                    <option value="<?php echo htmlspecialchars($category['category_code']); ?>" 
+                                            <?php echo $selected_category === $category['category_code'] ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($category['category_code']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-center gap-2">
+                            <label for="officeFilter" class="form-label mb-0 fw-semibold">
+                                <i class="bi bi-building me-1"></i>Office
+                            </label>
+                            <select class="form-select form-select-sm" style="width: auto;" id="officeFilter" name="office" onchange="autoFilter()">
+                                <option value="">All Offices</option>
+                                <?php foreach ($offices as $office): ?>
+                                    <option value="<?php echo htmlspecialchars($office['office_code']); ?>" 
+                                            <?php echo $selected_office === $office['office_code'] ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($office['office_code']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearFilters()">
+                            <i class="bi bi-x-circle me-1"></i>Clear Filters
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="table-container">
                 <div class="table-responsive">
-                    <table class="table table-custom" id="propertyCardTable">
-                        <thead>
-                            <tr class="filter-row">
-                                <th colspan="2" class="text-start">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <label for="categoryFilter" class="form-label mb-0 fw-semibold">
-                                            <i class="bi bi-tags me-1"></i>Category
-                                        </label>
-                                        <select class="form-select form-select-sm" style="width: auto;" id="categoryFilter" name="category" onchange="autoFilter()">
-                                            <option value="">All Categories</option>
-                                            <?php foreach ($categories as $category): ?>
-                                                <option value="<?php echo htmlspecialchars($category['category_code']); ?>" 
-                                                        <?php echo $selected_category === $category['category_code'] ? 'selected' : ''; ?>>
-                                                    <?php echo htmlspecialchars($category['category_code']); ?>
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-                                </th>
-                                <th colspan="2" class="text-start">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <label for="officeFilter" class="form-label mb-0 fw-semibold">
-                                            <i class="bi bi-building me-1"></i>Office
-                                        </label>
-                                        <select class="form-select form-select-sm" style="width: auto;" id="officeFilter" name="office" onchange="autoFilter()">
-                                            <option value="">All Offices</option>
-                                            <?php foreach ($offices as $office): ?>
-                                                <option value="<?php echo htmlspecialchars($office['office_code']); ?>" 
-                                                        <?php echo $selected_office === $office['office_code'] ? 'selected' : ''; ?>>
-                                                    <?php echo htmlspecialchars($office['office_code']); ?>
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-                                </th>
-                                <th colspan="5" class="text-end">
-                                    <div class="d-flex gap-2 justify-content-end">
-                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearFilters()">
-                                            <i class="bi bi-x-circle me-1"></i>Clear
-                                        </button>
-                                    </div>
-                                </th>
-                            </tr>
+                    <table class="table table-hover" id="propertyCardTable">
+                        <thead class="table-light">
                             <tr>
                                 <th>Date</th>
                                 <th>Property No.</th>
@@ -531,44 +263,40 @@ if ($conn && !$conn->connect_error) {
                             foreach ($asset_items as $index => $item): 
                             ?>
                                 <tr>
-                                    <td class="date-cell">
+                                    <td>
                                         <?php echo date('M d, Y', strtotime($item['created_at'])); ?>
                                     </td>
                                     <td>
                                         <span class="property-no"><?php echo htmlspecialchars($item['property_no']); ?></span>
                                     </td>
                                     <td>
-                                        <div>
-                                            <div class="category-badge"><?php echo htmlspecialchars($item['asset_category_code']); ?></div>
-                                            <small class="text-muted d-block mt-1"><?php echo htmlspecialchars($item['asset_category']); ?></small>
-                                        </div>
+                                        <span class="category-badge"><?php echo htmlspecialchars($item['asset_category_code']); ?></span>
+                                        <br><small class="text-muted"><?php echo htmlspecialchars($item['asset_category']); ?></small>
                                     </td>
-                                    <td class="description-cell" title="<?php echo htmlspecialchars($item['description']); ?>">
+                                    <td>
                                         <?php echo htmlspecialchars($item['description']); ?>
                                     </td>
                                     <td>
-                                        <div>
-                                            <div class="office-code-only"><?php echo htmlspecialchars($item['office_code']); ?></div>
-                                            <small class="text-muted d-block mt-1"><?php echo htmlspecialchars($item['office_name']); ?></small>
-                                        </div>
+                                        <span class="office-code-only"><?php echo htmlspecialchars($item['office_code']); ?></span>
+                                        <br><small class="text-muted"><?php echo htmlspecialchars($item['office_name']); ?></small>
                                     </td>
                                     <td>
                                         <?php if ($item['employee_name']): ?>
-                                            <div class="employee-info">
-                                                <span class="employee-name"><?php echo htmlspecialchars($item['employee_name']); ?></span>
-                                                <span class="employee-no"><?php echo htmlspecialchars($item['employee_no']); ?></span>
-                                            </div>
+                                            <?php echo htmlspecialchars($item['employee_name']); ?>
+                                            <br><small class="text-muted"><?php echo htmlspecialchars($item['employee_no']); ?></small>
                                         <?php else: ?>
                                             <span class="text-muted">Not assigned</span>
                                         <?php endif; ?>
                                     </td>
-                                    <td class="value-cell">
-                                        ₱<?php echo number_format($item['value'], 2); ?>
+                                    <td>
+                                        <strong>₱<?php echo number_format($item['value'], 2); ?></strong>
                                     </td>
                                     <td class="no-print">
-                                        <a href="view_asset_item.php?id=<?php echo $item['id']; ?>" class="btn btn-sm btn-outline-primary" title="View Asset Item">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
+                                        <div class="btn-group" role="group">
+                                            <a href="view_asset_item.php?id=<?php echo $item['id']; ?>" class="btn btn-sm btn-outline-primary" title="View Asset Item">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                             <?php 
