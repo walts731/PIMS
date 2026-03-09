@@ -127,6 +127,7 @@ try {
     <!-- Custom CSS -->
     <link href="../assets/css/index.css" rel="stylesheet">
     <link href="../assets/css/theme-custom.css" rel="stylesheet">
+    <link href="assets/css/admin-unified.css" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
