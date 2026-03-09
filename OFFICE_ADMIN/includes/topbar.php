@@ -52,27 +52,25 @@
 
                 <i class="bi bi-bell"></i>
 
-                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-
-                    3
-
-                </span>
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notificationBadge" style="display: none;">0</span>
 
             </button>
 
-            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationDropdown">
+            <ul class="dropdown-menu dropdown-menu-end notification-dropdown" aria-labelledby="notificationDropdown">
 
                 <li><h6 class="dropdown-header">Notifications</h6></li>
 
-                <li><a class="dropdown-item" href="#">New consumable request pending</a></li>
-
-                <li><a class="dropdown-item" href="#">Asset maintenance due</a></li>
-
-                <li><a class="dropdown-item" href="#">Low stock alert</a></li>
+                <div id="notificationList">
+                    <div class="notification-loading">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
 
                 <li><hr class="dropdown-divider"></li>
 
-                <li><a class="dropdown-item text-center" href="#">View all notifications</a></li>
+                <li><a class="dropdown-item text-center" href="notifications.php">View all notifications</a></li>
 
             </ul>
 
@@ -437,76 +435,269 @@
 
 
 <script>
-
-// Debug dropdown functionality
+// Notification System
+let notificationDropdown;
+let notificationList;
+let notificationBadge;
+let notificationTimeout;
 
 document.addEventListener('DOMContentLoaded', function() {
-
-    console.log('Topbar loaded, checking dropdown functionality...');
-
+    notificationDropdown = document.getElementById('notificationDropdown');
+    notificationList = document.getElementById('notificationList');
+    notificationBadge = document.getElementById('notificationBadge');
     
-
-    // Check if Bootstrap is loaded
-
-    if (typeof bootstrap === 'undefined') {
-
-        console.error('Bootstrap is not loaded!');
-
-    } else {
-
-        console.log('Bootstrap is loaded successfully');
-
+    // Initialize notification system
+    updateNotificationBadge();
+    
+    // Setup dropdown events
+    if (notificationDropdown) {
+        notificationDropdown.addEventListener('click', function() {
+            loadNotifications();
+        });
     }
-
     
-
-    // Check dropdown elements
-
-    const dropdowns = document.querySelectorAll('.dropdown');
-
-    console.log('Found dropdowns:', dropdowns.length);
-
-    
-
-    // Initialize dropdowns manually if needed
-
-    dropdowns.forEach(function(dropdown) {
-
-        const toggle = dropdown.querySelector('.dropdown-toggle');
-
-        if (toggle) {
-
-            console.log('Initializing dropdown for:', toggle);
-
-            try {
-
-                const dropdownInstance = new bootstrap.Dropdown(toggle);
-
-                console.log('Dropdown initialized successfully');
-
-            } catch (error) {
-
-                console.error('Error initializing dropdown:', error);
-
-            }
-
-        }
-
-    });
-
+    // Auto-refresh notification count every 30 seconds
+    setInterval(updateNotificationBadge, 30000);
 });
 
-
-
-function confirmLogout() {
-
-    if (confirm('Are you sure you want to logout?')) {
-
-        window.location.href = '../logout.php';
-
-    }
-
+function updateNotificationBadge() {
+    fetch('notifications_handler.php?action=get_count', {
+        credentials: 'include'  // Include cookies for session
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Notification count response:', data);
+            const count = data.unread_count || 0;
+            if (count > 0) {
+                notificationBadge.textContent = count > 99 ? '99+' : count;
+                notificationBadge.style.display = 'block';
+            } else {
+                notificationBadge.style.display = 'none';
+            }
+        })
+        .catch(error => {
+            console.error('Error updating notification badge:', error);
+            notificationBadge.style.display = 'none';
+        });
 }
 
+function loadNotifications() {
+    if (!notificationList) return;
+    
+    // Show loading state
+    notificationList.innerHTML = `
+        <div class="notification-loading">
+            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    `;
+    
+    fetch('notifications_handler.php?action=get_notifications&limit=5', {
+        credentials: 'include'
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Notifications response:', data);
+            displayNotifications(data.notifications);
+        })
+        .catch(error => {
+            console.error('Error loading notifications:', error);
+            notificationList.innerHTML = `
+                <li><a class="dropdown-item text-muted">Error loading notifications</a></li>
+            `;
+        });
+}
+
+function displayNotifications(notifications) {
+    if (!notifications || notifications.length === 0) {
+        notificationList.innerHTML = `
+            <li><a class="dropdown-item text-muted">No notifications</a></li>
+        `;
+        return;
+    }
+    
+    let html = '';
+    notifications.forEach(notification => {
+        const unreadClass = notification.is_read ? '' : 'unread';
+        const typeIcon = getNotificationIcon(notification.type);
+        
+        html += `
+            <li class="notification-item ${unreadClass}">
+                <a class="dropdown-item" href="${notification.action_url}" onclick="markAsReadOnClick(${notification.id}, event)">
+                    <div class="d-flex align-items-start">
+                        <div class="me-2">
+                            <i class="bi ${typeIcon}"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">${notification.title}</div>
+                            <div class="small text-muted">${notification.message}</div>
+                            <div class="small text-muted">${notification.time_ago}</div>
+                        </div>
+                        ${!notification.is_read ? '<div class="ms-2"><span class="badge bg-primary">New</span></div>' : ''}
+                    </div>
+                </a>
+            </li>
+        `;
+    });
+    
+    notificationList.innerHTML = html;
+}
+
+function getNotificationIcon(type) {
+    switch (type) {
+        case 'success': return 'bi-check-circle-fill text-success';
+        case 'warning': return 'bi-exclamation-triangle-fill text-warning';
+        case 'error': return 'bi-x-circle-fill text-danger';
+        case 'info': return 'bi-info-circle-fill text-info';
+        case 'system': return 'bi-gear-fill text-secondary';
+        default: return 'bi-bell-fill text-primary';
+    }
+}
+
+function markAsReadOnClick(notificationId, event) {
+    if (!event.ctrlKey && !event.metaKey) {
+        event.preventDefault();
+        
+        // Mark as read first
+        fetch('notifications_handler.php?action=mark_read', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `notification_id=${notificationId}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Get the notification URL and navigate
+                fetch('notifications_handler.php?action=get_notifications&limit=1&offset=0', {
+                    credentials: 'include'
+                })
+                .then(response => response.json())
+                .then(notificationData => {
+                    if (notificationData.notifications && notificationData.notifications.length > 0) {
+                        const notification = notificationData.notifications[0];
+                        window.location.href = notification.action_url;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error getting notification URL:', error);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error marking notification as read:', error);
+        });
+    }
+}
+
+// Debug dropdown functionality
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Office Admin topbar loaded, checking dropdown functionality...');
+    
+    // Check if Bootstrap is loaded
+    if (typeof bootstrap === 'undefined') {
+        console.error('Bootstrap is not loaded!');
+    } else {
+        console.log('Bootstrap is loaded successfully');
+    }
+    
+    // Check dropdown elements
+    const dropdowns = document.querySelectorAll('.dropdown');
+    console.log('Found dropdowns:', dropdowns.length);
+    
+    // Initialize dropdowns manually if needed
+    dropdowns.forEach(function(dropdown) {
+        const toggle = dropdown.querySelector('.dropdown-toggle');
+        if (toggle) {
+            console.log('Initializing dropdown for:', toggle);
+            try {
+                const dropdownInstance = new bootstrap.Dropdown(toggle);
+                console.log('Dropdown initialized successfully');
+            } catch (error) {
+                console.error('Error initializing dropdown:', error);
+            }
+        }
+    });
+});
+
+function confirmLogout() {
+    if (confirm('Are you sure you want to logout?')) {
+        window.location.href = '../logout.php';
+    }
+}
 </script>
 
+<style>
+/* Notification Dropdown Styles */
+.notification-dropdown {
+    width: 350px;
+    max-height: 400px;
+    border: none;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    border-radius: var(--border-radius);
+    margin-top: 0.5rem;
+    overflow: hidden;
+}
+
+.notification-item {
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.notification-item.unread {
+    background-color: #e3f2fd;
+    border-left: 3px solid #5CC2F2;
+}
+
+.notification-item .dropdown-item {
+    white-space: normal;
+    padding: 0.75rem 1rem;
+    border-radius: 0;
+}
+
+.notification-item .dropdown-item:hover {
+    background-color: #f8f9fa;
+}
+
+.notification-loading {
+    padding: 1rem;
+    text-align: center;
+}
+
+.notification-badge {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+    .notification-dropdown {
+        width: 300px;
+    }
+}
+</style>
