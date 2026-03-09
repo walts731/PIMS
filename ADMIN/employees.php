@@ -412,72 +412,7 @@ $showing_to = min($page * $per_page, $total_records);
     <!-- Custom CSS -->
     <link href="../assets/css/index.css" rel="stylesheet">
     <link href="../assets/css/theme-custom.css" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #F7F3F3 0%, #C1EAF2 100%);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-        
-        .stats-card {
-            background: white;
-            border-radius: var(--border-radius-lg);
-            padding: 1.5rem;
-            box-shadow: var(--shadow);
-            border-left: 4px solid var(--primary-color);
-            transition: transform 0.2s;
-        }
-        
-        .stats-card:hover {
-            transform: translateY(-2px);
-        }
-        
-        .stats-number {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--primary-color);
-            margin-bottom: 0.5rem;
-        }
-        
-        .stats-label {
-            color: #6c757d;
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
-        
-        .table-container {
-            background: white;
-            border-radius: var(--border-radius-lg);
-            padding: 1.5rem;
-            box-shadow: var(--shadow);
-            margin-bottom: 2rem;
-        }
-        
-        .status-badge {
-            padding: 0.25rem 0.75rem;
-            border-radius: var(--border-radius-xl);
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-        
-        .status-permanent { background: #d4edda; color: #155724; }
-        .status-contractual { background: #cce5ff; color: #004085; }
-        .status-job_order { background: #fff3cd; color: #856404; }
-        .status-resigned { background: #f8d7da; color: #721c24; }
-        .status-retired { background: #e2e3e5; color: #383d41; }
-        .clearance-cleared { background: #d4edda; color: #155724; }
-        .clearance-uncleared { background: #f8d7da; color: #721c24; }
-        
-        .page-header {
-            background: white;
-            border-radius: var(--border-radius-xl);
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow);
-            border-left: 4px solid var(--primary-color);
-        }
-    </style>
+    <link href="assets/css/admin-unified.css" rel="stylesheet">
 </head>
 <body>
     <?php

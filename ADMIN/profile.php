@@ -178,156 +178,7 @@ try {
     <!-- Custom CSS -->
     <link href="../assets/css/index.css" rel="stylesheet">
     <link href="../assets/css/theme-custom.css" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #F7F3F3 0%, #C1EAF2 100%);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-        
-        .profile-header {
-            background: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%);
-            color: white;
-            padding: 3rem 0;
-            margin-bottom: 2rem;
-            border-radius: 30px;
-        }
-        
-        .profile-avatar {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            background: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 3rem;
-            color: #191BA9;
-            margin: 0 auto 1rem;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-        
-        .profile-card {
-            background: white;
-            border-radius: 15px;
-            padding: 2rem;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            margin-bottom: 2rem;
-            border-left: 4px solid #191BA9;
-        }
-        
-        .form-control, .form-select {
-            border-radius: 10px;
-            border: 2px solid #e9ecef;
-            padding: 0.75rem 1rem;
-            transition: all 0.3s ease;
-        }
-        
-        .form-control:focus, .form-select:focus {
-            border-color: #191BA9;
-            box-shadow: 0 0 0 0.2rem rgba(25, 27, 169, 0.25);
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%);
-            border: none;
-            border-radius: 10px;
-            padding: 0.75rem 2rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(25, 27, 169, 0.3);
-        }
-        
-        .nav-tabs .nav-link {
-            border-radius: 10px 10px 0 0;
-            border: none;
-            color: #6c757d;
-            font-weight: 600;
-        }
-        
-        .nav-tabs .nav-link.active {
-            background: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%);
-            color: white;
-        }
-        
-        .activity-item {
-            padding: 1rem;
-            border-left: 3px solid #191BA9;
-            margin-bottom: 1rem;
-            background: #f8f9fa;
-            border-radius: 0 10px 10px 0;
-        }
-        
-        .role-badge {
-            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 0.8rem;
-        }
-        
-        .stats-card {
-            background: white;
-            border-radius: 15px;
-            padding: 1.5rem;
-            text-align: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease;
-        }
-        
-        .stats-card:hover {
-            transform: translateY(-5px);
-        }
-        
-        .stats-number {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #191BA9;
-        }
-        
-        /* Modal z-index fixes */
-        .modal {
-            z-index: 1055;
-        }
-        
-        .modal-backdrop {
-            z-index: 1050;
-        }
-        
-        .modal-dialog {
-            z-index: 1060;
-        }
-        
-        /* Ensure sidebar overlay doesn't interfere with modals */
-        .sidebar-overlay {
-            z-index: 1040;
-        }
-        
-        /* Fix modal backdrop issues */
-        .modal.show {
-            display: block !important;
-        }
-        
-        .modal-backdrop.show {
-            display: block !important;
-            opacity: 0.5;
-        }
-        
-        /* Ensure modal buttons are clickable */
-        .modal-footer button,
-        .modal-header button,
-        .modal-footer a {
-            z-index: 1061;
-            position: relative;
-        }
-    </style>
+    <link href="assets/css/admin-unified.css" rel="stylesheet">
 </head>
 <body>
     <?php
@@ -343,7 +194,7 @@ try {
         <!-- Main Content -->
         <div class="main-content">
             <!-- Profile Header -->
-            <div class="profile-header">
+            <div class="page-header">
                 <div class="container">
                     <div class="row align-items-center">
                         <div class="col-md-3 text-center">
@@ -357,7 +208,7 @@ try {
                             <span class="role-badge"><?php echo htmlspecialchars($user_data['role']); ?></span>
                         </div>
                         <div class="col-md-3 text-md-end">
-                            <div class="text-white">
+                            <div>
                                 <small>Member Since</small><br>
                                 <strong><?php echo date('M j, Y', strtotime($user_data['created_at'])); ?></strong>
                             </div>
