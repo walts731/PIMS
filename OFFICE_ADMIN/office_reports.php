@@ -103,12 +103,18 @@ if ($office_id && $conn) {
             $report_data['consumable_stats']['monthly_usage'] = $usage_data['monthly_usage'] ?? 0;
         }
         
-        // Asset Statistics
+        // Asset Statistics - Enhanced with detailed status breakdown
         $asset_query = "SELECT 
                           COUNT(*) as total_assets,
                           SUM(CASE WHEN status = 'available' THEN 1 ELSE 0 END) as available_assets,
-                          SUM(CASE WHEN status = 'maintenance' OR status = 'unserviceable' THEN 1 ELSE 0 END) as in_maintenance,
+                          SUM(CASE WHEN status = 'in_use' THEN 1 ELSE 0 END) as in_use_assets,
+                          SUM(CASE WHEN status = 'serviceable' THEN 1 ELSE 0 END) as serviceable_assets,
+                          SUM(CASE WHEN status = 'maintenance' THEN 1 ELSE 0 END) as maintenance_assets,
+                          SUM(CASE WHEN status = 'unserviceable' THEN 1 ELSE 0 END) as unserviceable_assets,
                           SUM(CASE WHEN status = 'disposed' THEN 1 ELSE 0 END) as disposed_assets,
+                          SUM(CASE WHEN status = 'no_tag' THEN 1 ELSE 0 END) as no_tag_assets,
+                          SUM(CASE WHEN status = 'pending_tag' THEN 1 ELSE 0 END) as pending_tag_assets,
+                          SUM(CASE WHEN status = 'red_tagged' THEN 1 ELSE 0 END) as red_tagged_assets,
                           SUM(COALESCE(value, 0)) as total_asset_value
                        FROM asset_items 
                        WHERE office_id = ?";
@@ -805,21 +811,38 @@ $report_data['asset_stats']['total_asset_value'] = number_format($report_data['a
                 }
             });
             
-            // Asset Status Chart
+            // Asset Status Chart - Enhanced with comprehensive status breakdown
             const assetStatusCtx = document.getElementById('assetStatusChart').getContext('2d');
             new Chart(assetStatusCtx, {
                 type: 'bar',
                 data: {
-                    labels: ['Available', 'In Maintenance', 'Disposed'],
+                    labels: ['Available', 'In Use', 'Serviceable', 'Maintenance', 'Unserviceable', 'Disposed', 'No Tag', 'Pending Tag', 'Red Tagged'],
                     datasets: [{
                         label: 'Assets',
                         data: [
                             <?php echo $report_data['asset_stats']['available_assets']; ?>,
-                            <?php echo $report_data['asset_stats']['in_maintenance']; ?>,
-                            <?php echo $report_data['asset_stats']['disposed_assets']; ?>
+                            <?php echo $report_data['asset_stats']['in_use_assets']; ?>,
+                            <?php echo $report_data['asset_stats']['serviceable_assets']; ?>,
+                            <?php echo $report_data['asset_stats']['maintenance_assets']; ?>,
+                            <?php echo $report_data['asset_stats']['unserviceable_assets']; ?>,
+                            <?php echo $report_data['asset_stats']['disposed_assets']; ?>,
+                            <?php echo $report_data['asset_stats']['no_tag_assets']; ?>,
+                            <?php echo $report_data['asset_stats']['pending_tag_assets']; ?>,
+                            <?php echo $report_data['asset_stats']['red_tagged_assets']; ?>
                         ],
-                        backgroundColor: ['#28a745', '#ffc107', '#dc3545'],
-                        borderWidth: 0
+                        backgroundColor: [
+                            '#28a745', // Available - Green
+                            '#17a2b8', // In Use - Blue
+                            '#20c997', // Serviceable - Teal
+                            '#ffc107', // Maintenance - Yellow
+                            '#fd7e14', // Unserviceable - Orange
+                            '#dc3545', // Disposed - Red
+                            '#6c757d', // No Tag - Gray
+                            '#e83e8c', // Pending Tag - Pink
+                            '#6f42c1'  // Red Tagged - Purple
+                        ],
+                        borderWidth: 0,
+                        borderRadius: 4
                     }]
                 },
                 options: {
@@ -828,7 +851,51 @@ $report_data['asset_stats']['total_asset_value'] = number_format($report_data['a
                     plugins: {
                         legend: {
                             display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            padding: 12,
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            borderColor: '#ddd',
+                            borderWidth: 1,
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = total > 0 ? ((context.parsed.y / total) * 100).toFixed(1) : 0;
+                                    return context.label + ': ' + context.parsed.y + ' (' + percentage + '%)';
+                                }
+                            }
                         }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1,
+                                callback: function(value) {
+                                    if (Math.floor(value) === value) {
+                                        return value;
+                                    }
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Number of Assets'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeInOutQuart'
                     }
                 }
             });
