@@ -40,14 +40,28 @@ if (!$conn || $conn->connect_error) {
             $check_item_status = $conn->query("SHOW COLUMNS FROM asset_items LIKE 'status'");
             $item_has_status = $check_item_status && $check_item_status->num_rows > 0;
             
-            // Office asset items
+            // Office asset items - Enhanced with comprehensive status breakdown
             $office_assets_query = "SELECT 
                 COUNT(*) as total_office_items" .
                 ($item_has_status ? ",
+                SUM(CASE WHEN status = 'available' THEN 1 ELSE 0 END) as available_assets,
+                SUM(CASE WHEN status = 'in_use' THEN 1 ELSE 0 END) as in_use_assets,
                 SUM(CASE WHEN status = 'serviceable' THEN 1 ELSE 0 END) as serviceable_items,
-                SUM(CASE WHEN status = 'unserviceable' THEN 1 ELSE 0 END) as unserviceable_items" : ",
+                SUM(CASE WHEN status = 'maintenance' THEN 1 ELSE 0 END) as maintenance_assets,
+                SUM(CASE WHEN status = 'unserviceable' THEN 1 ELSE 0 END) as unserviceable_items,
+                SUM(CASE WHEN status = 'disposed' THEN 1 ELSE 0 END) as disposed_assets,
+                SUM(CASE WHEN status = 'no_tag' THEN 1 ELSE 0 END) as no_tag_assets,
+                SUM(CASE WHEN status = 'pending_tag' THEN 1 ELSE 0 END) as pending_tag_assets,
+                SUM(CASE WHEN status = 'red_tagged' THEN 1 ELSE 0 END) as red_tagged_assets" : ",
+                0 as available_assets,
+                0 as in_use_assets,
                 0 as serviceable_items,
-                0 as unserviceable_items") . ",
+                0 as maintenance_assets,
+                0 as unserviceable_items,
+                0 as disposed_assets,
+                0 as no_tag_assets,
+                0 as pending_tag_assets,
+                0 as red_tagged_assets") . ",
                 COALESCE(SUM(value), 0) as total_office_value
                 FROM asset_items 
                 WHERE office_id = ?";
@@ -556,16 +570,38 @@ $page_title = 'Office Dashboard';
 <script>
 // Dashboard Charts
 document.addEventListener('DOMContentLoaded', function() {
-    // Asset Status Chart
+    // Asset Status Chart - Enhanced with comprehensive status breakdown
     const assetStatusCtx = document.getElementById('assetStatusChart').getContext('2d');
     new Chart(assetStatusCtx, {
         type: 'doughnut',
         data: {
-            labels: ['Serviceable', 'Unserviceable'],
+            labels: ['Available', 'In Use', 'Serviceable', 'Maintenance', 'Unserviceable', 'Disposed', 'No Tag', 'Pending Tag', 'Red Tagged'],
             datasets: [{
-                data: [<?php echo $stats['serviceable_items']; ?>, <?php echo $stats['unserviceable_items']; ?>],
-                backgroundColor: ['#28a745', '#dc3545'],
-                borderWidth: 0
+                data: [
+                    <?php echo $stats['available_assets']; ?>,
+                    <?php echo $stats['in_use_assets']; ?>,
+                    <?php echo $stats['serviceable_items']; ?>,
+                    <?php echo $stats['maintenance_assets']; ?>,
+                    <?php echo $stats['unserviceable_items']; ?>,
+                    <?php echo $stats['disposed_assets']; ?>,
+                    <?php echo $stats['no_tag_assets']; ?>,
+                    <?php echo $stats['pending_tag_assets']; ?>,
+                    <?php echo $stats['red_tagged_assets']; ?>
+                ],
+                backgroundColor: [
+                    '#28a745', // Available - Green
+                    '#17a2b8', // In Use - Blue
+                    '#20c997', // Serviceable - Teal
+                    '#ffc107', // Maintenance - Yellow
+                    '#fd7e14', // Unserviceable - Orange
+                    '#dc3545', // Disposed - Red
+                    '#6c757d', // No Tag - Gray
+                    '#e83e8c', // Pending Tag - Pink
+                    '#6f42c1'  // Red Tagged - Purple
+                ],
+                borderWidth: 2,
+                borderColor: '#fff',
+                hoverOffset: 8
             }]
         },
         options: {
@@ -573,8 +609,38 @@ document.addEventListener('DOMContentLoaded', function() {
             maintainAspectRatio: false,
             plugins: {
                 legend: {
-                    position: 'bottom'
+                    position: 'bottom',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 15,
+                        font: {
+                            size: 11
+                        }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    padding: 12,
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    borderColor: '#ddd',
+                    borderWidth: 1,
+                    displayColors: true,
+                    callbacks: {
+                        label: function(context) {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = total > 0 ? ((context.parsed / total) * 100).toFixed(1) : 0;
+                            return context.label + ': ' + context.parsed + ' (' + percentage + '%)';
+                        }
+                    }
                 }
+            },
+            cutout: '60%',
+            animation: {
+                animateRotate: true,
+                animateScale: true,
+                duration: 1000,
+                easing: 'easeInOutQuart'
             }
         }
     });
