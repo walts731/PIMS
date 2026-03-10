@@ -192,9 +192,9 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <i class="bi bi-speedometer2"></i>
             Dashboard
         </a>
-        <a href="assets.php" class="sidebar-nav-item <?php echo $current_page == 'assets.php' ? 'active' : ''; ?>">
-            <i class="bi bi-box-seam"></i>
-            Assets
+        <a href="asset_items.php" class="sidebar-nav-item <?php echo $current_page == 'asset_items.php' ? 'active' : ''; ?>">
+            <i class="bi bi-collection"></i>
+            Asset Items
         </a>
         <a href="offices.php" class="sidebar-nav-item <?php echo $current_page == 'offices.php' ? 'active' : ''; ?>">
             <i class="bi bi-building"></i>
