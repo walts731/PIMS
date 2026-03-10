@@ -352,22 +352,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
     
-    if (isset($_POST['delete_form'])) {
-        $form_id = $_POST['form_id'];
-        
-        $stmt = $conn->prepare("DELETE FROM forms WHERE id = ?");
-        $stmt->bind_param("i", $form_id);
-        
-        if ($stmt->execute()) {
-            logSystemAction($_SESSION['user_id'], 'delete', 'forms', "Deleted form with ID: $form_id");
-            header('Location: forms.php?message=Form deleted successfully');
-        } else {
-            header('Location: forms.php?error=Failed to delete form');
-        }
-        $stmt->close();
-        exit();
     }
-}
 
 // Get all forms
 $forms = [];
@@ -733,9 +718,6 @@ $stats['inactive_forms'] = $result->fetch_assoc()['inactive'];
                                                             <button class="btn btn-sm btn-outline-warning" onclick="editForm(<?php echo $form['id']; ?>)">
                                                                 <i class="bi bi-pencil"></i>
                                                             </button>
-                                                            <button class="btn btn-sm btn-outline-danger" onclick="deleteForm(<?php echo $form['id']; ?>)">
-                                                                <i class="bi bi-trash"></i>
-                                                            </button>
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -944,29 +926,6 @@ $stats['inactive_forms'] = $result->fetch_assoc()['inactive'];
             }
         }
         
-        // Delete form
-        function deleteForm(formId) {
-            if (confirm('Are you sure you want to delete this form? This action cannot be undone.')) {
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = 'forms.php';
-                
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = 'delete_form';
-                input.value = '1';
-                
-                const formIdInput = document.createElement('input');
-                formIdInput.type = 'hidden';
-                formIdInput.name = 'form_id';
-                formIdInput.value = formId;
-                
-                form.appendChild(input);
-                form.appendChild(formIdInput);
-                document.body.appendChild(form);
-                form.submit();
-            }
-        }
     </script>
 </body>
 </html>

@@ -586,7 +586,7 @@ $total_forms_value = $stats['par_value'] + $stats['ics_value'] + $stats['ris_val
             <div class="col-lg-8">
                 <div class="row g-3 mb-4">
                     <div class="col-md-6">
-                        <div class="section-card">
+                        <div class="section-card glass-morphism">
                             <div class="section-title">
                                 <i class="bi bi-pie-chart"></i> Asset Status Distribution
                             </div>
@@ -848,10 +848,8 @@ $total_forms_value = $stats['par_value'] + $stats['ics_value'] + $stats['ris_val
                                     <i class="bi <?php echo $activity['icon']; ?>"></i>
                                 </div>
                                 <div class="activity-content">
-                                    <div class="activity-title"><?php echo $activity['title']; ?></div>
-                                    <div class="activity-meta"><?php echo $activity['meta']; ?></div>
+                                    <div class="activity-title font-weight-bold fs-6"><?php echo $activity['title']; ?> <span class="activity-meta fw-bold text-primary"><?php echo $activity['meta']; ?>:</span> <span class="activity-time fw-semibold text-secondary"><?php echo $time_display; ?></span></div>
                                 </div>
-                                <div class="activity-time"><?php echo $time_display; ?></div>
                             </div>
                         <?php endforeach; else: ?>
                             <div class="text-center text-muted py-4">
