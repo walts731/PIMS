@@ -108,6 +108,56 @@ while ($history_row = $history_result->fetch_assoc()) {
 }
 $history_stmt->close();
 
+// Helper functions for timeline
+function getActionIcon($action) {
+    $icons = [
+        'Created' => 'plus-circle-fill',
+        'Updated' => 'pencil-fill',
+        'Deleted' => 'trash-fill',
+        'Status Changed' => 'arrow-repeat',
+        'Assigned' => 'person-check-fill',
+        'Transferred' => 'arrow-left-right',
+        'Maintenance' => 'tools',
+        'Disposed' => 'x-circle-fill',
+        'Inspected' => 'eye-fill',
+        'Repaired' => 'wrench',
+        'Calibrated' => 'speedometer2',
+        'Cleaned' => 'brush-fill',
+        'Tested' => 'check-circle-fill',
+        'Approved' => 'check-square-fill',
+        'Rejected' => 'x-square-fill'
+    ];
+    
+    return $icons[$action] ?? 'circle-fill';
+}
+
+function formatTimelineDate($date) {
+    $timestamp = strtotime($date);
+    $now = time();
+    $diff = $now - $timestamp;
+    
+    // If less than 24 hours, show relative time
+    if ($diff < 86400) {
+        if ($diff < 60) {
+            return 'Just now';
+        } elseif ($diff < 3600) {
+            $minutes = floor($diff / 60);
+            return $minutes == 1 ? '1 minute ago' : $minutes . ' minutes ago';
+        } else {
+            $hours = floor($diff / 3600);
+            return $hours == 1 ? '1 hour ago' : $hours . ' hours ago';
+        }
+    }
+    
+    // If within the last week, show day name
+    if ($diff < 604800) {
+        return date('l \a\t g:i A', $timestamp);
+    }
+    
+    // Otherwise show full date
+    return date('M j, Y \a\t g:i A', $timestamp);
+}
+
 // Handle POST request for updating asset item
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'update_item') {
     $update_fields = [];
@@ -534,6 +584,254 @@ $status_display = formatStatus($item['status']);
     <link href="../assets/css/index.css" rel="stylesheet">
     <link href="../assets/css/theme-custom.css" rel="stylesheet">
     <link href="assets/css/admin-unified.css" rel="stylesheet">
+    
+    <!-- Timeline CSS -->
+    <style>
+    .timeline {
+        position: relative;
+        padding: 20px 0;
+        margin: 0 auto;
+        max-width: 100%;
+    }
+    
+    .timeline::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 50%;
+        height: 100%;
+        width: 3px;
+        background: linear-gradient(180deg, var(--primary-color) 0%, #5CC2F2 100%);
+        transform: translateX(-50%);
+        border-radius: 3px;
+    }
+    
+    .timeline-item {
+        position: relative;
+        margin-bottom: 30px;
+        width: 100%;
+    }
+    
+    .timeline-left {
+        padding-right: calc(50% + 40px);
+        text-align: right;
+    }
+    
+    .timeline-right {
+        padding-left: calc(50% + 40px);
+        text-align: left;
+    }
+    
+    .timeline-dot {
+        position: absolute;
+        top: 10px;
+        left: 50%;
+        width: 20px;
+        height: 20px;
+        background: white;
+        border: 4px solid var(--primary-color);
+        border-radius: 50%;
+        transform: translateX(-50%);
+        z-index: 2;
+        box-shadow: 0 0 0 4px rgba(25, 27, 169, 0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .timeline-dot:hover {
+        transform: translateX(-50%) scale(1.2);
+        box-shadow: 0 0 0 6px rgba(25, 27, 169, 0.2);
+    }
+    
+    .timeline-dot-inner {
+        width: 100%;
+        height: 100%;
+        background: var(--primary-color);
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.1); opacity: 0.8; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+    
+    .timeline-content {
+        background: white;
+        border-radius: var(--border-radius-lg);
+        padding: 20px;
+        box-shadow: var(--shadow);
+        border-left: 4px solid var(--primary-color);
+        position: relative;
+        transition: all 0.3s ease;
+    }
+    
+    .timeline-content:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+        border-left-color: #5CC2F2;
+    }
+    
+    .timeline-left .timeline-content::after {
+        content: '';
+        position: absolute;
+        top: 15px;
+        right: -10px;
+        width: 0;
+        height: 0;
+        border-left: 10px solid white;
+        border-top: 10px solid transparent;
+        border-bottom: 10px solid transparent;
+    }
+    
+    .timeline-right .timeline-content::after {
+        content: '';
+        position: absolute;
+        top: 15px;
+        left: -10px;
+        width: 0;
+        height: 0;
+        border-right: 10px solid white;
+        border-top: 10px solid transparent;
+        border-bottom: 10px solid transparent;
+    }
+    
+    .timeline-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 10px;
+        gap: 15px;
+    }
+    
+    .timeline-left .timeline-header {
+        flex-direction: row-reverse;
+    }
+    
+    .timeline-action {
+        font-weight: 600;
+        color: var(--primary-color);
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .timeline-action i {
+        font-size: 1.1rem;
+    }
+    
+    .timeline-date {
+        font-size: 0.85rem;
+        color: #6c757d;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        white-space: nowrap;
+    }
+    
+    .timeline-details {
+        color: #495057;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        margin: 10px 0;
+        padding: 10px;
+        background: rgba(25, 27, 169, 0.05);
+        border-radius: var(--border-radius);
+        border-left: 3px solid rgba(25, 27, 169, 0.2);
+    }
+    
+    .timeline-user {
+        font-size: 0.8rem;
+        color: #6c757d;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        margin-top: 8px;
+        font-style: italic;
+    }
+    
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .timeline::before {
+            left: 30px;
+        }
+        
+        .timeline-item {
+            padding-left: 60px !important;
+            padding-right: 20px !important;
+            text-align: left !important;
+        }
+        
+        .timeline-dot {
+            left: 30px;
+        }
+        
+        .timeline-content::after {
+            left: -10px !important;
+            border-right: 10px solid white !important;
+            border-left: none !important;
+        }
+        
+        .timeline-header {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 8px !important;
+        }
+        
+        .timeline-action {
+            font-size: 0.9rem;
+        }
+        
+        .timeline-date {
+            font-size: 0.8rem;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .timeline-content {
+            padding: 15px;
+        }
+        
+        .timeline-action {
+            font-size: 0.85rem;
+        }
+        
+        .timeline-details {
+            font-size: 0.85rem;
+            padding: 8px;
+        }
+        
+        .timeline-user {
+            font-size: 0.75rem;
+        }
+    }
+    
+    /* Animation for timeline items */
+    .timeline-item {
+        opacity: 0;
+        transform: translateY(20px);
+        animation: fadeInUp 0.5s ease forwards;
+    }
+    
+    .timeline-item:nth-child(1) { animation-delay: 0.1s; }
+    .timeline-item:nth-child(2) { animation-delay: 0.2s; }
+    .timeline-item:nth-child(3) { animation-delay: 0.3s; }
+    .timeline-item:nth-child(4) { animation-delay: 0.4s; }
+    .timeline-item:nth-child(5) { animation-delay: 0.5s; }
+    .timeline-item:nth-child(6) { animation-delay: 0.6s; }
+    .timeline-item:nth-child(7) { animation-delay: 0.7s; }
+    .timeline-item:nth-child(8) { animation-delay: 0.8s; }
+    .timeline-item:nth-child(9) { animation-delay: 0.9s; }
+    .timeline-item:nth-child(10) { animation-delay: 1.0s; }
+    
+    @keyframes fadeInUp {
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    </style>
 </head>
 <body>
     <?php
@@ -558,11 +856,6 @@ $status_display = formatStatus($item['status']);
                     <p class="text-muted mb-0"><?php echo htmlspecialchars($item['description']); ?></p>
                 </div>
                 <div class="col-md-4 text-md-end d-flex flex-nowrap justify-content-end">
-                    <?php if ($item['status'] === 'serviceable'): ?>
-                    <button class="btn btn-success btn-sm me-2" onclick="addToIirup()">
-                        <i class="bi bi-plus-circle"></i> Add to IIRUP
-                    </button>
-                    <?php endif; ?>
                     <a href="asset_items_edit.php?id=<?php echo $item_id; ?>" class="btn btn-warning btn-sm me-2">
                         <i class="bi bi-pencil"></i> Edit
                     </a>
@@ -1030,21 +1323,43 @@ $status_display = formatStatus($item['status']);
                     <?php endif; ?>
                 </div>
                 
-                <!-- History -->
+                <!-- History Timeline -->
                 <?php if (!empty($item_history)): ?>
                 <div class="detail-card">
-                    <h5 class="mb-3"><i class="bi bi-clock-history"></i> Item History</h5>
-                    <?php foreach ($item_history as $history): ?>
-                        <div class="history-item">
-                            <div class="history-date"><?php echo date('F j, Y g:i A', strtotime($history['created_at'])); ?></div>
-                            <div class="mt-1">
-                                <strong><?php echo htmlspecialchars($history['action']); ?></strong>
-                                <?php if ($history['details']): ?>
-                                    <p class="mb-0 mt-1"><?php echo htmlspecialchars($history['details']); ?></p>
-                                <?php endif; ?>
+                    <h5 class="mb-4"><i class="bi bi-clock-history"></i> Item History Timeline</h5>
+                    
+                    <div class="timeline">
+                        <?php foreach ($item_history as $index => $history): ?>
+                            <div class="timeline-item <?php echo $index % 2 === 0 ? 'timeline-left' : 'timeline-right'; ?>">
+                                <div class="timeline-dot">
+                                    <div class="timeline-dot-inner"></div>
+                                </div>
+                                <div class="timeline-content">
+                                    <div class="timeline-header">
+                                        <div class="timeline-action">
+                                            <i class="bi bi-<?php echo getActionIcon($history['action']); ?>"></i>
+                                            <?php echo htmlspecialchars($history['action']); ?>
+                                        </div>
+                                        <div class="timeline-date">
+                                            <i class="bi bi-clock"></i>
+                                            <?php echo formatTimelineDate($history['created_at']); ?>
+                                        </div>
+                                    </div>
+                                    <?php if ($history['details']): ?>
+                                        <div class="timeline-details">
+                                            <?php echo htmlspecialchars($history['details']); ?>
+                                        </div>
+                                    <?php endif; ?>
+                                    <?php if (!empty($history['user_name'] ?? null)): ?>
+                                        <div class="timeline-user">
+                                            <i class="bi bi-person-circle"></i>
+                                            <?php echo htmlspecialchars($history['user_name']); ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
                             </div>
-                        </div>
-                    <?php endforeach; ?>
+                        <?php endforeach; ?>
+                    </div>
                 </div>
                 <?php endif; ?>
             </div>
@@ -1132,7 +1447,7 @@ $status_display = formatStatus($item['status']);
                 <!-- Actions -->
                 <div class="detail-card">
                     <h5 class="mb-3"><i class="bi bi-gear"></i> Actions</h5>
-                    <div class="d-grid gap-2">
+                    <div class="d-flex flex-wrap gap-2">
                         <?php if ($item['status'] === 'no_tag'): ?>
                             <!-- Show Create Tag button for no_tag assets -->
                             <a href="create_tag.php?id=<?php echo $item_id; ?>" class="btn btn-primary">
