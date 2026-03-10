@@ -515,5 +515,8 @@ if (!$conn || $conn->connect_error) {
             }
         }
     </script>
+    <?php require_once 'includes/sidebar-scripts.php'; ?>
+    <?php require_once 'includes/logout-modal.php'; ?>
+    <?php require_once 'includes/change-password-modal.php'; ?>
 </body>
 </html>

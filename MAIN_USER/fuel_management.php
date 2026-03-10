@@ -114,18 +114,18 @@ try {
         if (in_array('fuel_in', $existing_tables)) {
             $fuel_in_sql = "SELECT 
                               id,
-                              date as fuel_date,
+                              date_time as fuel_date,
                               quantity as fuel_quantity,
                               fuel_type,
                               vehicle_name,
                               plate_number,
-                              odometer as odometer_reading,
-                              purpose,
+                              office_id,
+                              supplier,
                               created_at,
                               created_by
                            FROM fuel_in 
-                           WHERE date BETWEEN ? AND ?
-                           ORDER BY date DESC";
+                           WHERE DATE(date_time) BETWEEN ? AND ?
+                           ORDER BY date_time DESC";
             
             $fuel_in_stmt = $conn->prepare($fuel_in_sql);
             if ($fuel_in_stmt) {
@@ -511,13 +511,6 @@ try {
                 </div>
             </div>
         </div>
-
-            <?php if ($error): ?>
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <i class="bi bi-exclamation-triangle me-2"></i>
-                    <strong>Error:</strong> <?php echo htmlspecialchars($error); ?>
-                </div>
-            <?php endif; ?>
 
             <!-- Statistics Cards -->
         <div class="row mb-4">
@@ -1171,12 +1164,6 @@ if (!$conn || $conn->connect_error) {
                             <i class="bi bi-fuel-pump me-2"></i>Fuel Management
                         </h1>
                         <p class="text-muted mb-0">Manage fuel consumption and vehicle refueling records.</p>
-                        <?php if ($error): ?>
-                            <div class="alert alert-warning mt-2 mb-0 py-2" role="alert">
-                                <i class="bi bi-exclamation-triangle me-1"></i>
-                                <small><?php echo htmlspecialchars($error); ?></small>
-                            </div>
-                        <?php endif; ?>
                     </div>
                     <div class="col-md-4 text-md-end">
                         <div class="d-flex align-items-center justify-content-md-end gap-2 flex-wrap">

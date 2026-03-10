@@ -3,8 +3,13 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
+<<<<<<< HEAD:pims_db.sql
 -- Generation Time: Mar 10, 2026 at 04:21 AM
 -- Server version: 10.6.15-MariaDB
+=======
+-- Generation Time: Mar 10, 2026 at 04:18 AM
+-- Server version: 10.4.32-MariaDB
+>>>>>>> 429b6fb170c167582da800de9bab9c180400ef7f:pims_db_ni_joswa.sql
 -- PHP Version: 8.2.12
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
@@ -807,6 +812,7 @@ CREATE TABLE `branches` (
 --
 
 INSERT INTO `branches` (`id`, `office_id`, `branch_name`, `branch_code`, `description`, `head_personnel`, `contact_number`, `location`, `status`, `created_at`, `updated_at`, `created_by`, `updated_by`) VALUES
+<<<<<<< HEAD:pims_db.sql
 (1, 1, 'Administrative Services', 'HO-ADM', 'Main administrative services', 'Juan Dela Cruz', '09123456789', 'Ground Floor', 'active', '2026-03-10 01:02:45', '2026-03-10 01:02:45', 1, NULL),
 (2, 1, 'Finance Department', 'HO-FIN', 'Financial management and accounting', 'Maria Santos', '09123456788', '2nd Floor', 'active', '2026-03-10 01:02:45', '2026-03-10 01:02:45', 1, NULL),
 (3, 1, 'Human Resources', 'HO-HR', 'Personnel management and recruitment', 'Jose Reyes', '09123456787', '2nd Floor', 'active', '2026-03-10 01:02:45', '2026-03-10 01:02:45', 1, NULL),
@@ -822,6 +828,23 @@ INSERT INTO `branches` (`id`, `office_id`, `branch_name`, `branch_code`, `descri
 (13, 5, 'Health Station', 'ED-HEALTH', 'Community health station', 'Nurse Gloria Santos', '09123456777', 'Barangay Health Center', 'active', '2026-03-10 01:02:45', '2026-03-10 01:02:45', 1, NULL),
 (14, 6, 'District Office', 'WD-MAIN', 'Main district administrative office', 'Miguel Lopez', '09123456776', 'District Center', 'active', '2026-03-10 01:02:45', '2026-03-10 01:20:41', 1, 1),
 (15, 11, 'Rural Health Unit', 'WD-RHU', 'Rural health services', 'Dr. Fernando Garcia', '09123456775', 'RHU Building', 'active', '2026-03-10 01:02:45', '2026-03-10 01:10:26', 1, 1);
+=======
+(1, 1, 'Administrative Services', 'HO-ADM', 'Main administrative services', 'Juan Dela Cruz', '09123456789', 'Ground Floor', 'active', '2026-03-10 03:17:35', '2026-03-10 03:17:35', 1, NULL),
+(2, 1, 'Finance Department', 'HO-FIN', 'Financial management and accounting', 'Maria Santos', '09123456788', '2nd Floor', 'active', '2026-03-10 03:17:35', '2026-03-10 03:17:35', 1, NULL),
+(3, 1, 'Human Resources', 'HO-HR', 'Personnel management and recruitment', 'Jose Reyes', '09123456787', '2nd Floor', 'active', '2026-03-10 03:17:35', '2026-03-10 03:17:35', 1, NULL),
+(4, 2, 'Lying-in Clinic', 'MHO-LIC', 'Maternal and child health services', 'Dr. Ana Garcia', '09123456786', 'Main Building', 'active', '2026-03-10 03:17:35', '2026-03-10 03:17:35', 1, NULL),
+(5, 2, 'Pharmacy', 'MHO-PHARM', 'Medicine dispensary and pharmacy services', 'Dr. Roberto Lopez', '09123456785', 'Main Building', 'active', '2026-03-10 03:17:35', '2026-03-10 03:17:35', 1, NULL),
+(6, 2, 'Dental Clinic', 'MHO-DENT', 'Dental health services', 'Dr. Cristina Martinez', '09123456784', 'Annex Building', 'active', '2026-03-10 03:17:35', '2026-03-10 03:17:35', 1, NULL),
+(7, 2, 'Laboratory', 'MHO-LAB', 'Medical laboratory services', 'Dr. Eduardo Rodriguez', '09123456783', 'Main Building', 'active', '2026-03-10 03:17:35', '2026-03-10 03:17:35', 1, NULL),
+(8, 3, 'District Office', 'ND-MAIN', 'Main district administrative office', 'Pedro Santos', '09123456782', 'District Center', 'active', '2026-03-10 03:17:35', '2026-03-10 03:17:35', 1, NULL),
+(9, 3, 'Satellite Clinic', 'ND-CLINIC', 'Primary healthcare services', 'Dr. Lourdes Hernandez', '09123456781', 'Barangay Hall', 'active', '2026-03-10 03:17:35', '2026-03-10 03:17:35', 1, NULL),
+(10, 4, 'District Office', 'SD-MAIN', 'Main district administrative office', 'Antonio Reyes', '09123456780', 'District Center', 'active', '2026-03-10 03:17:35', '2026-03-10 03:17:35', 1, NULL),
+(11, 4, 'Community Outreach', 'SD-OUTREACH', 'Community health outreach programs', 'Dr. Patricia Cruz', '09123456779', 'Mobile Unit', 'active', '2026-03-10 03:17:35', '2026-03-10 03:17:35', 1, NULL),
+(12, 5, 'District Office', 'ED-MAIN', 'Main district administrative office', 'Ricardo Martinez', '09123456778', 'District Center', 'active', '2026-03-10 03:17:35', '2026-03-10 03:17:35', 1, NULL),
+(13, 5, 'Health Station', 'ED-HEALTH', 'Community health station', 'Nurse Gloria Santos', '09123456777', 'Barangay Health Center', 'active', '2026-03-10 03:17:35', '2026-03-10 03:17:35', 1, NULL),
+(14, 6, 'District Office', 'WD-MAIN', 'Main district administrative office', 'Miguel Lopez', '09123456776', 'District Center', 'active', '2026-03-10 03:17:35', '2026-03-10 03:17:35', 1, NULL),
+(15, 6, 'Rural Health Unit', 'WD-RHU', 'Rural health services', 'Dr. Fernando Garcia', '09123456775', 'RHU Building', 'active', '2026-03-10 03:17:35', '2026-03-10 03:17:35', 1, NULL);
+>>>>>>> 429b6fb170c167582da800de9bab9c180400ef7f:pims_db_ni_joswa.sql
 
 -- --------------------------------------------------------
 
@@ -7808,6 +7831,7 @@ INSERT INTO `system_logs` (`id`, `user_id`, `action`, `module`, `description`, `
 (5989, 17, 'consumable_consumed', 'consumables', 'Consumed 1 units of A4 Paper. Remaining: 0. Notes: 1111', NULL, NULL, '2026-03-05 07:15:36'),
 (5990, 17, 'session_timeout', 'authentication', 'Session expired for user: Joshua Escaño (joshuamarifrancis@gmail.com) after 3985 seconds', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-05 07:26:30'),
 (5991, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-05 07:26:45'),
+<<<<<<< HEAD:pims_db.sql
 (5992, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-05 07:26:45'),
 (5993, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-09 01:21:58'),
 (5994, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-09 01:22:03'),
@@ -8402,6 +8426,9 @@ INSERT INTO `system_logs` (`id`, `user_id`, `action`, `module`, `description`, `
 (6581, 5, 'Tag Update Values Debug', 'forms', 'Values: property_no=\'2026-07-05-030-0215-03\', inventory_tag=\'\', date_counted=\'2026-03-10\', image=\'\', employee_id=6, category_id=2, end_user=\'John Legend\' (length: 11), item_id=40', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-10 02:59:52'),
 (6582, 5, 'Asset item updated successfully', 'assets', 'Item ID: 40, End User: John Legend, Rows affected: 1', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-10 02:59:52'),
 (6583, 5, 'Accessed Individual Item Request for User Property Form', 'forms', 'iirup_form.php', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-10 03:03:33');
+=======
+(5992, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-05 07:26:45');
+>>>>>>> 429b6fb170c167582da800de9bab9c180400ef7f:pims_db_ni_joswa.sql
 
 -- --------------------------------------------------------
 
@@ -9737,7 +9764,11 @@ ALTER TABLE `software`
 -- AUTO_INCREMENT for table `system_logs`
 --
 ALTER TABLE `system_logs`
+<<<<<<< HEAD:pims_db.sql
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6584;
+=======
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5993;
+>>>>>>> 429b6fb170c167582da800de9bab9c180400ef7f:pims_db_ni_joswa.sql
 
 --
 -- AUTO_INCREMENT for table `system_settings`
