@@ -811,7 +811,7 @@ try {
         </div>
     </div>
 
-    <!-- Fuel IN Section - Moved to Bottom -->
+    <!-- Fuel IN Section -->
     <div class="container-fluid mt-4">
         <div class="table-container">
             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -874,74 +874,6 @@ try {
                     <i class="bi bi-arrow-down-circle text-muted" style="font-size: 3rem;"></i>
                     <h5 class="text-muted mt-3">No Fuel IN Records Found</h5>
                     <p class="text-muted">No fuel IN transactions found for the selected period.</p>
-                </div>
-            <?php endif; ?>
-        </div>
-    </div>
-
-    <!-- Fuel OUT Section - Moved to Bottom -->
-    <div class="container-fluid mt-4">
-        <div class="table-container">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h4 class="mb-0">
-                    <i class="bi bi-arrow-up-circle text-danger me-2"></i>
-                    Fuel OUT Records
-                    <span class="badge badge-fuel-out ms-2">
-                        <?php echo count($fuel_out_records); ?> Transactions
-                    </span>
-                </h4>
-            </div>
-            
-            <?php if (!empty($fuel_out_records)): ?>
-                <div class="table-responsive">
-                    <table class="table table-hover fuel-table">
-                        <thead>
-                            <tr>
-                                <th><i class="bi bi-calendar3 me-1"></i>Date</th>
-                                <th><i class="bi bi-truck me-1"></i>Vehicle</th>
-                                <th><i class="bi bi-upc me-1"></i>Plate</th>
-                                <th><i class="bi bi-droplet me-1"></i>Quantity (L)</th>
-                                <th><i class="bi bi-fuel-pump me-1"></i>Fuel Type</th>
-                                <th><i class="bi bi-chat-text me-1"></i>Purpose</th>
-                                <th><i class="bi bi-speedometer2 me-1"></i>Odometer</th>
-                                <th><i class="bi bi-person me-1"></i>Added By</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($fuel_out_records as $record): ?>
-                                <tr>
-                                    <td>
-                                        <strong><?php echo date('M d, Y', strtotime($record['fuel_date'])); ?></strong>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-light text-danger">
-                                            <?php echo htmlspecialchars($record['vehicle_name'] ?? 'Unknown'); ?>
-                                        </span>
-                                    </td>
-                                    <td><?php echo htmlspecialchars($record['plate_number'] ?? 'N/A'); ?></td>
-                                    <td>
-                                        <strong class="text-danger">
-                                            <?php echo number_format($record['fuel_quantity'], 2); ?>
-                                        </strong>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-info text-white">
-                                            <?php echo htmlspecialchars($record['fuel_type'] ?? ''); ?>
-                                        </span>
-                                    </td>
-                                    <td><?php echo htmlspecialchars($record['purpose'] ?? ''); ?></td>
-                                    <td><?php echo number_format($record['odometer_reading'] ?? 0); ?></td>
-                                    <td><?php echo htmlspecialchars($record['created_by'] ?? ''); ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-            <?php else: ?>
-                <div class="text-center py-5">
-                    <i class="bi bi-arrow-up-circle text-muted" style="font-size: 3rem;"></i>
-                    <h5 class="text-muted mt-3">No Fuel OUT Records Found</h5>
-                    <p class="text-muted">No fuel OUT transactions found for the selected period.</p>
                 </div>
             <?php endif; ?>
         </div>
