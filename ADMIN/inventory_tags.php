@@ -151,230 +151,78 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventory Tags - PIMS</title>
-    <!-- Bootstrap CSS -->
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="../favicon/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="../favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../favicon/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="../favicon/apple-touch-icon.png">
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Custom CSS -->
-    <link href="../assets/css/index.css" rel="stylesheet">
-    <link href="../assets/css/theme-custom.css" rel="stylesheet">
     <link href="assets/css/admin-unified.css" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #F7F3F3 0%, #C1EAF2 100%);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-        
-        .page-header {
-            background: white;
-            border-radius: var(--border-radius-xl);
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow);
-            border-left: 4px solid var(--primary-color);
-        }
-        
-        .stats-card {
-            background: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%);
-            color: white;
-            border-radius: var(--border-radius-lg);
-            padding: 1.5rem;
-            text-align: center;
-            transition: var(--transition);
-            height: 100%;
-        }
-        
-        .stats-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 25px rgba(25, 27, 169, 0.3);
-        }
-        
-        .stats-number {
-            font-size: 1.2rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-            word-wrap: break-word;
-            line-height: 1.2;
-        }
-        
-        .stats-label {
-            font-size: 0.9rem;
-            opacity: 0.9;
-        }
-        
-        .table-container {
-            background: white;
-            border-radius: var(--border-radius-lg);
-            padding: 1.5rem;
-            box-shadow: var(--shadow);
-            margin-bottom: 2rem;
-        }
-        
-        .btn-action {
-            padding: 0.25rem 0.5rem;
-            font-size: 0.875rem;
-            margin: 0 0.125rem;
-        }
-        
-        .category-badge {
-            background: var(--primary-color);
-            color: white;
-            padding: 0.25rem 0.75rem;
-            border-radius: var(--border-radius-xl);
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-        
-        .text-value {
-            font-weight: 600;
-            color: #191BA9;
-        }
-        
-        .modal-header {
-            background: var(--primary-gradient);
-            color: white;
-        }
-        
-        .form-label {
-            font-weight: 600;
-            color: #333;
-        }
-        
-        .table-hover tbody tr:hover {
-            background-color: rgba(25, 27, 169, 0.05);
-        }
-        
-        .tag-preview {
-            max-width: 60px;
-            max-height: 60px;
-            border-radius: 8px;
-            box-shadow: var(--shadow);
-            cursor: pointer;
-            transition: var(--transition);
-        }
-        
-        .tag-preview:hover {
-            transform: scale(1.05);
-        }
-        
-        .filter-section {
-            background: white;
-            border-radius: var(--border-radius-lg);
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow);
-        }
-        
-        .search-box {
-            position: relative;
-        }
-        
-        .search-box input {
-            padding-left: 2.5rem;
-            border-radius: 25px;
-            border: 2px solid #e9ecef;
-            transition: var(--transition);
-        }
-        
-        .search-box input:focus {
-            border-color: #191ba9;
-            box-shadow: 0 0 0 0.2rem rgba(25, 27, 169, 0.25);
-        }
-        
-        .search-box i {
-            position: absolute;
-            left: 1rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #6c757d;
-        }
-        
-        @media print {
-            .no-print {
-                display: none !important;
-            }
-            
-            .table-container {
-                box-shadow: none;
-            }
-            
-            body {
-                background: white;
-            }
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 3rem;
-            color: #6c757d;
-        }
-        
-        .empty-state i {
-            font-size: 4rem;
-            color: #dee2e6;
-            margin-bottom: 1rem;
-        }
-    </style>
 </head>
 <body>
-    <?php
-    // Set page title for topbar
-    $page_title = 'Inventory Tags';
-    ?>
-    <!-- Main Content Wrapper -->
+    <?php $page_title = 'Inventory Tags'; ?>
     <div class="main-wrapper" id="mainWrapper">
         <?php require_once 'includes/sidebar-toggle.php'; ?>
         <?php require_once 'includes/sidebar.php'; ?>
         <?php require_once 'includes/topbar.php'; ?>
     
-    <!-- Main Content -->
     <div class="main-content">
-        <!-- Page Header -->
         <div class="page-header">
             <div class="row align-items-center">
                 <div class="col-md-8">
                     <h1 class="mb-2">
-                        <i class="bi bi-tags"></i> Inventory Tags
+                        <i class="bi bi-qr-code"></i> Inventory Tags
                     </h1>
                     <p class="text-muted mb-0">View and print inventory tags for all serviceable assets with property numbers</p>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <button type="button" class="btn btn-success" onclick="printSelectedTags()">
-                        <i class="bi bi-printer"></i> Print Selected
-                    </button>
+                    <div class="d-flex gap-2 justify-content-md-end">
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="printAllTags()">
+                            <i class="bi bi-printer"></i> Print All
+                        </button>
+                        <button type="button" class="btn btn-success btn-sm" onclick="printSelectedTags()">
+                            <i class="bi bi-check2"></i> Print Selected
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
-
         
-        <!-- Statistics Cards -->
-        <div class="row mb-4 no-print">
-            <div class="col-lg-4 col-md-6">
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
                 <div class="stats-card">
                     <div class="stats-number"><?php echo number_format($stats['total_tags'] ?? 0); ?></div>
-                    <div class="stats-label"><i class="bi bi-tags"></i> Serviceable Tags</div>
+                    <div class="stats-label"><i class="bi bi-qr-code"></i> Serviceable Tags</div>
                 </div>
             </div>
-            <div class="col-lg-4 col-md-6">
+            <div class="col-6 col-md-3">
                 <div class="stats-card">
                     <div class="stats-number"><?php echo number_format($stats['offices_with_tags'] ?? 0); ?></div>
                     <div class="stats-label"><i class="bi bi-building"></i> Offices with Tags</div>
                 </div>
             </div>
-            <div class="col-lg-4 col-md-6">
+            <div class="col-6 col-md-3">
                 <div class="stats-card">
                     <div class="stats-number"><?php echo isset($stats['total_tags']) && $stats['total_tags'] > 0 ? number_format($stats['total_tags'] / $stats['offices_with_tags'], 1) : '0'; ?></div>
                     <div class="stats-label"><i class="bi bi-graph-up"></i> Avg Tags per Office</div>
                 </div>
             </div>
+            <div class="col-6 col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number"><?php echo count($tags); ?></div>
+                    <div class="stats-label"><i class="bi bi-list-check"></i> Current Results</div>
+                </div>
+            </div>
         </div>
 
-        <!-- Search and Filters -->
-        <div class="filter-section no-print">
+        <div class="section-card mb-4">
+            <div class="section-title">
+                <i class="bi bi-funnel"></i> Search & Filters
+            </div>
             <form id="filterForm" class="row g-3">
                 <div class="col-md-3">
                     <div class="search-box">
@@ -411,8 +259,20 @@ try {
             </form>
         </div>
 
-        <!-- Inventory Tags Table -->
-        <div class="table-container">
+        <div class="section-card mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="section-title mb-0">
+                    <i class="bi bi-qr-code"></i> Inventory Tags
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-primary btn-sm btn-action" onclick="selectAllTags()">
+                        <i class="bi bi-check-all"></i> Select All
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm btn-action" onclick="clearSelection()">
+                        <i class="bi bi-x-square"></i> Clear Selection
+                    </button>
+                </div>
+            </div>
             <?php if (!empty($tags)): ?>
                 <form id="tagsForm">
                     <div class="table-responsive">
@@ -514,6 +374,7 @@ try {
             <?php endif; ?>
         </div>
     </div>
+    </div>
     
     <!-- Image Modal -->
     <div class="modal fade" id="imageModal" tabindex="-1">
@@ -551,11 +412,10 @@ try {
             </div>
         </div>
     </div>
-
+    
     <?php require_once 'includes/logout-modal.php'; ?>
     <?php require_once 'includes/change-password-modal.php'; ?>
     
-    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <?php require_once 'includes/sidebar-scripts.php'; ?>
     <script>
@@ -565,6 +425,26 @@ try {
             const checkboxes = document.querySelectorAll('.tag-checkbox');
             checkboxes.forEach(checkbox => {
                 checkbox.checked = selectAll.checked;
+            });
+        }
+
+        // Select all tags
+        function selectAllTags() {
+            const selectAll = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('.tag-checkbox');
+            selectAll.checked = true;
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = true;
+            });
+        }
+
+        // Clear selection
+        function clearSelection() {
+            const selectAll = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('.tag-checkbox');
+            selectAll.checked = false;
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = false;
             });
         }
 
@@ -604,10 +484,6 @@ try {
             <?php else: ?>
                 alert('No tags available to print.');
             <?php endif; ?>
-        }
-        function exportToCSV() {
-            // Simple CSV export without complex PHP generation
-            window.location.href = 'inventory_tags.php?export=csv';
         }
 
         // Automatic filtering

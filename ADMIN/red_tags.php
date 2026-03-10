@@ -181,235 +181,104 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Red Tags - PIMS</title>
-    <!-- Bootstrap CSS -->
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="../favicon/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="../favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../favicon/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="../favicon/apple-touch-icon.png">
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Custom CSS -->
-    <link href="../assets/css/index.css" rel="stylesheet">
-    <link href="../assets/css/theme-custom.css" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #F7F3F3 0%, #C1EAF2 100%);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-        
-        .page-header {
-            background: white;
-            border-radius: var(--border-radius-xl);
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow);
-            border-left: 4px solid #dc3545;
-        }
-        
-        .stats-card {
-            background: linear-gradient(135deg, #dc3545 0%, #f8d7da 100%);
-            color: #721c24;
-            border-radius: var(--border-radius-lg);
-            padding: 1.5rem;
-            text-align: center;
-            transition: var(--transition);
-            height: 100%;
-        }
-        
-        .stats-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 25px rgba(220, 53, 69, 0.3);
-        }
-        
-        .stats-number {
-            font-size: 1.2rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-            word-wrap: break-word;
-            line-height: 1.2;
-        }
-        
-        .table-container {
-            background: white;
-            border-radius: var(--border-radius-lg);
-            padding: 1.5rem;
-            box-shadow: var(--shadow);
-            margin-bottom: 2rem;
-        }
-        
-        .table {
-            margin-bottom: 0;
-        }
-        
-        .table th {
-            border-bottom: 2px solid #dee2e6;
-            font-weight: 600;
-            color: #495057;
-            background-color: #f8f9fa;
-        }
-        
-        .badge {
-            font-size: 0.75rem;
-            padding: 0.375rem 0.75rem;
-            border-radius: var(--border-radius);
-        }
-        
-        .filter-section {
-            background: white;
-            border-radius: var(--border-radius-lg);
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow);
-        }
-        
-        .search-box {
-            position: relative;
-        }
-        
-        .search-box input {
-            padding-left: 2.5rem;
-            border-radius: 25px;
-            border: 2px solid #e9ecef;
-            transition: var(--transition);
-        }
-        
-        .search-box input:focus {
-            border-color: #dc3545;
-            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
-        }
-        
-        .search-box i {
-            position: absolute;
-            left: 1rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #6c757d;
-        }
-        
-        @media print {
-            .no-print {
-                display: none !important;
-            }
-            
-            .table-container {
-                box-shadow: none;
-            }
-            
-            body {
-                background: white;
-            }
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 3rem;
-            color: #6c757d;
-        }
-        
-        .empty-state i {
-            font-size: 4rem;
-            color: #dee2e6;
-            margin-bottom: 1rem;
-        }
-        
-        .btn-custom {
-            border-radius: var(--border-radius);
-            font-weight: 500;
-            transition: var(--transition);
-        }
-        
-        .btn-custom:hover {
-            transform: translateY(-1px);
-            box-shadow: var(--shadow);
-        }
-    </style>
+    <link href="assets/css/admin-unified.css" rel="stylesheet">
 </head>
 <body>
-    <?php
-    // Set page title for topbar
-    $page_title = 'Red Tags';
-    ?>
-    <!-- Main Content Wrapper -->
+    <?php $page_title = 'Red Tags'; ?>
     <div class="main-wrapper" id="mainWrapper">
         <?php require_once 'includes/sidebar-toggle.php'; ?>
         <?php require_once 'includes/sidebar.php'; ?>
         <?php require_once 'includes/topbar.php'; ?>
     
-    <!-- Main Content -->
     <div class="main-content">
-        <!-- Page Header -->
-        <div class="page-header no-print">
+        <div class="page-header">
             <div class="row align-items-center">
                 <div class="col-md-8">
                     <h1 class="mb-2">
                         <i class="bi bi-tag"></i> Red Tags
                     </h1>
                     <p class="text-muted mb-0">View and manage all 5S red tags in the system</p>
+                    <?php if (isset($_SESSION['success'])): ?>
+                        <div class="alert alert-success alert-dismissible fade show mt-2" role="alert">
+                            <i class="bi bi-check-circle-fill"></i>
+                            <?php echo htmlspecialchars($_SESSION['success']); ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        <?php unset($_SESSION['success']); ?>
+                    <?php endif; ?>
+                    
+                    <?php if (isset($_SESSION['error'])): ?>
+                        <div class="alert alert-danger alert-dismissible fade show mt-2" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            <?php echo htmlspecialchars($_SESSION['error']); ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        <?php unset($_SESSION['error']); ?>
+                    <?php endif; ?>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <button type="button" class="btn btn-success btn-custom" onclick="printSelectedTags()">
-                        <i class="bi bi-printer"></i> Print Selected
-                    </button>
-                    <a href="unserviceable_assets.php" class="btn btn-danger btn-custom">
-                        <i class="bi bi-plus-circle"></i> Create Red Tag
-                    </a>
+                    <div class="d-flex gap-2 justify-content-md-end">
+                        <button type="button" class="btn btn-success btn-sm" onclick="printSelectedTags()">
+                            <i class="bi bi-printer"></i> Print Selected
+                        </button>
+                        <a href="unserviceable_assets.php" class="btn btn-danger btn-sm">
+                            <i class="bi bi-plus-circle"></i> Create Red Tag
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
         
-        <!-- Messages -->
-        <?php if (isset($_SESSION['success'])): ?>
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="bi bi-check-circle-fill"></i>
-                <?php echo htmlspecialchars($_SESSION['success']); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-            <?php unset($_SESSION['success']); ?>
-        <?php endif; ?>
-        
-        <?php if (isset($_SESSION['error'])): ?>
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="bi bi-exclamation-triangle-fill"></i>
-                <?php echo htmlspecialchars($_SESSION['error']); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-            <?php unset($_SESSION['error']); ?>
-        <?php endif; ?>
-        
-        <!-- Statistics Cards -->
-        <div class="row mb-4 no-print">
-            <div class="col-md-4 mb-3">
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
                 <div class="stats-card">
                     <div class="stats-number"><?php echo number_format($stats['total_red_tags'] ?? 0); ?></div>
-                    <div class="stats-label">Total Red Tags</div>
+                    <div class="stats-label"><i class="bi bi-tag"></i> Total Red Tags</div>
                 </div>
             </div>
-            <div class="col-md-4 mb-3">
+            <div class="col-6 col-md-3">
                 <div class="stats-card">
                     <div class="stats-number"><?php echo number_format($stats['offices_with_tags'] ?? 0); ?></div>
-                    <div class="stats-label">Offices with Tags</div>
+                    <div class="stats-label"><i class="bi bi-building"></i> Offices with Tags</div>
                 </div>
             </div>
-            <div class="col-md-4 mb-3">
+            <div class="col-6 col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number"><?php echo count($red_tags); ?></div>
+                    <div class="stats-label"><i class="bi bi-list-check"></i> Current Results</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
                 <div class="stats-card">
                     <div class="stats-number"><?php echo date('M Y'); ?></div>
-                    <div class="stats-label">Current Period</div>
+                    <div class="stats-label"><i class="bi bi-calendar"></i> Current Period</div>
                 </div>
             </div>
         </div>
 
-        <!-- Filter Section -->
-        <div class="filter-section no-print">
-            <div class="row g-3">
+        <div class="section-card mb-4">
+            <div class="section-title">
+                <i class="bi bi-funnel"></i> Search & Filters
+            </div>
+            <form id="filterForm" class="row g-3">
                 <div class="col-md-4">
                     <div class="search-box">
                         <i class="bi bi-search"></i>
-                        <input type="text" class="form-control" id="searchInput" placeholder="Search red tags..." value="<?php echo htmlspecialchars($search); ?>">
+                        <input type="text" name="search" id="searchInput" class="form-control" placeholder="Search red tags..." value="<?php echo htmlspecialchars($search); ?>">
                     </div>
                 </div>
                 <div class="col-md-2">
-                    <select class="form-select" id="officeFilter">
+                    <select name="office" id="officeFilter" class="form-select">
                         <option value="">All Offices</option>
                         <?php foreach ($offices as $office): ?>
                             <option value="<?php echo $office['id']; ?>" <?php echo $office_filter == $office['id'] ? 'selected' : ''; ?>>
@@ -419,21 +288,24 @@ try {
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <input type="date" class="form-control" id="dateFromFilter" value="<?php echo htmlspecialchars($date_from); ?>" placeholder="From Date">
+                    <input type="date" name="date_from" id="dateFromFilter" class="form-control" value="<?php echo htmlspecialchars($date_from); ?>" placeholder="From Date">
                 </div>
                 <div class="col-md-2">
-                    <input type="date" class="form-control" id="dateToFilter" value="<?php echo htmlspecialchars($date_to); ?>" placeholder="To Date">
+                    <input type="date" name="date_to" id="dateToFilter" class="form-control" value="<?php echo htmlspecialchars($date_to); ?>" placeholder="To Date">
                 </div>
                 <div class="col-md-2">
                     <button type="button" class="btn btn-outline-secondary w-100" onclick="clearFilters()">
                         <i class="bi bi-x-circle"></i> Clear Filters
                     </button>
                 </div>
-            </div>
+            </form>
         </div>
 
-        <!-- Red Tags Table -->
-        <div class="table-container">
+        <div class="section-card mb-4">
+            <div class="section-title">
+                <i class="bi bi-tag"></i> Red Tags Management
+            </div>
+            
             <?php if (empty($red_tags)): ?>
                 <div class="empty-state">
                     <i class="bi bi-tag"></i>
@@ -514,7 +386,7 @@ try {
         </div>
     </div>
     </div>
-
+    
     <?php require_once 'includes/logout-modal.php'; ?>
     <?php require_once 'includes/change-password-modal.php'; ?>
     

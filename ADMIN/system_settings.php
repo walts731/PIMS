@@ -39,10 +39,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ];
 
             foreach ($general_settings as $key => $value) {
-                $stmt = $conn->prepare("INSERT INTO system_settings (setting_name, setting_value, updated_by) 
-                                       VALUES (?, ?, ?) 
-                                       ON DUPLICATE KEY UPDATE setting_value = ?, updated_at = NOW(), updated_by = ?");
-                $stmt->bind_param("sssis", $key, $value, $_SESSION['user_id'], $value, $_SESSION['user_id']);
+                $stmt = $conn->prepare("INSERT INTO system_settings (setting_name, setting_value) 
+                                       VALUES (?, ?) 
+                                       ON DUPLICATE KEY UPDATE setting_value = ?, updated_at = NOW()");
+                $stmt->bind_param("sss", $key, $value, $value);
                 $stmt->execute();
             }
 
@@ -384,8 +384,18 @@ logSystemAction($_SESSION['user_id'], 'access', 'system_settings', 'Accessed sys
                                     <div class="col-md-6">
                                         <div class="mb-3">
                                             <label for="session_timeout" class="form-label">Session Timeout (minutes)</label>
-                                            <input type="number" class="form-control" id="session_timeout" name="session_timeout"
-                                                value="<?php echo htmlspecialchars($settings['session_timeout']); ?>" min="5" max="480">
+                                            <select class="form-select" id="session_timeout" name="session_timeout">
+                                                <option value="5" <?php echo $settings['session_timeout'] == 5 ? 'selected' : ''; ?>>5 minutes</option>
+                                                <option value="10" <?php echo $settings['session_timeout'] == 10 ? 'selected' : ''; ?>>10 minutes</option>
+                                                <option value="15" <?php echo $settings['session_timeout'] == 15 ? 'selected' : ''; ?>>15 minutes</option>
+                                                <option value="30" <?php echo $settings['session_timeout'] == 30 ? 'selected' : ''; ?>>30 minutes</option>
+                                                <option value="60" <?php echo $settings['session_timeout'] == 60 ? 'selected' : ''; ?>>1 hour</option>
+                                                <option value="120" <?php echo $settings['session_timeout'] == 120 ? 'selected' : ''; ?>>2 hours</option>
+                                                <option value="180" <?php echo $settings['session_timeout'] == 180 ? 'selected' : ''; ?>>3 hours</option>
+                                                <option value="240" <?php echo $settings['session_timeout'] == 240 ? 'selected' : ''; ?>>4 hours</option>
+                                                <option value="360" <?php echo $settings['session_timeout'] == 360 ? 'selected' : ''; ?>>6 hours</option>
+                                                <option value="480" <?php echo $settings['session_timeout'] == 480 ? 'selected' : ''; ?>>8 hours</option>
+                                            </select>
                                             <div class="form-text">How long users remain logged in without activity</div>
                                         </div>
                                     </div>
