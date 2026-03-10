@@ -557,11 +557,11 @@ $status_display = formatStatus($item['status']);
                     </h1>
                     <p class="text-muted mb-0"><?php echo htmlspecialchars($item['description']); ?></p>
                 </div>
-                <div class="col-md-4 text-md-end">
-                    <a href="asset_items_edit.php?id=<?php echo $item_id; ?>" class="btn btn-warning me-2">
+                <div class="col-md-4 text-md-end d-flex flex-nowrap justify-content-end">
+                    <a href="asset_items_edit.php?id=<?php echo $item_id; ?>" class="btn btn-warning btn-sm me-2">
                         <i class="bi bi-pencil"></i> Edit
                     </a>
-                    <a href="asset_items.php?asset_id=<?php echo $asset_id; ?>" class="btn btn-back me-2">
+                    <a href="asset_items.php?asset_id=<?php echo $asset_id; ?>" class="btn btn-back btn-sm me-2">
                         <i class="bi bi-arrow-left"></i> Back to Items
                     </a>
                     <a href="print_inventory_tag.php?id=<?php echo $item_id; ?>" class="btn btn-outline-primary btn-sm me-2" target="_blank">
