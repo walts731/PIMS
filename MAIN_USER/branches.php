@@ -344,6 +344,9 @@ if (!$conn || $conn->connect_error) {
                     </div>
                     <div class="col-md-4 text-md-end">
                         <div class="d-flex align-items-center justify-content-md-end gap-2 flex-wrap">
+                            <a class="btn btn-outline-secondary btn-sm" href="assets_per_office.php?office_id=4">
+                                <i class="bi bi-arrow-left"></i> Back
+                            </a>
                             <a class="btn btn-outline-primary btn-sm" href="branches.php">
                                 <i class="bi bi-arrow-clockwise"></i> Refresh
                             </a>
