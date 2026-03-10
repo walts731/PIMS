@@ -1,7 +1,7 @@
-<!-- Universal Notification Script for OFFICE_ADMIN -->
+<!-- Bootstrap-based Notification Script for OFFICE_ADMIN -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Initializing notification system...');
+    console.log('Initializing Bootstrap notification system...');
     
     const notificationBadge = document.getElementById('notificationBadge');
     const notificationDropdown = document.getElementById('notificationDropdown');
@@ -49,70 +49,60 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Load notifications when dropdown is clicked
+    // Initialize Bootstrap dropdown with explicit boundary control
+    let bootstrapDropdown = null;
+    
     if (notificationDropdown && notificationList) {
-        let isDropdownOpen = false;
-        
-        // Disable Bootstrap dropdown for this element
-        if (notificationDropdown.getAttribute('data-bs-toggle')) {
-            notificationDropdown.removeAttribute('data-bs-toggle');
-            notificationDropdown.removeAttribute('data-bs-auto-close');
+        // Initialize Bootstrap dropdown with specific boundary
+        try {
+            bootstrapDropdown = new bootstrap.Dropdown(notificationDropdown, {
+                autoClose: 'outside',
+                boundary: 'viewport',
+                reference: 'toggle',
+                display: 'dynamic',
+                popperConfig: {
+                    strategy: 'fixed', // Use fixed positioning
+                    placement: 'bottom-end' // Align to right edge
+                }
+            });
+            console.log('Bootstrap dropdown initialized successfully');
+        } catch (error) {
+            console.error('Error initializing Bootstrap dropdown:', error);
+            return;
         }
         
-        // Find and disable Bootstrap dropdown if it exists
-        const bootstrapDropdown = notificationDropdown.parentElement.querySelector('.dropdown-menu');
-        if (bootstrapDropdown) {
-            bootstrapDropdown.removeAttribute('data-bs-popper');
-        }
+        // Load notifications when dropdown is shown
+        notificationDropdown.addEventListener('show.bs.dropdown', function(e) {
+            console.log('Dropdown shown - loading notifications...');
+            
+            // Force proper positioning
+            const dropdownMenu = e.target.nextElementSibling;
+            if (dropdownMenu) {
+                dropdownMenu.style.position = 'absolute';
+                dropdownMenu.style.right = '0';
+                dropdownMenu.style.left = 'auto';
+                dropdownMenu.style.top = '100%';
+                dropdownMenu.style.transform = 'none';
+                dropdownMenu.style.minWidth = '350px';
+                dropdownMenu.style.maxWidth = '350px';
+                dropdownMenu.style.zIndex = '1050';
+            }
+            
+            loadNotifications();
+        });
         
+        // Update badge when dropdown is hidden
+        notificationDropdown.addEventListener('hide.bs.dropdown', function() {
+            console.log('Dropdown hidden - updating badge...');
+            updateNotificationBadge();
+        });
+        
+        // Prevent dropdown from repositioning on outside clicks
         notificationDropdown.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
             console.log('Notification dropdown clicked');
-            
-            const dropdownMenu = notificationDropdown.nextElementSibling;
-            if (dropdownMenu) {
-                if (!isDropdownOpen) {
-                    // Open dropdown
-                    dropdownMenu.style.display = 'block';
-                    dropdownMenu.style.position = 'absolute';
-                    dropdownMenu.style.top = '100%';
-                    dropdownMenu.style.right = '0';
-                    dropdownMenu.style.left = 'auto';
-                    dropdownMenu.style.transform = 'translateX(0)';
-                    dropdownMenu.style.zIndex = '1050';
-                    dropdownMenu.style.minWidth = '350px';
-                    dropdownMenu.style.boxShadow = '0 8px 16px rgba(0, 0, 0, 0.15)';
-                    dropdownMenu.style.borderRadius = 'var(--border-radius)';
-                    dropdownMenu.style.background = 'white';
-                    dropdownMenu.style.border = 'none';
-                    dropdownMenu.style.overflow = 'hidden';
-                    
-                    // Load notifications only when opening
-                    loadNotifications();
-                    isDropdownOpen = true;
-                    
-                    // Add click outside listener
-                    setTimeout(() => {
-                        document.addEventListener('click', closeDropdownOutside);
-                    }, 100);
-                } else {
-                    // Close dropdown
-                    dropdownMenu.style.display = 'none';
-                    isDropdownOpen = false;
-                    document.removeEventListener('click', closeDropdownOutside);
-                }
-            }
         });
-        
-        function closeDropdownOutside(e) {
-            const dropdownMenu = notificationDropdown.nextElementSibling;
-            if (dropdownMenu && !notificationDropdown.contains(e.target) && !dropdownMenu.contains(e.target)) {
-                dropdownMenu.style.display = 'none';
-                isDropdownOpen = false;
-                document.removeEventListener('click', closeDropdownOutside);
-            }
-        }
     }
     
     function loadNotifications() {
@@ -157,7 +147,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Auto-refresh every 30 seconds
     setInterval(updateNotificationBadge, 30000);
     
-    console.log('Notification system initialized successfully');
+    console.log('Bootstrap notification system initialized successfully');
 });
 </script>
 
@@ -190,13 +180,7 @@ document.addEventListener('DOMContentLoaded', function() {
 .notification-dropdown {
     width: 350px;
     max-height: 400px;
-    border: none;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-    border-radius: var(--border-radius);
-    margin-top: 0.5rem;
-    overflow: hidden;
-    background: white;
-    display: none;
+    overflow-y: auto;
 }
 
 .notification-item {
@@ -214,8 +198,6 @@ document.addEventListener('DOMContentLoaded', function() {
     border-radius: 0;
     color: inherit !important;
     text-decoration: none !important;
-    display: block;
-    width: 100%;
 }
 
 .notification-item .dropdown-item:hover {
@@ -228,7 +210,7 @@ document.addEventListener('DOMContentLoaded', function() {
     text-align: center;
 }
 
-/* Override Bootstrap dropdown completely */
+/* Force dropdown positioning - override Bootstrap completely */
 .dropdown-menu {
     position: absolute !important;
     transform: none !important;
@@ -236,29 +218,41 @@ document.addEventListener('DOMContentLoaded', function() {
     right: 0 !important;
     left: auto !important;
     min-width: 350px !important;
+    max-width: 350px !important;
+    max-height: 400px !important;
+    overflow-y: auto !important;
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15) !important;
     border-radius: var(--border-radius) !important;
     background: white !important;
     border: none !important;
-    overflow: hidden !important;
+    z-index: 1050 !important;
 }
 
-/* Prevent Bootstrap from repositioning */
+/* Override Bootstrap's show class positioning */
 .dropdown-menu.show {
     position: absolute !important;
     transform: none !important;
     top: 100% !important;
     right: 0 !important;
     left: auto !important;
+    min-width: 350px !important;
+    max-width: 350px !important;
 }
 
-/* Ensure dropdown doesn't go off screen */
+/* Prevent Bootstrap from repositioning on outside clicks */
+.dropdown-menu[data-popper] {
+    position: absolute !important;
+    transform: none !important;
+}
+
+/* Mobile adjustments */
 @media (max-width: 768px) {
     .notification-dropdown,
     .dropdown-menu {
         width: 300px !important;
         min-width: 300px !important;
-        right: -50px !important;
+        max-width: 300px !important;
+        right: 0 !important;
     }
 }
 </style>
