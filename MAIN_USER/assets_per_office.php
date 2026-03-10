@@ -376,10 +376,6 @@ if (!$conn || $conn->connect_error) {
                                     <span class="stat-value"><?php echo number_format($office_data['total_items']); ?></span>
                                     <span class="stat-label">Total Items</span>
                                 </div>
-                                <div class="stat-item">
-                                    <span class="stat-value"><?php echo number_format($office_data['total_value'], 2); ?></span>
-                                    <span class="stat-label">Total Value</span>
-                                </div>
                             </div>
                         </div>
                         
@@ -393,7 +389,6 @@ if (!$conn || $conn->connect_error) {
                                                 <th>Description</th>
                                                 <th>Category</th>
                                                 <th>Status</th>
-                                                <th class="text-end">Value</th>
                                                 <th>Actions</th>
                                             </tr>
                                         </thead>
@@ -443,17 +438,11 @@ if (!$conn || $conn->connect_error) {
                                                             <?php echo $display_status; ?>
                                                         </span>
                                                     </td>
-                                                    <td class="text-end"><?php echo number_format((float)($asset['item_value'] ?? 0), 2); ?></td>
                                                     <td>
                                                         <a href="view_asset_item.php?id=<?php echo (int)$asset['item_id']; ?>" class="btn btn-sm btn-outline-info me-1">
                                                             <i class="bi bi-eye"></i> View
                                                         </a>
-                                                        <?php if ($asset['item_status'] === 'serviceable'): ?>
-                                                            <button class="btn btn-sm btn-outline-warning" onclick="borrowItem(<?php echo (int)$asset['item_id']; ?>)">
-                                                                <i class="bi bi-arrow-left-right"></i> Borrow
-                                                            </button>
-                                                        <?php endif; ?>
-                                                    </td>
+                                                                                                            </td>
                                                 </tr>
                                             <?php endforeach; ?>
                                         </tbody>
@@ -555,47 +544,5 @@ if (!$conn || $conn->connect_error) {
                 });
             });
 
-            // Borrow item function
-            function borrowItem(itemId) {
-                if (confirm('Are you sure you want to borrow this item?')) {
-                    // Show loading state
-                    const button = event.target;
-                    const originalText = button.innerHTML;
-                    button.innerHTML = '<i class="bi bi-hourglass-split"></i> Processing...';
-                    button.disabled = true;
-
-                    // Create form data
-                    const formData = new FormData();
-                    formData.append('action', 'borrow');
-                    formData.append('item_id', itemId);
-                    formData.append('user_id', <?php echo (int)($_SESSION['user_id'] ?? 0); ?>);
-
-                    // Send request
-                    fetch('process_borrow.php', {
-                        method: 'POST',
-                        body: formData
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            alert('Item borrowed successfully!');
-                            // Reload page to show updated status
-                            window.location.reload();
-                        } else {
-                            alert('Error: ' + (data.message || 'Failed to borrow item'));
-                            // Restore button
-                            button.innerHTML = originalText;
-                            button.disabled = false;
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('An error occurred while borrowing the item.');
-                        // Restore button
-                        button.innerHTML = originalText;
-                        button.disabled = false;
                     });
-                }
-            }
-        });
     </script>
