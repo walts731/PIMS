@@ -261,9 +261,13 @@ if (!$conn || $conn->connect_error) {
                     <div class="col-md-8">
                         <h1 class="mb-1" style="font-weight: 700; color: #191BA9;">
                             <i class="bi bi-building me-2"></i>Assets per Office
-                            <?php if ($office_filter == 4): ?>
-                                <a href="branches.php" class="btn btn-outline-success btn-sm ms-3">
+                            <?php if ($office_filter > 0): ?>
+                                <a href="branches.php?office_id=<?php echo (int)$office_filter; ?>" class="btn btn-outline-success btn-sm ms-3">
                                     <i class="bi bi-diagram-3"></i> Branches
+                                </a>
+                            <?php else: ?>
+                                <a href="branches.php" class="btn btn-outline-success btn-sm ms-3">
+                                    <i class="bi bi-diagram-3"></i> All Branches
                                 </a>
                             <?php endif; ?>
                         </h1>

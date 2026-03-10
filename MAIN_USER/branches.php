@@ -24,6 +24,7 @@ $error = null;
 
 // Filter parameters
 $branch_filter = isset($_GET['branch_id']) ? (int)$_GET['branch_id'] : 0;
+$office_filter = isset($_GET['office_id']) ? (int)$_GET['office_id'] : 0;
 $status_filter = isset($_GET['status']) ? trim((string)$_GET['status']) : '';
 $category_filter = isset($_GET['category_id']) ? (int)$_GET['category_id'] : 0;
 
@@ -47,109 +48,184 @@ if (!$conn || $conn->connect_error) {
             }
         }
         
-        // Create example branch data
-        $example_branches = [
-            [
-                'id' => 1,
-                'branch_name' => 'Supply Room',
-                'total_items' => 150,
-                'total_value' => 250000.00,
-                'status_counts' => [
-                    'serviceable' => 120,
-                    'unserviceable' => 15,
-                    'red_tagged' => 5,
-                    'borrowed' => 8,
-                    'no_tag' => 2
-                ]
-            ],
-            [
-                'id' => 2,
-                'branch_name' => 'Main Office',
-                'total_items' => 85,
-                'total_value' => 180000.00,
-                'status_counts' => [
-                    'serviceable' => 70,
-                    'unserviceable' => 8,
-                    'red_tagged' => 3,
-                    'borrowed' => 4,
-                    'no_tag' => 0
-                ]
-            ],
-            [
-                'id' => 3,
-                'branch_name' => 'IT Department',
-                'total_items' => 200,
-                'total_value' => 450000.00,
-                'status_counts' => [
-                    'serviceable' => 180,
-                    'unserviceable' => 12,
-                    'red_tagged' => 5,
-                    'borrowed' => 3,
-                    'no_tag' => 0
-                ]
-            ],
-            [
-                'id' => 4,
-                'branch_name' => 'Maintenance',
-                'total_items' => 95,
-                'total_value' => 120000.00,
-                'status_counts' => [
-                    'serviceable' => 75,
-                    'unserviceable' => 10,
-                    'red_tagged' => 8,
-                    'borrowed' => 2,
-                    'no_tag' => 0
-                ]
-            ],
-            [
-                'id' => 5,
-                'branch_name' => 'Warehouse',
-                'total_items' => 300,
-                'total_value' => 320000.00,
-                'status_counts' => [
-                    'serviceable' => 250,
-                    'unserviceable' => 30,
-                    'red_tagged' => 15,
-                    'borrowed' => 5,
-                    'no_tag' => 0
-                ]
-            ],
-            [
-                'id' => 6,
-                'branch_name' => 'Conference Room',
-                'total_items' => 45,
-                'total_value' => 85000.00,
-                'status_counts' => [
-                    'serviceable' => 40,
-                    'unserviceable' => 3,
-                    'red_tagged' => 1,
-                    'borrowed' => 1,
-                    'no_tag' => 0
-                ]
-            ]
-        ];
+        // Get all branches from database
+        $branch_query = "SELECT b.id, b.branch_name, b.office_id, o.office_name 
+                        FROM branches b 
+                        LEFT JOIN offices o ON b.office_id = o.id";
         
-        // Apply branch filter if needed
-        if ($branch_filter > 0) {
-            $example_branches = array_filter($example_branches, function($branch) use ($branch_filter) {
-                return $branch['id'] == $branch_filter;
-            });
+        // Add office filter if specified
+        if ($office_filter > 0) {
+            $branch_query .= " WHERE b.office_id = ?";
         }
         
-        foreach ($example_branches as $branch) {
-            $assets_by_branch[$branch['id']] = [
-                'branch_name' => $branch['branch_name'],
-                'total_items' => $branch['total_items'],
-                'total_value' => $branch['total_value'],
-                'status_counts' => $branch['status_counts'],
-                'assets' => [] // Empty for now - would be populated with actual assets
-            ];
+        $branch_query .= " ORDER BY b.branch_name ASC";
+        
+        $branch_stmt = $conn->prepare($branch_query);
+        if ($office_filter > 0) {
+            $branch_stmt->bind_param("i", $office_filter);
         }
+        $branch_stmt->execute();
+        $branch_result = $branch_stmt->get_result();
+        
+        // Check if branch_id column exists in asset_items
+        $check_column = "SHOW COLUMNS FROM asset_items LIKE 'branch_id'";
+        $column_check = $conn->query($check_column);
+        $branch_id_exists = $column_check && $column_check->num_rows > 0;
+        
+        if ($branch_result) {
+            while ($branch = $branch_result->fetch_assoc()) {
+                $branches[] = $branch;
+                
+                // Apply branch filter
+                if ($branch_filter > 0 && $branch['id'] != $branch_filter) {
+                    continue;
+                }
+                
+                // Get assets for this branch with filters
+                if ($branch_id_exists) {
+                    $asset_query = "SELECT 
+                                        ai.id as item_id,
+                                        ai.description as item_description,
+                                        ai.status as item_status,
+                                        ai.value as item_value,
+                                        ai.property_no,
+                                        ai.acquisition_date,
+                                        a.description as asset_description,
+                                        a.unit,
+                                        ac.category_name,
+                                        ac.category_code,
+                                        ac.id as category_id,
+                                        COUNT(ai.id) as total_items,
+                                        COALESCE(SUM(ai.value), 0) as total_value
+                                    FROM asset_items ai
+                                    LEFT JOIN assets a ON ai.asset_id = a.id
+                                    LEFT JOIN asset_categories ac ON ac.id = a.asset_categories_id
+                                    WHERE ai.branch_id = ?";
+                    
+                    $params = [$branch['id']];
+                    $types = "i";
+                    
+                    // Apply status filter
+                    if ($status_filter !== '') {
+                        $asset_query .= " AND ai.status = ?";
+                        $params[] = $status_filter;
+                        $types .= "s";
+                    }
+                    
+                    // Apply category filter
+                    if ($category_filter > 0) {
+                        $asset_query .= " AND ac.id = ?";
+                        $params[] = $category_filter;
+                        $types .= "i";
+                    }
+                    
+                    $asset_query .= " GROUP BY a.id, ai.id ORDER BY a.description, ai.property_no";
+                    
+                    $asset_stmt = $conn->prepare($asset_query);
+                    if (!empty($params)) {
+                        $asset_stmt->bind_param($types, ...$params);
+                    } else {
+                        $asset_stmt->bind_param("i", $branch['id']);
+                    }
+                    $asset_stmt->execute();
+                    $asset_result = $asset_stmt->get_result();
+                } else {
+                    // Fallback: Use office_id if branch_id doesn't exist
+                    $asset_query = "SELECT 
+                                        ai.id as item_id,
+                                        ai.description as item_description,
+                                        ai.status as item_status,
+                                        ai.value as item_value,
+                                        ai.property_no,
+                                        ai.acquisition_date,
+                                        a.description as asset_description,
+                                        a.unit,
+                                        ac.category_name,
+                                        ac.category_code,
+                                        ac.id as category_id,
+                                        COUNT(ai.id) as total_items,
+                                        COALESCE(SUM(ai.value), 0) as total_value
+                                    FROM asset_items ai
+                                    LEFT JOIN assets a ON ai.asset_id = a.id
+                                    LEFT JOIN asset_categories ac ON ac.id = a.asset_categories_id
+                                    WHERE ai.office_id = ?";
+                    
+                    $params = [$branch['office_id']];
+                    $types = "i";
+                    
+                    // Apply status filter
+                    if ($status_filter !== '') {
+                        $asset_query .= " AND ai.status = ?";
+                        $params[] = $status_filter;
+                        $types .= "s";
+                    }
+                    
+                    // Apply category filter
+                    if ($category_filter > 0) {
+                        $asset_query .= " AND ac.id = ?";
+                        $params[] = $category_filter;
+                        $types .= "i";
+                    }
+                    
+                    $asset_query .= " GROUP BY a.id, ai.id ORDER BY a.description, ai.property_no";
+                    
+                    $asset_stmt = $conn->prepare($asset_query);
+                    if (!empty($params)) {
+                        $asset_stmt->bind_param($types, ...$params);
+                    } else {
+                        $asset_stmt->bind_param("i", $branch['office_id']);
+                    }
+                    $asset_stmt->execute();
+                    $asset_result = $asset_stmt->get_result();
+                }
+                
+                $assets_by_branch[$branch['id']] = [
+                    'branch_name' => $branch['branch_name'],
+                    'office_name' => $branch['office_name'],
+                    'assets' => [],
+                    'total_items' => 0,
+                    'total_value' => 0,
+                    'status_counts' => [
+                        'serviceable' => 0,
+                        'unserviceable' => 0,
+                        'red_tagged' => 0,
+                        'borrowed' => 0,
+                        'no_tag' => 0
+                    ]
+                ];
+                
+                if ($asset_result) {
+                    while ($asset = $asset_result->fetch_assoc()) {
+                        $assets_by_branch[$branch['id']]['assets'][] = $asset;
+                        $assets_by_branch[$branch['id']]['total_items'] += $asset['total_items'];
+                        $assets_by_branch[$branch['id']]['total_value'] += $asset['total_value'];
+                        
+                        // Count by status
+                        $status = $asset['item_status'];
+                        if (isset($assets_by_branch[$branch['id']]['status_counts'][$status])) {
+                            $assets_by_branch[$branch['id']]['status_counts'][$status] += $asset['total_items'];
+                        }
+                    }
+                }
+                
+                if (isset($asset_stmt)) {
+                    $asset_stmt->close();
+                }
+            }
+        }
+        
+        $branch_stmt->close();
         
     } catch (Exception $e) {
         $error = 'Error loading branches: ' . $e->getMessage();
         error_log('Main User Branches Error: ' . $e->getMessage());
     }
+}
+
+$page_title = 'Branches';
+if ($office_filter > 0 && !empty($branches)) {
+    $office_name = $branches[0]['office_name'] ?? 'Unknown Office';
+    $page_title = "Branches - {$office_name}";
 }
 ?>
 <!DOCTYPE html>
@@ -157,7 +233,7 @@ if (!$conn || $conn->connect_error) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Branches - Main User | PIMS</title>
+    <title><?php echo htmlspecialchars($page_title); ?> - Main User | PIMS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -318,8 +394,7 @@ if (!$conn || $conn->connect_error) {
     </style>
 </head>
 <body>
-    <?php $page_title = 'Branches'; ?>
-    <div class="main-wrapper" id="mainWrapper">
+        <div class="main-wrapper" id="mainWrapper">
         <?php require_once 'includes/sidebar-toggle.php'; ?>
         <?php require_once 'includes/sidebar.php'; ?>
         <?php require_once 'includes/topbar.php'; ?>
@@ -329,12 +404,26 @@ if (!$conn || $conn->connect_error) {
                 <div class="row align-items-center">
                     <div class="col-md-8">
                         <h1 class="mb-1" style="font-weight: 700; color: #667eea;">
-                            <i class="bi bi-diagram-3 me-2"></i>Branches
-                            <a href="assets_per_office.php?office_id=<?php echo $branch_filter; ?>" class="btn btn-outline-primary btn-sm ms-3">
-                                <i class="bi bi-building"></i> Offices
-                            </a>
+                            <i class="bi bi-diagram-3 me-2"></i>
+                            <?php 
+                            if ($office_filter > 0 && !empty($branches)) {
+                                $office_name = $branches[0]['office_name'] ?? 'Unknown Office';
+                                echo htmlspecialchars("{$office_name} Branches");
+                            } else {
+                                echo "All Branches";
+                            }
+                            ?>
                         </h1>
-                        <p class="text-muted mb-0">Viewing assets organized by branch location with filters.</p>
+                        <p class="text-muted mb-0">
+                            <?php 
+                            if ($office_filter > 0 && !empty($branches)) {
+                                $office_name = $branches[0]['office_name'] ?? 'Unknown Office';
+                                echo "Viewing branches for " . htmlspecialchars($office_name) . " with filters.";
+                            } else {
+                                echo "Viewing all branches across all offices with filters.";
+                            }
+                            ?>
+                        </p>
                         <?php if ($error): ?>
                             <div class="alert alert-warning mt-2 mb-0 py-2" role="alert">
                                 <i class="bi bi-exclamation-triangle me-1"></i>
@@ -344,21 +433,26 @@ if (!$conn || $conn->connect_error) {
                     </div>
                     <div class="col-md-4 text-md-end">
                         <div class="d-flex align-items-center justify-content-md-end gap-2 flex-wrap">
-                            <a class="btn btn-outline-secondary btn-sm" href="assets_per_office.php?office_id=4">
-                                <i class="bi bi-arrow-left"></i> Back
-                            </a>
+                            <?php if ($office_filter > 0): ?>
+                                <a class="btn btn-outline-secondary btn-sm" href="assets_per_office.php?office_id=<?php echo (int)$office_filter; ?>">
+                                    <i class="bi bi-arrow-left"></i> Back to Office
+                                </a>
+                            <?php else: ?>
+                                <a class="btn btn-outline-secondary btn-sm" href="assets_per_office.php">
+                                    <i class="bi bi-arrow-left"></i> Back to Offices
+                                </a>
+                            <?php endif; ?>
                             <a class="btn btn-outline-primary btn-sm" href="branches.php">
                                 <i class="bi bi-arrow-clockwise"></i> Refresh
                             </a>
                             <div class="d-inline-block" style="min-width: 200px;">
                                 <select class="form-select form-select-sm" id="branchFilter">
                                     <option value="0" <?php echo $branch_filter === 0 ? 'selected' : ''; ?>>All Branches</option>
-                                    <option value="1" <?php echo $branch_filter === 1 ? 'selected' : ''; ?>>Supply Room</option>
-                                    <option value="2" <?php echo $branch_filter === 2 ? 'selected' : ''; ?>>Main Office</option>
-                                    <option value="3" <?php echo $branch_filter === 3 ? 'selected' : ''; ?>>IT Department</option>
-                                    <option value="4" <?php echo $branch_filter === 4 ? 'selected' : ''; ?>>Maintenance</option>
-                                    <option value="5" <?php echo $branch_filter === 5 ? 'selected' : ''; ?>>Warehouse</option>
-                                    <option value="6" <?php echo $branch_filter === 6 ? 'selected' : ''; ?>>Conference Room</option>
+                                    <?php foreach ($branches as $branch): ?>
+                                        <option value="<?php echo (int)$branch['id']; ?>" <?php echo $branch_filter === (int)$branch['id'] ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($branch['branch_name']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
                                 </select>
                             </div>
                             <div class="d-inline-block" style="min-width: 180px;">
@@ -394,17 +488,7 @@ if (!$conn || $conn->connect_error) {
                             <i class="bi bi-funnel me-2"></i>
                             <strong>Active Filters:</strong>
                             <?php if ($branch_filter > 0): ?>
-                                <?php 
-                                $branch_names = [
-                                    1 => 'Supply Room',
-                                    2 => 'Main Office', 
-                                    3 => 'IT Department',
-                                    4 => 'Maintenance',
-                                    5 => 'Warehouse',
-                                    6 => 'Conference Room'
-                                ];
-                                ?>
-                                <span class="badge bg-primary me-1">Branch: <?php echo htmlspecialchars($branch_names[$branch_filter] ?? 'Unknown'); ?></span>
+                                <span class="badge bg-primary me-1">Branch: <?php echo htmlspecialchars(array_column($branches, 'branch_name', 'id')[$branch_filter] ?? 'Unknown'); ?></span>
                             <?php endif; ?>
                             <?php if ($status_filter !== ''): ?>
                                 <span class="badge bg-success me-1">Status: <?php echo ucfirst(str_replace('_', ' ', $status_filter)); ?></span>
@@ -485,7 +569,11 @@ if (!$conn || $conn->connect_error) {
         </div>
     </div>
 
+    <?php require_once 'includes/logout-modal.php'; ?>
+    <?php require_once 'includes/change-password-modal.php'; ?>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <?php require_once 'includes/sidebar-scripts.php'; ?>
     <script>
         // Filter functionality
         document.getElementById('branchFilter')?.addEventListener('change', function() {

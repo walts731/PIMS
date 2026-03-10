@@ -84,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     } else {
         try {
             $stmt = $conn->prepare("INSERT INTO branches (office_id, branch_name, branch_code, description, head_personnel, contact_number, location, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("issssss", $office_id, $branch_name, $branch_code, $description, $head_personnel, $contact_number, $location, $_SESSION['user_id']);
+            $stmt->bind_param("issssssi", $office_id, $branch_name, $branch_code, $description, $head_personnel, $contact_number, $location, $_SESSION['user_id']);
             $stmt->execute();
             
             $message = "Branch added successfully!";

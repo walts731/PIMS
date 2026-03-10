@@ -387,8 +387,6 @@ if ($fuel_in_result) {
                             <th>Date/Time</th>
                             <th>Fuel Type</th>
                             <th>Quantity (L)</th>
-                            <th>Unit Price</th>
-                            <th>Total Cost</th>
                             <th>Supplier</th>
                             <th>Storage Location</th>
                             <th>Received By</th>
@@ -405,8 +403,6 @@ if ($fuel_in_result) {
                                         </span>
                                     </td>
                                     <td><strong><?php echo number_format($transaction['quantity'], 2); ?></strong></td>
-                                    <td><?php echo number_format($transaction['unit_price'], 2); ?></td>
-                                    <td><?php echo number_format($transaction['total_cost'], 2); ?></td>
                                     <td><?php echo htmlspecialchars($transaction['supplier_name'] ?? 'N/A'); ?></td>
                                     <td><?php echo htmlspecialchars($transaction['storage_location'] ?? 'N/A'); ?></td>
                                     <td><?php echo htmlspecialchars(($transaction['first_name'] ?? '') . ' ' . ($transaction['last_name'] ?? '')); ?></td>
@@ -414,7 +410,7 @@ if ($fuel_in_result) {
                             <?php endwhile; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="8" class="text-center py-4">
+                                <td colspan="6" class="text-center py-4">
                                     <div class="text-muted">
                                         <i class="bi bi-arrow-down-circle" style="font-size: 3rem;"></i>
                                         <p class="mt-2 mb-0">No fuel in transactions found</p>
