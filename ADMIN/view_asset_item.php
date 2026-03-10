@@ -538,7 +538,7 @@ $status_display = formatStatus($item['status']);
 <body>
     <?php
     // Set page title for topbar
-    $page_title = 'Asset Item Details - ' . htmlspecialchars($item['description']);
+    $page_title = 'Asset Item Details';
     ?>
     <!-- Main Content Wrapper -->
     <div class="main-wrapper" id="mainWrapper">
@@ -558,6 +558,11 @@ $status_display = formatStatus($item['status']);
                     <p class="text-muted mb-0"><?php echo htmlspecialchars($item['description']); ?></p>
                 </div>
                 <div class="col-md-4 text-md-end d-flex flex-nowrap justify-content-end">
+                    <?php if ($item['status'] === 'serviceable'): ?>
+                    <button class="btn btn-success btn-sm me-2" onclick="addToIirup()">
+                        <i class="bi bi-plus-circle"></i> Add to IIRUP
+                    </button>
+                    <?php endif; ?>
                     <a href="asset_items_edit.php?id=<?php echo $item_id; ?>" class="btn btn-warning btn-sm me-2">
                         <i class="bi bi-pencil"></i> Edit
                     </a>
