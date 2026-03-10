@@ -241,6 +241,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Save data when form inputs change
     document.addEventListener('input', function(e) {
         if (e.target.closest('#iirupItemsTable')) {
+            // Check for duplicate property number when user types
+            if (e.target.name === 'property_no[]' && e.target.value.trim()) {
+                const row = e.target.closest('tr');
+                if (isPropertyNoDuplicate(e.target.value.trim(), row)) {
+                    // Show warning but don't prevent typing (user might be correcting)
+                    showModal('Warning', 'This property number already exists in the form. Each asset can only be added once.', 'warning');
+                }
+            }
             saveFormDataToSession();
         }
     });
@@ -275,13 +283,24 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Clear session data when form is submitted
+    // Clear auto-fill session flag when form is submitted
     const form = document.getElementById('iirupForm');
     if (form) {
         form.addEventListener('submit', function() {
+            clearAutoFillSession();
             clearIIRUPSessionData();
         });
     }
+    
+    // Clear auto-fill session flag when navigating away from the page
+    window.addEventListener('beforeunload', function() {
+        // Use navigator.sendBeacon for reliable delivery during page unload
+        if (navigator.sendBeacon) {
+            const data = new FormData();
+            data.append('clear_auto_fill', 'true');
+            navigator.sendBeacon('../includes/clear_auto_fill_session.php', data);
+        }
+    });
 });
 
 function addIIRUPRow() {
@@ -312,22 +331,7 @@ function addIIRUPRow() {
             '<input type="number" class="form-control form-control-sm" name="qty[]">',
             '<input type="number" step="0.01" class="form-control form-control-sm" name="unit_cost[]">',
             '<input type="number" step="0.01" class="form-control form-control-sm" name="total_cost[]">',
-            '<input type="number" step="0.01" class="form-control form-control-sm" name="accumulated_depreciation[]">',
-            '<input type="number" step="0.01" class="form-control form-control-sm" name="impairment_losses[]">',
-            '<input type="number" step="0.01" class="form-control form-control-sm" name="carrying_amount[]">',
-            '<input type="text" class="form-control form-control-sm" name="inventory_remarks[]" value="unserviceable">',
-            '<input type="number" step="0.01" class="form-control form-control-sm" name="disposal_sale[]">',
-            '<input type="number" step="0.01" class="form-control form-control-sm" name="disposal_transfer[]">',
-            '<input type="number" step="0.01" class="form-control form-control-sm" name="disposal_destruction[]">',
-            '<input type="text" class="form-control form-control-sm" name="disposal_others[]">',
-            '<input type="number" step="0.01" class="form-control form-control-sm" name="disposal_total[]">',
-            '<input type="number" step="0.01" class="form-control form-control-sm" name="appraised_value[]">',
-            '<input type="number" step="0.01" class="form-control form-control-sm" name="total[]">',
-            '<input type="text" class="form-control form-control-sm" name="or_no[]">',
-            '<input type="number" step="0.01" class="form-control form-control-sm" name="amount[]">',
             '<select class="form-control form-control-sm" name="dept_office[]">' + officeOptions + '</select>',
-            '<input type="text" class="form-control form-control-sm" name="control_no[]">',
-            '<input type="date" class="form-control form-control-sm" name="date_received[]">',
             '<div class="btn-group btn-group-sm" role="group">' +
                 '<button type="button" class="btn btn-sm btn-info" onclick="openFillModal(this)" title="Fill Data">' +
                     '<i class="bi bi-pencil-fill"></i>' +
@@ -401,6 +405,9 @@ function removeIIRUPRow(button) {
 
 function resetIIRUPForm() {
     try {
+        // Clear auto-fill session flag
+        clearAutoFillSession();
+        
         const modalElement = document.getElementById('resetConfirmModal');
         if (modalElement) {
             const modal = new bootstrap.Modal(modalElement);
@@ -412,6 +419,29 @@ function resetIIRUPForm() {
     } catch (error) {
         console.error('Error opening reset modal:', error);
         showModal('Error', 'Error opening reset modal. Please refresh the page.', 'error');
+    }
+}
+
+// Clear auto-fill session flag
+function clearAutoFillSession() {
+    try {
+        fetch('../includes/clear_auto_fill_session.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log('Auto-fill session cleared');
+            }
+        })
+        .catch(error => {
+            console.error('Error clearing auto-fill session:', error);
+        });
+    } catch (error) {
+        console.error('Error clearing auto-fill session:', error);
     }
 }
 
@@ -491,52 +521,23 @@ function openFillModal(button) {
         const inputs = currentRow.getElementsByTagName('input');
         const selects = currentRow.getElementsByTagName('select');
         
-        // Populate modal with current values (all 22 fields)
+        // Populate modal with current values (7 fields now: 6 inputs + 1 select)
         const modal_date_acquired = document.getElementById('modal_date_acquired');
         const modal_particulars = document.getElementById('modal_particulars');
         const modal_property_no = document.getElementById('modal_property_no');
         const modal_qty = document.getElementById('modal_qty');
         const modal_unit_cost = document.getElementById('modal_unit_cost');
         const modal_total_cost = document.getElementById('modal_total_cost');
-        const modal_accumulated_depreciation = document.getElementById('modal_accumulated_depreciation');
-        const modal_impairment_losses = document.getElementById('modal_impairment_losses');
-        const modal_carrying_amount = document.getElementById('modal_carrying_amount');
-        const modal_inventory_remarks = document.getElementById('modal_inventory_remarks');
-        const modal_disposal_sale = document.getElementById('modal_disposal_sale');
-        const modal_disposal_transfer = document.getElementById('modal_disposal_transfer');
-        const modal_disposal_destruction = document.getElementById('modal_disposal_destruction');
-        const modal_disposal_others = document.getElementById('modal_disposal_others');
-        const modal_disposal_total = document.getElementById('modal_disposal_total');
-        const modal_appraised_value = document.getElementById('modal_appraised_value');
-        const modal_total = document.getElementById('modal_total');
-        const modal_or_no = document.getElementById('modal_or_no');
-        const modal_amount = document.getElementById('modal_amount');
         const modal_dept_office = document.getElementById('modal_dept_office');
-        const modal_control_no = document.getElementById('modal_control_no');
-        const modal_date_received = document.getElementById('modal_date_received');
         
-        if (modal_date_acquired) modal_date_acquired.value = inputs[0].value || '';
-        if (modal_particulars) modal_particulars.value = inputs[1].value || '';
-        if (modal_property_no) modal_property_no.value = inputs[2].value || '';
-        if (modal_qty) modal_qty.value = inputs[3].value || '';
-        if (modal_unit_cost) modal_unit_cost.value = inputs[4].value || '';
-        if (modal_total_cost) modal_total_cost.value = inputs[5].value || '';
-        if (modal_accumulated_depreciation) modal_accumulated_depreciation.value = inputs[6].value || '';
-        if (modal_impairment_losses) modal_impairment_losses.value = inputs[7].value || '';
-        if (modal_carrying_amount) modal_carrying_amount.value = inputs[8].value || '';
-        if (modal_inventory_remarks) modal_inventory_remarks.value = inputs[9].value || '';
-        if (modal_disposal_sale) modal_disposal_sale.value = inputs[10].value || '';
-        if (modal_disposal_transfer) modal_disposal_transfer.value = inputs[11].value || '';
-        if (modal_disposal_destruction) modal_disposal_destruction.value = inputs[12].value || '';
-        if (modal_disposal_others) modal_disposal_others.value = inputs[13].value || '';
-        if (modal_disposal_total) modal_disposal_total.value = inputs[14].value || '';
-        if (modal_appraised_value) modal_appraised_value.value = inputs[15].value || '';
-        if (modal_total) modal_total.value = inputs[16].value || '';
-        if (modal_or_no) modal_or_no.value = inputs[17].value || '';
-        if (modal_amount) modal_amount.value = inputs[18].value || '';
-        if (modal_dept_office) modal_dept_office.value = selects[0].value || '';
-        if (modal_control_no) modal_control_no.value = inputs[19].value || '';
-        if (modal_date_received) modal_date_received.value = inputs[20].value || '';
+        // Access the existing input elements (0-5) and select element (0)
+        if (modal_date_acquired && inputs[0]) modal_date_acquired.value = inputs[0].value || '';
+        if (modal_particulars && inputs[1]) modal_particulars.value = inputs[1].value || '';
+        if (modal_property_no && inputs[2]) modal_property_no.value = inputs[2].value || '';
+        if (modal_qty && inputs[3]) modal_qty.value = inputs[3].value || '';
+        if (modal_unit_cost && inputs[4]) modal_unit_cost.value = inputs[4].value || '';
+        if (modal_total_cost && inputs[5]) modal_total_cost.value = inputs[5].value || '';
+        if (modal_dept_office && selects[0]) modal_dept_office.value = selects[0].value || '';
         
         modal.show();
     } catch (error) {
@@ -556,53 +557,30 @@ function saveFillData() {
         const inputs = currentRow.getElementsByTagName('input');
         const selects = currentRow.getElementsByTagName('select');
         
-        // Get modal elements
+        // Get modal elements (7 fields now: 6 inputs + 1 select)
         const modal_date_acquired = document.getElementById('modal_date_acquired');
         const modal_particulars = document.getElementById('modal_particulars');
         const modal_property_no = document.getElementById('modal_property_no');
         const modal_qty = document.getElementById('modal_qty');
         const modal_unit_cost = document.getElementById('modal_unit_cost');
         const modal_total_cost = document.getElementById('modal_total_cost');
-        const modal_accumulated_depreciation = document.getElementById('modal_accumulated_depreciation');
-        const modal_impairment_losses = document.getElementById('modal_impairment_losses');
-        const modal_carrying_amount = document.getElementById('modal_carrying_amount');
-        const modal_inventory_remarks = document.getElementById('modal_inventory_remarks');
-        const modal_disposal_sale = document.getElementById('modal_disposal_sale');
-        const modal_disposal_transfer = document.getElementById('modal_disposal_transfer');
-        const modal_disposal_destruction = document.getElementById('modal_disposal_destruction');
-        const modal_disposal_others = document.getElementById('modal_disposal_others');
-        const modal_disposal_total = document.getElementById('modal_disposal_total');
-        const modal_appraised_value = document.getElementById('modal_appraised_value');
-        const modal_total = document.getElementById('modal_total');
-        const modal_or_no = document.getElementById('modal_or_no');
-        const modal_amount = document.getElementById('modal_amount');
         const modal_dept_office = document.getElementById('modal_dept_office');
-        const modal_control_no = document.getElementById('modal_control_no');
-        const modal_date_received = document.getElementById('modal_date_received');
         
-        // Save modal values back to the row (all 22 fields)
+        // Check for duplicate property number (excluding current row)
+        const newPropertyNo = modal_property_no ? modal_property_no.value : '';
+        if (newPropertyNo && isPropertyNoDuplicate(newPropertyNo, currentRow)) {
+            showModal('Warning', 'This property number already exists in the form. Each asset can only be added once.', 'warning');
+            return; // Don't save the data
+        }
+        
+        // Save modal values back to the row (7 fields now: 6 inputs + 1 select)
         if (modal_date_acquired && inputs[0]) inputs[0].value = modal_date_acquired.value;
         if (modal_particulars && inputs[1]) inputs[1].value = modal_particulars.value;
         if (modal_property_no && inputs[2]) inputs[2].value = modal_property_no.value;
         if (modal_qty && inputs[3]) inputs[3].value = modal_qty.value;
         if (modal_unit_cost && inputs[4]) inputs[4].value = modal_unit_cost.value;
         if (modal_total_cost && inputs[5]) inputs[5].value = modal_total_cost.value;
-        if (modal_accumulated_depreciation && inputs[6]) inputs[6].value = modal_accumulated_depreciation.value;
-        if (modal_impairment_losses && inputs[7]) inputs[7].value = modal_impairment_losses.value;
-        if (modal_carrying_amount && inputs[8]) inputs[8].value = modal_carrying_amount.value;
-        if (modal_inventory_remarks && inputs[9]) inputs[9].value = modal_inventory_remarks.value;
-        if (modal_disposal_sale && inputs[10]) inputs[10].value = modal_disposal_sale.value;
-        if (modal_disposal_transfer && inputs[11]) inputs[11].value = modal_disposal_transfer.value;
-        if (modal_disposal_destruction && inputs[12]) inputs[12].value = modal_disposal_destruction.value;
-        if (modal_disposal_others && inputs[13]) inputs[13].value = modal_disposal_others.value;
-        if (modal_disposal_total && inputs[14]) inputs[14].value = modal_disposal_total.value;
-        if (modal_appraised_value && inputs[15]) inputs[15].value = modal_appraised_value.value;
-        if (modal_total && inputs[16]) inputs[16].value = modal_total.value;
-        if (modal_or_no && inputs[17]) inputs[17].value = modal_or_no.value;
-        if (modal_amount && inputs[18]) inputs[18].value = modal_amount.value;
         if (modal_dept_office && selects[0]) selects[0].value = modal_dept_office.value;
-        if (modal_control_no && inputs[19]) inputs[19].value = modal_control_no.value;
-        if (modal_date_received && inputs[20]) inputs[20].value = modal_date_received.value;
         
         // Close modal
         const modalElement = document.getElementById('fillDataModal');
@@ -743,11 +721,21 @@ function selectAsset(asset, input) {
     const isFirstRow = tbody.rows[0] === row;
     const isFirstRowEmpty = isFirstRow && isRowEmpty(row);
     
+    // Check for duplicate property number before adding
+    if (asset.property_no && isPropertyNoDuplicate(asset.property_no)) {
+        showModal('Warning', 'This property number already exists in the form. Each asset can only be added once.', 'warning');
+        return; // Don't add the asset
+    }
+    
     // If this is not the first row or the first row is not empty, add a new row
     if (!isFirstRow || !isFirstRowEmpty) {
         addIIRUPRow();
         const newRow = tbody.rows[tbody.rows.length - 1];
-        fillRowWithAssetData(newRow, asset);
+        const success = fillRowWithAssetData(newRow, asset);
+        if (!success) {
+            // If filling failed (due to duplicate), remove the newly added row
+            newRow.remove();
+        }
     } else {
         // Fill the current (first) row with asset data
         fillRowWithAssetData(row, asset);
@@ -771,9 +759,35 @@ function isRowEmpty(row) {
            (!qtyInput || !qtyInput.value);
 }
 
+// Check for duplicate property numbers in the table
+function isPropertyNoDuplicate(propertyNo, excludeRow = null) {
+    const table = document.getElementById('iirupItemsTable');
+    if (!table) return false;
+    
+    const tbody = table.getElementsByTagName('tbody')[0];
+    const rows = tbody.getElementsByTagName('tr');
+    
+    for (let i = 0; i < rows.length; i++) {
+        if (excludeRow && rows[i] === excludeRow) continue; // Skip the row we're checking
+        
+        const propertyNoInput = rows[i].querySelector('input[name="property_no[]"]');
+        if (propertyNoInput && propertyNoInput.value.trim() === propertyNo.trim()) {
+            return true; // Found duplicate
+        }
+    }
+    
+    return false; // No duplicate found
+}
+
 function fillRowWithAssetData(row, asset) {
     const inputs = row.getElementsByTagName('input');
     const selects = row.getElementsByTagName('select');
+    
+    // Check for duplicate property number
+    if (asset.property_no && isPropertyNoDuplicate(asset.property_no, row)) {
+        showModal('Warning', 'This property number already exists in the form. Each asset can only be added once.', 'warning');
+        return false; // Don't fill the row
+    }
     
     // Fill the form fields with asset data
     // Find the correct input indices (accounting for the autocomplete container)
@@ -837,9 +851,27 @@ function fillRowWithAssetData(row, asset) {
             deptOffice.value = asset.office_name;
         }
     }
+    
+    // Auto-fill Accountable Officer field if employee is available
+    if (asset.employee_name) {
+        const accountableOfficerInput = document.querySelector('input[name="accountable_officer"]');
+        if (accountableOfficerInput) {
+            accountableOfficerInput.value = asset.employee_name;
+            accountableOfficerInput.style.backgroundColor = '#e8f5e8';
+            accountableOfficerInput.style.border = '1px solid #28a745';
+        }
+    }
+    
+    return true; // Successfully filled
 }
 
 function selectAssetForModal(asset, input) {
+    // Check for duplicate property number in existing rows
+    if (asset.property_no && isPropertyNoDuplicate(asset.property_no)) {
+        showModal('Warning', 'This property number already exists in the form. Each asset can only be added once.', 'warning');
+        return; // Don't fill the modal
+    }
+    
     // Fill modal fields with asset data
     const particularsField = document.getElementById('modal_particulars');
     particularsField.value = asset.description;
