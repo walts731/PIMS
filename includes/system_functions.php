@@ -253,25 +253,32 @@ function logLoginAttempt($username, $success, $failure_reason = '') {
 
 /**
  * Check session timeout and logout if expired
+ * Uses idle timeout (time since last activity) instead of absolute timeout from login
  */
 function checkSessionTimeout() {
     // Get session timeout setting from database (default: 3600 seconds = 1 hour)
     $session_timeout = getSystemSetting('session_timeout', 3600);
     
-    // Check if user is logged in and login_time is set
-    if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true && isset($_SESSION['login_time'])) {
-        $login_time = $_SESSION['login_time'];
+    // Check if user is logged in
+    if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
         $current_time = time();
-        $elapsed_time = $current_time - $login_time;
         
-        // Check if session has expired
-        if ($elapsed_time > $session_timeout) {
+        // Initialize last_activity if not set (for existing sessions)
+        if (!isset($_SESSION['last_activity'])) {
+            $_SESSION['last_activity'] = $_SESSION['login_time'] ?? $current_time;
+        }
+        
+        $last_activity = $_SESSION['last_activity'];
+        $idle_time = $current_time - $last_activity;
+        
+        // Check if session has been idle too long
+        if ($idle_time > $session_timeout) {
             // Log session timeout
             $user_id = $_SESSION['user_id'] ?? null;
             $user_name = ($_SESSION['first_name'] ?? '') . ' ' . ($_SESSION['last_name'] ?? '');
             $user_email = $_SESSION['email'] ?? '';
             
-            logSystemAction($user_id, 'session_timeout', 'authentication', "Session expired for user: {$user_name} ({$user_email}) after {$elapsed_time} seconds");
+            logSystemAction($user_id, 'session_timeout', 'authentication', "Session expired for user: {$user_name} ({$user_email}) after {$idle_time} seconds of inactivity");
             logSecurityEvent('session_timeout', "Session timeout for user: {$user_name} ({$user_email})", 'medium', $user_id);
             
             // Destroy session
@@ -282,7 +289,7 @@ function checkSessionTimeout() {
             exit();
         }
         
-        // Update last activity time (optional - for future idle timeout feature)
+        // Update last activity time on each request
         $_SESSION['last_activity'] = $current_time;
     }
 }

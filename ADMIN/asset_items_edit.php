@@ -230,19 +230,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         }
     }
     
-    // Always update the image field.
-    // IMPORTANT: asset_items.image may be VARCHAR(255) in some deployments.
-    // To ensure saving works reliably in that schema, store only ONE filename
-    // (the most recent uploaded image, or the most recent existing image).
-    $final_image_filename = null;
-    if (!empty($image_filenames)) {
-        $final_image_filename = end($image_filenames);
-    } elseif (!empty($existing_images)) {
-        $final_image_filename = end($existing_images);
-    }
+    // Merge existing images with newly uploaded images
+    $all_images = array_merge($existing_images, $image_filenames);
+    
+    // Store as JSON array of filenames (supports multiple images)
+    $final_image_value = !empty($all_images) ? json_encode($all_images) : NULL;
 
     $update_fields[] = "image = ?";
-    $update_values[] = $final_image_filename;
+    $update_values[] = $final_image_value;
     $types .= 's';
     
     // Basic asset item fields
@@ -1088,8 +1083,6 @@ $status_display = formatStatus($item['status']);
                         </div>
                     </div>
                 </div>
-                
-                </form>
             </div>
             
             <!-- Sidebar Column -->
@@ -1216,6 +1209,7 @@ $status_display = formatStatus($item['status']);
                 </div>
             </div>
         </div>
+        </form>
         
     </div>
     </div> <!-- Close main wrapper -->
