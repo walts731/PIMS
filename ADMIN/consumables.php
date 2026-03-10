@@ -296,6 +296,17 @@ try {
 } catch (Exception $e) {
     error_log("Error fetching offices: " . $e->getMessage());
 }
+$descriptions = [];
+try {
+    $result = $conn->query("SELECT DISTINCT description FROM consumables ORDER BY description");
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $descriptions[] = $row['description'];
+        }
+    }
+} catch (Exception $e) {
+    error_log("Error fetching descriptions: " . $e->getMessage());
+}
 
 // Get consumable statistics
 $stats = [];
@@ -522,7 +533,7 @@ try {
                         
                         <div class="mb-3">
                             <label class="form-label">Description *</label>
-                            <input type="text" class="form-control" name="description" required>
+                            <input type="text" class="form-control" name="description" list="descriptionList" required>
                         </div>
                         
                         <div class="row">
@@ -591,6 +602,12 @@ try {
                                 </div>
                             </div>
                         </div>
+                        
+                        <datalist id="descriptionList">
+                            <?php foreach ($descriptions as $desc): ?>
+                                <option value="<?php echo htmlspecialchars($desc); ?>">
+                            <?php endforeach; ?>
+                        </datalist>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
