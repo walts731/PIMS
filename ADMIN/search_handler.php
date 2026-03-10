@@ -33,19 +33,19 @@ try {
     // Search in asset_items
     $asset_results = [];
     $asset_stmt = $conn->prepare("
-        SELECT ai.id, ai.description, ai.status, ai.property_number, ai.inventory_tag, ai.property_no,
+        SELECT ai.id, ai.description, ai.status, ai.property_no, ai.inventory_tag,
                a.description as asset_description, o.office_name,
                CONCAT(e.firstname, ' ', e.lastname) as employee_name
         FROM asset_items ai
         LEFT JOIN assets a ON ai.asset_id = a.id
         LEFT JOIN offices o ON ai.office_id = o.id
         LEFT JOIN employees e ON ai.employee_id = e.id
-        WHERE ai.description LIKE ? OR ai.property_number LIKE ? OR ai.inventory_tag LIKE ? OR ai.property_no LIKE ?
+        WHERE ai.description LIKE ? OR ai.property_no LIKE ? OR ai.inventory_tag LIKE ?
         ORDER BY ai.last_updated DESC
         LIMIT 10
     ");
     $search_pattern = "%$query%";
-    $asset_stmt->bind_param("ssss", $search_pattern, $search_pattern, $search_pattern, $search_pattern);
+    $asset_stmt->bind_param("sss", $search_pattern, $search_pattern, $search_pattern);
     $asset_stmt->execute();
     $asset_result = $asset_stmt->get_result();
     while ($row = $asset_result->fetch_assoc()) {
@@ -291,14 +291,11 @@ try {
                                     <strong><?php echo htmlspecialchars($asset['description']); ?></strong>
                                 </div>
                                 <div class="text-muted small">
-                                    <?php if (!empty($asset['property_number'])): ?>
-                                        <i class="bi bi-tag"></i> <?php echo htmlspecialchars($asset['property_number']); ?>
+                                    <?php if (!empty($asset['property_no'])): ?>
+                                        <i class="bi bi-tag"></i> <?php echo htmlspecialchars($asset['property_no']); ?>
                                     <?php endif; ?>
                                     <?php if (!empty($asset['inventory_tag'])): ?>
                                         <span class="ms-3"><i class="bi bi-upc-scan"></i> <?php echo htmlspecialchars($asset['inventory_tag']); ?></span>
-                                    <?php endif; ?>
-                                    <?php if (!empty($asset['property_no'])): ?>
-                                        <span class="ms-3"><i class="bi bi-card-text"></i> <?php echo htmlspecialchars($asset['property_no']); ?></span>
                                     <?php endif; ?>
                                     <?php if (!empty($asset['asset_description'])): ?>
                                         <span class="ms-3"><i class="bi bi-archive"></i> <?php echo htmlspecialchars($asset['asset_description']); ?></span>
