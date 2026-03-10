@@ -9,7 +9,7 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role
 }
 
 // Include required files
-require_once '../config.php';
+require_once '../includes/config.php';
 require_once '../includes/logger.php';
 
 // Set page title
@@ -46,10 +46,8 @@ $where_clause = "WHERE " . implode(' AND ', $where_conditions);
 // Get total count
 $count_sql = "SELECT COUNT(*) as total FROM notifications n $where_clause";
 $count_stmt = $conn->prepare($count_sql);
-$count_stmt->bind_param('i', $user_id);
-$count_stmt->execute();
-$count_result = $count_stmt->get_result();
-$total_notifications = $count_result->fetch_assoc()['total'];
+$count_stmt->execute($params);
+$total_notifications = $count_stmt->fetch(PDO::FETCH_ASSOC)['total'];
 $total_pages = ceil($total_notifications / $per_page);
 
 // Get notifications
@@ -62,50 +60,18 @@ $sql = "SELECT n.*,
          $where_clause 
          ORDER BY n.created_at DESC 
          LIMIT ? OFFSET ?";
+$params[] = $per_page;
+$params[] = $offset;
+
 $stmt = $conn->prepare($sql);
-
-// Bind parameters dynamically based on what we have
-$param_types = '';
-$param_values = [];
-
-// Add user_id parameter
-$param_types .= 'i';
-$param_values[] = $user_id;
-
-// Add type filter if exists
-if ($type_filter !== 'all') {
-    $param_types .= 's';
-    $param_values[] = $type_filter;
-}
-
-// Add search parameters if exists
-if (!empty($search)) {
-    $param_types .= 'ss';
-    $param_values[] = "%$search%";
-    $param_values[] = "%$search%";
-}
-
-// Add pagination parameters
-$param_types .= 'ii';
-$param_values[] = $per_page;
-$param_values[] = $offset;
-
-$stmt->bind_param($param_types, ...$param_values);
-$stmt->execute();
-$result = $stmt->get_result();
-
-$notifications = [];
-while ($row = $result->fetch_assoc()) {
-    $notifications[] = $row;
-}
+$stmt->execute($params);
+$notifications = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Get unread count
 $unread_sql = "SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND is_read = 0";
 $unread_stmt = $conn->prepare($unread_sql);
-$unread_stmt->bind_param('i', $user_id);
-$unread_stmt->execute();
-$unread_result = $unread_stmt->get_result();
-$unread_count = $unread_result->fetch_assoc()['count'];
+$unread_stmt->execute([$user_id]);
+$unread_count = $unread_stmt->fetch(PDO::FETCH_ASSOC)['count'];
 ?>
 
 <!DOCTYPE html>
