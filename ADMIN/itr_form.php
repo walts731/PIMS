@@ -41,15 +41,25 @@ if ($result && $row = $result->fetch_assoc()) {
     $header_image = $row['header_image'];
 }
 
-// Get active employees for dropdown
+// Get employees who have assets assigned to them for "From" dropdown
 $employees = [];
-$employees_sql = "SELECT id, employee_no, firstname, lastname FROM employees WHERE employment_status IN ('permanent', 'contractual', 'job_order') AND clearance_status = 'uncleared' ORDER BY lastname, firstname";
+$employees_sql = "SELECT DISTINCT e.id, e.employee_no, e.firstname, e.lastname 
+                   FROM employees e 
+                   INNER JOIN asset_items ai ON e.id = ai.employee_id 
+                   WHERE ai.status = 'serviceable' 
+                   AND ai.property_no IS NOT NULL 
+                   AND ai.property_no != '' 
+                   AND ai.inventory_tag IS NOT NULL 
+                   AND ai.inventory_tag != '' 
+                   AND ai.value IS NOT NULL 
+                   AND ai.value > 0
+                   ORDER BY e.lastname, e.firstname";
 $employees_result = $conn->query($employees_sql);
 while ($employee_row = $employees_result->fetch_assoc()) {
     $employees[] = $employee_row;
 }
 
-// Get all active employees for "To" dropdown (can receive assets regardless of clearance)
+// Get all permanent employees for "To" dropdown (can receive assets)
 $to_employees = [];
 $to_employees_sql = "SELECT id, employee_no, firstname, lastname FROM employees WHERE employment_status = 'permanent' ORDER BY lastname, firstname";
 $to_employees_result = $conn->query($to_employees_sql);
@@ -379,7 +389,7 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
                         <div class="col-md-8">
                             <label class="form-label"><strong>From Accountable Officer/Agency/Fund Cluster:</strong></label>
                             <select class="form-select" id="from_employee_search" name="from_office" required>
-                                <option value="">Select Employee (Uncleared Only)</option>
+                                <option value="">Select Employee (With Transferable Assets)</option>
                                 <?php foreach ($employees as $employee): ?>
                                     <option value="<?php echo $employee['id']; ?>">
                                         <?php echo htmlspecialchars($employee['employee_no'] . ' - ' . $employee['lastname'] . ', ' . $employee['firstname']); ?>
@@ -408,7 +418,7 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
                         </div>
                         <div class="col-md-4">
                             <label class="form-label"><strong>Date:</strong></label>
-                            <input type="date" class="form-control" name="transfer_date" value="<?php echo $itr_data ? htmlspecialchars($itr_data['transfer_date']) : date('Y-m-d'); ?>">
+                            <input type="text" class="form-control" name="transfer_date" placeholder="mm/dd/yyyy" value="<?php echo $itr_data ? htmlspecialchars(date('m/d/Y', strtotime($itr_data['transfer_date']))) : date('m/d/Y'); ?>" required>
                         </div>
                     </div>
 
@@ -440,7 +450,19 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
                         </div>
                         <div class="col-md-4">
                             <label class="form-label"><strong>End User:</strong></label>
-                            <input type="text" class="form-control" name="end_user" placeholder="Enter end user name">
+                            <select class="form-select" name="end_user" id="end_user_search">
+                                <option value="">Select Employee</option>
+                                <?php 
+                                // Get all employees for end user dropdown
+                                $all_employees_sql = "SELECT id, employee_no, firstname, lastname FROM employees ORDER BY lastname, firstname";
+                                $all_employees_result = $conn->query($all_employees_sql);
+                                while ($employee_row = $all_employees_result->fetch_assoc()) {
+                                    echo '<option value="' . htmlspecialchars($employee_row['employee_no'] . ' - ' . $employee_row['lastname'] . ', ' . $employee_row['firstname']) . '">';
+                                    echo htmlspecialchars($employee_row['employee_no'] . ' - ' . $employee_row['lastname'] . ', ' . $employee_row['firstname']);
+                                    echo '</option>';
+                                }
+                                ?>
+                            </select>
                         </div>
                     </div>
 
@@ -464,7 +486,7 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td><input type="date" class="form-control form-control-sm" name="date_acquired[]" value="<?php echo date('Y-m-d'); ?>" required></td>
+                                        <td><input type="text" class="form-control form-control-sm" name="date_acquired[]" placeholder="mm/dd/yyyy" value="<?php echo date('m/d/Y'); ?>" required></td>
                                         <td><input type="text" class="form-control form-control-sm" name="item_no[]" value="1" readonly></td>
                                         <td><input type="text" class="form-control form-control-sm" name="ics_par_no[]" placeholder="ICS & PAR No./Date"></td>
                                         <td>
@@ -472,7 +494,7 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
                                                 <option value="">Select Asset</option>
                                             </select>
                                         </td>
-                                        <td><input type="number" step="0.01" class="form-control form-control-sm" name="quantity[]" value="1" min="1" onchange="calculateITRTotal(this)"></td>
+                                        <td><input type="number" step="0.01" class="form-control form-control-sm bg-light" name="quantity[]" value="1" min="1" readonly></td>
                                         <td><input type="number" step="0.01" class="form-control form-control-sm" name="unit_price[]" required onchange="calculateITRTotal(this)"></td>
                                         <td><input type="number" step="0.01" class="form-control form-control-sm" name="total_amount[]" readonly></td>
                                         <td>
@@ -577,11 +599,11 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
             const nextItemNo = currentRows;
 
             const cells = [
-                '<input type="date" class="form-control form-control-sm" name="date_acquired[]" value="' + new Date().toISOString().split('T')[0] + '" required>',
+                '<input type="text" class="form-control form-control-sm" name="date_acquired[]" placeholder="mm/dd/yyyy" value="' + new Date().toLocaleDateString('en-US') + '" required>',
                 '<input type="text" class="form-control form-control-sm" name="item_no[]" value="' + nextItemNo + '" readonly>',
                 '<input type="text" class="form-control form-control-sm" name="ics_par_no[]" placeholder="ICS & PAR No./Date">',
                 '<select class="form-select form-select-sm" name="description[]" required><option value="">Select Asset</option></select>',
-                '<input type="number" step="0.01" class="form-control form-control-sm" name="quantity[]" value="1" min="1" onchange="calculateITRTotal(this)">',
+                '<input type="number" step="0.01" class="form-control form-control-sm bg-light" name="quantity[]" value="1" min="1" readonly>',
                 '<input type="number" step="0.01" class="form-control form-control-sm" name="unit_price[]" required onchange="calculateITRTotal(this)">',
                 '<input type="number" step="0.01" class="form-control form-control-sm" name="total_amount[]" readonly>',
                 '<input type="text" class="form-control form-control-sm" name="condition[]" value="serviceable" readonly>',
@@ -621,7 +643,7 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
 
         function calculateITRTotal(input) {
             const row = input.closest('tr');
-            const quantity = row.querySelector('input[name="quantity[]"]').value || 0;
+            const quantity = 1; // Always 1 for inventory transfers
             const unitPrice = row.querySelector('input[name="unit_price[]"]').value || 0;
             const totalAmount = (parseFloat(quantity) * parseFloat(unitPrice)).toFixed(2);
 
@@ -732,6 +754,13 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
                 allowClear: true,
                 width: '100%'
             });
+            
+            $('#end_user_search').select2({
+                theme: 'bootstrap-5',
+                placeholder: 'Search and select employee...',
+                allowClear: true,
+                width: '100%'
+            });
 
             // Initialize Select2 for asset description dropdowns
             initializeAssetDropdowns();
@@ -740,6 +769,11 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
             $('#from_employee_search').on('change', function() {
                 updateAllAssetDropdowns();
                 filterToEmployeeDropdown();
+            });
+            
+            // Update "Received by" field when "To" employee selection changes
+            $('#to_employee_search').on('change', function() {
+                updateReceivedByField();
             });
             
             // Handle transfer asset auto-fill
@@ -770,19 +804,6 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
                                 setTimeout(() => {
                                     if (!assetDropdown.val() || assetDropdown.val() !== transferData.asset_id) {
                                         // If asset wasn't found in dropdown, add it manually
-                                        const option = `<option value="${transferData.asset_id}" selected>${transferData.description}</option>`;
-                                        assetDropdown.append(option);
-                                        assetDropdown.val(transferData.asset_id).trigger('change');
-                                    }
-                                    
-                                    // Auto-fill unit price and calculate total
-                                    firstRow.find('input[name="unit_price[]"]').val(transferData.unit_cost);
-                                    firstRow.find('input[name="quantity[]"]').val(1);
-                                    calculateITRTotal(firstRow.find('input[name="unit_price[]"]')[0]);
-                                    
-                                    // Add ICS/PAR reference if property number exists
-                                    if (transferData.property_no) {
-                                        firstRow.find('input[name="ics_par_no[]"]').val(transferData.property_no);
                                     }
                                 }, 500);
                             }, 1000);
@@ -825,6 +846,34 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
             
             // Re-initialize Select2 to reflect changes
             $toDropdown.trigger('change.select2');
+        }
+
+        function updateReceivedByField() {
+            const toEmployeeId = $('#to_employee_search').val();
+            const receivedByInput = $('input[name="received_by"]');
+            const receivedByPositionInput = $('input[name="received_by_position"]');
+            
+            if (!toEmployeeId) {
+                // Clear fields if no employee selected
+                receivedByInput.val('');
+                receivedByPositionInput.val('');
+                return;
+            }
+            
+            // Get the selected option text to extract employee name
+            const selectedOption = $('#to_employee_search').find('option:selected');
+            if (selectedOption.length) {
+                const optionText = selectedOption.text();
+                // Extract employee name from format "EMP0001 - Dela Cruz, Juan"
+                const parts = optionText.split(' - ');
+                if (parts.length >= 2) {
+                    const employeeName = parts[1]; // "Dela Cruz, Juan"
+                    receivedByInput.val(employeeName);
+                    
+                    // Set a default position (can be customized later)
+                    receivedByPositionInput.val('Employee');
+                }
+            }
         }
 
         function initializeAssetDropdowns() {
@@ -953,7 +1002,14 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
             // Fill Date Acquired
             const dateAcquiredInput = row.find('input[name="date_acquired[]"]');
             if (dateAcquiredInput.length && assetData.acquisition_date) {
-                dateAcquiredInput.val(assetData.acquisition_date);
+                // Convert database date (Y-m-d) to mm/dd/yyyy format
+                if (assetData.acquisition_date.includes('-')) {
+                    const dateParts = assetData.acquisition_date.split('-');
+                    const formattedDate = `${dateParts[1]}/${dateParts[2]}/${dateParts[0]}`;
+                    dateAcquiredInput.val(formattedDate);
+                } else {
+                    dateAcquiredInput.val(assetData.acquisition_date);
+                }
             }
 
             // Fill ICS & PAR No
@@ -977,6 +1033,73 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
             row.find('input[name="unit_price[]"]').val('');
             row.find('input[name="total_amount[]"]').val('');
         }
+
+        // Date validation functions
+        function validateDateFormat(dateString) {
+            const regex = /^(0[1-9]|1[0-2])\/(0[1-9]|[12][0-9]|3[01])\/\d{4}$/;
+            return regex.test(dateString);
+        }
+
+        function isValidDate(dateString) {
+            if (!validateDateFormat(dateString)) {
+                return false;
+            }
+            
+            const parts = dateString.split('/');
+            const month = parseInt(parts[0], 10);
+            const day = parseInt(parts[1], 10);
+            const year = parseInt(parts[2], 10);
+            
+            const date = new Date(year, month - 1, day);
+            return date.getMonth() === month - 1 && date.getDate() === day && date.getFullYear() === year;
+        }
+
+        function formatDateInput(input) {
+            let value = input.value.replace(/\D/g, '');
+            
+            if (value.length >= 2) {
+                value = value.substring(0, 2) + '/' + value.substring(2);
+            }
+            if (value.length >= 5) {
+                value = value.substring(0, 5) + '/' + value.substring(5, 9);
+            }
+            
+            input.value = value;
+        }
+
+        // Initialize date formatting and validation
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add date formatting to date inputs
+            document.addEventListener('input', function(e) {
+                if (e.target.name === 'transfer_date' || e.target.name === 'date_acquired[]') {
+                    formatDateInput(e.target);
+                }
+            });
+
+            // Add date validation on form submission
+            document.getElementById('itrForm').addEventListener('submit', function(e) {
+                const transferDate = document.querySelector('input[name="transfer_date"]');
+                const dateAcquiredInputs = document.querySelectorAll('input[name="date_acquired[]"]');
+                
+                // Validate transfer date
+                if (transferDate && !isValidDate(transferDate.value)) {
+                    e.preventDefault();
+                    alert('Please enter a valid date in mm/dd/yyyy format for the transfer date.');
+                    transferDate.focus();
+                    return;
+                }
+                
+                // Validate date acquired fields
+                for (let i = 0; i < dateAcquiredInputs.length; i++) {
+                    if (!isValidDate(dateAcquiredInputs[i].value)) {
+                        e.preventDefault();
+                        alert('Please enter a valid date in mm/dd/yyyy format for the date acquired field.');
+                        dateAcquiredInputs[i].focus();
+                        return;
+                    }
+                }
+            });
+        });
 
         // Employee Search Functionality
         function initializeEmployeeSearch() {
