@@ -19,6 +19,26 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
     exit();
 }
 
+// Function to parse property number and extract category/subcategory codes
+function parsePropertyNumber($property_number) {
+    $parsed = [
+        'category_code' => null,
+        'subcategory_code' => null
+    ];
+    
+    // Split property number by '-'
+    $parts = explode('-', $property_number);
+    
+    // Expected format: YEAR-FORM-FUND-CATEGORY-SUBCATEGORY-SERIES
+    // Positions: 0=year, 1=form, 2=fund, 3=category, 4=subcategory, 5=series
+    if (count($parts) >= 6) {
+        $parsed['category_code'] = $parts[3];      // Category code (e.g., 030)
+        $parsed['subcategory_code'] = $parts[4];   // Subcategory code (e.g., 0307)
+    }
+    
+    return $parsed;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         // Get form data
@@ -201,9 +221,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     // Update the asset item with property number if assigned
                     if (!empty($item_property_number)) {
-                        $update_stmt = $conn->prepare("UPDATE asset_items SET property_no = ? WHERE id = ?");
+                        // Parse property number to extract category and subcategory codes
+                        $parsed_data = parsePropertyNumber($item_property_number);
+                        
+                        // Look up category and subcategory IDs
+                        $category_id = null;
+                        $subcategory_id = null;
+                        
+                        if (!empty($parsed_data['category_code'])) {
+                            $category_stmt = $conn->prepare("SELECT id FROM asset_categories WHERE category_code = ?");
+                            $category_stmt->bind_param("s", $parsed_data['category_code']);
+                            $category_stmt->execute();
+                            $category_result = $category_stmt->get_result();
+                            if ($category_result && $category_result->num_rows > 0) {
+                                $category_id = $category_result->fetch_assoc()['id'];
+                            }
+                            $category_stmt->close();
+                        }
+                        
+                        if (!empty($parsed_data['subcategory_code'])) {
+                            $subcategory_stmt = $conn->prepare("SELECT id FROM asset_sub_categories WHERE sub_category_code = ?");
+                            $subcategory_stmt->bind_param("s", $parsed_data['subcategory_code']);
+                            $subcategory_stmt->execute();
+                            $subcategory_result = $subcategory_stmt->get_result();
+                            if ($subcategory_result && $subcategory_result->num_rows > 0) {
+                                $subcategory_id = $subcategory_result->fetch_assoc()['id'];
+                            }
+                            $subcategory_stmt->close();
+                        }
+                        
+                        // Update the asset item with property number, category, and subcategory
+                        $update_stmt = $conn->prepare("UPDATE asset_items SET property_no = ?, category_id = ?, asset_subcategory_id = ? WHERE id = ?");
                         if ($update_stmt) {
-                            $update_stmt->bind_param("si", $item_property_number, $asset_item_id);
+                            $update_stmt->bind_param("siii", $item_property_number, $category_id, $subcategory_id, $asset_item_id);
                             $update_stmt->execute();
                             $update_stmt->close();
                         }
