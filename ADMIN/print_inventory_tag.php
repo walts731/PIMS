@@ -71,7 +71,12 @@ if (!$tag) {
 
 // Log the print action
 require_once '../includes/logger.php';
-logSystemAction($_SESSION['user_id'], 'print', 'inventory_tag', "Printed inventory tag: {$tag['inventory_tag']}");
+$printed_tag_value = $tag['inventory_tag'] ?? '';
+if (!empty($printed_tag_value)) {
+    logSystemAction($_SESSION['user_id'], 'print', 'inventory_tag', "Printed inventory tag: {$printed_tag_value}");
+} else {
+    logSystemAction($_SESSION['user_id'], 'print', 'inventory_tag', "Printed inventory tag (no inventory_tag set) - Item ID: {$tag_id}");
+}
 
 // Get additional specific data based on category
 $model_no = '';
@@ -296,11 +301,19 @@ function generateStickerHTML($sticker, $tag, $system_settings, $serviceable_chec
             <div class="two-column">
                 <div class="field-row">
                     <div class="field-label">Unit/Quantity:</div>
-                    <div class="field-value">' . ($unit_sets > 1 ? htmlspecialchars($unit_value) . ' of ' . htmlspecialchars($unit_sets) . ' sets' : htmlspecialchars($unit_value)) . '</div>
+                    <div class="field-value">' . (
+                        (function() use ($unit_value, $unit_sets, $tag) {
+                            $unit_label = $tag['unit'] ?? 'pcs';
+                            if ($unit_sets > 1) {
+                                return htmlspecialchars($unit_value) . ' of ' . htmlspecialchars($unit_sets) . ' ' . htmlspecialchars($unit_label);
+                            }
+                            return htmlspecialchars($unit_value) . ' ' . htmlspecialchars($unit_label);
+                        })()
+                    ) . '</div>
                 </div>
                 <div class="field-row">
                     <div class="field-label">Acquisition Date/Cost:</div>
-                    <div class="field-value-no-border">' . htmlspecialchars($acquisition_date) . ' / ' . htmlspecialchars($tag['unit_cost']) . '</div>
+                    <div class="field-value">' . htmlspecialchars($acquisition_date) . ' / ' . htmlspecialchars($tag['unit_cost']) . '</div>
                 </div>
             </div>
             
@@ -664,6 +677,17 @@ function generateStickerHTML($sticker, $tag, $system_settings, $serviceable_chec
 </head>
 
 <body>
+    <div class="no-print" style="position: sticky; top: 0; z-index: 999; background: #fff; border-bottom: 1px solid #ddd; padding: 10px;">
+        <div style="display:flex; align-items:center; justify-content: space-between; gap: 10px; max-width: 1100px; margin: 0 auto;">
+            <div style="font-family: Arial, sans-serif; font-size: 14px;">
+                <strong>Print Preview</strong>
+            </div>
+            <div style="display:flex; gap: 8px;">
+                <button type="button" onclick="window.print();" style="border: 1px solid #0d6efd; background: #0d6efd; color: #fff; padding: 6px 12px; border-radius: 6px; cursor: pointer;">Print</button>
+                <button type="button" onclick="window.close();" style="border: 1px solid #6c757d; background: #6c757d; color: #fff; padding: 6px 12px; border-radius: 6px; cursor: pointer;">Close</button>
+            </div>
+        </div>
+    </div>
     <div class="print-container">
         <div class="stickers-wrapper">
             <?php
@@ -676,17 +700,7 @@ function generateStickerHTML($sticker, $tag, $system_settings, $serviceable_chec
     </div>
 
     <script>
-        // Auto-print when page loads
-        window.onload = function() {
-            setTimeout(function() {
-                window.print();
-            }, 500);
-        };
-
-        // Close window after printing
-        window.onafterprint = function() {
-            window.close();
-        };
+        // Preview mode: user clicks Print
     </script>
 </body>
 
