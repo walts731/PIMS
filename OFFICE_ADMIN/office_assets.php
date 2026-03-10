@@ -723,8 +723,8 @@ try {
         });
     </script>
     
-    <!-- Universal Notification Script -->
-    <?php require_once 'includes/notification_script.php'; ?>
+    <!-- Bootstrap-based Notification Script -->
+    <?php require_once 'includes/notification_script_bootstrap.php'; ?>
     
     <!-- Sidebar Scripts -->
     <script src="../assets/js/sidebar.js"></script>
