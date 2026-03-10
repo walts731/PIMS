@@ -381,7 +381,7 @@ try {
                     </li>
                     <li>
                         <a href="itr_form.php" class="sidebar-dropdown-item <?php echo $current_page == 'itr_form.php' ? 'active' : ''; ?>">
-                            Inventory Transfer Request
+                            Property Transfer Request
                         </a>
                     </li>
                 </ul>
