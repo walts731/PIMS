@@ -3,6 +3,14 @@ session_start();
 require_once '../config.php';
 require_once '../includes/logger.php';
 
+// Fix for localhost SSL issues and CORS
+if (isset($_SERVER['HTTP_HOST']) && (strpos($_SERVER['HTTP_HOST'], 'localhost') !== false || strpos($_SERVER['HTTP_HOST'], '127.0.0.1') !== false)) {
+    header('Access-Control-Allow-Origin: *');
+    header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+    header('Access-Control-Allow-Headers: Content-Type, Cookie');
+    header('Access-Control-Allow-Credentials: true');
+}
+
 // Check if user is logged in and is office admin
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'office_admin') {
     http_response_code(401);
@@ -11,6 +19,11 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'office_admin') {
 }
 
 header('Content-Type: application/json');
+
+// Handle preflight OPTIONS request
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    exit(0);
+}
 
 $action = $_GET['action'] ?? '';
 
