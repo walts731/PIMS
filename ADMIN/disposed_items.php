@@ -187,149 +187,64 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Disposed Items - PIMS</title>
     
-    <!-- Bootstrap CSS -->
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="../favicon/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="../favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../favicon/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="../favicon/apple-touch-icon.png">
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <!-- Custom CSS -->
-    <link href="../assets/css/index.css" rel="stylesheet">
-    <link href="../assets/css/theme-custom.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="assets/css/admin-unified.css" rel="stylesheet">
     <!-- DataTables CSS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #F7F3F3 0%, #C1EAF2 100%);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-        
-        .page-header {
-            background: white;
-            border-radius: var(--border-radius-xl);
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow);
-            border-left: 4px solid var(--danger-color);
-        }
-        
-        .stats-card {
-            background: linear-gradient(135deg, #dc3545 0%, #f8d7da 100%);
-            color: #721c24;
-            border-radius: var(--border-radius-lg);
-            padding: 1.5rem;
-            text-align: center;
-            transition: var(--transition);
-            height: 100%;
-        }
-        
-        .stats-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 25px rgba(220, 53, 69, 0.3);
-        }
-        
-        .stats-number {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-        }
-        
-        .stats-label {
-            font-size: 0.9rem;
-            opacity: 0.9;
-        }
-        
-        .table-container {
-            background: white;
-            border-radius: var(--border-radius-lg);
-            padding: 1.5rem;
-            box-shadow: var(--shadow);
-            margin-bottom: 2rem;
-        }
-        
-        .warning-badge {
-            background: #dc3545;
-            color: white;
-            padding: 0.25rem 0.75rem;
-            border-radius: var(--border-radius-xl);
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-        
-        .text-value {
-            font-weight: 600;
-            color: #dc3545;
-        }
-        
-        .alert-warning {
-            border-left: 4px solid #ffc107;
-        }
-        
-        .office-filter-wrapper {
-            display: inline-flex;
-            align-items: center;
-        }
-        
-        .office-filter-wrapper label {
-            margin-bottom: 0;
-            white-space: nowrap;
-        }
-    </style>
 </head>
 <body>
-    <?php
-    // Set page title for topbar
-    $page_title = 'Disposed Items';
-    ?>
-    <!-- Main Content Wrapper -->
+    <?php $page_title = 'Disposed Items'; ?>
     <div class="main-wrapper" id="mainWrapper">
         <?php require_once 'includes/sidebar-toggle.php'; ?>
         <?php require_once 'includes/sidebar.php'; ?>
         <?php require_once 'includes/topbar.php'; ?>
     
-    <!-- Main Content -->
     <div class="main-content">
-        <!-- Page Header -->
-        <div class="page-header no-print">
+        <div class="page-header">
             <div class="row align-items-center">
                 <div class="col-md-8">
                     <h1 class="mb-2">
                         <i class="bi bi-trash3"></i> Disposed Items
                     </h1>
                     <p class="text-muted mb-0">View and manage all disposed items in the system</p>
+                    <?php if (isset($_SESSION['success'])): ?>
+                        <div class="alert alert-success alert-dismissible fade show mt-2" role="alert">
+                            <i class="bi bi-check-circle-fill"></i>
+                            <?php echo htmlspecialchars($_SESSION['success']); ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        <?php unset($_SESSION['success']); ?>
+                    <?php endif; ?>
+                    
+                    <?php if (isset($_SESSION['error'])): ?>
+                        <div class="alert alert-danger alert-dismissible fade show mt-2" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            <?php echo htmlspecialchars($_SESSION['error']); ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        <?php unset($_SESSION['error']); ?>
+                    <?php endif; ?>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <button type="button" class="btn btn-primary btn-custom" onclick="exportDisposedItems()">
-                        <i class="bi bi-download"></i> Export
-                    </button>
-                    <button type="button" class="btn btn-success btn-custom" onclick="printDisposedItems()">
-                        <i class="bi bi-printer"></i> Print
-                    </button>
+                    <div class="d-flex gap-2 justify-content-md-end">
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="exportDisposedItems()">
+                            <i class="bi bi-download"></i> Export
+                        </button>
+                        <button type="button" class="btn btn-success btn-sm" onclick="printDisposedItems()">
+                            <i class="bi bi-printer"></i> Print
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
-        
-        <!-- Messages -->
-        <?php if (isset($_SESSION['success'])): ?>
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="bi bi-check-circle-fill"></i>
-                <?php echo htmlspecialchars($_SESSION['success']); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-            <?php unset($_SESSION['success']); ?>
-        <?php endif; ?>
-        
-        <?php if (isset($_SESSION['error'])): ?>
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="bi bi-exclamation-triangle-fill"></i>
-                <?php echo htmlspecialchars($_SESSION['error']); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-            <?php unset($_SESSION['error']); ?>
-        <?php endif; ?>
         
         <!-- Print Header (hidden by default, visible only when printing) -->
         <div class="print-header" style="display: none;">
@@ -356,63 +271,75 @@ try {
             </div>
         </div>
         
-        <!-- Statistics Cards -->
-        <div class="row mb-4">
-            <div class="col-lg-6 col-md-6">
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
                 <div class="stats-card">
                     <div class="stats-number"><?php echo number_format($stats['total_disposed']); ?></div>
                     <div class="stats-label"><i class="bi bi-trash3"></i> Total Disposed</div>
                 </div>
             </div>
-            <div class="col-lg-6 col-md-6">
+            <div class="col-6 col-md-3">
                 <div class="stats-card">
                     <div class="stats-number">₱<?php echo number_format($stats['total_value'], 2); ?></div>
                     <div class="stats-label"><i class="bi bi-currency-dollar"></i> Total Value</div>
                 </div>
             </div>
+            <div class="col-6 col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number"><?php echo number_format($stats['this_month']); ?></div>
+                    <div class="stats-label"><i class="bi bi-calendar-month"></i> This Month</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number"><?php echo number_format($stats['this_year']); ?></div>
+                    <div class="stats-label"><i class="bi bi-calendar-year"></i> This Year</div>
+                </div>
+            </div>
         </div>
-        
-        <!-- Warning Alert -->
-        <div class="alert alert-warning" role="alert">
-            <i class="bi bi-exclamation-triangle-fill"></i>
-            <strong>Attention:</strong> The following items have been disposed and are no longer active in the inventory system.
-        </div>
-        
-        <!-- Disposed Items Table -->
-        <div class="table-container">
-            <div class="row mb-3">
+        <div class="section-card mb-4">
+            <div class="section-title">
+                <i class="bi bi-funnel"></i> Search & Filters
+            </div>
+            <div class="row g-3">
                 <div class="col-md-6">
-                    <h5 class="mb-0"><i class="bi bi-list-ul"></i> Disposed Items</h5>
+                    <div class="search-box">
+                        <i class="bi bi-search"></i>
+                        <input type="text" id="searchInput" class="form-control" placeholder="Search disposed items...">
+                    </div>
                 </div>
                 <div class="col-md-6">
-                    <div class="row g-2">
-                        <div class="col-md-6">
-                            <div class="office-filter-wrapper">
-                                <label for="officeFilter" class="form-label me-2">Office:</label>
-                                <select class="form-select form-select-sm" id="officeFilter" style="width: 200px;">
-                                    <option value="">All Offices</option>
-                                    <?php 
-                                    // Get unique offices from disposed items for JavaScript
-                                    $offices = [];
-                                    foreach ($disposed_items as $item) {
-                                        if (!empty($item['office_name']) && !in_array($item['office_name'], $offices)) {
-                                            $offices[] = $item['office_name'];
-                                        }
-                                    }
-                                    sort($offices);
-                                    foreach ($offices as $office): ?>
-                                        <option value="<?php echo htmlspecialchars($office); ?>"><?php echo htmlspecialchars($office); ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Search disposed items...">
-                        </div>
+                    <div class="office-filter-wrapper">
+                        <label for="officeFilter" class="form-label me-2">Office:</label>
+                        <select id="officeFilter" class="form-select" style="width: auto;">
+                            <option value="">All Offices</option>
+                            <?php 
+                            // Get unique offices from disposed items for JavaScript
+                            $offices = [];
+                            foreach ($disposed_items as $item) {
+                                if (!empty($item['office_name']) && !in_array($item['office_name'], $offices)) {
+                                    $offices[] = $item['office_name'];
+                                }
+                            }
+                            sort($offices);
+                            foreach ($offices as $office): ?>
+                                <option value="<?php echo htmlspecialchars($office); ?>"><?php echo htmlspecialchars($office); ?></option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                 </div>
             </div>
+        </div>
+
+        <div class="section-card mb-4">
+            <div class="section-title">
+                <i class="bi bi-trash3"></i> Disposed Items Management
+            </div>
             
+            <div class="alert alert-warning" role="alert">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <strong>Attention:</strong> The following items have been disposed and are no longer active in the inventory system.
+            </div>
             <?php if (empty($disposed_items)): ?>
                 <div class="empty-state">
                     <i class="bi bi-trash3"></i>
@@ -493,7 +420,7 @@ try {
             <?php endif; ?>
         </div>
     </div>
-    </div> <!-- Close main wrapper -->
+    </div>
     
     <?php require_once 'includes/logout-modal.php'; ?>
     <?php require_once 'includes/change-password-modal.php'; ?>

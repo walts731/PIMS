@@ -53,142 +53,61 @@ if ($result && $row = $result->fetch_assoc()) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IIRUP Entries - PIMS</title>
-    <!-- Bootstrap CSS -->
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="../favicon/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="../favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../favicon/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="../favicon/apple-touch-icon.png">
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Custom CSS -->
-    <link href="../assets/css/index.css" rel="stylesheet">
-    <link href="../assets/css/theme-custom.css" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #F7F3F3 0%, #C1EAF2 100%);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-        
-        .page-header {
-            background: white;
-            border-radius: var(--border-radius-xl);
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow);
-            border-left: 4px solid var(--primary-color);
-        }
-        
-        .iirup-card {
-            background: white;
-            border-radius: var(--border-radius-lg);
-            padding: 1.5rem;
-            box-shadow: var(--shadow);
-            margin-bottom: 1.5rem;
-            transition: var(--transition);
-            border-left: 4px solid #FF6B6B;
-        }
-        
-        .iirup-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
-        }
-        
-        .iirup-number {
-            background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: var(--border-radius);
-            font-weight: 600;
-            display: inline-block;
-            margin-bottom: 1rem;
-        }
-        
-        .status-badge {
-            padding: 0.25rem 0.75rem;
-            border-radius: var(--border-radius);
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-        
-        .status-draft { background-color: #f8f9fa; color: #6c757d; }
-        .status-submitted { background-color: #d1ecf1; color: #0c5460; }
-        .status-approved { background-color: #d4edda; color: #155724; }
-        .status-rejected { background-color: #f8d7da; color: #721c24; }
-        .status-processed { background-color: #cce5ff; color: #004085; }
-        
-        .stats-card {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border-radius: var(--border-radius);
-            padding: 1rem;
-            text-align: center;
-        }
-        
-        .stats-number {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--primary-color);
-        }
-        
-        .btn-action {
-            padding: 0.5rem 1rem;
-            border-radius: var(--border-radius);
-            font-size: 0.875rem;
-            transition: var(--transition);
-        }
-        
-        @media print {
-            .no-print { display: none !important; }
-            .iirup-card { box-shadow: none; }
-        }
-    </style>
+    <link href="assets/css/admin-unified.css" rel="stylesheet">
 </head>
 <body>
-    <?php
-    // Set page title for topbar
-    $page_title = 'IIRUP Entries';
-    ?>
-    <!-- Main Content Wrapper -->
+    <?php $page_title = 'IIRUP Entries'; ?>
     <div class="main-wrapper" id="mainWrapper">
         <?php require_once 'includes/sidebar-toggle.php'; ?>
         <?php require_once 'includes/sidebar.php'; ?>
         <?php require_once 'includes/topbar.php'; ?>
     
-    <!-- Main Content -->
     <div class="main-content">
-        <!-- Page Header -->
         <div class="page-header">
             <div class="row align-items-center">
                 <div class="col-md-8">
                     <h1 class="mb-2">
                         <i class="bi bi-file-earmark-text"></i> IIRUP Entries
                     </h1>
-                    <p class="text-muted mb-0">View and manage Individual Item Request for User Property entries</p>
+                    <p class="text-muted mb-0">View and manage Inventory and Inspection Report of Unserviceable Property entries</p>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <input type="text" class="form-control" id="searchInput" placeholder="Search IIRUP forms..." style="margin-bottom: 10px;">
-                    <div>
-                        <a href="iirup_form.php" class="btn btn-primary">
-                            <i class="bi bi-plus-circle"></i> New IIRUP
-                        </a>
-                        <button class="btn btn-outline-success btn-sm ms-2" onclick="exportIIRUPData()">
-                            <i class="bi bi-download"></i> Export
-                        </button>
+                    <div class="d-flex gap-2 justify-content-md-end flex-column">
+                        <div class="search-box">
+                            <i class="bi bi-search"></i>
+                            <input type="text" id="searchInput" class="form-control" placeholder="Search IIRUP forms...">
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="iirup_form.php" class="btn btn-primary btn-sm">
+                                <i class="bi bi-plus-circle"></i> New IIRUP
+                            </a>
+                            <button class="btn btn-success btn-sm" onclick="exportIIRUPData()">
+                                <i class="bi bi-download"></i> Export
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- Statistics -->
-        <div class="row mb-4">
-            <div class="col-md-4">
+        
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
                 <div class="stats-card">
                     <div class="stats-number"><?php echo count($iirup_forms); ?></div>
-                    <div class="text-muted">Total IIRUP Forms</div>
+                    <div class="stats-label"><i class="bi bi-file-earmark-text"></i> Total IIRUP Forms</div>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-6 col-md-3">
                 <div class="stats-card">
                     <div class="stats-number">
                         <?php 
@@ -196,10 +115,10 @@ if ($result && $row = $result->fetch_assoc()) {
                         echo $total_items; 
                         ?>
                     </div>
-                    <div class="text-muted">Total Items</div>
+                    <div class="stats-label"><i class="bi bi-list-check"></i> Total Items</div>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-6 col-md-3">
                 <div class="stats-card">
                     <div class="stats-number">
                         ₱<?php 
@@ -207,90 +126,100 @@ if ($result && $row = $result->fetch_assoc()) {
                         echo number_format($total_value, 2); 
                         ?>
                     </div>
-                    <div class="text-muted">Total Value</div>
+                    <div class="stats-label"><i class="bi bi-currency-dollar"></i> Total Value</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number"><?php echo date('M Y'); ?></div>
+                    <div class="stats-label"><i class="bi bi-calendar"></i> Current Period</div>
                 </div>
             </div>
         </div>
 
-        <!-- IIRUP Forms List -->
-        <div class="row">
+        <div class="section-card mb-4">
+            <div class="section-title">
+                <i class="bi bi-file-earmark-text"></i> IIRUP Forms Management
+            </div>
+            
             <?php if (empty($iirup_forms)): ?>
-                <div class="col-12">
-                    <div class="text-center py-5">
-                        <i class="bi bi-inbox display-1 text-muted"></i>
-                        <h4 class="mt-3 text-muted">No IIRUP Entries Found</h4>
-                        <p class="text-muted">Start by creating your first IIRUP form.</p>
-                        <a href="iirup_form.php" class="btn btn-primary">
-                            <i class="bi bi-plus-circle"></i> Create IIRUP Form
-                        </a>
-                    </div>
+                <div class="empty-state">
+                    <i class="bi bi-file-earmark-text"></i>
+                    <h4>No IIRUP Entries Found</h4>
+                    <p class="text-muted">Start by creating your first IIRUP form.</p>
+                    <a href="iirup_form.php" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Create IIRUP Form
+                    </a>
                 </div>
             <?php else: ?>
-                <?php foreach ($iirup_forms as $iirup): ?>
-                    <div class="col-12">
-                        <div class="iirup-card">
-                            <div class="row align-items-start">
-                                <div class="col-md-8">
-                                    <div class="d-flex justify-content-between align-items-start mb-3">
-                                        <div>
-                                            <div class="iirup-number">
-                                                <i class="bi bi-file-earmark-text"></i> <?php echo htmlspecialchars($iirup['form_number']); ?>
+                <div class="row">
+                    <?php foreach ($iirup_forms as $iirup): ?>
+                        <div class="col-12">
+                            <div class="iirup-card">
+                                <div class="row align-items-start">
+                                    <div class="col-md-8">
+                                        <div class="d-flex justify-content-between align-items-start mb-3">
+                                            <div>
+                                                <div class="iirup-number">
+                                                    <i class="bi bi-file-earmark-text"></i> <?php echo htmlspecialchars($iirup['form_number']); ?>
+                                                </div>
+                                                <div class="mb-2">
+                                                    <span class="status-badge status-<?php echo $iirup['status']; ?>">
+                                                        <?php echo htmlspecialchars($iirup['status']); ?>
+                                                    </span>
+                                                </div>
+                                                <h5 class="mb-2"><?php echo htmlspecialchars($iirup['accountable_officer']); ?></h5>
+                                                <p class="text-muted mb-2">
+                                                    <i class="bi bi-building"></i> <?php echo htmlspecialchars($iirup['department_office']); ?>
+                                                </p>
                                             </div>
-                                            <div class="mb-2">
-                                                <span class="status-badge status-<?php echo $iirup['status']; ?>">
-                                                    <?php echo htmlspecialchars($iirup['status']); ?>
-                                                </span>
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <small class="text-muted">Accountable Officer:</small>
+                                                <p class="mb-1"><?php echo htmlspecialchars($iirup['accountable_officer_name']); ?></p>
+                                                <p class="mb-1 text-muted"><?php echo htmlspecialchars($iirup['accountable_officer_designation']); ?></p>
                                             </div>
-                                            <h5 class="mb-2"><?php echo htmlspecialchars($iirup['accountable_officer']); ?></h5>
-                                            <p class="text-muted mb-2">
-                                                <i class="bi bi-building"></i> <?php echo htmlspecialchars($iirup['department_office']); ?>
-                                            </p>
+                                            <div class="col-md-6">
+                                                <small class="text-muted">As of Year:</small>
+                                                <p class="mb-1"><?php echo htmlspecialchars($iirup['as_of_year']); ?></p>
+                                                <p class="mb-1 text-muted">Items: <?php echo $iirup['total_items']; ?></p>
+                                            </div>
                                         </div>
                                     </div>
                                     
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <small class="text-muted">Accountable Officer:</small>
-                                            <p class="mb-1"><?php echo htmlspecialchars($iirup['accountable_officer_name']); ?></p>
-                                            <p class="mb-1 text-muted"><?php echo htmlspecialchars($iirup['accountable_officer_designation']); ?></p>
+                                    <div class="col-md-4 text-end">
+                                        <div class="mb-3">
+                                            <div class="text-muted small">Items Count</div>
+                                            <div class="h4"><?php echo $iirup['item_count']; ?></div>
                                         </div>
-                                        <div class="col-md-6">
-                                            <small class="text-muted">As of Year:</small>
-                                            <p class="mb-1"><?php echo htmlspecialchars($iirup['as_of_year']); ?></p>
-                                            <p class="mb-1 text-muted">Items: <?php echo $iirup['total_items']; ?></p>
+                                        <div class="mb-3">
+                                            <div class="text-muted small">Total Value</div>
+                                            <div class="h4">₱<?php echo number_format($iirup['total_value'], 2); ?></div>
                                         </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="col-md-4 text-end">
-                                    <div class="mb-3">
-                                        <div class="text-muted small">Items Count</div>
-                                        <div class="h4"><?php echo $iirup['item_count']; ?></div>
-                                    </div>
-                                    <div class="mb-3">
-                                        <div class="text-muted small">Total Value</div>
-                                        <div class="h4">₱<?php echo number_format($iirup['total_value'], 2); ?></div>
-                                    </div>
-                                    <div class="text-muted small mb-3">
-                                        <i class="bi bi-calendar"></i> <?php echo date('M d, Y', strtotime($iirup['created_at'])); ?>
-                                    </div>
-                                    <div class="no-print">
-                                        <button class="btn btn-sm btn-outline-primary btn-action me-2" onclick="viewIIRUP(<?php echo $iirup['id']; ?>)">
-                                            <i class="bi bi-eye"></i> View
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-info btn-action" onclick="printIIRUP(<?php echo $iirup['id']; ?>)">
-                                            <i class="bi bi-printer"></i> Print
-                                        </button>
+                                        <div class="text-muted small mb-3">
+                                            <i class="bi bi-calendar"></i> <?php echo date('M d, Y', strtotime($iirup['created_at'])); ?>
+                                        </div>
+                                        <div class="no-print">
+                                            <button class="btn btn-sm btn-outline-primary btn-action me-2" onclick="viewIIRUP(<?php echo $iirup['id']; ?>)">
+                                                <i class="bi bi-eye"></i> View
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-info btn-action" onclick="printIIRUP(<?php echo $iirup['id']; ?>)">
+                                                <i class="bi bi-printer"></i> Print
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                <?php endforeach; ?>
+                    <?php endforeach; ?>
+                </div>
             <?php endif; ?>
         </div>
     </div>
-
+    </div>
+    
     <?php include 'includes/logout-modal.php'; ?>
     <?php include 'includes/change-password-modal.php'; ?>
     <?php include 'includes/sidebar-scripts.php'; ?>

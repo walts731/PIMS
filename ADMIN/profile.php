@@ -144,10 +144,10 @@ try {
 $recent_logs = [];
 try {
     $stmt = $conn->prepare("
-        SELECT action, module, details, created_at, ip_address 
+        SELECT action, module, description, timestamp, ip_address 
         FROM system_logs 
         WHERE user_id = ? 
-        ORDER BY created_at DESC 
+        ORDER BY timestamp DESC 
         LIMIT 10
     ");
     $stmt->bind_param("i", $_SESSION['user_id']);
@@ -173,6 +173,8 @@ try {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
@@ -385,23 +387,39 @@ try {
                                     <p><strong>Last Login:</strong><br>
                                     <span class="text-muted">
                                         <?php 
-                                        // Get last login from logs if available
+                                        // Get last login from login_logs if available
                                         $last_login = 'Unknown';
                                         try {
                                             $stmt = $conn->prepare("
-                                                SELECT created_at FROM system_logs 
-                                                WHERE user_id = ? AND action = 'login' 
-                                                ORDER BY created_at DESC LIMIT 1
+                                                SELECT timestamp FROM login_logs 
+                                                WHERE user_id = ? AND status = 'success' 
+                                                ORDER BY timestamp DESC LIMIT 1
                                             ");
                                             $stmt->bind_param("i", $_SESSION['user_id']);
                                             $stmt->execute();
                                             $result = $stmt->get_result();
                                             if ($row = $result->fetch_assoc()) {
-                                                $last_login = date('M j, Y H:i:s', strtotime($row['created_at']));
+                                                $last_login = date('M j, Y g:i A', strtotime($row['timestamp']));
                                             }
                                             $stmt->close();
                                         } catch (Exception $e) {
-                                            // Ignore errors
+                                            // Try system_logs as fallback
+                                            try {
+                                                $stmt = $conn->prepare("
+                                                    SELECT timestamp FROM system_logs 
+                                                    WHERE user_id = ? AND (action = 'login' OR action = 'access') 
+                                                    ORDER BY timestamp DESC LIMIT 1
+                                                ");
+                                                $stmt->bind_param("i", $_SESSION['user_id']);
+                                                $stmt->execute();
+                                                $result = $stmt->get_result();
+                                                if ($row = $result->fetch_assoc()) {
+                                                    $last_login = date('M j, Y g:i A', strtotime($row['timestamp']));
+                                                }
+                                                $stmt->close();
+                                            } catch (Exception $e2) {
+                                                // Ignore errors
+                                            }
                                         }
                                         echo $last_login;
                                         ?>
@@ -425,29 +443,44 @@ try {
                             <?php if (empty($recent_logs)): ?>
                                 <p class="text-muted">No recent activity found.</p>
                             <?php else: ?>
-                                <?php foreach ($recent_logs as $log): ?>
-                                    <div class="activity-item">
-                                        <div class="d-flex justify-content-between align-items-start">
-                                            <div>
-                                                <strong><?php echo htmlspecialchars(ucfirst($log['action'])); ?></strong>
-                                                <?php if ($log['module']): ?>
-                                                    <span class="badge bg-secondary ms-2"><?php echo htmlspecialchars($log['module']); ?></span>
-                                                <?php endif; ?>
-                                                <?php if ($log['details']): ?>
-                                                    <br><small class="text-muted"><?php echo htmlspecialchars($log['details']); ?></small>
-                                                <?php endif; ?>
-                                            </div>
-                                            <small class="text-muted">
-                                                <?php echo date('M j, Y H:i:s', strtotime($log['created_at'])); ?>
-                                            </small>
-                                        </div>
-                                        <?php if ($log['ip_address']): ?>
-                                            <small class="text-muted">
-                                                <i class="bi bi-geo-alt"></i> <?php echo htmlspecialchars($log['ip_address']); ?>
-                                            </small>
-                                        <?php endif; ?>
-                                    </div>
-                                <?php endforeach; ?>
+                                <div class="table-responsive">
+                                    <table id="activityTable" class="table table-striped table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Action</th>
+                                                <th>Module</th>
+                                                <th>Description</th>
+                                                <th>Timestamp</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php foreach ($recent_logs as $log): ?>
+                                                <tr>
+                                                    <td>
+                                                        <strong><?php echo htmlspecialchars(ucfirst($log['action'])); ?></strong>
+                                                    </td>
+                                                    <td>
+                                                        <?php if ($log['module']): ?>
+                                                            <span class="badge bg-secondary"><?php echo htmlspecialchars($log['module']); ?></span>
+                                                        <?php else: ?>
+                                                            <span class="text-muted">-</span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td>
+                                                        <?php if ($log['description']): ?>
+                                                            <?php echo htmlspecialchars($log['description']); ?>
+                                                        <?php else: ?>
+                                                            <span class="text-muted">-</span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td>
+                                                        <small><?php echo date('M j, Y g:i A', strtotime($log['timestamp'])); ?></small>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -461,9 +494,44 @@ try {
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     <?php require_once 'includes/sidebar-scripts.php'; ?>
     
     <script>
+        // Initialize DataTables when activity tab is shown
+        document.getElementById('activity-tab').addEventListener('shown.bs.tab', function () {
+            if (!$.fn.DataTable.isDataTable('#activityTable')) {
+                $('#activityTable').DataTable({
+                    responsive: true,
+                    pageLength: 10,
+                    lengthMenu: [[5, 10, 25, 50, -1], [5, 10, 25, 50, "All"]],
+                    order: [[3, 'desc']], // Sort by timestamp column (index 3) descending
+                    columnDefs: [
+                        { targets: 0, width: '18%' }, // Action
+                        { targets: 1, width: '15%' }, // Module
+                        { targets: 2, width: '47%' }, // Description
+                        { targets: 3, width: '20%' }  // Timestamp
+                    ],
+                    language: {
+                        search: "Search activities:",
+                        lengthMenu: "Show _MENU_ activities",
+                        info: "Showing _START_ to _END_ of _TOTAL_ activities",
+                        paginate: {
+                            first: "First",
+                            last: "Last",
+                            next: "Next",
+                            previous: "Previous"
+                        },
+                        emptyTable: "No activity data available"
+                    }
+                });
+            }
+        });
+
         // Password confirmation validation
         document.getElementById('confirm_password')?.addEventListener('input', function() {
             const newPassword = document.getElementById('new_password').value;

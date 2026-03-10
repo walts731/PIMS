@@ -53,97 +53,26 @@ if ($result && $row = $result->fetch_assoc()) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ITR Entries - PIMS</title>
-    <!-- Bootstrap CSS -->
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="../favicon/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="../favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../favicon/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="../favicon/apple-touch-icon.png">
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Custom CSS -->
-    <link href="../assets/css/index.css" rel="stylesheet">
-    <link href="../assets/css/theme-custom.css" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #F7F3F3 0%, #C1EAF2 100%);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-        
-        .page-header {
-            background: white;
-            border-radius: var(--border-radius-xl);
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow);
-            border-left: 4px solid var(--primary-color);
-        }
-        
-        .itr-card {
-            background: white;
-            border-radius: var(--border-radius-lg);
-            padding: 1.5rem;
-            box-shadow: var(--shadow);
-            margin-bottom: 1.5rem;
-            transition: var(--transition);
-            border-left: 4px solid #28a745;
-        }
-        
-        .itr-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
-        }
-        
-        .itr-number {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: var(--border-radius);
-            font-weight: 600;
-            display: inline-block;
-            margin-bottom: 1rem;
-        }
-        
-        .stats-card {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border-radius: var(--border-radius);
-            padding: 1rem;
-            text-align: center;
-        }
-        
-        .stats-number {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--primary-color);
-        }
-        
-        .btn-action {
-            padding: 0.5rem 1rem;
-            border-radius: var(--border-radius);
-            font-size: 0.875rem;
-            transition: var(--transition);
-        }
-        
-        @media print {
-            .no-print { display: none !important; }
-            .itr-card { box-shadow: none; }
-        }
-    </style>
+    <link href="assets/css/admin-unified.css" rel="stylesheet">
 </head>
 <body>
-    <?php
-    // Set page title for topbar
-    $page_title = 'ITR Entries';
-    ?>
-    <!-- Main Content Wrapper -->
+    <?php $page_title = 'ITR Entries'; ?>
     <div class="main-wrapper" id="mainWrapper">
         <?php require_once 'includes/sidebar-toggle.php'; ?>
         <?php require_once 'includes/sidebar.php'; ?>
         <?php require_once 'includes/topbar.php'; ?>
     
-    <!-- Main Content -->
     <div class="main-content">
-        <!-- Page Header -->
         <div class="page-header">
             <div class="row align-items-center">
                 <div class="col-md-8">
@@ -153,28 +82,32 @@ if ($result && $row = $result->fetch_assoc()) {
                     <p class="text-muted mb-0">View and manage Inventory Transfer Request entries</p>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <input type="text" class="form-control" id="searchInput" placeholder="Search ITR forms..." style="margin-bottom: 10px;">
-                    <div>
-                        <a href="itr_form.php" class="btn btn-primary">
-                            <i class="bi bi-plus-circle"></i> New ITR
-                        </a>
-                        <button class="btn btn-outline-success btn-sm ms-2" onclick="exportITRData()">
-                            <i class="bi bi-download"></i> Export
-                        </button>
+                    <div class="d-flex gap-2 justify-content-md-end flex-column">
+                        <div class="search-box">
+                            <i class="bi bi-search"></i>
+                            <input type="text" id="searchInput" class="form-control" placeholder="Search ITR forms...">
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="itr_form.php" class="btn btn-primary btn-sm">
+                                <i class="bi bi-plus-circle"></i> New ITR
+                            </a>
+                            <button class="btn btn-success btn-sm" onclick="exportITRData()">
+                                <i class="bi bi-download"></i> Export
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- Statistics -->
-        <div class="row mb-4">
-            <div class="col-md-4">
+        
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
                 <div class="stats-card">
                     <div class="stats-number"><?php echo count($itr_forms); ?></div>
-                    <div class="text-muted">Total ITR Forms</div>
+                    <div class="stats-label"><i class="bi bi-arrow-left-right"></i> Total ITR Forms</div>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-6 col-md-3">
                 <div class="stats-card">
                     <div class="stats-number">
                         <?php 
@@ -182,10 +115,10 @@ if ($result && $row = $result->fetch_assoc()) {
                         echo $total_items; 
                         ?>
                     </div>
-                    <div class="text-muted">Total Items</div>
+                    <div class="stats-label"><i class="bi bi-list-check"></i> Total Items</div>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-6 col-md-3">
                 <div class="stats-card">
                     <div class="stats-number">
                         ₱<?php 
@@ -193,90 +126,100 @@ if ($result && $row = $result->fetch_assoc()) {
                         echo number_format($total_value, 2); 
                         ?>
                     </div>
-                    <div class="text-muted">Total Value</div>
+                    <div class="stats-label"><i class="bi bi-currency-dollar"></i> Total Value</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number"><?php echo date('M Y'); ?></div>
+                    <div class="stats-label"><i class="bi bi-calendar"></i> Current Period</div>
                 </div>
             </div>
         </div>
 
-        <!-- ITR Forms List -->
-        <div class="row">
+        <div class="section-card mb-4">
+            <div class="section-title">
+                <i class="bi bi-arrow-left-right"></i> ITR Forms Management
+            </div>
+            
             <?php if (empty($itr_forms)): ?>
-                <div class="col-12">
-                    <div class="text-center py-5">
-                        <i class="bi bi-inbox display-1 text-muted"></i>
-                        <h4 class="mt-3 text-muted">No ITR Entries Found</h4>
-                        <p class="text-muted">Start by creating your first ITR form.</p>
-                        <a href="itr_form.php" class="btn btn-primary">
-                            <i class="bi bi-plus-circle"></i> Create ITR Form
-                        </a>
-                    </div>
+                <div class="empty-state">
+                    <i class="bi bi-arrow-left-right"></i>
+                    <h4>No ITR Entries Found</h4>
+                    <p class="text-muted">Start by creating your first ITR form.</p>
+                    <a href="itr_form.php" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Create ITR Form
+                    </a>
                 </div>
             <?php else: ?>
-                <?php foreach ($itr_forms as $itr): ?>
-                    <div class="col-12">
-                        <div class="itr-card">
-                            <div class="row align-items-start">
-                                <div class="col-md-8">
-                                    <div class="d-flex justify-content-between align-items-start mb-3">
-                                        <div>
-                                            <div class="itr-number">
-                                                <i class="bi bi-arrow-left-right"></i> <?php echo htmlspecialchars($itr['itr_no']); ?>
+                <div class="row">
+                    <?php foreach ($itr_forms as $itr): ?>
+                        <div class="col-12">
+                            <div class="itr-card">
+                                <div class="row align-items-start">
+                                    <div class="col-md-8">
+                                        <div class="d-flex justify-content-between align-items-start mb-3">
+                                            <div>
+                                                <div class="itr-number">
+                                                    <i class="bi bi-arrow-left-right"></i> <?php echo htmlspecialchars($itr['itr_no']); ?>
+                                                </div>
+                                                <h5 class="mb-2"><?php echo htmlspecialchars($itr['entity_name']); ?></h5>
+                                                <p class="text-muted mb-2">
+                                                    <i class="bi bi-cash-stack"></i> Fund Cluster: <?php echo htmlspecialchars($itr['fund_cluster']); ?>
+                                                </p>
                                             </div>
-                                            <h5 class="mb-2"><?php echo htmlspecialchars($itr['entity_name']); ?></h5>
-                                            <p class="text-muted mb-2">
-                                                <i class="bi bi-cash-stack"></i> Fund Cluster: <?php echo htmlspecialchars($itr['fund_cluster']); ?>
-                                            </p>
                                         </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <small class="text-muted">From Office:</small>
+                                                <p class="mb-1"><?php echo htmlspecialchars($itr['from_office']); ?></p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <small class="text-muted">To Office:</small>
+                                                <p class="mb-1"><?php echo htmlspecialchars($itr['to_office']); ?></p>
+                                            </div>
+                                        </div>
+                                        
+                                        <?php if (!empty($itr['purpose'])): ?>
+                                        <div class="mt-2">
+                                            <small class="text-muted">Purpose:</small>
+                                            <p class="mb-1"><?php echo htmlspecialchars(substr($itr['purpose'], 0, 100)); ?><?php echo strlen($itr['purpose']) > 100 ? '...' : ''; ?></p>
+                                        </div>
+                                        <?php endif; ?>
                                     </div>
                                     
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <small class="text-muted">From Office:</small>
-                                            <p class="mb-1"><?php echo htmlspecialchars($itr['from_office']); ?></p>
+                                    <div class="col-md-4 text-end">
+                                        <div class="mb-3">
+                                            <div class="text-muted small">Items Count</div>
+                                            <div class="h4"><?php echo $itr['item_count']; ?></div>
                                         </div>
-                                        <div class="col-md-6">
-                                            <small class="text-muted">To Office:</small>
-                                            <p class="mb-1"><?php echo htmlspecialchars($itr['to_office']); ?></p>
+                                        <div class="mb-3">
+                                            <div class="text-muted small">Total Value</div>
+                                            <div class="h4">₱<?php echo number_format($itr['total_value'], 2); ?></div>
                                         </div>
-                                    </div>
-                                    
-                                    <?php if (!empty($itr['purpose'])): ?>
-                                    <div class="mt-2">
-                                        <small class="text-muted">Purpose:</small>
-                                        <p class="mb-1"><?php echo htmlspecialchars(substr($itr['purpose'], 0, 100)); ?><?php echo strlen($itr['purpose']) > 100 ? '...' : ''; ?></p>
-                                    </div>
-                                    <?php endif; ?>
-                                </div>
-                                
-                                <div class="col-md-4 text-end">
-                                    <div class="mb-3">
-                                        <div class="text-muted small">Items Count</div>
-                                        <div class="h4"><?php echo $itr['item_count']; ?></div>
-                                    </div>
-                                    <div class="mb-3">
-                                        <div class="text-muted small">Total Value</div>
-                                        <div class="h4">₱<?php echo number_format($itr['total_value'], 2); ?></div>
-                                    </div>
-                                    <div class="text-muted small mb-3">
-                                        <i class="bi bi-calendar"></i> <?php echo date('M d, Y', strtotime($itr['created_at'])); ?>
-                                    </div>
-                                    <div class="no-print">
-                                        <button class="btn btn-sm btn-outline-primary btn-action me-2" onclick="viewITR(<?php echo $itr['id']; ?>)">
-                                            <i class="bi bi-eye"></i> View
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-info btn-action" onclick="printITR(<?php echo $itr['id']; ?>)">
-                                            <i class="bi bi-printer"></i> Print
-                                        </button>
+                                        <div class="text-muted small mb-3">
+                                            <i class="bi bi-calendar"></i> <?php echo date('M d, Y', strtotime($itr['created_at'])); ?>
+                                        </div>
+                                        <div class="no-print">
+                                            <button class="btn btn-sm btn-outline-primary btn-action me-2" onclick="viewITR(<?php echo $itr['id']; ?>)">
+                                                <i class="bi bi-eye"></i> View
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-info btn-action" onclick="printITR(<?php echo $itr['id']; ?>)">
+                                                <i class="bi bi-printer"></i> Print
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                <?php endforeach; ?>
+                    <?php endforeach; ?>
+                </div>
             <?php endif; ?>
         </div>
     </div>
-
+    </div>
+    
     <?php include 'includes/logout-modal.php'; ?>
     <?php include 'includes/change-password-modal.php'; ?>
     <?php include 'includes/sidebar-scripts.php'; ?>

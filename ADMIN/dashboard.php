@@ -47,8 +47,16 @@ if (!$conn || $conn->connect_error) {
             COUNT(*) as total_items" .
             ($item_has_status ? ",
             SUM(CASE WHEN status = 'serviceable' THEN 1 ELSE 0 END) as serviceable_items,
+            SUM(CASE WHEN status = 'red_tagged' THEN 1 ELSE 0 END) as red_tagged_items,
+            SUM(CASE WHEN status = 'maintenance' THEN 1 ELSE 0 END) as maintenance_items,
+            SUM(CASE WHEN status = 'borrowed' THEN 1 ELSE 0 END) as borrowed_items,
+            SUM(CASE WHEN status = 'disposed' THEN 1 ELSE 0 END) as disposed_items,
             SUM(CASE WHEN status = 'unserviceable' THEN 1 ELSE 0 END) as unserviceable_items" : ",
             0 as serviceable_items,
+            0 as red_tagged_items,
+            0 as maintenance_items,
+            0 as borrowed_items,
+            0 as disposed_items,
             0 as unserviceable_items") . "
             FROM asset_items";
         $asset_result = $conn->query($asset_items_query);
@@ -121,27 +129,43 @@ if (!$conn || $conn->connect_error) {
         }
 
         // ===== FORMS/ENTRIES SUMMARY =====
-        // Check if columns exist first
-        $check_par = $conn->query("SHOW COLUMNS FROM par_forms LIKE 'total_amount'");
-        $par_has_total = $check_par && $check_par->num_rows > 0;
-        $par_query = "SELECT COUNT(*) as par_count" . ($par_has_total ? ", COALESCE(SUM(total_amount), 0) as par_value" : ", 0 as par_value") . " FROM par_forms";
+        // PAR Forms - calculate from par_items
+        $par_query = "SELECT COUNT(*) as par_count FROM par_forms";
         $par_result = $conn->query($par_query);
         if ($par_result) {
             $par_data = $par_result->fetch_assoc();
             $stats['par_count'] = $par_data['par_count'];
-            $stats['par_value'] = $par_data['par_value'];
+        }
+        
+        // Calculate PAR total from par_items
+        $par_value_query = "SELECT COALESCE(SUM(amount), 0) as par_value FROM par_items";
+        $par_value_result = $conn->query($par_value_query);
+        if ($par_value_result) {
+            $par_value_data = $par_value_result->fetch_assoc();
+            $stats['par_value'] = $par_value_data['par_value'];
+        } else {
+            $stats['par_value'] = 0;
         }
 
-        $check_ics = $conn->query("SHOW COLUMNS FROM ics_forms LIKE 'total_amount'");
-        $ics_has_total = $check_ics && $check_ics->num_rows > 0;
-        $ics_query = "SELECT COUNT(*) as ics_count" . ($ics_has_total ? ", COALESCE(SUM(total_amount), 0) as ics_value" : ", 0 as ics_value") . " FROM ics_forms";
+        // ICS Forms - calculate from ics_items using total_cost column
+        $ics_query = "SELECT COUNT(*) as ics_count FROM ics_forms";
         $ics_result = $conn->query($ics_query);
         if ($ics_result) {
             $ics_data = $ics_result->fetch_assoc();
             $stats['ics_count'] = $ics_data['ics_count'];
-            $stats['ics_value'] = $ics_data['ics_value'];
+        }
+        
+        // Calculate ICS total from ics_items using total_cost column
+        $ics_value_query = "SELECT COALESCE(SUM(total_cost), 0) as ics_value FROM ics_items";
+        $ics_value_result = $conn->query($ics_value_query);
+        if ($ics_value_result) {
+            $ics_value_data = $ics_value_result->fetch_assoc();
+            $stats['ics_value'] = $ics_value_data['ics_value'];
+        } else {
+            $stats['ics_value'] = 0;
         }
 
+        // RIS Forms - has total_amount column
         $check_ris = $conn->query("SHOW COLUMNS FROM ris_forms LIKE 'total_amount'");
         $ris_has_total = $check_ris && $check_ris->num_rows > 0;
         $ris_query = "SELECT COUNT(*) as ris_count" . ($ris_has_total ? ", COALESCE(SUM(total_amount), 0) as ris_value" : ", 0 as ris_value") . " FROM ris_forms";
@@ -152,24 +176,57 @@ if (!$conn || $conn->connect_error) {
             $stats['ris_value'] = $ris_data['ris_value'];
         }
 
-        $check_iirup = $conn->query("SHOW COLUMNS FROM iirup_forms LIKE 'total_amount'");
-        $iirup_has_total = $check_iirup && $check_iirup->num_rows > 0;
-        $iirup_query = "SELECT COUNT(*) as iirup_count" . ($iirup_has_total ? ", COALESCE(SUM(total_amount), 0) as iirup_value" : ", 0 as iirup_value") . " FROM iirup_forms";
+        // IIRUP Forms - calculate from iirup_items
+        $iirup_query = "SELECT COUNT(*) as iirup_count FROM iirup_forms";
         $iirup_result = $conn->query($iirup_query);
         if ($iirup_result) {
             $iirup_data = $iirup_result->fetch_assoc();
             $stats['iirup_count'] = $iirup_data['iirup_count'];
-            $stats['iirup_value'] = $iirup_data['iirup_value'];
+        }
+        
+        // Calculate IIRUP total from iirup_items using total_cost column
+        $iirup_value_query = "SELECT COALESCE(SUM(total_cost), 0) as iirup_value FROM iirup_items";
+        $iirup_value_result = $conn->query($iirup_value_query);
+        if ($iirup_value_result) {
+            $iirup_value_data = $iirup_value_result->fetch_assoc();
+            $stats['iirup_value'] = $iirup_value_data['iirup_value'];
+        } else {
+            $stats['iirup_value'] = 0;
         }
 
-        $check_itr = $conn->query("SHOW COLUMNS FROM itr_forms LIKE 'total_amount'");
-        $itr_has_total = $check_itr && $check_itr->num_rows > 0;
-        $itr_query = "SELECT COUNT(*) as itr_count" . ($itr_has_total ? ", COALESCE(SUM(total_amount), 0) as itr_value" : ", 0 as itr_value") . " FROM itr_forms";
-        $itr_result = $conn->query($itr_query);
-        if ($itr_result) {
-            $itr_data = $itr_result->fetch_assoc();
-            $stats['itr_count'] = $itr_data['itr_count'];
-            $stats['itr_value'] = $itr_data['itr_value'];
+        // ITR Forms - check if we should use items table instead
+        $itr_items_check = $conn->query("SELECT COUNT(*) as count FROM itr_items");
+        $itr_items_count = $itr_items_check->fetch_assoc()['count'];
+        
+        if ($itr_items_count > 0) {
+            // Use items table if it has data
+            $itr_query = "SELECT COUNT(*) as itr_count FROM itr_forms";
+            $itr_result = $conn->query($itr_query);
+            if ($itr_result) {
+                $itr_data = $itr_result->fetch_assoc();
+                $stats['itr_count'] = $itr_data['itr_count'];
+            }
+            
+            // Calculate ITR total from itr_items
+            $itr_value_query = "SELECT COALESCE(SUM(total_amount), 0) as itr_value FROM itr_items";
+            $itr_value_result = $conn->query($itr_value_query);
+            if ($itr_value_result) {
+                $itr_value_data = $itr_value_result->fetch_assoc();
+                $stats['itr_value'] = $itr_value_data['itr_value'];
+            } else {
+                $stats['itr_value'] = 0;
+            }
+        } else {
+            // Use forms table if no items exist
+            $check_itr = $conn->query("SHOW COLUMNS FROM itr_forms LIKE 'total_amount'");
+            $itr_has_total = $check_itr && $check_itr->num_rows > 0;
+            $itr_query = "SELECT COUNT(*) as itr_count" . ($itr_has_total ? ", COALESCE(SUM(total_amount), 0) as itr_value" : ", 0 as itr_value") . " FROM itr_forms";
+            $itr_result = $conn->query($itr_query);
+            if ($itr_result) {
+                $itr_data = $itr_result->fetch_assoc();
+                $stats['itr_count'] = $itr_data['itr_count'];
+                $stats['itr_value'] = $itr_data['itr_value'];
+            }
         }
 
         // ===== INVENTORY TAGS & RED TAGS =====
@@ -288,15 +345,20 @@ if (!$conn || $conn->connect_error) {
         }
 
         $recent_forms_query = "
-            (SELECT 'PAR' as form_type, par_no COLLATE utf8mb4_unicode_ci as form_no, created_at, " . ($par_has_total ? "total_amount" : "0") . " as total_amount, 'par_entries.php' as link FROM par_forms ORDER BY created_at DESC LIMIT 2)
+            (SELECT 'PAR' as form_type, par_no COLLATE utf8mb4_unicode_ci as form_no, created_at, 0 as total_amount, 'par_entries.php' as link FROM par_forms ORDER BY created_at DESC LIMIT 2)
             UNION ALL
-            (SELECT 'ICS' as form_type, ics_no COLLATE utf8mb4_unicode_ci as form_no, created_at, " . ($ics_has_total ? "total_amount" : "0") . " as total_amount, 'ics_entries.php' as link FROM ics_forms ORDER BY created_at DESC LIMIT 2)
+            (SELECT 'ICS' as form_type, ics_no COLLATE utf8mb4_unicode_ci as form_no, created_at, COALESCE((SELECT SUM(total_cost) FROM ics_items WHERE form_id = ics_forms.id), 0) as total_amount, 'ics_entries.php' as link FROM ics_forms ORDER BY created_at DESC LIMIT 2)
             UNION ALL
-            (SELECT 'RIS' as form_type, ris_no COLLATE utf8mb4_unicode_ci as form_no, created_at, " . ($ris_has_total ? "total_amount" : "0") . " as total_amount, 'ris_entries.php' as link FROM ris_forms ORDER BY created_at DESC LIMIT 2)
+            (SELECT 'RIS' as form_type, ris_no COLLATE utf8mb4_unicode_ci as form_no, created_at, total_amount as total_amount, 'ris_entries.php' as link FROM ris_forms ORDER BY created_at DESC LIMIT 2)
             UNION ALL
-            (SELECT 'IIRUP' as form_type, form_number COLLATE utf8mb4_unicode_ci as form_no, created_at, " . ($iirup_has_total ? "total_amount" : "0") . " as total_amount, 'iirup_entries.php' as link FROM iirup_forms ORDER BY created_at DESC LIMIT 2)
+            (SELECT 'IIRUP' as form_type, form_number COLLATE utf8mb4_unicode_ci as form_no, created_at, COALESCE((SELECT SUM(total_cost) FROM iirup_items WHERE form_id = iirup_forms.id), 0) as total_amount, 'iirup_entries.php' as link FROM iirup_forms ORDER BY created_at DESC LIMIT 2)
             UNION ALL
-            (SELECT 'ITR' as form_type, itr_no COLLATE utf8mb4_unicode_ci as form_no, created_at, " . ($itr_has_total ? "total_amount" : "0") . " as total_amount, 'itr_entries.php' as link FROM itr_forms ORDER BY created_at DESC LIMIT 2)
+            (SELECT 'ITR' as form_type, itr_no COLLATE utf8mb4_unicode_ci as form_no, created_at, COALESCE(
+                (CASE 
+                    WHEN (SELECT COUNT(*) FROM itr_items) > 0 
+                    THEN (SELECT SUM(total_amount) FROM itr_items WHERE form_id = itr_forms.id)
+                    ELSE total_amount
+                END), 0) as total_amount, 'itr_entries.php' as link FROM itr_forms ORDER BY created_at DESC LIMIT 2)
             ORDER BY created_at DESC
             LIMIT 5";
         $recent_forms_result = $conn->query($recent_forms_query);
@@ -317,14 +379,14 @@ if (!$conn || $conn->connect_error) {
             FROM asset_items ai
             LEFT JOIN assets a ON ai.asset_id = a.id
             LEFT JOIN offices o ON ai.office_id = o.id" .
-            ($item_has_status ? " WHERE ai.status = 'unserviceable'" : "") . "
+            ($item_has_status ? " WHERE ai.status = 'maintenance'" : "") . "
             ORDER BY ai.last_updated DESC
             LIMIT 5";
         $maintenance_result = $conn->query($maintenance_query);
-        $stats['maintenance_items'] = [];
+        $stats['maintenance_items_list'] = [];
         if ($maintenance_result) {
             while ($row = $maintenance_result->fetch_assoc()) {
-                $stats['maintenance_items'][] = $row;
+                $stats['maintenance_items_list'][] = $row;
             }
         }
 
@@ -353,7 +415,7 @@ if (!$conn || $conn->connect_error) {
 
 // Set default values if not set
 $defaults = [
-    'total_items' => 0, 'serviceable_items' => 0, 'unserviceable_items' => 0,
+    'total_items' => 0, 'serviceable_items' => 0, 'red_tagged_items' => 0, 'maintenance_items' => 0, 'borrowed_items' => 0, 'disposed_items' => 0, 'unserviceable_items' => 0,
     'total_asset_value' => 0, 'total_value' => 0, 'top_categories' => [],
     'total_consumables' => 0, 'total_quantity' => 0, 
     'low_stock_count' => 0,
@@ -366,7 +428,7 @@ $defaults = [
     'office_count' => 0, 'employee_count' => 0, 'active_employees' => 0,
     'office_distribution' => [],
     'recent_items' => [], 'recent_fuel' => [], 'recent_forms' => [],
-    'maintenance_items' => [], 'low_stock_items' => []
+    'maintenance_items_list' => [], 'low_stock_items' => []
 ];
 
 foreach ($defaults as $key => $value) {
@@ -503,7 +565,7 @@ $total_forms_value = $stats['par_value'] + $stats['ics_value'] + $stats['ris_val
             <div class="col-6 col-md-3">
                 <div class="stats-card">
                     <div class="stats-number">₱<?php echo number_format($stats['total_value'], 2); ?></div>
-                    <div class="stats-label"><i class="bi bi-currency-dollar"></i> Total Asset Value</div>
+                    <div class="stats-label"><i class="bi bi-cash-stack"></i> Total Asset Value</div>
                 </div>
             </div>
             <div class="col-6 col-md-3">
@@ -532,13 +594,29 @@ $total_forms_value = $stats['par_value'] + $stats['ics_value'] + $stats['ris_val
                                 <canvas id="assetStatusChart"></canvas>
                             </div>
                             <div class="row text-center mt-2">
-                                <div class="col-6">
+                                <div class="col-4">
                                     <div class="small text-muted">Serviceable</div>
                                     <div class="fw-bold text-success"><?php echo $stats['serviceable_items']; ?></div>
                                 </div>
-                                <div class="col-6">
+                                <div class="col-4">
+                                    <div class="small text-muted">Red Tagged</div>
+                                    <div class="fw-bold text-danger"><?php echo $stats['red_tagged_items']; ?></div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="small text-muted">Maintenance</div>
+                                    <div class="fw-bold text-warning"><?php echo $stats['maintenance_items']; ?></div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="small text-muted">Borrowed</div>
+                                    <div class="fw-bold text-primary"><?php echo $stats['borrowed_items']; ?></div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="small text-muted">Disposed</div>
+                                    <div class="fw-bold text-danger"><?php echo $stats['disposed_items']; ?></div>
+                                </div>
+                                <div class="col-4">
                                     <div class="small text-muted">Unserviceable</div>
-                                    <div class="fw-bold text-danger"><?php echo $stats['unserviceable_items']; ?></div>
+                                    <div class="fw-bold text-secondary"><?php echo $stats['unserviceable_items']; ?></div>
                                 </div>
                             </div>
                         </div>
@@ -592,12 +670,12 @@ $total_forms_value = $stats['par_value'] + $stats['ics_value'] + $stats['ris_val
                             </div>
                             <div class="form-summary-item">
                                 <div class="form-type">
-                                    <div class="form-type-icon ris">Unserviceable</div>
-                                    <span class="small">Unserviceable Items</span>
+                                    <div class="form-type-icon ris">Red Tagged</div>
+                                    <span class="small">Red Tagged Items</span>
                                 </div>
                                 <div class="text-end">
-                                    <div class="form-count"><?php echo number_format($stats['unserviceable_items']); ?></div>
-                                    <div class="form-value">Not Serviceable</div>
+                                    <div class="form-count"><?php echo number_format($stats['red_tagged_items']); ?></div>
+                                    <div class="form-value">Red Tagged Assets</div>
                                 </div>
                             </div>
                         </div>
@@ -786,7 +864,7 @@ $total_forms_value = $stats['par_value'] + $stats['ics_value'] + $stats['ris_val
             </div>
             
             <div class="col-lg-4">
-                <?php if ($stats['low_stock_count'] > 0 || $stats['active_red_tags'] > 0 || count($stats['maintenance_items']) > 0): ?>
+                <?php if ($stats['low_stock_count'] > 0 || $stats['active_red_tags'] > 0 || count($stats['maintenance_items_list']) > 0): ?>
                 <div class="section-card mb-4">
                     <div class="section-title">
                         <i class="bi bi-bell"></i> Alerts & Notifications
@@ -818,14 +896,14 @@ $total_forms_value = $stats['par_value'] + $stats['ics_value'] + $stats['ris_val
                     </div>
                     <?php endif; ?>
                     
-                    <?php if (!empty($stats['maintenance_items']) && count($stats['maintenance_items']) > 0): ?>
+                    <?php if (!empty($stats['maintenance_items_list']) && count($stats['maintenance_items_list']) > 0): ?>
                     <div class="alert-item">
                         <div class="alert-icon">
                             <i class="bi bi-tools"></i>
                         </div>
                         <div class="alert-content">
                             <div class="alert-title">Maintenance Required</div>
-                            <div class="alert-desc"><?php echo count($stats['maintenance_items']); ?> items under maintenance</div>
+                            <div class="alert-desc"><?php echo count($stats['maintenance_items_list']); ?> items under maintenance</div>
                         </div>
                         <a href="asset_items.php?status=maintenance" class="alert-value">View</a>
                     </div>
@@ -888,26 +966,6 @@ $total_forms_value = $stats['par_value'] + $stats['ics_value'] + $stats['ris_val
                                 <div class="overview-label">Fuel Today</div>
                             </div>
                         </div>
-                    </div>
-                </div>
-                
-                <div class="section-card">
-                    <div class="section-title">
-                        <i class="bi bi-lightning"></i> Quick Actions
-                    </div>
-                    <div class="d-grid gap-2">
-                        <a href="create_tag.php" class="btn btn-outline-primary btn-sm">
-                            <i class="bi bi-plus-circle me-1"></i> Create Inventory Tag
-                        </a>
-                        <a href="fuel.php?tab=fuelout" class="btn btn-outline-warning btn-sm">
-                            <i class="bi bi-fuel-pump me-1"></i> Record Fuel Out
-                        </a>
-                        <a href="red_tags.php" class="btn btn-outline-danger btn-sm">
-                            <i class="bi bi-tag-fill me-1"></i> Create Red Tag
-                        </a>
-                        <a href="par_form.php" class="btn btn-outline-success btn-sm">
-                            <i class="bi bi-file-earmark-plus me-1"></i> New PAR Form
-                        </a>
                     </div>
                 </div>
             </div>
