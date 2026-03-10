@@ -46,7 +46,32 @@ $where_clause = "WHERE " . implode(' AND ', $where_conditions);
 // Get total count
 $count_sql = "SELECT COUNT(*) as total FROM notifications n $where_clause";
 $count_stmt = $conn->prepare($count_sql);
-$count_stmt->bind_param('i', $user_id);
+
+// Build parameter types and values for count query
+$count_param_types = '';
+$count_param_values = [];
+
+// Add user_id parameter
+$count_param_types .= 'i';
+$count_param_values[] = $user_id;
+
+// Add type filter if exists
+if ($type_filter !== 'all') {
+    $count_param_types .= 's';
+    $count_param_values[] = $type_filter;
+}
+
+// Add search parameters if exists
+if (!empty($search)) {
+    $count_param_types .= 'ss';
+    $count_param_values[] = "%$search%";
+    $count_param_values[] = "%$search%";
+}
+
+// Bind parameters for count query
+if (!empty($count_param_values)) {
+    $count_stmt->bind_param($count_param_types, ...$count_param_values);
+}
 $count_stmt->execute();
 $count_result = $count_stmt->get_result();
 $total_notifications = $count_result->fetch_assoc()['total'];
@@ -124,24 +149,45 @@ $unread_count = $unread_result->fetch_assoc()['count'];
     
     <style>
         :root {
-            --primary-color: #5CC2F2;
-            --secondary-color: #6c757d;
+            --primary-color: #191BA9;
+            --secondary-color: #5CC2F2;
+            --accent-color: #C1EAF2;
+            --light-color: #F7F3F3;
+            --dark-color: #0A0A0A;
             --success-color: #28a745;
             --danger-color: #dc3545;
             --warning-color: #ffc107;
             --info-color: #17a2b8;
-            --light-color: #f8f9fa;
-            --dark-color: #343a40;
-            --border-radius: 8px;
-            --border-radius-lg: 12px;
-            --border-radius-xl: 16px;
-            --shadow: 0 2px 4px rgba(0,0,0,0.1);
-            --shadow-lg: 0 4px 6px rgba(0,0,0,0.1);
+            
+            /* Gradient definitions */
+            --primary-gradient: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%);
+            --secondary-gradient: linear-gradient(135deg, #5CC2F2 0%, #C1EAF2 100%);
+            --accent-gradient: linear-gradient(135deg, #C1EAF2 0%, #F7F3F3 100%);
+            --light-gradient: linear-gradient(135deg, #F7F3F3 0%, #ffffff 100%);
+            
+            /* Shadow definitions */
+            --shadow-sm: 0 0.125rem 0.25rem rgba(25, 27, 169, 0.15);
+            --shadow: 0 0.5rem 1rem rgba(25, 27, 169, 0.15);
+            --shadow-lg: 0 1rem 3rem rgba(25, 27, 169, 0.175);
+            --shadow-xl: 0 1.5rem 4rem rgba(25, 27, 169, 0.2);
+            
+            /* Border radius */
+            --border-radius-sm: 0.375rem;
+            --border-radius: 0.5rem;
+            --border-radius-lg: 0.75rem;
+            --border-radius-xl: 1rem;
+            --border-radius-2xl: 1.5rem;
+            
+            /* Transitions */
+            --transition-fast: all 0.15s ease-in-out;
+            --transition: all 0.3s ease-in-out;
+            --transition-slow: all 0.5s ease-in-out;
         }
         
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #F7F3F3 0%, #C1EAF2 100%);
+            background: var(--light-gradient);
+            color: var(--dark-color);
             min-height: 100vh;
         }
         
@@ -152,7 +198,7 @@ $unread_count = $unread_result->fetch_assoc()['count'];
             left: 0;
             width: 250px;
             height: 100vh;
-            background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
+            background: var(--primary-gradient);
             z-index: 1000;
             transition: transform 0.3s ease;
             overflow-y: auto;
@@ -182,7 +228,7 @@ $unread_count = $unread_result->fetch_assoc()['count'];
             width: 40px;
             height: 40px;
             margin-right: 1rem;
-            border-radius: 8px;
+            border-radius: var(--border-radius);
         }
         
         .sidebar-title {
@@ -205,7 +251,7 @@ $unread_count = $unread_result->fetch_assoc()['count'];
             padding: 0.75rem 1.5rem;
             color: rgba(255, 255, 255, 0.8);
             text-decoration: none;
-            transition: all 0.2s ease;
+            transition: var(--transition);
         }
         
         .menu-link:hover {
@@ -237,16 +283,18 @@ $unread_count = $unread_result->fetch_assoc()['count'];
         .main-content {
             flex: 1;
             margin-left: 250px;
-            padding: 2rem;
+            padding: 0;
             width: calc(100% - 250px);
+            display: flex;
+            flex-direction: column;
         }
         
         /* Topbar Styles */
         .topbar {
-            position: fixed;
+            position: relative;
             top: 0;
             right: 0;
-            left: 250px;
+            left: 0;
             height: 60px;
             background: white;
             border-bottom: 1px solid #e0e0e0;
@@ -255,11 +303,14 @@ $unread_count = $unread_result->fetch_assoc()['count'];
             justify-content: space-between;
             padding: 0 2rem;
             z-index: 999;
+            box-shadow: var(--shadow-sm);
+            flex-shrink: 0;
         }
         
-        .main-content {
-            margin-top: 60px;
-            padding-top: 2rem;
+        .content-area {
+            flex: 1;
+            padding: 2rem;
+            margin-top: 0;
         }
         
         .page-header {
@@ -268,7 +319,7 @@ $unread_count = $unread_result->fetch_assoc()['count'];
             padding: 2rem;
             margin-bottom: 2rem;
             box-shadow: var(--shadow);
-            border-left: 4px solid #5CC2F2;
+            border-left: 4px solid var(--primary-color);
         }
         
         .notification-card {
@@ -277,65 +328,144 @@ $unread_count = $unread_result->fetch_assoc()['count'];
             padding: 1.5rem;
             box-shadow: var(--shadow);
             margin-bottom: 1rem;
-            transition: all 0.2s ease;
+            transition: var(--transition);
             border-left: 4px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .notification-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--secondary-gradient);
+            opacity: 0;
+            transition: var(--transition);
         }
         
         .notification-card.unread {
-            border-left-color: #5CC2F2;
-            background-color: #f8fcff;
+            border-left-color: var(--secondary-color);
+            background: linear-gradient(135deg, #f8fcff 0%, #ffffff 100%);
+        }
+        
+        .notification-card.unread::before {
+            opacity: 1;
         }
         
         .notification-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
         }
         
         .notification-type-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            border-radius: var(--border-radius-lg);
             display: flex;
             align-items: center;
             justify-content: center;
             margin-right: 1rem;
-            font-size: 1.2rem;
+            font-size: 1.3rem;
+            box-shadow: var(--shadow-sm);
         }
         
-        .notification-type-info { background-color: #e3f2fd; color: #1976d2; }
-        .notification-type-success { background-color: #e8f5e8; color: #2e7d32; }
-        .notification-type-warning { background-color: #fff3e0; color: #f57c00; }
-        .notification-type-error { background-color: #ffebee; color: #c62828; }
+        .notification-type-info { 
+            background: var(--primary-gradient); 
+            color: white; 
+        }
+        .notification-type-success { 
+            background: var(--success-color); 
+            color: white; 
+        }
+        .notification-type-warning { 
+            background: var(--warning-color); 
+            color: white; 
+        }
+        .notification-type-error { 
+            background: var(--danger-color); 
+            color: white; 
+        }
         
         .filter-tabs {
             display: flex;
-            gap: 1rem;
+            gap: 0.5rem;
             margin-bottom: 2rem;
-            border-bottom: 2px solid #e0e0e0;
+            background: white;
+            padding: 0.5rem;
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-sm);
         }
         
         .filter-tab {
             padding: 0.75rem 1.5rem;
-            background: none;
+            background: transparent;
             border: none;
-            border-bottom: 3px solid transparent;
+            border-radius: var(--border-radius);
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: var(--transition);
             font-weight: 500;
+            color: var(--dark-color);
+            text-decoration: none;
+            position: relative;
         }
         
         .filter-tab:hover {
-            background-color: rgba(92, 194, 242, 0.1);
+            background: rgba(25, 27, 169, 0.05);
+            color: var(--primary-color);
         }
         
         .filter-tab.active {
-            border-bottom-color: #5CC2F2;
-            color: #5CC2F2;
+            background: var(--primary-gradient);
+            color: white;
+            box-shadow: var(--shadow-sm);
         }
         
         .search-box {
-            max-width: 400px;
+            background: white;
+            border-radius: var(--border-radius-lg);
+            padding: 1.5rem;
             margin-bottom: 2rem;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .search-box .form-control {
+            border: 2px solid #e0e0e0;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+        }
+        
+        .search-box .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(25, 27, 169, 0.15);
+        }
+        
+        .search-box .btn-primary {
+            background: var(--primary-gradient);
+            border: none;
+            border-radius: var(--border-radius);
+            font-weight: 500;
+            transition: var(--transition);
+        }
+        
+        .search-box .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .search-box .btn-outline-secondary {
+            border: 2px solid var(--secondary-color);
+            color: var(--secondary-color);
+            border-radius: var(--border-radius);
+            font-weight: 500;
+            transition: var(--transition);
+        }
+        
+        .search-box .btn-outline-secondary:hover {
+            background: var(--secondary-color);
+            color: white;
         }
         
         .pagination {
@@ -343,23 +473,44 @@ $unread_count = $unread_result->fetch_assoc()['count'];
             margin-top: 2rem;
         }
         
+        .pagination .page-link {
+            border: 2px solid #e0e0e0;
+            border-radius: var(--border-radius);
+            color: var(--dark-color);
+            font-weight: 500;
+            transition: var(--transition);
+        }
+        
+        .pagination .page-link:hover {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+        
+        .pagination .page-item.active .page-link {
+            background: var(--primary-gradient);
+            border-color: var(--primary-color);
+            color: white;
+        }
+        
         .sidebar-toggle {
             background: none;
             border: none;
             font-size: 1.5rem;
-            color: #5CC2F2;
+            color: var(--primary-color);
             cursor: pointer;
             padding: 0.5rem;
-            border-radius: 4px;
-            transition: all 0.2s ease;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
         }
         
         .sidebar-toggle:hover {
-            background-color: rgba(92, 194, 242, 0.1);
+            background: rgba(25, 27, 169, 0.1);
+            color: var(--primary-hover);
         }
         
         .sidebar-toggle.active {
-            background-color: #5CC2F2;
+            background: var(--primary-gradient);
             color: white;
         }
         
@@ -392,14 +543,10 @@ $unread_count = $unread_result->fetch_assoc()['count'];
                 margin-left: 0;
                 width: 100%;
             }
-            
-            .topbar {
-                left: 0;
-            }
         }
         
         @media (max-width: 768px) {
-            .main-content {
+            .content-area {
                 padding: 1rem;
             }
             
@@ -413,12 +560,23 @@ $unread_count = $unread_result->fetch_assoc()['count'];
             
             .filter-tabs {
                 flex-wrap: wrap;
-                gap: 0.5rem;
+                gap: 0.25rem;
+                padding: 0.25rem;
             }
             
             .filter-tab {
                 padding: 0.5rem 1rem;
                 font-size: 0.9rem;
+            }
+            
+            .search-box {
+                padding: 1rem;
+            }
+            
+            .notification-type-icon {
+                width: 40px;
+                height: 40px;
+                font-size: 1.1rem;
             }
         }
     </style>
@@ -433,8 +591,10 @@ $unread_count = $unread_result->fetch_assoc()['count'];
             <!-- Topbar -->
             <?php require_once 'includes/topbar.php'; ?>
             
-            <!-- Page Header -->
-            <div class="page-header">
+            <!-- Content Area -->
+            <div class="content-area">
+                <!-- Page Header -->
+                <div class="page-header">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <h2 class="mb-2">Notifications</h2>
@@ -612,6 +772,7 @@ $unread_count = $unread_result->fetch_assoc()['count'];
                     </p>
                 </div>
             <?php endif; ?>
+            </div>
         </div>
     </div>
     
