@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once '../config.php';
+require_once '../includes/logger.php';
 
 // Check if user is logged in and has appropriate role
 if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['system_admin', 'admin'])) {
@@ -71,7 +72,7 @@ if (!$item) {
 
 // Decode images from JSON if available
 $asset_images = [];
-if (!empty($item['image'])) {
+if (!empty($item['image']) && $item['image'] !== 'NULL' && $item['image'] !== null) {
     $decoded_images = json_decode($item['image'], true);
     if (is_array($decoded_images)) {
         $asset_images = $decoded_images;
@@ -89,6 +90,160 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     $update_fields = [];
     $update_values = [];
     $types = '';
+    
+    // Handle multiple image uploads - append to existing images
+    $image_filenames = [];
+    $existing_images = [];
+    
+    // Get existing images for this asset item
+    $get_existing_images_sql = "SELECT image FROM asset_items WHERE id = ?";
+    $get_existing_images_stmt = $conn->prepare($get_existing_images_sql);
+    $get_existing_images_stmt->bind_param("i", $item_id);
+    $get_existing_images_stmt->execute();
+    $existing_images_result = $get_existing_images_stmt->get_result();
+    if ($existing_row = $existing_images_result->fetch_assoc()) {
+        $existing_image_data = $existing_row['image'];
+        if (!empty($existing_image_data) && $existing_image_data !== 'NULL') {
+            $decoded_images = json_decode($existing_image_data, true);
+            if (is_array($decoded_images)) {
+                $existing_images = $decoded_images;
+            } elseif (!empty($existing_image_data)) {
+                // Handle case where it's a single filename (not JSON)
+                $existing_images = [$existing_image_data];
+            }
+        }
+    }
+    $get_existing_images_stmt->close();
+    
+    // Process uploaded files if any
+    if (isset($_FILES['asset_images'])) {
+        logSystemAction($_SESSION['user_id'], 'asset_item_edit_upload_debug', 'asset_management', 'FILES[asset_images]=' . json_encode([
+            'name' => $_FILES['asset_images']['name'] ?? null,
+            'type' => $_FILES['asset_images']['type'] ?? null,
+            'error' => $_FILES['asset_images']['error'] ?? null,
+            'size' => $_FILES['asset_images']['size'] ?? null
+        ]));
+        $files = $_FILES['asset_images'];
+        // Normalize to arrays even if a single file is uploaded
+        if (!is_array($files['name'])) {
+            $files = [
+                'name' => [$files['name']],
+                'type' => [$files['type']],
+                'tmp_name' => [$files['tmp_name']],
+                'error' => [$files['error']],
+                'size' => [$files['size']]
+            ];
+        }
+
+        // Enforce max 5 uploaded files per save
+        $selected_files = array_filter($files['name'], function($n) {
+            return trim((string)$n) !== '';
+        });
+        if (count($selected_files) > 5) {
+            $_SESSION['error'] = 'You can upload a maximum of 5 images at a time.';
+            header('Location: asset_items_edit.php?id=' . $item_id);
+            exit();
+        }
+        
+        // Validate and process each file
+        foreach ($files['name'] as $key => $name) {
+            if (trim((string)$name) === '') {
+                continue;
+            }
+            $error = $files['error'][$key];
+            
+            if ($error !== UPLOAD_ERR_OK) {
+                // Handle upload errors
+                switch ($error) {
+                    case UPLOAD_ERR_INI_SIZE:
+                    case UPLOAD_ERR_FORM_SIZE:
+                        $_SESSION['error'] = 'File ' . $name . ' is too large.';
+                        break;
+                    case UPLOAD_ERR_PARTIAL:
+                        $_SESSION['error'] = 'File ' . $name . ' was only partially uploaded.';
+                        break;
+                    case UPLOAD_ERR_NO_FILE:
+                        $_SESSION['error'] = 'No file was uploaded for ' . $name . '.';
+                        break;
+                    case UPLOAD_ERR_NO_TMP_DIR:
+                        $_SESSION['error'] = 'Missing temporary folder for file upload.';
+                        break;
+                    case UPLOAD_ERR_CANT_WRITE:
+                        $_SESSION['error'] = 'Failed to write file ' . $name . ' to disk.';
+                        break;
+                    case UPLOAD_ERR_EXTENSION:
+                        $_SESSION['error'] = 'File upload stopped by extension for ' . $name . '.';
+                        break;
+                    default:
+                        $_SESSION['error'] = 'Unknown upload error for file ' . $name . '.';
+                        break;
+                }
+                header('Location: asset_items_edit.php?id=' . $item_id);
+                exit();
+            }
+            
+            $file = [
+                'name' => $name,
+                'type' => $files['type'][$key],
+                'tmp_name' => $files['tmp_name'][$key],
+                'error' => $error,
+                'size' => $files['size'][$key]
+            ];
+            
+            // Validate file
+            $allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+            $max_size = 5 * 1024 * 1024; // 5MB per file
+            
+            if (!in_array($file['type'], $allowed_types)) {
+                $_SESSION['error'] = 'Invalid file type: ' . $file['name'] . '. Only JPG, PNG, and GIF files are allowed.';
+                header('Location: asset_items_edit.php?id=' . $item_id);
+                exit();
+            }
+            
+            if ($file['size'] > $max_size) {
+                $_SESSION['error'] = 'File ' . $file['name'] . ' size must be less than 5MB.';
+                header('Location: asset_items_edit.php?id=' . $item_id);
+                exit();
+            }
+            
+            // Generate unique filename
+            $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+            if ($extension === 'jpeg') {
+                $extension = 'jpg';
+            }
+            $image_filename = 'asset_' . $item_id . '_' . bin2hex(random_bytes(4)) . '_' . time() . '.' . $extension;
+            $upload_path = '../uploads/asset_images/' . $image_filename;
+            
+            // Create directory if it doesn't exist
+            if (!is_dir('../uploads/asset_images/')) {
+                mkdir('../uploads/asset_images/', 0755, true);
+            }
+            
+            // Move uploaded file
+            if (move_uploaded_file($file['tmp_name'], $upload_path)) {
+                $image_filenames[] = $image_filename;
+            } else {
+                $_SESSION['error'] = 'Error uploading image file: ' . $file['name'];
+                header('Location: asset_items_edit.php?id=' . $item_id);
+                exit();
+            }
+        }
+    }
+    
+    // Always update the image field.
+    // IMPORTANT: asset_items.image may be VARCHAR(255) in some deployments.
+    // To ensure saving works reliably in that schema, store only ONE filename
+    // (the most recent uploaded image, or the most recent existing image).
+    $final_image_filename = null;
+    if (!empty($image_filenames)) {
+        $final_image_filename = end($image_filenames);
+    } elseif (!empty($existing_images)) {
+        $final_image_filename = end($existing_images);
+    }
+
+    $update_fields[] = "image = ?";
+    $update_values[] = $final_image_filename;
+    $types .= 's';
     
     // Basic asset item fields
     if (isset($_POST['description'])) {
@@ -144,6 +299,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             $update_stmt = $conn->prepare($update_sql);
             $update_stmt->bind_param($types, ...$update_values);
             
+            logSystemAction($_SESSION['user_id'], 'asset_item_edit_sql_debug', 'asset_management', 'SQL=' . $update_sql . ' | image=' . ($final_image_filename === null ? 'NULL' : $final_image_filename));
             if ($update_stmt->execute()) {
                 // Log the update
                 logSystemAction($_SESSION['user_id'], 'asset_item_updated', 'asset_management', "Updated asset item: {$item['description']} (ID: {$item_id})");
@@ -152,7 +308,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                 updateCategorySpecificFields($item_id, $item['category_code'], $_POST);
                 
                 $_SESSION['success'] = 'Asset item updated successfully!';
-                header('Location: view_asset_item.php?id=' . $item_id);
+                header('Location: asset_items_edit.php?id=' . $item_id);
                 exit();
             } else {
                 $_SESSION['error'] = 'Failed to update asset item: ' . $update_stmt->error;
@@ -469,10 +625,33 @@ function updateCategorySpecificFields($item_id, $category_code, $post_data) {
 // Get employees for dropdown
 $employees = [];
 try {
-    $result = $conn->query("SELECT id, employee_no, firstname, lastname FROM employees WHERE clearance_status = 'cleared' ORDER BY employee_no");
-    if ($result) {
-        while ($row = $result->fetch_assoc()) {
+    // First get all cleared employees
+    $cleared_result = $conn->query("SELECT id, employee_no, firstname, lastname FROM employees WHERE clearance_status = 'cleared' ORDER BY employee_no");
+    if ($cleared_result) {
+        while ($row = $cleared_result->fetch_assoc()) {
             $employees[] = $row;
+        }
+    }
+    
+    // Then add the currently assigned employee if they exist and aren't already included
+    if (!empty($item['employee_id'])) {
+        $assigned_employee_found = false;
+        foreach ($employees as $emp) {
+            if ($emp['id'] == $item['employee_id']) {
+                $assigned_employee_found = true;
+                break;
+            }
+        }
+        
+        if (!$assigned_employee_found) {
+            $assigned_result = $conn->prepare("SELECT id, employee_no, firstname, lastname FROM employees WHERE id = ?");
+            $assigned_result->bind_param("i", $item['employee_id']);
+            $assigned_result->execute();
+            $assigned_row = $assigned_result->get_result()->fetch_assoc();
+            if ($assigned_row) {
+                $employees[] = $assigned_row;
+            }
+            $assigned_result->close();
         }
     }
 } catch (Exception $e) {
@@ -484,6 +663,7 @@ function formatStatus($status) {
     $status_map = [
         'serviceable' => ['Serviceable', 'status-serviceable'],
         'unserviceable' => ['Unserviceable', 'status-unserviceable'],
+        'undermaintenance' => ['Under Maintenance', 'status-undermaintenance'],
         'red_tagged' => ['Red Tagged', 'status-red-tagged'],
         'no_tag' => ['No Tag', 'status-no-tag']
     ];
@@ -562,7 +742,7 @@ $status_display = formatStatus($item['status']);
         <div class="row">
             <!-- Main Details Column -->
             <div class="col-lg-8">
-                <form method="POST">
+                <form method="POST" enctype="multipart/form-data">
                     <input type="hidden" name="action" value="update_item">
                 <!-- Item Information -->
                 <div class="detail-card">
@@ -598,6 +778,7 @@ $status_display = formatStatus($item['status']);
                                     <select class="form-select" name="status" required>
                                         <option value="serviceable" <?php echo $item['status'] === 'serviceable' ? 'selected' : ''; ?>>Serviceable</option>
                                         <option value="unserviceable" <?php echo $item['status'] === 'unserviceable' ? 'selected' : ''; ?>>Unserviceable</option>
+                                        <option value="undermaintenance" <?php echo $item['status'] === 'undermaintenance' ? 'selected' : ''; ?>>Under Maintenance</option>
                                         <option value="red_tagged" <?php echo $item['status'] === 'red_tagged' ? 'selected' : ''; ?>>Red Tagged</option>
                                         <option value="no_tag" <?php echo $item['status'] === 'no_tag' ? 'selected' : ''; ?>>No Tag</option>
                                     </select>
@@ -902,7 +1083,7 @@ $status_display = formatStatus($item['status']);
                                 <i class="bi bi-x-circle"></i> Cancel
                             </a>
                             <button type="submit" class="btn btn-success">
-                                <i class="bi bi-check-circle"></i> Save Changes
+                                <i class="bi bi-check-circle"></i> Save All Changes
                             </button>
                         </div>
                     </div>
@@ -975,6 +1156,49 @@ $status_display = formatStatus($item['status']);
                     <?php endif; ?>
                 </div>
                 
+                <!-- Image Upload Section -->
+                <div class="detail-card">
+                    <h5 class="mb-3"><i class="bi bi-cloud-upload"></i> Upload Additional Images</h5>
+                    
+                    <?php if (!empty($asset_images)): ?>
+                        <div class="mb-3">
+                            <h6>Existing Images:</h6>
+                            <div class="row" id="existingImagesRow">
+                                <?php foreach ($asset_images as $index => $image): ?>
+                                    <div class="col-md-3 mb-2 position-relative">
+                                        <div class="card">
+                                            <img src="../uploads/asset_images/<?php echo htmlspecialchars($image); ?>" 
+                                                 class="card-img-top" 
+                                                 style="height: 150px; object-fit: cover;" 
+                                                 alt="Existing Image">
+                                            <div class="card-body p-2">
+                                                <small class="text-muted d-block text-truncate"><?php echo htmlspecialchars($image); ?></small>
+                                                <span class="badge bg-success">Existing</span>
+                                            </div>
+                                            <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1" 
+                                                    onclick="deleteImage('<?php echo htmlspecialchars($image); ?>')" 
+                                                    title="Delete image">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <small class="text-info">Existing images will be preserved. New images will be added to the collection.</small>
+                        </div>
+                    <?php endif; ?>
+                    
+                    <div class="mb-3">
+                        <label for="asset_images" class="form-label">Upload New Images</label>
+                        <input type="file" class="form-control" id="asset_images" name="asset_images[]" accept="image/*" multiple>
+                        <small class="form-text text-muted">Upload additional images of the asset (JPG, PNG, GIF - Max 5MB each, Max 5 files)</small>
+                        <div id="imagePreview" class="mt-2"></div>
+                    </div>
+                    
+                    <!-- Hidden field to store existing images for JavaScript -->
+                    <input type="hidden" id="existingImagesData" value="<?php echo htmlspecialchars(json_encode($asset_images)); ?>">
+                </div>
+                
                 <!-- QR Code -->
                 <div class="detail-card text-center">
                     <h5 class="mb-3"><i class="bi bi-qr-code"></i> QR Code</h5>
@@ -1002,5 +1226,195 @@ $status_display = formatStatus($item['status']);
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <?php require_once 'includes/sidebar-scripts.php'; ?>
+    
+    <!-- jQuery for image functionality -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    
+    <script>
+        // Image preview functionality - append new images to existing preview
+        $('#asset_images').on('change', function() {
+            const preview = $('#imagePreview');
+            
+            // Get existing images from hidden field
+            const existingImagesData = $('#existingImagesData').val();
+            console.log('Raw existing images data from hidden field:', existingImagesData);
+            
+            const existingImages = existingImagesData && existingImagesData !== '' && existingImagesData !== '[]' 
+                ? JSON.parse(existingImagesData) 
+                : [];
+            console.log('Parsed existing images:', existingImages);
+            console.log('Number of existing images:', existingImages.length);
+            
+            // Add new images being uploaded
+            const files = this.files;
+            console.log('New files selected:', files.length);
+            let validFiles = true;
+            
+            // Validate all files first
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                
+                // Check file size
+                if (file.size > 5 * 1024 * 1024) {
+                    preview.append('<div class="alert alert-danger">File size must be less than 5MB</div>');
+                    validFiles = false;
+                    break;
+                }
+                
+                // Check file type
+                if (!file.type.startsWith('image/')) {
+                    preview.append('<div class="alert alert-danger">Only image files are allowed</div>');
+                    validFiles = false;
+                    break;
+                }
+            }
+            
+            // Check file count limit
+            if (files.length > 5) {
+                preview.append('<div class="alert alert-danger">Maximum 5 files allowed</div>');
+                validFiles = false;
+            }
+            
+            if (!validFiles) {
+                this.value = '';
+                return;
+            }
+            
+            // If no files selected, do nothing
+            if (files.length === 0) {
+                return;
+            }
+            
+            // Create or ensure preview container exists
+            if (preview.find('.preview-container').length === 0) {
+                // If this is the first time, create the container structure
+                if (existingImages.length > 0) {
+                    // If there are existing images, add a separator
+                    preview.html(`
+                        <div class="preview-container">
+                            <h6 class="mb-3">All Images</h6>
+                            <div class="row existing-images-row">
+                            </div>
+                            <hr class="my-3">
+                            <h6 class="mb-2">New Images Being Added:</h6>
+                            <div class="row new-images-row">
+                            </div>
+                        </div>
+                    `);
+                    
+                    // Add existing images to their row
+                    const existingRow = preview.find('.existing-images-row');
+                    existingImages.forEach(function(imageName) {
+                        const existingImageHtml = `
+                            <div class="col-md-3 mb-2">
+                                <div class="card">
+                                    <img src="../uploads/asset_images/${imageName}" class="card-img-top" style="height: 150px; object-fit: cover;" alt="Existing Image">
+                                    <div class="card-body p-2">
+                                        <small class="text-muted d-block text-truncate">${imageName}</small>
+                                        <span class="badge bg-success">Existing</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        existingRow.append(existingImageHtml);
+                    });
+                } else {
+                    // No existing images, just create container for new images
+                    preview.html(`
+                        <div class="preview-container">
+                            <h6 class="mb-3">New Images Being Added:</h6>
+                            <div class="row new-images-row">
+                            </div>
+                        </div>
+                    `);
+                }
+            }
+            
+            // Get the new images row
+            const newImagesRow = preview.find('.new-images-row');
+            
+            // Process and append new images
+            let processedCount = 0;
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const newImageHtml = `
+                        <div class="col-md-3 mb-2">
+                            <div class="card border-primary">
+                                <img src="${e.target.result}" class="card-img-top" style="height: 150px; object-fit: cover;" alt="New Image">
+                                <div class="card-body p-2">
+                                    <small class="text-muted d-block text-truncate">${file.name}</small>
+                                    <span class="badge bg-primary">New</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Append the new image to the new images row
+                    newImagesRow.append(newImageHtml);
+                    processedCount++;
+                    
+                    console.log(`Processed ${processedCount} of ${files.length} new images`);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        // Function to delete an image
+        function deleteImage(imageFilename) {
+            if (!confirm('Are you sure you want to delete this image? This action cannot be undone.')) {
+                return;
+            }
+            
+            $.ajax({
+                url: 'delete_asset_image.php',
+                method: 'POST',
+                data: {
+                    item_id: <?php echo $item_id; ?>,
+                    image_filename: imageFilename
+                },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        // Show success message
+                        const alertDiv = $('<div class="alert alert-success alert-dismissible fade show" role="alert">')
+                            .html('<i class="bi bi-check-circle-fill me-2"></i>' + response.message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>');
+                        $('.page-header').after(alertDiv);
+                        
+                        // Remove the image from the display
+                        $('#existingImagesRow').find(`img[alt*="${imageFilename}"]`).closest('.col-md-3').remove();
+                        
+                        // Update the hidden field
+                        const existingImagesData = $('#existingImagesData').val();
+                        let existingImages = existingImagesData && existingImagesData !== '' && existingImagesData !== '[]' 
+                            ? JSON.parse(existingImagesData) 
+                            : [];
+                        existingImages = existingImages.filter(img => img !== imageFilename);
+                        $('#existingImagesData').val(JSON.stringify(existingImages));
+                        
+                        // If no existing images left, reload the page to update the layout
+                        if (existingImages.length === 0) {
+                            setTimeout(function() {
+                                location.reload();
+                            }, 1500);
+                        }
+                    } else {
+                        // Show error message
+                        const alertDiv = $('<div class="alert alert-danger alert-dismissible fade show" role="alert">')
+                            .html('<i class="bi bi-exclamation-triangle-fill me-2"></i>' + response.error + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>');
+                        $('.page-header').after(alertDiv);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    // Show error message
+                    const alertDiv = $('<div class="alert alert-danger alert-dismissible fade show" role="alert">')
+                        .html('<i class="bi bi-exclamation-triangle-fill me-2"></i>Error deleting image. Please try again.<button type="button" class="btn-close" data-bs-dismiss="alert"></button>');
+                    $('.page-header').after(alertDiv);
+                }
+            });
+        }
+    </script>
 </body>
 </html>
