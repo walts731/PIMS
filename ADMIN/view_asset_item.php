@@ -108,6 +108,401 @@ while ($history_row = $history_result->fetch_assoc()) {
 }
 $history_stmt->close();
 
+// Handle POST request for updating asset item
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'update_item') {
+    $update_fields = [];
+    $update_values = [];
+    $types = '';
+    
+    // Basic asset item fields
+    if (isset($_POST['description'])) {
+        $update_fields[] = "description = ?";
+        $update_values[] = trim($_POST['description']);
+        $types .= 's';
+    }
+    
+    if (isset($_POST['status'])) {
+        $update_fields[] = "status = ?";
+        $update_values[] = $_POST['status'];
+        $types .= 's';
+    }
+    
+    if (isset($_POST['value'])) {
+        $update_fields[] = "value = ?";
+        $update_values[] = floatval($_POST['value']);
+        $types .= 'd';
+    }
+    
+    if (isset($_POST['acquisition_date'])) {
+        $update_fields[] = "acquisition_date = ?";
+        $update_values[] = $_POST['acquisition_date'];
+        $types .= 's';
+    }
+    
+    if (isset($_POST['end_user'])) {
+        $update_fields[] = "end_user = ?";
+        $update_values[] = trim($_POST['end_user']);
+        $types .= 's';
+    }
+    
+    if (isset($_POST['employee_id'])) {
+        $employee_id = intval($_POST['employee_id']);
+        if ($employee_id > 0) {
+            $update_fields[] = "employee_id = ?";
+            $update_values[] = $employee_id;
+            $types .= 'i';
+        } else {
+            $update_fields[] = "employee_id = NULL";
+        }
+    }
+    
+    // Update last_updated timestamp
+    $update_fields[] = "last_updated = NOW()";
+    
+    if (!empty($update_fields)) {
+        try {
+            $update_sql = "UPDATE asset_items SET " . implode(", ", $update_fields) . " WHERE id = ?";
+            $update_values[] = $item_id;
+            $types .= 'i';
+            
+            $update_stmt = $conn->prepare($update_sql);
+            $update_stmt->bind_param($types, ...$update_values);
+            
+            if ($update_stmt->execute()) {
+                // Log the update
+                logSystemAction($_SESSION['user_id'], 'asset_item_updated', 'asset_management', "Updated asset item: {$item['description']} (ID: {$item_id})");
+                
+                // Update category-specific fields based on category
+                updateCategorySpecificFields($item_id, $item['category_code'], $_POST);
+                
+                $_SESSION['success'] = 'Asset item updated successfully!';
+                header('Location: ' . $_SERVER['REQUEST_URI']);
+                exit();
+            } else {
+                $_SESSION['error'] = 'Failed to update asset item: ' . $update_stmt->error;
+            }
+            $update_stmt->close();
+        } catch (Exception $e) {
+            $_SESSION['error'] = 'Error updating asset item: ' . $e->getMessage();
+        }
+    }
+}
+
+// Function to update category-specific fields
+function updateCategorySpecificFields($item_id, $category_code, $post_data) {
+    global $conn;
+    
+    try {
+        switch ($category_code) {
+            case '030': // Computer Equipment
+                $computer_fields = [];
+                $computer_values = [];
+                $computer_types = '';
+                
+                if (isset($post_data['processor'])) {
+                    $computer_fields[] = "processor = ?";
+                    $computer_values[] = trim($post_data['processor']);
+                    $computer_types .= 's';
+                }
+                if (isset($post_data['ram_capacity'])) {
+                    $computer_fields[] = "ram_capacity = ?";
+                    $computer_values[] = trim($post_data['ram_capacity']);
+                    $computer_types .= 's';
+                }
+                if (isset($post_data['storage_type'])) {
+                    $computer_fields[] = "storage_type = ?";
+                    $computer_values[] = trim($post_data['storage_type']);
+                    $computer_types .= 's';
+                }
+                if (isset($post_data['storage_capacity'])) {
+                    $computer_fields[] = "storage_capacity = ?";
+                    $computer_values[] = trim($post_data['storage_capacity']);
+                    $computer_types .= 's';
+                }
+                if (isset($post_data['operating_system'])) {
+                    $computer_fields[] = "operating_system = ?";
+                    $computer_values[] = trim($post_data['operating_system']);
+                    $computer_types .= 's';
+                }
+                if (isset($post_data['computer_serial_number'])) {
+                    $computer_fields[] = "serial_number = ?";
+                    $computer_values[] = trim($post_data['computer_serial_number']);
+                    $computer_types .= 's';
+                }
+                
+                if (!empty($computer_fields)) {
+                    $computer_sql = "UPDATE asset_computers SET " . implode(", ", $computer_fields) . " WHERE asset_item_id = ?";
+                    $computer_values[] = $item_id;
+                    $computer_types .= 'i';
+                    
+                    $computer_stmt = $conn->prepare($computer_sql);
+                    $computer_stmt->bind_param($computer_types, ...$computer_values);
+                    $computer_stmt->execute();
+                    $computer_stmt->close();
+                }
+                break;
+                
+            case '07': // Vehicles
+                $vehicle_fields = [];
+                $vehicle_values = [];
+                $vehicle_types = '';
+                
+                if (isset($post_data['vehicle_brand'])) {
+                    $vehicle_fields[] = "brand = ?";
+                    $vehicle_values[] = trim($post_data['vehicle_brand']);
+                    $vehicle_types .= 's';
+                }
+                if (isset($post_data['vehicle_model'])) {
+                    $vehicle_fields[] = "model = ?";
+                    $vehicle_values[] = trim($post_data['vehicle_model']);
+                    $vehicle_types .= 's';
+                }
+                if (isset($post_data['plate_number'])) {
+                    $vehicle_fields[] = "plate_number = ?";
+                    $vehicle_values[] = trim($post_data['plate_number']);
+                    $vehicle_types .= 's';
+                }
+                if (isset($post_data['color'])) {
+                    $vehicle_fields[] = "color = ?";
+                    $vehicle_values[] = trim($post_data['color']);
+                    $vehicle_types .= 's';
+                }
+                if (isset($post_data['engine_number'])) {
+                    $vehicle_fields[] = "engine_number = ?";
+                    $vehicle_values[] = trim($post_data['engine_number']);
+                    $vehicle_types .= 's';
+                }
+                if (isset($post_data['chassis_number'])) {
+                    $vehicle_fields[] = "chassis_number = ?";
+                    $vehicle_values[] = trim($post_data['chassis_number']);
+                    $vehicle_types .= 's';
+                }
+                if (isset($post_data['year_manufactured'])) {
+                    $vehicle_fields[] = "year_manufactured = ?";
+                    $vehicle_values[] = intval($post_data['year_manufactured']);
+                    $vehicle_types .= 'i';
+                }
+                
+                if (!empty($vehicle_fields)) {
+                    $vehicle_sql = "UPDATE asset_vehicles SET " . implode(", ", $vehicle_fields) . " WHERE asset_item_id = ?";
+                    $vehicle_values[] = $item_id;
+                    $vehicle_types .= 'i';
+                    
+                    $vehicle_stmt = $conn->prepare($vehicle_sql);
+                    $vehicle_stmt->bind_param($vehicle_types, ...$vehicle_values);
+                    $vehicle_stmt->execute();
+                    $vehicle_stmt->close();
+                }
+                break;
+                
+            case '02': // Furniture & Fixtures
+                $furniture_fields = [];
+                $furniture_values = [];
+                $furniture_types = '';
+                
+                if (isset($post_data['material'])) {
+                    $furniture_fields[] = "material = ?";
+                    $furniture_values[] = trim($post_data['material']);
+                    $furniture_types .= 's';
+                }
+                if (isset($post_data['furniture_dimensions'])) {
+                    $furniture_fields[] = "dimensions = ?";
+                    $furniture_values[] = trim($post_data['furniture_dimensions']);
+                    $furniture_types .= 's';
+                }
+                if (isset($post_data['furniture_color'])) {
+                    $furniture_fields[] = "color = ?";
+                    $furniture_values[] = trim($post_data['furniture_color']);
+                    $furniture_types .= 's';
+                }
+                if (isset($post_data['furniture_manufacturer'])) {
+                    $furniture_fields[] = "manufacturer = ?";
+                    $furniture_values[] = trim($post_data['furniture_manufacturer']);
+                    $furniture_types .= 's';
+                }
+                
+                if (!empty($furniture_fields)) {
+                    $furniture_sql = "UPDATE asset_furniture SET " . implode(", ", $furniture_fields) . " WHERE asset_item_id = ?";
+                    $furniture_values[] = $item_id;
+                    $furniture_types .= 'i';
+                    
+                    $furniture_stmt = $conn->prepare($furniture_sql);
+                    $furniture_stmt->bind_param($furniture_types, ...$furniture_values);
+                    $furniture_stmt->execute();
+                    $furniture_stmt->close();
+                }
+                break;
+                
+            case '04': // Machinery & Equipment
+                $machinery_fields = [];
+                $machinery_values = [];
+                $machinery_types = '';
+                
+                if (isset($post_data['machine_type'])) {
+                    $machinery_fields[] = "machine_type = ?";
+                    $machinery_values[] = trim($post_data['machine_type']);
+                    $machinery_types .= 's';
+                }
+                if (isset($post_data['machinery_manufacturer'])) {
+                    $machinery_fields[] = "manufacturer = ?";
+                    $machinery_values[] = trim($post_data['machinery_manufacturer']);
+                    $machinery_types .= 's';
+                }
+                if (isset($post_data['model_number'])) {
+                    $machinery_fields[] = "model_number = ?";
+                    $machinery_values[] = trim($post_data['model_number']);
+                    $machinery_types .= 's';
+                }
+                if (isset($post_data['machinery_capacity'])) {
+                    $machinery_fields[] = "capacity = ?";
+                    $machinery_values[] = trim($post_data['machinery_capacity']);
+                    $machinery_types .= 's';
+                }
+                if (isset($post_data['power_requirements'])) {
+                    $machinery_fields[] = "power_requirements = ?";
+                    $machinery_values[] = trim($post_data['power_requirements']);
+                    $machinery_types .= 's';
+                }
+                if (isset($post_data['machinery_serial_number'])) {
+                    $machinery_fields[] = "serial_number = ?";
+                    $machinery_values[] = trim($post_data['machinery_serial_number']);
+                    $machinery_types .= 's';
+                }
+                
+                if (!empty($machinery_fields)) {
+                    $machinery_sql = "UPDATE asset_machinery SET " . implode(", ", $machinery_fields) . " WHERE asset_item_id = ?";
+                    $machinery_values[] = $item_id;
+                    $machinery_types .= 'i';
+                    
+                    $machinery_stmt = $conn->prepare($machinery_sql);
+                    $machinery_stmt->bind_param($machinery_types, ...$machinery_values);
+                    $machinery_stmt->execute();
+                    $machinery_stmt->close();
+                }
+                break;
+                
+            case '05': // Office Equipment
+                $office_fields = [];
+                $office_values = [];
+                $office_types = '';
+                
+                if (isset($post_data['office_brand'])) {
+                    $office_fields[] = "brand = ?";
+                    $office_values[] = trim($post_data['office_brand']);
+                    $office_types .= 's';
+                }
+                if (isset($post_data['office_model'])) {
+                    $office_fields[] = "model = ?";
+                    $office_values[] = trim($post_data['office_model']);
+                    $office_types .= 's';
+                }
+                if (isset($post_data['office_serial_number'])) {
+                    $office_fields[] = "serial_number = ?";
+                    $office_values[] = trim($post_data['office_serial_number']);
+                    $office_types .= 's';
+                }
+                
+                if (!empty($office_fields)) {
+                    $office_sql = "UPDATE asset_office_equipment SET " . implode(", ", $office_fields) . " WHERE asset_item_id = ?";
+                    $office_values[] = $item_id;
+                    $office_types .= 'i';
+                    
+                    $office_stmt = $conn->prepare($office_sql);
+                    $office_stmt->bind_param($office_types, ...$office_values);
+                    $office_stmt->execute();
+                    $office_stmt->close();
+                }
+                break;
+                
+            case '06': // Software
+                $software_fields = [];
+                $software_values = [];
+                $software_types = '';
+                
+                if (isset($post_data['software_name'])) {
+                    $software_fields[] = "software_name = ?";
+                    $software_values[] = trim($post_data['software_name']);
+                    $software_types .= 's';
+                }
+                if (isset($post_data['version'])) {
+                    $software_fields[] = "version = ?";
+                    $software_values[] = trim($post_data['version']);
+                    $software_types .= 's';
+                }
+                if (isset($post_data['license_key'])) {
+                    $software_fields[] = "license_key = ?";
+                    $software_values[] = trim($post_data['license_key']);
+                    $software_types .= 's';
+                }
+                if (isset($post_data['license_expiry'])) {
+                    $software_fields[] = "license_expiry = ?";
+                    $software_values[] = trim($post_data['license_expiry']);
+                    $software_types .= 's';
+                }
+                
+                if (!empty($software_fields)) {
+                    $software_sql = "UPDATE asset_software SET " . implode(", ", $software_fields) . " WHERE asset_item_id = ?";
+                    $software_values[] = $item_id;
+                    $software_types .= 'i';
+                    
+                    $software_stmt = $conn->prepare($software_sql);
+                    $software_stmt->bind_param($software_types, ...$software_values);
+                    $software_stmt->execute();
+                    $software_stmt->close();
+                }
+                break;
+                
+            case '03': // Land
+                $land_fields = [];
+                $land_values = [];
+                $land_types = '';
+                
+                if (isset($post_data['lot_area'])) {
+                    $land_fields[] = "lot_area = ?";
+                    $land_values[] = trim($post_data['lot_area']);
+                    $land_types .= 's';
+                }
+                if (isset($post_data['land_address'])) {
+                    $land_fields[] = "address = ?";
+                    $land_values[] = trim($post_data['land_address']);
+                    $land_types .= 's';
+                }
+                if (isset($post_data['tax_declaration_number'])) {
+                    $land_fields[] = "tax_declaration_number = ?";
+                    $land_values[] = trim($post_data['tax_declaration_number']);
+                    $land_types .= 's';
+                }
+                
+                if (!empty($land_fields)) {
+                    $land_sql = "UPDATE asset_land SET " . implode(", ", $land_fields) . " WHERE asset_item_id = ?";
+                    $land_values[] = $item_id;
+                    $land_types .= 'i';
+                    
+                    $land_stmt = $conn->prepare($land_sql);
+                    $land_stmt->bind_param($land_types, ...$land_values);
+                    $land_stmt->execute();
+                    $land_stmt->close();
+                }
+                break;
+        }
+    } catch (Exception $e) {
+        error_log("Error updating category-specific fields: " . $e->getMessage());
+    }
+}
+
+// Get employees for dropdown
+$employees = [];
+try {
+    $result = $conn->query("SELECT id, employee_no, firstname, lastname FROM employees WHERE clearance_status = 'cleared' ORDER BY employee_no");
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $employees[] = $row;
+        }
+    }
+} catch (Exception $e) {
+    error_log("Error fetching employees: " . $e->getMessage());
+}
+
 // Format status for display
 function formatStatus($status) {
     $status_map = [
@@ -163,6 +558,9 @@ $status_display = formatStatus($item['status']);
                     <p class="text-muted mb-0"><?php echo htmlspecialchars($item['description']); ?></p>
                 </div>
                 <div class="col-md-4 text-md-end">
+                    <a href="asset_items_edit.php?id=<?php echo $item_id; ?>" class="btn btn-warning me-2">
+                        <i class="bi bi-pencil"></i> Edit
+                    </a>
                     <a href="asset_items.php?asset_id=<?php echo $asset_id; ?>" class="btn btn-back me-2">
                         <i class="bi bi-arrow-left"></i> Back to Items
                     </a>
@@ -293,30 +691,36 @@ $status_display = formatStatus($item['status']);
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <div class="detail-label">Processor</div>
-                                    <div class="detail-value"><?php echo $item['processor'] ? htmlspecialchars($item['processor']) : '<span class="text-muted">Not specified</span>'; ?></div>
+                                    <label class="detail-label">Processor</label>
+                                    <input type="text" class="form-control" name="processor" value="<?php echo htmlspecialchars($item['processor'] ?? ''); ?>" placeholder="Enter processor">
                                 </div>
                                 <div class="mb-3">
-                                    <div class="detail-label">RAM (GB)</div>
-                                    <div class="detail-value"><?php echo $item['ram_capacity'] ? htmlspecialchars($item['ram_capacity']) : '<span class="text-muted">Not specified</span>'; ?></div>
+                                    <label class="detail-label">RAM (GB)</label>
+                                    <input type="text" class="form-control" name="ram_capacity" value="<?php echo htmlspecialchars($item['ram_capacity'] ?? ''); ?>" placeholder="e.g. 8GB, 16GB">
                                 </div>
                                 <div class="mb-3">
-                                    <div class="detail-label">Storage</div>
-                                    <div class="detail-value"><?php echo $item['storage_capacity'] ? htmlspecialchars($item['storage_capacity']) : '<span class="text-muted">Not specified</span>'; ?></div>
+                                    <label class="detail-label">Storage Capacity</label>
+                                    <input type="text" class="form-control" name="storage_capacity" value="<?php echo htmlspecialchars($item['storage_capacity'] ?? ''); ?>" placeholder="e.g. 500GB, 1TB">
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <div class="detail-label">Operating System</div>
-                                    <div class="detail-value"><?php echo $item['operating_system'] ? htmlspecialchars($item['operating_system']) : '<span class="text-muted">Not specified</span>'; ?></div>
+                                    <label class="detail-label">Operating System</label>
+                                    <input type="text" class="form-control" name="operating_system" value="<?php echo htmlspecialchars($item['operating_system'] ?? ''); ?>" placeholder="e.g. Windows 10, Ubuntu">
                                 </div>
                                 <div class="mb-3">
-                                    <div class="detail-label">Serial Number</div>
-                                    <div class="detail-value"><?php echo $item['computer_serial_number'] ? htmlspecialchars($item['computer_serial_number']) : '<span class="text-muted">Not specified</span>'; ?></div>
+                                    <label class="detail-label">Serial Number</label>
+                                    <input type="text" class="form-control" name="computer_serial_number" value="<?php echo htmlspecialchars($item['computer_serial_number'] ?? ''); ?>" placeholder="Enter serial number">
                                 </div>
                                 <div class="mb-3">
-                                    <div class="detail-label">Storage Type</div>
-                                    <div class="detail-value"><?php echo $item['storage_type'] ? htmlspecialchars(ucfirst($item['storage_type'])) : '<span class="text-muted">Not specified</span>'; ?></div>
+                                    <label class="detail-label">Storage Type</label>
+                                    <select class="form-select" name="storage_type">
+                                        <option value="">Not specified</option>
+                                        <option value="ssd" <?php echo ($item['storage_type'] === 'ssd') ? 'selected' : ''; ?>>SSD</option>
+                                        <option value="hdd" <?php echo ($item['storage_type'] === 'hdd') ? 'selected' : ''; ?>>HDD</option>
+                                        <option value="nvme" <?php echo ($item['storage_type'] === 'nvme') ? 'selected' : ''; ?>>NVMe</option>
+                                        <option value="hybrid" <?php echo ($item['storage_type'] === 'hybrid') ? 'selected' : ''; ?>>Hybrid</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -451,16 +855,16 @@ $status_display = formatStatus($item['status']);
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <div class="detail-label">Brand</div>
-                                    <div class="detail-value"><?php echo $item['vehicle_brand'] ? htmlspecialchars($item['vehicle_brand']) : '<span class="text-muted">Not specified</span>'; ?></div>
+                                    <label class="detail-label">Brand</label>
+                                    <input type="text" class="form-control" name="vehicle_brand" value="<?php echo htmlspecialchars($item['vehicle_brand'] ?? ''); ?>" placeholder="Enter vehicle brand">
                                 </div>
                                 <div class="mb-3">
-                                    <div class="detail-label">Model</div>
-                                    <div class="detail-value"><?php echo $item['vehicle_model'] ? htmlspecialchars($item['vehicle_model']) : '<span class="text-muted">Not specified</span>'; ?></div>
+                                    <label class="detail-label">Model</label>
+                                    <input type="text" class="form-control" name="vehicle_model" value="<?php echo htmlspecialchars($item['vehicle_model'] ?? ''); ?>" placeholder="Enter vehicle model">
                                 </div>
                                 <div class="mb-3">
-                                    <div class="detail-label">Plate Number</div>
-                                    <div class="detail-value"><?php echo $item['plate_number'] ? htmlspecialchars($item['plate_number']) : '<span class="text-muted">Not specified</span>'; ?></div>
+                                    <label class="detail-label">Plate Number</label>
+                                    <input type="text" class="form-control" name="plate_number" value="<?php echo htmlspecialchars($item['plate_number'] ?? ''); ?>" placeholder="Enter plate number">
                                 </div>
                             </div>
                             <div class="col-md-6">
