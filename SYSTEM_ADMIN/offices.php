@@ -665,8 +665,6 @@ $page_title = 'Offices';
                                     <tr>
                                         <th>Office Name</th>
                                         <th>Code</th>
-                                        <th>State</th>
-                                        <th>Capacity</th>
                                         <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
@@ -680,10 +678,6 @@ $page_title = 'Offices';
                                             </td>
                                             <td>
                                                 <span class="badge bg-secondary"><?php echo htmlspecialchars($office['office_code']); ?></span>
-                                            </td>
-                                            <td><?php echo htmlspecialchars($office['state'] ?? '-'); ?></td>
-                                            <td>
-                                                <span class="badge bg-info"><?php echo number_format($office['capacity']); ?></span>
                                             </td>
                                             <td>
                                                 <form method="POST" action="" style="display: inline;">
