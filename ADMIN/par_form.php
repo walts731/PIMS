@@ -40,7 +40,7 @@ if ($result && $row = $result->fetch_assoc()) {
 
 // Get next series number for auto-increment
 $next_series = '01';
-$result = $conn->query("SELECT MAX(CAST(SUBSTRING(property_number, -4, 2) AS UNSIGNED)) as max_series FROM asset_items WHERE property_number LIKE CONCAT(YEAR(CURDATE()), '-%')");
+$result = $conn->query("SELECT MAX(CAST(SUBSTRING(property_no, -4, 2) AS UNSIGNED)) as max_series FROM asset_items WHERE property_no LIKE CONCAT(YEAR(CURDATE()), '-%')");
 if ($result && $row = $result->fetch_assoc()) {
     $max_series = $row['max_series'];
     if ($max_series) {

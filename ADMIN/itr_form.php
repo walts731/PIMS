@@ -375,11 +375,11 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label class="form-label"><strong>Entity Name:</strong></label>
-                            <input type="text" class="form-control" name="entity_name" required>
+                            <input type="text" class="form-control" name="entity_name">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label"><strong>Fund Cluster:</strong></label>
-                            <input type="text" class="form-control" name="fund_cluster" required>
+                            <input type="text" class="form-control" name="fund_cluster">
                         </div>
 
                     </div>
@@ -804,13 +804,76 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
                                 setTimeout(() => {
                                     if (!assetDropdown.val() || assetDropdown.val() !== transferData.asset_id) {
                                         // If asset wasn't found in dropdown, add it manually
+                                        const newOption = new Option(transferData.description, transferData.asset_id, true, true);
+                                        assetDropdown.append(newOption).trigger('change');
+                                        
+                                        // Add data attributes for the asset
+                                        assetDropdown.find('option:last').attr('data-acquisition-date', new Date().toLocaleDateString('en-US'));
+                                        assetDropdown.find('option:last').attr('data-property-no', transferData.property_no);
+                                        assetDropdown.find('option:last').attr('data-value', transferData.value);
+                                        
+                                        // Manually fill the form fields
+                                        const assetData = {
+                                            description: transferData.description,
+                                            acquisition_date: new Date().toISOString().split('T')[0],
+                                            property_no: transferData.property_no,
+                                            value: transferData.value
+                                        };
+                                        fillAssetFields(firstRow, assetData);
                                     }
                                 }, 500);
+                            }, 1000);
+                        } else {
+                            // If no employee assigned, still try to add the asset manually
+                            setTimeout(() => {
+                                const firstRow = $('#itrItemsTable tbody tr:first');
+                                const assetDropdown = firstRow.find('select[name="description[]"]');
+                                
+                                // Add the asset manually to dropdown
+                                const newOption = new Option(transferData.description, transferData.asset_id, true, true);
+                                assetDropdown.append(newOption).trigger('change');
+                                
+                                // Add data attributes for the asset
+                                assetDropdown.find('option:last').attr('data-acquisition-date', new Date().toLocaleDateString('en-US'));
+                                assetDropdown.find('option:last').attr('data-property-no', transferData.property_no);
+                                assetDropdown.find('option:last').attr('data-value', transferData.value);
+                                
+                                // Manually fill the form fields
+                                const assetData = {
+                                    description: transferData.description,
+                                    acquisition_date: new Date().toISOString().split('T')[0],
+                                    property_no: transferData.property_no,
+                                    value: transferData.value
+                                };
+                                fillAssetFields(firstRow, assetData);
                             }, 1000);
                         }
                     },
                     error: function() {
                         console.log('Could not determine current employee for asset');
+                        // Still try to add the asset manually even if employee lookup fails
+                        setTimeout(() => {
+                            const firstRow = $('#itrItemsTable tbody tr:first');
+                            const assetDropdown = firstRow.find('select[name="description[]"]');
+                            
+                            // Add the asset manually to dropdown
+                            const newOption = new Option(transferData.description, transferData.asset_id, true, true);
+                            assetDropdown.append(newOption).trigger('change');
+                            
+                            // Add data attributes for the asset
+                            assetDropdown.find('option:last').attr('data-acquisition-date', new Date().toLocaleDateString('en-US'));
+                            assetDropdown.find('option:last').attr('data-property-no', transferData.property_no);
+                            assetDropdown.find('option:last').attr('data-value', transferData.value);
+                            
+                            // Manually fill the form fields
+                            const assetData = {
+                                description: transferData.description,
+                                acquisition_date: new Date().toISOString().split('T')[0],
+                                property_no: transferData.property_no,
+                                value: transferData.value
+                            };
+                            fillAssetFields(firstRow, assetData);
+                        }, 1000);
                     }
                 });
             <?php endif; ?>
