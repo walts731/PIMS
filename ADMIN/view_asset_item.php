@@ -1449,6 +1449,7 @@ $status_display = formatStatus($item['status']);
                 value: '<?php echo $item['value']; ?>',
                 unit_cost: '<?php echo $item['unit_cost']; ?>',
                 office_name: '<?php echo addslashes($item['office_name'] ?? ''); ?>',
+                employee_name: '<?php echo addslashes(trim(($item['firstname'] ?? '') . ' ' . ($item['lastname'] ?? ''))); ?>',
                 category_name: '<?php echo addslashes($item['category_name'] ?? ''); ?>',
                 category_code: '<?php echo addslashes($item['category_code'] ?? ''); ?>',
                 asset_description: '<?php echo addslashes($item['asset_description']); ?>',
@@ -1472,6 +1473,7 @@ $status_display = formatStatus($item['status']);
                 value: '<?php echo $item['monitor_value'] ?? $item['value']; ?>',
                 unit_cost: '<?php echo $item['monitor_unit_cost'] ?? $item['unit_cost']; ?>',
                 office_name: '<?php echo addslashes($item['office_name'] ?? ''); ?>',
+                employee_name: '<?php echo addslashes(trim(($item['firstname'] ?? '') . ' ' . ($item['lastname'] ?? ''))); ?>',
                 category_name: 'Computer Equipment',
                 category_code: '030',
                 asset_description: '<?php echo addslashes($item['monitor_model'] ?: 'Monitor'); ?>',
@@ -1496,6 +1498,7 @@ $status_display = formatStatus($item['status']);
                 value: '<?php echo $item['ups_value'] ?? $item['value']; ?>',
                 unit_cost: '<?php echo $item['ups_unit_cost'] ?? $item['unit_cost']; ?>',
                 office_name: '<?php echo addslashes($item['office_name'] ?? ''); ?>',
+                employee_name: '<?php echo addslashes(trim(($item['firstname'] ?? '') . ' ' . ($item['lastname'] ?? ''))); ?>',
                 category_name: 'Computer Equipment',
                 category_code: '030',
                 asset_description: '<?php echo addslashes($item['ups_model'] ?: 'UPS'); ?>',
@@ -1517,6 +1520,7 @@ $status_display = formatStatus($item['status']);
             params.append('value', data.value);
             params.append('unit_cost', data.unit_cost);
             params.append('office_name', data.office_name);
+            params.append('employee_name', data.employee_name || '');
             params.append('category_name', data.category_name);
             params.append('category_code', data.category_code);
             params.append('asset_description', data.asset_description);
