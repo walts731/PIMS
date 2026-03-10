@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 09, 2026 at 02:49 AM
--- Server version: 10.4.28-MariaDB
--- PHP Version: 8.2.4
+-- Generation Time: Mar 10, 2026 at 04:18 AM
+-- Server version: 10.4.32-MariaDB
+-- PHP Version: 8.2.12
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -317,7 +317,7 @@ INSERT INTO `asset_items` (`id`, `asset_id`, `asset_subcategory_id`, `asset_cate
 (11, 10, NULL, NULL, NULL, NULL, NULL, NULL, 8, 'Laptop AMD Ryzen7', 'Units', NULL, '2026-07-05-030-0002-03', NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 28000.00, NULL, 5, 'OVM', '2026-02-25 14:51:45', '2026-02-27 10:41:36'),
 (12, 11, NULL, NULL, NULL, NULL, NULL, NULL, 9, 'Hilux Van ', 'Units', NULL, '2026-07-05-070-0904-01', NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 750000.00, '2026-02-25', 4, 'OMM', '2026-02-25 15:41:22', '2026-02-27 10:41:36'),
 (13, 11, NULL, NULL, NULL, NULL, NULL, NULL, 9, 'Hilux Van ', 'Units', NULL, '2026-07-05-070-0905-01', NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 750000.00, '2026-02-25', 4, 'OMM', '2026-02-25 15:41:22', '2026-02-27 10:41:36'),
-(14, 12, 1, NULL, 6, 'Jack Robertson', 2, NULL, 10, 'COMPUTER DESKTOP i7', 'Sets', NULL, '2026-07-05-030-0306-01', NULL, '2026-02-27', '[\"asset_14_0_1772188896.jpg\",\"asset_14_1_1772188896.jpg\"]', 'qr_asset_14_1772188898.png', '', NULL, NULL, 75000.00, '2026-02-27', 4, 'OMM', '2026-02-27 10:38:03', '2026-03-05 08:38:03'),
+(14, 12, 1, NULL, 6, 'Jack Robertson', 2, NULL, 10, 'COMPUTER DESKTOP i7', 'Sets', NULL, '2026-07-05-030-0306-01', NULL, '2026-02-27', '[\"asset_14_0_1772188896.jpg\",\"asset_14_1_1772188896.jpg\"]', 'qr_asset_14_1772188898.png', 'serviceable', NULL, NULL, 75000.00, '2026-02-27', 4, 'OMM', '2026-02-27 10:38:03', '2026-03-04 03:53:01'),
 (15, 12, 1, NULL, 6, 'Roberto Cruz', 2, NULL, 10, 'COMPUTER DESKTOP i7', 'Sets', NULL, '2026-07-05-030-0307-01', NULL, '2026-02-27', '[\"asset_15_0_1772189215.jpg\",\"asset_15_1_1772189215.jpg\"]', 'qr_asset_15_1772189217.png', 'unserviceable', NULL, NULL, 75000.00, '2026-02-27', 4, 'OMM', '2026-02-27 10:38:03', '2026-02-28 00:12:32'),
 (26, 13, 1, NULL, 1, 'elton', 2, NULL, 11, 'desktop computer ', 'Sets', NULL, '2026-07-05-030-0308-01', NULL, '2026-03-03', 'NULL', 'qr_asset_26_1772506472.png', 'in_use', NULL, NULL, 75000.00, NULL, 4, 'OMM', '2026-03-03 02:53:04', '2026-03-03 08:39:30'),
 (27, 13, NULL, NULL, NULL, NULL, NULL, NULL, 11, 'desktop computer ', 'Sets', NULL, '2026-07-05-030-0309-01', NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 75000.00, NULL, 4, NULL, '2026-03-03 02:53:04', '2026-03-03 02:53:04'),
@@ -757,8 +757,71 @@ INSERT INTO `borrow_requests` (`id`, `requested_by`, `requested_by_office`, `req
 (5, 17, 5, 4, 5, 1, NULL, 'test', '2026-03-03', '2026-03-03', 'returned', 18, '2026-03-03 16:33:05', 'test', NULL, NULL, NULL, '2026-03-03 16:36:47', 'good', 'test', '2026-03-03 16:31:55', '2026-03-03 16:36:47'),
 (6, 17, 5, 4, 26, 1, NULL, 'asdfg', '2026-03-03', '2026-03-03', 'approved', 18, '2026-03-03 16:39:30', 'ghj', NULL, NULL, NULL, NULL, NULL, NULL, '2026-03-03 16:38:56', '2026-03-03 16:39:30'),
 (7, 17, 5, 4, 14, 1, NULL, 'hiram', '2026-03-04', '2026-03-04', 'denied', NULL, NULL, NULL, 18, '2026-03-04 11:53:01', 'bawal', NULL, NULL, NULL, '2026-03-04 11:51:11', '2026-03-04 11:53:01'),
-(8, 17, 5, 4, 34, 1, NULL, 'test', '2026-03-05', '2026-03-05', 'cancelled', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-03-05 11:17:55', '2026-03-05 15:44:42'),
-(9, 17, 5, 4, 14, 1, NULL, 'resttes', '2026-03-05', '2026-03-05', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-03-05 16:38:03', '2026-03-05 16:38:03');
+(8, 17, 5, 4, 34, 1, NULL, 'test', '2026-03-05', '2026-03-05', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-03-05 11:17:55', '2026-03-05 11:17:55');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `branches`
+--
+
+CREATE TABLE `branches` (
+  `id` int(11) NOT NULL,
+  `office_id` int(11) NOT NULL,
+  `branch_name` varchar(255) NOT NULL,
+  `branch_code` varchar(50) NOT NULL,
+  `description` text DEFAULT NULL,
+  `head_personnel` varchar(255) DEFAULT NULL,
+  `contact_number` varchar(50) DEFAULT NULL,
+  `location` varchar(255) DEFAULT NULL,
+  `status` enum('active','inactive') DEFAULT 'active',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `created_by` int(11) DEFAULT NULL,
+  `updated_by` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `branches`
+--
+
+INSERT INTO `branches` (`id`, `office_id`, `branch_name`, `branch_code`, `description`, `head_personnel`, `contact_number`, `location`, `status`, `created_at`, `updated_at`, `created_by`, `updated_by`) VALUES
+(1, 1, 'Administrative Services', 'HO-ADM', 'Main administrative services', 'Juan Dela Cruz', '09123456789', 'Ground Floor', 'active', '2026-03-10 03:17:35', '2026-03-10 03:17:35', 1, NULL),
+(2, 1, 'Finance Department', 'HO-FIN', 'Financial management and accounting', 'Maria Santos', '09123456788', '2nd Floor', 'active', '2026-03-10 03:17:35', '2026-03-10 03:17:35', 1, NULL),
+(3, 1, 'Human Resources', 'HO-HR', 'Personnel management and recruitment', 'Jose Reyes', '09123456787', '2nd Floor', 'active', '2026-03-10 03:17:35', '2026-03-10 03:17:35', 1, NULL),
+(4, 2, 'Lying-in Clinic', 'MHO-LIC', 'Maternal and child health services', 'Dr. Ana Garcia', '09123456786', 'Main Building', 'active', '2026-03-10 03:17:35', '2026-03-10 03:17:35', 1, NULL),
+(5, 2, 'Pharmacy', 'MHO-PHARM', 'Medicine dispensary and pharmacy services', 'Dr. Roberto Lopez', '09123456785', 'Main Building', 'active', '2026-03-10 03:17:35', '2026-03-10 03:17:35', 1, NULL),
+(6, 2, 'Dental Clinic', 'MHO-DENT', 'Dental health services', 'Dr. Cristina Martinez', '09123456784', 'Annex Building', 'active', '2026-03-10 03:17:35', '2026-03-10 03:17:35', 1, NULL),
+(7, 2, 'Laboratory', 'MHO-LAB', 'Medical laboratory services', 'Dr. Eduardo Rodriguez', '09123456783', 'Main Building', 'active', '2026-03-10 03:17:35', '2026-03-10 03:17:35', 1, NULL),
+(8, 3, 'District Office', 'ND-MAIN', 'Main district administrative office', 'Pedro Santos', '09123456782', 'District Center', 'active', '2026-03-10 03:17:35', '2026-03-10 03:17:35', 1, NULL),
+(9, 3, 'Satellite Clinic', 'ND-CLINIC', 'Primary healthcare services', 'Dr. Lourdes Hernandez', '09123456781', 'Barangay Hall', 'active', '2026-03-10 03:17:35', '2026-03-10 03:17:35', 1, NULL),
+(10, 4, 'District Office', 'SD-MAIN', 'Main district administrative office', 'Antonio Reyes', '09123456780', 'District Center', 'active', '2026-03-10 03:17:35', '2026-03-10 03:17:35', 1, NULL),
+(11, 4, 'Community Outreach', 'SD-OUTREACH', 'Community health outreach programs', 'Dr. Patricia Cruz', '09123456779', 'Mobile Unit', 'active', '2026-03-10 03:17:35', '2026-03-10 03:17:35', 1, NULL),
+(12, 5, 'District Office', 'ED-MAIN', 'Main district administrative office', 'Ricardo Martinez', '09123456778', 'District Center', 'active', '2026-03-10 03:17:35', '2026-03-10 03:17:35', 1, NULL),
+(13, 5, 'Health Station', 'ED-HEALTH', 'Community health station', 'Nurse Gloria Santos', '09123456777', 'Barangay Health Center', 'active', '2026-03-10 03:17:35', '2026-03-10 03:17:35', 1, NULL),
+(14, 6, 'District Office', 'WD-MAIN', 'Main district administrative office', 'Miguel Lopez', '09123456776', 'District Center', 'active', '2026-03-10 03:17:35', '2026-03-10 03:17:35', 1, NULL),
+(15, 6, 'Rural Health Unit', 'WD-RHU', 'Rural health services', 'Dr. Fernando Garcia', '09123456775', 'RHU Building', 'active', '2026-03-10 03:17:35', '2026-03-10 03:17:35', 1, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Stand-in structure for view `branch_summary`
+-- (See below for the actual view)
+--
+CREATE TABLE `branch_summary` (
+`id` int(11)
+,`branch_name` varchar(255)
+,`branch_code` varchar(50)
+,`description` text
+,`head_personnel` varchar(255)
+,`contact_number` varchar(50)
+,`location` varchar(255)
+,`status` enum('active','inactive')
+,`office_name` varchar(100)
+,`office_code` varchar(10)
+,`created_at` timestamp
+,`updated_at` timestamp
+);
 
 -- --------------------------------------------------------
 
@@ -7698,28 +7761,7 @@ INSERT INTO `system_logs` (`id`, `user_id`, `action`, `module`, `description`, `
 (5989, 17, 'consumable_consumed', 'consumables', 'Consumed 1 units of A4 Paper. Remaining: 0. Notes: 1111', NULL, NULL, '2026-03-05 07:15:36'),
 (5990, 17, 'session_timeout', 'authentication', 'Session expired for user: Joshua Escaño (joshuamarifrancis@gmail.com) after 3985 seconds', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-05 07:26:30'),
 (5991, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-05 07:26:45'),
-(5992, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-05 07:26:45'),
-(5993, 17, 'Request cancelled', 'borrow_requests', 'Borrow request #8 was cancelled by office admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-05 07:44:42'),
-(5994, 17, 'logout', 'authentication', 'User logged out: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-05 08:06:28'),
-(5995, 18, 'login_success', 'authentication', 'User logged in: OM admin (OM@pims.com) with role: office_admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-05 08:06:37'),
-(5996, 18, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-05 08:06:37'),
-(5997, 18, 'update', 'profile', 'Office admin updated profile information', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-05 08:07:02'),
-(5998, 18, 'logout', 'authentication', 'User logged out: joli sally (OM@pims.com) with role: office_admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-05 08:21:21'),
-(5999, 1, 'login_success', 'authentication', 'User logged in: System Administrator (admin@pims.com) with role: system_admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-05 08:21:31'),
-(6000, 1, 'access', 'dashboard', 'System admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-05 08:21:31'),
-(6001, 1, 'access', 'offices', 'System admin accessed offices page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-05 08:21:35'),
-(6002, 1, 'logout', 'authentication', 'User logged out: System Administrator (admin@pims.com) with role: system_admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-05 08:27:23'),
-(6003, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-05 08:27:33'),
-(6004, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-05 08:27:33'),
-(6005, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-05 08:27:53'),
-(6006, 17, 'create', 'borrow_request', 'Created borrow request for 1 unit(s) of asset #14', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-05 08:38:03'),
-(6007, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-09 00:47:57'),
-(6008, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-09 00:47:58'),
-(6009, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-09 01:20:49'),
-(6010, 17, 'access', 'inventory_reports', 'Office admin accessed inventory reports', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-09 01:41:22'),
-(6011, 17, 'access', 'inventory_reports', 'Office admin accessed inventory reports', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-09 01:41:24'),
-(6012, 17, 'access', 'inventory_reports', 'Office admin accessed inventory reports', '::1', 'Mozilla/5.0 (X11; Linux aarch64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 CrKey/1.54.250320', '2026-03-09 01:46:41'),
-(6013, 17, 'access', 'inventory_reports', 'Office admin accessed inventory reports', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-09 01:46:44');
+(5992, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-05 07:26:45');
 
 -- --------------------------------------------------------
 
@@ -7856,7 +7898,7 @@ INSERT INTO `users` (`id`, `username`, `email`, `phone`, `address`, `office`, `p
 (13, 'ejbm2022-9110-55459@bicol-u.edu.ph', 'ejbm2022-9110-55459@bicol-u.edu.ph', NULL, NULL, 1, '$2y$10$o54U6aFysIeH5wTqGKNiN.pYkUhYuvpyfdyNFerUZF/RSTbwg/RRa', 'user', 'Elton', 'Moises', 1, '2026-02-10 13:03:28', '2026-02-25 01:39:01', NULL, 0, 0, '2026-02-10 13:03:28', 0),
 (16, 'lgupilar.supplyroom@gmail.com', 'lgupilar.supplyroom@gmail.com', NULL, NULL, 3, '$2y$10$w4FzikJXfEqNn5ulfCZkaejz9v8KEPz4NV7QYFa0F/g9JQDqoAMZa', 'admin', 'John Patrick', 'Jazareno', 1, '2026-02-25 01:41:01', '2026-02-25 01:41:01', NULL, 0, 0, '2026-02-25 01:41:01', 0),
 (17, 'joshuamarifrancis@gmail.com', 'joshuamarifrancis@gmail.com', '', '', 5, '$2y$10$mLtzMicopmz6FtuqgBzXEulfmAZGt5eCjPiBs47ZWwORY2njUv0yK', 'office_admin', 'Joshua', 'Escaño', 1, '2026-02-25 08:40:28', '2026-03-04 08:00:07', NULL, 0, 0, '2026-02-25 08:40:28', 0),
-(18, 'OM@pims.com', 'OM@pims.com', '', '', 4, '$2y$10$6kUby429S74/f.Kd.400iO5vhbNYm8Xjjya5n7hlShCbiSdusmDyq', 'office_admin', 'joli', 'sally', 1, '2026-03-03 03:38:17', '2026-03-05 08:07:02', NULL, 0, 0, '2026-03-03 03:38:17', 0),
+(18, 'OM@pims.com', 'OM@pims.com', NULL, NULL, 4, '$2y$10$6kUby429S74/f.Kd.400iO5vhbNYm8Xjjya5n7hlShCbiSdusmDyq', 'office_admin', 'OM', 'admin', 1, '2026-03-03 03:38:17', '2026-03-03 03:38:17', NULL, 0, 0, '2026-03-03 03:38:17', 0),
 (19, 'AD@pims.com', 'AD@pims.com', NULL, NULL, 5, '$2y$10$01nH1ThL4s.XHcVy.ixNNexdNc9MgRfnSuhQ5xuUFItgNXuWFs8e2', 'admin', 'admin', 'admin', 1, '2026-03-03 06:11:33', '2026-03-03 06:11:33', NULL, 0, 0, '2026-03-03 06:11:33', 0);
 
 -- --------------------------------------------------------
@@ -7880,6 +7922,15 @@ CREATE TABLE `user_password_history` (
 DROP TABLE IF EXISTS `asset_category_tables`;
 
 CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `asset_category_tables`  AS SELECT `ac`.`id` AS `category_id`, `ac`.`category_name` AS `category_name`, `ac`.`category_code` AS `category_code`, CASE `ac`.`category_code` WHEN 'FF' THEN 'asset_furniture' WHEN 'CE' THEN 'asset_computers' WHEN 'VH' THEN 'asset_vehicles' WHEN 'ME' THEN 'asset_machinery' WHEN 'BI' THEN 'asset_buildings' WHEN 'LD' THEN 'asset_land' WHEN 'SW' THEN 'asset_software' WHEN 'OE' THEN 'asset_office_equipment' ELSE NULL END AS `specific_table_name` FROM `asset_categories` AS `ac` WHERE `ac`.`status` = 'active' ;
+
+-- --------------------------------------------------------
+
+--
+-- Structure for view `branch_summary`
+--
+DROP TABLE IF EXISTS `branch_summary`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `branch_summary`  AS SELECT `b`.`id` AS `id`, `b`.`branch_name` AS `branch_name`, `b`.`branch_code` AS `branch_code`, `b`.`description` AS `description`, `b`.`head_personnel` AS `head_personnel`, `b`.`contact_number` AS `contact_number`, `b`.`location` AS `location`, `b`.`status` AS `status`, `o`.`office_name` AS `office_name`, `o`.`office_code` AS `office_code`, `b`.`created_at` AS `created_at`, `b`.`updated_at` AS `updated_at` FROM (`branches` `b` left join `offices` `o` on(`b`.`office_id` = `o`.`id`)) ORDER BY `o`.`office_name` ASC, `b`.`branch_name` ASC ;
 
 -- --------------------------------------------------------
 
@@ -8137,6 +8188,15 @@ ALTER TABLE `borrow_requests`
   ADD KEY `fk_borrow_requests_denied_by` (`denied_by`),
   ADD KEY `idx_borrow_requests_composite` (`status`,`requested_to_office`,`created_at`),
   ADD KEY `idx_borrow_requests_outgoing` (`status`,`requested_by_office`,`created_at`);
+
+--
+-- Indexes for table `branches`
+--
+ALTER TABLE `branches`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_branch_code` (`branch_code`),
+  ADD KEY `idx_office_id` (`office_id`),
+  ADD KEY `idx_status` (`status`);
 
 --
 -- Indexes for table `consumables`
@@ -8744,7 +8804,13 @@ ALTER TABLE `borrow_form_submissions`
 -- AUTO_INCREMENT for table `borrow_requests`
 --
 ALTER TABLE `borrow_requests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
+-- AUTO_INCREMENT for table `branches`
+--
+ALTER TABLE `branches`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT for table `consumables`
@@ -9026,7 +9092,7 @@ ALTER TABLE `software`
 -- AUTO_INCREMENT for table `system_logs`
 --
 ALTER TABLE `system_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6014;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5993;
 
 --
 -- AUTO_INCREMENT for table `system_settings`
@@ -9188,6 +9254,12 @@ ALTER TABLE `borrow_requests`
   ADD CONSTRAINT `fk_borrow_requests_requested_by` FOREIGN KEY (`requested_by`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_borrow_requests_requested_by_office` FOREIGN KEY (`requested_by_office`) REFERENCES `offices` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_borrow_requests_requested_to_office` FOREIGN KEY (`requested_to_office`) REFERENCES `offices` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `branches`
+--
+ALTER TABLE `branches`
+  ADD CONSTRAINT `fk_branches_office` FOREIGN KEY (`office_id`) REFERENCES `offices` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `consumables`
