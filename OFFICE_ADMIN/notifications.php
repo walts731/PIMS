@@ -132,185 +132,28 @@ $unread_stmt->execute();
 $unread_result = $unread_stmt->get_result();
 $unread_count = $unread_result->fetch_assoc()['count'];
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($page_title); ?> - PIMS</title>
-    
-    <!-- Bootstrap CSS -->
+    <title><?php echo htmlspecialchars($page_title); ?> - PIMS<!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="../assets/css/index.css" rel="stylesheet">
+    <link href="../assets/css/theme-custom.css" rel="stylesheet">
+    <link href="dashboard.css?v=<?php echo time(); ?>" rel="stylesheet">
     
     <style>
-        :root {
-            --primary-color: #191BA9;
-            --secondary-color: #5CC2F2;
-            --accent-color: #C1EAF2;
-            --light-color: #F7F3F3;
-            --dark-color: #0A0A0A;
-            --success-color: #28a745;
-            --danger-color: #dc3545;
-            --warning-color: #ffc107;
-            --info-color: #17a2b8;
-            
-            /* Gradient definitions */
-            --primary-gradient: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%);
-            --secondary-gradient: linear-gradient(135deg, #5CC2F2 0%, #C1EAF2 100%);
-            --accent-gradient: linear-gradient(135deg, #C1EAF2 0%, #F7F3F3 100%);
-            --light-gradient: linear-gradient(135deg, #F7F3F3 0%, #ffffff 100%);
-            
-            /* Shadow definitions */
-            --shadow-sm: 0 0.125rem 0.25rem rgba(25, 27, 169, 0.15);
-            --shadow: 0 0.5rem 1rem rgba(25, 27, 169, 0.15);
-            --shadow-lg: 0 1rem 3rem rgba(25, 27, 169, 0.175);
-            --shadow-xl: 0 1.5rem 4rem rgba(25, 27, 169, 0.2);
-            
-            /* Border radius */
-            --border-radius-sm: 0.375rem;
-            --border-radius: 0.5rem;
-            --border-radius-lg: 0.75rem;
-            --border-radius-xl: 1rem;
-            --border-radius-2xl: 1.5rem;
-            
-            /* Transitions */
-            --transition-fast: all 0.15s ease-in-out;
-            --transition: all 0.3s ease-in-out;
-            --transition-slow: all 0.5s ease-in-out;
-        }
-        
         body {
             font-family: 'Inter', sans-serif;
-            background: var(--light-gradient);
-            color: var(--dark-color);
+            background: linear-gradient(135deg, #F7F3F3 0%, #C1EAF2 100%);
             min-height: 100vh;
-        }
-        
-        /* Sidebar Styles */
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 250px;
-            height: 100vh;
-            background: var(--primary-gradient);
-            z-index: 1000;
-            transition: transform 0.3s ease;
-            overflow-y: auto;
-        }
-        
-        .sidebar.show {
-            transform: translateX(0);
-        }
-        
-        .sidebar:not(.show) {
-            transform: translateX(-100%);
-        }
-        
-        .sidebar-header {
-            padding: 1.5rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .sidebar-brand {
-            display: flex;
-            align-items: center;
-            text-decoration: none;
-            color: white;
-        }
-        
-        .sidebar-logo {
-            width: 40px;
-            height: 40px;
-            margin-right: 1rem;
-            border-radius: var(--border-radius);
-        }
-        
-        .sidebar-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: white;
-        }
-        
-        .sidebar-nav {
-            padding: 1rem 0;
-        }
-        
-        .menu-item {
-            margin-bottom: 0.5rem;
-        }
-        
-        .menu-link {
-            display: flex;
-            align-items: center;
-            padding: 0.75rem 1.5rem;
-            color: rgba(255, 255, 255, 0.8);
-            text-decoration: none;
-            transition: var(--transition);
-        }
-        
-        .menu-link:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-            color: white;
-            text-decoration: none;
-        }
-        
-        .menu-link.active {
-            background-color: rgba(255, 255, 255, 0.2);
-            color: white;
-        }
-        
-        .menu-link i {
-            margin-right: 0.75rem;
-            font-size: 1.1rem;
-        }
-        
-        .menu-text {
-            font-weight: 500;
-        }
-        
-        /* Main Content Layout */
-        .main-wrapper {
-            display: flex;
-            min-height: 100vh;
-        }
-        
-        .main-content {
-            flex: 1;
-            margin-left: 250px;
-            padding: 0;
-            width: calc(100% - 250px);
-            display: flex;
-            flex-direction: column;
-        }
-        
-        /* Topbar Styles */
-        .topbar {
-            position: relative;
-            top: 0;
-            right: 0;
-            left: 0;
-            height: 60px;
-            background: white;
-            border-bottom: 1px solid #e0e0e0;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 2rem;
-            z-index: 999;
-            box-shadow: var(--shadow-sm);
-            flex-shrink: 0;
-        }
-        
-        .content-area {
-            flex: 1;
-            padding: 2rem;
-            margin-top: 0;
+            overflow-x: hidden;
         }
         
         .page-header {
@@ -493,63 +336,18 @@ $unread_count = $unread_result->fetch_assoc()['count'];
             color: white;
         }
         
-        .sidebar-toggle {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            color: var(--primary-color);
-            cursor: pointer;
-            padding: 0.5rem;
-            border-radius: var(--border-radius);
-            transition: var(--transition);
+        /* Sidebar logo fix */
+        .sidebar-logo {
+            width: 40px !important;
+            height: 40px !important;
+            max-width: 40px !important;
+            max-height: 40px !important;
+            object-fit: contain !important;
+            border-radius: var(--border-radius) !important;
         }
         
-        .sidebar-toggle:hover {
-            background: rgba(25, 27, 169, 0.1);
-            color: var(--primary-hover);
-        }
-        
-        .sidebar-toggle.active {
-            background: var(--primary-gradient);
-            color: white;
-        }
-        
-        .sidebar-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 998;
-            display: none;
-        }
-        
-        .sidebar-overlay.show {
-            display: block;
-        }
-        
-        /* Responsive */
-        @media (max-width: 1024px) {
-            .sidebar {
-                transform: translateX(-100%);
-            }
-            
-            .sidebar.show {
-                transform: translateX(0);
-            }
-            
-            .main-content {
-                margin-left: 0;
-                width: 100%;
-            }
-        }
-        
+        /* Responsive adjustments */
         @media (max-width: 768px) {
-            .content-area {
-                padding: 1rem;
-            }
-            
             .page-header {
                 padding: 1rem;
             }
