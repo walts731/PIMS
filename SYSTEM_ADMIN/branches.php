@@ -155,33 +155,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     }
 }
 
-// DELETE - Delete branch
-if (isset($_GET['action']) && $_GET['action'] == 'delete' && isset($_GET['id'])) {
-    $id = intval($_GET['id']);
-    
-    try {
-        // Get branch info before deletion
-        $stmt = $conn->prepare("SELECT b.branch_name, b.branch_code, o.office_name FROM branches b LEFT JOIN offices o ON b.office_id = o.id WHERE b.id = ?");
-        $stmt->bind_param("i", $id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $branch = $result->fetch_assoc();
-        
-        if ($branch) {
-            $stmt = $conn->prepare("DELETE FROM branches WHERE id = ?");
-            $stmt->bind_param("i", $id);
-            $stmt->execute();
-            
-            $message = "Branch deleted successfully!";
-            $message_type = "success";
-            
-            logSystemAction($_SESSION['user_id'], 'branch_deleted', 'branch_management', "Deleted branch: {$branch['branch_name']} ({$branch['branch_code']}) from " . $branch['office_name']);
-        }
-    } catch (Exception $e) {
-        $message = "Error deleting branch: " . $e->getMessage();
-        $message_type = "danger";
-    }
-}
 
 // Get all branches with office information
 $branches = [];
@@ -564,16 +537,10 @@ $page_title = 'Branches';
                                                 </form>
                                             </td>
                                             <td>
-                                                <div class="btn-group" role="group">
-                                                    <button type="button" class="btn btn-sm btn-outline-primary" 
-                                                            onclick="window.location.href='branches.php?action=edit&id=<?php echo $branch['id']; ?>'">
-                                                        <i class="bi bi-pencil"></i>
-                                                    </button>
-                                                    <button type="button" class="btn btn-sm btn-outline-danger" 
-                                                            onclick="deleteBranch(<?php echo $branch['id']; ?>, '<?php echo htmlspecialchars($branch['branch_name']); ?>')">
-                                                        <i class="bi bi-trash"></i>
-                                                    </button>
-                                                </div>
+                                                <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                        onclick="window.location.href='branches.php?action=edit&id=<?php echo $branch['id']; ?>'">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
@@ -735,36 +702,7 @@ $page_title = 'Branches';
     </div>
     <?php endif; ?>
     
-    <!-- Delete Confirmation Modal -->
-    <div class="modal fade" id="deleteModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title"><i class="bi bi-exclamation-triangle"></i> Confirm Delete</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="text-center mb-3">
-                        <i class="bi bi-trash fs-1 text-danger"></i>
-                    </div>
-                    <h6 class="text-center mb-3">Are you sure you want to delete this branch?</h6>
-                    <p class="text-muted text-center mb-0">
-                        <strong id="deleteBranchName"></strong><br>
-                        This action cannot be undone.
-                    </p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="bi bi-x-circle"></i> Cancel
-                    </button>
-                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
-                        <i class="bi bi-trash"></i> Delete
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-    
+        
     </div>
 
     <!-- Scripts -->
@@ -772,7 +710,7 @@ $page_title = 'Branches';
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
-    <script src="../assets/js/sidebar.js"></script>
+    <script src="assets/js/sidebar.js"></script>
     
     <script>
     $(document).ready(function() {
@@ -803,17 +741,6 @@ $page_title = 'Branches';
         <?php if ($edit_branch): ?>
         $('#editBranchModal').modal('show');
         <?php endif; ?>
-    });
-    
-    function deleteBranch(id, name) {
-        $('#deleteBranchName').text(name);
-        $('#confirmDeleteBtn').data('id', id);
-        $('#deleteModal').modal('show');
-    }
-    
-    $('#confirmDeleteBtn').click(function() {
-        var id = $(this).data('id');
-        window.location.href = 'branches.php?action=delete&id=' + id;
     });
     </script>
     

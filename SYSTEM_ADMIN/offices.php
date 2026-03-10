@@ -319,33 +319,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     }
 }
 
-// DELETE - Delete office
-if (isset($_GET['action']) && $_GET['action'] == 'delete' && isset($_GET['id'])) {
-    $id = intval($_GET['id']);
-    
-    try {
-        // Get office info before deletion
-        $stmt = $conn->prepare("SELECT office_name, office_code FROM offices WHERE id = ?");
-        $stmt->bind_param("i", $id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $office = $result->fetch_assoc();
-        
-        if ($office) {
-            $stmt = $conn->prepare("DELETE FROM offices WHERE id = ?");
-            $stmt->bind_param("i", $id);
-            $stmt->execute();
-            
-            $message = "Office deleted successfully!";
-            $message_type = "success";
-            
-            logSystemAction($_SESSION['user_id'], 'office_deleted', 'office_management', "Deleted office: {$office['office_name']} ({$office['office_code']})");
-        }
-    } catch (Exception $e) {
-        $message = "Error deleting office: " . $e->getMessage();
-        $message_type = "danger";
-    }
-}
 
 // Get all offices
 $offices = [];
@@ -698,16 +671,10 @@ $page_title = 'Offices';
                                                 </form>
                                             </td>
                                             <td>
-                                                <div class="btn-group" role="group">
-                                                    <button type="button" class="btn btn-sm btn-outline-primary" 
-                                                            onclick="window.location.href='offices.php?action=edit&id=<?php echo $office['id']; ?>'">
-                                                        <i class="bi bi-pencil"></i>
-                                                    </button>
-                                                    <button type="button" class="btn btn-sm btn-outline-danger" 
-                                                            onclick="deleteOffice(<?php echo $office['id']; ?>, '<?php echo htmlspecialchars($office['office_name']); ?>')">
-                                                        <i class="bi bi-trash"></i>
-                                                    </button>
-                                                </div>
+                                                <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                        onclick="window.location.href='offices.php?action=edit&id=<?php echo $office['id']; ?>'">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
@@ -912,26 +879,6 @@ $page_title = 'Offices';
         </div>
     </div>
     
-    <!-- Delete Confirmation Modal -->
-    <div class="modal fade" id="deleteModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title">Confirm Delete</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <p>Are you sure you want to delete the office "<span id="deleteOfficeName"></span>"?</p>
-                    <p class="text-muted small">This action cannot be undone.</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-danger" id="deleteConfirmBtn" onclick="confirmDelete()">Delete</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    
     <?php require_once 'includes/logout-modal.php'; ?>
     <?php require_once 'includes/change-password-modal.php'; ?>
 </div> <!-- Close main wrapper -->
@@ -999,19 +946,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    function deleteOffice(id, name) {
-        document.getElementById('deleteOfficeName').textContent = name;
-        document.getElementById('deleteConfirmBtn').setAttribute('data-office-id', id);
-        new bootstrap.Modal(document.getElementById('deleteModal')).show();
-    }
-    
-    function confirmDelete() {
-        const officeId = document.getElementById('deleteConfirmBtn').getAttribute('data-office-id');
-        if (officeId) {
-            window.location.href = `offices.php?action=delete&id=${officeId}`;
-        }
-    }
-    
+        
         
     // Show edit modal if editing
     <?php if ($edit_office): ?>
