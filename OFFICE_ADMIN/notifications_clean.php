@@ -533,7 +533,7 @@ function getTimeAgo($datetime) {
                                         <i class="bi bi-clock"></i> 
                                         <?php echo getTimeAgo($notification['created_at']); ?>
                                     </small>
-                                    <span class="notification-type-badge <?php echo $notification['type']; ?>">
+                                    <span class="badge bg-secondary">
                                         <?php echo ucfirst($notification['type']); ?>
                                     </span>
                                     <?php if ($notification['related_type']): ?>
@@ -602,10 +602,6 @@ function getTimeAgo($datetime) {
         <?php endif; ?>
     </div>
     
-    <?php require_once 'includes/logout-modal.php'; ?>
-    <?php require_once 'includes/change-password-modal.php'; ?>
-    </div>
-    
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js?v=<?php echo time(); ?>"></script>
     <!-- Sidebar Scripts -->
@@ -623,9 +619,7 @@ function getTimeAgo($datetime) {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Update notification badge if exists
                     updateNotificationBadge();
-                    // Remove unread styling
                     const card = document.querySelector(`[data-id="${notificationId}"]`);
                     if (card) {
                         card.classList.remove('unread');
@@ -650,9 +644,7 @@ function getTimeAgo($datetime) {
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        // Update notification badge if exists
                         updateNotificationBadge();
-                        // Remove the notification card
                         const card = document.querySelector(`[data-id="${notificationId}"]`);
                         if (card) {
                             card.remove();
@@ -673,9 +665,7 @@ function getTimeAgo($datetime) {
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        // Update notification badge if exists
                         updateNotificationBadge();
-                        // Remove unread styling from all cards
                         document.querySelectorAll('.notification-card.unread').forEach(card => {
                             card.classList.remove('unread');
                         });
@@ -696,7 +686,6 @@ function getTimeAgo($datetime) {
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        // Update notification badge if exists
                         updateNotificationBadge();
                         location.reload();
                     }
@@ -707,7 +696,6 @@ function getTimeAgo($datetime) {
             }
         }
         
-        // Update notification badge if it exists
         function updateNotificationBadge() {
             const badge = document.getElementById('notificationBadge');
             if (badge) {
@@ -730,30 +718,9 @@ function getTimeAgo($datetime) {
             }
         }
         
-        // Initialize notification badge on page load
         document.addEventListener('DOMContentLoaded', function() {
             updateNotificationBadge();
         });
-    </script>
-</body>
-</html>
-                            headers: {
-                                'Content-Type': 'application/x-www-form-urlencoded',
-                            },
-                            body: `notification_id=${notificationId}`
-                        })
-                    );
-                });
-                
-                Promise.all(deletePromises)
-                    .then(() => {
-                        location.reload();
-                    })
-                    .catch(error => {
-                        console.error('Error clearing notifications:', error);
-                    });
-            }
-        }
     </script>
 </body>
 </html>

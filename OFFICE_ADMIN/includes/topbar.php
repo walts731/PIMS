@@ -462,7 +462,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function updateNotificationBadge() {
     fetch('notifications_handler.php?action=get_count', {
-        credentials: 'include'  // Include cookies for session
+        credentials: 'include',  // Include cookies for session
+        timeout: 10000  // 10 second timeout
     })
         .then(response => {
             if (!response.ok) {
@@ -482,7 +483,15 @@ function updateNotificationBadge() {
         })
         .catch(error => {
             console.error('Error updating notification badge:', error);
-            notificationBadge.style.display = 'none';
+            // For localhost issues, try a fallback approach
+            if (error.message.includes('timeout') || error.message.includes('network')) {
+                console.log('Network error detected, trying fallback...');
+                // Set a default visible badge to indicate notifications exist
+                notificationBadge.textContent = '?';
+                notificationBadge.style.display = 'block';
+            } else {
+                notificationBadge.style.display = 'none';
+            }
         });
 }
 
@@ -499,7 +508,8 @@ function loadNotifications() {
     `;
     
     fetch('notifications_handler.php?action=get_notifications&limit=5', {
-        credentials: 'include'
+        credentials: 'include',
+        timeout: 10000  // 10 second timeout
     })
         .then(response => {
             if (!response.ok) {
@@ -513,9 +523,16 @@ function loadNotifications() {
         })
         .catch(error => {
             console.error('Error loading notifications:', error);
-            notificationList.innerHTML = `
-                <li><a class="dropdown-item text-muted">Error loading notifications</a></li>
-            `;
+            if (error.message.includes('timeout') || error.message.includes('network')) {
+                notificationList.innerHTML = `
+                    <li><a class="dropdown-item text-muted">Network error - check console</a></li>
+                    <li><a class="dropdown-item text-center" href="notifications.php">View All Notifications</a></li>
+                `;
+            } else {
+                notificationList.innerHTML = `
+                    <li><a class="dropdown-item text-muted">Error loading notifications</a></li>
+                `;
+            }
         });
 }
 
