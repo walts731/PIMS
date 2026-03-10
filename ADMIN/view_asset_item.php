@@ -24,7 +24,7 @@ $item_sql = "SELECT ai.*,
                    ac.category_name, ac.category_code,
                    subcat.sub_category_name, subcat.sub_category_code,
                    o.office_name,
-                   comp.processor, comp.ram_capacity, comp.storage_type, comp.storage_capacity, 
+                   comp.processor, comp.ram_capacity, comp.storage_type, comp.storage_capacity, comp.model,
                    comp.operating_system, comp.serial_number as computer_serial_number,
                    desk.monitor_name, desk.monitor_model, desk.monitor_serial_number, desk.monitor_status,
                    desk.ups_name, desk.ups_model, desk.ups_serial_number, desk.ups_status,
@@ -691,36 +691,30 @@ $status_display = formatStatus($item['status']);
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label class="detail-label">Processor</label>
-                                    <input type="text" class="form-control" name="processor" value="<?php echo htmlspecialchars($item['processor'] ?? ''); ?>" placeholder="Enter processor">
+                                    <div class="detail-label">Processor</div>
+                                    <div class="detail-value"><?php echo $item['processor'] ? htmlspecialchars($item['processor']) : '<span class="text-muted">Not specified</span>'; ?></div>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="detail-label">RAM (GB)</label>
-                                    <input type="text" class="form-control" name="ram_capacity" value="<?php echo htmlspecialchars($item['ram_capacity'] ?? ''); ?>" placeholder="e.g. 8GB, 16GB">
+                                    <div class="detail-label">RAM (GB)</div>
+                                    <div class="detail-value"><?php echo $item['ram_capacity'] ? htmlspecialchars($item['ram_capacity']) : '<span class="text-muted">Not specified</span>'; ?></div>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="detail-label">Storage Capacity</label>
-                                    <input type="text" class="form-control" name="storage_capacity" value="<?php echo htmlspecialchars($item['storage_capacity'] ?? ''); ?>" placeholder="e.g. 500GB, 1TB">
+                                    <div class="detail-label">Storage Capacity</div>
+                                    <div class="detail-value"><?php echo $item['storage_capacity'] ? htmlspecialchars($item['storage_capacity']) : '<span class="text-muted">Not specified</span>'; ?></div>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label class="detail-label">Operating System</label>
-                                    <input type="text" class="form-control" name="operating_system" value="<?php echo htmlspecialchars($item['operating_system'] ?? ''); ?>" placeholder="e.g. Windows 10, Ubuntu">
+                                    <div class="detail-label">Operating System</div>
+                                    <div class="detail-value"><?php echo $item['operating_system'] ? htmlspecialchars($item['operating_system']) : '<span class="text-muted">Not specified</span>'; ?></div>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="detail-label">Serial Number</label>
-                                    <input type="text" class="form-control" name="computer_serial_number" value="<?php echo htmlspecialchars($item['computer_serial_number'] ?? ''); ?>" placeholder="Enter serial number">
+                                    <div class="detail-label">Serial Number</div>
+                                    <div class="detail-value"><?php echo $item['computer_serial_number'] ? htmlspecialchars($item['computer_serial_number']) : '<span class="text-muted">Not specified</span>'; ?></div>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="detail-label">Storage Type</label>
-                                    <select class="form-select" name="storage_type">
-                                        <option value="">Not specified</option>
-                                        <option value="ssd" <?php echo ($item['storage_type'] === 'ssd') ? 'selected' : ''; ?>>SSD</option>
-                                        <option value="hdd" <?php echo ($item['storage_type'] === 'hdd') ? 'selected' : ''; ?>>HDD</option>
-                                        <option value="nvme" <?php echo ($item['storage_type'] === 'nvme') ? 'selected' : ''; ?>>NVMe</option>
-                                        <option value="hybrid" <?php echo ($item['storage_type'] === 'hybrid') ? 'selected' : ''; ?>>Hybrid</option>
-                                    </select>
+                                    <div class="detail-label">Model</div>
+                                    <div class="detail-value"><?php echo $item['model'] ? htmlspecialchars($item['model']) : '<span class="text-muted">Not specified</span>'; ?></div>
                                 </div>
                             </div>
                         </div>

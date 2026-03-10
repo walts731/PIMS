@@ -320,29 +320,31 @@ try {
         
         // Insert or update computer equipment-specific information
         $computer_sql = "INSERT INTO asset_computers 
-                       (asset_item_id, processor, ram_capacity, storage_type, storage_capacity, operating_system, serial_number, created_by, created_at)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                       (asset_item_id, processor, ram_capacity, storage_type, storage_capacity, model, operating_system, serial_number, created_by, created_at)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                        ON DUPLICATE KEY UPDATE
                        processor = VALUES(processor),
                        ram_capacity = VALUES(ram_capacity),
                        storage_type = VALUES(storage_type),
                        storage_capacity = VALUES(storage_capacity),
+                       model = VALUES(model),
                        operating_system = VALUES(operating_system),
                        serial_number = VALUES(serial_number),
                        updated_by = VALUES(created_by),
                        updated_at = CURRENT_TIMESTAMP";
         
         $computer_stmt = $conn->prepare($computer_sql);
-        $computer_stmt->bind_param("issssssi", $item_id, $processor, $ram_capacity, $storage_type, $storage_capacity, $operating_system, $serial_number, $_SESSION['user_id']);
+        $computer_stmt->bind_param("isssssssi", $item_id, $processor, $ram_capacity, $storage_type, $storage_capacity, $model, $operating_system, $serial_number, $_SESSION['user_id']);
         $computer_stmt->execute();
         
         // Log computer equipment-specific field updates
         $computer_details = sprintf(
-            "Computer Equipment specs saved - Processor: %s, RAM: %s, Storage: %s %s, OS: %s, Serial: %s",
+            "Computer Equipment specs saved - Processor: %s, RAM: %s, Storage: %s %s, Model: %s, OS: %s, Serial: %s",
             $processor ?: 'Not specified',
             $ram_capacity ?: 'Not specified',
             $storage_capacity ?: 'Not specified',
             $storage_type ?: 'Not specified',
+            $model ?: 'Not specified',
             $operating_system ?: 'Not specified',
             $serial_number ?: 'Not specified'
         );
