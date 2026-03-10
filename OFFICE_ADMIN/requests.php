@@ -1677,6 +1677,9 @@ if ($office_id && $conn) {
         });
     </script>
     
+    <!-- Universal Notification Script -->
+    <?php require_once 'includes/notification_script.php'; ?>
+    
     <!-- Sidebar Scripts -->
     <script src="../assets/js/sidebar.js"></script>
 </body>
