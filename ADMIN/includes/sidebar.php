@@ -140,13 +140,16 @@ try {
     box-shadow: 0 2px 10px rgba(25, 27, 169, 0.1);
     position: sticky;
     top: 0;
+    left: 0;
+    right: 0;
     z-index: 1000;
-    transition: padding-left 0.3s ease-in-out;
+    transition: all 0.3s ease-in-out;
     padding-left: 80px; /* Space for toggle button when sidebar is closed */
 }
 
 .navbar.sidebar-active {
-    padding-left: 20px; /* Reduce padding when sidebar is open */
+    padding-left: 300px; /* Extend to start from sidebar edge when open */
+    box-shadow: 0 2px 10px rgba(25, 27, 169, 0.2);
 }
 
 .navbar-brand {

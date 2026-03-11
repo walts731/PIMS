@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Toggle sidebar
     sidebarToggle.addEventListener('click', function() {
+        
         toggleSidebar();
     });
 
