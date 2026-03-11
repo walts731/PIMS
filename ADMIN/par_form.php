@@ -425,7 +425,7 @@ if ($result && $row = $result->fetch_assoc()) {
                                                         <i class="bi bi-gear"></i> Generate
                                                     </button>
                                                 </div>
-                                                <small class="text-muted">Format: YEAR-FORM-FUND-CATEGORY-SUBCATEGORY+SERIES-OFFICE</small>
+                                                <small class="text-muted">Format: YEAR-FORM-CATEGORY-SUBCATEGORY+SERIES-OFFICE</small>
                                             </td>
                                             <td><input type="date" class="form-control form-control-sm" name="date_acquired[]"></td>
                                             <td><input type="number" step="0.01" class="form-control form-control-sm" name="amount[]" required onchange="updateGrandTotal()"></td>
@@ -495,28 +495,10 @@ if ($result && $row = $result->fetch_assoc()) {
                         <i class="bi bi-info-circle"></i> <span id="quantityText">Generating 1 property number</span>
                     </div>
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-12">
                             <label class="form-label"><strong>Form Type:</strong></label>
                             <input type="text" class="form-control" id="formType" value="07" readonly>
                             <small class="text-muted">Auto-detected: Property Acknowledgment Receipt</small>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label"><strong>Fund:</strong></label>
-                            <select class="form-select" id="fundSelect">
-                                <option value="">Select Fund</option>
-                                <?php 
-                                if ($funds_result) {
-                                    // Reset pointer to beginning
-                                    $funds_result->data_seek(0);
-                                    while ($fund = $funds_result->fetch_assoc()) {
-                                        // Extract numeric part from fund code (e.g., "05" from "GEN-2025")
-                                        preg_match('/(\d{2})$/', $fund['fund_code'], $matches);
-                                        $fund_code = isset($matches[1]) ? $matches[1] : '05';
-                                        echo '<option value="' . $fund_code . '">' . htmlspecialchars($fund['fund_name']) . ' (' . htmlspecialchars($fund['fund_code']) . ')</option>';
-                                    }
-                                }
-                                ?>
-                            </select>
                         </div>
                     </div>
                     
@@ -688,7 +670,7 @@ if ($result && $row = $result->fetch_assoc()) {
                 '<input type="text" class="form-control form-control-sm" name="property_number[]" value="" readonly placeholder="Click Generate to create">' +
                 '<button type="button" class="btn btn-sm btn-outline-primary" onclick="showPropertyNumberGenerator(this)" title="Generate Property Number"><i class="bi bi-gear"></i> Generate</button>' +
                 '</div>' +
-                '<small class="text-muted">Format: YEAR-FORM-FUND-CATEGORY-SUBCATEGORY+SERIES-OFFICE</small>',
+                '<small class="text-muted">Format: YEAR-FORM-CATEGORY-SUBCATEGORY+SERIES-OFFICE</small>',
                 '<input type="date" class="form-control form-control-sm" name="date_acquired[]">',
                 '<input type="number" step="0.01" class="form-control form-control-sm" name="amount[]" required onchange="updateGrandTotal()">',
                 '<button type="button" class="btn btn-sm btn-danger" onclick="removeRow(this)"><i class="bi bi-trash"></i></button>'
@@ -1124,7 +1106,6 @@ if ($result && $row = $result->fetch_assoc()) {
         }
         
         function clearGeneratorForm() {
-            document.getElementById('fundSelect').value = '';
             document.getElementById('categorySelect').value = '';
             document.getElementById('subcategorySelect').value = '';
             // Don't clear series - it's auto-incremented
@@ -1140,7 +1121,6 @@ if ($result && $row = $result->fetch_assoc()) {
         function generatePropertyNumberPreview() {
             const year = new Date().getFullYear();
             const formType = document.getElementById('formType').value || '07';
-            const fund = document.getElementById('fundSelect').value || '05';
             const category = document.getElementById('categorySelect').value || '030';
             const subcategory = document.getElementById('subcategorySelect').value || '01';
             const baseSeries = document.getElementById('seriesInput').value || '<?php echo $next_series; ?>';
@@ -1166,7 +1146,7 @@ if ($result && $row = $result->fetch_assoc()) {
                 // Combine subcategory and series without dash
                 const subcategorySeries = subcategory + currentSeries;
                 
-                const propertyNumber = `${year}-${formType}-${fund}-${category}-${subcategorySeries}-${office}`;
+                const propertyNumber = `${year}-${formType}-${category}-${subcategorySeries}-${office}`;
                 propertyNumbers.push(propertyNumber);
             }
             
@@ -1270,7 +1250,7 @@ if ($result && $row = $result->fetch_assoc()) {
         // Auto-update preview when any field changes
         document.addEventListener('DOMContentLoaded', function() {
             // Add event listeners for auto-preview
-            const fields = ['fundSelect', 'categorySelect', 'subcategorySelect'];
+            const fields = ['categorySelect', 'subcategorySelect'];
             fields.forEach(fieldId => {
                 const element = document.getElementById(fieldId);
                 if (element) {
