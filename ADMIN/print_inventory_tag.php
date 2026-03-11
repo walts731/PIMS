@@ -71,7 +71,12 @@ if (!$tag) {
 
 // Log the print action
 require_once '../includes/logger.php';
-logSystemAction($_SESSION['user_id'], 'print', 'inventory_tag', "Printed inventory tag: {$tag['inventory_tag']}");
+$printed_tag_value = $tag['inventory_tag'] ?? '';
+if (!empty($printed_tag_value)) {
+    logSystemAction($_SESSION['user_id'], 'print', 'inventory_tag', "Printed inventory tag: {$printed_tag_value}");
+} else {
+    logSystemAction($_SESSION['user_id'], 'print', 'inventory_tag', "Printed inventory tag (no inventory_tag set) - Item ID: {$tag_id}");
+}
 
 // Get additional specific data based on category
 $model_no = '';
@@ -104,13 +109,13 @@ if (!empty($asset_id)) {
 
 if ($tag['category_code'] === '030') {
     // Computer Equipment
-    $comp_sql = "SELECT processor as model_no, serial_number FROM asset_computers WHERE asset_item_id = ?";
+    $comp_sql = "SELECT model, serial_number FROM asset_computers WHERE asset_item_id = ?";
     $comp_stmt = $conn->prepare($comp_sql);
     $comp_stmt->bind_param("i", $tag_id);
     $comp_stmt->execute();
     $comp_result = $comp_stmt->get_result();
     if ($comp_row = $comp_result->fetch_assoc()) {
-        $model_no = $comp_row['model_no'] ?? '';
+        $model_no = $comp_row['model'] ?? '';
         $serial_no = $comp_row['serial_number'] ?? '';
     }
     $comp_stmt->close();
@@ -296,11 +301,19 @@ function generateStickerHTML($sticker, $tag, $system_settings, $serviceable_chec
             <div class="two-column">
                 <div class="field-row">
                     <div class="field-label">Unit/Quantity:</div>
-                    <div class="field-value">' . ($unit_sets > 1 ? htmlspecialchars($unit_value) . ' of ' . htmlspecialchars($unit_sets) . ' sets' : htmlspecialchars($unit_value)) . '</div>
+                    <div class="field-value">' . (
+                        (function() use ($unit_value, $unit_sets, $tag) {
+                            $unit_label = $tag['unit'] ?? 'pcs';
+                            if ($unit_sets > 1) {
+                                return htmlspecialchars($unit_value) . ' of ' . htmlspecialchars($unit_sets) . ' ' . htmlspecialchars($unit_label);
+                            }
+                            return htmlspecialchars($unit_value) . ' ' . htmlspecialchars($unit_label);
+                        })()
+                    ) . '</div>
                 </div>
                 <div class="field-row">
                     <div class="field-label">Acquisition Date/Cost:</div>
-                    <div class="field-value-no-border">' . htmlspecialchars($acquisition_date) . ' / ' . htmlspecialchars($tag['unit_cost']) . '</div>
+                    <div class="field-value">' . htmlspecialchars($acquisition_date) . ' / ' . htmlspecialchars($tag['unit_cost']) . '</div>
                 </div>
             </div>
             
@@ -584,7 +597,6 @@ function generateStickerHTML($sticker, $tag, $system_settings, $serviceable_chec
 
         .signature-section {
             margin-top: auto;
-            border-top: 1px solid #000;
             padding-top: 6px;
         }
 
@@ -664,6 +676,26 @@ function generateStickerHTML($sticker, $tag, $system_settings, $serviceable_chec
 </head>
 
 <body>
+    <div class="no-print" style="position: sticky; top: 0; z-index: 999; background: #fff; border-bottom: 1px solid #ddd; padding: 10px;">
+        <div style="display:flex; align-items:center; justify-content: space-between; gap: 10px; max-width: 1100px; margin: 0 auto;">
+            <div style="display:flex; align-items:center; gap: 15px;">
+                <div style="font-family: Arial, sans-serif; font-size: 14px;">
+                    <strong>Print Preview</strong>
+                </div>
+                <div style="display:flex; align-items:center; gap: 8px; font-family: Arial, sans-serif; font-size: 12px;">
+                    <span>Zoom:</span>
+                    <button type="button" onclick="zoomOut()" style="border: 1px solid #6c757d; background: #f8f9fa; color: #495057; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 16px; line-height: 1;">−</button>
+                    <span id="zoomLevel" style="min-width: 45px; text-align: center; font-weight: bold;">100%</span>
+                    <button type="button" onclick="zoomIn()" style="border: 1px solid #6c757d; background: #f8f9fa; color: #495057; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 16px; line-height: 1;">+</button>
+                    <button type="button" onclick="resetZoom()" style="border: 1px solid #6c757d; background: #f8f9fa; color: #495057; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">Reset</button>
+                </div>
+            </div>
+            <div style="display:flex; gap: 8px;">
+                <button type="button" onclick="window.print();" style="border: 1px solid #0d6efd; background: #0d6efd; color: #fff; padding: 6px 12px; border-radius: 6px; cursor: pointer;">Print</button>
+                <button type="button" onclick="window.close();" style="border: 1px solid #6c757d; background: #6c757d; color: #fff; padding: 6px 12px; border-radius: 6px; cursor: pointer;">Close</button>
+            </div>
+        </div>
+    </div>
     <div class="print-container">
         <div class="stickers-wrapper">
             <?php
@@ -676,17 +708,87 @@ function generateStickerHTML($sticker, $tag, $system_settings, $serviceable_chec
     </div>
 
     <script>
-        // Auto-print when page loads
-        window.onload = function() {
-            setTimeout(function() {
-                window.print();
-            }, 500);
-        };
+        // Zoom functionality
+        let currentZoom = 200;
+        const zoomStep = 10;
+        const minZoom = 50;
+        const maxZoom = 200;
 
-        // Close window after printing
-        window.onafterprint = function() {
-            window.close();
-        };
+        function updateZoom() {
+            const printContainer = document.querySelector('.print-container');
+            const zoomLevelDisplay = document.getElementById('zoomLevel');
+            
+            printContainer.style.transform = `scale(${currentZoom / 100})`;
+            printContainer.style.transformOrigin = 'top left';
+            printContainer.style.transition = 'transform 0.2s ease-in-out';
+            
+            // Adjust container height to accommodate zoom
+            const scaledHeight = printContainer.scrollHeight * (currentZoom / 100);
+            document.body.style.minHeight = scaledHeight + 'px';
+            
+            zoomLevelDisplay.textContent = currentZoom + '%';
+        }
+
+        function zoomIn() {
+            if (currentZoom < maxZoom) {
+                currentZoom += zoomStep;
+                updateZoom();
+            }
+        }
+
+        function zoomOut() {
+            if (currentZoom > minZoom) {
+                currentZoom -= zoomStep;
+                updateZoom();
+            }
+        }
+
+        function resetZoom() {
+            currentZoom = 100;
+            updateZoom();
+        }
+
+        // Keyboard shortcuts for zoom
+        document.addEventListener('keydown', function(e) {
+            // Ctrl + Plus or Ctrl + = to zoom in
+            if (e.ctrlKey && (e.key === '+' || e.key === '=')) {
+                e.preventDefault();
+                zoomIn();
+            }
+            // Ctrl + Minus to zoom out
+            else if (e.ctrlKey && e.key === '-') {
+                e.preventDefault();
+                zoomOut();
+            }
+            // Ctrl + 0 to reset zoom
+            else if (e.ctrlKey && e.key === '0') {
+                e.preventDefault();
+                resetZoom();
+            }
+        });
+
+        // Mouse wheel zoom with Ctrl key
+        document.addEventListener('wheel', function(e) {
+            if (e.ctrlKey) {
+                e.preventDefault();
+                if (e.deltaY < 0) {
+                    zoomIn();
+                } else {
+                    zoomOut();
+                }
+            }
+        });
+
+        // Reset zoom when printing
+        window.addEventListener('beforeprint', function() {
+            currentZoom = 100;
+            updateZoom();
+        });
+
+        // Initialize zoom on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateZoom();
+        });
     </script>
 </body>
 

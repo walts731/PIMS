@@ -1036,8 +1036,12 @@ $report_data['asset_stats']['total_asset_value'] = number_format($report_data['a
             window.location.href = url.toString();
         }
     </script>
-    
-    <!-- Sidebar Scripts -->
-    <script src="../assets/js/sidebar.js"></script>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Bootstrap-based Notification Script -->
+<?php require_once 'includes/notification_script_bootstrap.php'; ?>
+<!-- Sidebar Scripts -->
+<script src="../assets/js/sidebar.js"></script>
 </body>
 </html>
