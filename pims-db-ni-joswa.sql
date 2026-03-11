@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 11, 2026 at 04:25 AM
+-- Generation Time: Mar 11, 2026 at 06:55 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -1412,10 +1412,10 @@ CREATE TABLE `ics_forms` (
   `ics_no` varchar(50) NOT NULL,
   `received_from` varchar(255) NOT NULL,
   `received_from_position` varchar(255) NOT NULL,
-  `received_from_date` date NOT NULL,
+  `received_from_date` date DEFAULT NULL,
   `received_by` varchar(255) NOT NULL,
   `received_by_position` varchar(255) NOT NULL,
-  `received_by_date` date NOT NULL,
+  `received_by_date` date DEFAULT NULL,
   `created_by` int(11) NOT NULL,
   `updated_by` int(11) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
@@ -1427,8 +1427,8 @@ CREATE TABLE `ics_forms` (
 --
 
 INSERT INTO `ics_forms` (`id`, `entity_name`, `fund_cluster`, `ics_no`, `received_from`, `received_from_position`, `received_from_date`, `received_by`, `received_by_position`, `received_by_date`, `created_by`, `updated_by`, `created_at`, `updated_at`) VALUES
-(1, '01', 'REGULAR AGENCY FUND', 'OMMI-26-01', 'James Gosling', 'OFFICER', '0000-00-00', 'BENJAMIN THOMPSON', 'Property Custodian', '0000-00-00', 5, 5, '2026-02-24 03:22:29', '2026-02-24 03:22:29'),
-(3, '01', 'REGULAR AGENCY FUND', '2026/05', 'James Gosling', 'OFFICER', '0000-00-00', 'BENJAMIN THOMPSON', 'Property Custodian', '0000-00-00', 5, 5, '2026-02-24 04:07:42', '2026-02-24 04:07:42');
+(1, '01', 'REGULAR AGENCY FUND', 'OMMI-26-01', 'James Gosling', 'OFFICER', NULL, 'BENJAMIN THOMPSON', 'Property Custodian', NULL, 5, 5, '2026-02-24 03:22:29', '2026-03-11 05:42:08'),
+(3, '01', 'REGULAR AGENCY FUND', '2026/05', 'James Gosling', 'OFFICER', NULL, 'BENJAMIN THOMPSON', 'Property Custodian', NULL, 5, 5, '2026-02-24 04:07:42', '2026-03-11 05:42:08');
 
 -- --------------------------------------------------------
 
@@ -1687,16 +1687,16 @@ CREATE TABLE `itr_forms` (
   `purpose` text DEFAULT NULL,
   `requested_by` varchar(100) NOT NULL,
   `requested_by_position` varchar(100) NOT NULL,
-  `requested_date` date NOT NULL,
+  `requested_date` date DEFAULT NULL,
   `approved_by` varchar(100) NOT NULL,
   `approved_by_position` varchar(100) NOT NULL,
-  `approved_date` date NOT NULL,
+  `approved_date` date DEFAULT NULL,
   `released_by` varchar(100) NOT NULL,
   `released_by_position` varchar(100) NOT NULL,
-  `released_date` date NOT NULL,
+  `released_date` date DEFAULT NULL,
   `received_by` varchar(100) NOT NULL,
   `received_by_position` varchar(100) NOT NULL,
-  `received_date` date NOT NULL,
+  `received_date` date DEFAULT NULL,
   `status` enum('draft','submitted','approved','released','received','cancelled') DEFAULT 'draft',
   `total_amount` decimal(12,2) DEFAULT 0.00,
   `created_by` int(11) NOT NULL,
@@ -1710,7 +1710,7 @@ CREATE TABLE `itr_forms` (
 --
 
 INSERT INTO `itr_forms` (`id`, `entity_name`, `fund_cluster`, `itr_no`, `from_office`, `to_office`, `transfer_date`, `transfer_type`, `transfer_type_others`, `end_user`, `purpose`, `requested_by`, `requested_by_position`, `requested_date`, `approved_by`, `approved_by_position`, `approved_date`, `released_by`, `released_by_position`, `released_date`, `received_by`, `received_by_position`, `received_date`, `status`, `total_amount`, `created_by`, `updated_by`, `created_at`, `updated_at`) VALUES
-(1, 'LGU PILAR', 'N/A', '2026/05', '1', '6', '2026-03-04', 'Reassignment', '', '', 'USED FOR ENCODING', '', '', '0000-00-00', 'KENNETH', 'MUNICIPAL BUDGET OFFICER', '0000-00-00', 'MARK JAYSON NAMIA', 'SUPPLY OFFICER', '0000-00-00', 'BENJAMIN THOMPSON', 'MPDC', '0000-00-00', 'draft', 0.00, 16, 16, '2026-03-04 07:04:43', '2026-03-04 07:04:43');
+(1, 'LGU PILAR', 'N/A', '2026/05', '1', '6', '2026-03-04', 'Reassignment', '', '', 'USED FOR ENCODING', '', '', NULL, 'KENNETH', 'MUNICIPAL BUDGET OFFICER', NULL, 'MARK JAYSON NAMIA', 'SUPPLY OFFICER', NULL, 'BENJAMIN THOMPSON', 'MPDC', NULL, 'draft', 0.00, 16, 16, '2026-03-04 07:04:43', '2026-03-11 05:42:08');
 
 -- --------------------------------------------------------
 
@@ -2016,12 +2016,12 @@ CREATE TABLE `par_forms` (
 --
 
 INSERT INTO `par_forms` (`id`, `entity_name`, `fund_cluster`, `par_no`, `office_location`, `received_by_name`, `received_by_position`, `received_by_date`, `issued_by_name`, `issued_by_position`, `issued_by_date`, `remarks`, `created_by`, `updated_by`, `created_at`, `updated_at`) VALUES
-(6, 'LGU PILAR', 'COMPUTERIZATION', 'OMMP-2026-02-0001', '01', 'Leo Peterson', 'PROPERTY CUSTODIAN', '0000-00-00', 'LEO PETERSON', 'CLERK', '0000-00-00', NULL, 5, 5, '2026-02-24 00:43:51', '2026-02-24 00:43:51'),
-(7, 'LGU PILAR', 'REGULAR AGENCY FUND', 'OMMP-2026-02-0002', '01', 'Leo Peterson', 'PROPERTY CUSTODIAN', '0000-00-00', 'LEO PETERSON', 'CLERK', '0000-00-00', NULL, 5, 5, '2026-02-24 01:38:03', '2026-02-24 01:38:03'),
-(8, 'LGU PILAR', 'COMPUTERIZATION', 'OMMP-2026-02-0003', '01', 'Leo Peterson', 'PROPERTY CUSTODIAN', '0000-00-00', 'LEO PETERSON', 'CLERK', '0000-00-00', NULL, 5, 5, '2026-02-25 14:51:45', '2026-02-25 14:51:45'),
-(9, 'LGU PILAR', 'REGULAR AGENCY FUND', 'OMMP-2026-02-0004', '01', 'Leo Peterson', 'PROPERTY CUSTODIAN', '0000-00-00', 'LEO PETERSON', 'CLERK', '0000-00-00', NULL, 5, 5, '2026-02-25 15:41:22', '2026-02-25 15:41:22'),
-(10, 'LGU PILAR/OMM', '', 'OMMP-2026-02-0005', '01', 'Leo Peterson', 'PROPERTY CUSTODIAN', '0000-00-00', 'LEO PETERSON', 'CLERK', '0000-00-00', NULL, 5, 5, '2026-02-27 10:38:03', '2026-02-27 10:38:03'),
-(11, 'lgupilar', 'gf', 'OMMP-2026-03-0006', '01', 'Leo Peterson', 'PROPERTY CUSTODIAN', '0000-00-00', 'LEO PETERSON', 'CLERK', '0000-00-00', NULL, 5, 5, '2026-03-03 02:53:04', '2026-03-03 02:53:04');
+(6, 'LGU PILAR', 'COMPUTERIZATION', 'OMMP-2026-02-0001', '01', 'Leo Peterson', 'PROPERTY CUSTODIAN', NULL, 'LEO PETERSON', 'CLERK', NULL, NULL, 5, 5, '2026-02-24 00:43:51', '2026-03-11 05:42:08'),
+(7, 'LGU PILAR', 'REGULAR AGENCY FUND', 'OMMP-2026-02-0002', '01', 'Leo Peterson', 'PROPERTY CUSTODIAN', NULL, 'LEO PETERSON', 'CLERK', NULL, NULL, 5, 5, '2026-02-24 01:38:03', '2026-03-11 05:42:08'),
+(8, 'LGU PILAR', 'COMPUTERIZATION', 'OMMP-2026-02-0003', '01', 'Leo Peterson', 'PROPERTY CUSTODIAN', NULL, 'LEO PETERSON', 'CLERK', NULL, NULL, 5, 5, '2026-02-25 14:51:45', '2026-03-11 05:42:08'),
+(9, 'LGU PILAR', 'REGULAR AGENCY FUND', 'OMMP-2026-02-0004', '01', 'Leo Peterson', 'PROPERTY CUSTODIAN', NULL, 'LEO PETERSON', 'CLERK', NULL, NULL, 5, 5, '2026-02-25 15:41:22', '2026-03-11 05:42:08'),
+(10, 'LGU PILAR/OMM', '', 'OMMP-2026-02-0005', '01', 'Leo Peterson', 'PROPERTY CUSTODIAN', NULL, 'LEO PETERSON', 'CLERK', NULL, NULL, 5, 5, '2026-02-27 10:38:03', '2026-03-11 05:42:08'),
+(11, 'lgupilar', 'gf', 'OMMP-2026-03-0006', '01', 'Leo Peterson', 'PROPERTY CUSTODIAN', NULL, 'LEO PETERSON', 'CLERK', NULL, NULL, 5, 5, '2026-03-03 02:53:04', '2026-03-11 05:42:08');
 
 -- --------------------------------------------------------
 
@@ -2218,21 +2218,21 @@ CREATE TABLE `ris_forms` (
   `division` varchar(100) NOT NULL,
   `office` varchar(100) NOT NULL,
   `responsibility_center` varchar(100) NOT NULL,
-  `date` date NOT NULL,
-  `date_2` date NOT NULL,
+  `date` date DEFAULT NULL,
+  `date_2` date DEFAULT NULL,
   `purpose` text NOT NULL,
   `requested_by` varchar(100) NOT NULL,
   `requested_by_position` varchar(100) NOT NULL,
-  `requested_date` date NOT NULL,
+  `requested_date` date DEFAULT NULL,
   `approved_by` varchar(100) NOT NULL,
   `approved_by_position` varchar(100) NOT NULL,
-  `approved_date` date NOT NULL,
+  `approved_date` date DEFAULT NULL,
   `issued_by` varchar(100) NOT NULL,
   `issued_by_position` varchar(100) NOT NULL,
-  `issued_date` date NOT NULL,
+  `issued_date` date DEFAULT NULL,
   `received_by` varchar(100) NOT NULL,
   `received_by_position` varchar(100) NOT NULL,
-  `received_date` date NOT NULL,
+  `received_date` date DEFAULT NULL,
   `status` enum('draft','submitted','approved','issued','received','cancelled') DEFAULT 'draft',
   `total_amount` decimal(12,2) DEFAULT 0.00,
   `created_by` int(11) NOT NULL,
@@ -2245,10 +2245,10 @@ CREATE TABLE `ris_forms` (
 --
 
 INSERT INTO `ris_forms` (`id`, `ris_no`, `sai_no`, `code`, `division`, `office`, `responsibility_center`, `date`, `date_2`, `purpose`, `requested_by`, `requested_by_position`, `requested_date`, `approved_by`, `approved_by_position`, `approved_date`, `issued_by`, `issued_by_position`, `issued_date`, `received_by`, `received_by_position`, `received_date`, `status`, `total_amount`, `created_by`, `created_at`, `updated_at`) VALUES
-(1, '2026/05/0009', '2026/05/0030', '05/0030/02', 'Finance Division', 'OMASS', 'Budget and Accounting Section', '2026-02-18', '2026-02-18', 'for washing', 'LEO PETERSON', 'MAYOR', '0000-00-00', 'ELTON ESCANO', 'MAYOR', '0000-00-00', 'DANIEL ATLAS', 'CLERK', '0000-00-00', 'BENJAMIN THOMPSON', 'PROPERTY CUSTODIAN', '0000-00-00', 'draft', 2500.00, 5, '2026-02-18 05:18:20', '2026-02-18 05:18:20'),
-(2, 'RIS-2025-000123', '', '', '', 'OMASS', '', '0000-00-00', '0000-00-00', 'for washing', 'LEO PETERSON', 'MAYOR', '0000-00-00', 'ELTON ESCANO', 'MAYOR', '0000-00-00', 'DANIEL ATLAS', 'CLERK', '0000-00-00', 'BENJAMIN THOMPSON', 'PROPERTY CUSTODIAN', '0000-00-00', 'draft', 1000.00, 5, '2026-02-28 02:19:37', '2026-02-28 02:19:37'),
-(4, 'RIS-2025-000134', '345224455', 'FUR-01034', '', 'OMBO', '', '2026-03-02', '2026-03-02', 'for ombo', 'LEO PETERSON', 'MAYOR', '0000-00-00', 'ELTON ESCANO', 'MAYOR', '0000-00-00', 'DANIEL ATLAS', 'CLERK', '0000-00-00', 'BENJAMIN THOMPSON', 'PROPERTY CUSTODIAN', '0000-00-00', 'draft', 1250.00, 17, '2026-03-02 01:03:41', '2026-03-02 01:03:41'),
-(6, 'RIS-2025-0065', 'SAI-2025-0066', '1234567890', '', 'OVM', '', '0000-00-00', '0000-00-00', 'print', 'LEO PETERSON', 'MAYOR', '0000-00-00', 'ELTON ESCANO', 'MAYOR', '0000-00-00', 'DANIEL ATLAS', 'CLERK', '0000-00-00', 'BENJAMIN THOMPSON', 'PROPERTY CUSTODIAN', '0000-00-00', 'draft', 540.00, 19, '2026-03-03 08:52:48', '2026-03-03 08:52:48');
+(1, '2026/05/0009', '2026/05/0030', '05/0030/02', 'Finance Division', 'OMASS', 'Budget and Accounting Section', '2026-02-18', '2026-02-18', 'for washing', 'LEO PETERSON', 'MAYOR', NULL, 'ELTON ESCANO', 'MAYOR', NULL, 'DANIEL ATLAS', 'CLERK', NULL, 'BENJAMIN THOMPSON', 'PROPERTY CUSTODIAN', NULL, 'draft', 2500.00, 5, '2026-02-18 05:18:20', '2026-03-11 05:42:09'),
+(2, 'RIS-2025-000123', '', '', '', 'OMASS', '', NULL, NULL, 'for washing', 'LEO PETERSON', 'MAYOR', NULL, 'ELTON ESCANO', 'MAYOR', NULL, 'DANIEL ATLAS', 'CLERK', NULL, 'BENJAMIN THOMPSON', 'PROPERTY CUSTODIAN', NULL, 'draft', 1000.00, 5, '2026-02-28 02:19:37', '2026-03-11 05:42:09'),
+(4, 'RIS-2025-000134', '345224455', 'FUR-01034', '', 'OMBO', '', '2026-03-02', '2026-03-02', 'for ombo', 'LEO PETERSON', 'MAYOR', NULL, 'ELTON ESCANO', 'MAYOR', NULL, 'DANIEL ATLAS', 'CLERK', NULL, 'BENJAMIN THOMPSON', 'PROPERTY CUSTODIAN', NULL, 'draft', 1250.00, 17, '2026-03-02 01:03:41', '2026-03-11 05:42:09'),
+(6, 'RIS-2025-0065', 'SAI-2025-0066', '1234567890', '', 'OVM', '', NULL, NULL, 'print', 'LEO PETERSON', 'MAYOR', NULL, 'ELTON ESCANO', 'MAYOR', NULL, 'DANIEL ATLAS', 'CLERK', NULL, 'BENJAMIN THOMPSON', 'PROPERTY CUSTODIAN', NULL, 'draft', 540.00, 19, '2026-03-03 08:52:48', '2026-03-11 05:42:09');
 
 -- --------------------------------------------------------
 
