@@ -7,18 +7,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const mainWrapper = document.getElementById('mainWrapper');
     const navbar = document.querySelector('.navbar');
 
-    // Debug: Check if elements exist
-    console.log('Elements found:', {
-        sidebarToggle: !!sidebarToggle,
-        sidebar: !!sidebar,
-        sidebarOverlay: !!sidebarOverlay,
-        mainWrapper: !!mainWrapper,
-        navbar: !!navbar
-    });
-
     // Toggle sidebar
     sidebarToggle.addEventListener('click', function() {
-        console.log('Sidebar toggle clicked'); // Debug log
         toggleSidebar();
     });
 
@@ -36,7 +26,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function toggleSidebar() {
         const isOpen = sidebar.classList.contains('active');
-        console.log('Toggling sidebar, currently open:', isOpen); // Debug log
         
         if (isOpen) {
             closeSidebar();
