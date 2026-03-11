@@ -72,7 +72,14 @@ function getNotifications() {
                    END as action_url
             FROM notifications n 
             WHERE n.user_id = ? 
-            ORDER BY n.created_at DESC 
+            ORDER BY 
+                CASE n.priority 
+                    WHEN 'critical' THEN 1 
+                    WHEN 'high' THEN 2 
+                    WHEN 'medium' THEN 3 
+                    WHEN 'low' THEN 4 
+                END ASC,
+                n.created_at DESC 
             LIMIT ? OFFSET ?";
     
     $stmt = $conn->prepare($sql);
@@ -87,6 +94,7 @@ function getNotifications() {
             'title' => $row['title'],
             'message' => $row['message'],
             'type' => $row['type'],
+            'priority' => $row['priority'],
             'is_read' => (bool)$row['is_read'],
             'created_at' => $row['created_at'],
             'read_at' => $row['read_at'],
@@ -203,14 +211,14 @@ function getTimeAgo($datetime) {
 }
 
 // Function to create notifications for office events
-function createOfficeNotification($user_id, $title, $message, $type = 'info', $related_id = null, $related_type = null) {
+function createOfficeNotification($user_id, $title, $message, $type = 'info', $related_id = null, $related_type = null, $priority = 'medium') {
     global $conn;
     
-    $sql = "INSERT INTO notifications (user_id, title, message, type, related_id, related_type) 
-            VALUES (?, ?, ?, ?, ?, ?)";
+    $sql = "INSERT INTO notifications (user_id, title, message, type, priority, related_id, related_type) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param('issssi', $user_id, $title, $message, $type, $related_id, $related_type);
+    $stmt->bind_param('issssis', $user_id, $title, $message, $type, $priority, $related_id, $related_type);
     $stmt->execute();
     
     return $stmt->insert_id;
@@ -220,27 +228,27 @@ function createOfficeNotification($user_id, $title, $message, $type = 'info', $r
 function createLowStockNotification($office_admin_id, $consumable_id, $consumable_name, $current_stock, $reorder_level) {
     $title = "Low Stock Alert";
     $message = "Consumable '{$consumable_name}' is running low on stock. Current: {$current_stock}, Reorder at: {$reorder_level}";
-    return createOfficeNotification($office_admin_id, $title, $message, 'warning', $consumable_id, 'consumable');
+    return createOfficeNotification($office_admin_id, $title, $message, 'warning', $consumable_id, 'consumable', 'high');
 }
 
 // Function to create notifications for new requests
 function createNewRequestNotification($office_admin_id, $request_id, $request_type, $requester_name) {
     $title = "New {$request_type} Request";
     $message = "New {$request_type} request received from {$requester_name}";
-    return createOfficeNotification($office_admin_id, $title, $message, 'info', $request_id, 'request');
+    return createOfficeNotification($office_admin_id, $title, $message, 'info', $request_id, 'request', 'medium');
 }
 
 // Function to create notifications for asset maintenance
 function createMaintenanceNotification($office_admin_id, $asset_id, $asset_name) {
     $title = "Asset Maintenance Due";
     $message = "Asset '{$asset_name}' is due for maintenance";
-    return createOfficeNotification($office_admin_id, $title, $message, 'warning', $asset_id, 'asset');
+    return createOfficeNotification($office_admin_id, $title, $message, 'warning', $asset_id, 'asset', 'high');
 }
 
 // Function to create notifications for borrow requests
 function createBorrowRequestNotification($office_admin_id, $borrow_request_id, $requester_office, $asset_name) {
     $title = "New Borrow Request";
     $message = "Borrow request received from {$requester_office} for '{$asset_name}'";
-    return createOfficeNotification($office_admin_id, $title, $message, 'info', $borrow_request_id, 'request');
+    return createOfficeNotification($office_admin_id, $title, $message, 'info', $borrow_request_id, 'request', 'medium');
 }
 ?>
