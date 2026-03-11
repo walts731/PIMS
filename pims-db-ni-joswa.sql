@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 11, 2026 at 03:14 AM
+-- Generation Time: Mar 11, 2026 at 06:55 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -959,12 +959,14 @@ CREATE TABLE `employees` (
   `id` int(11) NOT NULL,
   `employee_no` varchar(20) DEFAULT NULL,
   `firstname` varchar(50) NOT NULL,
+  `middle_name` varchar(50) DEFAULT NULL,
   `lastname` varchar(50) NOT NULL,
   `email` varchar(100) DEFAULT NULL,
   `phone` varchar(20) DEFAULT NULL,
   `profile_photo` varchar(255) DEFAULT NULL,
   `office_id` int(11) DEFAULT NULL,
   `position` varchar(100) DEFAULT NULL,
+  `designation` text DEFAULT NULL,
   `employment_status` enum('permanent','contractual','job_order','resigned','retired') DEFAULT 'permanent',
   `clearance_status` enum('cleared','uncleared') DEFAULT 'uncleared',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
@@ -975,11 +977,11 @@ CREATE TABLE `employees` (
 -- Dumping data for table `employees`
 --
 
-INSERT INTO `employees` (`id`, `employee_no`, `firstname`, `lastname`, `email`, `phone`, `profile_photo`, `office_id`, `position`, `employment_status`, `clearance_status`, `created_at`, `updated_at`) VALUES
-(1, 'EMP0001', 'Juan', 'Dela Cruz', 'juan.cruz@lgu.gov', '9123456789', NULL, 1, 'Office Clerk', 'permanent', 'uncleared', '2026-01-21 14:27:49', '2026-01-22 12:08:11'),
-(2, 'EMP0002', 'Maria', 'Santos', 'maria.santos@lgu.gov', '09234567890', NULL, 2, 'Accountant', 'contractual', 'uncleared', '2026-01-21 14:27:49', '2026-01-23 12:04:06'),
-(3, 'EMP0003', 'Jose', 'Reyes', 'jose.reyes@lgu.gov', '09345678901', NULL, 3, 'IT Specialist', 'job_order', 'uncleared', '2026-01-21 14:27:49', '2026-01-21 14:37:48'),
-(6, 'EMP20260001', 'Walton', 'loneza', 'wjll2022-2920-98466@bicol-u.edu.ph', '9107171456', 'uploads/employees/employee_6_1769087366.png', 4, '', 'permanent', 'uncleared', '2026-01-22 13:09:26', '2026-01-27 09:42:34');
+INSERT INTO `employees` (`id`, `employee_no`, `firstname`, `middle_name`, `lastname`, `email`, `phone`, `profile_photo`, `office_id`, `position`, `designation`, `employment_status`, `clearance_status`, `created_at`, `updated_at`) VALUES
+(1, 'EMP0001', 'Juan', NULL, 'Dela Cruz', 'juan.cruz@lgu.gov', '9123456789', NULL, 1, 'Office Clerk', NULL, 'permanent', 'uncleared', '2026-01-21 14:27:49', '2026-01-22 12:08:11'),
+(2, 'EMP0002', 'Maria', NULL, 'Santos', 'maria.santos@lgu.gov', '09234567890', NULL, 2, 'Accountant', NULL, 'contractual', 'uncleared', '2026-01-21 14:27:49', '2026-01-23 12:04:06'),
+(3, 'EMP0003', 'Jose', NULL, 'Reyes', 'jose.reyes@lgu.gov', '09345678901', NULL, 3, 'IT Specialist', NULL, 'job_order', 'uncleared', '2026-01-21 14:27:49', '2026-01-21 14:37:48'),
+(6, 'EMP20260001', 'Walton', NULL, 'loneza', 'wjll2022-2920-98466@bicol-u.edu.ph', '9107171456', 'uploads/employees/employee_6_1769087366.png', 4, '', NULL, 'permanent', 'uncleared', '2026-01-22 13:09:26', '2026-01-27 09:42:34');
 
 -- --------------------------------------------------------
 
@@ -1410,10 +1412,10 @@ CREATE TABLE `ics_forms` (
   `ics_no` varchar(50) NOT NULL,
   `received_from` varchar(255) NOT NULL,
   `received_from_position` varchar(255) NOT NULL,
-  `received_from_date` date NOT NULL,
+  `received_from_date` date DEFAULT NULL,
   `received_by` varchar(255) NOT NULL,
   `received_by_position` varchar(255) NOT NULL,
-  `received_by_date` date NOT NULL,
+  `received_by_date` date DEFAULT NULL,
   `created_by` int(11) NOT NULL,
   `updated_by` int(11) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
@@ -1425,8 +1427,8 @@ CREATE TABLE `ics_forms` (
 --
 
 INSERT INTO `ics_forms` (`id`, `entity_name`, `fund_cluster`, `ics_no`, `received_from`, `received_from_position`, `received_from_date`, `received_by`, `received_by_position`, `received_by_date`, `created_by`, `updated_by`, `created_at`, `updated_at`) VALUES
-(1, '01', 'REGULAR AGENCY FUND', 'OMMI-26-01', 'James Gosling', 'OFFICER', '0000-00-00', 'BENJAMIN THOMPSON', 'Property Custodian', '0000-00-00', 5, 5, '2026-02-24 03:22:29', '2026-02-24 03:22:29'),
-(3, '01', 'REGULAR AGENCY FUND', '2026/05', 'James Gosling', 'OFFICER', '0000-00-00', 'BENJAMIN THOMPSON', 'Property Custodian', '0000-00-00', 5, 5, '2026-02-24 04:07:42', '2026-02-24 04:07:42');
+(1, '01', 'REGULAR AGENCY FUND', 'OMMI-26-01', 'James Gosling', 'OFFICER', NULL, 'BENJAMIN THOMPSON', 'Property Custodian', NULL, 5, 5, '2026-02-24 03:22:29', '2026-03-11 05:42:08'),
+(3, '01', 'REGULAR AGENCY FUND', '2026/05', 'James Gosling', 'OFFICER', NULL, 'BENJAMIN THOMPSON', 'Property Custodian', NULL, 5, 5, '2026-02-24 04:07:42', '2026-03-11 05:42:08');
 
 -- --------------------------------------------------------
 
@@ -1685,16 +1687,16 @@ CREATE TABLE `itr_forms` (
   `purpose` text DEFAULT NULL,
   `requested_by` varchar(100) NOT NULL,
   `requested_by_position` varchar(100) NOT NULL,
-  `requested_date` date NOT NULL,
+  `requested_date` date DEFAULT NULL,
   `approved_by` varchar(100) NOT NULL,
   `approved_by_position` varchar(100) NOT NULL,
-  `approved_date` date NOT NULL,
+  `approved_date` date DEFAULT NULL,
   `released_by` varchar(100) NOT NULL,
   `released_by_position` varchar(100) NOT NULL,
-  `released_date` date NOT NULL,
+  `released_date` date DEFAULT NULL,
   `received_by` varchar(100) NOT NULL,
   `received_by_position` varchar(100) NOT NULL,
-  `received_date` date NOT NULL,
+  `received_date` date DEFAULT NULL,
   `status` enum('draft','submitted','approved','released','received','cancelled') DEFAULT 'draft',
   `total_amount` decimal(12,2) DEFAULT 0.00,
   `created_by` int(11) NOT NULL,
@@ -1708,7 +1710,7 @@ CREATE TABLE `itr_forms` (
 --
 
 INSERT INTO `itr_forms` (`id`, `entity_name`, `fund_cluster`, `itr_no`, `from_office`, `to_office`, `transfer_date`, `transfer_type`, `transfer_type_others`, `end_user`, `purpose`, `requested_by`, `requested_by_position`, `requested_date`, `approved_by`, `approved_by_position`, `approved_date`, `released_by`, `released_by_position`, `released_date`, `received_by`, `received_by_position`, `received_date`, `status`, `total_amount`, `created_by`, `updated_by`, `created_at`, `updated_at`) VALUES
-(1, 'LGU PILAR', 'N/A', '2026/05', '1', '6', '2026-03-04', 'Reassignment', '', '', 'USED FOR ENCODING', '', '', '0000-00-00', 'KENNETH', 'MUNICIPAL BUDGET OFFICER', '0000-00-00', 'MARK JAYSON NAMIA', 'SUPPLY OFFICER', '0000-00-00', 'BENJAMIN THOMPSON', 'MPDC', '0000-00-00', 'draft', 0.00, 16, 16, '2026-03-04 07:04:43', '2026-03-04 07:04:43');
+(1, 'LGU PILAR', 'N/A', '2026/05', '1', '6', '2026-03-04', 'Reassignment', '', '', 'USED FOR ENCODING', '', '', NULL, 'KENNETH', 'MUNICIPAL BUDGET OFFICER', NULL, 'MARK JAYSON NAMIA', 'SUPPLY OFFICER', NULL, 'BENJAMIN THOMPSON', 'MPDC', NULL, 'draft', 0.00, 16, 16, '2026-03-04 07:04:43', '2026-03-11 05:42:08');
 
 -- --------------------------------------------------------
 
@@ -1860,7 +1862,7 @@ INSERT INTO `notifications` (`id`, `user_id`, `title`, `message`, `type`, `prior
 (20, 17, 'CRITICAL: System Security Alert', 'Unauthorized access attempt detected on the system. Immediate attention required.', 'error', 'critical', NULL, 'system', 1, '2026-03-11 01:59:27', '2026-03-11 02:01:18'),
 (21, 17, 'URGENT: Low Stock Alert', 'Critical consumable \"Printer Paper\" is critically low. Only 5 units remaining.', 'warning', 'high', 1, 'consumable', 0, '2026-03-11 01:59:27', NULL),
 (22, 17, 'New Asset Request', 'New request from IT Department for \"Laptop Computer\" approval required.', 'info', 'medium', 1, 'request', 0, '2026-03-11 01:59:27', NULL),
-(23, 17, 'Information: System Update Completed', 'Monthly system maintenance has been completed successfully. All systems operational.', 'success', 'low', NULL, 'system', 0, '2026-03-11 01:59:27', NULL),
+(23, 17, 'Information: System Update Completed', 'Monthly system maintenance has been completed successfully. All systems operational.', 'success', 'low', NULL, 'system', 1, '2026-03-11 01:59:27', '2026-03-11 03:08:20'),
 (24, 17, 'Low Stock Alert', 'Consumable \'Test Consumable\' is running low on stock. Current: 2, Reorder at: 10', 'warning', 'high', 1, 'consumable', 0, '2026-03-11 01:59:27', NULL),
 (25, 17, 'Asset Maintenance Due', 'Asset \'Test Asset\' is due for maintenance', 'warning', 'high', 1, 'asset', 0, '2026-03-11 01:59:27', NULL),
 (26, 17, 'New Borrow Request', 'New Borrow request received from Test User', 'info', 'medium', 1, 'request', 0, '2026-03-11 01:59:27', NULL),
@@ -2014,12 +2016,12 @@ CREATE TABLE `par_forms` (
 --
 
 INSERT INTO `par_forms` (`id`, `entity_name`, `fund_cluster`, `par_no`, `office_location`, `received_by_name`, `received_by_position`, `received_by_date`, `issued_by_name`, `issued_by_position`, `issued_by_date`, `remarks`, `created_by`, `updated_by`, `created_at`, `updated_at`) VALUES
-(6, 'LGU PILAR', 'COMPUTERIZATION', 'OMMP-2026-02-0001', '01', 'Leo Peterson', 'PROPERTY CUSTODIAN', '0000-00-00', 'LEO PETERSON', 'CLERK', '0000-00-00', NULL, 5, 5, '2026-02-24 00:43:51', '2026-02-24 00:43:51'),
-(7, 'LGU PILAR', 'REGULAR AGENCY FUND', 'OMMP-2026-02-0002', '01', 'Leo Peterson', 'PROPERTY CUSTODIAN', '0000-00-00', 'LEO PETERSON', 'CLERK', '0000-00-00', NULL, 5, 5, '2026-02-24 01:38:03', '2026-02-24 01:38:03'),
-(8, 'LGU PILAR', 'COMPUTERIZATION', 'OMMP-2026-02-0003', '01', 'Leo Peterson', 'PROPERTY CUSTODIAN', '0000-00-00', 'LEO PETERSON', 'CLERK', '0000-00-00', NULL, 5, 5, '2026-02-25 14:51:45', '2026-02-25 14:51:45'),
-(9, 'LGU PILAR', 'REGULAR AGENCY FUND', 'OMMP-2026-02-0004', '01', 'Leo Peterson', 'PROPERTY CUSTODIAN', '0000-00-00', 'LEO PETERSON', 'CLERK', '0000-00-00', NULL, 5, 5, '2026-02-25 15:41:22', '2026-02-25 15:41:22'),
-(10, 'LGU PILAR/OMM', '', 'OMMP-2026-02-0005', '01', 'Leo Peterson', 'PROPERTY CUSTODIAN', '0000-00-00', 'LEO PETERSON', 'CLERK', '0000-00-00', NULL, 5, 5, '2026-02-27 10:38:03', '2026-02-27 10:38:03'),
-(11, 'lgupilar', 'gf', 'OMMP-2026-03-0006', '01', 'Leo Peterson', 'PROPERTY CUSTODIAN', '0000-00-00', 'LEO PETERSON', 'CLERK', '0000-00-00', NULL, 5, 5, '2026-03-03 02:53:04', '2026-03-03 02:53:04');
+(6, 'LGU PILAR', 'COMPUTERIZATION', 'OMMP-2026-02-0001', '01', 'Leo Peterson', 'PROPERTY CUSTODIAN', NULL, 'LEO PETERSON', 'CLERK', NULL, NULL, 5, 5, '2026-02-24 00:43:51', '2026-03-11 05:42:08'),
+(7, 'LGU PILAR', 'REGULAR AGENCY FUND', 'OMMP-2026-02-0002', '01', 'Leo Peterson', 'PROPERTY CUSTODIAN', NULL, 'LEO PETERSON', 'CLERK', NULL, NULL, 5, 5, '2026-02-24 01:38:03', '2026-03-11 05:42:08'),
+(8, 'LGU PILAR', 'COMPUTERIZATION', 'OMMP-2026-02-0003', '01', 'Leo Peterson', 'PROPERTY CUSTODIAN', NULL, 'LEO PETERSON', 'CLERK', NULL, NULL, 5, 5, '2026-02-25 14:51:45', '2026-03-11 05:42:08'),
+(9, 'LGU PILAR', 'REGULAR AGENCY FUND', 'OMMP-2026-02-0004', '01', 'Leo Peterson', 'PROPERTY CUSTODIAN', NULL, 'LEO PETERSON', 'CLERK', NULL, NULL, 5, 5, '2026-02-25 15:41:22', '2026-03-11 05:42:08'),
+(10, 'LGU PILAR/OMM', '', 'OMMP-2026-02-0005', '01', 'Leo Peterson', 'PROPERTY CUSTODIAN', NULL, 'LEO PETERSON', 'CLERK', NULL, NULL, 5, 5, '2026-02-27 10:38:03', '2026-03-11 05:42:08'),
+(11, 'lgupilar', 'gf', 'OMMP-2026-03-0006', '01', 'Leo Peterson', 'PROPERTY CUSTODIAN', NULL, 'LEO PETERSON', 'CLERK', NULL, NULL, 5, 5, '2026-03-03 02:53:04', '2026-03-11 05:42:08');
 
 -- --------------------------------------------------------
 
@@ -2216,21 +2218,21 @@ CREATE TABLE `ris_forms` (
   `division` varchar(100) NOT NULL,
   `office` varchar(100) NOT NULL,
   `responsibility_center` varchar(100) NOT NULL,
-  `date` date NOT NULL,
-  `date_2` date NOT NULL,
+  `date` date DEFAULT NULL,
+  `date_2` date DEFAULT NULL,
   `purpose` text NOT NULL,
   `requested_by` varchar(100) NOT NULL,
   `requested_by_position` varchar(100) NOT NULL,
-  `requested_date` date NOT NULL,
+  `requested_date` date DEFAULT NULL,
   `approved_by` varchar(100) NOT NULL,
   `approved_by_position` varchar(100) NOT NULL,
-  `approved_date` date NOT NULL,
+  `approved_date` date DEFAULT NULL,
   `issued_by` varchar(100) NOT NULL,
   `issued_by_position` varchar(100) NOT NULL,
-  `issued_date` date NOT NULL,
+  `issued_date` date DEFAULT NULL,
   `received_by` varchar(100) NOT NULL,
   `received_by_position` varchar(100) NOT NULL,
-  `received_date` date NOT NULL,
+  `received_date` date DEFAULT NULL,
   `status` enum('draft','submitted','approved','issued','received','cancelled') DEFAULT 'draft',
   `total_amount` decimal(12,2) DEFAULT 0.00,
   `created_by` int(11) NOT NULL,
@@ -2243,10 +2245,10 @@ CREATE TABLE `ris_forms` (
 --
 
 INSERT INTO `ris_forms` (`id`, `ris_no`, `sai_no`, `code`, `division`, `office`, `responsibility_center`, `date`, `date_2`, `purpose`, `requested_by`, `requested_by_position`, `requested_date`, `approved_by`, `approved_by_position`, `approved_date`, `issued_by`, `issued_by_position`, `issued_date`, `received_by`, `received_by_position`, `received_date`, `status`, `total_amount`, `created_by`, `created_at`, `updated_at`) VALUES
-(1, '2026/05/0009', '2026/05/0030', '05/0030/02', 'Finance Division', 'OMASS', 'Budget and Accounting Section', '2026-02-18', '2026-02-18', 'for washing', 'LEO PETERSON', 'MAYOR', '0000-00-00', 'ELTON ESCANO', 'MAYOR', '0000-00-00', 'DANIEL ATLAS', 'CLERK', '0000-00-00', 'BENJAMIN THOMPSON', 'PROPERTY CUSTODIAN', '0000-00-00', 'draft', 2500.00, 5, '2026-02-18 05:18:20', '2026-02-18 05:18:20'),
-(2, 'RIS-2025-000123', '', '', '', 'OMASS', '', '0000-00-00', '0000-00-00', 'for washing', 'LEO PETERSON', 'MAYOR', '0000-00-00', 'ELTON ESCANO', 'MAYOR', '0000-00-00', 'DANIEL ATLAS', 'CLERK', '0000-00-00', 'BENJAMIN THOMPSON', 'PROPERTY CUSTODIAN', '0000-00-00', 'draft', 1000.00, 5, '2026-02-28 02:19:37', '2026-02-28 02:19:37'),
-(4, 'RIS-2025-000134', '345224455', 'FUR-01034', '', 'OMBO', '', '2026-03-02', '2026-03-02', 'for ombo', 'LEO PETERSON', 'MAYOR', '0000-00-00', 'ELTON ESCANO', 'MAYOR', '0000-00-00', 'DANIEL ATLAS', 'CLERK', '0000-00-00', 'BENJAMIN THOMPSON', 'PROPERTY CUSTODIAN', '0000-00-00', 'draft', 1250.00, 17, '2026-03-02 01:03:41', '2026-03-02 01:03:41'),
-(6, 'RIS-2025-0065', 'SAI-2025-0066', '1234567890', '', 'OVM', '', '0000-00-00', '0000-00-00', 'print', 'LEO PETERSON', 'MAYOR', '0000-00-00', 'ELTON ESCANO', 'MAYOR', '0000-00-00', 'DANIEL ATLAS', 'CLERK', '0000-00-00', 'BENJAMIN THOMPSON', 'PROPERTY CUSTODIAN', '0000-00-00', 'draft', 540.00, 19, '2026-03-03 08:52:48', '2026-03-03 08:52:48');
+(1, '2026/05/0009', '2026/05/0030', '05/0030/02', 'Finance Division', 'OMASS', 'Budget and Accounting Section', '2026-02-18', '2026-02-18', 'for washing', 'LEO PETERSON', 'MAYOR', NULL, 'ELTON ESCANO', 'MAYOR', NULL, 'DANIEL ATLAS', 'CLERK', NULL, 'BENJAMIN THOMPSON', 'PROPERTY CUSTODIAN', NULL, 'draft', 2500.00, 5, '2026-02-18 05:18:20', '2026-03-11 05:42:09'),
+(2, 'RIS-2025-000123', '', '', '', 'OMASS', '', NULL, NULL, 'for washing', 'LEO PETERSON', 'MAYOR', NULL, 'ELTON ESCANO', 'MAYOR', NULL, 'DANIEL ATLAS', 'CLERK', NULL, 'BENJAMIN THOMPSON', 'PROPERTY CUSTODIAN', NULL, 'draft', 1000.00, 5, '2026-02-28 02:19:37', '2026-03-11 05:42:09'),
+(4, 'RIS-2025-000134', '345224455', 'FUR-01034', '', 'OMBO', '', '2026-03-02', '2026-03-02', 'for ombo', 'LEO PETERSON', 'MAYOR', NULL, 'ELTON ESCANO', 'MAYOR', NULL, 'DANIEL ATLAS', 'CLERK', NULL, 'BENJAMIN THOMPSON', 'PROPERTY CUSTODIAN', NULL, 'draft', 1250.00, 17, '2026-03-02 01:03:41', '2026-03-11 05:42:09'),
+(6, 'RIS-2025-0065', 'SAI-2025-0066', '1234567890', '', 'OVM', '', NULL, NULL, 'print', 'LEO PETERSON', 'MAYOR', NULL, 'ELTON ESCANO', 'MAYOR', NULL, 'DANIEL ATLAS', 'CLERK', NULL, 'BENJAMIN THOMPSON', 'PROPERTY CUSTODIAN', NULL, 'draft', 540.00, 19, '2026-03-03 08:52:48', '2026-03-11 05:42:09');
 
 -- --------------------------------------------------------
 
@@ -7857,7 +7859,15 @@ INSERT INTO `system_logs` (`id`, `user_id`, `action`, `module`, `description`, `
 (6062, 17, 'logout', 'authentication', 'User logged out: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-11 02:03:53'),
 (6063, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-11 02:04:05'),
 (6064, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-11 02:04:05'),
-(6065, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-11 02:05:14');
+(6065, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-11 02:05:14'),
+(6066, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (X11; Linux aarch64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 CrKey/1.54.250320', '2026-03-11 02:23:42'),
+(6067, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-11 03:01:06'),
+(6068, 17, 'logout', 'authentication', 'User logged out: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-11 03:01:10'),
+(6069, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-11 03:01:20'),
+(6070, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-11 03:01:20'),
+(6071, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-11 03:08:26'),
+(6072, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-11 03:08:35'),
+(6073, 17, 'access', 'inventory_reports', 'Office admin accessed inventory reports', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-11 03:08:38');
 
 -- --------------------------------------------------------
 
@@ -9188,7 +9198,7 @@ ALTER TABLE `software`
 -- AUTO_INCREMENT for table `system_logs`
 --
 ALTER TABLE `system_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6066;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6074;
 
 --
 -- AUTO_INCREMENT for table `system_settings`
