@@ -1,4 +1,8 @@
 <?php
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 // Start session
 session_start();
 
@@ -162,7 +166,8 @@ $unread_count = $unread_result->fetch_assoc()['count'];
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($page_title); ?> - PIMS<!-- Bootstrap CSS -->
+    <title><?php echo htmlspecialchars($page_title); ?> - PIMS</title>
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
@@ -404,7 +409,6 @@ $unread_count = $unread_result->fetch_assoc()['count'];
         }
         
         .priority-tab.active {
-            color: white;
             border-color: transparent;
             box-shadow: var(--shadow-sm);
         }
@@ -416,6 +420,7 @@ $unread_count = $unread_result->fetch_assoc()['count'];
         
         .priority-tab.priority-critical.active {
             background: #dc3545;
+            color: white;
         }
         
         .priority-tab.priority-high {
@@ -425,6 +430,7 @@ $unread_count = $unread_result->fetch_assoc()['count'];
         
         .priority-tab.priority-high.active {
             background: #fd7e14;
+            color: white;
         }
         
         .priority-tab.priority-medium {
@@ -434,6 +440,7 @@ $unread_count = $unread_result->fetch_assoc()['count'];
         
         .priority-tab.priority-medium.active {
             background: #ffc107;
+            color: #212529;
         }
         
         .priority-tab.priority-low {
@@ -443,6 +450,7 @@ $unread_count = $unread_result->fetch_assoc()['count'];
         
         .priority-tab.priority-low.active {
             background: #28a745;
+            color: white;
         }
         
         /* Priority Badges */
@@ -638,32 +646,32 @@ $unread_count = $unread_result->fetch_assoc()['count'];
             <!-- Notifications List -->
             <?php if (!empty($notifications)): ?>
                 <?php foreach ($notifications as $notification): ?>
-                    <div class="notification-card <?php echo $notification['status']; ?> priority-<?php echo $notification['priority']; ?>" data-id="<?php echo $notification['id']; ?>">
+                    <div class="notification-card <?php echo $notification['status'] ?? ''; ?> priority-<?php echo $notification['priority'] ?? 'medium'; ?>" data-id="<?php echo $notification['id'] ?? ''; ?>">
                         <div class="d-flex align-items-start">
-                            <div class="notification-type-icon notification-type-<?php echo $notification['type']; ?>">
-                                <i class="bi bi-<?php echo getNotificationIcon($notification['type']); ?>"></i>
+                            <div class="notification-type-icon notification-type-<?php echo $notification['type'] ?? 'info'; ?>">
+                                <i class="bi bi-<?php echo getNotificationIcon($notification['type'] ?? 'info'); ?>"></i>
                             </div>
                             <div class="flex-grow-1">
                                 <div class="d-flex align-items-start justify-content-between">
                                     <div class="flex-grow-1">
                                         <h5 class="mb-1">
-                                            <?php echo htmlspecialchars($notification['title']); ?>
+                                            <?php echo htmlspecialchars($notification['title'] ?? ''); ?>
                                             <?php if (!$notification['is_read']): ?>
                                                 <span class="badge bg-primary ms-2">New</span>
                                             <?php endif; ?>
-                                            <span class="priority-badge priority-<?php echo $notification['priority']; ?> ms-2">
-                                                <?php echo strtoupper($notification['priority']); ?>
+                                            <span class="priority-badge priority-<?php echo $notification['priority'] ?? 'medium'; ?> ms-2">
+                                                <?php echo strtoupper($notification['priority'] ?? 'MEDIUM'); ?>
                                             </span>
                                         </h5>
                                         <p class="text-muted mb-2">
-                                            <?php echo htmlspecialchars($notification['message']); ?>
+                                            <?php echo htmlspecialchars($notification['message'] ?? ''); ?>
                                         </p>
                                     </div>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <small class="text-muted">
                                         <i class="bi bi-clock"></i>
-                                        <?php echo getTimeAgo($notification['created_at']); ?>
+                                        <?php echo getTimeAgo($notification['created_at'] ?? ''); ?>
                                     </small>
                                     <div class="btn-group btn-group-sm">
                                         <?php if (!$notification['is_read']): ?>

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 10, 2026 at 07:24 AM
+-- Generation Time: Mar 11, 2026 at 03:14 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -1831,6 +1831,7 @@ CREATE TABLE `notifications` (
   `title` varchar(255) NOT NULL,
   `message` text NOT NULL,
   `type` enum('info','success','warning','error','system') DEFAULT 'info',
+  `priority` enum('critical','high','medium','low') DEFAULT 'medium',
   `related_id` int(11) DEFAULT NULL,
   `related_type` varchar(50) DEFAULT NULL,
   `is_read` tinyint(1) NOT NULL DEFAULT 0,
@@ -1842,12 +1843,30 @@ CREATE TABLE `notifications` (
 -- Dumping data for table `notifications`
 --
 
-INSERT INTO `notifications` (`id`, `user_id`, `title`, `message`, `type`, `related_id`, `related_type`, `is_read`, `created_at`, `read_at`) VALUES
-(2, 1, 'New Asset Added', 'A new asset has been added to the inventory.', 'info', 1, 'asset', 0, '2026-02-05 12:58:08', NULL),
-(3, 1, 'System Update', 'The system has been updated with new features.', 'system', NULL, NULL, 0, '2026-02-05 12:58:08', NULL),
-(4, 1, 'Low Stock Alert', 'Some consumables are running low on stock.', 'warning', NULL, 'consumable', 0, '2026-02-05 12:58:08', NULL),
-(5, 1, 'Maintenance Reminder', 'Scheduled maintenance is due for some assets.', 'warning', NULL, 'asset', 0, '2026-02-05 12:58:08', NULL),
-(11, 17, 'Test Notification 04:44:08', 'Created at 2026-03-10 04:44:08', 'info', NULL, NULL, 0, '2026-03-10 03:44:08', NULL);
+INSERT INTO `notifications` (`id`, `user_id`, `title`, `message`, `type`, `priority`, `related_id`, `related_type`, `is_read`, `created_at`, `read_at`) VALUES
+(2, 1, 'New Asset Added', 'A new asset has been added to the inventory.', 'info', 'medium', 1, 'asset', 0, '2026-02-05 12:58:08', NULL),
+(3, 1, 'System Update', 'The system has been updated with new features.', 'system', 'medium', NULL, NULL, 0, '2026-02-05 12:58:08', NULL),
+(4, 1, 'Low Stock Alert', 'Some consumables are running low on stock.', 'warning', 'high', NULL, 'consumable', 0, '2026-02-05 12:58:08', NULL),
+(5, 1, 'Maintenance Reminder', 'Scheduled maintenance is due for some assets.', 'warning', 'high', NULL, 'asset', 0, '2026-02-05 12:58:08', NULL),
+(11, 17, 'Test Notification 04:44:08', 'Created at 2026-03-10 04:44:08', 'info', 'medium', NULL, NULL, 1, '2026-03-10 03:44:08', '2026-03-10 08:05:37'),
+(12, 1, 'CRITICAL: System Security Alert', 'Unauthorized access attempt detected on the system. Immediate attention required.', 'error', 'critical', NULL, 'system', 0, '2026-03-11 01:56:43', NULL),
+(13, 1, 'URGENT: Low Stock Alert', 'Critical consumable \"Printer Paper\" is critically low. Only 5 units remaining.', 'warning', 'high', 1, 'consumable', 0, '2026-03-11 01:56:43', NULL),
+(14, 1, 'New Asset Request', 'New request from IT Department for \"Laptop Computer\" approval required.', 'info', 'medium', 1, 'request', 0, '2026-03-11 01:56:43', NULL),
+(15, 1, 'Information: System Update Completed', 'Monthly system maintenance has been completed successfully. All systems operational.', 'success', 'low', NULL, 'system', 0, '2026-03-11 01:56:43', NULL),
+(16, 1, 'CRITICAL: System Security Alert', 'Unauthorized access attempt detected on the system. Immediate attention required.', 'error', 'critical', NULL, 'system', 0, '2026-03-11 01:58:31', NULL),
+(17, 1, 'URGENT: Low Stock Alert', 'Critical consumable \"Printer Paper\" is critically low. Only 5 units remaining.', 'warning', 'high', 1, 'consumable', 0, '2026-03-11 01:58:31', NULL),
+(18, 1, 'New Asset Request', 'New request from IT Department for \"Laptop Computer\" approval required.', 'info', 'medium', 1, 'request', 0, '2026-03-11 01:58:31', NULL),
+(19, 1, 'Information: System Update Completed', 'Monthly system maintenance has been completed successfully. All systems operational.', 'success', 'low', NULL, 'system', 0, '2026-03-11 01:58:31', NULL),
+(20, 17, 'CRITICAL: System Security Alert', 'Unauthorized access attempt detected on the system. Immediate attention required.', 'error', 'critical', NULL, 'system', 1, '2026-03-11 01:59:27', '2026-03-11 02:01:18'),
+(21, 17, 'URGENT: Low Stock Alert', 'Critical consumable \"Printer Paper\" is critically low. Only 5 units remaining.', 'warning', 'high', 1, 'consumable', 0, '2026-03-11 01:59:27', NULL),
+(22, 17, 'New Asset Request', 'New request from IT Department for \"Laptop Computer\" approval required.', 'info', 'medium', 1, 'request', 0, '2026-03-11 01:59:27', NULL),
+(23, 17, 'Information: System Update Completed', 'Monthly system maintenance has been completed successfully. All systems operational.', 'success', 'low', NULL, 'system', 0, '2026-03-11 01:59:27', NULL),
+(24, 17, 'Low Stock Alert', 'Consumable \'Test Consumable\' is running low on stock. Current: 2, Reorder at: 10', 'warning', 'high', 1, 'consumable', 0, '2026-03-11 01:59:27', NULL),
+(25, 17, 'Asset Maintenance Due', 'Asset \'Test Asset\' is due for maintenance', 'warning', 'high', 1, 'asset', 0, '2026-03-11 01:59:27', NULL),
+(26, 17, 'New Borrow Request', 'New Borrow request received from Test User', 'info', 'medium', 1, 'request', 0, '2026-03-11 01:59:27', NULL),
+(27, 17, 'Consumable Used', '5 units of \'Test Consumable\' consumed. Remaining stock: 25', 'info', 'low', 1, 'consumable', 0, '2026-03-11 01:59:27', NULL),
+(28, 17, 'Asset Status Changed', 'Asset \'Test Asset\' status changed from \'available\' to \'maintenance\'', 'warning', 'high', 1, 'asset', 0, '2026-03-11 01:59:27', NULL),
+(29, 17, 'Asset Status Changed', 'Asset \'Test Asset\' status changed from \'available\' to \'disposed\'', 'error', 'critical', 1, 'asset', 0, '2026-03-11 01:59:27', NULL);
 
 -- --------------------------------------------------------
 
@@ -2623,7 +2642,9 @@ INSERT INTO `security_logs` (`id`, `event_type`, `description`, `severity`, `use
 (102, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-05 03:44:58'),
 (103, 'session_timeout', 'Session timeout for user: System Administrator (admin@pims.com)', 'medium', 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-05 05:27:26'),
 (104, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-05 07:26:30'),
-(105, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-10 05:39:51');
+(105, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-10 05:39:51'),
+(106, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '::1', 'Mozilla/5.0 (X11; Linux aarch64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 CrKey/1.54.250320', '2026-03-10 07:03:36'),
+(107, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-10 08:05:09');
 
 -- --------------------------------------------------------
 
@@ -7795,7 +7816,48 @@ INSERT INTO `system_logs` (`id`, `user_id`, `action`, `module`, `description`, `
 (6021, 17, 'notifications_accessed', 'notifications', 'Office admin accessed notifications page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-10 06:20:58'),
 (6022, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-10 06:21:04'),
 (6023, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-10 06:21:10'),
-(6024, 17, 'notifications_accessed', 'notifications', 'Office admin accessed notifications page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-10 06:21:13');
+(6024, 17, 'notifications_accessed', 'notifications', 'Office admin accessed notifications page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-10 06:21:13'),
+(6025, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-10 06:31:32'),
+(6026, 17, 'notifications_accessed', 'notifications', 'Office admin accessed notifications page', '::1', 'Mozilla/5.0 (X11; Linux aarch64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 CrKey/1.54.250320', '2026-03-10 06:34:42'),
+(6027, 17, 'notifications_accessed', 'notifications', 'Office admin accessed notifications page', '::1', 'Mozilla/5.0 (X11; Linux aarch64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 CrKey/1.54.250320', '2026-03-10 06:48:09'),
+(6028, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-10 06:48:12'),
+(6029, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-10 06:57:48'),
+(6030, 17, 'session_timeout', 'authentication', 'Session expired for user: Joshua Escaño (joshuamarifrancis@gmail.com) after 3720 seconds', '::1', 'Mozilla/5.0 (X11; Linux aarch64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 CrKey/1.54.250320', '2026-03-10 07:03:36'),
+(6031, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-10 07:03:47'),
+(6032, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-10 07:03:47'),
+(6033, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-10 07:08:58'),
+(6034, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-10 07:09:30'),
+(6035, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-10 07:09:32'),
+(6036, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-10 07:09:34'),
+(6037, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-10 07:30:00'),
+(6038, 17, 'notifications_accessed', 'notifications', 'Office admin accessed notifications page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-10 07:30:13'),
+(6039, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-10 07:30:16'),
+(6040, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-10 07:31:32'),
+(6041, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (X11; Linux aarch64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 CrKey/1.54.250320', '2026-03-10 07:35:29'),
+(6042, 17, 'notifications_accessed', 'notifications', 'Office admin accessed notifications page', '::1', 'Mozilla/5.0 (X11; Linux aarch64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 CrKey/1.54.250320', '2026-03-10 07:44:43'),
+(6043, 17, 'notifications_accessed', 'notifications', 'Office admin accessed notifications page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-10 07:45:36'),
+(6044, 17, 'notifications_accessed', 'notifications', 'Office admin accessed notifications page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-10 07:45:43'),
+(6045, 17, 'notifications_accessed', 'notifications', 'Office admin accessed notifications page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-10 07:47:36'),
+(6046, 17, 'notifications_accessed', 'notifications', 'Office admin accessed notifications page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-10 07:51:55'),
+(6047, 17, 'session_timeout', 'authentication', 'Session expired for user: Joshua Escaño (joshuamarifrancis@gmail.com) after 3682 seconds', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-10 08:05:09'),
+(6048, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-10 08:05:18'),
+(6049, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-10 08:05:18'),
+(6050, 17, 'access', 'inventory_reports', 'Office admin accessed inventory reports', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-10 08:05:34'),
+(6051, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-10 08:10:37'),
+(6052, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-11 01:07:28'),
+(6053, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-11 01:07:29'),
+(6054, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-11 01:09:21'),
+(6055, 17, 'notification_created', 'consumable', 'Low stock notification created for Test Consumable', 'Unknown', 'Unknown', '2026-03-11 01:59:27'),
+(6056, 17, 'notification_created', 'asset', 'Maintenance notification created for Test Asset', 'Unknown', 'Unknown', '2026-03-11 01:59:27'),
+(6057, 17, 'notification_created', 'request', 'New request notification created for Borrow', 'Unknown', 'Unknown', '2026-03-11 01:59:27'),
+(6058, 17, 'notification_created', 'consumable', 'Consumption notification created for Test Consumable', 'Unknown', 'Unknown', '2026-03-11 01:59:27'),
+(6059, 17, 'notification_created', 'asset', 'Status change notification created for Test Asset', 'Unknown', 'Unknown', '2026-03-11 01:59:27'),
+(6060, 17, 'notification_created', 'asset', 'Status change notification created for Test Asset', 'Unknown', 'Unknown', '2026-03-11 01:59:27'),
+(6061, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-11 02:01:08'),
+(6062, 17, 'logout', 'authentication', 'User logged out: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-11 02:03:53'),
+(6063, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-11 02:04:05'),
+(6064, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-11 02:04:05'),
+(6065, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-11 02:05:14');
 
 -- --------------------------------------------------------
 
@@ -9000,7 +9062,7 @@ ALTER TABLE `login_logs`
 -- AUTO_INCREMENT for table `notifications`
 --
 ALTER TABLE `notifications`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
 
 --
 -- AUTO_INCREMENT for table `notification_settings`
@@ -9108,7 +9170,7 @@ ALTER TABLE `security_audit_logs`
 -- AUTO_INCREMENT for table `security_logs`
 --
 ALTER TABLE `security_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=106;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=108;
 
 --
 -- AUTO_INCREMENT for table `security_metrics`
@@ -9126,7 +9188,7 @@ ALTER TABLE `software`
 -- AUTO_INCREMENT for table `system_logs`
 --
 ALTER TABLE `system_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6025;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6066;
 
 --
 -- AUTO_INCREMENT for table `system_settings`

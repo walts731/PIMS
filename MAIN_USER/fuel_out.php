@@ -16,6 +16,33 @@ if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['system_admin', '
 
 logSystemAction($_SESSION['user_id'], 'access', 'main_user_fuel_out', 'Main user accessed fuel OUT page');
 
+// Get filter parameters
+$fuel_type_filter = isset($_GET['fuel_type']) ? (int)$_GET['fuel_type'] : 0;
+$period_filter = isset($_GET['period']) ? trim((string)$_GET['period']) : 'all';
+
+// Calculate date range based on period filter
+$date_condition = "";
+$date_params = [];
+$date_types = "";
+
+switch ($period_filter) {
+    case 'today':
+        $date_condition = " AND DATE(ft.transaction_date) = CURDATE()";
+        break;
+    case 'week':
+        $date_condition = " AND ft.transaction_date >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
+        break;
+    case 'month':
+        $date_condition = " AND ft.transaction_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+        break;
+    case 'year':
+        $date_condition = " AND ft.transaction_date >= DATE_SUB(NOW(), INTERVAL 365 DAY)";
+        break;
+    default:
+        $date_condition = "";
+        break;
+}
+
 // Initialize error variable
 $error = null;
 
@@ -50,20 +77,62 @@ if (empty($total_fuel_out_all) && in_array('fuel_transactions', $existing_tables
     }
 }
 
-// Get recent fuel out transactions (like admin)
+// Get recent fuel out transactions with filters
 $fuel_out_query = "SELECT ft.*, u.first_name, u.last_name, e.firstname as emp_firstname, e.lastname as emp_lastname
                    FROM fuel_transactions ft 
                    LEFT JOIN users u ON ft.user_id = u.id 
                    LEFT JOIN employees e ON ft.employee_id = e.id
-                   WHERE ft.transaction_type = 'OUT' 
-                   ORDER BY ft.created_at DESC";
+                   WHERE ft.transaction_type = 'OUT'";
+
+// Add filters to query
+$where_conditions = [];
+if ($fuel_type_filter > 0) {
+    $where_conditions[] = "ft.fuel_type = " . $fuel_type_filter;
+}
+if (!empty($date_condition)) {
+    $where_conditions[] = substr($date_condition, 5); // Remove " AND " prefix
+}
+
+if (!empty($where_conditions)) {
+    $fuel_out_query .= " AND " . implode(" AND ", $where_conditions);
+}
+
+$fuel_out_query .= " ORDER BY ft.created_at DESC";
 $fuel_out_result = $conn->query($fuel_out_query);
 
-// Get today's fuel out summary
+// Get filtered period fuel out summary
+$summary_date_condition = "";
+switch ($period_filter) {
+    case 'today':
+        $summary_date_condition = " AND DATE(ft.transaction_date) = CURDATE()";
+        break;
+    case 'week':
+        $summary_date_condition = " AND ft.transaction_date >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
+        break;
+    case 'month':
+        $summary_date_condition = " AND ft.transaction_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+        break;
+    case 'year':
+        $summary_date_condition = " AND ft.transaction_date >= DATE_SUB(NOW(), INTERVAL 365 DAY)";
+        break;
+    default:
+        $summary_date_condition = " AND DATE(ft.transaction_date) = CURDATE()"; // Default to today for summary
+        break;
+}
+
 $today_fuel_out_query = "SELECT fuel_type, SUM(quantity) as total_quantity 
-                        FROM fuel_transactions 
-                        WHERE transaction_type = 'OUT' AND DATE(transaction_date) = CURDATE() 
-                        GROUP BY fuel_type";
+                        FROM fuel_transactions ft
+                        WHERE transaction_type = 'OUT'";
+
+// Add fuel type filter to summary if selected
+if ($fuel_type_filter > 0) {
+    $today_fuel_out_query .= " AND fuel_type = " . $fuel_type_filter;
+}
+
+// Add date condition to summary
+$today_fuel_out_query .= $summary_date_condition;
+
+$today_fuel_out_query .= " GROUP BY fuel_type";
 $today_fuel_out_result = $conn->query($today_fuel_out_query);
 
 // Get fuel types for dropdown
@@ -291,6 +360,82 @@ if ($fuel_out_result) {
                             </h3>
                             <small class="text-muted">All Time Total</small>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Section -->
+        <div class="filter-section mb-4">
+            <div class="row align-items-end">
+                <div class="col-md-3">
+                    <label for="period" class="form-label fw-semibold">
+                        <i class="bi bi-calendar-range me-1"></i>Time Period
+                    </label>
+                    <form method="GET" class="d-flex gap-2">
+                        <select class="form-select" id="period" name="period" onchange="this.form.submit()">
+                            <option value="all" <?php echo $period_filter === 'all' ? 'selected' : ''; ?>>
+                                All Time
+                            </option>
+                            <option value="today" <?php echo $period_filter === 'today' ? 'selected' : ''; ?>>
+                                Today
+                            </option>
+                            <option value="week" <?php echo $period_filter === 'week' ? 'selected' : ''; ?>>
+                                Last 7 Days
+                            </option>
+                            <option value="month" <?php echo $period_filter === 'month' ? 'selected' : ''; ?>>
+                                Last 30 Days
+                            </option>
+                            <option value="year" <?php echo $period_filter === 'year' ? 'selected' : ''; ?>>
+                                Last 365 Days
+                            </option>
+                        </select>
+                        <select class="form-select" id="fuel_type" name="fuel_type" onchange="this.form.submit()">
+                            <option value="0" <?php echo $fuel_type_filter === 0 ? 'selected' : ''; ?>>
+                                All Fuel Types
+                            </option>
+                            <?php 
+                            $fuel_types_result->data_seek(0);
+                            while ($fuel_type = $fuel_types_result->fetch_assoc()): ?>
+                                <option value="<?php echo $fuel_type['id']; ?>" 
+                                        <?php echo $fuel_type_filter === (int)$fuel_type['id'] ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($fuel_type['name']); ?>
+                                </option>
+                            <?php endwhile; ?>
+                        </select>
+                        <?php if ($fuel_type_filter > 0 || $period_filter !== 'all'): ?>
+                            <a href="fuel_out.php" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-1"></i>
+                                Clear
+                            </a>
+                        <?php endif; ?>
+                    </form>
+                </div>
+                <div class="col-md-9">
+                    <div class="text-muted">
+                        <small>
+                            <?php if ($period_filter !== 'all' || $fuel_type_filter > 0): ?>
+                                <i class="bi bi-funnel me-1"></i>
+                                Showing transactions for 
+                                <?php 
+                                $period_labels = [
+                                    'today' => 'Today',
+                                    'week' => 'Last 7 Days',
+                                    'month' => 'Last 30 Days',
+                                    'year' => 'Last 365 Days'
+                                ];
+                                if ($period_filter !== 'all') {
+                                    echo '<span class="badge bg-primary me-1">' . htmlspecialchars($period_labels[$period_filter]) . '</span>';
+                                }
+                                if ($fuel_type_filter > 0) {
+                                    echo '<span class="badge bg-danger">Selected Fuel Type</span>';
+                                }
+                                ?>
+                            <?php else: ?>
+                                <i class="bi bi-info-circle me-1"></i>
+                                Showing all fuel OUT transactions. Use filters above to narrow results.
+                            <?php endif; ?>
+                        </small>
                     </div>
                 </div>
             </div>
