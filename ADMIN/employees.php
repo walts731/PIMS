@@ -30,11 +30,16 @@ $message_type = '';
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'edit') {
     $id = intval($_POST['id'] ?? 0);
     $firstname = trim($_POST['firstname'] ?? '');
+    $middle_name = trim($_POST['middlename'] ?? '');
     $lastname = trim($_POST['lastname'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $phone = trim($_POST['phone'] ?? '');
     $office_id = intval($_POST['office_id'] ?? 0);
     $position = trim($_POST['position'] ?? '');
+    $designation = isset($_POST['designation']) ? array_filter($_POST['designation'], function($val) {
+        return !empty(trim($val));
+    }) : [];
+    $designation = !empty($designation) ? json_encode(array_values($designation)) : null;
     $employment_status = trim($_POST['employment_status'] ?? 'permanent');
     
     // Handle profile photo upload
@@ -91,9 +96,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                 $message_type = "danger";
             } else {
                 // Update employee
-                $update_sql = "UPDATE employees SET firstname = ?, lastname = ?, email = ?, phone = ?, office_id = ?, position = ?, employment_status = ?, profile_photo = ? WHERE id = ?";
+                $update_sql = "UPDATE employees SET firstname = ?, middle_name = ?, lastname = ?, email = ?, phone = ?, office_id = ?, position = ?, designation = ?, employment_status = ?, profile_photo = ? WHERE id = ?";
                 $update_stmt = $conn->prepare($update_sql);
-                $update_stmt->bind_param("sssissssi", $firstname, $lastname, $email, $phone, $office_id, $position, $employment_status, $profile_photo, $id);
+                $update_stmt->bind_param("sssssissssi", $firstname, $middle_name, $lastname, $email, $phone, $office_id, $position, $designation, $employment_status, $profile_photo, $id);
                 
                 if ($update_stmt->execute()) {
                     logSystemAction($_SESSION['user_id'], 'update', 'employees', "Updated employee: $firstname $lastname");
@@ -119,11 +124,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
 // ADD - Create new employee
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'add') {
     $firstname = trim($_POST['firstname'] ?? '');
+    $middle_name = trim($_POST['middlename'] ?? '');
     $lastname = trim($_POST['lastname'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $phone = trim($_POST['phone'] ?? '');
     $office_id = intval($_POST['office_id'] ?? 0);
     $position = trim($_POST['position'] ?? '');
+    $designation = isset($_POST['designation']) ? array_filter($_POST['designation'], function($val) {
+        return !empty(trim($val));
+    }) : [];
+    $designation = !empty($designation) ? json_encode(array_values($designation)) : null;
     $employment_status = trim($_POST['employment_status'] ?? 'permanent');
     $clearance_status = trim($_POST['clearance_status'] ?? 'uncleared');
     
@@ -189,9 +199,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             $employee_no = $prefix . $year . str_pad($new_number, 4, '0', STR_PAD_LEFT);
             
             // Insert employee
-            $insert_sql = "INSERT INTO employees (employee_no, firstname, lastname, email, phone, office_id, position, employment_status, clearance_status, profile_photo, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+            $insert_sql = "INSERT INTO employees (employee_no, firstname, middle_name, lastname, email, phone, office_id, position, designation, employment_status, clearance_status, profile_photo, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
             $insert_stmt = $conn->prepare($insert_sql);
-            $insert_stmt->bind_param("ssssissssi", $employee_no, $firstname, $lastname, $email, $phone, $office_id, $position, $employment_status, $clearance_status, $profile_photo);
+            $insert_stmt->bind_param("sssssisssssi", $employee_no, $firstname, $middle_name, $lastname, $email, $phone, $office_id, $position, $designation, $employment_status, $clearance_status, $profile_photo);
             
             if ($insert_stmt->execute()) {
                 $employee_id = $conn->insert_id;
@@ -555,10 +565,16 @@ $showing_to = min($page * $per_page, $total_records);
                                     </td>
                                     <td><?php echo htmlspecialchars($employee['employee_no'] ?? 'N/A'); ?></td>
                                     <td>
-                                        <?php echo htmlspecialchars($employee['firstname'] . ' ' . $employee['lastname']); ?>
+                                        <?php echo htmlspecialchars($employee['firstname'] . ' ' . ($employee['middle_name'] ?? '') . ' ' . $employee['lastname']); ?>
                                         <?php if (!empty($employee['email'])): ?>
                                             <br><small class="text-muted"><?php echo htmlspecialchars($employee['email']); ?></small>
                                         <?php endif; ?>
+                                        <?php if (!empty($employee['designation'])):
+                                            $designations = json_decode($employee['designation'], true);
+                                            if (!empty($designations) && is_array($designations)):
+                                                echo '<br><small class="text-primary"><strong>Designations:</strong> ' . htmlspecialchars(implode(', ', $designations)) . '</small>';
+                                            endif;
+                                        endif; ?>
                                     </td>
                                     <td><?php echo htmlspecialchars($employee['office_name'] ?? 'N/A'); ?></td>
                                     <td>
@@ -758,11 +774,15 @@ $showing_to = min($page * $per_page, $total_records);
                         <input type="hidden" name="action" value="add">
                         
                         <div class="row">
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <label for="addFirstname" class="form-label">First Name *</label>
                                 <input type="text" class="form-control" id="addFirstname" name="firstname" required>
                             </div>
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-4 mb-3">
+                                <label for="addMiddlename" class="form-label">Middle Name</label>
+                                <input type="text" class="form-control" id="addMiddlename" name="middlename">
+                            </div>
+                            <div class="col-md-4 mb-3">
                                 <label for="addLastname" class="form-label">Last Name *</label>
                                 <input type="text" class="form-control" id="addLastname" name="lastname" required>
                             </div>
@@ -781,13 +801,20 @@ $showing_to = min($page * $per_page, $total_records);
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="addPhoto" class="form-label">Profile Photo</label>
-                                <input type="file" class="form-control" id="addPhoto" name="profile_photo" accept="image/*">
-                                <small class="text-muted">Allowed: JPG, PNG, GIF (Max 5MB)</small>
-                            </div>
-                            <div class="col-md-6 mb-3">
                                 <label for="addPosition" class="form-label">Position</label>
                                 <input type="text" class="form-control" id="addPosition" name="position">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Designations</label>
+                                <div id="designationContainer">
+                                    <div class="input-group mb-2">
+                                        <input type="text" class="form-control" name="designation[]" placeholder="Enter designation">
+                                        <button class="btn btn-outline-success" type="button" onclick="addDesignation(this)">
+                                            <i class="bi bi-plus"></i> Add
+                                        </button>
+                                    </div>
+                                </div>
+                                <small class="text-muted">Click Add to include multiple designations</small>
                             </div>
                         </div>
                         
@@ -812,6 +839,17 @@ $showing_to = min($page * $per_page, $total_records);
                                     <option value="resigned">Resigned</option>
                                     <option value="retired">Retired</option>
                                 </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="addPhoto" class="form-label">Profile Photo</label>
+                                <input type="file" class="form-control" id="addPhoto" name="profile_photo" accept="image/*">
+                                <small class="text-muted">Allowed: JPG, PNG, GIF (Max 5MB)</small>
+                            </div>
+                            <div class="col-md-6">
+                                <!-- Empty column for balance -->
                             </div>
                         </div>
                         
@@ -855,31 +893,17 @@ $showing_to = min($page * $per_page, $total_records);
                         <input type="hidden" name="id" id="editEmployeeId" value="<?php echo $edit_employee['id'] ?? ''; ?>">
                         
                         <div class="row">
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <label for="editFirstname" class="form-label">First Name *</label>
                                 <input type="text" class="form-control" id="editFirstname" name="firstname" required value="<?php echo htmlspecialchars($edit_employee['firstname'] ?? ''); ?>">
                             </div>
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-4 mb-3">
+                                <label for="editMiddlename" class="form-label">Middle Name</label>
+                                <input type="text" class="form-control" id="editMiddlename" name="middlename" value="<?php echo htmlspecialchars($edit_employee['middlename'] ?? ''); ?>">
+                            </div>
+                            <div class="col-md-4 mb-3">
                                 <label for="editLastname" class="form-label">Last Name *</label>
                                 <input type="text" class="form-control" id="editLastname" name="lastname" required value="<?php echo htmlspecialchars($edit_employee['lastname'] ?? ''); ?>">
-                            </div>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="editPhone" class="form-label">Phone</label>
-                                <input type="tel" class="form-control" id="editPhone" name="phone" value="<?php echo htmlspecialchars($edit_employee['phone'] ?? ''); ?>">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="editPhoto" class="form-label">Profile Photo</label>
-                                <input type="file" class="form-control" id="editPhoto" name="profile_photo" accept="image/*">
-                                <input type="hidden" name="current_photo" value="<?php echo htmlspecialchars($edit_employee['profile_photo'] ?? ''); ?>">
-                                <small class="text-muted">Allowed: JPG, PNG, GIF (Max 5MB)</small>
-                                <?php if (!empty($edit_employee['profile_photo'])): ?>
-                                    <div class="mt-2">
-                                        <img src="../<?php echo htmlspecialchars($edit_employee['profile_photo']); ?>" alt="Current Photo" style="max-width: 100px; max-height: 100px; border-radius: 8px;">
-                                    </div>
-                                <?php endif; ?>
                             </div>
                         </div>
                         
@@ -889,8 +913,48 @@ $showing_to = min($page * $per_page, $total_records);
                                 <input type="email" class="form-control" id="editEmail" name="email" required value="<?php echo htmlspecialchars($edit_employee['email'] ?? ''); ?>">
                             </div>
                             <div class="col-md-6 mb-3">
+                                <label for="editPhone" class="form-label">Phone</label>
+                                <input type="tel" class="form-control" id="editPhone" name="phone" value="<?php echo htmlspecialchars($edit_employee['phone'] ?? ''); ?>">
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
                                 <label for="editPosition" class="form-label">Position</label>
                                 <input type="text" class="form-control" id="editPosition" name="position" value="<?php echo htmlspecialchars($edit_employee['position'] ?? ''); ?>">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Designations</label>
+                                <div id="editDesignationContainer">
+                                    <?php 
+                                    if (!empty($edit_employee['designation'])) {
+                                        $designations = json_decode($edit_employee['designation'], true);
+                                        if (!empty($designations) && is_array($designations)) {
+                                            foreach ($designations as $index => $designation) {
+                                                echo '<div class="input-group mb-2">';
+                                                echo '<input type="text" class="form-control" name="designation[]" value="' . htmlspecialchars($designation) . '" placeholder="Enter designation">';
+                                                if ($index > 0) {
+                                                    echo '<button class="btn btn-outline-danger" type="button" onclick="removeDesignation(this)"><i class="bi bi-dash"></i></button>';
+                                                } else {
+                                                    echo '<button class="btn btn-outline-success" type="button" onclick="addDesignation(this)"><i class="bi bi-plus"></i> Add</button>';
+                                                }
+                                                echo '</div>';
+                                            }
+                                        } else {
+                                            echo '<div class="input-group mb-2">';
+                                            echo '<input type="text" class="form-control" name="designation[]" placeholder="Enter designation">';
+                                            echo '<button class="btn btn-outline-success" type="button" onclick="addDesignation(this)"><i class="bi bi-plus"></i> Add</button>';
+                                            echo '</div>';
+                                        }
+                                    } else {
+                                        echo '<div class="input-group mb-2">';
+                                        echo '<input type="text" class="form-control" name="designation[]" placeholder="Enter designation">';
+                                        echo '<button class="btn btn-outline-success" type="button" onclick="addDesignation(this)"><i class="bi bi-plus"></i> Add</button>';
+                                        echo '</div>';
+                                    }
+                                    ?>
+                                </div>
+                                <small class="text-muted">Click Add to include multiple designations</small>
                             </div>
                         </div>
                         
@@ -915,6 +979,23 @@ $showing_to = min($page * $per_page, $total_records);
                                     <option value="resigned" <?php echo (isset($edit_employee['employment_status']) && $edit_employee['employment_status'] == 'resigned') ? 'selected' : ''; ?>>Resigned</option>
                                     <option value="retired" <?php echo (isset($edit_employee['employment_status']) && $edit_employee['employment_status'] == 'retired') ? 'selected' : ''; ?>>Retired</option>
                                 </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="editPhoto" class="form-label">Profile Photo</label>
+                                <input type="file" class="form-control" id="editPhoto" name="profile_photo" accept="image/*">
+                                <input type="hidden" name="current_photo" value="<?php echo htmlspecialchars($edit_employee['profile_photo'] ?? ''); ?>">
+                                <small class="text-muted">Allowed: JPG, PNG, GIF (Max 5MB)</small>
+                                <?php if (!empty($edit_employee['profile_photo'])): ?>
+                                    <div class="mt-2">
+                                        <img src="../<?php echo htmlspecialchars($edit_employee['profile_photo']); ?>" alt="Current Photo" style="max-width: 100px; max-height: 100px; border-radius: 8px;">
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                            <div class="col-md-6">
+                                <!-- Empty column for balance -->
                             </div>
                         </div>
                     </div>
@@ -1018,6 +1099,53 @@ $showing_to = min($page * $per_page, $total_records);
             });
         });
 
+        // Designation management functions
+        function addDesignation(button) {
+            // Determine which container we're working with
+            let container;
+            if (button) {
+                // If called from a button, find the container
+                const modalBody = button.closest('.modal-body');
+                if (modalBody) {
+                    container = modalBody.querySelector('#editDesignationContainer') || 
+                               modalBody.querySelector('#designationContainer');
+                }
+            } else {
+                // Fallback to checking both containers
+                container = document.getElementById('editDesignationContainer') || 
+                          document.getElementById('designationContainer');
+            }
+            
+            if (!container) {
+                console.error('Container not found');
+                return;
+            }
+            
+            const newInput = document.createElement('div');
+            newInput.className = 'input-group mb-2';
+            newInput.innerHTML = `
+                <input type="text" class="form-control" name="designation[]" placeholder="Enter designation">
+                <button class="btn btn-outline-danger" type="button" onclick="removeDesignation(this)">
+                    <i class="bi bi-dash"></i>
+                </button>
+            `;
+            
+            container.appendChild(newInput);
+        }
+        
+        function removeDesignation(button) {
+            const container = button.parentElement;
+            const parentContainer = container.parentElement;
+            
+            // Don't remove if it's the last one
+            if (parentContainer.children.length > 1) {
+                container.remove();
+            } else {
+                // Clear the value instead of removing the last input
+                container.querySelector('input').value = '';
+            }
+        }
+        
         // Employee management functions
         function addEmployee() {
             // Clear form fields
@@ -1039,15 +1167,25 @@ $showing_to = min($page * $per_page, $total_records);
         
         // Export employees function
         function exportEmployees() {
-            let csv = 'Employee No,Name,Email,Office,Employment Status,Clearance Status\n';
+            let csv = 'Employee No,Name,Middle Name,Email,Office,Position,Designations,Employment Status,Clearance Status\n';
             
             <?php if (!empty($employees)): ?>
                 <?php foreach ($employees as $employee): ?>
                     csv += '<?php echo 
                         '"' . addslashes($employee['employee_no'] ?? 'N/A') . '",' .
-                        '"' . addslashes(($employee['firstname'] ?? '') . ' ' . ($employee['lastname'] ?? '')) . '",' .
+                        '"' . addslashes(($employee['firstname'] ?? '') . ' ' . ($employee['middle_name'] ?? '') . ' ' . ($employee['lastname'] ?? '')) . '",' .
+                        '"' . addslashes($employee['middlename'] ?? '') . '",' .
                         '"' . addslashes($employee['email'] ?? '') . '",' .
                         '"' . addslashes($employee['office_name'] ?? 'N/A') . '",' .
+                        '"' . addslashes($employee['position'] ?? '') . '",' .
+                        '"'; 
+                        if (!empty($employee['designation'])) {
+                            $designations = json_decode($employee['designation'], true);
+                            if (!empty($designations) && is_array($designations)) {
+                                echo addslashes(implode(', ', $designations));
+                            }
+                        }
+                        echo '",' .
                         '"' . addslashes(ucfirst(str_replace('_', ' ', $employee['employment_status'] ?? 'permanent'))) . '",' .
                         '"' . addslashes(ucfirst($employee['clearance_status'] ?? 'uncleared')) . '"' 
                     ; ?>' + '\n';
