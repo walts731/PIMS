@@ -23,6 +23,7 @@ logSystemAction($_SESSION['user_id'], 'Accessed Individual Item Request for User
 
 // Handle auto-fill data from view_asset_item.php
 $auto_fill_data = [];
+$should_auto_fill = false;
 if (isset($_GET['auto_fill']) && $_GET['auto_fill'] === 'true') {
     $auto_fill_data = [
         'asset_id' => $_GET['asset_id'] ?? '',
@@ -33,12 +34,20 @@ if (isset($_GET['auto_fill']) && $_GET['auto_fill'] === 'true') {
         'value' => $_GET['value'] ?? '',
         'unit_cost' => $_GET['unit_cost'] ?? '',
         'office_name' => $_GET['office_name'] ?? '',
+        'employee_name' => $_GET['employee_name'] ?? '',
         'category_name' => $_GET['category_name'] ?? '',
         'category_code' => $_GET['category_code'] ?? '',
         'asset_description' => $_GET['asset_description'] ?? '',
         'unit' => $_GET['unit'] ?? '',
         'component_type' => $_GET['component_type'] ?? 'main_asset' // Track which component is being added
     ];
+    
+    // Check if we should auto-fill (not a refresh)
+    $should_auto_fill = !isset($_SESSION['iirup_auto_fill_completed']) || $_SESSION['iirup_auto_fill_completed'] !== $_GET['property_no'];
+    
+    if ($should_auto_fill) {
+        $_SESSION['iirup_auto_fill_completed'] = $_GET['property_no'];
+    }
 }
 
 // Get next SAI number (IIRUP uses sai_no tag type)
@@ -363,61 +372,14 @@ if ($result && $row = $result->fetch_assoc()) {
                                     <table class="table table-bordered" id="iirupItemsTable">
                                         <thead class="table-light">
                                             <tr>
-                                                <th rowspan="3">Date Acquired</th>
-                                                <th rowspan="3">Particulars/ Articles</th>
-                                                <th rowspan="3">Property No.</th>
-                                                <th rowspan="3">Qty</th>
-                                                <th colspan="6">INVENTORY</th>
-                                                <th colspan="7">INSPECTION and DISPOSAL</th>
-                                                <th colspan="2">RECORD OF SALES</th>
-                                                <th rowspan="3">DEPT/OFFICE</th>
-                                                <th rowspan="3">CONTROL NO.</th>
-                                                <th rowspan="3">DATE RECEIVED</th>
-                                                <th rowspan="3">Action</th>
-                                            </tr>
-                                            <tr>
-                                                <th rowspan="2">Unit Cost</th>
-                                                <th rowspan="2">Total Cost</th>
-                                                <th rowspan="2">Accumulated Depreciation</th>
-                                                <th rowspan="2">Accumulated Impairment Losses</th>
-                                                <th rowspan="2">Carrying Amount</th>
-                                                <th rowspan="2">Remarks</th>
-                                                <th colspan="5">DISPOSAL</th>
-                                                <th rowspan="2">Appraised Value</th>
-                                                <th rowspan="2">Total</th>
-                                                <th rowspan="2">OR No.</th>
-                                                <th rowspan="2">Amount</th>
-                                            </tr>
-                                            <tr>
-                                                <th>Sale</th>
-                                                <th>Transfer</th>
-                                                <th>Destruction</th>
-                                                <th>Others (Specify)</th>
-                                                <th>Total</th>
-                                            </tr>
-                                            <tr>
-                                                <th>(1)</th>
-                                                <th>(2)</th>
-                                                <th>(3)</th>
-                                                <th>(4)</th>
-                                                <th>(5)</th>
-                                                <th>(6)</th>
-                                                <th>(7)</th>
-                                                <th>(8)</th>
-                                                <th>(9)</th>
-                                                <th>(10)</th>
-                                                <th>(11)</th>
-                                                <th>(12)</th>
-                                                <th>(13)</th>
-                                                <th>(14)</th>
-                                                <th>(15)</th>
-                                                <th>(16)</th>
-                                                <th>(17)</th>
-                                                <th>(18)</th>
-                                                <th></th>
-                                                <th></th>
-                                                <th></th>
-                                                <th></th>
+                                                <th>Date Acquired</th>
+                                                <th>Particulars/ Articles</th>
+                                                <th>Property No.</th>
+                                                <th>Qty</th>
+                                                <th>Unit Cost</th>
+                                                <th>Total Cost</th>
+                                                <th>DEPT/OFFICE</th>
+                                                <th>Action</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -436,19 +398,6 @@ if ($result && $row = $result->fetch_assoc()) {
                                                 <td><input type="number" class="form-control form-control-sm" name="qty[]"></td>
                                                 <td><input type="number" step="0.01" class="form-control form-control-sm" name="unit_cost[]"></td>
                                                 <td><input type="number" step="0.01" class="form-control form-control-sm" name="total_cost[]"></td>
-                                                <td><input type="number" step="0.01" class="form-control form-control-sm" name="accumulated_depreciation[]"></td>
-                                                <td><input type="number" step="0.01" class="form-control form-control-sm" name="impairment_losses[]"></td>
-                                                <td><input type="number" step="0.01" class="form-control form-control-sm" name="carrying_amount[]"></td>
-                                                <td><input type="text" class="form-control form-control-sm" name="inventory_remarks[]" value="unserviceable"></td>
-                                                <td><input type="number" step="0.01" class="form-control form-control-sm" name="disposal_sale[]"></td>
-                                                <td><input type="number" step="0.01" class="form-control form-control-sm" name="disposal_transfer[]"></td>
-                                                <td><input type="number" step="0.01" class="form-control form-control-sm" name="disposal_destruction[]"></td>
-                                                <td><input type="text" class="form-control form-control-sm" name="disposal_others[]"></td>
-                                                <td><input type="number" step="0.01" class="form-control form-control-sm" name="disposal_total[]"></td>
-                                                <td><input type="number" step="0.01" class="form-control form-control-sm" name="appraised_value[]"></td>
-                                                <td><input type="number" step="0.01" class="form-control form-control-sm" name="total[]"></td>
-                                                <td><input type="text" class="form-control form-control-sm" name="or_no[]"></td>
-                                                <td><input type="number" step="0.01" class="form-control form-control-sm" name="amount[]"></td>
                                                 <td><select class="form-control form-control-sm" name="dept_office[]">
                                                     <option value="">Select Department/Office</option>
                                                     <?php
@@ -461,8 +410,6 @@ if ($result && $row = $result->fetch_assoc()) {
                                                     }
                                                     ?>
                                                 </select></td>
-                                                <td><input type="text" class="form-control form-control-sm" name="control_no[]"></td>
-                                                <td><input type="date" class="form-control form-control-sm" name="date_received[]"></td>
                                                 <td>
                                                     <div class="btn-group btn-group-sm" role="group">
                                                         <button type="button" class="btn btn-sm btn-info" onclick="openFillModal(this)" title="Fill Data">
@@ -549,7 +496,7 @@ if ($result && $row = $result->fetch_assoc()) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/iirup_form.js?v=<?php echo time(); ?>"></script>
     
-    <?php if (!empty($auto_fill_data)): ?>
+    <?php if (!empty($auto_fill_data) && $should_auto_fill): ?>
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Wait for session data to be loaded first
@@ -609,6 +556,16 @@ if ($result && $row = $result->fetch_assoc()) {
     }
     
     function fillRowWithAutoFillData(row) {
+        <?php if (!empty($auto_fill_data['employee_name'])): ?>
+        // Auto-fill Accountable Officer field
+        const accountableOfficerInput = document.querySelector('input[name="accountable_officer"]');
+        if (accountableOfficerInput) {
+            accountableOfficerInput.value = '<?php echo addslashes($auto_fill_data['employee_name']); ?>';
+            accountableOfficerInput.style.backgroundColor = '#e8f5e8';
+            accountableOfficerInput.style.border = '1px solid #28a745';
+        }
+        <?php endif; ?>
+        
         // Fill the form fields with auto-fill asset data
         <?php if (!empty($auto_fill_data['description'])): ?>
         const particularsInput = row.querySelector('input[name="particulars[]"]');

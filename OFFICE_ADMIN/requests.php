@@ -1677,6 +1677,9 @@ if ($office_id && $conn) {
         });
     </script>
     
+    <!-- Bootstrap-based Notification Script -->
+    <?php require_once 'includes/notification_script_bootstrap.php'; ?>
+    
     <!-- Sidebar Scripts -->
     <script src="../assets/js/sidebar.js"></script>
 </body>
