@@ -17,6 +17,7 @@ $page_title = 'Notifications';
 
 // Get current filter and search parameters
 $type_filter = $_GET['type'] ?? 'all';
+$priority_filter = $_GET['priority'] ?? 'all';
 $search = $_GET['search'] ?? '';
 $page = max(1, intval($_GET['page'] ?? 1));
 $per_page = 20;
@@ -33,6 +34,11 @@ $params = [$user_id];
 if ($type_filter !== 'all') {
     $where_conditions[] = "n.type = ?";
     $params[] = $type_filter;
+}
+
+if ($priority_filter !== 'all') {
+    $where_conditions[] = "n.priority = ?";
+    $params[] = $priority_filter;
 }
 
 if (!empty($search)) {
@@ -61,6 +67,12 @@ if ($type_filter !== 'all') {
     $count_param_values[] = $type_filter;
 }
 
+// Add priority filter if exists
+if ($priority_filter !== 'all') {
+    $count_param_types .= 's';
+    $count_param_values[] = $priority_filter;
+}
+
 // Add search parameters if exists
 if (!empty($search)) {
     $count_param_types .= 'ss';
@@ -85,7 +97,14 @@ $sql = "SELECT n.*,
          END as status
          FROM notifications n 
          $where_clause 
-         ORDER BY n.created_at DESC 
+         ORDER BY 
+            CASE n.priority 
+                WHEN 'critical' THEN 1 
+                WHEN 'high' THEN 2 
+                WHEN 'medium' THEN 3 
+                WHEN 'low' THEN 4 
+            END ASC,
+            n.created_at DESC 
          LIMIT ? OFFSET ?";
 $stmt = $conn->prepare($sql);
 
@@ -101,6 +120,12 @@ $param_values[] = $user_id;
 if ($type_filter !== 'all') {
     $param_types .= 's';
     $param_values[] = $type_filter;
+}
+
+// Add priority filter if exists
+if ($priority_filter !== 'all') {
+    $param_types .= 's';
+    $param_values[] = $priority_filter;
 }
 
 // Add search parameters if exists
@@ -346,6 +371,131 @@ $unread_count = $unread_result->fetch_assoc()['count'];
             border-radius: var(--border-radius) !important;
         }
         
+        /* Priority Filters */
+        .priority-filters {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            background: white;
+            padding: 0.5rem;
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-sm);
+            flex-wrap: wrap;
+        }
+        
+        .priority-tab {
+            padding: 0.75rem 1rem;
+            background: transparent;
+            border: 2px solid #e0e0e0;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 500;
+            color: var(--dark-color);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .priority-tab:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .priority-tab.active {
+            color: white;
+            border-color: transparent;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .priority-tab.priority-critical {
+            border-color: #dc3545;
+            color: #dc3545;
+        }
+        
+        .priority-tab.priority-critical.active {
+            background: #dc3545;
+        }
+        
+        .priority-tab.priority-high {
+            border-color: #fd7e14;
+            color: #fd7e14;
+        }
+        
+        .priority-tab.priority-high.active {
+            background: #fd7e14;
+        }
+        
+        .priority-tab.priority-medium {
+            border-color: #ffc107;
+            color: #ffc107;
+        }
+        
+        .priority-tab.priority-medium.active {
+            background: #ffc107;
+        }
+        
+        .priority-tab.priority-low {
+            border-color: #28a745;
+            color: #28a745;
+        }
+        
+        .priority-tab.priority-low.active {
+            background: #28a745;
+        }
+        
+        /* Priority Badges */
+        .priority-badge {
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .priority-badge.priority-critical {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .priority-badge.priority-high {
+            background: #fd7e14;
+            color: white;
+        }
+        
+        .priority-badge.priority-medium {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .priority-badge.priority-low {
+            background: #28a745;
+            color: white;
+        }
+        
+        /* Priority Card Borders */
+        .notification-card.priority-critical {
+            border-left-color: #dc3545;
+            border-left-width: 5px;
+        }
+        
+        .notification-card.priority-high {
+            border-left-color: #fd7e14;
+            border-left-width: 4px;
+        }
+        
+        .notification-card.priority-medium {
+            border-left-color: #ffc107;
+            border-left-width: 3px;
+        }
+        
+        .notification-card.priority-low {
+            border-left-color: #28a745;
+            border-left-width: 3px;
+        }
+        
         /* Responsive adjustments */
         @media (max-width: 768px) {
             .page-header {
@@ -367,6 +517,16 @@ $unread_count = $unread_result->fetch_assoc()['count'];
                 font-size: 0.9rem;
             }
             
+            .priority-filters {
+                gap: 0.25rem;
+                padding: 0.25rem;
+            }
+            
+            .priority-tab {
+                padding: 0.5rem 0.75rem;
+                font-size: 0.8rem;
+            }
+            
             .search-box {
                 padding: 1rem;
             }
@@ -375,6 +535,11 @@ $unread_count = $unread_result->fetch_assoc()['count'];
                 width: 40px;
                 height: 40px;
                 font-size: 1.1rem;
+            }
+            
+            .priority-badge {
+                font-size: 0.6rem;
+                padding: 0.2rem 0.4rem;
             }
         }
     </style>
@@ -417,20 +582,39 @@ $unread_count = $unread_result->fetch_assoc()['count'];
             
             <!-- Filters -->
             <div class="filter-tabs">
-                <a href="?type=all" class="filter-tab <?php echo $type_filter === 'all' ? 'active' : ''; ?>">
-                    All (<?php echo $total_notifications; ?>)
+                <a href="?type=all&priority=<?php echo htmlspecialchars($priority_filter); ?>" class="filter-tab <?php echo $type_filter === 'all' ? 'active' : ''; ?>">
+                    All Types (<?php echo $total_notifications; ?>)
                 </a>
-                <a href="?type=info" class="filter-tab <?php echo $type_filter === 'info' ? 'active' : ''; ?>">
+                <a href="?type=info&priority=<?php echo htmlspecialchars($priority_filter); ?>" class="filter-tab <?php echo $type_filter === 'info' ? 'active' : ''; ?>">
                     Info
                 </a>
-                <a href="?type=success" class="filter-tab <?php echo $type_filter === 'success' ? 'active' : ''; ?>">
+                <a href="?type=success&priority=<?php echo htmlspecialchars($priority_filter); ?>" class="filter-tab <?php echo $type_filter === 'success' ? 'active' : ''; ?>">
                     Success
                 </a>
-                <a href="?type=warning" class="filter-tab <?php echo $type_filter === 'warning' ? 'active' : ''; ?>">
+                <a href="?type=warning&priority=<?php echo htmlspecialchars($priority_filter); ?>" class="filter-tab <?php echo $type_filter === 'warning' ? 'active' : ''; ?>">
                     Warning
                 </a>
-                <a href="?type=error" class="filter-tab <?php echo $type_filter === 'error' ? 'active' : ''; ?>">
+                <a href="?type=error&priority=<?php echo htmlspecialchars($priority_filter); ?>" class="filter-tab <?php echo $type_filter === 'error' ? 'active' : ''; ?>">
                     Error
+                </a>
+            </div>
+            
+            <!-- Priority Filters -->
+            <div class="priority-filters">
+                <a href="?priority=all&type=<?php echo htmlspecialchars($type_filter); ?>" class="priority-tab <?php echo $priority_filter === 'all' ? 'active' : ''; ?>">
+                    <i class="bi bi-flag"></i> All Priorities
+                </a>
+                <a href="?priority=critical&type=<?php echo htmlspecialchars($type_filter); ?>" class="priority-tab priority-critical <?php echo $priority_filter === 'critical' ? 'active' : ''; ?>">
+                    <i class="bi bi-exclamation-octagon-fill"></i> Critical
+                </a>
+                <a href="?priority=high&type=<?php echo htmlspecialchars($type_filter); ?>" class="priority-tab priority-high <?php echo $priority_filter === 'high' ? 'active' : ''; ?>">
+                    <i class="bi bi-exclamation-triangle-fill"></i> High
+                </a>
+                <a href="?priority=medium&type=<?php echo htmlspecialchars($type_filter); ?>" class="priority-tab priority-medium <?php echo $priority_filter === 'medium' ? 'active' : ''; ?>">
+                    <i class="bi bi-dash-circle-fill"></i> Medium
+                </a>
+                <a href="?priority=low&type=<?php echo htmlspecialchars($type_filter); ?>" class="priority-tab priority-low <?php echo $priority_filter === 'low' ? 'active' : ''; ?>">
+                    <i class="bi bi-info-circle-fill"></i> Low
                 </a>
             </div>
             
@@ -438,11 +622,12 @@ $unread_count = $unread_result->fetch_assoc()['count'];
             <div class="search-box">
                 <form method="GET" class="d-flex gap-2">
                     <input type="hidden" name="type" value="<?php echo htmlspecialchars($type_filter); ?>">
+                    <input type="hidden" name="priority" value="<?php echo htmlspecialchars($priority_filter); ?>">
                     <input type="text" name="search" class="form-control" placeholder="Search notifications..." value="<?php echo htmlspecialchars($search); ?>">
                     <button type="submit" class="btn btn-primary">
                         <i class="bi bi-search"></i> Search
                     </button>
-                    <?php if (!empty($search) || $type_filter !== 'all'): ?>
+                    <?php if (!empty($search) || $type_filter !== 'all' || $priority_filter !== 'all'): ?>
                         <a href="notifications.php" class="btn btn-outline-secondary">
                             <i class="bi bi-x-circle"></i> Clear
                         </a>
@@ -453,21 +638,28 @@ $unread_count = $unread_result->fetch_assoc()['count'];
             <!-- Notifications List -->
             <?php if (!empty($notifications)): ?>
                 <?php foreach ($notifications as $notification): ?>
-                    <div class="notification-card <?php echo $notification['status']; ?>" data-id="<?php echo $notification['id']; ?>">
+                    <div class="notification-card <?php echo $notification['status']; ?> priority-<?php echo $notification['priority']; ?>" data-id="<?php echo $notification['id']; ?>">
                         <div class="d-flex align-items-start">
                             <div class="notification-type-icon notification-type-<?php echo $notification['type']; ?>">
                                 <i class="bi bi-<?php echo getNotificationIcon($notification['type']); ?>"></i>
                             </div>
                             <div class="flex-grow-1">
-                                <h5 class="mb-1">
-                                    <?php echo htmlspecialchars($notification['title']); ?>
-                                    <?php if (!$notification['is_read']): ?>
-                                        <span class="badge bg-primary ms-2">New</span>
-                                    <?php endif; ?>
-                                </h5>
-                                <p class="text-muted mb-2">
-                                    <?php echo htmlspecialchars($notification['message']); ?>
-                                </p>
+                                <div class="d-flex align-items-start justify-content-between">
+                                    <div class="flex-grow-1">
+                                        <h5 class="mb-1">
+                                            <?php echo htmlspecialchars($notification['title']); ?>
+                                            <?php if (!$notification['is_read']): ?>
+                                                <span class="badge bg-primary ms-2">New</span>
+                                            <?php endif; ?>
+                                            <span class="priority-badge priority-<?php echo $notification['priority']; ?> ms-2">
+                                                <?php echo strtoupper($notification['priority']); ?>
+                                            </span>
+                                        </h5>
+                                        <p class="text-muted mb-2">
+                                            <?php echo htmlspecialchars($notification['message']); ?>
+                                        </p>
+                                    </div>
+                                </div>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <small class="text-muted">
                                         <i class="bi bi-clock"></i>
