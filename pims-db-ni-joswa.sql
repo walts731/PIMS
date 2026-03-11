@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 11, 2026 at 03:14 AM
+-- Generation Time: Mar 11, 2026 at 04:25 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -959,12 +959,14 @@ CREATE TABLE `employees` (
   `id` int(11) NOT NULL,
   `employee_no` varchar(20) DEFAULT NULL,
   `firstname` varchar(50) NOT NULL,
+  `middle_name` varchar(50) DEFAULT NULL,
   `lastname` varchar(50) NOT NULL,
   `email` varchar(100) DEFAULT NULL,
   `phone` varchar(20) DEFAULT NULL,
   `profile_photo` varchar(255) DEFAULT NULL,
   `office_id` int(11) DEFAULT NULL,
   `position` varchar(100) DEFAULT NULL,
+  `designation` text DEFAULT NULL,
   `employment_status` enum('permanent','contractual','job_order','resigned','retired') DEFAULT 'permanent',
   `clearance_status` enum('cleared','uncleared') DEFAULT 'uncleared',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
@@ -975,11 +977,11 @@ CREATE TABLE `employees` (
 -- Dumping data for table `employees`
 --
 
-INSERT INTO `employees` (`id`, `employee_no`, `firstname`, `lastname`, `email`, `phone`, `profile_photo`, `office_id`, `position`, `employment_status`, `clearance_status`, `created_at`, `updated_at`) VALUES
-(1, 'EMP0001', 'Juan', 'Dela Cruz', 'juan.cruz@lgu.gov', '9123456789', NULL, 1, 'Office Clerk', 'permanent', 'uncleared', '2026-01-21 14:27:49', '2026-01-22 12:08:11'),
-(2, 'EMP0002', 'Maria', 'Santos', 'maria.santos@lgu.gov', '09234567890', NULL, 2, 'Accountant', 'contractual', 'uncleared', '2026-01-21 14:27:49', '2026-01-23 12:04:06'),
-(3, 'EMP0003', 'Jose', 'Reyes', 'jose.reyes@lgu.gov', '09345678901', NULL, 3, 'IT Specialist', 'job_order', 'uncleared', '2026-01-21 14:27:49', '2026-01-21 14:37:48'),
-(6, 'EMP20260001', 'Walton', 'loneza', 'wjll2022-2920-98466@bicol-u.edu.ph', '9107171456', 'uploads/employees/employee_6_1769087366.png', 4, '', 'permanent', 'uncleared', '2026-01-22 13:09:26', '2026-01-27 09:42:34');
+INSERT INTO `employees` (`id`, `employee_no`, `firstname`, `middle_name`, `lastname`, `email`, `phone`, `profile_photo`, `office_id`, `position`, `designation`, `employment_status`, `clearance_status`, `created_at`, `updated_at`) VALUES
+(1, 'EMP0001', 'Juan', NULL, 'Dela Cruz', 'juan.cruz@lgu.gov', '9123456789', NULL, 1, 'Office Clerk', NULL, 'permanent', 'uncleared', '2026-01-21 14:27:49', '2026-01-22 12:08:11'),
+(2, 'EMP0002', 'Maria', NULL, 'Santos', 'maria.santos@lgu.gov', '09234567890', NULL, 2, 'Accountant', NULL, 'contractual', 'uncleared', '2026-01-21 14:27:49', '2026-01-23 12:04:06'),
+(3, 'EMP0003', 'Jose', NULL, 'Reyes', 'jose.reyes@lgu.gov', '09345678901', NULL, 3, 'IT Specialist', NULL, 'job_order', 'uncleared', '2026-01-21 14:27:49', '2026-01-21 14:37:48'),
+(6, 'EMP20260001', 'Walton', NULL, 'loneza', 'wjll2022-2920-98466@bicol-u.edu.ph', '9107171456', 'uploads/employees/employee_6_1769087366.png', 4, '', NULL, 'permanent', 'uncleared', '2026-01-22 13:09:26', '2026-01-27 09:42:34');
 
 -- --------------------------------------------------------
 
@@ -1860,7 +1862,7 @@ INSERT INTO `notifications` (`id`, `user_id`, `title`, `message`, `type`, `prior
 (20, 17, 'CRITICAL: System Security Alert', 'Unauthorized access attempt detected on the system. Immediate attention required.', 'error', 'critical', NULL, 'system', 1, '2026-03-11 01:59:27', '2026-03-11 02:01:18'),
 (21, 17, 'URGENT: Low Stock Alert', 'Critical consumable \"Printer Paper\" is critically low. Only 5 units remaining.', 'warning', 'high', 1, 'consumable', 0, '2026-03-11 01:59:27', NULL),
 (22, 17, 'New Asset Request', 'New request from IT Department for \"Laptop Computer\" approval required.', 'info', 'medium', 1, 'request', 0, '2026-03-11 01:59:27', NULL),
-(23, 17, 'Information: System Update Completed', 'Monthly system maintenance has been completed successfully. All systems operational.', 'success', 'low', NULL, 'system', 0, '2026-03-11 01:59:27', NULL),
+(23, 17, 'Information: System Update Completed', 'Monthly system maintenance has been completed successfully. All systems operational.', 'success', 'low', NULL, 'system', 1, '2026-03-11 01:59:27', '2026-03-11 03:08:20'),
 (24, 17, 'Low Stock Alert', 'Consumable \'Test Consumable\' is running low on stock. Current: 2, Reorder at: 10', 'warning', 'high', 1, 'consumable', 0, '2026-03-11 01:59:27', NULL),
 (25, 17, 'Asset Maintenance Due', 'Asset \'Test Asset\' is due for maintenance', 'warning', 'high', 1, 'asset', 0, '2026-03-11 01:59:27', NULL),
 (26, 17, 'New Borrow Request', 'New Borrow request received from Test User', 'info', 'medium', 1, 'request', 0, '2026-03-11 01:59:27', NULL),
@@ -7857,7 +7859,15 @@ INSERT INTO `system_logs` (`id`, `user_id`, `action`, `module`, `description`, `
 (6062, 17, 'logout', 'authentication', 'User logged out: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-11 02:03:53'),
 (6063, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-11 02:04:05'),
 (6064, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-11 02:04:05'),
-(6065, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-11 02:05:14');
+(6065, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-11 02:05:14'),
+(6066, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (X11; Linux aarch64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 CrKey/1.54.250320', '2026-03-11 02:23:42'),
+(6067, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-11 03:01:06'),
+(6068, 17, 'logout', 'authentication', 'User logged out: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-11 03:01:10'),
+(6069, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-11 03:01:20'),
+(6070, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-11 03:01:20'),
+(6071, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-11 03:08:26'),
+(6072, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-11 03:08:35'),
+(6073, 17, 'access', 'inventory_reports', 'Office admin accessed inventory reports', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-11 03:08:38');
 
 -- --------------------------------------------------------
 
@@ -9188,7 +9198,7 @@ ALTER TABLE `software`
 -- AUTO_INCREMENT for table `system_logs`
 --
 ALTER TABLE `system_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6066;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6074;
 
 --
 -- AUTO_INCREMENT for table `system_settings`
