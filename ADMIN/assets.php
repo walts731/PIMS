@@ -674,28 +674,10 @@ try {
                         <i class="bi bi-info-circle"></i> <span id="assetQuantityText">Generating property numbers for asset quantity</span>
                     </div>
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-12">
                             <label class="form-label"><strong>Form Type:</strong></label>
                             <input type="text" class="form-control" id="assetFormType" value="07" readonly>
                             <small class="text-muted">Auto-detected: Property Acknowledgment Receipt</small>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label"><strong>Fund:</strong></label>
-                            <select class="form-select" id="assetFundSelect">
-                                <option value="">Select Fund</option>
-                                <?php 
-                                // Get funds for dropdown
-                                $funds_result = $conn->query("SELECT fund_code, fund_name, fund_cluster FROM funds WHERE status = 'active' ORDER BY fund_code");
-                                if ($funds_result) {
-                                    while ($fund = $funds_result->fetch_assoc()) {
-                                        // Extract numeric part from fund code (e.g., "05" from "GEN-2025")
-                                        preg_match('/(\d{2})$/', $fund['fund_code'], $matches);
-                                        $fund_code = isset($matches[1]) ? $matches[1] : '05';
-                                        echo '<option value="' . $fund_code . '">' . htmlspecialchars($fund['fund_name']) . ' (' . htmlspecialchars($fund['fund_code']) . ')</option>';
-                                    }
-                                }
-                                ?>
-                            </select>
                         </div>
                     </div>
                     
@@ -1439,7 +1421,6 @@ try {
         function generateAssetPropertyNumberPreview() {
             const year = new Date().getFullYear();
             const formType = document.getElementById('assetFormType').value || '07';
-            const fund = document.getElementById('assetFundSelect').value || '05';
             const category = document.getElementById('assetCategorySelectGen').value || '030';
             const subcategory = document.getElementById('assetSubcategorySelectGen').value || '01';
             const baseSeries = document.getElementById('assetSeriesInput').value || '01';
@@ -1465,7 +1446,7 @@ try {
                 // Combine subcategory and series without dash
                 const subcategorySeries = subcategory + currentSeries;
                 
-                const propertyNumber = `${year}-${formType}-${fund}-${category}-${subcategorySeries}-${officeCode}`;
+                const propertyNumber = `${year}-${formType}-${category}-${subcategorySeries}-${officeCode}`;
                 propertyNumbers.push(propertyNumber);
             }
             
@@ -1560,7 +1541,7 @@ try {
             }
             
             // Auto-update preview when any field changes
-            const fields = ['assetFundSelect', 'assetCategorySelectGen', 'assetSubcategorySelectGen', 'assetQuantityInput'];
+            const fields = ['assetCategorySelectGen', 'assetSubcategorySelectGen', 'assetQuantityInput'];
             fields.forEach(fieldId => {
                 const element = document.getElementById(fieldId);
                 if (element) {
