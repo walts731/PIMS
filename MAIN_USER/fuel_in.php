@@ -18,6 +18,30 @@ logSystemAction($_SESSION['user_id'], 'access', 'main_user_fuel_in', 'Main user 
 
 // Get filter parameters
 $fuel_type_filter = isset($_GET['fuel_type']) ? (int)$_GET['fuel_type'] : 0;
+$period_filter = isset($_GET['period']) ? trim((string)$_GET['period']) : 'all';
+
+// Calculate date range based on period filter
+$date_condition = "";
+$date_params = [];
+$date_types = "";
+
+switch ($period_filter) {
+    case 'today':
+        $date_condition = " AND DATE(fi.date_time) = CURDATE()";
+        break;
+    case 'week':
+        $date_condition = " AND fi.date_time >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
+        break;
+    case 'month':
+        $date_condition = " AND fi.date_time >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+        break;
+    case 'year':
+        $date_condition = " AND fi.date_time >= DATE_SUB(NOW(), INTERVAL 365 DAY)";
+        break;
+    default:
+        $date_condition = "";
+        break;
+}
 
 // Get recent fuel in transactions from fuel_in table (exactly like admin)
 $fuel_in_query = "SELECT fi.*, ft.name as fuel_type_name, u.first_name, u.last_name 
@@ -25,25 +49,55 @@ $fuel_in_query = "SELECT fi.*, ft.name as fuel_type_name, u.first_name, u.last_n
                  LEFT JOIN fuel_types ft ON fi.fuel_type = ft.id 
                  LEFT JOIN users u ON fi.received_by = u.id";
 
-// Add fuel type filter if selected
+// Add filters to query
+$where_conditions = [];
 if ($fuel_type_filter > 0) {
-    $fuel_in_query .= " WHERE fi.fuel_type = " . $fuel_type_filter;
+    $where_conditions[] = "fi.fuel_type = " . $fuel_type_filter;
+}
+if (!empty($date_condition)) {
+    $where_conditions[] = substr($date_condition, 5); // Remove " AND " prefix
+}
+
+if (!empty($where_conditions)) {
+    $fuel_in_query .= " WHERE " . implode(" AND ", $where_conditions);
 }
 
 $fuel_in_query .= " ORDER BY fi.date_time DESC 
                  LIMIT 50";
 $fuel_in_result = $conn->query($fuel_in_query);
 
-// Get today's fuel in summary
+// Get filtered period fuel in summary
+$summary_date_condition = "";
+switch ($period_filter) {
+    case 'today':
+        $summary_date_condition = " AND DATE(fi.date_time) = CURDATE()";
+        break;
+    case 'week':
+        $summary_date_condition = " AND fi.date_time >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
+        break;
+    case 'month':
+        $summary_date_condition = " AND fi.date_time >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+        break;
+    case 'year':
+        $summary_date_condition = " AND fi.date_time >= DATE_SUB(NOW(), INTERVAL 365 DAY)";
+        break;
+    default:
+        $summary_date_condition = " AND DATE(fi.date_time) = CURDATE()"; // Default to today for summary
+        break;
+}
+
 $today_fuel_in_query = "SELECT ft.name as fuel_type, SUM(fi.quantity) as total_quantity 
                         FROM fuel_in fi 
                         LEFT JOIN fuel_types ft ON fi.fuel_type = ft.id 
-                        WHERE DATE(fi.date_time) = CURDATE()";
+                        WHERE 1=1";
 
-// Add fuel type filter to today's summary if selected
+// Add fuel type filter to summary if selected
 if ($fuel_type_filter > 0) {
     $today_fuel_in_query .= " AND fi.fuel_type = " . $fuel_type_filter;
 }
+
+// Add date condition to summary
+$today_fuel_in_query .= $summary_date_condition;
 
 $today_fuel_in_query .= " GROUP BY ft.name";
 $today_fuel_in_result = $conn->query($today_fuel_in_query);
@@ -322,12 +376,28 @@ if ($fuel_in_result) {
             <!-- Filter Section -->
             <div class="filter-section mb-4">
                 <div class="row align-items-end">
-                    <div class="col-md-4">
-                        <label for="fuel_type" class="form-label fw-semibold">
-                            <i class="bi bi-fuel-pump me-1"></i>
-                            Filter by Fuel Type
+                    <div class="col-md-3">
+                        <label for="period" class="form-label fw-semibold">
+                            <i class="bi bi-calendar-range me-1"></i>Time Period
                         </label>
                         <form method="GET" class="d-flex gap-2">
+                            <select class="form-select" id="period" name="period" onchange="this.form.submit()">
+                                <option value="all" <?php echo $period_filter === 'all' ? 'selected' : ''; ?>>
+                                    All Time
+                                </option>
+                                <option value="today" <?php echo $period_filter === 'today' ? 'selected' : ''; ?>>
+                                    Today
+                                </option>
+                                <option value="week" <?php echo $period_filter === 'week' ? 'selected' : ''; ?>>
+                                    Last 7 Days
+                                </option>
+                                <option value="month" <?php echo $period_filter === 'month' ? 'selected' : ''; ?>>
+                                    Last 30 Days
+                                </option>
+                                <option value="year" <?php echo $period_filter === 'year' ? 'selected' : ''; ?>>
+                                    Last 365 Days
+                                </option>
+                            </select>
                             <select class="form-select" id="fuel_type" name="fuel_type" onchange="this.form.submit()">
                                 <option value="0" <?php echo $fuel_type_filter === 0 ? 'selected' : ''; ?>>
                                     All Fuel Types
@@ -341,7 +411,7 @@ if ($fuel_in_result) {
                                     </option>
                                 <?php endwhile; ?>
                             </select>
-                            <?php if ($fuel_type_filter > 0): ?>
+                            <?php if ($fuel_type_filter > 0 || $period_filter !== 'all'): ?>
                                 <a href="fuel_in.php" class="btn btn-outline-secondary">
                                     <i class="bi bi-x-circle me-1"></i>
                                     Clear
@@ -349,15 +419,29 @@ if ($fuel_in_result) {
                             <?php endif; ?>
                         </form>
                     </div>
-                    <div class="col-md-8">
+                    <div class="col-md-9">
                         <div class="text-muted">
                             <small>
-                                <?php if ($fuel_type_filter > 0): ?>
+                                <?php if ($period_filter !== 'all' || $fuel_type_filter > 0): ?>
                                     <i class="bi bi-funnel me-1"></i>
-                                    Showing transactions for selected fuel type only
+                                    Showing transactions for 
+                                    <?php 
+                                    $period_labels = [
+                                        'today' => 'Today',
+                                        'week' => 'Last 7 Days',
+                                        'month' => 'Last 30 Days',
+                                        'year' => 'Last 365 Days'
+                                    ];
+                                    if ($period_filter !== 'all') {
+                                        echo '<span class="badge bg-primary me-1">' . htmlspecialchars($period_labels[$period_filter]) . '</span>';
+                                    }
+                                    if ($fuel_type_filter > 0) {
+                                        echo '<span class="badge bg-success">Selected Fuel Type</span>';
+                                    }
+                                    ?>
                                 <?php else: ?>
                                     <i class="bi bi-info-circle me-1"></i>
-                                    Showing all fuel types. Select a fuel type to filter.
+                                    Showing all fuel IN transactions. Use filters above to narrow results.
                                 <?php endif; ?>
                             </small>
                         </div>

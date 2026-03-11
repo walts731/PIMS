@@ -45,26 +45,27 @@ try {
     if (empty($existing_tables)) {
         $error = 'No fuel tables found. Please contact administrator to set up fuel management tables.';
     } else {
-        // Get filter parameters
-        $date_from = isset($_GET['date_from']) ? trim((string)$_GET['date_from']) : date('Y-m-01');
+        // Get filter parameters - expanded default date range
+        $date_from = isset($_GET['date_from']) ? trim((string)$_GET['date_from']) : date('Y-m-01', strtotime('-3 months'));
         $date_to = isset($_GET['date_to']) ? trim((string)$_GET['date_to']) : date('Y-m-d');
         $office_filter = isset($_GET['office']) ? (int)$_GET['office'] : 0;
         
-        // Get fuel IN records
-        if (in_array('fuel_in', $existing_tables)) {
+        // Get fuel IN records from fuel_transactions table
+        if (in_array('fuel_transactions', $existing_tables)) {
             $fuel_in_sql = "SELECT 
                               id,
-                              date as fuel_date,
+                              DATE(transaction_date) as fuel_date,
                               quantity as fuel_quantity,
                               fuel_type,
-                              vehicle_name,
-                              plate_number,
-                              odometer as odometer_reading,
+                              vehicle_equipment as vehicle_name,
+                              '' as plate_number,
+                              odometer_reading,
                               purpose,
                               created_at,
-                              created_by
-                           FROM fuel_in 
-                           WHERE date BETWEEN ? AND ?";
+                              user_id as created_by
+                           FROM fuel_transactions 
+                           WHERE transaction_type = 'IN' 
+                           AND DATE(transaction_date) BETWEEN ? AND ?";
             
             $params = [$date_from, $date_to];
             $types = "ss";
@@ -75,7 +76,7 @@ try {
                 $types .= "i";
             }
             
-            $fuel_in_sql .= " ORDER BY date DESC";
+            $fuel_in_sql .= " ORDER BY transaction_date DESC";
             
             $fuel_in_stmt = $conn->prepare($fuel_in_sql);
             if ($fuel_in_stmt) {
@@ -89,21 +90,22 @@ try {
             }
         }
         
-        // Get fuel OUT records
-        if (in_array('fuel_out', $existing_tables)) {
+        // Get fuel OUT records from fuel_transactions table
+        if (in_array('fuel_transactions', $existing_tables)) {
             $fuel_out_sql = "SELECT 
                                id,
-                               date as fuel_date,
+                               DATE(transaction_date) as fuel_date,
                                quantity as fuel_quantity,
                                fuel_type,
-                               vehicle_name,
-                               plate_number,
-                               odometer as odometer_reading,
+                               vehicle_equipment as vehicle_name,
+                               '' as plate_number,
+                               odometer_reading,
                                purpose,
                                created_at,
-                               created_by
-                            FROM fuel_out 
-                            WHERE date BETWEEN ? AND ?";
+                               user_id as created_by
+                            FROM fuel_transactions 
+                            WHERE transaction_type = 'OUT' 
+                            AND DATE(transaction_date) BETWEEN ? AND ?";
             
             $params = [$date_from, $date_to];
             $types = "ss";
@@ -114,7 +116,7 @@ try {
                 $types .= "i";
             }
             
-            $fuel_out_sql .= " ORDER BY date DESC";
+            $fuel_out_sql .= " ORDER BY transaction_date DESC";
             
             $fuel_out_stmt = $conn->prepare($fuel_out_sql);
             if ($fuel_out_stmt) {
@@ -128,84 +130,6 @@ try {
             }
         }
         
-        // If no fuel_in/fuel_out tables, get from fuel_transactions
-        if (empty($fuel_in_records) && empty($fuel_out_records) && in_array('fuel_transactions', $existing_tables)) {
-            // Get IN transactions
-            $in_sql = "SELECT 
-                          id,
-                          transaction_date as fuel_date,
-                          quantity as fuel_quantity,
-                          fuel_type,
-                          vehicle_name,
-                          plate_number,
-                          odometer as odometer_reading,
-                          notes as purpose,
-                          created_at,
-                          user_id as created_by
-                       FROM fuel_transactions 
-                       WHERE transaction_type = 'IN' 
-                       AND DATE(transaction_date) BETWEEN ? AND ?";
-            
-            $params = [$date_from, $date_to];
-            $types = "ss";
-            
-            if ($office_filter > 0) {
-                $in_sql .= " AND office_id = ?";
-                $params[] = $office_filter;
-                $types .= "i";
-            }
-            
-            $in_sql .= " ORDER BY transaction_date DESC";
-            
-            $in_stmt = $conn->prepare($in_sql);
-            if ($in_stmt) {
-                $in_stmt->bind_param($types, ...$params);
-                $in_stmt->execute();
-                $in_result = $in_stmt->get_result();
-                while ($row = $in_result->fetch_assoc()) {
-                    $fuel_in_records[] = $row;
-                }
-                $in_stmt->close();
-            }
-            
-            // Get OUT transactions
-            $out_sql = "SELECT 
-                           id,
-                           transaction_date as fuel_date,
-                           quantity as fuel_quantity,
-                           fuel_type,
-                           vehicle_name,
-                           plate_number,
-                           odometer as odometer_reading,
-                           notes as purpose,
-                           created_at,
-                           user_id as created_by
-                        FROM fuel_transactions 
-                        WHERE transaction_type = 'OUT' 
-                        AND DATE(transaction_date) BETWEEN ? AND ?";
-            
-            $params = [$date_from, $date_to];
-            $types = "ss";
-            
-            if ($office_filter > 0) {
-                $out_sql .= " AND office_id = ?";
-                $params[] = $office_filter;
-                $types .= "i";
-            }
-            
-            $out_sql .= " ORDER BY transaction_date DESC";
-            
-            $out_stmt = $conn->prepare($out_sql);
-            if ($out_stmt) {
-                $out_stmt->bind_param($types, ...$params);
-                $out_stmt->execute();
-                $out_result = $out_stmt->get_result();
-                while ($row = $out_result->fetch_assoc()) {
-                    $fuel_out_records[] = $row;
-                }
-                $out_stmt->close();
-            }
-        }
     }
 } catch (Exception $e) {
     $error = 'An error occurred while fetching fuel transactions: ' . $e->getMessage();
@@ -374,6 +298,14 @@ try {
         .alert {
             animation: slideDown 0.5s ease-out;
         }
+        .filter-section {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            animation: slideUp 0.6s ease-out 0.4s both;
+        }
     </style>
 </head>
 <body>
@@ -405,6 +337,40 @@ try {
                 <strong>Error:</strong> <?php echo htmlspecialchars($error); ?>
             </div>
         <?php endif; ?>
+
+        <!-- Filter Section -->
+        <div class="filter-section">
+            <h5 class="mb-3">
+                <i class="bi bi-funnel me-2"></i>
+                Filter Transactions
+            </h5>
+            <form method="GET" class="row g-2 align-items-end">
+                <div class="col-md-4">
+                    <label for="date_from" class="form-label fw-semibold">From Date</label>
+                    <input type="date" class="form-control" id="date_from" name="date_from" value="<?php echo htmlspecialchars($date_from); ?>">
+                </div>
+                <div class="col-md-4">
+                    <label for="date_to" class="form-label fw-semibold">To Date</label>
+                    <input type="date" class="form-control" id="date_to" name="date_to" value="<?php echo htmlspecialchars($date_to); ?>">
+                </div>
+                <div class="col-md-4">
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-gradient flex-fill">
+                            <i class="bi bi-funnel me-1"></i>
+                            Filter
+                        </button>
+                        <a href="fuel_transactions.php" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-clockwise me-1"></i>
+                            Reset
+                        </a>
+                        <a href="fuel_transactions.php?date_from=2020-01-01&date_to=<?php echo date('Y-m-d'); ?>" class="btn btn-outline-info">
+                            <i class="bi bi-calendar-range me-1"></i>
+                            Show All
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
 
         <!-- Statistics Summary -->
         <div class="row mb-4">

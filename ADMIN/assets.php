@@ -313,6 +313,9 @@ $subcategory_filter = isset($_GET['subcategory']) ? intval($_GET['subcategory'])
 $office_filter = isset($_GET['office']) ? intval($_GET['office']) : 0;
 $search_filter = isset($_GET['search']) ? trim($_GET['search']) : '';
 
+// Debug logging for filters
+error_log("DEBUG: Filter parameters - Category: $category_filter, Subcategory: $subcategory_filter, Office: $office_filter, Search: '$search_filter'");
+
 // Get assets with category, subcategory, and office information
 $assets = [];
 try {
@@ -639,7 +642,7 @@ try {
                             <?php endforeach; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="8" class="text-center text-muted py-4">
+                                <td colspan="7" class="text-center text-muted py-4">
                                     <i class="bi bi-inbox fs-1"></i>
                                     <p class="mt-2">No assets found. Click "Add Asset" to create your first asset.</p>
                                 </td>
@@ -964,125 +967,374 @@ try {
         let assetsTable;
         
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize DataTable
-            assetsTable = $('#assetsTable').DataTable({
-                responsive: true,
-                pageLength: 25,
-                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
-                order: [[4, 'desc']], // Sort by Created date column (index 4) by default
-                columnDefs: [
-                    {
-                        targets: 0, // Category column
-                        orderable: true,
-                        render: function(data, type, row) {
-                            if (type === 'display') {
-                                return data;
-                            }
-                            return data.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
-                        }
-                    },
-                    {
-                        targets: 4, // Created date column
-                        orderable: true,
-                        render: function(data, type, row) {
-                            if (type === 'sort' || type === 'type') {
-                                // Convert date string to timestamp for sorting
-                                return new Date(data).getTime();
-                            }
-                            return data;
-                        }
-                    },
-                    {
-                        targets: -1, // Actions column (last column)
-                        orderable: false,
-                        searchable: false
-                    }
-                ],
-                dom: '<"row"<"col-md-6"l><"col-md-6 text-end"f>>rtip',
-                language: {
-                    search: "Search assets:",
-                    lengthMenu: "Show _MENU_ assets per page",
-                    info: "Showing _START_ to _END_ of _TOTAL_ assets",
-                    paginate: {
-                        first: "First",
-                        last: "Last",
-                        next: "Next",
-                        previous: "Previous"
-                    },
-                    emptyTable: "No assets available",
-                    zeroRecords: "No matching assets found"
-                }
-            });
+            // Check if table has data rows before initializing DataTables
+            const tableBody = $('#assetsTable tbody');
+            const hasData = tableBody.find('tr').length > 0 && !tableBody.find('td[colspan]').length;
             
-            // Category filter - reload page with filter parameter
-            $('#categoryFilter').on('change', function() {
-                const categoryValue = this.value;
-                const currentUrl = new URL(window.location);
+            console.log('Table has data:', hasData);
+            console.log('Table rows found:', tableBody.find('tr').length);
+            
+            // Initialize DataTable with error handling
+            try {
+                if (hasData) {
+                    // Only initialize DataTables if there's actual data
+                    assetsTable = $('#assetsTable').DataTable({
+                        responsive: true,
+                        pageLength: 25,
+                        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                        order: [[4, 'desc']], // Sort by Created date column (index 4) by default
+                        columnDefs: [
+                            {
+                                targets: 0, // Category column
+                                orderable: true,
+                                render: function(data, type, row) {
+                                    if (type === 'display') {
+                                        return data;
+                                    }
+                                    return data.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+                                }
+                            },
+                            {
+                                targets: 4, // Created date column
+                                orderable: true,
+                                render: function(data, type, row) {
+                                    if (type === 'sort' || type === 'type') {
+                                        // Convert date string to timestamp for sorting
+                                        return new Date(data).getTime();
+                                    }
+                                    return data;
+                                }
+                            },
+                            {
+                                targets: -1, // Actions column (last column)
+                                orderable: false,
+                                searchable: false
+                            }
+                        ],
+                        dom: '<"row"<"col-md-6"l><"col-md-6 text-end"f>>rtip',
+                        language: {
+                            search: "Search assets:",
+                            lengthMenu: "Show _MENU_ assets per page",
+                            info: "Showing _START_ to _END_ of _TOTAL_ assets",
+                            paginate: {
+                                first: "First",
+                                last: "Last",
+                                next: "Next",
+                                previous: "Previous"
+                            },
+                            emptyTable: "No assets available",
+                            zeroRecords: "No matching assets found"
+                        },
+                        initComplete: function(settings, json) {
+                            console.log('DataTables initialized successfully');
+                            // Initialize subcategory filter state after DataTables is ready
+                            initializeSubcategoryFilter();
+                        }
+                    });
+                } else {
+                    // No data - don't initialize DataTables, just add basic styling
+                    $('#assetsTable').addClass('table-striped');
+                    console.log('No data found - DataTables not initialized');
+                    // Still initialize subcategory filter
+                    initializeSubcategoryFilter();
+                }
+            } catch (error) {
+                console.error('DataTables initialization error:', error);
+                // Fallback: make table work without DataTables
+                $('#assetsTable').addClass('table-striped');
+                // Initialize subcategory filter even if DataTables fails
+                initializeSubcategoryFilter();
+            }
+            
+            // Function to initialize subcategory filter based on current category selection
+            function initializeSubcategoryFilter() {
+                const categoryValue = $('#categoryFilter').val();
+                const subcategorySelect = $('#subcategoryFilter');
                 
-                // Clear subcategory filter when category changes
-                currentUrl.searchParams.delete('subcategory');
+                console.log('Initializing subcategory filter with category:', categoryValue);
+                
+                // Check if subcategories are already loaded via PHP
+                const hasPhpSubcategories = subcategorySelect.find('option').length > 1;
+                
+                if (hasPhpSubcategories && categoryValue) {
+                    console.log('Subcategories already loaded via PHP, skipping AJAX');
+                    // Just make sure the subcategory filter is enabled
+                    subcategorySelect.prop('disabled', false);
+                    return;
+                }
                 
                 if (categoryValue) {
-                    currentUrl.searchParams.set('category', categoryValue);
+                    // Enable subcategory filter and show loading
+                    subcategorySelect.prop('disabled', false);
+                    subcategorySelect.empty().append('<option value="">Loading subcategories...</option>');
+                    
+                    // Load subcategories for selected category - using simple API for testing
+                    $.ajax({
+                        url: './api/get_subcategories_simple.php',
+                        method: 'GET',
+                        data: { category_id: categoryValue },
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success) {
+                                // Get current selected subcategory value
+                                const currentSubcategory = subcategorySelect.val();
+                                
+                                // Clear current options
+                                subcategorySelect.empty().append('<option value="">All Subcategories</option>');
+                                
+                                // Add new subcategory options
+                                response.subcategories.forEach(function(subcat) {
+                                    subcategorySelect.append(
+                                        $('<option>', {
+                                            value: subcat.id,
+                                            text: subcat.code + ' - ' + subcat.name,
+                                            selected: subcat.id == currentSubcategory
+                                        })
+                                    );
+                                });
+                                
+                                console.log('Initialized subcategories:', response.subcategories);
+                            } else {
+                                console.error('Error loading subcategories:', response.error);
+                                subcategorySelect.empty().append('<option value="">Error: ' + response.error + '</option>');
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('AJAX error details:', {
+                                status: status,
+                                error: error,
+                                responseText: xhr.responseText,
+                                statusCode: xhr.status
+                            });
+                            
+                            let errorMessage = 'Error loading subcategories';
+                            if (xhr.responseJSON && xhr.responseJSON.error) {
+                                errorMessage = xhr.responseJSON.error;
+                            } else if (xhr.status === 404) {
+                                errorMessage = 'API endpoint not found';
+                            } else if (xhr.status === 500) {
+                                errorMessage = 'Server error - check logs';
+                            }
+                            
+                            subcategorySelect.empty().append('<option value="">' + errorMessage + '</option>');
+                        }
+                    });
                 } else {
-                    currentUrl.searchParams.delete('category');
+                    // Disable subcategory filter if no category selected
+                    subcategorySelect.prop('disabled', true);
                 }
-                currentUrl.searchParams.delete('page'); // Reset pagination
-                window.location.href = currentUrl.toString();
+            }
+            
+            // Category filter - dynamically load subcategories and apply filter
+            $('#categoryFilter').on('change', function() {
+                const categoryValue = this.value;
+                const subcategorySelect = $('#subcategoryFilter');
+                
+                console.log('Category filter changed:', categoryValue);
+                
+                if (categoryValue) {
+                    // Enable subcategory filter and show loading
+                    subcategorySelect.prop('disabled', false);
+                    subcategorySelect.empty().append('<option value="">Loading subcategories...</option>');
+                    
+                    // Load subcategories for selected category - using simple API for testing
+                    $.ajax({
+                        url: './api/get_subcategories_simple.php',
+                        method: 'GET',
+                        data: { category_id: categoryValue },
+                        dataType: 'json',
+                        beforeSend: function(xhr) {
+                            console.log('Sending AJAX request to: ./api/get_subcategories_simple.php?category_id=' + categoryValue);
+                        },
+                        success: function(response) {
+                            console.log('AJAX response received:', response);
+                            
+                            if (response.success) {
+                                // Clear current options
+                                subcategorySelect.empty().append('<option value="">All Subcategories</option>');
+                                
+                                // Add new subcategory options
+                                response.subcategories.forEach(function(subcat) {
+                                    subcategorySelect.append(
+                                        $('<option>', {
+                                            value: subcat.id,
+                                            text: subcat.code + ' - ' + subcat.name
+                                        })
+                                    );
+                                });
+                                
+                                console.log('Loaded subcategories:', response.subcategories);
+                            } else {
+                                console.error('Error loading subcategories:', response.error);
+                                subcategorySelect.empty().append('<option value="">Error: ' + response.error + '</option>');
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('AJAX error details:', {
+                                status: status,
+                                error: error,
+                                responseText: xhr.responseText,
+                                statusCode: xhr.status
+                            });
+                            
+                            let errorMessage = 'Error loading subcategories';
+                            if (xhr.responseJSON && xhr.responseJSON.error) {
+                                errorMessage = xhr.responseJSON.error;
+                            } else if (xhr.status === 404) {
+                                errorMessage = 'API endpoint not found';
+                            } else if (xhr.status === 500) {
+                                errorMessage = 'Server error - check logs';
+                            }
+                            
+                            subcategorySelect.empty().append('<option value="">' + errorMessage + '</option>');
+                        }
+                    });
+                    
+                    // Apply category filter
+                    applyFilters();
+                } else {
+                    // Disable and clear subcategory filter
+                    subcategorySelect.prop('disabled', true);
+                    subcategorySelect.empty().append('<option value="">All Subcategories</option>');
+                    
+                    // Apply filters (will clear category filter)
+                    applyFilters();
+                }
             });
             
-            // Subcategory filter - reload page with filter parameter
+            // Subcategory filter - apply filter dynamically
             $('#subcategoryFilter').on('change', function() {
                 const subcategoryValue = this.value;
-                const currentUrl = new URL(window.location);
-                
-                if (subcategoryValue) {
-                    currentUrl.searchParams.set('subcategory', subcategoryValue);
-                } else {
-                    currentUrl.searchParams.delete('subcategory');
-                }
-                currentUrl.searchParams.delete('page'); // Reset pagination
-                window.location.href = currentUrl.toString();
+                console.log('Subcategory filter changed:', subcategoryValue);
+                applyFilters();
             });
             
-            // Office filter - reload page with filter parameter
+            // Office filter - apply filter dynamically
             $('#officeFilter').on('change', function() {
                 const officeValue = this.value;
-                const currentUrl = new URL(window.location);
-                if (officeValue) {
-                    currentUrl.searchParams.set('office', officeValue);
-                } else {
-                    currentUrl.searchParams.delete('office');
-                }
-                currentUrl.searchParams.delete('page'); // Reset pagination
-                window.location.href = currentUrl.toString();
+                console.log('Office filter changed:', officeValue);
+                applyFilters();
             });
+            
+            // Function to apply all filters dynamically
+            function applyFilters() {
+                const categoryValue = $('#categoryFilter').val();
+                const subcategoryValue = $('#subcategoryFilter').val();
+                const officeValue = $('#officeFilter').val();
+                
+                console.log('Applying filters:', {
+                    category: categoryValue,
+                    subcategory: subcategoryValue,
+                    office: officeValue
+                });
+                
+                // Build filter conditions for DataTables
+                let searchTerms = [];
+                
+                if (categoryValue) {
+                    // Filter by category - this will be handled by server-side reload
+                    // For now, we'll reload the page to maintain consistency with existing logic
+                    const currentUrl = new URL(window.location);
+                    currentUrl.searchParams.set('category', categoryValue);
+                    if (subcategoryValue) {
+                        currentUrl.searchParams.set('subcategory', subcategoryValue);
+                    } else {
+                        currentUrl.searchParams.delete('subcategory');
+                    }
+                    if (officeValue) {
+                        currentUrl.searchParams.set('office', officeValue);
+                    } else {
+                        currentUrl.searchParams.delete('office');
+                    }
+                    currentUrl.searchParams.delete('page'); // Reset pagination
+                    window.location.href = currentUrl.toString();
+                } else {
+                    // No category filter - clear all filters and reload
+                    const currentUrl = new URL(window.location);
+                    currentUrl.searchParams.delete('category');
+                    currentUrl.searchParams.delete('subcategory');
+                    currentUrl.searchParams.delete('office');
+                    currentUrl.searchParams.delete('page');
+                    window.location.href = currentUrl.toString();
+                }
+            }
             
         });
         
         // Export assets function (updated for DataTables)
         function exportAssets() {
-            // Use DataTables export functionality
-            const data = assetsTable.data().toArray();
-            let csv = 'Category,Description,Quantity,Status,Office,Created\n';
+            console.log('Export function called');
             
-            data.forEach(row => {
-                const rowData = [
-                    row[0].replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim(), // Category
-                    row[1], // Description
-                    row[2], // Quantity
-                    row[3].replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim(), // Status
-                    row[4], // Office
-                    row[5]  // Created
-                ];
-                csv += rowData.map(cell => `"${cell.trim()}"`).join(',') + '\n';
+            if (assetsTable) {
+                // Use DataTables export functionality if DataTables is initialized
+                try {
+                    const data = assetsTable.data().toArray();
+                    let csv = 'Category,Subcategory,Description,Quantity,Office,Created,Actions\n';
+                    
+                    data.forEach(row => {
+                        const rowData = [
+                            row[0].replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim(), // Category
+                            row[1].replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim(), // Subcategory
+                            row[2], // Description
+                            row[3], // Quantity
+                            row[4].replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim(), // Office
+                            row[5], // Created
+                            row[6].replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()  // Actions
+                        ];
+                        csv += rowData.map(cell => `"${cell.trim()}"`).join(',') + '\n';
+                    });
+                    
+                    // Download CSV
+                    const blob = new Blob([csv], { type: 'text/csv' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'assets_export.csv';
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                } catch (error) {
+                    console.error('DataTables export error:', error);
+                    // Fallback to manual table export
+                    exportTableManually();
+                }
+            } else {
+                // DataTables not initialized, use manual export
+                exportTableManually();
+            }
+        }
+        
+        // Manual export function for when DataTables is not available
+        function exportTableManually() {
+            console.log('Using manual table export');
+            let csv = 'Category,Subcategory,Description,Quantity,Office,Created\n';
+            
+            $('#assetsTable tbody tr').each(function() {
+                const $row = $(this);
+                // Skip empty state rows
+                if ($row.find('td[colspan]').length > 0) {
+                    return;
+                }
+                
+                const rowData = [];
+                $row.find('td').each(function(index) {
+                    let cellText = $(this).text().trim();
+                    // Skip actions column for export
+                    if (index < 6) {
+                        rowData.push(cellText);
+                    }
+                });
+                
+                if (rowData.length > 0) {
+                    csv += rowData.map(cell => `"${cell}"`).join(',') + '\n';
+                }
             });
             
+            // Download CSV
             const blob = new Blob([csv], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `assets_export_${new Date().toISOString().split('T')[0]}.csv`;
+            a.download = 'assets_export.csv';
             a.click();
             window.URL.revokeObjectURL(url);
         }
