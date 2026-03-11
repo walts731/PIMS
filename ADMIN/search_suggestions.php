@@ -41,12 +41,12 @@ try {
     
     // Search in asset_items
     $asset_stmt = $conn->prepare("
-        SELECT ai.id, ai.description, ai.property_number, ai.inventory_tag, ai.property_no,
+        SELECT ai.id, ai.description, ai.property_no, ai.inventory_tag,
                a.description as asset_description, o.office_name
         FROM asset_items ai
         LEFT JOIN assets a ON ai.asset_id = a.id
         LEFT JOIN offices o ON ai.office_id = o.id
-        WHERE ai.description LIKE ? OR ai.property_number LIKE ? OR ai.inventory_tag LIKE ? OR ai.property_no LIKE ?
+        WHERE ai.description LIKE ? OR ai.property_no LIKE ? OR ai.inventory_tag LIKE ?
         ORDER BY ai.last_updated DESC
         LIMIT 5
     ");
@@ -57,7 +57,7 @@ try {
     }
     
     $search_pattern = "%$query%";
-    $asset_stmt->bind_param("ssss", $search_pattern, $search_pattern, $search_pattern, $search_pattern);
+    $asset_stmt->bind_param("sss", $search_pattern, $search_pattern, $search_pattern);
     $asset_stmt->execute();
     $asset_result = $asset_stmt->get_result();
     
@@ -65,14 +65,11 @@ try {
         $text = $row['description'];
         $meta = [];
         
-        if (!empty($row['property_number'])) {
-            $meta[] = 'Property #: ' . htmlspecialchars($row['property_number']);
+        if (!empty($row['property_no'])) {
+            $meta[] = 'Prop No: ' . htmlspecialchars($row['property_no']);
         }
         if (!empty($row['inventory_tag'])) {
             $meta[] = 'Tag: ' . htmlspecialchars($row['inventory_tag']);
-        }
-        if (!empty($row['property_no'])) {
-            $meta[] = 'Prop No: ' . htmlspecialchars($row['property_no']);
         }
         if (!empty($row['office_name'])) {
             $meta[] = htmlspecialchars($row['office_name']);
