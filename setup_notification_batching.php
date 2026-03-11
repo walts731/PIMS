@@ -21,7 +21,8 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role
 $message = '';
 $message_type = '';
 
-if ($_POST['action'] === 'setup') {
+// Check if setup form was submitted
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'setup') {
     try {
         // Read and execute the SQL setup file
         $sql_file = 'database/notification_batching_tables.sql';
