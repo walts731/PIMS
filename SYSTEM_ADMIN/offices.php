@@ -239,6 +239,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     $phone = trim($_POST['phone'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $capacity = intval($_POST['capacity'] ?? 0);
+    $branch = !empty($_POST['branch']) ? intval($_POST['branch']) : null;
     
     // Validation
     if (empty($office_name) || empty($office_code)) {
@@ -252,8 +253,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         $message_type = "danger";
     } else {
         try {
-            $stmt = $conn->prepare("INSERT INTO offices (office_name, office_code, address, state, postal_code, country, phone, email, capacity, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("ssssssssii", $office_name, $office_code, $address, $state, $postal_code, $country, $phone, $email, $capacity, $_SESSION['user_id']);
+            $stmt = $conn->prepare("INSERT INTO offices (office_name, office_code, address, state, postal_code, country, phone, email, capacity, branch, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("ssssssssiii", $office_name, $office_code, $address, $state, $postal_code, $country, $phone, $email, $capacity, $branch, $_SESSION['user_id']);
             $stmt->execute();
             
             $message = "Office added successfully!";
@@ -284,6 +285,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     $phone = trim($_POST['phone'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $capacity = intval($_POST['capacity'] ?? 0);
+    $branch = !empty($_POST['branch']) ? intval($_POST['branch']) : null;
     
     // Validation
     if (empty($office_name) || empty($office_code)) {
@@ -297,8 +299,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         $message_type = "danger";
     } else {
         try {
-            $stmt = $conn->prepare("UPDATE offices SET office_name = ?, office_code = ?, address = ?, state = ?, postal_code = ?, country = ?, phone = ?, email = ?, capacity = ?, updated_by = ? WHERE id = ?");
-            $stmt->bind_param("ssssssssiii", $office_name, $office_code, $address, $state, $postal_code, $country, $phone, $email, $capacity, $_SESSION['user_id'], $id);
+            $stmt = $conn->prepare("UPDATE offices SET office_name = ?, office_code = ?, address = ?, state = ?, postal_code = ?, country = ?, phone = ?, email = ?, capacity = ?, branch = ?, updated_by = ? WHERE id = ?");
+            $stmt->bind_param("ssssssssiiii", $office_name, $office_code, $address, $state, $postal_code, $country, $phone, $email, $capacity, $branch, $_SESSION['user_id'], $id);
             $stmt->execute();
             
             // Log the action before redirect
@@ -320,10 +322,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
 }
 
 
-// Get all offices
+// Get all offices with branch/parent info
 $offices = [];
 try {
-    $stmt = $conn->prepare("SELECT o.*, u1.username as created_by_name, u2.username as updated_by_name FROM offices o LEFT JOIN users u1 ON o.created_by = u1.id LEFT JOIN users u2 ON o.updated_by = u2.id ORDER BY o.office_name");
+    $stmt = $conn->prepare("SELECT o.*, u1.username as created_by_name, u2.username as updated_by_name, p.office_name as parent_office_name, p.office_code as parent_office_code, (SELECT COUNT(*) FROM offices WHERE branch = o.id) as child_count FROM offices o LEFT JOIN users u1 ON o.created_by = u1.id LEFT JOIN users u2 ON o.updated_by = u2.id LEFT JOIN offices p ON o.branch = p.id ORDER BY o.office_name");
     $stmt->execute();
     $result = $stmt->get_result();
     while ($row = $result->fetch_assoc()) {
@@ -542,14 +544,14 @@ $page_title = 'Offices';
                     <p class="text-muted mb-0">Manage office departments for the LGU</p>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <div class="btn-group" role="group">
-                        <button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#importOfficesModal">
-                            <i class="bi bi-upload"></i> Import
-                        </button>
-                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addOfficeModal">
-                            <i class="bi bi-plus-circle"></i> Add Office
-                        </button>
-                    </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addOfficeModal">
+                                <i class="bi bi-plus-circle"></i> Add Office
+                            </button>
+                            <button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#importOfficesModal">
+                                <i class="bi bi-upload"></i> Import
+                            </button>
+                        </div>
                 </div>
             </div>
         </div>
@@ -563,8 +565,8 @@ $page_title = 'Offices';
                             <div class="stats-number"><?php echo count($offices); ?></div>
                             <div class="text-muted">Total Offices</div>
                             <small class="text-success">
-                                <i class="bi bi-building"></i> 
-                                Branches
+                                <i class="bi bi-diagram-2"></i> 
+                                <?php echo array_sum(array_column($offices, 'child_count')); ?> Sub-Offices
                             </small>
                         </div>
                         <div class="text-primary">
@@ -638,6 +640,8 @@ $page_title = 'Offices';
                                     <tr>
                                         <th>Office Name</th>
                                         <th>Code</th>
+                                        <th>Parent Office</th>
+                                        <th>Sub-Offices</th>
                                         <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
@@ -651,6 +655,29 @@ $page_title = 'Offices';
                                             </td>
                                             <td>
                                                 <span class="badge bg-secondary"><?php echo htmlspecialchars($office['office_code']); ?></span>
+                                            </td>
+                                            <td>
+                                                <?php if ($office['branch']): ?>
+                                                    <span class="badge bg-warning">
+                                                        <i class="bi bi-diagram-2"></i> <?php echo htmlspecialchars($office['parent_office_code'] . ' - ' . $office['parent_office_name']); ?>
+                                                    </span>
+                                                <?php else: ?>
+                                                    <span class="badge bg-primary">
+                                                        <i class="bi bi-building"></i> Main Office
+                                                    </span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info">
+                                                    <i class="bi bi-diagram-2"></i> <?php echo $office['child_count']; ?> sub-offices
+                                                </span>
+                                                <?php if ($office['child_count'] > 0): ?>
+                                                    <br>
+                                                    <button type="button" class="btn btn-sm btn-outline-info mt-1" 
+                                                            onclick="showSubOffices(<?php echo $office['id']; ?>, '<?php echo htmlspecialchars($office['office_name']); ?>')">
+                                                        <i class="bi bi-eye"></i> View Sub-Offices
+                                                    </button>
+                                                <?php endif; ?>
                                             </td>
                                             <td>
                                                 <form method="POST" action="" style="display: inline;">
@@ -675,6 +702,12 @@ $page_title = 'Offices';
                                                         onclick="window.location.href='offices.php?action=edit&id=<?php echo $office['id']; ?>'">
                                                     <i class="bi bi-pencil"></i>
                                                 </button>
+                                                <?php if ($office['child_count'] > 0): ?>
+                                                    <button type="button" class="btn btn-sm btn-outline-info" 
+                                                            onclick="showSubOffices(<?php echo $office['id']; ?>, '<?php echo htmlspecialchars($office['office_name']); ?>')">
+                                                        <i class="bi bi-diagram-2"></i>
+                                                    </button>
+                                                <?php endif; ?>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
@@ -708,6 +741,18 @@ $page_title = 'Offices';
                                 <input type="text" class="form-control" id="office_code" name="office_code" 
                                        placeholder="e.g., HO" required>
                             </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="parent_office" class="form-label">Parent Office</label>
+                            <select class="form-select" id="parent_office" name="branch">
+                                <option value="">None (Main Office)</option>
+                                <?php foreach ($offices as $office): ?>
+                                    <option value="<?php echo $office['id']; ?>">
+                                        <?php echo htmlspecialchars($office['office_code'] . ' - ' . $office['office_name']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <small class="form-text text-muted">Select a parent office if this is a sub-office</small>
                         </div>
                         <div class="mb-3">
                             <label for="address" class="form-label">Address</label>
@@ -830,6 +875,20 @@ $page_title = 'Offices';
                             </div>
                         </div>
                         <div class="mb-3">
+                            <label for="edit_parent_office" class="form-label">Parent Office</label>
+                            <select class="form-select" id="edit_parent_office" name="branch">
+                                <option value="">None (Main Office)</option>
+                                <?php foreach ($offices as $office): ?>
+                                    <?php if (!isset($edit_office['id']) || $office['id'] != $edit_office['id']): // Prevent self-reference ?>
+                                        <option value="<?php echo $office['id']; ?>" <?php echo (isset($edit_office['branch']) && $edit_office['branch'] == $office['id']) ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($office['office_code'] . ' - ' . $office['office_name']); ?>
+                                        </option>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
+                            </select>
+                            <small class="form-text text-muted">Select a parent office if this is a sub-office</small>
+                        </div>
+                        <div class="mb-3">
                             <label for="edit_address" class="form-label">Address</label>
                             <textarea class="form-control" id="edit_address" name="address" rows="2"><?php echo htmlspecialchars($edit_office['address'] ?? ''); ?></textarea>
                         </div>
@@ -875,6 +934,38 @@ $page_title = 'Offices';
                         <button type="submit" class="btn btn-primary">Update Office</button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- View Sub-Offices Modal -->
+    <div class="modal fade" id="viewSubOfficesModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Sub-Offices for <span id="parentOfficeNameDisplay"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="subOfficesTable">
+                            <thead>
+                                <tr>
+                                    <th>Office Name</th>
+                                    <th>Office Code</th>
+                                    <th>Address</th>
+                                    <th>Contact</th>
+                                    <th>Capacity</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="subOfficesTableBody">
+                                <!-- Sub-offices will be loaded here via JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -955,6 +1046,58 @@ document.addEventListener('DOMContentLoaded', function() {
             editModal.show();
         });
     <?php endif; ?>
+    
+    // Office hierarchy functions
+    const officesData = <?php echo json_encode($offices); ?>;
+    
+    // Show sub-offices for a parent office
+    function showSubOffices(parentOfficeId, parentOfficeName) {
+        document.getElementById('parentOfficeNameDisplay').textContent = parentOfficeName;
+        
+        // Filter sub-offices for this parent
+        const subOffices = officesData.filter(office => office.branch == parentOfficeId);
+        
+        // Populate sub-offices table
+        const tbody = document.getElementById('subOfficesTableBody');
+        tbody.innerHTML = '';
+        
+        if (subOffices.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">
+                        <i class="bi bi-building fs-1"></i>
+                        <p class="mt-2">No sub-offices found for this office. Click "Add Office" to create a sub-office.</p>
+                    </td>
+                </tr>
+            `;
+        } else {
+            subOffices.forEach(office => {
+                const statusBadge = office.status === 'active' 
+                    ? '<span class="badge bg-success">Active</span>' 
+                    : '<span class="badge bg-secondary">Inactive</span>';
+                
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${office.office_name}</strong></td>
+                        <td><span class="badge bg-info">${office.office_code}</span></td>
+                        <td>${office.address || '-'}</td>
+                        <td>${office.phone || '-'}</td>
+                        <td>${office.capacity || '0'}</td>
+                        <td>${statusBadge}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="window.location.href='offices.php?action=edit&id=${office.id}'">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+        
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('viewSubOfficesModal'));
+        modal.show();
+    }
     
     function showAlert(message, type) {
         // Remove existing alerts
