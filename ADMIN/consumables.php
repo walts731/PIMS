@@ -429,7 +429,7 @@ try {
                             <select class="form-select form-select-sm" id="officeFilter">
                                 <option value="">All Offices</option>
                                 <?php foreach ($offices as $office): ?>
-                                    <option value="<?php echo $office['id']; ?>" <?php echo $office_filter == $office['id'] ? 'selected' : ''; ?>>
+                                    <option value="<?php echo $office['id']; ?>" <?php echo ($office_filter == $office['id'] || ($office_filter == 0 && $office['id'] == 3)) ? 'selected' : ''; ?>>
                                         <?php echo htmlspecialchars($office['office_name']); ?>
                                     </option>
                                 <?php endforeach; ?>
@@ -458,10 +458,9 @@ try {
                         <tr>
                             <th>Description</th>
                             <th>Quantity</th>
-                            <th>Units</th>
                             <th>Unit Cost</th>
                             <th>Total Value</th>
-                            <th>Reorder Level</th>
+                            <th>Reorder</th>
                             <th>Office</th>
                             <th>For Office</th>
                             <th>Actions</th>
@@ -477,8 +476,7 @@ try {
                                             <span class="low-stock-badge ms-2">Low Stock</span>
                                         <?php endif; ?>
                                     </td>
-                                    <td><?php echo $consumable['quantity']; ?></td>
-                                    <td><?php echo htmlspecialchars($consumable['units'] ?? 'N/A'); ?></td>
+                                    <td><?php echo $consumable['quantity'] . ' ' . htmlspecialchars($consumable['units'] ?? 'N/A'); ?></td>
                                     <td><?php echo number_format($consumable['unit_cost'], 2); ?></td>
                                     <td class="text-value"><?php echo number_format($consumable['quantity'] * $consumable['unit_cost'], 2); ?></td>
                                     <td><?php echo $consumable['reorder_level']; ?></td>
@@ -490,12 +488,15 @@ try {
                                                 <i class="bi bi-check-circle"></i> Released
                                             </button>
                                         <?php elseif ($consumable['for_office_id'] == 3): ?>
-                                            <button class="btn btn-sm btn-outline-secondary" disabled>
-                                                <i class="bi bi-info-circle"></i> Supply Office
+                                            <button class="btn btn-sm btn-outline-warning" onclick="editReorderLevel(<?php echo $consumable['id']; ?>, '<?php echo htmlspecialchars($consumable['description']); ?>', <?php echo $consumable['quantity']; ?>)">
+                                                <i class="bi bi-pencil"></i> Reorder
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-primary" onclick="openLendModal(<?php echo $consumable['id']; ?>)">
+                                                <i class="bi bi-arrow-up-right"></i> Lend
                                             </button>
                                         <?php else: ?>
                                             <button class="btn btn-sm btn-outline-warning" onclick="editReorderLevel(<?php echo $consumable['id']; ?>, '<?php echo htmlspecialchars($consumable['description']); ?>', <?php echo $consumable['quantity']; ?>)">
-                                                <i class="bi bi-pencil"></i> Edit Reorder
+                                                <i class="bi bi-pencil"></i> Reorder
                                             </button>
                                             <button class="btn btn-sm btn-outline-success" onclick="openReleaseModal(<?php echo $consumable['id']; ?>)">
                                                 <i class="bi bi-box-arrow-right"></i> Release
@@ -506,7 +507,7 @@ try {
                             <?php endforeach; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="9" class="text-center text-muted py-4">
+                                <td colspan="8" class="text-center text-muted py-4">
                                     <i class="bi bi-inbox fs-1"></i>
                                     <p class="mt-2">No consumables found. Click "Add Consumable" to create your first consumable.</p>
                                 </td>
@@ -688,6 +689,21 @@ try {
         </div>
     </div>
     
+    <!-- Lend Consumable Modal -->
+    <div class="modal fade" id="lendConsumableModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-arrow-up-right"></i> Lend Consumable</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <iframe id="lendModalFrame" src="" style="width: 100%; height: 600px; border: none;"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- jQuery -->
@@ -738,6 +754,13 @@ try {
             modal.show();
         }
         
+        // Open lend modal function
+        function openLendModal(consumableId) {
+            const modal = new bootstrap.Modal(document.getElementById('lendConsumableModal'));
+            document.getElementById('lendModalFrame').src = 'lend_consumable_modal.php?id=' + consumableId;
+            modal.show();
+        }
+        
         // Close release modal function (called from iframe)
         function closeReleaseModal() {
             const modal = bootstrap.Modal.getInstance(document.getElementById('releaseConsumableModal'));
@@ -746,8 +769,36 @@ try {
             }
         }
         
+        // Close lend modal function (called from iframe)
+        function closeLendModal() {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('lendConsumableModal'));
+            if (modal) {
+                modal.hide();
+            }
+        }
+        
         // Show release success message (called from iframe)
         function showReleaseSuccess(message) {
+            // Create success alert
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
+            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            alertDiv.innerHTML = `
+                <i class="bi bi-check-circle"></i> ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alertDiv);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.parentNode.removeChild(alertDiv);
+                }
+            }, 5000);
+        }
+        
+        // Show lend success message (called from iframe)
+        function showLendSuccess(message) {
             // Create success alert
             const alertDiv = document.createElement('div');
             alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
@@ -849,20 +900,19 @@ try {
             // Get current table data from DOM
             const table = document.getElementById('consumablesTable');
             const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
-            let csv = 'Description,Quantity,Units,Unit Cost,Total Value,Reorder Level,Office,For Office\n';
+            let csv = 'Description,Quantity,Unit Cost,Total Value,Reorder Level,Office,For Office\n';
             
             for (let i = 0; i < rows.length; i++) {
                 const cells = rows[i].getElementsByTagName('td');
-                if (cells.length === 9) { // Skip empty message row
+                if (cells.length === 8) { // Skip empty message row
                     const rowData = [
                         cells[0].textContent.replace(/\s+/g, ' ').trim(), // Description
-                        cells[1].textContent.trim(), // Quantity
-                        cells[2].textContent.trim(), // Units
-                        cells[3].textContent.trim(), // Unit Cost
-                        cells[4].textContent.replace(/[^0-9.-]+/g, '').trim(), // Total Value
-                        cells[5].textContent.trim(), // Reorder Level
-                        cells[6].textContent.trim(), // Office
-                        cells[7].textContent.trim()  // For Office
+                        cells[1].textContent.trim(), // Quantity (now includes units)
+                        cells[2].textContent.trim(), // Unit Cost
+                        cells[3].textContent.replace(/[^0-9.-]+/g, '').trim(), // Total Value
+                        cells[4].textContent.trim(), // Reorder Level
+                        cells[5].textContent.trim(), // Office
+                        cells[6].textContent.trim()  // For Office
                     ];
                     csv += rowData.map(cell => `"${cell}"`).join(',') + '\n';
                 }
