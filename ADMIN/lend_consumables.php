@@ -325,7 +325,7 @@ try {
 <body>
     <?php
     // Set page title for topbar
-    $page_title = 'Lend Consumables';
+    $page_title = 'Borrowing Consumables';
     ?>
     <!-- Main Content Wrapper -->
     <div class="main-wrapper" id="mainWrapper">
@@ -465,7 +465,6 @@ try {
                                 <tr>
                                     <td>
                                         <?php echo htmlspecialchars($transaction['description']); ?>
-                                        <br><small class="text-muted">Received by: <?php echo htmlspecialchars($transaction['received_by_list']); ?></small>
                                     </td>
                                     <td><?php echo $transaction['total_quantity_lent']; ?></td>
                                     <td><?php echo number_format($transaction['unit_cost'], 2); ?></td>
@@ -508,17 +507,18 @@ try {
                         
                         <div class="mb-3">
                             <label class="form-label">Consumable from Supply Office *</label>
-                            <select class="form-select" name="consumable_id" id="consumableSelect" required>
-                                <option value="">Select Consumable</option>
+                            <input type="text" class="form-control" id="consumableSearch" name="consumable_search" list="consumableList" placeholder="Search and select consumable..." autocomplete="off" required>
+                            <input type="hidden" name="consumable_id" id="consumableId" required>
+                            <datalist id="consumableList">
                                 <?php foreach ($available_consumables as $consumable): ?>
-                                    <option value="<?php echo $consumable['id']; ?>" 
+                                    <option value="<?php echo htmlspecialchars($consumable['description']); ?>" 
+                                            data-id="<?php echo $consumable['id']; ?>"
                                             data-quantity="<?php echo $consumable['quantity']; ?>"
                                             data-unit-cost="<?php echo $consumable['unit_cost']; ?>"
-                                            data-description="<?php echo htmlspecialchars($consumable['description']); ?>">
-                                        <?php echo htmlspecialchars($consumable['description']); ?> (Available: <?php echo $consumable['quantity']; ?>)
+                                            data-display-text="<?php echo htmlspecialchars($consumable['description']); ?> (Available: <?php echo $consumable['quantity']; ?>)">
                                     </option>
                                 <?php endforeach; ?>
-                            </select>
+                            </datalist>
                             <small class="text-muted">Only consumables stored in Supply Office are available for borrowing</small>
                         </div>
                         
@@ -629,27 +629,16 @@ try {
     <?php require_once 'includes/sidebar-scripts.php'; ?>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Handle consumable selection
-            document.getElementById('consumableSelect').addEventListener('change', function() {
-                const selectedOption = this.options[this.selectedIndex];
-                const availableQuantity = parseInt(selectedOption.dataset.quantity);
-                const unitCost = parseFloat(selectedOption.dataset.unitCost);
-                const quantityLentInput = document.getElementById('quantityLent');
-                const unitCostInput = document.getElementById('unitCost');
-                
-                // Set available quantity as max
-                quantityLentInput.max = availableQuantity;
-                quantityLentInput.placeholder = `Max: ${availableQuantity}`;
-                
-                // Set unit cost
-                unitCostInput.value = unitCost.toFixed(2);
-                
-                // Calculate total value
-                calculateTotalValue();
-            });
+            // Handle consumable selection (now handled by datalist functionality above)
+            // The old consumableSelect handler is no longer needed
             
             // Calculate total value when quantity changes
-            document.getElementById('quantityLent').addEventListener('input', calculateTotalValue);
+            document.getElementById('quantityLent').addEventListener('input', function() {
+                const quantity = parseInt(this.value) || 0;
+                const unitCost = parseFloat(document.getElementById('unitCost').value) || 0;
+                const totalValue = quantity * unitCost;
+                document.getElementById('totalValue').textContent = totalValue.toFixed(2);
+            });
             
             function calculateTotalValue() {
                 const quantity = parseInt(document.getElementById('quantityLent').value) || 0;
@@ -724,6 +713,88 @@ try {
                     window.location.href = currentUrl.toString();
                 }, 500);
             });
+        });
+        
+        // Searchable datalist functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('consumableSearch');
+            const hiddenIdInput = document.getElementById('consumableId');
+            const quantityLentInput = document.getElementById('quantityLent');
+            const unitCostInput = document.getElementById('unitCost');
+            const datalist = document.getElementById('consumableList');
+            
+            // Store consumable data for quick lookup
+            const consumableData = {};
+            const options = datalist.querySelectorAll('option');
+            options.forEach(option => {
+                const id = option.dataset.id;
+                if (id) {
+                    consumableData[id] = {
+                        id: id,
+                        description: option.value,
+                        quantity: parseInt(option.dataset.quantity),
+                        unitCost: parseFloat(option.dataset.unitCost),
+                        displayText: option.dataset.displayText
+                    };
+                }
+            });
+            
+            // Handle input change
+            searchInput.addEventListener('input', function() {
+                const inputValue = this.value.trim();
+                const matchingOption = Array.from(options).find(option => 
+                    option.value.toLowerCase() === inputValue.toLowerCase()
+                );
+                
+                if (matchingOption) {
+                    const data = consumableData[matchingOption.dataset.id];
+                    if (data) {
+                        hiddenIdInput.value = data.id;
+                        quantityLentInput.max = data.quantity;
+                        quantityLentInput.placeholder = `Max: ${data.quantity}`;
+                        unitCostInput.value = data.unitCost.toFixed(2);
+                        calculateTotalValue();
+                    }
+                } else {
+                    // Clear fields if no match
+                    hiddenIdInput.value = '';
+                    quantityLentInput.max = '';
+                    quantityLentInput.placeholder = '';
+                    unitCostInput.value = '';
+                    calculateTotalValue();
+                }
+            });
+            
+            // Handle change event for final selection
+            searchInput.addEventListener('change', function() {
+                const inputValue = this.value.trim();
+                const matchingOption = Array.from(options).find(option => 
+                    option.value.toLowerCase() === inputValue.toLowerCase()
+                );
+                
+                if (matchingOption) {
+                    const data = consumableData[matchingOption.dataset.id];
+                    if (data) {
+                        this.value = data.description; // Ensure clean description
+                        hiddenIdInput.value = data.id;
+                    }
+                } else {
+                    // Clear if invalid selection
+                    this.value = '';
+                    hiddenIdInput.value = '';
+                }
+            });
+            
+            // Calculate total value function
+            function calculateTotalValue() {
+                const quantity = parseInt(quantityLentInput.value) || 0;
+                const unitCost = parseFloat(unitCostInput.value) || 0;
+                const totalValue = quantity * unitCost;
+                document.getElementById('totalValue').textContent = totalValue.toFixed(2);
+            }
+            
+            // Quantity change handler
+            quantityLentInput.addEventListener('input', calculateTotalValue);
         });
         
         // Export borrow transactions function

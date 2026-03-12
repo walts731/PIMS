@@ -226,8 +226,55 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['action']) && $_GET['acti
     }
 }
 
+// AJAX handler to get statistics based on office filter
+if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['action']) && $_GET['action'] == 'get_stats') {
+    $office_id = intval($_GET['office_id'] ?? 0);
+    
+    try {
+        $sql = "SELECT 
+                    COUNT(*) as total_consumables,
+                    SUM(quantity) as total_quantity,
+                    SUM(quantity * unit_cost) as total_value,
+                    COUNT(CASE WHEN quantity <= reorder_level THEN 1 END) as low_stock_count,
+                    COUNT(DISTINCT office_id) as total_offices
+                FROM consumables
+                WHERE quantity > 0";
+        
+        $params = [];
+        $types = '';
+        
+        // Apply office filter to statistics
+        if ($office_id > 0) {
+            $sql .= " AND office_id = ?";
+            $params[] = $office_id;
+            $types .= 'i';
+        }
+        
+        $stmt = $conn->prepare($sql);
+        if (!empty($params)) {
+            $stmt->bind_param($types, ...$params);
+        }
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($row = $result->fetch_assoc()) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true, 'data' => $row]);
+        } else {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'No statistics found']);
+        }
+        $stmt->close();
+        exit;
+    } catch (Exception $e) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        exit;
+    }
+}
+
 // Handle filter parameters
-$office_filter = isset($_GET['office']) ? intval($_GET['office']) : 0;
+$office_filter = isset($_GET['office']) ? intval($_GET['office']) : 3; // Default to Supply Office (ID = 3)
 $for_office_filter = isset($_GET['for_office']) ? intval($_GET['for_office']) : 0;
 $search_filter = isset($_GET['search']) ? trim($_GET['search']) : '';
 
@@ -317,11 +364,29 @@ try {
                 SUM(quantity * unit_cost) as total_value,
                 COUNT(CASE WHEN quantity <= reorder_level THEN 1 END) as low_stock_count,
                 COUNT(DISTINCT office_id) as total_offices
-            FROM consumables";
-    $result = $conn->query($sql);
+            FROM consumables
+            WHERE quantity > 0";
+    
+    $params = [];
+    $types = '';
+    
+    // Apply office filter to statistics
+    if ($office_filter > 0) {
+        $sql .= " AND office_id = ?";
+        $params[] = $office_filter;
+        $types .= 'i';
+    }
+    
+    $stmt = $conn->prepare($sql);
+    if (!empty($params)) {
+        $stmt->bind_param($types, ...$params);
+    }
+    $stmt->execute();
+    $result = $stmt->get_result();
     if ($result) {
         $stats = $result->fetch_assoc();
     }
+    $stmt->close();
 } catch (Exception $e) {
     error_log("Error fetching stats: " . $e->getMessage());
 }
@@ -448,7 +513,7 @@ try {
                             <select class="form-select form-select-sm" id="officeFilter">
                                 <option value="">All Offices</option>
                                 <?php foreach ($offices as $office): ?>
-                                    <option value="<?php echo $office['id']; ?>" <?php echo ($office_filter == $office['id'] || ($office_filter == 0 && $office['id'] == 3)) ? 'selected' : ''; ?>>
+                                    <option value="<?php echo $office['id']; ?>" <?php echo $office_filter == $office['id'] ? 'selected' : ''; ?>>
                                         <?php echo htmlspecialchars($office['office_name']); ?>
                                     </option>
                                 <?php endforeach; ?>
@@ -836,6 +901,50 @@ try {
             }, 5000);
         }
         
+        // Update statistics cards dynamically
+        function updateStatistics(officeId) {
+            fetch(`consumables.php?action=get_stats&office_id=${officeId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const stats = data.data;
+                        // Update statistics cards with animation
+                        updateStatCard('.stats-number', 0, stats.total_quantity || 0);
+                        updateStatCard('.stats-number', 1, stats.total_consumables || 0);
+                        updateStatCard('.stats-number', 2, parseFloat(stats.total_value || 0).toFixed(2));
+                        updateStatCard('.stats-number', 3, stats.low_stock_count || 0);
+                    } else {
+                        console.error('Error updating statistics:', data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+        
+        // Helper function to animate stat card updates
+        function updateStatCard(selector, index, newValue) {
+            const elements = document.querySelectorAll(selector);
+            if (elements[index]) {
+                const element = elements[index];
+                const oldValue = element.textContent;
+                
+                // Add animation class
+                element.style.transition = 'all 0.3s ease';
+                element.style.transform = 'scale(1.1)';
+                element.style.color = '#1E56A0';
+                
+                // Update value
+                element.textContent = newValue;
+                
+                // Reset animation after delay
+                setTimeout(() => {
+                    element.style.transform = 'scale(1)';
+                    element.style.color = '';
+                }, 300);
+            }
+        }
+        
         // Initialize DataTable
         let consumablesTable;
         
@@ -869,6 +978,10 @@ try {
             // Office filter
             $('#officeFilter').on('change', function() {
                 const officeValue = this.value;
+                
+                // Update statistics immediately without page reload
+                updateStatistics(officeValue);
+                
                 const currentUrl = new URL(window.location);
                 if (officeValue) {
                     currentUrl.searchParams.set('office', officeValue);

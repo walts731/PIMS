@@ -233,12 +233,34 @@ try {
                     <p class="text-muted mb-0">Track all consumable release transactions</p>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <a href="consumables.php" class="btn btn-outline-secondary btn-sm me-2">
-                        <i class="bi bi-arrow-left"></i> Back to Consumables
-                    </a>
-                    <button class="btn btn-outline-success btn-sm" onclick="exportReleaseHistory()">
-                        <i class="bi bi-download"></i> Export
-                    </button>
+                    <div class="btn-group" role="group">
+                        <a href="consumables.php" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Back to Consumables
+                        </a>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-gear"></i> Actions
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item" href="lend_consumables.php">
+                                        <i class="bi bi-arrow-left-right"></i> Borrowing
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="consumables.php">
+                                        <i class="bi bi-box-seam"></i> Consumables Management
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" href="#" onclick="exportReleaseHistory()">
+                                        <i class="bi bi-download"></i> Export History
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
