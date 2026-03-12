@@ -401,7 +401,7 @@
 }
 
 .suggestion-asset {
-    background: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%);
+    background: var(--primary-gradient);
     color: white;
 }
 

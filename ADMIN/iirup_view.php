@@ -80,7 +80,7 @@ if ($result && $row = $result->fetch_assoc()) {
     <style>
         body {
             font-family: 'Times New Roman', serif;
-            background: linear-gradient(135deg, #F7F3F3 0%, #C1EAF2 100%);
+            background: linear-gradient(135deg, #F6F6F6 0%, #D6E4F0 100%);
             min-height: 100vh;
             overflow-x: hidden;
         }

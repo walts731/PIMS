@@ -141,7 +141,7 @@ if ($conn && !$conn->connect_error) {
         <div class="page-header">
             <div class="row align-items-center">
                 <div class="col-md-8">
-                    <h1 class="mb-2" style="font-weight: 700; color: #191BA9;">
+                    <h1 class="mb-2" style="font-weight: 700; color: var(--primary-color);">
                         <i class="bi bi-credit-card me-2"></i>Property Card
                     </h1>
                     <p class="text-muted mb-0">View all asset items with Property Acknowledgment Receipt (PAR) references</p>

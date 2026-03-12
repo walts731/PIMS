@@ -102,7 +102,7 @@ if ($result && $row = $result->fetch_assoc()) {
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #F7F3F3 0%, #C1EAF2 100%);
+            background: linear-gradient(135deg, var(--light-color) 0%, var(--light-accent) 100%);
             min-height: 100vh;
             overflow-x: hidden;
         }
@@ -147,18 +147,18 @@ if ($result && $row = $result->fetch_assoc()) {
         
         .form-control:focus, .form-select:focus {
             border-color: var(--primary-color);
-            box-shadow: 0 0 0 0.2rem rgba(25, 27, 169, 0.25);
+            box-shadow: 0 0 0 0.2rem rgba(var(--primary-rgb), 0.25);
         }
         
         .btn-primary {
-            background: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%);
+            background: var(--primary-gradient);
             border: none;
             border-radius: var(--border-radius);
             transition: var(--transition);
         }
         
         .btn-primary:hover {
-            background: linear-gradient(135deg, #1572C6 0%, #4AB8E8 100%);
+            background: var(--primary-gradient);
             transform: translateY(-2px);
             box-shadow: var(--shadow);
         }

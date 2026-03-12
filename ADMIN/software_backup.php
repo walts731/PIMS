@@ -178,7 +178,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #F7F3F3 0%, #C1EAF2 100%);
+            background: linear-gradient(135deg, var(--light-color) 0%, var(--light-accent) 100%);
             min-height: 100vh;
         }
         
@@ -243,7 +243,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         .table tbody tr:hover {
-            background-color: rgba(25, 27, 169, 0.05);
+            background-color: rgba(var(--primary-rgb), 0.05);
         }
         
         .btn-software {
@@ -257,7 +257,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         .btn-software:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(25, 27, 169, 0.3);
+            box-shadow: 0 5px 15px rgba(var(--primary-rgb), 0.3);
             color: white;
         }
         

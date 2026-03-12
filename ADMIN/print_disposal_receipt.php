@@ -103,7 +103,7 @@ try {
         .receipt-header h3 {
             margin: 0.5rem 0;
             font-weight: 600;
-            color: #191BA9;
+            color: var(--primary-color);
         }
         
         .receipt-header h4 {
@@ -119,7 +119,7 @@ try {
         .receipt-section h5 {
             font-weight: 600;
             margin-bottom: 0.75rem;
-            color: #191BA9;
+            color: var(--primary-color);
             border-bottom: 1px solid #dee2e6;
             padding-bottom: 0.25rem;
         }

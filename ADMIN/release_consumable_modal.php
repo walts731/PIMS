@@ -223,7 +223,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             padding: 20px;
         }
         .modal-header {
-            background: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%);
+            background: var(--primary-gradient);
             color: white;
         }
         .form-label {
@@ -232,7 +232,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         }
         .consumable-info {
             background: #e3f2fd;
-            border-left: 4px solid #191BA9;
+            border-left: 4px solid var(--primary-color);
             padding: 15px;
             border-radius: 8px;
             margin-bottom: 20px;
@@ -240,7 +240,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         .quantity-display {
             font-size: 1.2rem;
             font-weight: 700;
-            color: #191BA9;
+            color: var(--primary-color);
         }
     </style>
 </head>

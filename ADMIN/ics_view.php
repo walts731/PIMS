@@ -81,7 +81,7 @@ if ($result && $row = $result->fetch_assoc()) {
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #F7F3F3 0%, #C1EAF2 100%);
+            background: linear-gradient(135deg, var(--light-color) 0%, var(--light-accent) 100%);
             min-height: 100vh;
             overflow-x: hidden;
         }
@@ -104,7 +104,7 @@ if ($result && $row = $result->fetch_assoc()) {
         }
         
         .ics-number {
-            background: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%);
+            background: var(--primary-gradient);
             color: white;
             padding: 0.5rem 1rem;
             border-radius: var(--border-radius);
