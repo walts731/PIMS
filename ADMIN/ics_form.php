@@ -406,7 +406,7 @@ if ($result && $row = $result->fetch_assoc()) {
                                                         <i class="bi bi-gear"></i> Generate
                                                     </button>
                                                 </div>
-                                                <small class="text-muted">Format: YEAR-FORM-FUND-CATEGORY-SUBCATEGORY+SERIES-OFFICE</small>
+                                                <small class="text-muted">Format: YEAR-FORM-CATEGORY-SUBCATEGORY+SERIES-OFFICE</small>
                                             </td>
                                                 <td><input type="text" class="form-control form-control-sm" name="useful_life[]" required></td>
                                                 <td><button type="button" class="btn btn-sm btn-danger" onclick="removeICSRow(this)"><i class="bi bi-trash"></i></button></td>
@@ -474,28 +474,10 @@ if ($result && $row = $result->fetch_assoc()) {
                 </div>
                 <div class="modal-body">
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-12">
                             <label class="form-label"><strong>Form Type:</strong></label>
                             <input type="text" class="form-control" id="formType" value="04" readonly>
                             <small class="text-muted">Auto-detected: Inventory Custodian Slip</small>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label"><strong>Fund:</strong></label>
-                            <select class="form-select" id="fundSelect">
-                                <option value="">Select Fund</option>
-                                <?php 
-                                if ($funds_result) {
-                                    // Reset pointer to beginning
-                                    $funds_result->data_seek(0);
-                                    while ($fund = $funds_result->fetch_assoc()) {
-                                        // Extract numeric part from fund code (e.g., "05" from "GEN-2025")
-                                        preg_match('/(\d{2})$/', $fund['fund_code'], $matches);
-                                        $fund_code = isset($matches[1]) ? $matches[1] : '05';
-                                        echo '<option value="' . $fund_code . '">' . htmlspecialchars($fund['fund_name']) . ' (' . htmlspecialchars($fund['fund_code']) . ')</option>';
-                                    }
-                                }
-                                ?>
-                            </select>
                         </div>
                     </div>
                     
@@ -629,7 +611,6 @@ if ($result && $row = $result->fetch_assoc()) {
         }
         
         function clearGeneratorForm() {
-            document.getElementById('fundSelect').value = '';
             document.getElementById('categorySelect').value = '';
             document.getElementById('subcategorySelect').value = '';
             // Don't clear series - it's auto-incremented
@@ -641,14 +622,13 @@ if ($result && $row = $result->fetch_assoc()) {
         function generatePropertyNumberPreview() {
             const year = new Date().getFullYear();
             const formType = document.getElementById('formType').value || '04';
-            const fund = document.getElementById('fundSelect').value || '05';
             const category = document.getElementById('categorySelect').value || '030';
             const subcategory = document.getElementById('subcategorySelect').value || '01';
             const series = document.getElementById('seriesInput').value || '<?php echo $next_series; ?>';
             const office = document.getElementById('officeSelect').value || '01';
             
-            // Build property number: YEAR-FORM-FUND-CATEGORY-SUBCATEGORY+SERIES-OFFICE
-            const propertyNumber = `${year}-${formType}-${fund}-${category}-${subcategory}${series}-${office}`;
+            // Build property number: YEAR-FORM-CATEGORY-SUBCATEGORY+SERIES-OFFICE
+            const propertyNumber = `${year}-${formType}-${category}-${subcategory}${series}-${office}`;
             
             document.getElementById('propertyNumberPreview').textContent = propertyNumber;
         }
@@ -716,7 +696,7 @@ if ($result && $row = $result->fetch_assoc()) {
         // Auto-update preview when any field changes
         document.addEventListener('DOMContentLoaded', function() {
             // Add event listeners for auto-preview
-            const fields = ['fundSelect', 'categorySelect', 'subcategorySelect', 'officeSelect'];
+            const fields = ['categorySelect', 'subcategorySelect', 'officeSelect'];
             fields.forEach(fieldId => {
                 const element = document.getElementById(fieldId);
                 if (element) {
