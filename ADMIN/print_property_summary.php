@@ -165,7 +165,7 @@ if ($conn && !$conn->connect_error) {
             font-size: 16px;
             font-weight: bold;
             margin-bottom: 4px;
-            color: #191BA9;
+            color: var(--primary-color);
         }
         
         .print-subtitle {
@@ -191,7 +191,7 @@ if ($conn && !$conn->connect_error) {
         }
         
         .stat-box {
-            border: 2px solid #191BA9;
+            border: 2px solid var(--primary-color);
             padding: 10px;
             text-align: center;
             min-width: 120px;
@@ -201,7 +201,7 @@ if ($conn && !$conn->connect_error) {
         .stat-number {
             font-size: 20px;
             font-weight: bold;
-            color: #191BA9;
+            color: var(--primary-color);
             margin-bottom: 4px;
         }
         
@@ -219,7 +219,7 @@ if ($conn && !$conn->connect_error) {
             font-size: 14px;
             font-weight: bold;
             margin-bottom: 10px;
-            color: #191BA9;
+            color: var(--primary-color);
             text-align: center;
         }
         

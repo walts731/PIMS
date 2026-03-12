@@ -119,7 +119,7 @@ if ($conn && !$conn->connect_error) {
     <link href="../assets/css/theme-custom.css" rel="stylesheet">
     <style>
         :root {
-            --primary-gradient: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%);
+            --primary-gradient: var(--primary-gradient);
             --border-radius: 12px;
             --transition: all 0.3s ease;
             --shadow: 0 2px 12px rgba(0,0,0,0.08);
@@ -128,7 +128,7 @@ if ($conn && !$conn->connect_error) {
         
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #F7F3F3 0%, #C1EAF2 100%);
+            background: linear-gradient(135deg, var(--light-color) 0%, var(--light-accent) 100%);
             min-height: 100vh;
             overflow-x: hidden;
         }
@@ -139,7 +139,7 @@ if ($conn && !$conn->connect_error) {
             padding: 2rem;
             margin-bottom: 2rem;
             box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-            border-left: 4px solid #191BA9;
+            border-left: 4px solid var(--primary-color);
         }
         
         .summary-card {
@@ -190,12 +190,12 @@ if ($conn && !$conn->connect_error) {
         }
         
         .table-custom tbody tr:hover {
-            background: rgba(25, 27, 169, 0.02);
+            background: rgba(var(--primary-rgb), 0.02);
         }
         
         .office-code {
-            background: rgba(25, 27, 169, 0.1);
-            color: #191BA9;
+            background: rgba(var(--primary-rgb), 0.1);
+            color: var(--primary-color);
             padding: 0.25rem 0.5rem;
             border-radius: 6px;
             font-size: 0.8rem;
@@ -205,8 +205,8 @@ if ($conn && !$conn->connect_error) {
         }
         
         .category-badge {
-            background: rgba(25, 27, 169, 0.1);
-            color: #191BA9;
+            background: rgba(var(--primary-rgb), 0.1);
+            color: var(--primary-color);
             padding: 0.25rem 0.5rem;
             border-radius: 6px;
             font-size: 0.8rem;
@@ -228,7 +228,7 @@ if ($conn && !$conn->connect_error) {
         }
         
         .stat-card {
-            background: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%);
+            background: var(--primary-gradient);
             color: white;
             padding: 1.5rem;
             border-radius: 12px;
@@ -248,8 +248,8 @@ if ($conn && !$conn->connect_error) {
         }
         
         .filter-info {
-            background: rgba(25, 27, 169, 0.1);
-            color: #191BA9;
+            background: rgba(var(--primary-rgb), 0.1);
+            color: var(--primary-color);
             padding: 0.5rem 1rem;
             border-radius: 8px;
             font-size: 0.85rem;
@@ -329,7 +329,7 @@ if ($conn && !$conn->connect_error) {
                 font-size: 16px;
                 font-weight: bold;
                 margin-bottom: 4px;
-                color: #191BA9;
+                color: var(--primary-color);
             }
             
             .print-subtitle {
@@ -388,7 +388,7 @@ if ($conn && !$conn->connect_error) {
             }
             
             .stat-box {
-                border: 2px solid #191BA9;
+                border: 2px solid var(--primary-color);
                 padding: 10px;
                 text-align: center;
                 min-width: 120px;
@@ -398,7 +398,7 @@ if ($conn && !$conn->connect_error) {
             .stat-number {
                 font-size: 20px;
                 font-weight: bold;
-                color: #191BA9;
+                color: var(--primary-color);
                 margin-bottom: 4px;
             }
             
@@ -412,7 +412,7 @@ if ($conn && !$conn->connect_error) {
                 font-size: 14px;
                 font-weight: bold;
                 margin-bottom: 10px;
-                color: #191BA9;
+                color: var(--primary-color);
                 text-align: center;
             }
             
@@ -481,7 +481,7 @@ if ($conn && !$conn->connect_error) {
         <div class="page-header">
             <div class="row align-items-center">
                 <div class="col-md-8">
-                    <h1 class="mb-2" style="font-weight: 700; color: #191BA9;">
+                    <h1 class="mb-2" style="font-weight: 700; color: var(--primary-color);">
                         <i class="bi bi-list-ul me-2"></i>Property Summary
                     </h1>
                     <p class="text-muted mb-0">Summary of asset values by office and category</p>
@@ -545,7 +545,7 @@ if ($conn && !$conn->connect_error) {
         
         <!-- Office Summary -->
         <div class="summary-table" id="officeSummary">
-            <h3 class="mb-3" style="color: #191BA9; font-weight: 600;">
+            <h3 class="mb-3" style="color: var(--primary-color); font-weight: 600;">
                 <i class="bi bi-building me-2"></i>Summary by Office
             </h3>
             <div class="table-responsive">
@@ -580,7 +580,7 @@ if ($conn && !$conn->connect_error) {
                             </tr>
                         <?php endforeach; ?>
                         <?php if (!empty($office_summary)): ?>
-                            <tr style="background: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%); color: white; font-weight: 600;">
+                            <tr style="background: var(--primary-gradient); color: white; font-weight: 600;">
                                 <td colspan="2">
                                     <strong>Grand Total</strong>
                                 </td>
@@ -602,7 +602,7 @@ if ($conn && !$conn->connect_error) {
         
         <!-- Category Summary -->
         <div class="summary-table" id="categorySummary">
-            <h3 class="mb-3" style="color: #191BA9; font-weight: 600;">
+            <h3 class="mb-3" style="color: var(--primary-color); font-weight: 600;">
                 <i class="bi bi-tags me-2"></i>Summary by Category
             </h3>
             <div class="table-responsive">
@@ -637,7 +637,7 @@ if ($conn && !$conn->connect_error) {
                             </tr>
                         <?php endforeach; ?>
                         <?php if (!empty($category_summary)): ?>
-                            <tr style="background: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%); color: white; font-weight: 600;">
+                            <tr style="background: var(--primary-gradient); color: white; font-weight: 600;">
                                 <td colspan="2">
                                     <strong>Grand Total</strong>
                                 </td>

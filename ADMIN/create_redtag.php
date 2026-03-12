@@ -301,7 +301,7 @@ if (empty($red_tag_no)) {
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #F7F3F3 0%, #C1EAF2 100%);
+            background: linear-gradient(135deg, #F6F6F6 0%, #D6E4F0 100%);
             min-height: 100vh;
             overflow-x: hidden;
         }

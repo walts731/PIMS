@@ -188,7 +188,7 @@ if ($conn && !$conn->connect_error) {
         .print-title {
             font-size: 18px;
             font-weight: bold;
-            color: #191BA9;
+            color: var(--primary-color);
             margin-bottom: 5px;
         }
         
@@ -206,7 +206,7 @@ if ($conn && !$conn->connect_error) {
         }
         
         .stat-card {
-            background: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%);
+            background: var(--primary-gradient);
             color: white;
             padding: 8px 12px;
             border-radius: 8px;
@@ -237,7 +237,7 @@ if ($conn && !$conn->connect_error) {
         }
         
         th {
-            background-color: #191BA9;
+            background-color: var(--primary-color);
             color: white;
             font-weight: bold;
             text-align: center;
@@ -266,8 +266,8 @@ if ($conn && !$conn->connect_error) {
         }
         
         .category-badge {
-            background: rgba(25, 27, 169, 0.1);
-            color: #191BA9;
+            background: rgba(var(--primary-rgb), 0.1);
+            color: var(--primary-color);
             padding: 2px 4px;
             border-radius: 3px;
             font-weight: 500;
@@ -275,8 +275,8 @@ if ($conn && !$conn->connect_error) {
         }
         
         .office-code {
-            background: rgba(25, 27, 169, 0.1);
-            color: #191BA9;
+            background: rgba(var(--primary-rgb), 0.1);
+            color: var(--primary-color);
             padding: 2px 4px;
             border-radius: 3px;
             font-weight: 500;

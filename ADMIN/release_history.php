@@ -135,7 +135,7 @@ try {
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #F7F3F3 0%, #C1EAF2 100%);
+            background: linear-gradient(135deg, var(--light-color) 0%, var(--light-accent) 100%);
             min-height: 100vh;
             overflow-x: hidden;
         }
@@ -150,7 +150,7 @@ try {
         }
         
         .stats-card {
-            background: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%);
+            background: var(--primary-gradient);
             color: white;
             border-radius: var(--border-radius-lg);
             padding: 1.5rem;
@@ -161,7 +161,7 @@ try {
         
         .stats-card:hover {
             transform: translateY(-3px);
-            box-shadow: 0 10px 25px rgba(25, 27, 169, 0.3);
+            box-shadow: 0 10px 25px rgba(var(--primary-rgb), 0.3);
         }
         
         .stats-number {
@@ -193,11 +193,11 @@ try {
         
         .text-value {
             font-weight: 600;
-            color: #191BA9;
+            color: var(--primary-color);
         }
         
         .quantity-badge {
-            background-color: #191BA9;
+            background-color: var(--primary-color);
             color: white;
             padding: 0.25rem 0.5rem;
             border-radius: 15px;
@@ -224,7 +224,7 @@ try {
         
         .section-title {
             font-weight: 600;
-            color: #191BA9;
+            color: var(--primary-color);
             margin-bottom: 1rem;
             font-size: 1.1rem;
             display: flex;
@@ -233,7 +233,7 @@ try {
         }
         
         .table-hover tbody tr:hover {
-            background-color: rgba(25, 27, 169, 0.05);
+            background-color: rgba(var(--primary-rgb), 0.05);
         }
     </style>
 </head>

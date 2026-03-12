@@ -38,7 +38,7 @@ $page_title = 'QR Scanner';
     
     <style>
         body {
-            background: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%);
+            background: var(--primary-gradient);
             min-height: 100vh;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
@@ -58,7 +58,7 @@ $page_title = 'QR Scanner';
         }
         
         .scanner-header h1 {
-            color: #191BA9;
+            color: var(--primary-color);
             font-weight: 700;
             margin-bottom: 0.5rem;
         }
@@ -91,7 +91,7 @@ $page_title = 'QR Scanner';
         }
         
         .btn-scanner {
-            background: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%);
+            background: var(--primary-gradient);
             border: none;
             color: white;
             padding: 0.75rem 2rem;
@@ -102,7 +102,7 @@ $page_title = 'QR Scanner';
         
         .btn-scanner:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(25, 27, 169, 0.3);
+            box-shadow: 0 10px 20px rgba(var(--primary-rgb), 0.3);
             color: white;
         }
         
@@ -158,7 +158,7 @@ $page_title = 'QR Scanner';
             left: 1rem;
             background: rgba(255, 255, 255, 0.9);
             border: none;
-            color: #191BA9;
+            color: var(--primary-color);
             padding: 0.5rem 1rem;
             border-radius: 50px;
             font-weight: 600;
@@ -168,7 +168,7 @@ $page_title = 'QR Scanner';
         
         .back-button:hover {
             background: white;
-            color: #191BA9;
+            color: var(--primary-color);
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
             text-decoration: none;
@@ -182,7 +182,7 @@ $page_title = 'QR Scanner';
         }
         
         .instructions h6 {
-            color: #191BA9;
+            color: var(--primary-color);
             font-weight: 600;
             margin-bottom: 0.5rem;
         }
