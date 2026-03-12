@@ -489,6 +489,10 @@ try {
                                             <button class="btn btn-sm btn-outline-info" disabled>
                                                 <i class="bi bi-check-circle"></i> Released
                                             </button>
+                                        <?php elseif ($consumable['for_office_id'] == 3): ?>
+                                            <button class="btn btn-sm btn-outline-secondary" disabled>
+                                                <i class="bi bi-info-circle"></i> Supply Office
+                                            </button>
                                         <?php else: ?>
                                             <button class="btn btn-sm btn-outline-warning" onclick="editReorderLevel(<?php echo $consumable['id']; ?>, '<?php echo htmlspecialchars($consumable['description']); ?>', <?php echo $consumable['quantity']; ?>)">
                                                 <i class="bi bi-pencil"></i> Edit Reorder
