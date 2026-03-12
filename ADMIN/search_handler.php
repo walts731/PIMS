@@ -106,7 +106,7 @@ try {
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #F7F3F3 0%, #C1EAF2 100%);
+            background: linear-gradient(135deg, var(--light-color) 0%, var(--light-accent) 100%);
             min-height: 100vh;
             overflow-x: hidden;
         }
@@ -139,13 +139,13 @@ try {
             border-radius: var(--border-radius);
             margin-bottom: 0.75rem;
             border-left: 4px solid var(--primary-color);
-            background: rgba(25, 27, 169, 0.05);
+            background: rgba(var(--primary-rgb), 0.05);
             transition: var(--transition);
             cursor: pointer;
         }
         
         .search-result-item:hover {
-            background: rgba(25, 27, 169, 0.1);
+            background: rgba(var(--primary-rgb), 0.1);
             transform: translateX(3px);
         }
         
@@ -157,7 +157,7 @@ try {
         }
         
         .asset-badge {
-            background: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%);
+            background: var(--primary-gradient);
             color: white;
         }
         

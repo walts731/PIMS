@@ -20,6 +20,21 @@ try {
 }
 ?>
 <style>
+<?php if (($system_settings['theme_preset'] ?? 'default') === 'legacy'): ?>
+:root {
+    --primary-color: #191BA9 !important;
+    --primary-hover: #151689 !important;
+    --primary-gradient: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%) !important;
+    --light-accent: #C1EAF2 !important;
+    --secondary-color: #5CC2F2 !important;
+    --light-color: #F7F3F3 !important;
+    --primary-rgb: 25, 27, 169 !important;
+}
+<?php else: ?>
+:root {
+    --primary-rgb: 30, 86, 160 !important;
+}
+<?php endif; ?>
 /* Sidebar Styles */
 .sidebar {
     position: fixed;
@@ -28,7 +43,7 @@ try {
     width: 280px;
     height: 100vh;
     background: var(--primary-gradient);
-    box-shadow: 2px 0 10px rgba(25, 27, 169, 0.1);
+    box-shadow: 2px 0 10px rgba(30, 86, 160, 0.1);
     transition: left 0.3s ease-in-out;
     z-index: 1040;
     overflow-y: auto;
@@ -137,7 +152,7 @@ try {
 
 .navbar {
     background: var(--primary-gradient);
-    box-shadow: 0 2px 10px rgba(25, 27, 169, 0.1);
+    box-shadow: 0 2px 10px rgba(30, 86, 160, 0.1);
     position: sticky;
     top: 0;
     left: 0;
@@ -149,7 +164,7 @@ try {
 
 .navbar.sidebar-active {
     padding-left: 300px; /* Extend to start from sidebar edge when open */
-    box-shadow: 0 2px 10px rgba(25, 27, 169, 0.2);
+    box-shadow: 0 2px 10px rgba(30, 86, 160, 0.2);
 }
 
 .navbar-brand {

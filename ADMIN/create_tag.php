@@ -223,7 +223,7 @@ $category_fields = [
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #F7F3F3 0%, #C1EAF2 100%);
+            background: linear-gradient(135deg, var(--light-color) 0%, var(--light-accent) 100%);
             min-height: 100vh;
             overflow-x: hidden;
         }
@@ -246,7 +246,7 @@ $category_fields = [
         }
         
         .asset-info-card {
-            background: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%);
+            background: var(--primary-gradient);
             color: white;
             border-radius: var(--border-radius-lg);
             padding: 1.5rem;
@@ -272,7 +272,7 @@ $category_fields = [
         
         .btn-back:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(25, 27, 169, 0.3);
+            box-shadow: 0 5px 15px rgba(var(--primary-rgb), 0.3);
             color: white;
         }
         
@@ -289,8 +289,8 @@ $category_fields = [
         }
         
         .form-control:focus, .form-select:focus {
-            border-color: #191BA9;
-            box-shadow: 0 0 0 0.2rem rgba(25, 27, 169, 0.25);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(var(--primary-rgb), 0.25);
         }
         
         .required {

@@ -58,6 +58,11 @@ try {
             console.error('Available window.Chart:', window.Chart);
             return;
         }
+        
+        // Get computed CSS variables for Chart.js styling
+        const rootStyle = getComputedStyle(document.documentElement);
+        const primaryColor = rootStyle.getPropertyValue('--primary-color').trim() || '#1E56A0';
+        const primaryRgb = rootStyle.getPropertyValue('--primary-rgb').trim() || '30, 86, 160';
     
         Chart.defaults.font.family = 'Inter, sans-serif';
         Chart.defaults.color = '#666';
@@ -117,7 +122,7 @@ try {
                         '#28a745',  // Green for Serviceable
                         '#dc3545',  // Red for Red Tagged
                         '#ffc107',  // Yellow for Maintenance
-                        '#007bff',  // Blue for Borrowed
+                        primaryColor,  // Primary color for Borrowed
                         '#6c757d',  // Gray for Disposed
                         '#6c757d'   // Gray for Unserviceable
                     ],
@@ -208,8 +213,8 @@ try {
                 datasets: [{
                     label: 'Asset Count',
                     data: officeData.map(o => o.item_count),
-                    backgroundColor: 'rgba(25, 27, 169, 0.8)',
-                    borderColor: 'rgba(25, 27, 169, 1)',
+                    backgroundColor: `rgba(${primaryRgb}, 0.8)`,
+                    borderColor: `rgba(${primaryRgb}, 1)`,
                     borderWidth: 2,
                     borderRadius: 8,
                     barThickness: 40

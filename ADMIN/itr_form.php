@@ -135,7 +135,7 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #F7F3F3 0%, #C1EAF2 100%);
+            background: linear-gradient(135deg, var(--light-color) 0%, var(--light-accent) 100%);
             min-height: 100vh;
             overflow-x: hidden;
         }
@@ -182,18 +182,18 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
         .form-control:focus,
         .form-select:focus {
             border-color: var(--primary-color);
-            box-shadow: 0 0 0 0.2rem rgba(25, 27, 169, 0.25);
+            box-shadow: 0 0 0 0.2rem rgba(var(--primary-rgb), 0.25);
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%);
+            background: var(--primary-gradient);
             border: none;
             border-radius: var(--border-radius);
             transition: var(--transition);
         }
 
         .btn-primary:hover {
-            background: linear-gradient(135deg, #1572C6 0%, #4AB8E8 100%);
+            background: var(--primary-gradient);
             transform: translateY(-2px);
             box-shadow: var(--shadow);
         }
@@ -217,7 +217,7 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
         .autocomplete-dropdown {
             position: fixed;
             background: white;
-            border: 2px solid #191BA9;
+            border: 2px solid var(--primary-color);
             border-radius: 0.5rem;
             box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
             max-height: 200px;
@@ -240,7 +240,7 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
         }
 
         .autocomplete-item.active {
-            background-color: #191BA9;
+            background-color: var(--primary-color);
             color: white;
         }
 
@@ -249,7 +249,7 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
         }
 
         .autocomplete-item strong {
-            color: #191BA9;
+            color: var(--primary-color);
         }
 
         .autocomplete-item.active strong {
@@ -267,7 +267,7 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
             left: 0 !important;
             right: 0 !important;
             background: white !important;
-            border: 2px solid #191BA9 !important;
+            border: 2px solid var(--primary-color) !important;
             border-top: none !important;
             border-radius: 0 0 0.5rem 0.5rem !important;
             box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
@@ -295,7 +295,7 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
         }
 
         .employee-result-item strong {
-            color: #191BA9 !important;
+            color: var(--primary-color) !important;
         }
     </style>
 </head>

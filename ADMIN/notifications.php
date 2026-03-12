@@ -125,7 +125,7 @@ function getTimeAgo($datetime) {
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #F7F3F3 0%, #C1EAF2 100%);
+            background: linear-gradient(135deg, var(--light-color) 0%, var(--light-accent) 100%);
             min-height: 100vh;
         }
         
@@ -155,7 +155,7 @@ function getTimeAgo($datetime) {
         
         .notification-card.unread {
             border-left-color: var(--primary-color);
-            background: linear-gradient(to right, rgba(25, 27, 169, 0.05), transparent);
+            background: linear-gradient(to right, rgba(var(--primary-rgb), 0.05), transparent);
         }
         
         .notification-type-badge {
