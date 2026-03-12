@@ -26,6 +26,9 @@ if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
             case 'main_user':
                 header('Location: MAIN_USER/dashboard.php');
                 exit();
+            case 'fuel':
+                header('Location: FUEL/dashboard.php');
+                exit();
         }
     }
     exit();
@@ -152,7 +155,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         
                         logSystemAction($user['id'], 'login_success', 'authentication', "User logged in: {$user['first_name']} {$user['last_name']} ({$email}) with role: {$user['role']}");
                         
-                        $allowed_roles = ['system_admin', 'admin', 'office_admin', 'user', 'main_user'];
+                        $allowed_roles = ['system_admin', 'admin', 'office_admin', 'user', 'main_user', 'fuel'];
                         if (in_array($user['role'], $allowed_roles)) {
                             switch ($user['role']) {
                                 case 'system_admin':
@@ -169,6 +172,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     break;
                                 case 'main_user':
                                     header('Location: MAIN_USER/dashboard.php');
+                                    break;
+                                case 'fuel':
+                                    header('Location: FUEL/dashboard.php');
                                     break;
                             }
                             exit();

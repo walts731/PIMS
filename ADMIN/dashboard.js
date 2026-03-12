@@ -6,46 +6,37 @@ function refreshDashboard() {
 
 function exportData() {
     // Get data from the page instead of PHP variables
-    const totalItems = parseInt(document.querySelector('.stat-value')?.textContent?.replace(/,/g, '') || 0);
-    const serviceableItems = parseInt(document.querySelector('.stat-sublabel')?.textContent?.match(/\d+/)?.[0] || 0);
-    const totalValue = parseFloat(document.querySelectorAll('.stat-value')[1]?.textContent?.replace(/[^0-9.]/g, '') || 0);
-    const totalForms = parseInt(document.querySelectorAll('.stat-value')[2]?.textContent?.replace(/,/g, '') || 0);
-    const fuelStock = parseInt(document.querySelectorAll('.stat-value')[3]?.textContent?.replace(/,/g, '') || 0);
+    const statCards = document.querySelectorAll('.stat-card');
+    const totalItems = parseInt(statCards[0]?.querySelector('.stat-value')?.textContent?.replace(/,/g, '') || 0);
+    const totalValue = parseFloat(statCards[1]?.querySelector('.stat-value')?.textContent?.replace(/[^0-9.]/g, '') || 0);
+    const employeeCount = parseInt(statCards[2]?.querySelector('.stat-value')?.textContent?.replace(/,/g, '') || 0);
     
     const data = {
         timestamp: new Date().toISOString(),
         assets: {
             total_items: totalItems,
-            serviceable: serviceableItems,
+            serviceable: 0,
             in_use: 0,
             red_tagged: 0,
             maintenance: 0,
             value: totalValue
         },
-        forms: {
-            total: totalForms,
-            value: 0,
-            par: 0,
-            ics: 0,
-            ris: 0,
-            iirup: 0,
-            itr: 0
+        employees: {
+            total: employeeCount,
+            active: 0
         },
-        fuel: {
-            stock: fuelStock,
-            today_transactions: 0
+        forms: {
+            total: 0,
+            value: 0
         }
     };
     
     let csv = 'Category,Metric,Value\n';
     csv += `Assets,Total Items,${data.assets.total_items}\n`;
-    csv += `Assets,Serviceable,${data.assets.serviceable}\n`;
-    csv += `Assets,Red Tagged,${data.assets.red_tagged}\n`;
-    csv += `Assets,Value,${data.assets.value}\n`;
+    csv += `Assets,Total Value,${data.assets.value}\n`;
+    csv += `Employees,Total Count,${data.employees.total}\n`;
     csv += `Forms,Total Count,${data.forms.total}\n`;
     csv += `Forms,Total Value,${data.forms.value}\n`;
-    csv += `Fuel,Stock (L),${data.fuel.stock}\n`;
-    csv += `Fuel,Today's Transactions,${data.fuel.today_transactions}\n`;
     
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
@@ -126,33 +117,77 @@ try {
                         '#28a745',  // Green for Serviceable
                         '#dc3545',  // Red for Red Tagged
                         '#ffc107',  // Yellow for Maintenance
-                        '#6f42c1',  // Purple for Borrowed
-                        '#fd7e14',  // Orange for Disposed
+                        '#007bff',  // Blue for Borrowed
+                        '#6c757d',  // Gray for Disposed
                         '#6c757d'   // Gray for Unserviceable
                     ],
-                    borderWidth: 0,
+                    borderColor: '#fff',
+                    borderWidth: 2,
                     hoverOffset: 4
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                cutout: '70%',
+                cutout: '60%',
                 plugins: {
                     legend: {
-                        display: false
+                        position: 'bottom',
+                        labels: {
+                            padding: 15,
+                            usePointStyle: true,
+                            font: {
+                                size: 12
+                            }
+                        }
                     },
                     tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        padding: 12,
+                        titleFont: {
+                            size: 14,
+                            weight: 'bold'
+                        },
+                        bodyFont: {
+                            size: 13
+                        },
                         callbacks: {
                             label: function(context) {
                                 const label = context.label || '';
-                                const originalValues = [serviceableCount, redTaggedCount, maintenanceCount, borrowedCount, disposedCount, unserviceableCount];
-                                const value = originalValues[context.dataIndex] || 0;
-                                const total = originalValues.reduce((a, b) => a + b, 0);
-                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                const value = context.parsed;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
                                 return `${label}: ${value} (${percentage}%)`;
                             }
                         }
+                    },
+                    beforeDraw: function(chart) {
+                        const ctx = chart.ctx;
+                        const width = chart.width;
+                        const height = chart.height;
+                        
+                        ctx.restore();
+                        const fontSize = (height / 114).toFixed(2);
+                        ctx.font = fontSize + "em sans-serif";
+                        ctx.textBaseline = "middle";
+                        
+                        const totalAssets = chartData.reduce((a, b) => a + b, 0);
+                        const text = totalAssets.toString();
+                        const textX = Math.round((width - ctx.measureText(text).width) / 2);
+                        const textY = height / 2 - 10;
+                        
+                        ctx.fillStyle = '#333';
+                        ctx.fillText(text, textX, textY);
+                        
+                        // Add label below the number
+                        ctx.font = (fontSize * 0.6) + "em sans-serif";
+                        const label = "Total Assets";
+                        const labelX = Math.round((width - ctx.measureText(label).width) / 2);
+                        const labelY = height / 2 + 10;
+                        
+                        ctx.fillStyle = '#666';
+                        ctx.fillText(label, labelX, labelY);
+                        ctx.save();
                     }
                 }
             }
@@ -171,11 +206,13 @@ try {
             data: {
                 labels: officeData.map(o => o.office_name.substring(0, 15)),
                 datasets: [{
-                    label: 'Item Value',
-                    data: officeData.map(o => o.item_value),
-                    backgroundColor: '#5CC2F2',
-                    borderRadius: 4,
-                    barThickness: 20
+                    label: 'Asset Count',
+                    data: officeData.map(o => o.item_count),
+                    backgroundColor: 'rgba(25, 27, 169, 0.8)',
+                    borderColor: 'rgba(25, 27, 169, 1)',
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    barThickness: 40
                 }]
             },
             options: {
@@ -184,31 +221,70 @@ try {
                 plugins: {
                     legend: {
                         display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        padding: 12,
+                        titleFont: {
+                            size: 14,
+                            weight: 'bold'
+                        },
+                        bodyFont: {
+                            size: 13
+                        },
+                        callbacks: {
+                            label: function(context) {
+                                const officeName = officeData[context.dataIndex].office_name;
+                                const count = context.parsed.y;
+                                return `${officeName}: ${count} assets`;
+                            }
+                        }
                     }
                 },
                 scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: {
-                            color: 'rgba(0,0,0,0.05)'
-                        },
-                        ticks: {
-                            callback: function(value) {
-                                return 'PHP ' + (value / 1000000).toFixed(1) + 'M';
-                            },
-                            font: {
-                                size: 10
-                            }
-                        }
-                    },
                     x: {
+                        title: {
+                            display: true,
+                            text: 'Offices',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            color: '#333',
+                            padding: 10
+                        },
                         grid: {
                             display: false
                         },
                         ticks: {
                             font: {
-                                size: 10
-                            }
+                                size: 12
+                            },
+                            color: '#666'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Assets Distribution',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            color: '#333',
+                            padding: 10
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)',
+                            drawBorder: false
+                        },
+                        ticks: {
+                            font: {
+                                size: 12
+                            },
+                            color: '#666',
+                            stepSize: 1
                         }
                     }
                 }
