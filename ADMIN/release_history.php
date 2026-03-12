@@ -30,10 +30,10 @@ $date_from = isset($_GET['date_from']) ? trim($_GET['date_from']) : '';
 $date_to = isset($_GET['date_to']) ? trim($_GET['date_to']) : '';
 $transaction_type = isset($_GET['transaction_type']) ? trim($_GET['transaction_type']) : '';
 
-// Get consumable transaction history (both additions and releases) with filters
+// Get consumable transaction history (additions, releases, and lends) with filters
 $transaction_history = [];
 try {
-    // Union query to get both additions and releases
+    // Union query to get additions, releases, and lends
     $sql = "(SELECT 
                 'addition' as transaction_type,
                 c.id,
@@ -51,9 +51,12 @@ try {
                 'Consumable added to inventory' as notes,
                 c.created_at,
                 fo.office_name as from_office_name,
-                to_off.office_name as to_office_name
+                to_off.office_name as to_office_name,
+                NULL as expected_return_date,
+                NULL as actual_return_date,
+                NULL as lend_status
             FROM consumables c
-            LEFT JOIN users u ON 1=0 -- No user for additions, but we need the column
+            LEFT JOIN users u ON 1=0 -- No user for additions, but we need column
             LEFT JOIN offices fo ON c.office_id = fo.id
             LEFT JOIN offices to_off ON c.for_office_id = to_off.id
             WHERE c.created_at IS NOT NULL) 
@@ -77,12 +80,44 @@ try {
                 h.notes,
                 h.created_at,
                 fo.office_name as from_office_name,
-                to_off.office_name as to_office_name
+                to_off.office_name as to_office_name,
+                NULL as expected_return_date,
+                NULL as actual_return_date,
+                NULL as lend_status
             FROM consumable_release_history h
             LEFT JOIN users u ON h.released_by = u.id
             LEFT JOIN consumables c ON h.consumable_id = c.id
             LEFT JOIN offices fo ON h.from_office_id = fo.id
             LEFT JOIN offices to_off ON h.to_office_id = to_off.id)
+            
+            UNION ALL
+            
+            (SELECT 
+                'lend' as transaction_type,
+                l.id,
+                l.description,
+                l.quantity_lent as quantity,
+                c.units,
+                l.unit_cost,
+                l.total_value,
+                l.from_office_id,
+                l.to_office_id,
+                l.lent_by,
+                CONCAT(u.first_name, ' ', u.last_name) as released_by_name,
+                l.received_by,
+                l.date_lent as transaction_date,
+                l.notes,
+                l.created_at,
+                fo.office_name as from_office_name,
+                to_off.office_name as to_office_name,
+                l.expected_return_date,
+                l.actual_return_date,
+                l.status as lend_status
+            FROM lend_consumables l
+            LEFT JOIN users u ON l.lent_by = u.id
+            LEFT JOIN consumables c ON l.consumable_id = c.id
+            LEFT JOIN offices fo ON l.from_office_id = fo.id
+            LEFT JOIN offices to_off ON l.to_office_id = to_off.id)
             
             ORDER BY transaction_date DESC";
     
@@ -226,6 +261,7 @@ try {
                                     <option value="">All Types</option>
                                     <option value="addition" <?php echo ($transaction_type == 'addition') ? 'selected' : ''; ?>>Additions</option>
                                     <option value="release" <?php echo ($transaction_type == 'release') ? 'selected' : ''; ?>>Releases</option>
+                                    <option value="lend" <?php echo ($transaction_type == 'lend') ? 'selected' : ''; ?>>Lends</option>
                                 </select>
                             </div>
                             <div class="col-md-2">
@@ -312,6 +348,8 @@ try {
                             <th>To Office</th>
                             <th>Released By</th>
                             <th>Received By</th>
+                            <th>Expected Return</th>
+                            <th>Status</th>
                             <th>Notes</th>
                         </tr>
                     </thead>
@@ -322,8 +360,10 @@ try {
                                     <td>
                                         <?php if ($transaction['transaction_type'] === 'addition'): ?>
                                             <span class="badge bg-success">Addition</span>
-                                        <?php else: ?>
+                                        <?php elseif ($transaction['transaction_type'] === 'release'): ?>
                                             <span class="badge bg-primary">Release</span>
+                                        <?php elseif ($transaction['transaction_type'] === 'lend'): ?>
+                                            <span class="badge bg-warning text-dark">Lend</span>
                                         <?php endif; ?>
                                     </td>
                                     <td><small><?php echo date('M j, Y H:i', strtotime($transaction['transaction_date'])); ?></small></td>
@@ -336,12 +376,32 @@ try {
                                     <td><?php echo htmlspecialchars($transaction['to_office_name'] ?: 'N/A'); ?></td>
                                     <td><?php echo htmlspecialchars($transaction['released_by_name'] ?: 'System'); ?></td>
                                     <td><?php echo htmlspecialchars($transaction['received_by'] ?: 'Not specified'); ?></td>
+                                    <td>
+                                        <?php if ($transaction['transaction_type'] === 'lend' && !empty($transaction['expected_return_date'])): ?>
+                                            <small><?php echo date('M j, Y', strtotime($transaction['expected_return_date'])); ?></small>
+                                        <?php else: ?>
+                                            <small class="text-muted">N/A</small>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php if ($transaction['transaction_type'] === 'lend' && !empty($transaction['lend_status'])): ?>
+                                            <?php if ($transaction['lend_status'] === 'lent'): ?>
+                                                <span class="badge bg-warning text-dark">Lent</span>
+                                            <?php elseif ($transaction['lend_status'] === 'returned'): ?>
+                                                <span class="badge bg-success">Returned</span>
+                                            <?php elseif ($transaction['lend_status'] === 'overdue'): ?>
+                                                <span class="badge bg-danger">Overdue</span>
+                                            <?php endif; ?>
+                                        <?php else: ?>
+                                            <small class="text-muted">N/A</small>
+                                        <?php endif; ?>
+                                    </td>
                                     <td><small><?php echo htmlspecialchars($transaction['notes'] ?: 'No notes'); ?></small></td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="12" class="text-center text-muted py-4">
+                                <td colspan="14" class="text-center text-muted py-4">
                                     <i class="bi bi-inbox fs-1"></i>
                                     <p class="mt-2">No transaction history found.</p>
                                 </td>
@@ -384,7 +444,9 @@ try {
             filterSelects.forEach(select => {
                 select.addEventListener('change', function() {
                     console.log('Filter changed:', this.name, this.value);
-                    performAutoSearch();
+                    // Auto-submit form
+                    const form = document.getElementById('filterForm');
+                    form.submit();
                 });
             });
             
@@ -392,48 +454,11 @@ try {
             filterDates.forEach(input => {
                 input.addEventListener('change', function() {
                     console.log('Date filter changed:', this.name, this.value);
-                    performAutoSearch();
+                    // Auto-submit form
+                    const form = document.getElementById('filterForm');
+                    form.submit();
                 });
             });
-            
-            // Function to perform auto-search
-            function performAutoSearch() {
-                const form = document.getElementById('filterForm');
-                const formData = new FormData(form);
-                const currentUrl = new URL(window.location);
-                
-                console.log('Performing auto-search with form data:', Object.fromEntries(formData));
-                
-                // Clear all existing filter parameters first
-                currentUrl.searchParams.delete('transaction_type');
-                currentUrl.searchParams.delete('from_office');
-                currentUrl.searchParams.delete('to_office');
-                currentUrl.searchParams.delete('date_from');
-                currentUrl.searchParams.delete('date_to');
-                // Keep search parameter if it exists from table search
-                
-                // Add non-empty filter parameters
-                if (formData.get('transaction_type')) {
-                    currentUrl.searchParams.set('transaction_type', formData.get('transaction_type'));
-                }
-                if (formData.get('from_office')) {
-                    currentUrl.searchParams.set('from_office', formData.get('from_office'));
-                }
-                if (formData.get('to_office')) {
-                    currentUrl.searchParams.set('to_office', formData.get('to_office'));
-                }
-                if (formData.get('date_from')) {
-                    currentUrl.searchParams.set('date_from', formData.get('date_from'));
-                }
-                if (formData.get('date_to')) {
-                    currentUrl.searchParams.set('date_to', formData.get('date_to'));
-                }
-                
-                console.log('Navigating to:', currentUrl.toString());
-                
-                // Navigate to new URL
-                window.location.href = currentUrl.toString();
-            }
             
             // Search functionality from table area
             const searchInput = document.getElementById('tableSearch');
@@ -475,12 +500,33 @@ try {
             const params = new URLSearchParams(window.location.search);
             
             // Create CSV content
-            let csvContent = "Type,Date,Description,Quantity,Units,Unit Cost,Total Value,From Office,To Office,Released By,Received By,Notes\n";
+            let csvContent = "Type,Date,Description,Quantity,Units,Unit Cost,Total Value,From Office,To Office,Released By,Received By,Expected Return,Status,Notes\n";
             
             <?php if (!empty($transaction_history)): ?>
-                <?php foreach ($transaction_history as $transaction): ?>
-                    csvContent += "<?php echo ucfirst($transaction['transaction_type']); ?>","<?php echo date('Y-m-d H:i', strtotime($transaction['transaction_date'])); ?>","<?php echo addslashes($transaction['description']); ?>","<?php echo $transaction['quantity']; ?>","<?php echo addslashes($transaction['units'] ?: 'N/A'); ?>","<?php echo $transaction['unit_cost']; ?>","<?php echo $transaction['total_value']; ?>","<?php echo addslashes($transaction['from_office_name'] ?: 'N/A'); ?>","<?php echo addslashes($transaction['to_office_name'] ?: 'N/A'); ?>","<?php echo addslashes($transaction['released_by_name'] ?: 'System'); ?>","<?php echo addslashes($transaction['received_by'] ?: 'Not specified'); ?>","<?php echo addslashes($transaction['notes'] ?: 'No notes'); ?>"\n";
-                <?php endforeach; ?>
+                // Transaction data as JSON for safe handling
+                const transactionData = <?php echo json_encode($transaction_history); ?>;
+                
+                // Process each transaction
+                transactionData.forEach(transaction => {
+                    const type = transaction.transaction_type || '';
+                    const date = transaction.transaction_date ? new Date(transaction.transaction_date).toISOString().slice(0, 19).replace('T', ' ') : '';
+                    const description = (transaction.description || '').replace(/"/g, '""');
+                    const quantity = transaction.quantity || 0;
+                    const units = (transaction.units || 'N/A').replace(/"/g, '""');
+                    const unitCost = transaction.unit_cost || 0;
+                    const totalValue = transaction.total_value || 0;
+                    const fromOffice = (transaction.from_office_name || 'N/A').replace(/"/g, '""');
+                    const toOffice = (transaction.to_office_name || 'N/A').replace(/"/g, '""');
+                    const releasedBy = (transaction.released_by_name || 'System').replace(/"/g, '""');
+                    const receivedBy = (transaction.received_by || 'Not specified').replace(/"/g, '""');
+                    const expectedReturn = (transaction.transaction_type === 'lend' && transaction.expected_return_date) ? 
+                        new Date(transaction.expected_return_date).toISOString().slice(0, 10) : 'N/A';
+                    const status = (transaction.transaction_type === 'lend' && transaction.lend_status) ? 
+                        transaction.lend_status.charAt(0).toUpperCase() + transaction.lend_status.slice(1) : 'N/A';
+                    const notes = (transaction.notes || 'No notes').replace(/"/g, '""');
+                    
+                    csvContent += `"${type}","${date}","${description}","${quantity}","${units}","${unitCost}","${totalValue}","${fromOffice}","${toOffice}","${releasedBy}","${receivedBy}","${expectedReturn}","${status}","${notes}"\n`;
+                });
             <?php endif; ?>
             
             // Create download link
