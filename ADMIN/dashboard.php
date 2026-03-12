@@ -104,30 +104,6 @@ if (!$conn || $conn->connect_error) {
             $stats['low_stock_count'] = $low_stock_result->fetch_assoc()['low_stock_count'];
         }
 
-        // ===== FUEL MANAGEMENT =====
-        $fuel_stock_query = "SELECT 
-            COALESCE(SUM(quantity), 0) as total_fuel_stock,
-            COUNT(DISTINCT fuel_type_id) as fuel_types_count
-            FROM fuel_stock";
-        $fuel_result = $conn->query($fuel_stock_query);
-        if ($fuel_result) {
-            $fuel_data = $fuel_result->fetch_assoc();
-            $stats['total_fuel_stock'] = $fuel_data['total_fuel_stock'];
-            $stats['fuel_types_count'] = $fuel_data['fuel_types_count'];
-        }
-
-        // Fuel transactions today
-        $fuel_today_query = "SELECT 
-            COUNT(*) as today_transactions,
-            SUM(CASE WHEN transaction_type = 'OUT' THEN quantity ELSE 0 END) as fuel_out_today,
-            SUM(CASE WHEN transaction_type = 'IN' THEN quantity ELSE 0 END) as fuel_in_today
-            FROM fuel_transactions 
-            WHERE DATE(transaction_date) = CURDATE()";
-        $fuel_today_result = $conn->query($fuel_today_query);
-        if ($fuel_today_result) {
-            $stats = array_merge($stats, $fuel_today_result->fetch_assoc());
-        }
-
         // ===== FORMS/ENTRIES SUMMARY =====
         // PAR Forms - calculate from par_items
         $par_query = "SELECT COUNT(*) as par_count FROM par_forms";
@@ -330,20 +306,6 @@ if (!$conn || $conn->connect_error) {
             }
         }
 
-        $recent_fuel_query = "SELECT 
-            ft.*, u.first_name, u.last_name
-            FROM fuel_transactions ft
-            LEFT JOIN users u ON ft.user_id = u.id
-            ORDER BY ft.transaction_date DESC
-            LIMIT 5";
-        $recent_fuel_result = $conn->query($recent_fuel_query);
-        $stats['recent_fuel'] = [];
-        if ($recent_fuel_result) {
-            while ($row = $recent_fuel_result->fetch_assoc()) {
-                $stats['recent_fuel'][] = $row;
-            }
-        }
-
         $recent_forms_query = "
             (SELECT 'PAR' as form_type, par_no COLLATE utf8mb4_unicode_ci as form_no, created_at, 0 as total_amount, 'par_entries.php' as link FROM par_forms ORDER BY created_at DESC LIMIT 2)
             UNION ALL
@@ -427,7 +389,7 @@ $defaults = [
     'red_tag_count' => 0, 'active_red_tags' => 0,
     'office_count' => 0, 'employee_count' => 0, 'active_employees' => 0,
     'office_distribution' => [],
-    'recent_items' => [], 'recent_fuel' => [], 'recent_forms' => [],
+    'recent_items' => [], 'recent_forms' => [],
     'maintenance_items_list' => [], 'low_stock_items' => []
 ];
 
@@ -509,15 +471,6 @@ $total_forms_value = $stats['par_value'] + $stats['ics_value'] + $stats['ris_val
                 </a>
             </div>
             <div class="col-6 col-md-4 col-lg-2">
-                <a href="borrowing.php" class="module-card">
-                    <div class="module-icon green">
-                        <i class="bi bi-arrow-left-right"></i>
-                    </div>
-                    <div class="module-title">Borrowing</div>
-                    <div class="module-desc">Asset borrowing</div>
-                </a>
-            </div>
-            <div class="col-6 col-md-4 col-lg-2">
                 <a href="consumables.php" class="module-card">
                     <div class="module-icon orange">
                         <i class="bi bi-archive"></i>
@@ -527,12 +480,12 @@ $total_forms_value = $stats['par_value'] + $stats['ics_value'] + $stats['ris_val
                 </a>
             </div>
             <div class="col-6 col-md-4 col-lg-2">
-                <a href="fuel.php" class="module-card">
-                    <div class="module-icon purple">
-                        <i class="bi bi-fuel-pump"></i>
+                <a href="borrowing.php" class="module-card">
+                    <div class="module-icon green">
+                        <i class="bi bi-arrow-left-right"></i>
                     </div>
-                    <div class="module-title">Fuel</div>
-                    <div class="module-desc">Fuel management</div>
+                    <div class="module-title">Borrowing</div>
+                    <div class="module-desc">Asset borrowing</div>
                 </a>
             </div>
             <div class="col-6 col-md-4 col-lg-2">
@@ -553,40 +506,43 @@ $total_forms_value = $stats['par_value'] + $stats['ics_value'] + $stats['ris_val
                     <div class="module-desc">View reports</div>
                 </a>
             </div>
+            <div class="col-6 col-md-4 col-lg-2">
+                <a href="employees.php" class="module-card">
+                    <div class="module-icon purple">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <div class="module-title">Employees</div>
+                    <div class="module-desc">Staff management</div>
+                </a>
+            </div>
         </div>
         
         <div class="row g-3 mb-4">
-            <div class="col-6 col-md-3">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo number_format($stats['total_items']); ?></div>
-                    <div class="stats-label"><i class="bi bi-box-seam"></i> Total Asset Items</div>
+            <div class="col-6 col-md-4">
+                <div class="stat-card">
+                    <div class="stat-value"><?php echo number_format($stats['total_items']); ?></div>
+                    <div class="stat-label"><i class="bi bi-box-seam"></i> Total Asset Items</div>
                 </div>
             </div>
-            <div class="col-6 col-md-3">
-                <div class="stats-card">
-                    <div class="stats-number">₱<?php echo number_format($stats['total_value'], 2); ?></div>
-                    <div class="stats-label"><i class="bi bi-cash-stack"></i> Total Asset Value</div>
+            <div class="col-6 col-md-4">
+                <div class="stat-card">
+                    <div class="stat-value">₱<?php echo number_format($stats['total_value'], 2); ?></div>
+                    <div class="stat-label"><i class="bi bi-cash-stack"></i> Total Asset Value</div>
                 </div>
             </div>
-            <div class="col-6 col-md-3">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo number_format($total_forms); ?></div>
-                    <div class="stats-label"><i class="bi bi-file-earmark-text"></i> Total Forms</div>
-                </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo number_format($stats['total_fuel_stock'], 0); ?></div>
-                    <div class="stats-label"><i class="bi bi-fuel-pump"></i> Fuel Stock (L)</div>
+            <div class="col-6 col-md-4">
+                <div class="stat-card">
+                    <div class="stat-value"><?php echo number_format($stats['employee_count']); ?></div>
+                    <div class="stat-label"><i class="bi bi-people"></i> Employees</div>
                 </div>
             </div>
         </div>
         
         <div class="row">
-            <div class="col-lg-8">
+            <div class="col-lg-12">
                 <div class="row g-3 mb-4">
-                    <div class="col-md-6">
-                        <div class="section-card glass-morphism">
+                    <div class="col-md-4">
+                        <div class="section-card glass-morphism h-100">
                             <div class="section-title">
                                 <i class="bi bi-pie-chart"></i> Asset Status Distribution
                             </div>
@@ -621,8 +577,8 @@ $total_forms_value = $stats['par_value'] + $stats['ics_value'] + $stats['ris_val
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="section-card">
+                    <div class="col-md-4">
+                        <div class="section-card h-100">
                             <div class="section-title">
                                 <i class="bi bi-building"></i> Office Distribution
                             </div>
@@ -633,152 +589,34 @@ $total_forms_value = $stats['par_value'] + $stats['ics_value'] + $stats['ris_val
                             <script type="application/json" id="officeData">
                             <?php echo json_encode(array_slice($stats['office_distribution'], 0, 5)); ?>
                             </script>
+
                         </div>
                     </div>
-                </div>
-                
-                <div class="section-card mb-4">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div class="section-title mb-0">
-                            <i class="bi bi-box-seam"></i> Asset Summary
-                        </div>
-                        <a href="asset_items.php" class="view-all">
-                            View All <i class="bi bi-arrow-right"></i>
-                        </a>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-summary-item">
-                                <div class="form-type">
-                                    <div class="form-type-icon par">Total</div>
-                                    <span class="small">Total Asset Items</span>
+                    <div class="col-md-4">
+                        <div class="section-card h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="section-title mb-0">
+                                    <i class="bi bi-tags"></i> Top Categories
                                 </div>
-                                <div class="text-end">
-                                    <div class="form-count"><?php echo number_format($stats['total_items']); ?></div>
-                                    <div class="form-value">PHP <?php echo number_format($stats['total_value'], 2); ?></div>
-                                </div>
+                                <a href="asset_categories.php" class="view-all">
+                                    All <i class="bi bi-arrow-right"></i>
+                                </a>
                             </div>
-                            <div class="form-summary-item">
-                                <div class="form-type">
-                                    <div class="form-type-icon ics">Serviceable</div>
-                                    <span class="small">Serviceable Items</span>
+                            <?php if (!empty($stats['top_categories'])): ?>
+                                <?php foreach ($stats['top_categories'] as $category): ?>
+                                <div class="category-item">
+                                    <div class="category-info">
+                                        <span class="category-code"><?php echo htmlspecialchars($category['code']); ?></span>
+                                        <span class="category-name"><?php echo htmlspecialchars($category['name']); ?></span>
+                                    </div>
+                                    <div class="category-count"><?php echo $category['item_count']; ?> items</div>
                                 </div>
-                                <div class="text-end">
-                                    <div class="form-count"><?php echo number_format($stats['serviceable_items']); ?></div>
-                                    <div class="form-value">Active & Available</div>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <div class="text-center text-muted py-3">
+                                    <small>No categories found</small>
                                 </div>
-                            </div>
-                            <div class="form-summary-item">
-                                <div class="form-type">
-                                    <div class="form-type-icon ris">Red Tagged</div>
-                                    <span class="small">Red Tagged Items</span>
-                                </div>
-                                <div class="text-end">
-                                    <div class="form-count"><?php echo number_format($stats['red_tagged_items']); ?></div>
-                                    <div class="form-value">Red Tagged Assets</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-summary-item">
-                                <div class="form-type">
-                                    <div class="form-type-icon iirup">Categories</div>
-                                    <span class="small">Asset Categories</span>
-                                </div>
-                                <div class="text-end">
-                                    <div class="form-count"><?php echo count($stats['top_categories']); ?></div>
-                                    <div class="form-value">Active Categories</div>
-                                </div>
-                            </div>
-                            <div class="form-summary-item">
-                                <div class="form-type">
-                                    <div class="form-type-icon itr">Offices</div>
-                                    <span class="small">Office Distribution</span>
-                                </div>
-                                <div class="text-end">
-                                    <div class="form-count"><?php echo $stats['office_count']; ?></div>
-                                    <div class="form-value">Active Offices</div>
-                                </div>
-                            </div>
-                            <div class="form-summary-item" style="background: rgba(25, 27, 169, 0.05); border-radius: 8px; padding: 0.75rem; margin-top: 0.5rem;">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="fw-bold">Total Asset Value</span>
-                                    <span class="fw-bold text-primary">PHP <?php echo number_format($stats['total_value'], 2); ?></span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="section-card mb-4">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div class="section-title mb-0">
-                            <i class="bi bi-files"></i> Forms & Entries Summary
-                        </div>
-                        <a href="par_entries.php" class="view-all">
-                            View All <i class="bi bi-arrow-right"></i>
-                        </a>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-summary-item">
-                                <div class="form-type">
-                                    <div class="form-type-icon par">PAR</div>
-                                    <span class="small">Property Receipts</span>
-                                </div>
-                                <div class="text-end">
-                                    <div class="form-count"><?php echo number_format($stats['par_count']); ?></div>
-                                    <div class="form-value">PHP <?php echo number_format($stats['par_value'], 2); ?></div>
-                                </div>
-                            </div>
-                            <div class="form-summary-item">
-                                <div class="form-type">
-                                    <div class="form-type-icon ics">ICS</div>
-                                    <span class="small">Custodian Slips</span>
-                                </div>
-                                <div class="text-end">
-                                    <div class="form-count"><?php echo number_format($stats['ics_count']); ?></div>
-                                    <div class="form-value">PHP <?php echo number_format($stats['ics_value'], 2); ?></div>
-                                </div>
-                            </div>
-                            <div class="form-summary-item">
-                                <div class="form-type">
-                                    <div class="form-type-icon ris">RIS</div>
-                                    <span class="small">Requisition Slips</span>
-                                </div>
-                                <div class="text-end">
-                                    <div class="form-count"><?php echo number_format($stats['ris_count']); ?></div>
-                                    <div class="form-value">PHP <?php echo number_format($stats['ris_value'], 2); ?></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-summary-item">
-                                <div class="form-type">
-                                    <div class="form-type-icon iirup">IIRUP</div>
-                                    <span class="small">Unserviceable Report</span>
-                                </div>
-                                <div class="text-end">
-                                    <div class="form-count"><?php echo number_format($stats['iirup_count']); ?></div>
-                                    <div class="form-value">PHP <?php echo number_format($stats['iirup_value'], 2); ?></div>
-                                </div>
-                            </div>
-                            <div class="form-summary-item">
-                                <div class="form-type">
-                                    <div class="form-type-icon itr">ITR</div>
-                                    <span class="small">Transfer Requests</span>
-                                </div>
-                                <div class="text-end">
-                                    <div class="form-count"><?php echo number_format($stats['itr_count']); ?></div>
-                                    <div class="form-value">PHP <?php echo number_format($stats['itr_value'], 2); ?></div>
-                                </div>
-                            </div>
-                            <div class="form-summary-item" style="background: rgba(25, 27, 169, 0.05); border-radius: 8px; padding: 0.75rem; margin-top: 0.5rem;">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="fw-bold">Total Value</span>
-                                    <span class="fw-bold text-primary">PHP <?php echo number_format($total_forms_value, 2); ?></span>
-                                </div>
-                            </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -801,17 +639,6 @@ $total_forms_value = $stats['par_value'] + $stats['ics_value'] + $stats['ris_val
                                 'title' => htmlspecialchars($item['description']),
                                 'meta' => 'Status: ' . ucfirst($item['status']),
                                 'time' => $item['last_updated']
-                            ];
-                        }
-                        
-                        foreach ($stats['recent_fuel'] as $fuel) {
-                            $all_activity[] = [
-                                'type' => 'fuel',
-                                'icon' => 'bi-fuel-pump',
-                                'icon_class' => 'orange',
-                                'title' => ucfirst($fuel['fuel_type']) . ' - ' . $fuel['transaction_type'],
-                                'meta' => number_format($fuel['quantity'], 2) . ' L',
-                                'time' => $fuel['transaction_date']
                             ];
                         }
                         
@@ -861,116 +688,10 @@ $total_forms_value = $stats['par_value'] + $stats['ics_value'] + $stats['ris_val
                 </div>
             </div>
             
-            <div class="col-lg-4">
-                <?php if ($stats['low_stock_count'] > 0 || $stats['active_red_tags'] > 0 || count($stats['maintenance_items_list']) > 0): ?>
-                <div class="section-card mb-4">
-                    <div class="section-title">
-                        <i class="bi bi-bell"></i> Alerts & Notifications
-                    </div>
-                    
-                    <?php if ($stats['low_stock_count'] > 0): ?>
-                    <div class="alert-item">
-                        <div class="alert-icon">
-                            <i class="bi bi-exclamation-triangle"></i>
-                        </div>
-                        <div class="alert-content">
-                            <div class="alert-title">Low Stock Items</div>
-                            <div class="alert-desc"><?php echo $stats['low_stock_count']; ?> items need replenishment</div>
-                        </div>
-                        <a href="consumables.php" class="alert-value">View</a>
-                    </div>
-                    <?php endif; ?>
-                    
-                    <?php if ($stats['active_red_tags'] > 0): ?>
-                    <div class="alert-item">
-                        <div class="alert-icon">
-                            <i class="bi bi-tag-fill"></i>
-                        </div>
-                        <div class="alert-content">
-                            <div class="alert-title">Active Red Tags</div>
-                            <div class="alert-desc"><?php echo $stats['active_red_tags']; ?> unserviceable items</div>
-                        </div>
-                        <a href="red_tags.php" class="alert-value">View</a>
-                    </div>
-                    <?php endif; ?>
-                    
-                    <?php if (!empty($stats['maintenance_items_list']) && count($stats['maintenance_items_list']) > 0): ?>
-                    <div class="alert-item">
-                        <div class="alert-icon">
-                            <i class="bi bi-tools"></i>
-                        </div>
-                        <div class="alert-content">
-                            <div class="alert-title">Maintenance Required</div>
-                            <div class="alert-desc"><?php echo count($stats['maintenance_items_list']); ?> items under maintenance</div>
-                        </div>
-                        <a href="asset_items.php?status=maintenance" class="alert-value">View</a>
-                    </div>
-                    <?php endif; ?>
-                </div>
-                <?php endif; ?>
-                
-                <div class="section-card mb-4">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div class="section-title mb-0">
-                            <i class="bi bi-tags"></i> Top Categories
-                        </div>
-                        <a href="asset_categories.php" class="view-all">
-                            All <i class="bi bi-arrow-right"></i>
-                        </a>
-                    </div>
-                    <?php if (!empty($stats['top_categories'])): ?>
-                        <?php foreach ($stats['top_categories'] as $category): ?>
-                        <div class="category-item">
-                            <div class="category-info">
-                                <span class="category-code"><?php echo htmlspecialchars($category['code']); ?></span>
-                                <span class="category-name"><?php echo htmlspecialchars($category['name']); ?></span>
-                            </div>
-                            <div class="category-count"><?php echo $category['item_count']; ?> items</div>
-                        </div>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <div class="text-center text-muted py-3">
-                            <small>No categories found</small>
-                        </div>
-                    <?php endif; ?>
-                </div>
-                
-                <div class="section-card mb-4">
-                    <div class="section-title">
-                        <i class="bi bi-info-circle"></i> System Overview
-                    </div>
-                    <div class="row text-center g-2">
-                        <div class="col-6">
-                            <div class="overview-card primary">
-                                <div class="overview-number"><?php echo number_format($stats['office_count']); ?></div>
-                                <div class="overview-label">Offices</div>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="overview-card success">
-                                <div class="overview-number"><?php echo number_format($stats['active_employees']); ?></div>
-                                <div class="overview-label">Employees</div>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="overview-card warning">
-                                <div class="overview-number"><?php echo number_format($stats['active_tags']); ?></div>
-                                <div class="overview-label">Active Tags</div>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="overview-card danger">
-                                <div class="overview-number"><?php echo number_format($stats['today_transactions']); ?></div>
-                                <div class="overview-label">Fuel Today</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+
         </div>
     </div>
-    </div>
-    
+
     <?php require_once 'includes/logout-modal.php'; ?>
     <?php require_once 'includes/change-password-modal.php'; ?>
     

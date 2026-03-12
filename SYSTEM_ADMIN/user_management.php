@@ -637,6 +637,16 @@ try {
             color: white;
         }
         
+        .role-main_user {
+            background: linear-gradient(135deg, #6f42c1 0%, #9561e2 100%);
+            color: white;
+        }
+        
+        .role-fuel {
+            background: linear-gradient(135deg, #fd7e14 0%, #ff922b 100%);
+            color: white;
+        }
+        
         .status-badge {
             font-size: 0.75rem;
             padding: 0.25rem 0.75rem;
@@ -1051,6 +1061,8 @@ $page_title = 'User Management';
                                         <option value="admin">Admin</option>
                                         <option value="office_admin">Office Admin</option>
                                         <option value="user">User</option>
+                                        <option value="main_user">Main User</option>
+                                        <option value="fuel">Fuel</option>
                                     </select>
                                 </div>
                             </div>
@@ -1136,6 +1148,8 @@ $page_title = 'User Management';
                                         <option value="admin">Admin</option>
                                         <option value="office_admin">Office Admin</option>
                                         <option value="user">User</option>
+                                        <option value="main_user">Main User</option>
+                                        <option value="fuel">Fuel</option>
                                     </select>
                                     <small class="text-muted" id="roleWarning" style="display: none;">Note: System admin role cannot be changed</small>
                                 </div>
@@ -1171,6 +1185,8 @@ $page_title = 'User Management';
                                 <option value="admin">Admin</option>
                                 <option value="office_admin">Office Admin</option>
                                 <option value="user">User</option>
+                                <option value="main_user">Main User</option>
+                                <option value="fuel">Fuel</option>
                             </select>
                         </div>
                         <div class="col-md-8">

@@ -337,7 +337,7 @@ foreach ($software_data as $software) {
                 <div class="col-md-6">
                     <div class="row g-2 mb-2">
                         <div class="col-md-3">
-                            <select class="form-select form-select-sm" id="categoryFilter">
+                            <select class="form-select form-select-sm" id="categoryFilter" onchange="applyFilters()">
                                 <option value="">All Categories</option>
                                 <?php foreach ($categories as $category): ?>
                                     <option value="<?php echo htmlspecialchars($category); ?>" <?php echo $category_filter == $category ? 'selected' : ''; ?>>
@@ -347,7 +347,7 @@ foreach ($software_data as $software) {
                             </select>
                         </div>
                         <div class="col-md-3">
-                            <select class="form-select form-select-sm" id="licenseFilter">
+                            <select class="form-select form-select-sm" id="licenseFilter" onchange="applyFilters()">
                                 <option value="">All Licenses</option>
                                 <?php foreach ($license_types as $license): ?>
                                     <option value="<?php echo htmlspecialchars($license); ?>" <?php echo $license_filter == $license ? 'selected' : ''; ?>>
@@ -357,7 +357,7 @@ foreach ($software_data as $software) {
                             </select>
                         </div>
                         <div class="col-md-3">
-                            <select class="form-select form-select-sm" id="statusFilter">
+                            <select class="form-select form-select-sm" id="statusFilter" onchange="applyFilters()">
                                 <option value="">All Status</option>
                                 <option value="active" <?php echo $status_filter == 'active' ? 'selected' : ''; ?>>Active</option>
                                 <option value="inactive" <?php echo $status_filter == 'inactive' ? 'selected' : ''; ?>>Inactive</option>
@@ -543,6 +543,144 @@ foreach ($software_data as $software) {
         </div>
     </div>
 
+    <!-- View Software Modal -->
+    <div class="modal fade" id="viewSoftwareModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Software Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="viewSoftwareContent">
+                    <!-- Content will be loaded dynamically -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Software Modal -->
+    <div class="modal fade" id="editSoftwareModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Software Item</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="editSoftwareForm" method="POST" action="process_software.php">
+                    <div class="modal-body">
+                        <input type="hidden" name="action" value="edit">
+                        <input type="hidden" name="id" id="editSoftwareId">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">Software Name *</label>
+                                <input type="text" name="software_name" id="editSoftwareName" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Category *</label>
+                                <select name="category" id="editCategory" class="form-control" required>
+                                    <option value="">Select Category</option>
+                                    <option value="Operating System">Operating System</option>
+                                    <option value="Office Suite">Office Suite</option>
+                                    <option value="Antivirus">Antivirus</option>
+                                    <option value="Database">Database</option>
+                                    <option value="Development Tools">Development Tools</option>
+                                    <option value="Design Software">Design Software</option>
+                                    <option value="Accounting">Accounting</option>
+                                    <option value="Communication">Communication</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <label class="form-label">Description</label>
+                            <textarea name="description" id="editDescription" class="form-control" rows="2"></textarea>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Vendor *</label>
+                                <input type="text" name="vendor" id="editVendor" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Version</label>
+                                <input type="text" name="version" id="editVersion" class="form-control">
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <label class="form-label">License Type *</label>
+                                <select name="license_type" id="editLicenseType" class="form-control" required>
+                                    <option value="">Select License Type</option>
+                                    <option value="Free">Free</option>
+                                    <option value="Open Source">Open Source</option>
+                                    <option value="Commercial">Commercial</option>
+                                    <option value="Subscription">Subscription</option>
+                                    <option value="Trial">Trial</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">License Key</label>
+                                <input type="text" name="license_key" id="editLicenseKey" class="form-control">
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Purchase Date *</label>
+                                <input type="date" name="purchase_date" id="editPurchaseDate" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Purchase Cost *</label>
+                                <input type="number" name="purchase_cost" id="editPurchaseCost" class="form-control" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Renewal Date</label>
+                                <input type="date" name="renewal_date" id="editRenewalDate" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Renewal Cost</label>
+                                <input type="number" name="renewal_cost" id="editRenewalCost" class="form-control" step="0.01">
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Status *</label>
+                                <select name="status" id="editStatus" class="form-control" required>
+                                    <option value="">Select Status</option>
+                                    <option value="Active">Active</option>
+                                    <option value="Inactive">Inactive</option>
+                                    <option value="Expired">Expired</option>
+                                    <option value="Pending">Pending</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Assigned To</label>
+                                <input type="text" name="assigned_to" id="editAssignedTo" class="form-control">
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Installation Date</label>
+                                <input type="date" name="installation_date" id="editInstallationDate" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Notes</label>
+                                <textarea name="notes" id="editNotes" class="form-control" rows="1"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Update Software</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- jQuery -->
@@ -550,91 +688,35 @@ foreach ($software_data as $software) {
     <?php require_once 'includes/sidebar-scripts.php'; ?>
     
     <script>
-        // Filter functions - same as assets.php
+        // Filter functions - same as infrastructure.php
         function applyFilters() {
             const category = document.getElementById('categoryFilter')?.value || '';
             const license = document.getElementById('licenseFilter')?.value || '';
             const status = document.getElementById('statusFilter')?.value || '';
             const search = document.getElementById('searchInput')?.value || '';
             
-            console.log('Applying filters:', { category, license, status, search });
+            const params = new URLSearchParams();
+            if (category) params.set('category', category);
+            if (license) params.set('license', license);
+            if (status) params.set('status', status);
+            if (search) params.set('search', search);
             
-            // Build URL parameters like assets.php
-            const currentUrl = new URL(window.location);
-            
-            // Update parameters
-            if (category) {
-                currentUrl.searchParams.set('category', category);
-            } else {
-                currentUrl.searchParams.delete('category');
-            }
-            if (license) {
-                currentUrl.searchParams.set('license', license);
-            } else {
-                currentUrl.searchParams.delete('license');
-            }
-            if (status) {
-                currentUrl.searchParams.set('status', status);
-            } else {
-                currentUrl.searchParams.delete('status');
-            }
-            if (search) {
-                currentUrl.searchParams.set('search', search);
-            } else {
-                currentUrl.searchParams.delete('search');
-            }
-            
-            // Remove page parameter if exists
-            currentUrl.searchParams.delete('page');
-            
-            console.log('Navigating to:', currentUrl.toString());
-            window.location.href = currentUrl.toString();
+            const url = 'software.php' + (params.toString() ? '?' + params.toString() : '');
+            window.location.href = url;
         }
         
         function clearFilters() {
-            console.log('Clearing all filters');
             window.location.href = 'software.php';
         }
         
         // Export function
         function exportSoftware() {
             console.log('Exporting software data...');
-            let csv = 'Software Name,Category,Description,Vendor,Version,License Type,License Key,Purchase Cost,Purchase Date,Expiry Date,Status\n';
+            let csv = 'Software Name,Category,Description,Vendor,Version,License Type,License Key,Purchase Cost,Purchase Date,Renewal Date,Status\n';
             
             <?php if (!empty($software_data)): ?>
                 <?php foreach ($software_data as $software): ?>
-                    csv += <?php 
-                        $data = [
-                            'name' => $software['software_name'],
-                            'category' => $software['category'],
-                            'description' => $software['description'],
-                            'vendor' => $software['vendor'],
-                            'version' => $software['version'],
-                            'license_type' => $software['license_type'],
-                            'license_key' => $software['license_key'],
-                            'purchase_cost' => $software['purchase_cost'],
-                            'purchase_date' => $software['purchase_date'],
-                            'expiry_date' => $software['expiry_date'],
-                            'status' => $software['status']
-                        ];
-                        
-                        // Build CSV string manually to avoid JSON issues
-                        $name = str_replace('"', '""', htmlspecialchars($software['software_name']));
-                        $category = str_replace('"', '""', htmlspecialchars($software['category']));
-                        $description = str_replace('"', '""', htmlspecialchars($software['description']));
-                        $vendor = str_replace('"', '""', htmlspecialchars($software['vendor']));
-                        $version = str_replace('"', '""', htmlspecialchars($software['version']));
-                        $license_type = str_replace('"', '""', htmlspecialchars($software['license_type']));
-                        $license_key = str_replace('"', '""', htmlspecialchars($software['license_key']));
-                        
-                        $csv_line = "\"$name\",\"$category\",\"$description\",\"$vendor\",\"$version\",\"$license_type\",\"$license_key\"," . 
-                                   $software['purchase_cost'] . "," . 
-                                   ($software['purchase_date'] ? '"' . $software['purchase_date'] . '"' : '""') . "," .
-                                   ($software['expiry_date'] ? '"' . $software['expiry_date'] . '"' : '""') . "," .
-                                   '"' . $software['status'] . '"';
-                        
-                        echo "'" . addslashes($csv_line) . "'";
-                    ?> + '\n';
+                    csv += `<?php echo htmlspecialchars($software['software_name']); ?>,<?php echo htmlspecialchars($software['category']); ?>,<?php echo htmlspecialchars($software['description']); ?>,<?php echo htmlspecialchars($software['vendor']); ?>,<?php echo htmlspecialchars($software['version']); ?>,<?php echo htmlspecialchars($software['license_type']); ?>,<?php echo htmlspecialchars($software['license_key']); ?>,<?php echo $software['purchase_cost']; ?>,<?php echo $software['purchase_date']; ?>,<?php echo $software['renewal_date']; ?>,<?php echo htmlspecialchars($software['status']); ?>\n`;
                 <?php endforeach; ?>
             <?php endif; ?>
             
@@ -648,103 +730,245 @@ foreach ($software_data as $software) {
             window.URL.revokeObjectURL(url);
         }
         
-        // View and Edit functions (placeholders)
+        // View Software function
         function viewSoftware(id) {
-            console.log('Viewing software with ID:', id);
-            alert('View functionality coming soon for ID: ' + id);
+            $.ajax({
+                url: 'api/software.php?action=get&id=' + id,
+                method: 'GET',
+                success: function(response) {
+                    if (response.success) {
+                        const data = response.data;
+                        let html = `
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>Software Name</h6>
+                                    <p>${data.software_name || 'N/A'}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>Category</h6>
+                                    <p>${data.category || 'N/A'}</p>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <h6>Description</h6>
+                                    <p>${data.description || 'N/A'}</p>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <h6>Vendor</h6>
+                                    <p>${data.vendor || 'N/A'}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>Version</h6>
+                                    <p>${data.version || 'N/A'}</p>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <h6>License Type</h6>
+                                    <p>${data.license_type || 'N/A'}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>License Key</h6>
+                                    <p>${data.license_key || 'N/A'}</p>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <h6>Purchase Date</h6>
+                                    <p>${data.purchase_date ? new Date(data.purchase_date).toLocaleDateString() : 'N/A'}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>Purchase Cost</h6>
+                                    <p>₱${parseFloat(data.purchase_cost || 0).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <h6>Renewal Date</h6>
+                                    <p>${data.renewal_date ? new Date(data.renewal_date).toLocaleDateString() : 'N/A'}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>Renewal Cost</h6>
+                                    <p>₱${parseFloat(data.renewal_cost || 0).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <h6>Status</h6>
+                                    <p><span class="status-badge bg-${data.status === 'Active' ? 'success' : data.status === 'Expired' ? 'danger' : data.status === 'Pending' ? 'warning' : 'secondary'}">${data.status || 'N/A'}</span></p>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>Assigned To</h6>
+                                    <p>${data.assigned_to || 'N/A'}</p>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <h6>Installation Date</h6>
+                                    <p>${data.installation_date ? new Date(data.installation_date).toLocaleDateString() : 'N/A'}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>Notes</h6>
+                                    <p>${data.notes || 'N/A'}</p>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <h6>Record Information</h6>
+                                    <p><small class="text-muted">
+                                        Created: ${data.created_at ? new Date(data.created_at).toLocaleString() : 'N/A'}<br>
+                                        Last Updated: ${data.updated_at ? new Date(data.updated_at).toLocaleString() : 'Never'}
+                                    </small></p>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // Add files if they exist
+                        if (data.files && (data.files.license_doc || (data.files.installation_files && data.files.installation_files.length > 0))) {
+                            html += `
+                                <div class="row mt-3">
+                                    <div class="col-12">
+                                        <h6>Files</h6>
+                            `;
+                            
+                            if (data.files.license_doc) {
+                                html += `
+                                    <div class="mb-2">
+                                        <i class="bi bi-file-earmark-text"></i> 
+                                        <a href="../uploads/software/licenses/${data.files.license_doc}" target="_blank">License Document</a>
+                                    </div>
+                                `;
+                            }
+                            
+                            if (data.files.installation_files && data.files.installation_files.length > 0) {
+                                data.files.installation_files.forEach(function(file, index) {
+                                    html += `
+                                        <div class="mb-2">
+                                            <i class="bi bi-file-earmark-zip"></i> 
+                                            <a href="../uploads/software/installations/${file}" target="_blank">Installation File ${index + 1}</a>
+                                        </div>
+                                    `;
+                                });
+                            }
+                            
+                            html += `
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        
+                        $('#viewSoftwareContent').html(html);
+                        $('#viewSoftwareModal').modal('show');
+                    } else {
+                        alert('Error loading software details: ' + response.message);
+                    }
+                },
+                error: function() {
+                    alert('Error loading software details. Please try again.');
+                }
+            });
         }
         
+        // Edit Software function
         function editSoftware(id) {
-            console.log('Editing software with ID:', id);
-            alert('Edit functionality coming soon for ID: ' + id);
+            $.ajax({
+                url: 'api/software.php?action=get&id=' + id,
+                method: 'GET',
+                success: function(response) {
+                    if (response.success) {
+                        const data = response.data;
+                        
+                        // Populate form fields
+                        $('#editSoftwareId').val(data.id);
+                        $('#editSoftwareName').val(data.software_name || '');
+                        $('#editCategory').val(data.category || '');
+                        $('#editDescription').val(data.description || '');
+                        $('#editVendor').val(data.vendor || '');
+                        $('#editVersion').val(data.version || '');
+                        $('#editLicenseType').val(data.license_type || '');
+                        $('#editLicenseKey').val(data.license_key || '');
+                        $('#editPurchaseDate').val(data.purchase_date || '');
+                        $('#editPurchaseCost').val(data.purchase_cost || '');
+                        $('#editRenewalDate').val(data.renewal_date || '');
+                        $('#editRenewalCost').val(data.renewal_cost || '');
+                        $('#editStatus').val(data.status || '');
+                        $('#editAssignedTo').val(data.assigned_to || '');
+                        $('#editInstallationDate').val(data.installation_date || '');
+                        $('#editNotes').val(data.notes || '');
+                        
+                        $('#editSoftwareModal').modal('show');
+                    } else {
+                        alert('Error loading software data: ' + response.message);
+                    }
+                },
+                error: function() {
+                    alert('Error loading software data. Please try again.');
+                }
+            });
         }
         
-        // Search on Enter key and auto-search
-        document.addEventListener('DOMContentLoaded', function() {
-            const searchInput = document.getElementById('searchInput');
-            const searchIndicator = document.getElementById('searchIndicator');
-            const categoryFilter = document.getElementById('categoryFilter');
-            const licenseFilter = document.getElementById('licenseFilter');
-            const statusFilter = document.getElementById('statusFilter');
-            let searchTimeout;
+        // Handle edit form submission via AJAX
+        $('#editSoftwareForm').on('submit', function(e) {
+            e.preventDefault();
             
-            // Add auto-filter for dropdown selects - same as assets.php
-            if (categoryFilter) {
-                categoryFilter.addEventListener('change', function() {
-                    console.log('Category filter changed:', this.value);
-                    applyFilters();
-                });
-            }
-            
-            if (licenseFilter) {
-                licenseFilter.addEventListener('change', function() {
-                    console.log('License filter changed:', this.value);
-                    applyFilters();
-                });
-            }
-            
-            if (statusFilter) {
-                statusFilter.addEventListener('change', function() {
-                    console.log('Status filter changed:', this.value);
-                    applyFilters();
-                });
-            }
-            
-            if (searchInput) {
-                // Auto-search as user types (with debouncing) - same as assets.php
-                searchInput.addEventListener('input', function(e) {
-                    console.log('Search input changed:', e.target.value);
-                    
-                    // Show loading indicator
-                    if (searchIndicator) {
-                        searchIndicator.style.display = 'block';
-                        searchIndicator.innerHTML = '<i class="bi bi-hourglass-split"></i>';
-                    }
-                    
-                    // Clear previous timeout
-                    clearTimeout(searchTimeout);
-                    
-                    // Set new timeout to search after user stops typing (500ms delay)
-                    searchTimeout = setTimeout(function() {
-                        console.log('Auto-search triggered after typing delay');
-                        applyFilters();
-                    }, 500);
-                });
-                
-                // Keep Enter key support as well
-                searchInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        console.log('Enter key pressed in search, applying filters immediately');
-                        clearTimeout(searchTimeout); // Cancel auto-search
+            $.ajax({
+                url: $(this).attr('action'),
+                method: 'POST',
+                data: $(this).serialize(),
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        // Close modal and show success message
+                        $('#editSoftwareModal').modal('hide');
                         
-                        // Show immediate loading indicator
-                        if (searchIndicator) {
-                            searchIndicator.style.display = 'block';
-                            searchIndicator.innerHTML = '<i class="bi bi-hourglass-split"></i>';
-                        }
+                        // Show success message
+                        const successHtml = `
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                <i class="bi bi-check-circle"></i> ${response.message}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        `;
                         
-                        applyFilters();
+                        // Insert success message after page header
+                        $('.page-header .row').first().after(successHtml);
+                        
+                        // Reload page to show updated data
+                        setTimeout(function() {
+                            window.location.reload();
+                        }, 1500);
+                    } else {
+                        // Show error message
+                        alert('Error: ' + response.message);
                     }
-                });
-                
-                // Hide indicator when search loses focus (after a short delay)
-                searchInput.addEventListener('blur', function() {
-                    setTimeout(function() {
-                        if (searchIndicator) {
-                            searchIndicator.style.display = 'none';
-                        }
-                    }, 1000);
-                });
-            }
-            
-            // Log current filter values on page load
-            console.log('Current filters:', {
-                category: document.getElementById('categoryFilter')?.value || '',
-                license: document.getElementById('licenseFilter')?.value || '',
-                status: document.getElementById('statusFilter')?.value || '',
-                search: document.getElementById('searchInput')?.value || ''
+                },
+                error: function(xhr, status, error) {
+                    // Show error message
+                    alert('Error updating software item. Please try again.');
+                    console.error('AJAX Error:', error);
+                }
             });
         });
+        
+        // Search on Enter key
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchInput');
+            
+            if (searchInput) {
+                searchInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        applyFilters();
+                    }
+                });
+            }
+        });
     </script>
+</div> <!-- Close main-content -->
+</div> <!-- Close main-wrapper -->
+
+<?php require_once 'includes/logout-modal.php'; ?>
+<?php require_once 'includes/change-password-modal.php'; ?>
 </body>
 </html>

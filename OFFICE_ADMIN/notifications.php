@@ -1,4 +1,8 @@
 <?php
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 // Start session
 session_start();
 
@@ -162,7 +166,8 @@ $unread_count = $unread_result->fetch_assoc()['count'];
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($page_title); ?> - PIMS<!-- Bootstrap CSS -->
+    <title><?php echo htmlspecialchars($page_title); ?> - PIMS</title>
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
@@ -404,7 +409,6 @@ $unread_count = $unread_result->fetch_assoc()['count'];
         }
         
         .priority-tab.active {
-            color: white;
             border-color: transparent;
             box-shadow: var(--shadow-sm);
         }
@@ -416,6 +420,7 @@ $unread_count = $unread_result->fetch_assoc()['count'];
         
         .priority-tab.priority-critical.active {
             background: #dc3545;
+            color: white;
         }
         
         .priority-tab.priority-high {
@@ -425,6 +430,7 @@ $unread_count = $unread_result->fetch_assoc()['count'];
         
         .priority-tab.priority-high.active {
             background: #fd7e14;
+            color: white;
         }
         
         .priority-tab.priority-medium {
@@ -434,6 +440,7 @@ $unread_count = $unread_result->fetch_assoc()['count'];
         
         .priority-tab.priority-medium.active {
             background: #ffc107;
+            color: #212529;
         }
         
         .priority-tab.priority-low {
@@ -443,6 +450,7 @@ $unread_count = $unread_result->fetch_assoc()['count'];
         
         .priority-tab.priority-low.active {
             background: #28a745;
+            color: white;
         }
         
         /* Priority Badges */
@@ -638,34 +646,46 @@ $unread_count = $unread_result->fetch_assoc()['count'];
             <!-- Notifications List -->
             <?php if (!empty($notifications)): ?>
                 <?php foreach ($notifications as $notification): ?>
-                    <div class="notification-card <?php echo $notification['status']; ?> priority-<?php echo $notification['priority']; ?>" data-id="<?php echo $notification['id']; ?>">
+                    <div class="notification-card <?php echo $notification['status'] ?? ''; ?> priority-<?php echo $notification['priority'] ?? 'medium'; ?>" data-id="<?php echo $notification['id'] ?? ''; ?>">
                         <div class="d-flex align-items-start">
-                            <div class="notification-type-icon notification-type-<?php echo $notification['type']; ?>">
-                                <i class="bi bi-<?php echo getNotificationIcon($notification['type']); ?>"></i>
+                            <div class="notification-type-icon notification-type-<?php echo $notification['type'] ?? 'info'; ?>">
+                                <i class="bi bi-<?php echo getNotificationIcon($notification['type'] ?? 'info'); ?>"></i>
                             </div>
                             <div class="flex-grow-1">
                                 <div class="d-flex align-items-start justify-content-between">
                                     <div class="flex-grow-1">
                                         <h5 class="mb-1">
-                                            <?php echo htmlspecialchars($notification['title']); ?>
+                                            <?php echo htmlspecialchars($notification['title'] ?? ''); ?>
                                             <?php if (!$notification['is_read']): ?>
                                                 <span class="badge bg-primary ms-2">New</span>
                                             <?php endif; ?>
-                                            <span class="priority-badge priority-<?php echo $notification['priority']; ?> ms-2">
-                                                <?php echo strtoupper($notification['priority']); ?>
+                                            <span class="priority-badge priority-<?php echo $notification['priority'] ?? 'medium'; ?> ms-2">
+                                                <?php echo strtoupper($notification['priority'] ?? 'MEDIUM'); ?>
                                             </span>
                                         </h5>
                                         <p class="text-muted mb-2">
-                                            <?php echo htmlspecialchars($notification['message']); ?>
+                                            <?php echo htmlspecialchars($notification['message'] ?? ''); ?>
                                         </p>
                                     </div>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <small class="text-muted">
                                         <i class="bi bi-clock"></i>
-                                        <?php echo getTimeAgo($notification['created_at']); ?>
+                                        <?php echo getTimeAgo($notification['created_at'] ?? ''); ?>
                                     </small>
                                     <div class="btn-group btn-group-sm">
+                                        <?php 
+                                        // Add contextual quick actions based on notification type and related data
+                                        $quickActions = getNotificationQuickActions($notification);
+                                        foreach ($quickActions as $action): ?>
+                                            <button class="btn btn-<?php echo $action['color']; ?> btn-sm" 
+                                                    onclick="<?php echo $action['onclick']; ?>"
+                                                    title="<?php echo htmlspecialchars($action['title']); ?>">
+                                                <i class="bi bi-<?php echo $action['icon']; ?>"></i> 
+                                                <?php echo $action['label']; ?>
+                                            </button>
+                                        <?php endforeach; ?>
+                                        
                                         <?php if (!$notification['is_read']): ?>
                                             <button class="btn btn-outline-primary btn-sm" onclick="markAsRead(<?php echo $notification['id']; ?>)">
                                                 <i class="bi bi-check2"></i> Mark Read
@@ -880,7 +900,12 @@ $unread_count = $unread_result->fetch_assoc()['count'];
                 return;
             }
             
-            // Get all notification IDs
+            fetch('notifications_handler.php?action=clear_all', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
             const notificationCards = document.querySelectorAll('.notification-card');
             const notificationIds = Array.from(notificationCards).map(card => card.dataset.id);
             
@@ -903,6 +928,39 @@ $unread_count = $unread_result->fetch_assoc()['count'];
                 .catch(error => {
                     console.error('Error clearing notifications:', error);
                 });
+        }
+        
+        function quickApproveRequest(requestId) {
+            if (confirm('Are you sure you want to approve this request?')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = 'requests.php';
+                form.innerHTML = `
+                    <input type="hidden" name="action" value="approve_request">
+                    <input type="hidden" name="request_id" value="${requestId}">
+                    <input type="hidden" name="notes" value="Approved via notification quick action">
+                `;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+        
+        function updateNotificationBadge() {
+            // Update notification badge in topbar if it exists
+            const badge = document.querySelector('.notification-badge');
+            if (badge) {
+                fetch('notifications_handler.php?action=get_unread_count')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.unread_count > 0) {
+                            badge.textContent = data.unread_count;
+                            badge.style.display = 'inline-block';
+                        } else {
+                            badge.style.display = 'none';
+                        }
+                    })
+                    .catch(error => console.error('Error updating badge:', error));
+            }
         }
     </script>
 </body>
@@ -934,5 +992,69 @@ function getNotificationIcon($type) {
         'consumable' => 'box-seam'
     ];
     return $icons[$type] ?? 'bell';
+}
+
+function getNotificationQuickActions($notification) {
+    $actions = [];
+    $type = $notification['type'] ?? 'info';
+    $relatedId = $notification['related_id'] ?? null;
+    $relatedType = $notification['related_type'] ?? null;
+    
+    // Request-related actions
+    if ($type === 'request' && $relatedId) {
+        $actions[] = [
+            'label' => 'View Request',
+            'icon' => 'eye',
+            'color' => 'outline-info',
+            'onclick' => "window.location.href='requests.php#request-{$relatedId}'",
+            'title' => 'View this request'
+        ];
+        
+        // If it's a pending request, add quick approve/deny
+        if (strpos($notification['message'] ?? '', 'pending') !== false) {
+            $actions[] = [
+                'label' => 'Quick Approve',
+                'icon' => 'check-circle',
+                'color' => 'success',
+                'onclick' => "quickApproveRequest({$relatedId})",
+                'title' => 'Approve this request'
+            ];
+        }
+    }
+    
+    // Asset-related actions
+    if ($type === 'asset' && $relatedId) {
+        $actions[] = [
+            'label' => 'View Asset',
+            'icon' => 'box',
+            'color' => 'outline-primary',
+            'onclick' => "window.location.href='office_assets.php#asset-{$relatedId}'",
+            'title' => 'View this asset'
+        ];
+    }
+    
+    // Consumable-related actions
+    if ($type === 'consumable' && strpos($notification['message'] ?? '', 'low stock') !== false) {
+        $actions[] = [
+            'label' => 'Reorder',
+            'icon' => 'cart-plus',
+            'color' => 'warning',
+            'onclick' => "window.location.href='office_consumables.php'",
+            'title' => 'Go to consumables to reorder'
+        ];
+    }
+    
+    // System actions
+    if ($type === 'system') {
+        $actions[] = [
+            'label' => 'Settings',
+            'icon' => 'gear',
+            'color' => 'outline-secondary',
+            'onclick' => "window.location.href='profile.php'",
+            'title' => 'Go to settings'
+        ];
+    }
+    
+    return $actions;
 }
 ?>
