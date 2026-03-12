@@ -398,6 +398,86 @@ foreach ($defaults as $key => $value) {
                 font-size: 2rem;
             }
         }
+        
+        .quick-actions-toolbar {
+            background: white;
+            border-radius: var(--border-radius-lg);
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--accent-color);
+        }
+        
+        .quick-action-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.25rem;
+            border-radius: var(--border-radius);
+            border: 2px solid transparent;
+            font-weight: 500;
+            text-decoration: none;
+            transition: var(--transition);
+            cursor: pointer;
+            background: white;
+            color: var(--dark-color);
+        }
+        
+        .quick-action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .quick-action-btn.urgent {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            border-color: #dc3545;
+        }
+        
+        .quick-action-btn.primary {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #1517a6 100%);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        
+        .quick-action-btn.info {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+            color: white;
+            border-color: #17a2b8;
+        }
+        
+        .quick-action-btn.success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border-color: #28a745;
+        }
+        
+        .quick-action-btn.secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #545b62 100%);
+            color: white;
+            border-color: #6c757d;
+        }
+        
+        .quick-action-btn.outline {
+            background: transparent;
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+        
+        .quick-action-btn.outline:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        @media (max-width: 768px) {
+            .quick-actions-toolbar .d-flex {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .quick-action-btn {
+                justify-content: center;
+            }
+        }
     </style>
 </head>
 <body>
@@ -460,37 +540,52 @@ $page_title = 'Office Dashboard';
             </div>
         </div>
         
-        <!-- Quick Actions -->
+        <!-- Quick Actions Toolbar -->
         <div class="row mb-4 justify-content-center">
             <div class="col-12">
-                <h5 class="mb-3">Quick Actions</h5>
-            </div>
-            <div class="col-md-3 col-sm-6 mb-3">
-                <a href="office_consumables.php" class="quick-action-card">
-                    <div class="quick-action-icon">
-                        <i class="bi bi-archive"></i>
+                <div class="quick-actions-toolbar">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">Quick Actions</h5>
+                        <div class="toolbar-actions">
+                            <button class="btn btn-sm btn-outline-primary" onclick="refreshDashboard()">
+                                <i class="bi bi-arrow-clockwise"></i> Refresh
+                            </button>
+                        </div>
                     </div>
-                    <div class="quick-action-title">Consumables</div>
-                    <div class="quick-action-desc">Track consumable usage</div>
-                </a>
-            </div>
-            <div class="col-md-3 col-sm-6 mb-3">
-                <a href="office_assets.php" class="quick-action-card">
-                    <div class="quick-action-icon">
-                        <i class="bi bi-box-seam"></i>
+                    <div class="d-flex flex-wrap gap-2">
+                        <?php if ($stats['pending_requests'] > 0): ?>
+                            <button class="quick-action-btn urgent" onclick="window.location.href='requests.php'">
+                                <i class="bi bi-exclamation-circle"></i>
+                                <span>Approve <?php echo $stats['pending_requests']; ?> Requests</span>
+                            </button>
+                        <?php endif; ?>
+                        
+                        <button class="quick-action-btn primary" onclick="window.location.href='requests.php?action=new'">
+                            <i class="bi bi-plus-circle"></i>
+                            <span>New Request</span>
+                        </button>
+                        
+                        <button class="quick-action-btn info" onclick="window.location.href='office_assets.php'">
+                            <i class="bi bi-box-seam"></i>
+                            <span>Browse Assets</span>
+                        </button>
+                        
+                        <button class="quick-action-btn secondary" onclick="window.location.href='office_consumables.php'">
+                            <i class="bi bi-archive"></i>
+                            <span>Consumables</span>
+                        </button>
+                        
+                        <button class="quick-action-btn success" onclick="window.location.href='office_reports.php'">
+                            <i class="bi bi-graph-up"></i>
+                            <span>Reports</span>
+                        </button>
+                        
+                        <button class="quick-action-btn outline" onclick="window.location.href='notifications.php'">
+                            <i class="bi bi-bell"></i>
+                            <span>Notifications</span>
+                        </button>
                     </div>
-                    <div class="quick-action-title">View Assets</div>
-                    <div class="quick-action-desc">Browse office assets</div>
-                </a>
-            </div>
-            <div class="col-md-3 col-sm-6 mb-3">
-                <a href="office_reports.php" class="quick-action-card">
-                    <div class="quick-action-icon">
-                        <i class="bi bi-graph-up"></i>
-                    </div>
-                    <div class="quick-action-title">Generate Report</div>
-                    <div class="quick-action-desc">Office inventory reports</div>
-                </a>
+                </div>
             </div>
         </div>
         

@@ -338,40 +338,6 @@ try {
             </div>
         <?php endif; ?>
 
-        <!-- Filter Section -->
-        <div class="filter-section">
-            <h5 class="mb-3">
-                <i class="bi bi-funnel me-2"></i>
-                Filter Transactions
-            </h5>
-            <form method="GET" class="row g-2 align-items-end">
-                <div class="col-md-4">
-                    <label for="date_from" class="form-label fw-semibold">From Date</label>
-                    <input type="date" class="form-control" id="date_from" name="date_from" value="<?php echo htmlspecialchars($date_from); ?>">
-                </div>
-                <div class="col-md-4">
-                    <label for="date_to" class="form-label fw-semibold">To Date</label>
-                    <input type="date" class="form-control" id="date_to" name="date_to" value="<?php echo htmlspecialchars($date_to); ?>">
-                </div>
-                <div class="col-md-4">
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-gradient flex-fill">
-                            <i class="bi bi-funnel me-1"></i>
-                            Filter
-                        </button>
-                        <a href="fuel_transactions.php" class="btn btn-outline-secondary">
-                            <i class="bi bi-arrow-clockwise me-1"></i>
-                            Reset
-                        </a>
-                        <a href="fuel_transactions.php?date_from=2020-01-01&date_to=<?php echo date('Y-m-d'); ?>" class="btn btn-outline-info">
-                            <i class="bi bi-calendar-range me-1"></i>
-                            Show All
-                        </a>
-                    </div>
-                </div>
-            </form>
-        </div>
-
         <!-- Statistics Summary -->
         <div class="row mb-4">
             <div class="col-md-12">
