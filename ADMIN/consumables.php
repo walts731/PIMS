@@ -376,15 +376,34 @@ try {
                     <?php endif; ?>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addConsumableModal">
-                        <i class="bi bi-plus-circle"></i> Add Consumable
-                    </button>
-                    <button class="btn btn-outline-info btn-sm ms-2" onclick="window.location.href='release_history.php'">
-                        <i class="bi bi-clock-history"></i> History
-                    </button>
-                    <button class="btn btn-outline-success btn-sm ms-2" onclick="exportConsumables()">
-                        <i class="bi bi-download"></i> Export
-                    </button>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addConsumableModal">
+                            <i class="bi bi-plus-circle"></i> Add Consumable
+                        </button>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-gear"></i> Actions
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item" href="lend_consumables.php">
+                                        <i class="bi bi-arrow-left-right"></i> Borrowing
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="release_history.php">
+                                        <i class="bi bi-clock-history"></i> History
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" href="#" onclick="exportConsumables()">
+                                        <i class="bi bi-download"></i> Export Consumables
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
