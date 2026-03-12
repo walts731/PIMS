@@ -99,7 +99,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     $lend_quantity = intval($_POST['lend_quantity'] ?? 0);
     $target_office_id = intval($_POST['target_office_id'] ?? 0);
     $received_by = trim($_POST['received_by'] ?? '');
-    $expected_return_date = $_POST['expected_return_date'] ?? '';
     $remarks = trim($_POST['remarks'] ?? '');
     
     // Validation
@@ -180,8 +179,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             
             // Insert into lend_consumables table
             $total_value = $lend_quantity * $source_data['unit_cost'];
-            $lend_stmt = $conn->prepare("INSERT INTO lend_consumables (consumable_id, description, quantity_lent, unit_cost, total_value, from_office_id, to_office_id, lent_by, received_by, expected_return_date, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $lend_stmt->bind_param("isddiisssss", 
+            $lend_stmt = $conn->prepare("INSERT INTO lend_consumables (consumable_id, description, quantity_lent, unit_cost, total_value, from_office_id, to_office_id, lent_by, received_by, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $lend_stmt->bind_param("isddiissss", 
                 $source_consumable_id,          // i
                 $source_data['description'],      // s
                 $lend_quantity,                 // i
@@ -191,7 +190,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                 $target_office_id,               // i
                 $_SESSION['user_id'],           // i
                 $received_by,                   // s
-                $expected_return_date,           // s
                 $remarks                        // s
             );
             $lend_stmt->execute();
@@ -206,7 +204,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             $office_stmt->close();
             
             // Log lend action
-            $log_remarks = "Lent {$lend_quantity} '{$source_data['description']}' from office ID {$source_data['office_id']} to {$office_data['office_name']}. {$target_action}. Expected return: " . ($expected_return_date ?: 'Not specified') . ". Remarks: " . ($remarks ?: 'No remarks');
+            $log_remarks = "Lent {$lend_quantity} '{$source_data['description']}' from office ID {$source_data['office_id']} to {$office_data['office_name']}. {$target_action}. Remarks: " . ($remarks ?: 'No remarks');
             logSystemAction($_SESSION['user_id'], 'consumable_lent', 'consumable_management', $log_remarks);
             
             // Commit transaction
@@ -347,15 +345,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                                     </div>
                                 </div>
                                 <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label class="form-label">Expected Return Date</label>
-                                            <input type="date" class="form-control" name="expected_return_date" 
-                                                   min="<?php echo date('Y-m-d'); ?>">
-                                            <small class="text-muted">When items are expected to be returned</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
+                                    <div class="col-md-12">
                                         <div class="mb-3">
                                             <label class="form-label">Received By *</label>
                                             <input type="text" class="form-control" name="received_by" 
