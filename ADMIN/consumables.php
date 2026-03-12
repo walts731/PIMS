@@ -458,9 +458,9 @@ try {
                         <tr>
                             <th>Description</th>
                             <th>Quantity</th>
+                            <th>Units</th>
                             <th>Unit Cost</th>
                             <th>Total Value</th>
-                            <th>Reorder</th>
                             <th>Office</th>
                             <th>For Office</th>
                             <th>Actions</th>
@@ -476,30 +476,30 @@ try {
                                             <span class="low-stock-badge ms-2">Low Stock</span>
                                         <?php endif; ?>
                                     </td>
-                                    <td><?php echo $consumable['quantity'] . ' ' . htmlspecialchars($consumable['units'] ?? 'N/A'); ?></td>
+                                    <td><?php echo $consumable['quantity']; ?></td>
+                                    <td><?php echo htmlspecialchars($consumable['units'] ?? 'N/A'); ?></td>
                                     <td><?php echo number_format($consumable['unit_cost'], 2); ?></td>
                                     <td class="text-value"><?php echo number_format($consumable['quantity'] * $consumable['unit_cost'], 2); ?></td>
-                                    <td><?php echo $consumable['reorder_level']; ?></td>
                                     <td><?php echo htmlspecialchars($consumable['office_name'] ?? 'N/A'); ?></td>
                                     <td><?php echo htmlspecialchars($consumable['for_office_name'] ?? 'N/A'); ?></td>
                                     <td>
                                         <?php if (empty($consumable['for_office_name'])): ?>
                                             <button class="btn btn-sm btn-outline-info" disabled>
-                                                <i class="bi bi-check-circle"></i> Released
+                                                <i class="bi bi-check-circle"></i> 
                                             </button>
                                         <?php elseif ($consumable['for_office_id'] == 3): ?>
                                             <button class="btn btn-sm btn-outline-warning" onclick="editReorderLevel(<?php echo $consumable['id']; ?>, '<?php echo htmlspecialchars($consumable['description']); ?>', <?php echo $consumable['quantity']; ?>)">
-                                                <i class="bi bi-pencil"></i> Reorder
+                                                <i class="bi bi-pencil"></i> 
                                             </button>
                                             <button class="btn btn-sm btn-outline-primary" onclick="openLendModal(<?php echo $consumable['id']; ?>)">
-                                                <i class="bi bi-arrow-up-right"></i> Lend
+                                                <i class="bi bi-arrow-up-right"></i> 
                                             </button>
                                         <?php else: ?>
                                             <button class="btn btn-sm btn-outline-warning" onclick="editReorderLevel(<?php echo $consumable['id']; ?>, '<?php echo htmlspecialchars($consumable['description']); ?>', <?php echo $consumable['quantity']; ?>)">
-                                                <i class="bi bi-pencil"></i> Reorder
+                                                <i class="bi bi-pencil"></i> 
                                             </button>
                                             <button class="btn btn-sm btn-outline-success" onclick="openReleaseModal(<?php echo $consumable['id']; ?>)">
-                                                <i class="bi bi-box-arrow-right"></i> Release
+                                                <i class="bi bi-box-arrow-right"></i> 
                                             </button>
                                         <?php endif; ?>
                                     </td>
@@ -900,17 +900,17 @@ try {
             // Get current table data from DOM
             const table = document.getElementById('consumablesTable');
             const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
-            let csv = 'Description,Quantity,Unit Cost,Total Value,Reorder Level,Office,For Office\n';
+            let csv = 'Description,Quantity,Units,Unit Cost,Total Value,Office,For Office\n';
             
             for (let i = 0; i < rows.length; i++) {
                 const cells = rows[i].getElementsByTagName('td');
                 if (cells.length === 8) { // Skip empty message row
                     const rowData = [
                         cells[0].textContent.replace(/\s+/g, ' ').trim(), // Description
-                        cells[1].textContent.trim(), // Quantity (now includes units)
-                        cells[2].textContent.trim(), // Unit Cost
-                        cells[3].textContent.replace(/[^0-9.-]+/g, '').trim(), // Total Value
-                        cells[4].textContent.trim(), // Reorder Level
+                        cells[1].textContent.trim(), // Quantity
+                        cells[2].textContent.trim(), // Units
+                        cells[3].textContent.trim(), // Unit Cost
+                        cells[4].textContent.replace(/[^0-9.-]+/g, '').trim(), // Total Value
                         cells[5].textContent.trim(), // Office
                         cells[6].textContent.trim()  // For Office
                     ];
