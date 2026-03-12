@@ -383,13 +383,9 @@ try {
                             <th>Total Value</th>
                             <th>From Office</th>
                             <th>To Office</th>
-                            <th>Released By</th>
-                            <th>Received By</th>
                             <?php if ($transaction_type == 'lend'): ?>
-                                <th>Expected Return</th>
                                 <th>Status</th>
                             <?php endif; ?>
-                            <th>Notes</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -402,19 +398,10 @@ try {
                                     <td><span class="quantity-badge"><?php echo $transaction['quantity']; ?></span></td>
                                     <td><?php echo htmlspecialchars($transaction['units'] ?: 'N/A'); ?></td>
                                     <td><?php echo number_format($transaction['unit_cost'], 2); ?></td>
-                                    <td><span class="value-badge"><?php echo number_format($transaction['total_value'], 2); ?></span></td>
+                                    <td><span class="text-value"><?php echo number_format($transaction['quantity'] * $transaction['unit_cost'], 2); ?></span></td>
                                     <td><?php echo htmlspecialchars($transaction['from_office_name'] ?: 'N/A'); ?></td>
                                     <td><?php echo htmlspecialchars($transaction['to_office_name'] ?: 'N/A'); ?></td>
-                                    <td><?php echo htmlspecialchars($transaction['released_by_name'] ?: 'System'); ?></td>
-                                    <td><?php echo htmlspecialchars($transaction['received_by'] ?: 'Not specified'); ?></td>
                                     <?php if ($transaction_type == 'lend'): ?>
-                                        <td>
-                                            <?php if ($transaction['transaction_type'] === 'lend' && !empty($transaction['expected_return_date'])): ?>
-                                                <small><?php echo date('M j, Y', strtotime($transaction['expected_return_date'])); ?></small>
-                                            <?php else: ?>
-                                                <small class="text-muted">N/A</small>
-                                            <?php endif; ?>
-                                        </td>
                                         <td>
                                             <?php if ($transaction['transaction_type'] === 'lend' && !empty($transaction['lend_status'])): ?>
                                                 <?php if ($transaction['lend_status'] === 'lent'): ?>
@@ -429,7 +416,6 @@ try {
                                             <?php endif; ?>
                                         </td>
                                     <?php endif; ?>
-                                    <td><small><?php echo htmlspecialchars($transaction['notes'] ?: 'No notes'); ?></small></td>
                                     <td>
                                         <button class="btn btn-sm btn-outline-info" onclick="viewTransactionDetails(<?php echo $transaction['id']; ?>, '<?php echo $transaction['transaction_type']; ?>')">
                                             <i class="bi bi-eye"></i> View
@@ -439,7 +425,7 @@ try {
                             <?php endforeach; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="<?php echo ($transaction_type == 'lend') ? '14' : '12'; ?>" class="text-center text-muted py-4">
+                                <td colspan="<?php echo ($transaction_type == 'lend') ? '9' : '8'; ?>" class="text-center text-muted py-4">
                                     <i class="bi bi-inbox fs-1"></i>
                                     <p class="mt-2">No transaction history found.</p>
                                 </td>
@@ -705,10 +691,6 @@ try {
                                 <div class="row mb-2">
                                     <div class="col-sm-4"><strong>To Office:</strong></div>
                                     <div class="col-sm-8">${transaction.to_office_name || 'N/A'}</div>
-                                </div>
-                                <div class="row mb-2">
-                                    <div class="col-sm-4"><strong>Processed By:</strong></div>
-                                    <div class="col-sm-8">${transaction.released_by_name || transaction.lent_by_name || 'System'}</div>
                                 </div>
                                 ${transaction.received_by || (transaction.transaction_type === 'addition' ? 'N/A' : '') ? `
                                 <div class="row mb-2">
