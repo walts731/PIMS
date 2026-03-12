@@ -421,11 +421,6 @@ try {
             <i class="bi bi-archive"></i>
             Consumables
         </a>
-        <a href="fuel.php" class="sidebar-nav-item <?php echo $current_page == 'fuel.php' ? 'active' : ''; ?>">
-            <i class="bi bi-fuel-pump"></i>
-            Fuel Inventory
-        </a>
-        
         <a href="employees.php" class="sidebar-nav-item <?php echo $current_page == 'employees.php' ? 'active' : ''; ?>">
             <i class="bi bi-people"></i>
             Employees
