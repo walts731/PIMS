@@ -49,9 +49,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         $message_type = "danger";
     } else {
         try {
-            $stmt = $conn->prepare("INSERT INTO asset_sub_categories (sub_category_name, sub_category_code, asset_categories_id, useful_life, status, created_by) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("ssiiis", $sub_category_name, $sub_category_code, $asset_categories_id, $useful_life, $status, $_SESSION['user_id']);
-            $stmt->execute();
+            $sub_category_name = mysqli_real_escape_string($conn, $sub_category_name);
+            $sub_category_code = mysqli_real_escape_string($conn, $sub_category_code);
+            $asset_categories_id = intval($asset_categories_id);
+            $useful_life = intval($useful_life);
+            $status = mysqli_real_escape_string($conn, $status);
+            $created_by = intval($_SESSION['user_id']);
+            
+            $sql = "INSERT INTO asset_sub_categories (sub_category_name, sub_category_code, asset_categories_id, useful_life, status, created_by) 
+                    VALUES ('$sub_category_name', '$sub_category_code', $asset_categories_id, $useful_life, '$status', $created_by)";
+            
+            $conn->query($sql);
             
             $message = "Sub category added successfully!";
             $message_type = "success";
@@ -59,11 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             logSystemAction($_SESSION['user_id'], 'sub_category_added', 'asset_management', "Added sub category: {$sub_category_name} ({$sub_category_code})");
             
         } catch (Exception $e) {
-            if (strpos($e->getMessage(), 'Duplicate entry') !== false) {
-                $message = "Sub category code already exists.";
-            } else {
-                $message = "Error adding sub category: " . $e->getMessage();
-            }
+            $message = "Error adding sub category: " . $e->getMessage();
             $message_type = "danger";
         }
     }
@@ -119,43 +123,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             logSystemAction($_SESSION['user_id'], 'sub_category_updated', 'asset_management', "Updated sub category: {$sub_category_name} ({$sub_category_code})");
             
         } catch (Exception $e) {
-            if (strpos($e->getMessage(), 'Duplicate entry') !== false) {
-                $message = "Sub category code already exists.";
-            } else {
-                $message = "Error updating sub category: " . $e->getMessage();
-            }
+            $message = "Error updating sub category: " . $e->getMessage();
             $message_type = "danger";
         }
     }
 }
 
-// DELETE - Delete sub category
-if (isset($_GET['action']) && $_GET['action'] == 'delete' && isset($_GET['id'])) {
-    $id = intval($_GET['id']);
-    
-    try {
-        // Get sub category info before deletion
-        $stmt = $conn->prepare("SELECT sub_category_name, sub_category_code FROM asset_sub_categories WHERE id = ?");
-        $stmt->bind_param("i", $id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $sub_category = $result->fetch_assoc();
-        
-        if ($sub_category) {
-            $stmt = $conn->prepare("DELETE FROM asset_sub_categories WHERE id = ?");
-            $stmt->bind_param("i", $id);
-            $stmt->execute();
-            
-            $message = "Sub category deleted successfully!";
-            $message_type = "success";
-            
-            logSystemAction($_SESSION['user_id'], 'sub_category_deleted', 'asset_management', "Deleted sub category: {$sub_category['sub_category_name']} ({$sub_category['sub_category_code']})");
-        }
-    } catch (Exception $e) {
-        $message = "Error deleting sub category: " . $e->getMessage();
-        $message_type = "danger";
-    }
-}
 
 // Get all sub categories with parent category info
 $sub_categories = [];
@@ -432,15 +405,12 @@ try {
                                         <button class="btn btn-sm btn-outline-primary btn-action" onclick="editSubCategory(<?php echo $sub_category['id']; ?>)">
                                             <i class="bi bi-pencil"></i>
                                         </button>
-                                        <button class="btn btn-sm btn-outline-danger btn-action" onclick="deleteSubCategory(<?php echo $sub_category['id']; ?>, '<?php echo htmlspecialchars($sub_category['sub_category_name']); ?>')">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="7" class="text-center text-muted py-4">
+                                <td colspan="6" class="text-center text-muted py-4">
                                     <i class="bi bi-inbox fs-1"></i>
                                     <p class="mt-2">No sub categories found. Click "Add Sub Category" to create your first sub category.</p>
                                 </td>
@@ -649,13 +619,7 @@ try {
             }
         }
         
-        // Delete sub category function
-        function deleteSubCategory(id, name) {
-            if (confirm(`Are you sure you want to delete the sub category "${name}"? This action cannot be undone.`)) {
-                window.location.href = `sub_categories.php?action=delete&id=${id}`;
-            }
-        }
-        
+                
         // Export sub categories function
         function exportSubCategories() {
             const data = subCategoriesTable.data().toArray();
