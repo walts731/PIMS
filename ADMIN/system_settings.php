@@ -35,7 +35,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'auto_save_interval' => intval($_POST['auto_save_interval'] ?? 5),
                 'items_per_page' => intval($_POST['items_per_page'] ?? 25),
                 'date_format' => $_POST['date_format'] ?? 'Y-m-d',
-                'time_format' => $_POST['time_format'] ?? '24h'
+                'time_format' => $_POST['time_format'] ?? '24h',
+                'theme_preset' => $_POST['theme_preset'] ?? 'default'
             ];
 
             foreach ($general_settings as $key => $value) {
@@ -168,7 +169,8 @@ $defaults = [
     'auto_save_interval' => 5,
     'items_per_page' => 25,
     'date_format' => 'Y-m-d',
-    'time_format' => '24h'
+    'time_format' => '24h',
+    'theme_preset' => 'default'
 ];
 
 foreach ($defaults as $key => $value) {
@@ -201,7 +203,7 @@ logSystemAction($_SESSION['user_id'], 'access', 'system_settings', 'Accessed sys
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #F7F3F3 0%, #C1EAF2 100%);
+            background: linear-gradient(135deg, var(--light-color) 0%, var(--light-accent) 100%);
             min-height: 100vh;
             overflow-x: hidden;
         }
@@ -257,7 +259,7 @@ logSystemAction($_SESSION['user_id'], 'access', 'system_settings', 'Accessed sys
         .form-control:focus,
         .form-select:focus {
             border-color: var(--primary-color);
-            box-shadow: 0 0 0 0.2rem rgba(25, 27, 169, 0.25);
+            box-shadow: 0 0 0 0.2rem rgba(var(--primary-rgb), 0.25);
         }
 
         .form-check-input:checked {
@@ -436,6 +438,18 @@ logSystemAction($_SESSION['user_id'], 'access', 'system_settings', 'Accessed sys
                                                 <option value="100" <?php echo $settings['items_per_page'] == 100 ? 'selected' : ''; ?>>100 items</option>
                                             </select>
                                             <div class="form-text">Default number of items to display in tables</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="theme_preset" class="form-label">Theme Preset</label>
+                                            <select class="form-select" id="theme_preset" name="theme_preset">
+                                                <option value="default" <?php echo $settings['theme_preset'] == 'default' ? 'selected' : ''; ?>>Modern Navy Blue (#1E56A0)</option>
+                                                <option value="legacy" <?php echo $settings['theme_preset'] == 'legacy' ? 'selected' : ''; ?>>Classic Bright Blue (#191BA9)</option>
+                                            </select>
+                                            <div class="form-text">Choose the primary color palette for the system</div>
                                         </div>
                                     </div>
                                 </div>

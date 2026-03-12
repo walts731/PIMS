@@ -601,7 +601,7 @@ $status_display = formatStatus($item['status']);
         left: 50%;
         height: 100%;
         width: 3px;
-        background: linear-gradient(180deg, var(--primary-color) 0%, #5CC2F2 100%);
+        background: linear-gradient(180deg, var(--primary-color) 0%, var(--primary-hover) 100%);
         transform: translateX(-50%);
         border-radius: 3px;
     }
@@ -633,13 +633,13 @@ $status_display = formatStatus($item['status']);
         border-radius: 50%;
         transform: translateX(-50%);
         z-index: 2;
-        box-shadow: 0 0 0 4px rgba(25, 27, 169, 0.1);
+        box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.1);
         transition: all 0.3s ease;
     }
     
     .timeline-dot:hover {
         transform: translateX(-50%) scale(1.2);
-        box-shadow: 0 0 0 6px rgba(25, 27, 169, 0.2);
+        box-shadow: 0 0 0 6px rgba(var(--primary-rgb), 0.2);
     }
     
     .timeline-dot-inner {
@@ -669,7 +669,7 @@ $status_display = formatStatus($item['status']);
     .timeline-content:hover {
         transform: translateY(-2px);
         box-shadow: var(--shadow-lg);
-        border-left-color: #5CC2F2;
+        border-left-color: var(--primary-hover);
     }
     
     .timeline-left .timeline-content::after {
@@ -736,9 +736,9 @@ $status_display = formatStatus($item['status']);
         line-height: 1.5;
         margin: 10px 0;
         padding: 10px;
-        background: rgba(25, 27, 169, 0.05);
+        background: rgba(var(--primary-rgb), 0.05);
         border-radius: var(--border-radius);
-        border-left: 3px solid rgba(25, 27, 169, 0.2);
+        border-left: 3px solid rgba(var(--primary-rgb), 0.2);
     }
     
     .timeline-user {

@@ -256,8 +256,10 @@ function logLoginAttempt($username, $success, $failure_reason = '') {
  * Uses idle timeout (time since last activity) instead of absolute timeout from login
  */
 function checkSessionTimeout() {
-    // Get session timeout setting from database (default: 3600 seconds = 1 hour)
-    $session_timeout = getSystemSetting('session_timeout', 3600);
+    // Get session timeout setting from database in minutes (default: 60 minutes)
+    $session_timeout_minutes = (int) getSystemSetting('session_timeout', 60);
+    // Convert to seconds
+    $session_timeout_seconds = $session_timeout_minutes * 60;
     
     // Check if user is logged in
     if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
@@ -272,7 +274,7 @@ function checkSessionTimeout() {
         $idle_time = $current_time - $last_activity;
         
         // Check if session has been idle too long
-        if ($idle_time > $session_timeout) {
+        if ($idle_time > $session_timeout_seconds) {
             // Log session timeout
             $user_id = $_SESSION['user_id'] ?? null;
             $user_name = ($_SESSION['first_name'] ?? '') . ' ' . ($_SESSION['last_name'] ?? '');

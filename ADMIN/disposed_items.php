@@ -630,7 +630,7 @@ try {
                 font-size: 16px;
                 font-weight: bold;
                 margin-bottom: 5px;
-                color: #191BA9;
+                color: var(--primary-color);
             }
             
             .print-subtitle {

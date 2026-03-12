@@ -1,6 +1,6 @@
 body {
     font-family: 'Inter', sans-serif;
-    background: linear-gradient(135deg, #F7F3F3 0%, #C1EAF2 100%);
+    background: linear-gradient(135deg, var(--light-color) 0%, var(--light-accent) 100%);
     min-height: 100vh;
     overflow-x: hidden;
 }
@@ -11,7 +11,7 @@ body {
     padding: 1.5rem 2rem;
     margin-bottom: 1.5rem;
     box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-    border-left: 4px solid #191BA9;
+    border-left: 4px solid var(--primary-color);
 }
 
 .module-card {
@@ -30,8 +30,8 @@ body {
 
 .module-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 12px 24px rgba(25, 27, 169, 0.15);
-    border-color: #191BA9;
+    box-shadow: 0 12px 24px rgba(var(--primary-rgb), 0.15);
+    border-color: var(--primary-color);
     color: inherit;
 }
 
@@ -46,7 +46,7 @@ body {
     font-size: 1.5rem;
 }
 
-.module-icon.blue { background: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%); color: white; }
+.module-icon.blue { background: var(--primary-gradient); color: white; }
 .module-icon.green { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; }
 .module-icon.orange { background: linear-gradient(135deg, #fd7e14 0%, #ffc107 100%); color: white; }
 .module-icon.purple { background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%); color: white; }
@@ -89,7 +89,7 @@ body {
     margin-bottom: 0.75rem;
 }
 
-.stat-icon.blue { background: rgba(25, 27, 169, 0.1); color: #191BA9; }
+.stat-icon.blue { background: rgba(var(--primary-rgb), 0.1); color: var(--primary-color); }
 .stat-icon.green { background: rgba(40, 167, 69, 0.1); color: #28a745; }
 .stat-icon.orange { background: rgba(253, 126, 20, 0.1); color: #fd7e14; }
 .stat-icon.purple { background: rgba(111, 66, 193, 0.1); color: #6f42c1; }
@@ -135,7 +135,7 @@ body {
 }
 
 .section-title i {
-    color: #191BA9;
+    color: var(--primary-color);
 }
 
 .chart-container {
@@ -201,7 +201,7 @@ body {
 }
 
 .status-serviceable { background: rgba(40, 167, 69, 0.1); color: #28a745; }
-.status-in_use { background: rgba(25, 27, 169, 0.1); color: #191BA9; }
+.status-in_use { background: rgba(var(--primary-rgb), 0.1); color: var(--primary-color); }
 .status-maintenance { background: rgba(253, 126, 20, 0.1); color: #fd7e14; }
 .status-disposed { background: rgba(220, 53, 69, 0.1); color: #dc3545; }
 .status-unserviceable { background: rgba(108, 117, 125, 0.1); color: #6c757d; }
@@ -289,7 +289,7 @@ body {
     flex-shrink: 0;
 }
 
-.form-type-icon.par { background: rgba(25, 27, 169, 0.1); color: #191BA9; }
+.form-type-icon.par { background: rgba(var(--primary-rgb), 0.1); color: var(--primary-color); }
 .form-type-icon.ics { background: rgba(40, 167, 69, 0.1); color: #28a745; }
 .form-type-icon.ris { background: rgba(253, 126, 20, 0.1); color: #fd7e14; }
 .form-type-icon.iirup { background: rgba(111, 66, 193, 0.1); color: #6f42c1; }
@@ -326,7 +326,7 @@ body {
 .category-code {
     font-size: 0.7rem;
     padding: 0.15rem 0.4rem;
-    background: #191BA9;
+    background: var(--primary-color);
     color: white;
     border-radius: 4px;
     font-weight: 500;
@@ -344,7 +344,7 @@ body {
 
 .view-all {
     font-size: 0.8rem;
-    color: #191BA9;
+    color: var(--primary-color);
     text-decoration: none;
     font-weight: 500;
     display: flex;

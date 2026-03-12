@@ -117,7 +117,7 @@ try {
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #F7F3F3 0%, #C1EAF2 100%);
+            background: linear-gradient(135deg, var(--light-color) 0%, var(--light-accent) 100%);
             min-height: 100vh;
             padding: 20px 0;
         }
@@ -198,7 +198,7 @@ try {
             text-align: center;
             font-size: 1.8rem;
             font-weight: 700;
-            color: #191ba9;
+            color: var(--primary-color);
             margin-bottom: 30px;
             text-transform: uppercase;
             letter-spacing: 2px;
@@ -212,7 +212,7 @@ try {
         }
         
         .borrower-info h4 {
-            color: #191ba9;
+            color: var(--primary-color);
             font-weight: 600;
             margin-bottom: 20px;
             font-size: 1.1rem;
@@ -259,25 +259,25 @@ try {
         }
         
         .items-table h4 {
-            color: #191ba9;
+            color: var(--primary-color);
             font-weight: 600;
             margin-bottom: 15px;
             font-size: 1.1rem;
         }
         
         .items-table table {
-            border: 2px solid #191ba9;
+            border: 2px solid var(--primary-color);
             border-radius: 8px;
             overflow: hidden;
         }
         
         .items-table th {
-            background: #191ba9;
+            background: var(--primary-color);
             color: white;
             font-weight: 600;
             text-align: center;
             padding: 15px 10px;
-            border: 1px solid #191ba9;
+            border: 1px solid var(--primary-color);
         }
         
         .items-table td {

@@ -221,7 +221,7 @@ header('Pragma: public');
         
         .text-value {
             font-weight: bold;
-            color: #191BA9;
+            color: var(--primary-color);
         }
         
         .footer {

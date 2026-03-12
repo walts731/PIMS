@@ -274,7 +274,7 @@ if (!empty($serviceable_assets)) {
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #F7F3F3 0%, #C1EAF2 100%);
+            background: linear-gradient(135deg, var(--light-color) 0%, var(--light-accent) 100%);
             min-height: 100vh;
             overflow-x: hidden;
         }
@@ -296,7 +296,7 @@ if (!empty($serviceable_assets)) {
         }
         .form-section h6 {
             margin-bottom: 1rem;
-            color: #191ba9;
+            color: var(--primary-color);
             font-weight: 600;
         }
         .items-table {
@@ -313,7 +313,7 @@ if (!empty($serviceable_assets)) {
             border-left: 3px solid #dc3545;
         }
         .form-select:required:focus {
-            border-left-color: #191ba9;
+            border-left-color: var(--primary-color);
         }
     </style>
 </head>
