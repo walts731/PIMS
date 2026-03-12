@@ -125,6 +125,238 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             break;
             
+        // Bulk Actions Handlers
+        case 'bulk_approve':
+            $request_ids = $_POST['request_ids'] ?? '';
+            if (empty($request_ids)) {
+                echo json_encode(['success' => false, 'error' => 'No requests selected']);
+                exit;
+            }
+            
+            $id_array = explode(',', $request_ids);
+            $approved_count = 0;
+            
+            foreach ($id_array as $request_id) {
+                $request_id = (int)trim($request_id);
+                if ($request_id <= 0) continue;
+                
+                $update_query = "UPDATE borrow_requests SET 
+                                 status = 'approved', 
+                                 approved_by = ?, 
+                                 approved_at = NOW(), 
+                                 approval_notes = 'Bulk approved' 
+                                 WHERE id = ? AND status = 'pending' AND requested_to_office = ?";
+                $stmt = $conn->prepare($update_query);
+                $stmt->bind_param("iii", $_SESSION['user_id'], $request_id, $office_id);
+                
+                if ($stmt->execute() && $stmt->affected_rows > 0) {
+                    // Update asset status to pending when request is approved
+                    $asset_update = "UPDATE asset_items SET status = 'pending' 
+                                    WHERE id = (SELECT asset_id FROM borrow_requests WHERE id = ?)";
+                    $stmt2 = $conn->prepare($asset_update);
+                    $stmt2->bind_param("i", $request_id);
+                    $stmt2->execute();
+                    
+                    $approved_count++;
+                    logSystemAction($_SESSION['user_id'], 'bulk_approve', 'borrow_request', "Bulk approved borrow request #$request_id");
+                }
+            }
+            
+            if ($approved_count > 0) {
+                echo json_encode(['success' => true, 'message' => "$approved_count requests approved successfully"]);
+            } else {
+                echo json_encode(['success' => false, 'error' => 'No requests were approved']);
+            }
+            exit;
+            
+        case 'bulk_deny':
+            $request_ids = $_POST['request_ids'] ?? '';
+            $reason = $_POST['reason'] ?? '';
+            
+            if (empty($request_ids)) {
+                echo json_encode(['success' => false, 'error' => 'No requests selected']);
+                exit;
+            }
+            
+            if (empty($reason)) {
+                echo json_encode(['success' => false, 'error' => 'Denial reason is required']);
+                exit;
+            }
+            
+            $id_array = explode(',', $request_ids);
+            $denied_count = 0;
+            
+            foreach ($id_array as $request_id) {
+                $request_id = (int)trim($request_id);
+                if ($request_id <= 0) continue;
+                
+                $update_query = "UPDATE borrow_requests SET 
+                                 status = 'denied', 
+                                 denied_by = ?, 
+                                 denied_at = NOW(), 
+                                 denial_reason = ? 
+                                 WHERE id = ? AND status = 'pending' AND requested_to_office = ?";
+                $stmt = $conn->prepare($update_query);
+                $stmt->bind_param("isii", $_SESSION['user_id'], $reason, $request_id, $office_id);
+                
+                if ($stmt->execute() && $stmt->affected_rows > 0) {
+                    // Update asset status back to serviceable when request is denied
+                    $asset_update = "UPDATE asset_items SET status = 'serviceable' 
+                                    WHERE id = (SELECT asset_id FROM borrow_requests WHERE id = ?)";
+                    $stmt2 = $conn->prepare($asset_update);
+                    $stmt2->bind_param("i", $request_id);
+                    $stmt2->execute();
+                    
+                    $denied_count++;
+                    logSystemAction($_SESSION['user_id'], 'bulk_deny', 'borrow_request', "Bulk denied borrow request #$request_id");
+                }
+            }
+            
+            if ($denied_count > 0) {
+                echo json_encode(['success' => true, 'message' => "$denied_count requests denied"]);
+            } else {
+                echo json_encode(['success' => false, 'error' => 'No requests were denied']);
+            }
+            exit;
+            
+        case 'bulk_mark_borrowed':
+            $request_ids = $_POST['request_ids'] ?? '';
+            if (empty($request_ids)) {
+                echo json_encode(['success' => false, 'error' => 'No requests selected']);
+                exit;
+            }
+            
+            $id_array = explode(',', $request_ids);
+            $marked_count = 0;
+            
+            foreach ($id_array as $request_id) {
+                $request_id = (int)trim($request_id);
+                if ($request_id <= 0) continue;
+                
+                $update_query = "UPDATE borrow_requests SET 
+                                 status = 'borrowed' 
+                                 WHERE id = ? AND status = 'approved' AND requested_to_office = ?";
+                $stmt = $conn->prepare($update_query);
+                $stmt->bind_param("ii", $request_id, $office_id);
+                
+                if ($stmt->execute() && $stmt->affected_rows > 0) {
+                    // Update asset status to in_use when marked as borrowed
+                    $asset_update = "UPDATE asset_items SET status = 'in_use' 
+                                    WHERE id = (SELECT asset_id FROM borrow_requests WHERE id = ?)";
+                    $stmt2 = $conn->prepare($asset_update);
+                    $stmt2->bind_param("i", $request_id);
+                    $stmt2->execute();
+                    
+                    $marked_count++;
+                    logSystemAction($_SESSION['user_id'], 'bulk_mark_borrowed', 'borrow_request', "Bulk marked borrow request #$request_id as borrowed");
+                }
+            }
+            
+            if ($marked_count > 0) {
+                echo json_encode(['success' => true, 'message' => "$marked_count requests marked as borrowed"]);
+            } else {
+                echo json_encode(['success' => false, 'error' => 'No requests were marked as borrowed']);
+            }
+            exit;
+            
+        // Real-time Updates Handler
+        case 'check_updates':
+            $last_update = $_GET['last_update'] ?? '';
+            $has_updates = false;
+            $new_requests = [];
+            $changed_requests = [];
+            $current_stats = [
+                'pending_incoming' => 0,
+                'approved_incoming' => 0,
+                'borrowed_incoming' => 0,
+                'pending_outgoing' => 0,
+                'approved_outgoing' => 0,
+                'borrowed_outgoing' => 0
+            ];
+            
+            if ($office_id && $conn) {
+                try {
+                    // Get current requests with timestamps
+                    $current_query = "SELECT br.*, 'incoming' as request_type,
+                                     u.first_name, u.last_name, u.email, 
+                                     o.office_name as requester_office, ai.description as asset_description,
+                                     ai.property_no as asset_code, ac.category_name
+                                     FROM borrow_requests br
+                                     JOIN users u ON br.requested_by = u.id
+                                     JOIN offices o ON br.requested_by_office = o.id
+                                     JOIN asset_items ai ON br.asset_id = ai.id
+                                     LEFT JOIN asset_categories ac ON ai.asset_category_id = ac.id
+                                     WHERE br.requested_to_office = ? 
+                                     UNION ALL
+                                     SELECT br.*, 'outgoing' as request_type,
+                                     u.first_name, u.last_name, u.email,
+                                     o.office_name as approver_office, ai.description as asset_description,
+                                     ai.property_no as asset_code, ac.category_name,
+                                     oa.first_name as admin_first_name, oa.last_name as admin_last_name
+                                     FROM borrow_requests br
+                                     JOIN users u ON br.requested_by = u.id
+                                     JOIN offices o ON br.requested_to_office = o.id
+                                     JOIN asset_items ai ON br.asset_id = ai.id
+                                     LEFT JOIN asset_categories ac ON ai.asset_category_id = ac.id
+                                     LEFT JOIN users oa ON oa.office = br.requested_to_office AND oa.role = 'office_admin' AND oa.is_active = 1
+                                     WHERE br.requested_by_office = ?
+                                     ORDER BY br.updated_at DESC";
+                    $stmt = $conn->prepare($current_query);
+                    $stmt->bind_param("ii", $office_id, $office_id);
+                    $stmt->execute();
+                    $result = $stmt->get_result();
+                    
+                    while ($row = $result->fetch_assoc()) {
+                        $request_time = new DateTime($row['updated_at']);
+                        $last_update_time = new DateTime($last_update);
+                        
+                        // Check if request is newer than last update
+                        if ($request_time > $last_update_time) {
+                            $has_updates = true;
+                            
+                            // Check if it's a completely new request (created after last update)
+                            $created_time = new DateTime($row['created_at']);
+                            if ($created_time > $last_update_time) {
+                                $new_requests[] = [
+                                    'id' => $row['id'],
+                                    'type' => $row['request_type'],
+                                    'status' => $row['status']
+                                ];
+                            } else {
+                                // It's an existing request that was updated
+                                $changed_requests[] = [
+                                    'id' => $row['id'],
+                                    'type' => $row['request_type'],
+                                    'status' => $row['status']
+                                ];
+                            }
+                        }
+                        
+                        // Update current stats
+                        if ($row['request_type'] === 'incoming') {
+                            if ($row['status'] === 'pending') $current_stats['pending_incoming']++;
+                            elseif ($row['status'] === 'approved') $current_stats['approved_incoming']++;
+                            elseif ($row['status'] === 'borrowed') $current_stats['borrowed_incoming']++;
+                        } else {
+                            if ($row['status'] === 'pending') $current_stats['pending_outgoing']++;
+                            elseif ($row['status'] === 'approved') $current_stats['approved_outgoing']++;
+                            elseif ($row['status'] === 'borrowed') $current_stats['borrowed_outgoing']++;
+                        }
+                    }
+                } catch (Exception $e) {
+                    error_log("Error checking updates: " . $e->getMessage());
+                }
+            }
+            
+            echo json_encode([
+                'has_updates' => $has_updates,
+                'new_requests' => $new_requests,
+                'changed_requests' => $changed_requests,
+                'stats' => $current_stats,
+                'timestamp' => date('Y-m-d H:i:s')
+            ]);
+            exit;
+            
         case 'deny_request':
             $request_id = $_POST['request_id'] ?? 0;
             $reason = $_POST['reason'] ?? '';
@@ -493,6 +725,31 @@ if ($office_id && $conn) {
             margin-bottom: 1rem;
             opacity: 0.5;
         }
+        
+        .bulk-actions-bar {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-bottom: 2px solid #5CC2F2;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .bulk-actions-bar .btn-group {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .request-checkbox {
+            transform: scale(1.1);
+            cursor: pointer;
+        }
+        
+        .request-checkbox:checked {
+            background-color: #5CC2F2;
+            border-color: #5CC2F2;
+        }
+        
+        #selectedCount {
+            font-weight: 600;
+            color: #191BA9;
+        }
     </style>
 </head>
 <body>
@@ -547,7 +804,7 @@ $page_title = 'Requests Management';
                 <div class="stats-card">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <div class="stats-number"><?php echo $request_stats['pending_incoming']; ?></div>
+                            <div class="stats-number" data-stat="pending_incoming"><?php echo $request_stats['pending_incoming']; ?></div>
                             <div class="text-muted">Pending Incoming</div>
                             <small class="text-warning">Awaiting your action</small>
                         </div>
@@ -561,7 +818,7 @@ $page_title = 'Requests Management';
                 <div class="stats-card">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <div class="stats-number"><?php echo $request_stats['borrowed_incoming']; ?></div>
+                            <div class="stats-number" data-stat="borrowed_incoming"><?php echo $request_stats['borrowed_incoming']; ?></div>
                             <div class="text-muted">Borrowed Incoming</div>
                             <small class="text-warning">Currently borrowed</small>
                         </div>
@@ -634,6 +891,31 @@ $page_title = 'Requests Management';
                 </div>
             </div>
             <div class="card-body p-0">
+                <!-- Bulk Actions Bar -->
+                <div id="bulkActionsBar" class="bulk-actions-bar d-none">
+                    <div class="d-flex justify-content-between align-items-center p-3 bg-light border-bottom">
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="text-muted">
+                                <span id="selectedCount">0</span> requests selected
+                            </span>
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-sm btn-outline-success" id="bulkApproveBtn" disabled>
+                                    <i class="bi bi-check-circle"></i> Approve Selected
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" id="bulkDenyBtn" disabled>
+                                    <i class="bi bi-x-circle"></i> Deny Selected
+                                </button>
+                                <button class="btn btn-sm btn-outline-warning" id="bulkMarkBorrowedBtn" disabled>
+                                    <i class="bi bi-hand-index"></i> Mark Borrowed
+                                </button>
+                            </div>
+                        </div>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="clearSelection()">
+                            <i class="bi bi-x"></i> Clear Selection
+                        </button>
+                    </div>
+                </div>
+                
                 <!-- Unified Request List -->
                 <div id="requestsContainer">
                     <?php if (!empty($incoming_requests) || !empty($outgoing_requests)): ?>
@@ -641,6 +923,9 @@ $page_title = 'Requests Management';
                             <table class="table table-hover mb-0" id="requestsTable">
                                 <thead>
                                     <tr>
+                                        <th width="40">
+                                            <input type="checkbox" id="selectAllRequests" class="form-check-input" title="Select all requests">
+                                        </th>
                                         <th>Type</th>
                                         <th>Requester/Office</th>
                                         <th>Asset</th>
@@ -682,7 +967,11 @@ $page_title = 'Requests Management';
                                         <tr class="request-row" 
                                             data-type="<?php echo $request['request_type']; ?>" 
                                             data-status="<?php echo $request['status']; ?>"
-                                            data-needs-action="<?php echo ($request['request_type'] === 'incoming' && $request['status'] === 'pending') ? 'true' : 'false'; ?>">
+                                            data-needs-action="<?php echo ($request['request_type'] === 'incoming' && $request['status'] === 'pending') ? 'true' : 'false'; ?>"
+                                            data-request-id="<?php echo $request['id']; ?>">
+                                            <td>
+                                                <input type="checkbox" class="form-check-input request-checkbox" value="<?php echo $request['id']; ?>">
+                                            </td>
                                             <td>
                                                 <span class="request-type-badge request-type-<?php echo $request['request_type']; ?>">
                                                     <?php if ($request['request_type'] === 'incoming'): ?>
@@ -1680,8 +1969,397 @@ $page_title = 'Requests Management';
             }
         }
         
-        // Initialize filters on page load
+        // Real-time Updates Functionality
+        let lastUpdateTime = new Date();
+        let pollingInterval;
+        
+        function startRealTimeUpdates() {
+            // Clear any existing interval
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+            }
+            
+            // Poll every 30 seconds
+            pollingInterval = setInterval(checkForUpdates, 30000);
+        }
+        
+        function stopRealTimeUpdates() {
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+            }
+        }
+        
+        function checkForUpdates() {
+            fetch('requests.php?action=check_updates&last_update=' + lastUpdateTime.toISOString(), {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.has_updates) {
+                    showNotification('New requests or status changes detected', 'info');
+                    
+                    // Update request counts in stats cards
+                    if (data.stats) {
+                        updateStatsCards(data.stats);
+                    }
+                    
+                    // Update table with new data
+                    if (data.new_requests || data.changed_requests) {
+                        updateRequestTable(data);
+                    }
+                    
+                    lastUpdateTime = new Date();
+                }
+            })
+            .catch(error => {
+                console.error('Real-time update error:', error);
+            });
+        }
+        
+        function updateStatsCards(newStats) {
+            // Update incoming stats
+            const pendingIncomingEl = document.querySelector('[data-stat="pending_incoming"]');
+            const approvedIncomingEl = document.querySelector('[data-stat="approved_incoming"]');
+            const borrowedIncomingEl = document.querySelector('[data-stat="borrowed_incoming"]');
+            
+            if (pendingIncomingEl && newStats.pending_incoming !== undefined) {
+                pendingIncomingEl.textContent = newStats.pending_incoming;
+            }
+            if (approvedIncomingEl && newStats.approved_incoming !== undefined) {
+                approvedIncomingEl.textContent = newStats.approved_incoming;
+            }
+            if (borrowedIncomingEl && newStats.borrowed_incoming !== undefined) {
+                borrowedIncomingEl.textContent = newStats.borrowed_incoming;
+            }
+            
+            // Update outgoing stats
+            const pendingOutgoingEl = document.querySelector('[data-stat="pending_outgoing"]');
+            const approvedOutgoingEl = document.querySelector('[data-stat="approved_outgoing"]');
+            const borrowedOutgoingEl = document.querySelector('[data-stat="borrowed_outgoing"]');
+            
+            if (pendingOutgoingEl && newStats.pending_outgoing !== undefined) {
+                pendingOutgoingEl.textContent = newStats.pending_outgoing;
+            }
+            if (approvedOutgoingEl && newStats.approved_outgoing !== undefined) {
+                approvedOutgoingEl.textContent = newStats.approved_outgoing;
+            }
+            if (borrowedOutgoingEl && newStats.borrowed_outgoing !== undefined) {
+                borrowedOutgoingEl.textContent = newStats.borrowed_outgoing;
+            }
+        }
+        
+        function updateRequestTable(data) {
+            if (data.new_requests && data.new_requests.length > 0) {
+                data.new_requests.forEach(request => {
+                    addRequestRow(request);
+                });
+                showNotification(`${data.new_requests.length} new request(s) received`, 'success');
+            }
+            
+            if (data.changed_requests && data.changed_requests.length > 0) {
+                data.changed_requests.forEach(change => {
+                    updateRequestRow(change);
+                });
+                showNotification(`${data.changed_requests.length} request(s) updated`, 'info');
+            }
+        }
+        
+        function addRequestRow(request) {
+            const tbody = document.querySelector('#requestsTable tbody');
+            if (!tbody) return;
+            
+            const row = createRequestRow(request);
+            tbody.insertBefore(row, tbody.firstChild);
+            
+            // Animate new row
+            row.style.backgroundColor = '#d4edda';
+            setTimeout(() => {
+                row.style.transition = 'background-color 2s';
+                row.style.backgroundColor = '';
+            }, 100);
+        }
+        
+        function updateRequestRow(change) {
+            const row = document.querySelector(`tr[data-request-id="${change.id}"]`);
+            if (!row) return;
+            
+            // Update status if changed
+            if (change.status) {
+                const statusCell = row.querySelector('.status-badge');
+                if (statusCell) {
+                    statusCell.className = `status-badge status-${change.status}`;
+                    statusCell.textContent = change.status.charAt(0).toUpperCase() + change.status.slice(1);
+                }
+                
+                // Update row data attributes
+                row.dataset.status = change.status;
+                row.dataset.needsAction = (change.type === 'incoming' && change.status === 'pending') ? 'true' : 'false';
+            }
+            
+            // Animate updated row
+            row.style.backgroundColor = '#fff3cd';
+            setTimeout(() => {
+                row.style.transition = 'background-color 2s';
+                row.style.backgroundColor = '';
+            }, 100);
+        }
+        
+        function createRequestRow(request) {
+            // This would need to generate the same HTML structure as existing rows
+            // For now, we'll just reload the page to show new requests
+            setTimeout(() => location.reload(), 2000);
+            return null;
+        }
+        
+        // Keyboard Shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Only when not typing in input fields
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            
+            // Ctrl+A to select all
+            if (e.ctrlKey && e.key === 'a') {
+                e.preventDefault();
+                const selectAll = document.getElementById('selectAllRequests');
+                if (selectAll) {
+                    selectAll.checked = !selectAll.checked;
+                    selectAllRequests();
+                }
+            }
+            
+            // Ctrl+R to refresh
+            if (e.ctrlKey && e.key === 'r') {
+                e.preventDefault();
+                refreshRequests();
+            }
+            
+            // Escape to clear selection
+            if (e.key === 'Escape') {
+                clearSelection();
+            }
+            
+            // Ctrl+Enter to bulk approve selected pending requests
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                const bulkApproveBtn = document.getElementById('bulkApproveBtn');
+                if (bulkApproveBtn && !bulkApproveBtn.disabled) {
+                    bulkApprove();
+                }
+            }
+        });
+        
+        // Bulk Actions Functionality
+        let selectedRequests = new Set();
+        
+        function updateBulkActionsBar() {
+            const bulkActionsBar = document.getElementById('bulkActionsBar');
+            const selectedCount = document.getElementById('selectedCount');
+            const bulkApproveBtn = document.getElementById('bulkApproveBtn');
+            const bulkDenyBtn = document.getElementById('bulkDenyBtn');
+            const bulkMarkBorrowedBtn = document.getElementById('bulkMarkBorrowedBtn');
+            
+            const count = selectedRequests.size;
+            selectedCount.textContent = count;
+            
+            // Show/hide bulk actions bar
+            if (count > 0) {
+                bulkActionsBar.classList.remove('d-none');
+            } else {
+                bulkActionsBar.classList.add('d-none');
+            }
+            
+            // Enable/disable bulk action buttons based on selected requests
+            const hasPendingIncoming = Array.from(selectedRequests).some(id => {
+                const row = document.querySelector(`tr[data-request-id="${id}"]`);
+                return row && row.dataset.type === 'incoming' && row.dataset.status === 'pending';
+            });
+            
+            const hasApprovedIncoming = Array.from(selectedRequests).some(id => {
+                const row = document.querySelector(`tr[data-request-id="${id}"]`);
+                return row && row.dataset.type === 'incoming' && row.dataset.status === 'approved';
+            });
+            
+            bulkApproveBtn.disabled = !hasPendingIncoming;
+            bulkDenyBtn.disabled = !hasPendingIncoming;
+            bulkMarkBorrowedBtn.disabled = !hasApprovedIncoming;
+        }
+        
+        function toggleRequestSelection(requestId) {
+            if (selectedRequests.has(requestId)) {
+                selectedRequests.delete(requestId);
+            } else {
+                selectedRequests.add(requestId);
+            }
+            updateBulkActionsBar();
+        }
+        
+        function selectAllRequests() {
+            const selectAll = document.getElementById('selectAllRequests');
+            const checkboxes = document.querySelectorAll('.request-checkbox');
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAll.checked;
+                const requestId = parseInt(checkbox.value);
+                if (selectAll.checked) {
+                    selectedRequests.add(requestId);
+                } else {
+                    selectedRequests.delete(requestId);
+                }
+            });
+            
+            updateBulkActionsBar();
+        }
+        
+        function clearSelection() {
+            selectedRequests.clear();
+            document.querySelectorAll('.request-checkbox').forEach(cb => cb.checked = false);
+            document.getElementById('selectAllRequests').checked = false;
+            updateBulkActionsBar();
+        }
+        
+        function bulkApprove() {
+            const pendingIncomingIds = Array.from(selectedRequests).filter(id => {
+                const row = document.querySelector(`tr[data-request-id="${id}"]`);
+                return row && row.dataset.type === 'incoming' && row.dataset.status === 'pending';
+            });
+            
+            if (pendingIncomingIds.length === 0) {
+                showNotification('No pending incoming requests selected for approval', 'warning');
+                return;
+            }
+            
+            if (confirm(`Approve ${pendingIncomingIds.length} pending request(s)?`)) {
+                // Submit bulk approval via AJAX
+                fetch('requests.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'bulk_approve',
+                        request_ids: pendingIncomingIds.join(',')
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification(`${pendingIncomingIds.length} requests approved successfully`, 'success');
+                        clearSelection();
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showNotification(data.error || 'Error approving requests', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Bulk approval error:', error);
+                    showNotification('Error approving requests', 'error');
+                });
+            }
+        }
+        
+        function bulkDeny() {
+            const pendingIncomingIds = Array.from(selectedRequests).filter(id => {
+                const row = document.querySelector(`tr[data-request-id="${id}"]`);
+                return row && row.dataset.type === 'incoming' && row.dataset.status === 'pending';
+            });
+            
+            if (pendingIncomingIds.length === 0) {
+                showNotification('No pending incoming requests selected for denial', 'warning');
+                return;
+            }
+            
+            const reason = prompt('Enter denial reason for all selected requests:');
+            if (!reason) return;
+            
+            if (confirm(`Deny ${pendingIncomingIds.length} pending request(s)?`)) {
+                // Submit bulk denial via AJAX
+                fetch('requests.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'bulk_deny',
+                        request_ids: pendingIncomingIds.join(','),
+                        reason: reason
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification(`${pendingIncomingIds.length} requests denied`, 'success');
+                        clearSelection();
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showNotification(data.error || 'Error denying requests', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Bulk denial error:', error);
+                    showNotification('Error denying requests', 'error');
+                });
+            }
+        }
+        
+        function bulkMarkBorrowed() {
+            const approvedIncomingIds = Array.from(selectedRequests).filter(id => {
+                const row = document.querySelector(`tr[data-request-id="${id}"]`);
+                return row && row.dataset.type === 'incoming' && row.dataset.status === 'approved';
+            });
+            
+            if (approvedIncomingIds.length === 0) {
+                showNotification('No approved incoming requests selected to mark as borrowed', 'warning');
+                return;
+            }
+            
+            if (confirm(`Mark ${approvedIncomingIds.length} approved request(s) as borrowed?`)) {
+                // Submit bulk mark borrowed via AJAX
+                fetch('requests.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'bulk_mark_borrowed',
+                        request_ids: approvedIncomingIds.join(',')
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification(`${approvedIncomingIds.length} requests marked as borrowed`, 'success');
+                        clearSelection();
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showNotification(data.error || 'Error marking requests as borrowed', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Bulk mark borrowed error:', error);
+                    showNotification('Error marking requests as borrowed', 'error');
+                });
+            }
+        }
+        
+        // Event listeners for bulk actions
         document.addEventListener('DOMContentLoaded', function() {
+            // Select all checkbox
+            document.getElementById('selectAllRequests')?.addEventListener('change', selectAllRequests);
+            
+            // Individual checkboxes
+            document.querySelectorAll('.request-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    toggleRequestSelection(parseInt(this.value));
+                });
+            });
+            
+            // Bulk action buttons
+            document.getElementById('bulkApproveBtn')?.addEventListener('click', bulkApprove);
+            document.getElementById('bulkDenyBtn')?.addEventListener('click', bulkDeny);
+            document.getElementById('bulkMarkBorrowedBtn')?.addEventListener('click', bulkMarkBorrowed);
+            
             initSmartFilters();
         });
     </script>
