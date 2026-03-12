@@ -551,6 +551,9 @@ $page_title = 'Offices';
                             <button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#importOfficesModal">
                                 <i class="bi bi-upload"></i> Import
                             </button>
+                            <button class="btn btn-success btn-sm" onclick="exportOffices()">
+                                <i class="bi bi-download"></i> Export
+                            </button>
                         </div>
                 </div>
             </div>
@@ -1121,6 +1124,35 @@ document.addEventListener('DOMContentLoaded', function() {
                 alertDiv.remove();
             }
         }, 5000);
+    }
+    
+    // Export offices function
+    function exportOffices() {
+        // Get current offices data from PHP variable
+        const officesData = <?php echo json_encode($offices); ?>;
+        
+        // Create CSV content
+        let csvContent = "Office Name,Office Code\n";
+        
+        officesData.forEach(office => {
+            const officeName = (office.office_name || '').replace(/"/g, '""');
+            const officeCode = (office.office_code || '').replace(/"/g, '""');
+            csvContent += `"${officeName}","${officeCode}"\n`;
+        });
+        
+        // Create download link
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'offices_export_' + new Date().toISOString().split('T')[0] + '.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        // Show success message
+        showAlert('Offices exported successfully!', 'success');
     }
 </script>
 </body>
