@@ -228,7 +228,7 @@ if ($office_id && $conn) {
     try {
         $incoming_query = "SELECT br.*, u.first_name, u.last_name, u.email, 
                           o.office_name as requester_office, ai.description as asset_description,
-                          COALESCE(ai.property_number, ai.property_no) as asset_code, ac.category_name
+                          ai.property_no as asset_code, ac.category_name
                           FROM borrow_requests br
                           JOIN users u ON br.requested_by = u.id
                           JOIN offices o ON br.requested_by_office = o.id
@@ -257,12 +257,14 @@ if ($office_id && $conn) {
         // Outgoing requests (this office requesting from other offices)
         $outgoing_query = "SELECT br.*, u.first_name, u.last_name, u.email,
                           o.office_name as approver_office, ai.description as asset_description,
-                          COALESCE(ai.property_number, ai.property_no) as asset_code, ac.category_name
+                          ai.property_no as asset_code, ac.category_name,
+                          oa.first_name as admin_first_name, oa.last_name as admin_last_name
                           FROM borrow_requests br
                           JOIN users u ON br.requested_by = u.id
                           JOIN offices o ON br.requested_to_office = o.id
                           JOIN asset_items ai ON br.asset_id = ai.id
                           LEFT JOIN asset_categories ac ON ai.asset_category_id = ac.id
+                          LEFT JOIN users oa ON oa.office = br.requested_to_office AND oa.role = 'office_admin' AND oa.is_active = 1
                           WHERE br.requested_by_office = ?
                           ORDER BY br.created_at DESC";
         $stmt = $conn->prepare($outgoing_query);
@@ -661,7 +663,12 @@ $page_title = 'Requests Management';
                                     foreach ($outgoing_requests as $req) {
                                         $req['request_type'] = 'outgoing';
                                         $req['display_name'] = $req['approver_office'];
-                                        $req['display_office'] = $req['first_name'] . ' ' . $req['last_name'];
+                                        // Show office admin if available, otherwise show the requester
+                                        if (!empty($req['admin_first_name']) && !empty($req['admin_last_name'])) {
+                                            $req['display_office'] = $req['admin_first_name'] . ' ' . $req['admin_last_name'] . ' (Admin)';
+                                        } else {
+                                            $req['display_office'] = 'No office admin assigned';
+                                        }
                                         $all_requests[] = $req;
                                     }
                                     
