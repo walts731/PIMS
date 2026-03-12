@@ -109,33 +109,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     }
 }
 
-// DELETE - Delete category
-if (isset($_GET['action']) && $_GET['action'] == 'delete' && isset($_GET['id'])) {
-    $id = intval($_GET['id']);
-    
-    try {
-        // Get category info before deletion
-        $stmt = $conn->prepare("SELECT category_name, category_code FROM asset_categories WHERE id = ?");
-        $stmt->bind_param("i", $id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $category = $result->fetch_assoc();
-        
-        if ($category) {
-            $stmt = $conn->prepare("DELETE FROM asset_categories WHERE id = ?");
-            $stmt->bind_param("i", $id);
-            $stmt->execute();
-            
-            $message = "Category deleted successfully!";
-            $message_type = "success";
-            
-            logSystemAction($_SESSION['user_id'], 'category_deleted', 'asset_management', "Deleted category: {$category['category_name']} ({$category['category_code']})");
-        }
-    } catch (Exception $e) {
-        $message = "Error deleting category: " . $e->getMessage();
-        $message_type = "danger";
-    }
-}
 
 // Get all categories
 $categories = [];
@@ -500,10 +473,6 @@ $page_title = 'Categories';
                                                             onclick="editCategory(<?php echo $category['id']; ?>)">
                                                         <i class="bi bi-pencil"></i>
                                                     </button>
-                                                    <button type="button" class="btn btn-sm btn-outline-danger" 
-                                                            onclick="deleteCategory(<?php echo $category['id']; ?>, '<?php echo htmlspecialchars($category['category_name']); ?>')">
-                                                        <i class="bi bi-trash"></i>
-                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -614,26 +583,7 @@ $page_title = 'Categories';
         </div>
     </div>
     
-    <!-- Delete Confirmation Modal -->
-    <div class="modal fade" id="deleteModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title">Confirm Delete</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <p>Are you sure you want to delete the category "<span id="deleteCategoryName"></span>"?</p>
-                    <p class="text-muted small">This action cannot be undone.</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-danger" id="deleteConfirmBtn">Delete</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    
+        
     <?php require_once 'includes/logout-modal.php'; ?>
     <?php require_once 'includes/change-password-modal.php'; ?>
 </div> <!-- Close main wrapper -->
@@ -724,12 +674,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
     
-    function deleteCategory(id, name) {
-        document.getElementById('deleteCategoryName').textContent = name;
-        document.getElementById('deleteConfirmBtn').href = `categories.php?action=delete&id=${id}`;
-        new bootstrap.Modal(document.getElementById('deleteModal')).show();
-    }
-    
+        
     // Handle status switch changes
     document.querySelectorAll('.status-switch').forEach(switchElement => {
         switchElement.addEventListener('change', function() {
