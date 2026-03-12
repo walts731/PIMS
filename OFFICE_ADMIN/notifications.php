@@ -674,6 +674,18 @@ $unread_count = $unread_result->fetch_assoc()['count'];
                                         <?php echo getTimeAgo($notification['created_at'] ?? ''); ?>
                                     </small>
                                     <div class="btn-group btn-group-sm">
+                                        <?php 
+                                        // Add contextual quick actions based on notification type and related data
+                                        $quickActions = getNotificationQuickActions($notification);
+                                        foreach ($quickActions as $action): ?>
+                                            <button class="btn btn-<?php echo $action['color']; ?> btn-sm" 
+                                                    onclick="<?php echo $action['onclick']; ?>"
+                                                    title="<?php echo htmlspecialchars($action['title']); ?>">
+                                                <i class="bi bi-<?php echo $action['icon']; ?>"></i> 
+                                                <?php echo $action['label']; ?>
+                                            </button>
+                                        <?php endforeach; ?>
+                                        
                                         <?php if (!$notification['is_read']): ?>
                                             <button class="btn btn-outline-primary btn-sm" onclick="markAsRead(<?php echo $notification['id']; ?>)">
                                                 <i class="bi bi-check2"></i> Mark Read
@@ -888,7 +900,12 @@ $unread_count = $unread_result->fetch_assoc()['count'];
                 return;
             }
             
-            // Get all notification IDs
+            fetch('notifications_handler.php?action=clear_all', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
             const notificationCards = document.querySelectorAll('.notification-card');
             const notificationIds = Array.from(notificationCards).map(card => card.dataset.id);
             
@@ -911,6 +928,39 @@ $unread_count = $unread_result->fetch_assoc()['count'];
                 .catch(error => {
                     console.error('Error clearing notifications:', error);
                 });
+        }
+        
+        function quickApproveRequest(requestId) {
+            if (confirm('Are you sure you want to approve this request?')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = 'requests.php';
+                form.innerHTML = `
+                    <input type="hidden" name="action" value="approve_request">
+                    <input type="hidden" name="request_id" value="${requestId}">
+                    <input type="hidden" name="notes" value="Approved via notification quick action">
+                `;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+        
+        function updateNotificationBadge() {
+            // Update notification badge in topbar if it exists
+            const badge = document.querySelector('.notification-badge');
+            if (badge) {
+                fetch('notifications_handler.php?action=get_unread_count')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.unread_count > 0) {
+                            badge.textContent = data.unread_count;
+                            badge.style.display = 'inline-block';
+                        } else {
+                            badge.style.display = 'none';
+                        }
+                    })
+                    .catch(error => console.error('Error updating badge:', error));
+            }
         }
     </script>
 </body>
@@ -942,5 +992,69 @@ function getNotificationIcon($type) {
         'consumable' => 'box-seam'
     ];
     return $icons[$type] ?? 'bell';
+}
+
+function getNotificationQuickActions($notification) {
+    $actions = [];
+    $type = $notification['type'] ?? 'info';
+    $relatedId = $notification['related_id'] ?? null;
+    $relatedType = $notification['related_type'] ?? null;
+    
+    // Request-related actions
+    if ($type === 'request' && $relatedId) {
+        $actions[] = [
+            'label' => 'View Request',
+            'icon' => 'eye',
+            'color' => 'outline-info',
+            'onclick' => "window.location.href='requests.php#request-{$relatedId}'",
+            'title' => 'View this request'
+        ];
+        
+        // If it's a pending request, add quick approve/deny
+        if (strpos($notification['message'] ?? '', 'pending') !== false) {
+            $actions[] = [
+                'label' => 'Quick Approve',
+                'icon' => 'check-circle',
+                'color' => 'success',
+                'onclick' => "quickApproveRequest({$relatedId})",
+                'title' => 'Approve this request'
+            ];
+        }
+    }
+    
+    // Asset-related actions
+    if ($type === 'asset' && $relatedId) {
+        $actions[] = [
+            'label' => 'View Asset',
+            'icon' => 'box',
+            'color' => 'outline-primary',
+            'onclick' => "window.location.href='office_assets.php#asset-{$relatedId}'",
+            'title' => 'View this asset'
+        ];
+    }
+    
+    // Consumable-related actions
+    if ($type === 'consumable' && strpos($notification['message'] ?? '', 'low stock') !== false) {
+        $actions[] = [
+            'label' => 'Reorder',
+            'icon' => 'cart-plus',
+            'color' => 'warning',
+            'onclick' => "window.location.href='office_consumables.php'",
+            'title' => 'Go to consumables to reorder'
+        ];
+    }
+    
+    // System actions
+    if ($type === 'system') {
+        $actions[] = [
+            'label' => 'Settings',
+            'icon' => 'gear',
+            'color' => 'outline-secondary',
+            'onclick' => "window.location.href='profile.php'",
+            'title' => 'Go to settings'
+        ];
+    }
+    
+    return $actions;
 }
 ?>

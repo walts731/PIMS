@@ -228,7 +228,7 @@ if ($office_id && $conn) {
     try {
         $incoming_query = "SELECT br.*, u.first_name, u.last_name, u.email, 
                           o.office_name as requester_office, ai.description as asset_description,
-                          COALESCE(ai.property_number, ai.property_no) as asset_code, ac.category_name
+                          ai.property_no as asset_code, ac.category_name
                           FROM borrow_requests br
                           JOIN users u ON br.requested_by = u.id
                           JOIN offices o ON br.requested_by_office = o.id
@@ -257,12 +257,14 @@ if ($office_id && $conn) {
         // Outgoing requests (this office requesting from other offices)
         $outgoing_query = "SELECT br.*, u.first_name, u.last_name, u.email,
                           o.office_name as approver_office, ai.description as asset_description,
-                          COALESCE(ai.property_number, ai.property_no) as asset_code, ac.category_name
+                          ai.property_no as asset_code, ac.category_name,
+                          oa.first_name as admin_first_name, oa.last_name as admin_last_name
                           FROM borrow_requests br
                           JOIN users u ON br.requested_by = u.id
                           JOIN offices o ON br.requested_to_office = o.id
                           JOIN asset_items ai ON br.asset_id = ai.id
                           LEFT JOIN asset_categories ac ON ai.asset_category_id = ac.id
+                          LEFT JOIN users oa ON oa.office = br.requested_to_office AND oa.role = 'office_admin' AND oa.is_active = 1
                           WHERE br.requested_by_office = ?
                           ORDER BY br.created_at DESC";
         $stmt = $conn->prepare($outgoing_query);
@@ -398,196 +400,112 @@ if ($office_id && $conn) {
             box-shadow: var(--shadow-lg);
         }
         
-        .status-badge {
-            font-size: 0.75rem;
-            padding: 0.25rem 0.75rem;
-            border-radius: var(--border-radius-xl);
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-        
-        .status-pending {
-            background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
-            color: #212529;
-        }
-        
-        .status-approved {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
-        }
-        
-        .status-denied {
-            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-            color: white;
-        }
-        
-        .status-returned {
-            background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%);
-            color: white;
-        }
-        
-        .status-cancelled {
-            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
-            color: white;
-        }
-        
-        .status-borrowed {
-            background: linear-gradient(135deg, #fd7e14 0%, #e55a00 100%);
-            color: white;
-        }
-        
-        .stats-card {
+        .filter-tabs {
+            display: flex;
+            gap: 0.5rem;
             background: white;
+            padding: 0.5rem;
             border-radius: var(--border-radius-lg);
-            padding: 1.5rem;
-            box-shadow: var(--shadow);
-            border-left: 4px solid var(--primary-color);
-            transition: var(--transition);
+            box-shadow: var(--shadow-sm);
         }
         
-        .stats-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
-        }
-        
-        .stats-number {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--primary-color);
-        }
-        
-        .action-btn {
-            padding: 0.375rem 0.75rem;
-            border-radius: var(--border-radius);
-            font-size: 0.875rem;
-            transition: var(--transition);
-            margin: 0.125rem;
-        }
-        
-        .action-btn:hover {
-            transform: translateY(-1px);
-        }
-        
-        .nav-tabs .nav-link {
-            border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+        .filter-tab {
+            padding: 0.75rem 1.5rem;
+            background: transparent;
             border: none;
-            background: rgba(255, 255, 255, 0.5);
-            color: #666;
-            font-weight: 500;
+            border-radius: var(--border-radius);
+            cursor: pointer;
             transition: var(--transition);
+            font-weight: 500;
+            color: var(--dark-color);
+            text-decoration: none;
+            position: relative;
         }
         
-        .nav-tabs .nav-link.active {
-            background: white;
+        .filter-tab:hover {
+            background: rgba(25, 27, 169, 0.05);
             color: var(--primary-color);
-            border-bottom: 3px solid var(--primary-color);
         }
         
-        .nav-tabs .nav-link:hover {
-            background: rgba(255, 255, 255, 0.8);
+        .filter-tab.active {
+            background: var(--primary-gradient);
+            color: white;
+            box-shadow: var(--shadow-sm);
         }
         
-        .tab-content {
-            background: white;
-            border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
-            padding: 1.5rem;
-            box-shadow: var(--shadow);
+        .request-type-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .request-type-incoming {
+            background: rgba(25, 27, 169, 0.1);
+            color: var(--primary-color);
+        }
+        
+        .request-type-outgoing {
+            background: rgba(92, 194, 242, 0.1);
+            color: var(--accent-color);
+        }
+        
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-approved { background: #d1e7dd; color: #0f5132; }
+        .status-borrowed { background: #cff4fc; color: #055160; }
+        .status-returned { background: #d1ecf1; color: #0c5460; }
+        .status-denied { background: #f8d7da; color: #721c24; }
+        
+        .quick-action {
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 0.25rem;
+        }
+        
+        .request-row[data-needs-action="true"] {
+            background: linear-gradient(90deg, rgba(255, 193, 7, 0.05) 0%, transparent 100%);
+            border-left: 3px solid #ffc107;
+        }
+        
+        .request-row.hidden {
+            display: none;
         }
         
         .empty-state {
             text-align: center;
             padding: 3rem;
-            color: #666;
+            color: #6c757d;
         }
         
         .empty-state i {
-            font-size: 4rem;
-            color: #ddd;
+            font-size: 3rem;
             margin-bottom: 1rem;
-        }
-        
-        /* Timeline Styles */
-        .timeline {
-            position: relative;
-            padding-left: 40px;
-        }
-        
-        .timeline-item {
-            position: relative;
-            margin-bottom: 1.5rem;
-        }
-        
-        .timeline-marker {
-            position: absolute;
-            left: -40px;
-            top: 0;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 14px;
-            border: 2px solid #fff;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .timeline-marker.primary {
-            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-        }
-        
-        .timeline-marker.success {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-        }
-        
-        .timeline-marker.danger {
-            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-        }
-        
-        .timeline-marker.info {
-            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
-        }
-        
-        .timeline-marker.secondary {
-            background: linear-gradient(135deg, #6c757d 0%, #545b62 100%);
-        }
-        
-        .timeline-content {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 1rem;
-            border-left: 3px solid #dee2e6;
-            transition: all 0.3s ease;
-        }
-        
-        .timeline-content:hover {
-            background: #fff;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            transform: translateX(2px);
-        }
-        
-        .timeline-connector {
-            position: absolute;
-            left: -24px;
-            top: 32px;
-            width: 2px;
-            height: 20px;
-            background: linear-gradient(180deg, #dee2e6 0%, transparent 100%);
-        }
-        
-        .timeline-item:last-child .timeline-connector {
-            display: none;
+            opacity: 0.5;
         }
     </style>
 </head>
 <body>
+    <?php
+// Set page title for topbar
+$page_title = 'Requests Management';
+?>
 <!-- Main Content Wrapper -->
     <div class="main-wrapper" id="mainWrapper">
         <?php require_once 'includes/sidebar.php'; ?>
         <?php require_once 'includes/topbar.php'; ?>
-    
-    <!-- Main Content -->
+        
+        <!-- Main Content -->
     <div class="main-content">
         <!-- Page Header -->
         <div class="page-header">
@@ -683,192 +601,173 @@ if ($office_id && $conn) {
             </div>
         </div>
         
-        <!-- Request Tabs -->
+        <!-- Smart Filter Tabs -->
         <div class="card border-0 shadow-lg rounded-4">
             <div class="card-header bg-white border-bottom-0">
-                <ul class="nav nav-tabs card-header-tabs" role="tablist">
-                    <li class="nav-item">
-                        <a class="nav-link active" data-bs-toggle="tab" href="#incoming" role="tab">
-                            <i class="bi bi-inbox"></i> Incoming Requests
-                            <?php if ($request_stats['pending_incoming'] > 0): ?>
-                                <span class="badge bg-warning text-dark ms-1"><?php echo $request_stats['pending_incoming']; ?></span>
-                            <?php endif; ?>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" data-bs-toggle="tab" href="#outgoing" role="tab">
-                            <i class="bi bi-send"></i> Outgoing Requests
-                            <?php if ($request_stats['pending_outgoing'] > 0): ?>
-                                <span class="badge bg-info ms-1"><?php echo $request_stats['pending_outgoing']; ?></span>
-                            <?php endif; ?>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-            <div class="card-body p-0">
-                <div class="tab-content">
-                    <!-- Incoming Requests Tab -->
-                    <div class="tab-pane fade show active" id="incoming" role="tabpanel">
-                        <?php if (!empty($incoming_requests)): ?>
-                            <div class="table-responsive">
-                                <table class="table table-hover mb-0">
-                                    <thead>
-                                        <tr>
-                                            <th>Requester</th>
-                                            <th>Office</th>
-                                            <th>Asset</th>
-                                            <th>Purpose</th>
-                                            <th>Duration</th>
-                                            <th>Status</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($incoming_requests as $request): ?>
-                                            <tr>
-                                                <td>
-                                                    <div>
-                                                        <strong><?php echo htmlspecialchars($request['first_name'] . ' ' . $request['last_name']); ?></strong>
-                                                        <div class="small text-muted"><?php echo htmlspecialchars($request['email']); ?></div>
-                                                    </div>
-                                                </td>
-                                                <td><?php echo htmlspecialchars($request['requester_office']); ?></td>
-                                                <td>
-                                                    <div>
-                                                        <strong><?php echo htmlspecialchars($request['asset_description']); ?></strong>
-                                                        <div class="small text-muted"><?php echo htmlspecialchars($request['asset_code']); ?></div>
-                                                        <div class="small text-info"><?php echo htmlspecialchars($request['category_name'] ?? 'Uncategorized'); ?></div>
-                                                    </div>
-                                                </td>
-                                                <td><?php echo htmlspecialchars($request['purpose']); ?></td>
-                                                <td>
-                                                    <div class="small">
-                                                        <div>From: <?php echo date('M j, Y', strtotime($request['start_date'])); ?></div>
-                                                        <div>To: <?php echo date('M j, Y', strtotime($request['end_date'])); ?></div>
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <span class="status-badge status-<?php echo $request['status']; ?>">
-                                                        <?php echo ucfirst($request['status']); ?>
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <?php if ($request['status'] === 'pending'): ?>
-                                                        <button class="btn btn-sm btn-success action-btn" 
-                                                                onclick="approveRequest(<?php echo $request['id']; ?>)">
-                                                            <i class="bi bi-check-circle"></i> Approve
-                                                        </button>
-                                                        <button class="btn btn-sm btn-danger action-btn" 
-                                                                onclick="denyRequest(<?php echo $request['id']; ?>)">
-                                                            <i class="bi bi-x-circle"></i> Deny
-                                                        </button>
-                                                    <?php elseif ($request['status'] === 'approved'): ?>
-                                                        <button class="btn btn-sm btn-warning action-btn" 
-                                                                onclick="markBorrowed(<?php echo $request['id']; ?>)">
-                                                            <i class="bi bi-hand-index"></i> Mark Borrowed
-                                                        </button>
-                                                        <button class="btn btn-sm btn-primary action-btn" 
-                                                                onclick="returnAsset(<?php echo $request['id']; ?>)">
-                                                            <i class="bi bi-arrow-return-left"></i> Return
-                                                        </button>
-                                                    <?php elseif ($request['status'] === 'borrowed'): ?>
-                                                        <button class="btn btn-sm btn-primary action-btn" 
-                                                                onclick="returnAsset(<?php echo $request['id']; ?>)">
-                                                            <i class="bi bi-arrow-return-left"></i> Return
-                                                        </button>
-                                                    <?php endif; ?>
-                                                    <button class="btn btn-sm btn-outline-info action-btn" 
-                                                            onclick="viewDetails(<?php echo $request['id']; ?>)">
-                                                        <i class="bi bi-eye"></i> Details
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                        <?php else: ?>
-                            <div class="empty-state">
-                                <i class="bi bi-inbox"></i>
-                                <h5>No Incoming Requests</h5>
-                                <p>Other offices haven't requested to borrow assets from your office yet.</p>
-                            </div>
-                        <?php endif; ?>
-                    </div>
-                    
-                    <!-- Outgoing Requests Tab -->
-                    <div class="tab-pane fade" id="outgoing" role="tabpanel">
-                        <?php if (!empty($outgoing_requests)): ?>
-                            <div class="table-responsive">
-                                <table class="table table-hover mb-0">
-                                    <thead>
-                                        <tr>
-                                            <th>Requested To</th>
-                                            <th>Asset</th>
-                                            <th>Purpose</th>
-                                            <th>Duration</th>
-                                            <th>Status</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($outgoing_requests as $request): ?>
-                                            <tr>
-                                                <td>
-                                                    <div>
-                                                        <strong><?php echo htmlspecialchars($request['approver_office']); ?></strong>
-                                                        <div class="small text-muted">
-                                                            Processed by: <?php echo htmlspecialchars($request['first_name'] . ' ' . $request['last_name']); ?>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <div>
-                                                        <strong><?php echo htmlspecialchars($request['asset_description']); ?></strong>
-                                                        <div class="small text-muted"><?php echo htmlspecialchars($request['asset_code']); ?></div>
-                                                        <div class="small text-info"><?php echo htmlspecialchars($request['category_name'] ?? 'Uncategorized'); ?></div>
-                                                    </div>
-                                                </td>
-                                                <td><?php echo htmlspecialchars($request['purpose']); ?></td>
-                                                <td>
-                                                    <div class="small">
-                                                        <div>From: <?php echo date('M j, Y', strtotime($request['start_date'])); ?></div>
-                                                        <div>To: <?php echo date('M j, Y', strtotime($request['end_date'])); ?></div>
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <span class="status-badge status-<?php echo $request['status']; ?>">
-                                                        <?php echo ucfirst($request['status']); ?>
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <button class="btn btn-sm btn-outline-info action-btn" 
-                                                            onclick="viewDetails(<?php echo $request['id']; ?>)">
-                                                        <i class="bi bi-eye"></i> Details
-                                                    </button>
-                                                    <?php if ($request['status'] === 'pending'): ?>
-                                                        <button class="btn btn-sm btn-outline-warning action-btn" 
-                                                                onclick="cancelRequest(<?php echo $request['id']; ?>)">
-                                                            <i class="bi bi-x-circle"></i> Cancel
-                                                        </button>
-                                                    <?php endif; ?>
-                                                </td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                        <?php else: ?>
-                            <div class="empty-state">
-                                <i class="bi bi-send"></i>
-                                <h5>No Outgoing Requests</h5>
-                                <p>You haven't requested to borrow assets from other offices yet.</p>
-                            </div>
-                        <?php endif; ?>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">Request Management</h5>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-primary" onclick="refreshRequests()">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                        </button>
+                        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#newRequestModal">
+                            <i class="bi bi-plus-circle"></i> New Request
+                        </button>
                     </div>
                 </div>
+                <div class="filter-tabs">
+                    <button class="filter-tab active" data-filter="needs_action">
+                        <i class="bi bi-exclamation-circle"></i> Needs My Action
+                        <?php if ($request_stats['pending_incoming'] > 0): ?>
+                            <span class="badge bg-warning text-dark ms-1"><?php echo $request_stats['pending_incoming']; ?></span>
+                        <?php endif; ?>
+                    </button>
+                    <button class="filter-tab" data-filter="waiting">
+                        <i class="bi bi-clock"></i> Waiting for Others
+                        <?php if ($request_stats['pending_outgoing'] > 0): ?>
+                            <span class="badge bg-info ms-1"><?php echo $request_stats['pending_outgoing']; ?></span>
+                        <?php endif; ?>
+                    </button>
+                    <button class="filter-tab" data-filter="all">
+                        <i class="bi bi-list-ul"></i> All Requests
+                    </button>
+                </div>
             </div>
-        </div>
+            <div class="card-body p-0">
+                <!-- Unified Request List -->
+                <div id="requestsContainer">
+                    <?php if (!empty($incoming_requests) || !empty($outgoing_requests)): ?>
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0" id="requestsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Type</th>
+                                        <th>Requester/Office</th>
+                                        <th>Asset</th>
+                                        <th>Purpose</th>
+                                        <th>Duration</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php 
+                                    // Merge and sort requests by created_at
+                                    $all_requests = [];
+                                    foreach ($incoming_requests as $req) {
+                                        $req['request_type'] = 'incoming';
+                                        $req['display_name'] = $req['first_name'] . ' ' . $req['last_name'];
+                                        $req['display_office'] = $req['requester_office'];
+                                        $all_requests[] = $req;
+                                    }
+                                    foreach ($outgoing_requests as $req) {
+                                        $req['request_type'] = 'outgoing';
+                                        $req['display_name'] = $req['approver_office'];
+                                        // Show office admin if available, otherwise show the requester
+                                        if (!empty($req['admin_first_name']) && !empty($req['admin_last_name'])) {
+                                            $req['display_office'] = $req['admin_first_name'] . ' ' . $req['admin_last_name'] . ' (Admin)';
+                                        } else {
+                                            $req['display_office'] = 'No office admin assigned';
+                                        }
+                                        $all_requests[] = $req;
+                                    }
+                                    
+                                    // Sort by created_at descending
+                                    usort($all_requests, function($a, $b) {
+                                        return strtotime($b['created_at']) - strtotime($a['created_at']);
+                                    });
+                                    
+                                    foreach ($all_requests as $request): 
+                                    ?>
+                                        <tr class="request-row" 
+                                            data-type="<?php echo $request['request_type']; ?>" 
+                                            data-status="<?php echo $request['status']; ?>"
+                                            data-needs-action="<?php echo ($request['request_type'] === 'incoming' && $request['status'] === 'pending') ? 'true' : 'false'; ?>">
+                                            <td>
+                                                <span class="request-type-badge request-type-<?php echo $request['request_type']; ?>">
+                                                    <?php if ($request['request_type'] === 'incoming'): ?>
+                                                        <i class="bi bi-inbox"></i> Incoming
+                                                    <?php else: ?>
+                                                        <i class="bi bi-send"></i> Outgoing
+                                                    <?php endif; ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div>
+                                                    <strong><?php echo htmlspecialchars($request['display_name']); ?></strong>
+                                                    <div class="small text-muted"><?php echo htmlspecialchars($request['display_office']); ?></div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div>
+                                                    <strong><?php echo htmlspecialchars($request['asset_description']); ?></strong>
+                                                    <div class="small text-muted"><?php echo htmlspecialchars($request['asset_code']); ?></div>
+                                                    <div class="small text-info"><?php echo htmlspecialchars($request['category_name'] ?? 'Uncategorized'); ?></div>
+                                                </div>
+                                            </td>
+                                            <td><?php echo htmlspecialchars($request['purpose']); ?></td>
+                                            <td>
+                                                <div class="small">
+                                                    <div>From: <?php echo date('M j, Y', strtotime($request['start_date'])); ?></div>
+                                                    <div>To: <?php echo date('M j, Y', strtotime($request['end_date'])); ?></div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="status-badge status-<?php echo $request['status']; ?>">
+                                                    <?php echo ucfirst($request['status']); ?>
+                                                </span>
+                                                <?php if ($request['request_type'] === 'incoming' && $request['status'] === 'pending'): ?>
+                                                    <div class="small text-warning mt-1">
+                                                        <i class="bi bi-exclamation-circle"></i> Your action needed
+                                                    </div>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <?php if ($request['request_type'] === 'incoming' && $request['status'] === 'pending'): ?>
+                                                    <button class="btn btn-sm btn-success action-btn quick-action" 
+                                                            onclick="quickApprove(<?php echo $request['id']; ?>)"
+                                                            title="Approve request">
+                                                        <i class="bi bi-check-circle"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-danger action-btn quick-action" 
+                                                            onclick="quickDeny(<?php echo $request['id']; ?>)"
+                                                            title="Deny request">
+                                                        <i class="bi bi-x-circle"></i>
+                                                    </button>
+                                                <?php elseif ($request['request_type'] === 'incoming' && $request['status'] === 'approved'): ?>
+                                                    <button class="btn btn-sm btn-warning action-btn quick-action" 
+                                                            onclick="quickMarkBorrowed(<?php echo $request['id']; ?>)"
+                                                            title="Mark as borrowed">
+                                                        <i class="bi bi-hand-index"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-primary action-btn" 
+                                                            onclick="returnAsset(<?php echo $request['id']; ?>)">
+                                                        <i class="bi bi-arrow-return-left"></i> Return
+                                                    </button>
+                                                <?php elseif ($request['request_type'] === 'incoming' && $request['status'] === 'borrowed'): ?>
+                                                    <button class="btn btn-sm btn-primary action-btn" 
+                                                            onclick="returnAsset(<?php echo $request['id']; ?>)">
+                                                        <i class="bi bi-arrow-return-left"></i> Return
+                                                    </button>
+                                                <?php endif; ?>
+                                                <button class="btn btn-sm btn-outline-info action-btn" 
+                                                        onclick="viewDetails(<?php echo $request['id']; ?>)">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php else: ?>
+                        <div class="empty-state">
+                            <i class="bi bi-inbox"></i>
+                            <h5>No Requests Found</h5>
+                            <p>No requests match the current filter criteria.</p>
+                        </div>
+                    <?php endif; ?>
+                </div>
     </div>
     
     <?php require_once 'includes/logout-modal.php'; ?>
@@ -1674,6 +1573,116 @@ if ($office_id && $conn) {
             if (categorySelect && assetSelect) {
                 categorySelect.addEventListener('change', filterAssets);
             }
+        });
+        
+        // Smart Filter Functionality
+        function initSmartFilters() {
+            const filterTabs = document.querySelectorAll('.filter-tab');
+            const requestRows = document.querySelectorAll('.request-row');
+            
+            filterTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const filter = this.dataset.filter;
+                    
+                    // Update active tab
+                    filterTabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Filter requests
+                    requestRows.forEach(row => {
+                        row.classList.remove('hidden');
+                        
+                        switch(filter) {
+                            case 'needs_action':
+                                if (row.dataset.needsAction !== 'true') {
+                                    row.classList.add('hidden');
+                                }
+                                break;
+                            case 'waiting':
+                                if (row.dataset.needsAction === 'true' || row.dataset.type === 'incoming') {
+                                    row.classList.add('hidden');
+                                }
+                                break;
+                            case 'all':
+                                // Show all requests
+                                break;
+                        }
+                    });
+                    
+                    updateEmptyState();
+                });
+            });
+        }
+        
+        // Quick Action Functions
+        function quickApprove(requestId) {
+            if (confirm('Are you sure you want to approve this request?')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.innerHTML = `
+                    <input type="hidden" name="action" value="approve_request">
+                    <input type="hidden" name="request_id" value="${requestId}">
+                    <input type="hidden" name="notes" value="Approved via quick action">
+                `;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+        
+        function quickDeny(requestId) {
+            const reason = prompt('Please enter a reason for denial:');
+            if (reason) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.innerHTML = `
+                    <input type="hidden" name="action" value="deny_request">
+                    <input type="hidden" name="request_id" value="${requestId}">
+                    <input type="hidden" name="denial_reason" value="${reason}">
+                `;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+        
+        function quickMarkBorrowed(requestId) {
+            if (confirm('Mark this asset as borrowed?')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.innerHTML = `
+                    <input type="hidden" name="action" value="mark_borrowed">
+                    <input type="hidden" name="request_id" value="${requestId}">
+                `;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+        
+        function refreshRequests() {
+            window.location.reload();
+        }
+        
+        function updateEmptyState() {
+            const visibleRows = document.querySelectorAll('.request-row:not(.hidden)');
+            const container = document.getElementById('requestsContainer');
+            const emptyState = container.querySelector('.empty-state');
+            
+            if (visibleRows.length === 0 && !emptyState) {
+                const emptyDiv = document.createElement('div');
+                emptyDiv.className = 'empty-state';
+                emptyDiv.innerHTML = `
+                    <i class="bi bi-inbox"></i>
+                    <h5>No Requests Found</h5>
+                    <p>No requests match the current filter criteria.</p>
+                `;
+                container.appendChild(emptyDiv);
+            } else if (visibleRows.length > 0 && emptyState) {
+                emptyState.remove();
+            }
+        }
+        
+        // Initialize filters on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initSmartFilters();
         });
     </script>
     
