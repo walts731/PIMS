@@ -32,7 +32,7 @@ $office_filter = isset($_GET['office_id']) ? (int)$_GET['office_id'] : 0;
 $offices = [];
 
 $status_filter = isset($_GET['status']) ? trim((string)$_GET['status']) : '';
-$allowed_statuses = ['serviceable', 'unserviceable', 'red_tagged', 'borrowed', 'no_tag'];
+$allowed_statuses = ['serviceable', 'unserviceable', 'red_tagged', 'in_use', 'no_tag'];
 if ($status_filter !== '' && !in_array($status_filter, $allowed_statuses, true)) {
     $status_filter = '';
 }
@@ -76,9 +76,9 @@ if (!$conn || $conn->connect_error) {
         $where_clauses = [];
 
         if ($status_filter !== '') {
-            if ($status_filter === 'borrowed') {
-                // For borrowed status, filter by asset_items.status = 'borrowed'
-                $where_clauses[] = "ai.status = 'borrowed'";
+            if ($status_filter === 'in_use') {
+                // For in_use status, filter by asset_items.status = 'in_use'
+                $where_clauses[] = "ai.status = 'in_use'";
             } else {
                 $where_clauses[] = "ai.status = ?";
                 $params[] = $status_filter;
@@ -120,7 +120,7 @@ $total_items = count($items);
 $serviceable_items = count(array_filter($items, fn($item) => ($item['status'] ?? '') === 'serviceable'));
 $unserviceable_items = count(array_filter($items, fn($item) => ($item['status'] ?? '') === 'unserviceable'));
 $redtagged_items = count(array_filter($items, fn($item) => ($item['status'] ?? '') === 'red_tagged'));
-$borrowed_items = count(array_filter($items, fn($item) => ($item['status'] ?? '') === 'borrowed'));
+$borrowed_items = count(array_filter($items, fn($item) => ($item['status'] ?? '') === 'in_use'));
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -270,7 +270,7 @@ $borrowed_items = count(array_filter($items, fn($item) => ($item['status'] ?? ''
                                                     $status_class = 'status-red-tagged';
                                                     $display_status = 'Red-Tagged';
                                                     break;
-                                                case 'borrowed':
+                                                case 'in_use':
                                                     $status_class = 'status-borrowed';
                                                     $display_status = 'Borrowed';
                                                     break;
