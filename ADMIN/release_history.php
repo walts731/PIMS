@@ -28,76 +28,152 @@ $to_office_filter = isset($_GET['to_office']) ? intval($_GET['to_office']) : 0;
 $search_filter = isset($_GET['search']) ? trim($_GET['search']) : '';
 $date_from = isset($_GET['date_from']) ? trim($_GET['date_from']) : '';
 $date_to = isset($_GET['date_to']) ? trim($_GET['date_to']) : '';
+$transaction_type = isset($_GET['transaction_type']) ? trim($_GET['transaction_type']) : 'addition'; // Default to addition tab
 
-// Get release history with filters
-$release_history = [];
+// Get consumable transaction history (additions, releases, and lends) with filters
+$transaction_history = [];
 try {
-    $sql = "SELECT h.*, 
-                    fo.office_name as from_office_name, 
-                    to_off.office_name as to_office_name,
-                    CONCAT(u.first_name, ' ', u.last_name) as released_by_name,
-                    c.units
-             FROM consumable_release_history h
-             LEFT JOIN offices fo ON h.from_office_id = fo.id
-             LEFT JOIN offices to_off ON h.to_office_id = to_off.id
-             LEFT JOIN users u ON h.released_by = u.id
-             LEFT JOIN consumables c ON h.consumable_id = c.id
-             WHERE 1=1";
-    
-    $params = [];
-    $types = '';
-    
-    if ($from_office_filter > 0) {
-        $sql .= " AND h.from_office_id = ?";
-        $params[] = $from_office_filter;
-        $types .= 'i';
-    }
-    
-    if ($to_office_filter > 0) {
-        $sql .= " AND h.to_office_id = ?";
-        $params[] = $to_office_filter;
-        $types .= 'i';
-    }
-    
-    if (!empty($search_filter)) {
-        $sql .= " AND (h.description LIKE ? OR fo.office_name LIKE ? OR to_off.office_name LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ?)";
-        $search_term = '%' . $search_filter . '%';
-        $params[] = $search_term;
-        $params[] = $search_term;
-        $params[] = $search_term;
-        $params[] = $search_term;
-        $params[] = $search_term;
-        $types .= 'sssss';
-    }
-    
-    if (!empty($date_from)) {
-        $sql .= " AND DATE(h.release_date) >= ?";
-        $params[] = $date_from;
-        $types .= 's';
-    }
-    
-    if (!empty($date_to)) {
-        $sql .= " AND DATE(h.release_date) <= ?";
-        $params[] = $date_to;
-        $types .= 's';
-    }
-    
-    $sql .= " ORDER BY h.release_date DESC";
+    // Union query to get additions, releases, and lends
+    $sql = "(SELECT 
+                'addition' as transaction_type,
+                c.id,
+                c.description,
+                c.quantity as quantity,
+                c.units,
+                c.unit_cost,
+                c.quantity * c.unit_cost as total_value,
+                c.office_id as from_office_id,
+                c.for_office_id as to_office_id,
+                NULL as released_by,
+                CONCAT(u.first_name, ' ', u.last_name) as released_by_name,
+                NULL as received_by,
+                c.created_at as transaction_date,
+                'Consumable added to inventory' as notes,
+                c.created_at,
+                fo.office_name as from_office_name,
+                to_off.office_name as to_office_name,
+                NULL as expected_return_date,
+                NULL as actual_return_date,
+                NULL as lend_status
+            FROM consumables c
+            LEFT JOIN users u ON 1=0 -- No user for additions, but we need column
+            LEFT JOIN offices fo ON c.office_id = fo.id
+            LEFT JOIN offices to_off ON c.for_office_id = to_off.id
+            WHERE c.created_at IS NOT NULL) 
+            
+            UNION ALL
+            
+            (SELECT 
+                'release' as transaction_type,
+                h.id,
+                h.description,
+                h.quantity_released as quantity,
+                c.units,
+                h.unit_cost,
+                h.total_value,
+                h.from_office_id,
+                h.to_office_id,
+                h.released_by,
+                CONCAT(u.first_name, ' ', u.last_name) as released_by_name,
+                h.received_by,
+                h.release_date as transaction_date,
+                h.notes,
+                h.created_at,
+                fo.office_name as from_office_name,
+                to_off.office_name as to_office_name,
+                NULL as expected_return_date,
+                NULL as actual_return_date,
+                NULL as lend_status
+            FROM consumable_release_history h
+            LEFT JOIN users u ON h.released_by = u.id
+            LEFT JOIN consumables c ON h.consumable_id = c.id
+            LEFT JOIN offices fo ON h.from_office_id = fo.id
+            LEFT JOIN offices to_off ON h.to_office_id = to_off.id)
+            
+            UNION ALL
+            
+            (SELECT 
+                'lend' as transaction_type,
+                l.id,
+                l.description,
+                l.quantity_lent as quantity,
+                c.units,
+                l.unit_cost,
+                l.total_value,
+                l.from_office_id,
+                l.to_office_id,
+                l.lent_by,
+                CONCAT(u.first_name, ' ', u.last_name) as released_by_name,
+                l.received_by,
+                l.date_lent as transaction_date,
+                l.notes,
+                l.created_at,
+                fo.office_name as from_office_name,
+                to_off.office_name as to_office_name,
+                l.expected_return_date,
+                l.actual_return_date,
+                l.status as lend_status
+            FROM lend_consumables l
+            LEFT JOIN users u ON l.lent_by = u.id
+            LEFT JOIN consumables c ON l.consumable_id = c.id
+            LEFT JOIN offices fo ON l.from_office_id = fo.id
+            LEFT JOIN offices to_off ON l.to_office_id = to_off.id)
+            
+            ORDER BY transaction_date DESC";
     
     $stmt = $conn->prepare($sql);
-    if (!empty($params)) {
-        $stmt->bind_param($types, ...$params);
-    }
     $stmt->execute();
     $result = $stmt->get_result();
     
     while ($row = $result->fetch_assoc()) {
-        $release_history[] = $row;
+        // Apply filters
+        $include_record = true;
+        
+        // Filter by transaction type
+        if (!empty($transaction_type) && $row['transaction_type'] !== $transaction_type) {
+            $include_record = false;
+        }
+        
+        // Filter by from office
+        if ($from_office_filter > 0 && $row['from_office_id'] != $from_office_filter) {
+            $include_record = false;
+        }
+        
+        // Filter by to office
+        if ($to_office_filter > 0 && $row['to_office_id'] != $to_office_filter) {
+            $include_record = false;
+        }
+        
+        // Filter by search term
+        if (!empty($search_filter)) {
+            $search_term = strtolower($search_filter);
+            $description_match = strpos(strtolower($row['description']), $search_term) !== false;
+            $from_office_match = strpos(strtolower($row['from_office_name'] ?? ''), $search_term) !== false;
+            $to_office_match = strpos(strtolower($row['to_office_name'] ?? ''), $search_term) !== false;
+            $released_by_match = strpos(strtolower($row['released_by_name'] ?? ''), $search_term) !== false;
+            
+            if (!$description_match && !$from_office_match && !$to_office_match && !$released_by_match) {
+                $include_record = false;
+            }
+        }
+        
+        // Filter by date range
+        if (!empty($date_from) && date('Y-m-d', strtotime($row['transaction_date'])) < $date_from) {
+            $include_record = false;
+        }
+        
+        if (!empty($date_to) && date('Y-m-d', strtotime($row['transaction_date'])) > $date_to) {
+            $include_record = false;
+        }
+        
+        if ($include_record) {
+            $transaction_history[] = $row;
+        }
     }
     $stmt->close();
     
 } catch (Exception $e) {
-    error_log("Error fetching release history: " . $e->getMessage());
+    error_log("Error fetching transaction history: " . $e->getMessage());
 }
 
 // Get offices for dropdown filters
@@ -132,110 +208,7 @@ try {
     <!-- Custom CSS -->
     <link href="../assets/css/index.css" rel="stylesheet">
     <link href="../assets/css/theme-custom.css" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, var(--light-color) 0%, var(--light-accent) 100%);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-        
-        .page-header {
-            background: white;
-            border-radius: var(--border-radius-xl);
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow);
-            border-left: 4px solid var(--primary-color);
-        }
-        
-        .stats-card {
-            background: var(--primary-gradient);
-            color: white;
-            border-radius: var(--border-radius-lg);
-            padding: 1.5rem;
-            text-align: center;
-            transition: var(--transition);
-            height: 100%;
-        }
-        
-        .stats-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 25px rgba(var(--primary-rgb), 0.3);
-        }
-        
-        .stats-number {
-            font-size: 1.2rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-            word-wrap: break-word;
-            line-height: 1.2;
-        }
-        
-        .stats-label {
-            font-size: 0.9rem;
-            opacity: 0.9;
-        }
-        
-        .table-container {
-            background: white;
-            border-radius: var(--border-radius-lg);
-            padding: 1.5rem;
-            box-shadow: var(--shadow);
-            margin-bottom: 2rem;
-        }
-        
-        .btn-action {
-            padding: 0.25rem 0.5rem;
-            font-size: 0.875rem;
-            margin: 0 0.125rem;
-        }
-        
-        .text-value {
-            font-weight: 600;
-            color: var(--primary-color);
-        }
-        
-        .quantity-badge {
-            background-color: var(--primary-color);
-            color: white;
-            padding: 0.25rem 0.5rem;
-            border-radius: 15px;
-            font-weight: 600;
-            font-size: 0.8rem;
-        }
-        
-        .value-badge {
-            background-color: #198754;
-            color: white;
-            padding: 0.25rem 0.5rem;
-            border-radius: 15px;
-            font-weight: 600;
-            font-size: 0.8rem;
-        }
-        
-        .filter-section {
-            background: white;
-            border-radius: var(--border-radius-lg);
-            padding: 1.5rem;
-            box-shadow: var(--shadow);
-            margin-bottom: 2rem;
-        }
-        
-        .section-title {
-            font-weight: 600;
-            color: var(--primary-color);
-            margin-bottom: 1rem;
-            font-size: 1.1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .table-hover tbody tr:hover {
-            background-color: rgba(var(--primary-rgb), 0.05);
-        }
-    </style>
+    <link href="assets/css/admin-unified.css" rel="stylesheet">
 </head>
 <body>
     <?php
@@ -260,109 +233,164 @@ try {
                     <p class="text-muted mb-0">Track all consumable release transactions</p>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <a href="consumables.php" class="btn btn-outline-secondary btn-sm">
-                        <i class="bi bi-arrow-left"></i> Back to Consumables
-                    </a>
-                    <button class="btn btn-outline-success btn-sm ms-2" onclick="exportReleaseHistory()">
-                        <i class="bi bi-download"></i> Export
-                    </button>
+                    <div class="btn-group" role="group">
+                        <a href="consumables.php" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Back to Consumables
+                        </a>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-gear"></i> Actions
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item" href="lend_consumables.php">
+                                        <i class="bi bi-arrow-left-right"></i> Borrowing
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="consumables.php">
+                                        <i class="bi bi-box-seam"></i> Consumables Management
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" href="#" onclick="exportReleaseHistory()">
+                                        <i class="bi bi-download"></i> Export History
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
         
-        <!-- Statistics Cards -->
-        <div class="row mb-4">
-            <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo count($release_history); ?></div>
-                    <div class="stats-label"><i class="bi bi-clock-history"></i> Total Releases</div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php 
-                        $total_quantity = array_sum(array_column($release_history, 'quantity_released'));
-                        echo number_format($total_quantity);
-                    ?></div>
-                    <div class="stats-label"><i class="bi bi-box-seam"></i> Total Items Released</div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php 
-                        $total_value = array_sum(array_column($release_history, 'total_value'));
-                        echo number_format($total_value, 2);
-                    ?></div>
-                    <div class="stats-label"><i class="bi bi-currency-dollar"></i> Total Value</div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php 
-                        $unique_offices = count(array_unique(array_column($release_history, 'to_office_id')));
-                        echo $unique_offices;
-                    ?></div>
-                    <div class="stats-label"><i class="bi bi-building"></i> Offices Served</div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Filters -->
+                
+        <!-- Transaction Type Tabs -->
         <div class="table-container">
             <div class="row mb-3">
-                <div class="col-md-6">
-                    <h5 class="mb-0"><i class="bi bi-funnel"></i> Filters</h5>
+                <div class="col-12">
+                    <h5 class="mb-3"><i class="bi bi-clock-history"></i> Transaction History</h5>
+                    
+                    <!-- Tabs -->
+                    <ul class="nav nav-tabs" id="transactionTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link <?php echo ($transaction_type == 'addition') ? 'active' : ''; ?>" 
+                                    id="additions-tab" 
+                                    data-bs-toggle="tab" 
+                                    data-bs-target="#additions" 
+                                    type="button" 
+                                    role="tab" 
+                                    onclick="switchTab('addition')">
+                                <i class="bi bi-plus-circle"></i> Additions
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link <?php echo ($transaction_type == 'release') ? 'active' : ''; ?>" 
+                                    id="releases-tab" 
+                                    data-bs-toggle="tab" 
+                                    data-bs-target="#releases" 
+                                    type="button" 
+                                    role="tab" 
+                                    onclick="switchTab('release')">
+                                <i class="bi bi-box-arrow-right"></i> Releases
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link <?php echo ($transaction_type == 'lend') ? 'active' : ''; ?>" 
+                                    id="lends-tab" 
+                                    data-bs-toggle="tab" 
+                                    data-bs-target="#lends" 
+                                    type="button" 
+                                    role="tab" 
+                                    onclick="switchTab('lend')">
+                                <i class="bi bi-arrow-up-right"></i> Lends
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <!-- Remaining Filters -->
+                    <form method="GET" id="filterForm" class="mt-3">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label form-label-sm">From Office</label>
+                                <select class="form-select form-select-sm" name="from_office">
+                                    <option value="">All Offices</option>
+                                    <?php foreach ($offices as $office): ?>
+                                        <option value="<?php echo $office['id']; ?>" <?php echo ($from_office_filter == $office['id']) ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($office['office_name']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label form-label-sm">To Office</label>
+                                <select class="form-select form-select-sm" name="to_office">
+                                    <option value="">All Offices</option>
+                                    <?php foreach ($offices as $office): ?>
+                                        <option value="<?php echo $office['id']; ?>" <?php echo ($to_office_filter == $office['id']) ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($office['office_name']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label form-label-sm">Date Range</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="date" class="form-control" name="date_from" value="<?php echo htmlspecialchars($date_from); ?>" placeholder="From">
+                                    <input type="date" class="form-control" name="date_to" value="<?php echo htmlspecialchars($date_to); ?>" placeholder="To">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label form-label-sm">&nbsp;</label>
+                                <div>
+                                    <a href="release_history.php" class="btn btn-outline-secondary btn-sm">
+                                        <i class="bi bi-arrow-clockwise"></i> Clear Filters
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" name="transaction_type" id="transactionTypeInput" value="<?php echo htmlspecialchars($transaction_type); ?>">
+                    </form>
                 </div>
             </div>
-            <form method="GET" class="row g-3">
-                <div class="col-md-2">
-                    <select class="form-select form-select-sm" name="from_office">
-                        <option value="">From Office</option>
-                        <?php foreach ($offices as $office): ?>
-                            <option value="<?php echo $office['id']; ?>" <?php echo ($from_office_filter == $office['id']) ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($office['office_name']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <select class="form-select form-select-sm" name="to_office">
-                        <option value="">To Office</option>
-                        <?php foreach ($offices as $office): ?>
-                            <option value="<?php echo $office['id']; ?>" <?php echo ($to_office_filter == $office['id']) ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($office['office_name']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <input type="date" class="form-control form-control-sm" name="date_from" placeholder="Date From" value="<?php echo htmlspecialchars($date_from); ?>">
-                </div>
-                <div class="col-md-2">
-                    <input type="date" class="form-control form-control-sm" name="date_to" placeholder="Date To" value="<?php echo htmlspecialchars($date_to); ?>">
-                </div>
-                <div class="col-md-2">
-                    <input type="text" class="form-control form-control-sm" name="search" placeholder="Search..." value="<?php echo htmlspecialchars($search_filter); ?>">
-                </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary btn-sm me-2">
-                        <i class="bi bi-funnel"></i> Filter
-                    </button>
-                    <a href="release_history.php" class="btn btn-outline-secondary btn-sm">
-                        <i class="bi bi-arrow-clockwise"></i> Clear
-                    </a>
-                </div>
-            </form>
         </div>
         
         <!-- History Table -->
         <div class="table-container">
-            <div class="row mb-3">
+            <div class="row mb-3 align-items-center">
                 <div class="col-md-6">
-                    <h5 class="mb-0"><i class="bi bi-clock-history"></i> Release History</h5>
+                    <h5 class="mb-0"><i class="bi bi-list-ul"></i> 
+                        <?php 
+                        switch($transaction_type) {
+                            case 'addition': echo 'Addition History'; break;
+                            case 'release': echo 'Release History'; break;
+                            case 'lend': echo 'Lend History'; break;
+                            default: echo 'Transaction History'; break;
+                        }
+                        ?>
+                    </h5>
                 </div>
-                <div class="col-md-6 text-md-end">
-                    <span class="badge bg-secondary"><?php echo count($release_history); ?> records</span>
+                <div class="col-md-6">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <div class="input-group input-group-sm">
+                                <input type="text" class="form-control" id="tableSearch" placeholder="Search transactions..." value="<?php echo htmlspecialchars($search_filter); ?>">
+                                <button class="btn btn-outline-secondary" type="button" id="searchBtn">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6 text-md-end">
+                            <span class="badge bg-secondary me-2"><?php echo count($transaction_history); ?> records</span>
+                            <?php if (!empty($transaction_type)): ?>
+                                <span class="badge bg-info me-2"><?php echo ucfirst($transaction_type); ?></span>
+                            <?php endif; ?>
+                            <?php if ($from_office_filter > 0 || $to_office_filter > 0 || !empty($date_from) || !empty($date_to)): ?>
+                                <span class="badge bg-success">Filters Applied</span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="table-responsive">
@@ -377,33 +405,51 @@ try {
                             <th>Total Value</th>
                             <th>From Office</th>
                             <th>To Office</th>
-                            <th>Released By</th>
-                            <th>Received By</th>
-                            <th>Notes</th>
+                            <?php if ($transaction_type == 'lend'): ?>
+                                <th>Status</th>
+                            <?php endif; ?>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php if (!empty($release_history)): ?>
-                            <?php foreach ($release_history as $release): ?>
+                        <?php if (!empty($transaction_history)): ?>
+                            <?php foreach ($transaction_history as $transaction): ?>
                                 <tr>
-                                    <td><small><?php echo date('M j, Y H:i', strtotime($release['release_date'])); ?></small></td>
-                                    <td><?php echo htmlspecialchars($release['description']); ?></td>
-                                    <td><span class="quantity-badge"><?php echo $release['quantity_released']; ?></span></td>
-                                    <td><?php echo htmlspecialchars($release['units'] ?: 'N/A'); ?></td>
-                                    <td><?php echo number_format($release['unit_cost'], 2); ?></td>
-                                    <td><span class="value-badge"><?php echo number_format($release['total_value'], 2); ?></span></td>
-                                    <td><?php echo htmlspecialchars($release['from_office_name']); ?></td>
-                                    <td><?php echo htmlspecialchars($release['to_office_name']); ?></td>
-                                    <td><?php echo htmlspecialchars($release['released_by_name']); ?></td>
-                                    <td><?php echo htmlspecialchars($release['received_by'] ?: 'Not specified'); ?></td>
-                                    <td><small><?php echo htmlspecialchars($release['notes'] ?: 'No notes'); ?></small></td>
+                                    <td><small><?php echo date('M j, Y H:i', strtotime($transaction['transaction_date'])); ?></small></td>
+                                    <td><?php echo htmlspecialchars($transaction['description']); ?></td>
+                                    <td><span class="quantity-badge"><?php echo $transaction['quantity']; ?></span></td>
+                                    <td><?php echo htmlspecialchars($transaction['units'] ?: 'N/A'); ?></td>
+                                    <td><?php echo number_format($transaction['unit_cost'], 2); ?></td>
+                                    <td><span class="text-value"><?php echo number_format($transaction['quantity'] * $transaction['unit_cost'], 2); ?></span></td>
+                                    <td><?php echo htmlspecialchars($transaction['from_office_name'] ?: 'N/A'); ?></td>
+                                    <td><?php echo htmlspecialchars($transaction['to_office_name'] ?: 'N/A'); ?></td>
+                                    <?php if ($transaction_type == 'lend'): ?>
+                                        <td>
+                                            <?php if ($transaction['transaction_type'] === 'lend' && !empty($transaction['lend_status'])): ?>
+                                                <?php if ($transaction['lend_status'] === 'lent'): ?>
+                                                    <span class="badge bg-warning text-dark">Lent</span>
+                                                <?php elseif ($transaction['lend_status'] === 'returned'): ?>
+                                                    <span class="badge bg-success">Returned</span>
+                                                <?php elseif ($transaction['lend_status'] === 'overdue'): ?>
+                                                    <span class="badge bg-danger">Overdue</span>
+                                                <?php endif; ?>
+                                            <?php else: ?>
+                                                <small class="text-muted">N/A</small>
+                                            <?php endif; ?>
+                                        </td>
+                                    <?php endif; ?>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-info" onclick="viewTransactionDetails(<?php echo $transaction['id']; ?>, '<?php echo $transaction['transaction_type']; ?>')">
+                                            <i class="bi bi-eye"></i> View
+                                        </button>
+                                    </td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="11" class="text-center text-muted py-4">
-                                    <i class="bi bi-clock-history fs-1"></i>
-                                    <p class="mt-2">No release history found.</p>
+                                <td colspan="<?php echo ($transaction_type == 'lend') ? '9' : '8'; ?>" class="text-center text-muted py-4">
+                                    <i class="bi bi-inbox fs-1"></i>
+                                    <p class="mt-2">No transaction history found.</p>
                                 </td>
                             </tr>
                         <?php endif; ?>
@@ -412,6 +458,31 @@ try {
             </div>
         </div>
     </div>
+    </div>
+    
+    <!-- View Transaction Details Modal -->
+    <div class="modal fade" id="viewTransactionModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-eye"></i> Transaction Details</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="transactionDetails">
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2">Loading transaction details...</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
     </div>
     
     <?php require_once 'includes/logout-modal.php'; ?>
@@ -434,17 +505,302 @@ try {
     <?php require_once 'includes/sidebar-scripts.php'; ?>
     
     <script>
+        // Tab switching function
+        function switchTab(transactionType) {
+            const form = document.getElementById('filterForm');
+            const transactionTypeInput = document.getElementById('transactionTypeInput');
+            
+            // Update hidden input
+            transactionTypeInput.value = transactionType;
+            
+            // Submit form to reload page with new tab
+            form.submit();
+        }
+        
+        // Auto-search functionality for filters
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto-search for all filter inputs (selects and date inputs)
+            const filterSelects = document.querySelectorAll('#filterForm select');
+            const filterDates = document.querySelectorAll('#filterForm input[type="date"]');
+            
+            // Add change event listeners to all select elements
+            filterSelects.forEach(select => {
+                select.addEventListener('change', function() {
+                    console.log('Filter changed:', this.name, this.value);
+                    // Auto-submit form
+                    const form = document.getElementById('filterForm');
+                    form.submit();
+                });
+            });
+            
+            // Add change event listeners to all date inputs
+            filterDates.forEach(input => {
+                input.addEventListener('change', function() {
+                    console.log('Date filter changed:', this.name, this.value);
+                    // Auto-submit form
+                    const form = document.getElementById('filterForm');
+                    form.submit();
+                });
+            });
+            
+            // Search functionality from table area
+            const searchInput = document.getElementById('tableSearch');
+            const searchBtn = document.getElementById('searchBtn');
+            
+            // Function to perform search
+            function performSearch() {
+                const searchValue = searchInput.value.trim();
+                const currentUrl = new URL(window.location);
+                
+                // Update or remove search parameter
+                if (searchValue) {
+                    currentUrl.searchParams.set('search', searchValue);
+                } else {
+                    currentUrl.searchParams.delete('search');
+                }
+                
+                // Navigate to new URL
+                window.location.href = currentUrl.toString();
+            }
+            
+            // Search on button click
+            if (searchBtn) {
+                searchBtn.addEventListener('click', performSearch);
+            }
+            
+            // Search on Enter key press
+            if (searchInput) {
+                searchInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        performSearch();
+                    }
+                });
+            }
+        });
+        
+        // View transaction details function
+        function viewTransactionDetails(transactionId, transactionType) {
+            const modal = new bootstrap.Modal(document.getElementById('viewTransactionModal'));
+            const detailsContainer = document.getElementById('transactionDetails');
+            
+            // Show loading state
+            detailsContainer.innerHTML = `
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading transaction details...</p>
+                </div>
+            `;
+            
+            // Show modal
+            modal.show();
+            
+            // Fetch transaction details
+            fetch(`get_transaction_details.php?id=${transactionId}&type=${transactionType}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        displayTransactionDetails(data.data);
+                    } else {
+                        detailsContainer.innerHTML = `
+                            <div class="alert alert-danger">
+                                <i class="bi bi-exclamation-triangle"></i> 
+                                Error: ${data.error}
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    detailsContainer.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle"></i> 
+                            Error loading transaction details. Please try again.
+                        </div>
+                    `;
+                });
+        }
+        
+        // Display transaction details function
+        function displayTransactionDetails(transaction) {
+            const detailsContainer = document.getElementById('transactionDetails');
+            
+            let typeBadge = '';
+            let typeIcon = '';
+            let typeTitle = '';
+            
+            switch(transaction.transaction_type) {
+                case 'addition':
+                    typeBadge = '<span class="badge bg-success">Addition</span>';
+                    typeIcon = '<i class="bi bi-plus-circle text-success"></i>';
+                    typeTitle = 'Consumable Addition';
+                    break;
+                case 'release':
+                    typeBadge = '<span class="badge bg-primary">Release</span>';
+                    typeIcon = '<i class="bi bi-box-arrow-right text-primary"></i>';
+                    typeTitle = 'Consumable Release';
+                    break;
+                case 'lend':
+                    typeBadge = '<span class="badge bg-warning text-dark">Lend</span>';
+                    typeIcon = '<i class="bi bi-arrow-up-right text-warning"></i>';
+                    typeTitle = 'Consumable Lend';
+                    break;
+            }
+            
+            let detailsHTML = `
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="d-flex align-items-center mb-3">
+                            ${typeIcon}
+                            <h5 class="mb-0 ms-2">${typeTitle}</h5>
+                            <div class="ms-auto">${typeBadge}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="bi bi-info-circle"></i> Transaction Information</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Date:</strong></div>
+                                    <div class="col-sm-8">${transaction.transaction_date_formatted}</div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Description:</strong></div>
+                                    <div class="col-sm-8">${transaction.description}</div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Quantity:</strong></div>
+                                    <div class="col-sm-8">${transaction.quantity}</div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Units:</strong></div>
+                                    <div class="col-sm-8">${transaction.units || 'N/A'}</div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Unit Cost:</strong></div>
+                                    <div class="col-sm-8">₱${parseFloat(transaction.unit_cost || 0).toFixed(2)}</div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Total Value:</strong></div>
+                                    <div class="col-sm-8">₱${(parseFloat(transaction.quantity || 0) * parseFloat(transaction.unit_cost || 0)).toFixed(2)}</div>
+                                </div>
+                                ${transaction.notes || (transaction.transaction_type === 'addition' ? 'Consumable added to inventory' : '') ? `
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Notes:</strong></div>
+                                    <div class="col-sm-8">${transaction.notes || (transaction.transaction_type === 'addition' ? 'Consumable added to inventory' : '')}</div>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="bi bi-people"></i> People & Offices</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>From Office:</strong></div>
+                                    <div class="col-sm-8">${transaction.from_office_name || 'N/A'}</div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>To Office:</strong></div>
+                                    <div class="col-sm-8">${transaction.to_office_name || 'N/A'}</div>
+                                </div>
+                                ${transaction.received_by || (transaction.transaction_type === 'addition' ? 'N/A' : '') ? `
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Received By:</strong></div>
+                                    <div class="col-sm-8">${transaction.received_by || (transaction.transaction_type === 'addition' ? 'N/A' : '')}</div>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                        
+                        ${transaction.transaction_type === 'lend' ? `
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="bi bi-calendar-check"></i> Lend Information</h6>
+                            </div>
+                            <div class="card-body">
+                                ${transaction.expected_return_date ? `
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Expected Return:</strong></div>
+                                    <div class="col-sm-8">${transaction.expected_return_date_formatted}</div>
+                                </div>
+                                ` : ''}
+                                ${transaction.actual_return_date ? `
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Actual Return:</strong></div>
+                                    <div class="col-sm-8">${transaction.actual_return_date_formatted}</div>
+                                </div>
+                                ` : ''}
+                                <div class="row mb-2">
+                                    <div class="col-sm-4"><strong>Status:</strong></div>
+                                    <div class="col-sm-8">
+                                        ${transaction.status === 'lent' ? '<span class="badge bg-warning text-dark">Lent</span>' : ''}
+                                        ${transaction.status === 'returned' ? '<span class="badge bg-success">Returned</span>' : ''}
+                                        ${transaction.status === 'overdue' ? '<span class="badge bg-danger">Overdue</span>' : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+            
+            detailsContainer.innerHTML = detailsHTML;
+        }
+
         function exportReleaseHistory() {
             // Get current filter parameters
             const params = new URLSearchParams(window.location.search);
+            const currentTab = params.get('transaction_type') || 'addition';
             
-            // Create CSV content
-            let csvContent = "Date,Description,Quantity,Units,Unit Cost,Total Value,From Office,To Office,Released By,Received By,Notes\n";
+            // Create CSV content based on current tab
+            let csvContent = "";
+            if (currentTab === 'lend') {
+                csvContent = "Date,Description,Quantity,Units,Unit Cost,Total Value,From Office,To Office,Released By,Received By,Expected Return,Status,Notes\n";
+            } else {
+                csvContent = "Date,Description,Quantity,Units,Unit Cost,Total Value,From Office,To Office,Released By,Received By,Notes\n";
+            }
             
-            <?php if (!empty($release_history)): ?>
-                <?php foreach ($release_history as $release): ?>
-                    csvContent += "<?php echo date('Y-m-d H:i', strtotime($release['release_date'])); ?>","<?php echo addslashes($release['description']); ?>","<?php echo $release['quantity_released']; ?>","<?php echo addslashes($release['units'] ?: 'N/A'); ?>","<?php echo $release['unit_cost']; ?>","<?php echo $release['total_value']; ?>","<?php echo addslashes($release['from_office_name']); ?>","<?php echo addslashes($release['to_office_name']); ?>","<?php echo addslashes($release['released_by_name']); ?>","<?php echo addslashes($release['received_by'] ?: 'Not specified'); ?>","<?php echo addslashes($release['notes'] ?: 'No notes'); ?>"\n";
-                <?php endforeach; ?>
+            <?php if (!empty($transaction_history)): ?>
+                // Transaction data as JSON for safe handling
+                const transactionData = <?php echo json_encode($transaction_history); ?>;
+                
+                // Process each transaction
+                transactionData.forEach(transaction => {
+                    const date = transaction.transaction_date ? new Date(transaction.transaction_date).toISOString().slice(0, 19).replace('T', ' ') : '';
+                    const description = (transaction.description || '').replace(/"/g, '""');
+                    const quantity = transaction.quantity || 0;
+                    const units = (transaction.units || 'N/A').replace(/"/g, '""');
+                    const unitCost = transaction.unit_cost || 0;
+                    const totalValue = transaction.total_value || 0;
+                    const fromOffice = (transaction.from_office_name || 'N/A').replace(/"/g, '""');
+                    const toOffice = (transaction.to_office_name || 'N/A').replace(/"/g, '""');
+                    const releasedBy = (transaction.released_by_name || 'System').replace(/"/g, '""');
+                    const receivedBy = (transaction.received_by || 'Not specified').replace(/"/g, '""');
+                    const notes = (transaction.notes || 'No notes').replace(/"/g, '""');
+                    
+                    if (currentTab === 'lend') {
+                        const expectedReturn = (transaction.transaction_type === 'lend' && transaction.expected_return_date) ? 
+                            new Date(transaction.expected_return_date).toISOString().slice(0, 10) : 'N/A';
+                        const status = (transaction.transaction_type === 'lend' && transaction.lend_status) ? 
+                            transaction.lend_status.charAt(0).toUpperCase() + transaction.lend_status.slice(1) : 'N/A';
+                        
+                        csvContent += `"${date}","${description}","${quantity}","${units}","${unitCost}","${totalValue}","${fromOffice}","${toOffice}","${releasedBy}","${receivedBy}","${expectedReturn}","${status}","${notes}"\n`;
+                    } else {
+                        csvContent += `"${date}","${description}","${quantity}","${units}","${unitCost}","${totalValue}","${fromOffice}","${toOffice}","${releasedBy}","${receivedBy}","${notes}"\n`;
+                    }
+                });
             <?php endif; ?>
             
             // Create download link
@@ -452,7 +808,7 @@ try {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'release_history_' + new Date().toISOString().split('T')[0] + '.csv';
+            a.download = 'consumable_transaction_history_' + new Date().toISOString().split('T')[0] + '.csv';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
