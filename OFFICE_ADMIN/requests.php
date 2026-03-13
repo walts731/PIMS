@@ -261,6 +261,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
         // Real-time Updates Handler
         case 'check_updates':
+            // Clean any previous output
+            if (ob_get_level()) {
+                ob_clean();
+            }
+            
             $last_update = $_GET['last_update'] ?? '';
             $has_updates = false;
             $new_requests = [];
@@ -345,16 +350,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 } catch (Exception $e) {
                     error_log("Error checking updates: " . $e->getMessage());
+                    // Return error response
+                    header('Content-Type: application/json');
+                    echo json_encode([
+                        'error' => 'Database error occurred',
+                        'has_updates' => false,
+                        'timestamp' => date('Y-m-d H:i:s')
+                    ]);
+                    exit;
                 }
             }
             
-            echo json_encode([
+            // Set proper content type and output clean JSON
+            header('Content-Type: application/json');
+            $response = [
                 'has_updates' => $has_updates,
                 'new_requests' => $new_requests,
                 'changed_requests' => $changed_requests,
                 'stats' => $current_stats,
                 'timestamp' => date('Y-m-d H:i:s')
-            ]);
+            ];
+            
+            echo json_encode($response);
             exit;
             
         case 'cancel_request':
@@ -488,9 +505,11 @@ $request_stats = [
     'pending_incoming' => 0,
     'approved_incoming' => 0,
     'borrowed_incoming' => 0,
+    'denied_incoming' => 0,
     'pending_outgoing' => 0,
     'approved_outgoing' => 0,
-    'borrowed_outgoing' => 0
+    'borrowed_outgoing' => 0,
+    'denied_outgoing' => 0
 ];
 
 if ($office_id && $conn) {
@@ -520,6 +539,8 @@ if ($office_id && $conn) {
                 $request_stats['approved_incoming']++;
             } elseif ($row['status'] === 'borrowed') {
                 $request_stats['borrowed_incoming']++;
+            } elseif ($row['status'] === 'denied') {
+                $request_stats['denied_incoming']++;
             }
         }
         
@@ -2228,7 +2249,22 @@ $page_title = 'Requests Management';
                     'X-Requested-With': 'XMLHttpRequest'
                 }
             })
-            .then(response => response.json())
+            .then(response => {
+                // Log the response status and text for debugging
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers.get('content-type'));
+                return response.text().then(text => {
+                    console.log('Raw response:', text);
+                    // Try to parse JSON
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                        console.error('JSON parse error:', e);
+                        console.error('Response text that failed to parse:', text);
+                        throw e;
+                    }
+                });
+            })
             .then(data => {
                 if (data.has_updates) {
                     showNotification('New requests or status changes detected', 'info');
