@@ -1017,9 +1017,6 @@ $page_title = 'Requests Management';
                         <button class="btn btn-sm btn-outline-primary" onclick="refreshRequests()">
                             <i class="bi bi-arrow-clockwise"></i> Refresh
                         </button>
-                        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#newRequestModal">
-                            <i class="bi bi-plus-circle"></i> New Request
-                        </button>
                     </div>
                 </div>
                 
@@ -2132,6 +2129,7 @@ $page_title = 'Requests Management';
                     });
                     
                     updateEmptyState();
+                    updateSelectAllCheckboxState();
                 });
             });
         }
@@ -2145,6 +2143,7 @@ $page_title = 'Requests Management';
                 }
             });
             updateEmptyState();
+            updateSelectAllCheckboxState();
         }
         
         // Quick Action Functions
@@ -2648,14 +2647,22 @@ $page_title = 'Requests Management';
                 selectedRequests.add(requestId);
             }
             updateBulkActionsBar();
+            updateSelectAllCheckboxState();
         }
         
         function selectAllRequests() {
             const selectAll = document.getElementById('selectAllRequests');
-            const checkboxes = document.querySelectorAll('.request-checkbox');
+            // Only select checkboxes that are in visible rows (not hidden by current filter)
+            const visibleCheckboxes = document.querySelectorAll('.request-row:not(.hidden) .request-checkbox');
+            const allCheckboxes = document.querySelectorAll('.request-checkbox');
             
-            checkboxes.forEach(checkbox => {
+            // Update all checkboxes to match the selectAll state
+            allCheckboxes.forEach(checkbox => {
                 checkbox.checked = selectAll.checked;
+            });
+            
+            // Only update the selectedRequests set with visible checkboxes
+            visibleCheckboxes.forEach(checkbox => {
                 const requestId = parseInt(checkbox.value);
                 if (selectAll.checked) {
                     selectedRequests.add(requestId);
@@ -2672,6 +2679,27 @@ $page_title = 'Requests Management';
             document.querySelectorAll('.request-checkbox').forEach(cb => cb.checked = false);
             document.getElementById('selectAllRequests').checked = false;
             updateBulkActionsBar();
+        }
+        
+        function updateSelectAllCheckboxState() {
+            const selectAll = document.getElementById('selectAllRequests');
+            const visibleCheckboxes = document.querySelectorAll('.request-row:not(.hidden) .request-checkbox');
+            const checkedVisibleCheckboxes = document.querySelectorAll('.request-row:not(.hidden) .request-checkbox:checked');
+            
+            // Update select all checkbox state based on visible checkboxes
+            if (visibleCheckboxes.length === 0) {
+                selectAll.checked = false;
+                selectAll.indeterminate = false;
+            } else if (checkedVisibleCheckboxes.length === 0) {
+                selectAll.checked = false;
+                selectAll.indeterminate = false;
+            } else if (checkedVisibleCheckboxes.length === visibleCheckboxes.length) {
+                selectAll.checked = true;
+                selectAll.indeterminate = false;
+            } else {
+                selectAll.checked = false;
+                selectAll.indeterminate = true;
+            }
         }
         
         function bulkApprove() {
