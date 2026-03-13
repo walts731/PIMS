@@ -2032,6 +2032,9 @@ $page_title = 'Requests Management';
             const filterTabs = document.querySelectorAll('.filter-tab');
             const requestRows = document.querySelectorAll('.request-row');
             
+            // Apply initial filter for "needs_action" on page load
+            applyInitialFilter();
+            
             filterTabs.forEach(tab => {
                 tab.addEventListener('click', function() {
                     const filter = this.dataset.filter;
@@ -2046,12 +2049,14 @@ $page_title = 'Requests Management';
                         
                         switch(filter) {
                             case 'needs_action':
+                                // Show only incoming pending requests that need action
                                 if (row.dataset.needsAction !== 'true') {
                                     row.classList.add('hidden');
                                 }
                                 break;
                             case 'waiting':
-                                if (row.dataset.needsAction === 'true' || row.dataset.type === 'incoming') {
+                                // Show only outgoing requests (waiting for others' action)
+                                if (row.dataset.type === 'incoming') {
                                     row.classList.add('hidden');
                                 }
                                 break;
@@ -2064,6 +2069,17 @@ $page_title = 'Requests Management';
                     updateEmptyState();
                 });
             });
+        }
+        
+        function applyInitialFilter() {
+            // Apply the initial "needs_action" filter when page loads
+            const requestRows = document.querySelectorAll('.request-row');
+            requestRows.forEach(row => {
+                if (row.dataset.needsAction !== 'true') {
+                    row.classList.add('hidden');
+                }
+            });
+            updateEmptyState();
         }
         
         // Quick Action Functions
