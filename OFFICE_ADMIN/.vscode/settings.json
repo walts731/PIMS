@@ -1,0 +1,37 @@
+{
+  "editor.minimap.enabled": false,
+  "editor.codeLens": false,
+  "editor.inlineSuggest.enabled": false,
+  "editor.smoothScrolling": false,
+  "editor.bracketPairColorization.enabled": false,
+
+  "workbench.startupEditor": "none",
+  "workbench.editor.enablePreview": true,
+  "workbench.localHistory.enabled": false,
+
+  "files.autoSave": "off",
+
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/vendor/**": true,
+    "**/.git/**": true,
+    "**/dist/**": true,
+    "**/build/**": true,
+    "**/.cache/**": true
+  },
+
+  "files.exclude": {
+    "**/node_modules": true,
+    "**/vendor": true,
+    "**/.git": true,
+    "**/dist": true,
+    "**/build": true
+  },
+
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/vendor": true,
+    "**/dist": true,
+    "**/build": true
+  }
+}
