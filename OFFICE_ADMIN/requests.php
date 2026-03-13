@@ -221,6 +221,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
         case 'bulk_mark_borrowed':
             $request_ids = $_POST['request_ids'] ?? '';
+            error_log("bulk_mark_borrowed called with request_ids: " . $request_ids);
+            
             if (empty($request_ids)) {
                 echo json_encode(['success' => false, 'error' => 'No requests selected']);
                 exit;
@@ -230,8 +232,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $marked_count = 0;
             
             foreach ($id_array as $request_id) {
-                $request_id = (int)trim($request_id);
+                $request_id = (int) trim($request_id);
                 if ($request_id <= 0) continue;
+                
+                error_log("Processing request ID: " . $request_id);
                 
                 $update_query = "UPDATE borrow_requests SET 
                                  status = 'borrowed' 
@@ -240,6 +244,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->bind_param("ii", $request_id, $office_id);
                 
                 if ($stmt->execute() && $stmt->affected_rows > 0) {
+                    error_log("Successfully updated request ID: " . $request_id . " Affected rows: " . $stmt->affected_rows);
+                    
                     // Update asset status to in_use when marked as borrowed
                     $asset_update = "UPDATE asset_items SET status = 'in_use' 
                                     WHERE id = (SELECT asset_id FROM borrow_requests WHERE id = ?)";
@@ -249,8 +255,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     $marked_count++;
                     logSystemAction($_SESSION['user_id'], 'bulk_mark_borrowed', 'borrow_request', "Bulk marked borrow request #$request_id as borrowed");
+                } else {
+                    error_log("Failed to update request ID: " . $request_id . " Error: " . $stmt->error);
                 }
             }
+            
+            error_log("Total marked count: " . $marked_count);
             
             if ($marked_count > 0) {
                 echo json_encode(['success' => true, 'message' => "$marked_count requests marked as borrowed"]);
@@ -2913,10 +2923,16 @@ $page_title = 'Requests Management';
         }
         
         function bulkMarkBorrowed() {
+            console.log('bulkMarkBorrowed called');
+            console.log('selectedRequests:', Array.from(selectedRequests));
+            
             const approvedIncomingIds = Array.from(selectedRequests).filter(id => {
                 const row = document.querySelector(`tr[data-request-id="${id}"]`);
+                console.log(`Checking request ${id}:`, row ? `${row.dataset.type}/${row.dataset.status}` : 'not found');
                 return row && row.dataset.type === 'incoming' && row.dataset.status === 'approved';
             });
+            
+            console.log('approvedIncomingIds:', approvedIncomingIds);
             
             if (approvedIncomingIds.length === 0) {
                 showNotification('No approved incoming requests selected to mark as borrowed', 'warning');
@@ -3011,9 +3027,28 @@ $page_title = 'Requests Management';
             });
             
             // Bulk action buttons
-            document.getElementById('bulkApproveBtn')?.addEventListener('click', bulkApprove);
-            document.getElementById('bulkDenyBtn')?.addEventListener('click', bulkDeny);
-            document.getElementById('bulkMarkBorrowedBtn')?.addEventListener('click', bulkMarkBorrowed);
+            const bulkApproveBtn = document.getElementById('bulkApproveBtn');
+            const bulkDenyBtn = document.getElementById('bulkDenyBtn');
+            const bulkMarkBorrowedBtn = document.getElementById('bulkMarkBorrowedBtn');
+            
+            console.log('Setting up event listeners:');
+            console.log('bulkApproveBtn:', bulkApproveBtn);
+            console.log('bulkDenyBtn:', bulkDenyBtn);
+            console.log('bulkMarkBorrowedBtn:', bulkMarkBorrowedBtn);
+            
+            if (bulkApproveBtn) {
+                bulkApproveBtn.addEventListener('click', bulkApprove);
+                console.log('Added listener to bulkApproveBtn');
+            }
+            if (bulkDenyBtn) {
+                bulkDenyBtn.addEventListener('click', bulkDeny);
+                console.log('Added listener to bulkDenyBtn');
+            }
+            if (bulkMarkBorrowedBtn) {
+                bulkMarkBorrowedBtn.addEventListener('click', bulkMarkBorrowed);
+                console.log('Added listener to bulkMarkBorrowedBtn');
+            }
+            
             document.getElementById('bulkCancelBtn')?.addEventListener('click', bulkCancel);
             document.getElementById('bulkApproveBtnAll')?.addEventListener('click', bulkApprove);
             document.getElementById('bulkDenyBtnAll')?.addEventListener('click', bulkDeny);
