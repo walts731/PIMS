@@ -226,8 +226,55 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['action']) && $_GET['acti
     }
 }
 
+// AJAX handler to get statistics based on office filter
+if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['action']) && $_GET['action'] == 'get_stats') {
+    $office_id = intval($_GET['office_id'] ?? 0);
+    
+    try {
+        $sql = "SELECT 
+                    COUNT(*) as total_consumables,
+                    SUM(quantity) as total_quantity,
+                    SUM(quantity * unit_cost) as total_value,
+                    COUNT(CASE WHEN quantity <= reorder_level THEN 1 END) as low_stock_count,
+                    COUNT(DISTINCT office_id) as total_offices
+                FROM consumables
+                WHERE quantity > 0";
+        
+        $params = [];
+        $types = '';
+        
+        // Apply office filter to statistics
+        if ($office_id > 0) {
+            $sql .= " AND office_id = ?";
+            $params[] = $office_id;
+            $types .= 'i';
+        }
+        
+        $stmt = $conn->prepare($sql);
+        if (!empty($params)) {
+            $stmt->bind_param($types, ...$params);
+        }
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($row = $result->fetch_assoc()) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true, 'data' => $row]);
+        } else {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'No statistics found']);
+        }
+        $stmt->close();
+        exit;
+    } catch (Exception $e) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        exit;
+    }
+}
+
 // Handle filter parameters
-$office_filter = isset($_GET['office']) ? intval($_GET['office']) : 0;
+$office_filter = isset($_GET['office']) ? intval($_GET['office']) : 3; // Default to Supply Office (ID = 3)
 $for_office_filter = isset($_GET['for_office']) ? intval($_GET['for_office']) : 0;
 $search_filter = isset($_GET['search']) ? trim($_GET['search']) : '';
 
@@ -317,11 +364,29 @@ try {
                 SUM(quantity * unit_cost) as total_value,
                 COUNT(CASE WHEN quantity <= reorder_level THEN 1 END) as low_stock_count,
                 COUNT(DISTINCT office_id) as total_offices
-            FROM consumables";
-    $result = $conn->query($sql);
+            FROM consumables
+            WHERE quantity > 0";
+    
+    $params = [];
+    $types = '';
+    
+    // Apply office filter to statistics
+    if ($office_filter > 0) {
+        $sql .= " AND office_id = ?";
+        $params[] = $office_filter;
+        $types .= 'i';
+    }
+    
+    $stmt = $conn->prepare($sql);
+    if (!empty($params)) {
+        $stmt->bind_param($types, ...$params);
+    }
+    $stmt->execute();
+    $result = $stmt->get_result();
     if ($result) {
         $stats = $result->fetch_assoc();
     }
+    $stmt->close();
 } catch (Exception $e) {
     error_log("Error fetching stats: " . $e->getMessage());
 }
@@ -376,15 +441,34 @@ try {
                     <?php endif; ?>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addConsumableModal">
-                        <i class="bi bi-plus-circle"></i> Add Consumable
-                    </button>
-                    <button class="btn btn-outline-info btn-sm ms-2" onclick="window.location.href='release_history.php'">
-                        <i class="bi bi-clock-history"></i> History
-                    </button>
-                    <button class="btn btn-outline-success btn-sm ms-2" onclick="exportConsumables()">
-                        <i class="bi bi-download"></i> Export
-                    </button>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addConsumableModal">
+                            <i class="bi bi-plus-circle"></i> Add Consumable
+                        </button>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-gear"></i> Actions
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item" href="lend_consumables.php">
+                                        <i class="bi bi-arrow-left-right"></i> Borrowing
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="release_history.php">
+                                        <i class="bi bi-clock-history"></i> History
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" href="#" onclick="exportConsumables()">
+                                        <i class="bi bi-download"></i> Export Consumables
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -461,7 +545,6 @@ try {
                             <th>Units</th>
                             <th>Unit Cost</th>
                             <th>Total Value</th>
-                            <th>Reorder Level</th>
                             <th>Office</th>
                             <th>For Office</th>
                             <th>Actions</th>
@@ -481,20 +564,26 @@ try {
                                     <td><?php echo htmlspecialchars($consumable['units'] ?? 'N/A'); ?></td>
                                     <td><?php echo number_format($consumable['unit_cost'], 2); ?></td>
                                     <td class="text-value"><?php echo number_format($consumable['quantity'] * $consumable['unit_cost'], 2); ?></td>
-                                    <td><?php echo $consumable['reorder_level']; ?></td>
                                     <td><?php echo htmlspecialchars($consumable['office_name'] ?? 'N/A'); ?></td>
                                     <td><?php echo htmlspecialchars($consumable['for_office_name'] ?? 'N/A'); ?></td>
                                     <td>
                                         <?php if (empty($consumable['for_office_name'])): ?>
                                             <button class="btn btn-sm btn-outline-info" disabled>
-                                                <i class="bi bi-check-circle"></i> Released
+                                                <i class="bi bi-check-circle"></i> 
+                                            </button>
+                                        <?php elseif ($consumable['for_office_id'] == 3): ?>
+                                            <button class="btn btn-sm btn-outline-warning" onclick="editReorderLevel(<?php echo $consumable['id']; ?>, '<?php echo htmlspecialchars($consumable['description']); ?>', <?php echo $consumable['quantity']; ?>)">
+                                                <i class="bi bi-pencil"></i> 
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-primary" onclick="openLendModal(<?php echo $consumable['id']; ?>)">
+                                                <i class="bi bi-arrow-up-right"></i> 
                                             </button>
                                         <?php else: ?>
                                             <button class="btn btn-sm btn-outline-warning" onclick="editReorderLevel(<?php echo $consumable['id']; ?>, '<?php echo htmlspecialchars($consumable['description']); ?>', <?php echo $consumable['quantity']; ?>)">
-                                                <i class="bi bi-pencil"></i> Edit Reorder
+                                                <i class="bi bi-pencil"></i> 
                                             </button>
                                             <button class="btn btn-sm btn-outline-success" onclick="openReleaseModal(<?php echo $consumable['id']; ?>)">
-                                                <i class="bi bi-box-arrow-right"></i> Release
+                                                <i class="bi bi-box-arrow-right"></i> 
                                             </button>
                                         <?php endif; ?>
                                     </td>
@@ -502,7 +591,7 @@ try {
                             <?php endforeach; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="9" class="text-center text-muted py-4">
+                                <td colspan="8" class="text-center text-muted py-4">
                                     <i class="bi bi-inbox fs-1"></i>
                                     <p class="mt-2">No consumables found. Click "Add Consumable" to create your first consumable.</p>
                                 </td>
@@ -684,6 +773,21 @@ try {
         </div>
     </div>
     
+    <!-- Lend Consumable Modal -->
+    <div class="modal fade" id="lendConsumableModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-arrow-up-right"></i> Lend Consumable</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <iframe id="lendModalFrame" src="" style="width: 100%; height: 600px; border: none;"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- jQuery -->
@@ -734,9 +838,24 @@ try {
             modal.show();
         }
         
+        // Open lend modal function
+        function openLendModal(consumableId) {
+            const modal = new bootstrap.Modal(document.getElementById('lendConsumableModal'));
+            document.getElementById('lendModalFrame').src = 'lend_consumable_modal.php?id=' + consumableId;
+            modal.show();
+        }
+        
         // Close release modal function (called from iframe)
         function closeReleaseModal() {
             const modal = bootstrap.Modal.getInstance(document.getElementById('releaseConsumableModal'));
+            if (modal) {
+                modal.hide();
+            }
+        }
+        
+        // Close lend modal function (called from iframe)
+        function closeLendModal() {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('lendConsumableModal'));
             if (modal) {
                 modal.hide();
             }
@@ -760,6 +879,70 @@ try {
                     alertDiv.parentNode.removeChild(alertDiv);
                 }
             }, 5000);
+        }
+        
+        // Show lend success message (called from iframe)
+        function showLendSuccess(message) {
+            // Create success alert
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
+            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            alertDiv.innerHTML = `
+                <i class="bi bi-check-circle"></i> ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alertDiv);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.parentNode.removeChild(alertDiv);
+                }
+            }, 5000);
+        }
+        
+        // Update statistics cards dynamically
+        function updateStatistics(officeId) {
+            fetch(`consumables.php?action=get_stats&office_id=${officeId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const stats = data.data;
+                        // Update statistics cards with animation
+                        updateStatCard('.stats-number', 0, stats.total_quantity || 0);
+                        updateStatCard('.stats-number', 1, stats.total_consumables || 0);
+                        updateStatCard('.stats-number', 2, parseFloat(stats.total_value || 0).toFixed(2));
+                        updateStatCard('.stats-number', 3, stats.low_stock_count || 0);
+                    } else {
+                        console.error('Error updating statistics:', data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+        
+        // Helper function to animate stat card updates
+        function updateStatCard(selector, index, newValue) {
+            const elements = document.querySelectorAll(selector);
+            if (elements[index]) {
+                const element = elements[index];
+                const oldValue = element.textContent;
+                
+                // Add animation class
+                element.style.transition = 'all 0.3s ease';
+                element.style.transform = 'scale(1.1)';
+                element.style.color = '#1E56A0';
+                
+                // Update value
+                element.textContent = newValue;
+                
+                // Reset animation after delay
+                setTimeout(() => {
+                    element.style.transform = 'scale(1)';
+                    element.style.color = '';
+                }, 300);
+            }
         }
         
         // Initialize DataTable
@@ -795,6 +978,10 @@ try {
             // Office filter
             $('#officeFilter').on('change', function() {
                 const officeValue = this.value;
+                
+                // Update statistics immediately without page reload
+                updateStatistics(officeValue);
+                
                 const currentUrl = new URL(window.location);
                 if (officeValue) {
                     currentUrl.searchParams.set('office', officeValue);
@@ -845,20 +1032,19 @@ try {
             // Get current table data from DOM
             const table = document.getElementById('consumablesTable');
             const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
-            let csv = 'Description,Quantity,Units,Unit Cost,Total Value,Reorder Level,Office,For Office\n';
+            let csv = 'Description,Quantity,Units,Unit Cost,Total Value,Office,For Office\n';
             
             for (let i = 0; i < rows.length; i++) {
                 const cells = rows[i].getElementsByTagName('td');
-                if (cells.length === 9) { // Skip empty message row
+                if (cells.length === 8) { // Skip empty message row
                     const rowData = [
                         cells[0].textContent.replace(/\s+/g, ' ').trim(), // Description
                         cells[1].textContent.trim(), // Quantity
                         cells[2].textContent.trim(), // Units
                         cells[3].textContent.trim(), // Unit Cost
                         cells[4].textContent.replace(/[^0-9.-]+/g, '').trim(), // Total Value
-                        cells[5].textContent.trim(), // Reorder Level
-                        cells[6].textContent.trim(), // Office
-                        cells[7].textContent.trim()  // For Office
+                        cells[5].textContent.trim(), // Office
+                        cells[6].textContent.trim()  // For Office
                     ];
                     csv += rowData.map(cell => `"${cell}"`).join(',') + '\n';
                 }

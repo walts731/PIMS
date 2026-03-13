@@ -1215,6 +1215,103 @@ body {
 }
 
 /* =============================================================================
+   DROPDOWNS
+   ============================================================================= */
+
+.dropdown-menu {
+    border-radius: var(--border-radius-lg);
+    border: none;
+    box-shadow: var(--shadow-xl);
+    z-index: 1050;
+    background: var(--white);
+    padding: 0.5rem 0;
+    margin-top: 0.25rem;
+}
+
+.dropdown-item {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--dark-color);
+    transition: var(--transition);
+    border: none;
+}
+
+.dropdown-item:hover {
+    background: var(--light-accent);
+    color: var(--primary-color);
+    transform: translateX(4px);
+}
+
+.dropdown-item i {
+    width: 16px;
+    margin-right: 0.5rem;
+    text-align: center;
+}
+
+.dropdown-divider {
+    margin: 0.5rem 0;
+    border-color: #e9ecef;
+}
+
+/* Ensure dropdown appears above all elements */
+.btn-group .dropdown-menu {
+    z-index: 1060;
+}
+
+.page-header .btn-group .dropdown-menu {
+    z-index: 1070;
+}
+
+/* Statistics cards z-index */
+.stats-card {
+    z-index: 1;
+    position: relative;
+}
+
+/* Page header z-index */
+.page-header {
+    z-index: 10;
+    position: relative;
+}
+
+/* Searchable Dropdown Styles */
+.position-relative {
+    position: relative !important;
+}
+
+.searchable-select {
+    position: relative;
+}
+
+.searchable-select select {
+    padding-right: 40px;
+}
+
+.searchable-select input {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background: transparent;
+    outline: none;
+    width: 30px;
+    cursor: pointer;
+    z-index: 10;
+}
+
+.searchable-select input:focus {
+    outline: none;
+}
+
+/* Dropdown z-index */
+.main-content {
+    z-index: 1;
+    position: relative;
+}
+
+/* =============================================================================
    ACCESSIBILITY & FOCUS STATES
    ============================================================================= */
 
