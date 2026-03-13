@@ -27,7 +27,7 @@ $office_filter = isset($_GET['office_id']) ? (int)$_GET['office_id'] : 0;
 $status_filter = isset($_GET['status']) ? trim((string)$_GET['status']) : '';
 $category_filter = isset($_GET['category_id']) ? (int)$_GET['category_id'] : 0;
 
-$allowed_statuses = ['serviceable', 'unserviceable', 'red_tagged', 'borrowed', 'no_tag'];
+$allowed_statuses = ['serviceable', 'unserviceable', 'red_tagged', 'in_use', 'no_tag'];
 if ($status_filter !== '' && !in_array($status_filter, $allowed_statuses, true)) {
     $status_filter = '';
 }
@@ -117,7 +117,7 @@ if (!$conn || $conn->connect_error) {
                         'serviceable' => 0,
                         'unserviceable' => 0,
                         'red_tagged' => 0,
-                        'borrowed' => 0,
+                        'in_use' => 0,
                         'no_tag' => 0
                     ]
                 ];
@@ -300,7 +300,7 @@ if (!$conn || $conn->connect_error) {
                                     <option value="serviceable" <?php echo $status_filter === 'serviceable' ? 'selected' : ''; ?>>Serviceable</option>
                                     <option value="unserviceable" <?php echo $status_filter === 'unserviceable' ? 'selected' : ''; ?>>Unserviceable</option>
                                     <option value="red_tagged" <?php echo $status_filter === 'red_tagged' ? 'selected' : ''; ?>>Red-Tagged</option>
-                                    <option value="borrowed" <?php echo $status_filter === 'borrowed' ? 'selected' : ''; ?>>Borrowed</option>
+                                    <option value="in_use" <?php echo $status_filter === 'in_use' ? 'selected' : ''; ?>>Borrowed</option>
                                     <option value="no_tag" <?php echo $status_filter === 'no_tag' ? 'selected' : ''; ?>>No Tag</option>
                                 </select>
                             </div>
@@ -363,9 +363,9 @@ if (!$conn || $conn->connect_error) {
                                             Red-Tagged: <?php echo $office_data['status_counts']['red_tagged']; ?>
                                         </span>
                                     <?php endif; ?>
-                                    <?php if ($office_data['status_counts']['borrowed'] > 0): ?>
+                                    <?php if ($office_data['status_counts']['in_use'] > 0): ?>
                                         <span class="status-badge status-borrowed">
-                                            Borrowed: <?php echo $office_data['status_counts']['borrowed']; ?>
+                                            Borrowed: <?php echo $office_data['status_counts']['in_use']; ?>
                                         </span>
                                     <?php endif; ?>
                                     <?php if ($office_data['status_counts']['no_tag'] > 0): ?>
@@ -425,7 +425,7 @@ if (!$conn || $conn->connect_error) {
                                                                 $status_class = 'status-red-tagged';
                                                                 $display_status = 'Red-Tagged';
                                                                 break;
-                                                            case 'borrowed':
+                                                            case 'in_use':
                                                                 $status_class = 'status-borrowed';
                                                                 $display_status = 'Borrowed';
                                                                 break;
