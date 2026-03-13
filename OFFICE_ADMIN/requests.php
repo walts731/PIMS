@@ -811,6 +811,36 @@ if ($office_id && $conn) {
             50% { opacity: 0.7; }
             100% { opacity: 1; }
         }
+        
+        /* Page Footer Styles */
+        .page-footer {
+            margin-top: 3rem;
+            padding: 2rem 0;
+            border-top: 1px solid rgba(0,0,0,0.1);
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        }
+        
+        .footer-content {
+            text-align: center;
+        }
+        
+        .footer-spacer {
+            height: 2rem;
+        }
+        
+        .footer-info {
+            opacity: 0.7;
+        }
+        
+        /* Ensure main content has proper bottom spacing */
+        .main-content {
+            padding-bottom: 2rem;
+        }
+        
+        /* Add some breathing room for the table */
+        #requestsContainer {
+            margin-bottom: 2rem;
+        }
     </style>
 </head>
 <body>
@@ -2695,5 +2725,17 @@ $page_title = 'Requests Management';
     
     <!-- Sidebar Scripts -->
     <script src="../assets/js/sidebar.js"></script>
+    
+    <!-- Page Footer -->
+    <footer class="page-footer">
+        <div class="footer-content">
+            <div class="footer-spacer"></div>
+            <div class="footer-info">
+                <small class="text-muted">
+                    © <?php echo date('Y'); ?> PIMS - Property and Inventory Management System
+                </small>
+            </div>
+        </div>
+    </footer>
 </body>
 </html>
