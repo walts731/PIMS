@@ -357,6 +357,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
             exit;
             
+        case 'cancel_request':
+            $request_id = $_POST['request_id'] ?? 0;
+            
+            // Verify this is an outgoing request from the current office
+            $verify_query = "SELECT id FROM borrow_requests 
+                           WHERE id = ? AND requested_by_office = ? AND status = 'pending'";
+            $stmt = $conn->prepare($verify_query);
+            $stmt->bind_param("ii", $request_id, $office_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($result->num_rows > 0) {
+                // Update request status to cancelled
+                $update_query = "UPDATE borrow_requests SET 
+                                 status = 'cancelled' 
+                                 WHERE id = ? AND requested_by_office = ?";
+                $stmt = $conn->prepare($update_query);
+                $stmt->bind_param("ii", $request_id, $office_id);
+                
+                if ($stmt->execute()) {
+                    // Update asset status back to serviceable when request is cancelled
+                    $asset_update = "UPDATE asset_items SET status = 'serviceable' 
+                                    WHERE id = (SELECT asset_id FROM borrow_requests WHERE id = ?)";
+                    $stmt2 = $conn->prepare($asset_update);
+                    $stmt2->bind_param("i", $request_id);
+                    $stmt2->execute();
+                    
+                    $_SESSION['success'] = "Request cancelled successfully";
+                    logSystemAction($_SESSION['user_id'], 'cancel', 'borrow_request', "Cancelled borrow request #$request_id");
+                } else {
+                    $_SESSION['error'] = "Error cancelling request";
+                }
+            } else {
+                $_SESSION['error'] = "Request not found or cannot be cancelled";
+            }
+            break;
+            
         case 'deny_request':
             $request_id = $_POST['request_id'] ?? 0;
             $reason = $_POST['reason'] ?? '';
@@ -694,6 +731,7 @@ if ($office_id && $conn) {
         .status-borrowed { background: #cff4fc; color: #055160; }
         .status-returned { background: #d1ecf1; color: #0c5460; }
         .status-denied { background: #f8d7da; color: #721c24; }
+        .status-cancelled { background: #e2e3e5; color: #495057; }
         
         .quick-action {
             width: 32px;
@@ -1200,6 +1238,12 @@ $page_title = 'Requests Management';
                                                     <button class="btn btn-sm btn-primary action-btn" 
                                                             onclick="returnAsset(<?php echo $request['id']; ?>)">
                                                         <i class="bi bi-arrow-return-left"></i> Return
+                                                    </button>
+                                                <?php elseif ($request['request_type'] === 'outgoing' && $request['status'] === 'pending'): ?>
+                                                    <button class="btn btn-sm btn-outline-danger action-btn" 
+                                                            onclick="cancelRequest(<?php echo $request['id']; ?>)"
+                                                            title="Cancel request">
+                                                        <i class="bi bi-x-circle"></i> Cancel
                                                     </button>
                                                 <?php endif; ?>
                                                 <button class="btn btn-sm btn-outline-info action-btn" 
@@ -2098,7 +2142,7 @@ $page_title = 'Requests Management';
         }
         
         function quickDeny(requestId) {
-            const reason = prompt('Please enter a reason for denial:');
+            const reason = prompt('Please enter the reason for denial:');
             if (reason) {
                 const form = document.createElement('form');
                 form.method = 'POST';
@@ -2125,8 +2169,17 @@ $page_title = 'Requests Management';
             }
         }
         
-        function refreshRequests() {
-            window.location.reload();
+        function cancelRequest(requestId) {
+            if (confirm('Are you sure you want to cancel this request? This action cannot be undone.')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.innerHTML = `
+                    <input type="hidden" name="action" value="cancel_request">
+                    <input type="hidden" name="request_id" value="${requestId}">
+                `;
+                document.body.appendChild(form);
+                form.submit();
+            }
         }
         
         function updateEmptyState() {
