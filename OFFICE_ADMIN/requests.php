@@ -261,6 +261,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
         // Real-time Updates Handler
         case 'check_updates':
+            // Clean any previous output
+            if (ob_get_level()) {
+                ob_clean();
+            }
+            
             $last_update = $_GET['last_update'] ?? '';
             $has_updates = false;
             $new_requests = [];
@@ -345,16 +350,116 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 } catch (Exception $e) {
                     error_log("Error checking updates: " . $e->getMessage());
+                    // Return error response
+                    header('Content-Type: application/json');
+                    echo json_encode([
+                        'error' => 'Database error occurred',
+                        'has_updates' => false,
+                        'timestamp' => date('Y-m-d H:i:s')
+                    ]);
+                    exit;
                 }
             }
             
-            echo json_encode([
+            // Set proper content type and output clean JSON
+            header('Content-Type: application/json');
+            $response = [
                 'has_updates' => $has_updates,
                 'new_requests' => $new_requests,
                 'changed_requests' => $changed_requests,
                 'stats' => $current_stats,
                 'timestamp' => date('Y-m-d H:i:s')
-            ]);
+            ];
+            
+            echo json_encode($response);
+            exit;
+            
+        case 'cancel_request':
+            $request_id = $_POST['request_id'] ?? 0;
+            
+            // Verify this is an outgoing request from the current office
+            $verify_query = "SELECT id FROM borrow_requests 
+                           WHERE id = ? AND requested_by_office = ? AND status = 'pending'";
+            $stmt = $conn->prepare($verify_query);
+            $stmt->bind_param("ii", $request_id, $office_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($result->num_rows > 0) {
+                // Update request status to cancelled
+                $update_query = "UPDATE borrow_requests SET 
+                                 status = 'cancelled' 
+                                 WHERE id = ? AND requested_by_office = ?";
+                $stmt = $conn->prepare($update_query);
+                $stmt->bind_param("ii", $request_id, $office_id);
+                
+                if ($stmt->execute()) {
+                    // Update asset status back to serviceable when request is cancelled
+                    $asset_update = "UPDATE asset_items SET status = 'serviceable' 
+                                    WHERE id = (SELECT asset_id FROM borrow_requests WHERE id = ?)";
+                    $stmt2 = $conn->prepare($asset_update);
+                    $stmt2->bind_param("i", $request_id);
+                    $stmt2->execute();
+                    
+                    $_SESSION['success'] = "Request cancelled successfully";
+                    logSystemAction($_SESSION['user_id'], 'cancel', 'borrow_request', "Cancelled borrow request #$request_id");
+                } else {
+                    $_SESSION['error'] = "Error cancelling request";
+                }
+            } else {
+                $_SESSION['error'] = "Request not found or cannot be cancelled";
+            }
+            break;
+            
+        case 'bulk_cancel':
+            $request_ids = $_POST['request_ids'] ?? '';
+            if (empty($request_ids)) {
+                echo json_encode(['success' => false, 'error' => 'No request IDs provided']);
+                exit;
+            }
+            
+            $request_id_array = explode(',', $request_ids);
+            $cancelled_count = 0;
+            
+            foreach ($request_id_array as $request_id) {
+                $request_id = trim($request_id);
+                if (empty($request_id)) continue;
+                
+                // Verify this is an outgoing request from current office
+                $verify_query = "SELECT id FROM borrow_requests 
+                               WHERE id = ? AND requested_by_office = ? AND status = 'pending'";
+                $stmt = $conn->prepare($verify_query);
+                $stmt->bind_param("ii", $request_id, $office_id);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                
+                if ($result->num_rows > 0) {
+                    // Update request status to cancelled
+                    $update_query = "UPDATE borrow_requests SET 
+                                     status = 'cancelled' 
+                                     WHERE id = ? AND requested_by_office = ?";
+                    $stmt = $conn->prepare($update_query);
+                    $stmt->bind_param("ii", $request_id, $office_id);
+                    
+                    if ($stmt->execute()) {
+                        // Update asset status back to serviceable when request is cancelled
+                        $asset_update = "UPDATE asset_items SET status = 'serviceable' 
+                                        WHERE id = (SELECT asset_id FROM borrow_requests WHERE id = ?)";
+                        $stmt2 = $conn->prepare($asset_update);
+                        $stmt2->bind_param("i", $request_id);
+                        $stmt2->execute();
+                        
+                        $cancelled_count++;
+                        logSystemAction($_SESSION['user_id'], 'bulk_cancel', 'borrow_request', "Cancelled borrow request #$request_id");
+                    }
+                }
+            }
+            
+            if ($cancelled_count > 0) {
+                echo json_encode(['success' => true, 'message' => "$cancelled_count requests cancelled"]);
+            } else {
+                echo json_encode(['success' => false, 'error' => 'No requests were cancelled']);
+            }
             exit;
             
         case 'deny_request':
@@ -451,9 +556,11 @@ $request_stats = [
     'pending_incoming' => 0,
     'approved_incoming' => 0,
     'borrowed_incoming' => 0,
+    'denied_incoming' => 0,
     'pending_outgoing' => 0,
     'approved_outgoing' => 0,
-    'borrowed_outgoing' => 0
+    'borrowed_outgoing' => 0,
+    'denied_outgoing' => 0
 ];
 
 if ($office_id && $conn) {
@@ -483,6 +590,8 @@ if ($office_id && $conn) {
                 $request_stats['approved_incoming']++;
             } elseif ($row['status'] === 'borrowed') {
                 $request_stats['borrowed_incoming']++;
+            } elseif ($row['status'] === 'denied') {
+                $request_stats['denied_incoming']++;
             }
         }
         
@@ -694,6 +803,7 @@ if ($office_id && $conn) {
         .status-borrowed { background: #cff4fc; color: #055160; }
         .status-returned { background: #d1ecf1; color: #0c5460; }
         .status-denied { background: #f8d7da; color: #721c24; }
+        .status-cancelled { background: #e2e3e5; color: #495057; }
         
         .quick-action {
             width: 32px;
@@ -958,9 +1068,6 @@ $page_title = 'Requests Management';
                         <button class="btn btn-sm btn-outline-primary" onclick="refreshRequests()">
                             <i class="bi bi-arrow-clockwise"></i> Refresh
                         </button>
-                        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#newRequestModal">
-                            <i class="bi bi-plus-circle"></i> New Request
-                        </button>
                     </div>
                 </div>
                 
@@ -1062,15 +1169,41 @@ $page_title = 'Requests Management';
                                 <span id="selectedCount">0</span> requests selected
                             </span>
                             <div class="btn-group" role="group">
-                                <button class="btn btn-sm btn-outline-success" id="bulkApproveBtn" disabled>
-                                    <i class="bi bi-check-circle"></i> Approve Selected
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger" id="bulkDenyBtn" disabled>
-                                    <i class="bi bi-x-circle"></i> Deny Selected
-                                </button>
-                                <button class="btn btn-sm btn-outline-warning" id="bulkMarkBorrowedBtn" disabled>
-                                    <i class="bi bi-hand-index"></i> Mark Borrowed
-                                </button>
+                                <!-- Buttons for "needs_action" filter (incoming requests) -->
+                                <div id="incomingBulkActions" class="btn-group" role="group">
+                                    <button class="btn btn-sm btn-outline-success" id="bulkApproveBtn" disabled>
+                                        <i class="bi bi-check-circle"></i> Approve Selected
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" id="bulkDenyBtn" disabled>
+                                        <i class="bi bi-x-circle"></i> Deny Selected
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-warning" id="bulkMarkBorrowedBtn" disabled>
+                                        <i class="bi bi-hand-index"></i> Mark Borrowed
+                                    </button>
+                                </div>
+                                
+                                <!-- Buttons for "waiting" filter (outgoing requests) -->
+                                <div id="outgoingBulkActions" class="btn-group d-none" role="group">
+                                    <button class="btn btn-sm btn-outline-danger" id="bulkCancelBtn" disabled>
+                                        <i class="bi bi-x-circle"></i> Cancel Selected
+                                    </button>
+                                </div>
+                                
+                                <!-- Buttons for "all" filter (both incoming and outgoing) -->
+                                <div id="allBulkActions" class="btn-group d-none" role="group">
+                                    <button class="btn btn-sm btn-outline-success" id="bulkApproveBtnAll" disabled>
+                                        <i class="bi bi-check-circle"></i> Approve Selected
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" id="bulkDenyBtnAll" disabled>
+                                        <i class="bi bi-x-circle"></i> Deny Selected
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-warning" id="bulkMarkBorrowedBtnAll" disabled>
+                                        <i class="bi bi-hand-index"></i> Mark Borrowed
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" id="bulkCancelBtnAll" disabled>
+                                        <i class="bi bi-x-circle"></i> Cancel Selected
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         <button class="btn btn-sm btn-outline-secondary" onclick="clearSelection()">
@@ -1200,6 +1333,12 @@ $page_title = 'Requests Management';
                                                     <button class="btn btn-sm btn-primary action-btn" 
                                                             onclick="returnAsset(<?php echo $request['id']; ?>)">
                                                         <i class="bi bi-arrow-return-left"></i> Return
+                                                    </button>
+                                                <?php elseif ($request['request_type'] === 'outgoing' && $request['status'] === 'pending'): ?>
+                                                    <button class="btn btn-sm btn-outline-danger action-btn" 
+                                                            onclick="cancelRequest(<?php echo $request['id']; ?>)"
+                                                            title="Cancel request">
+                                                        <i class="bi bi-x-circle"></i> Cancel
                                                     </button>
                                                 <?php endif; ?>
                                                 <button class="btn btn-sm btn-outline-info action-btn" 
@@ -2032,6 +2171,9 @@ $page_title = 'Requests Management';
             const filterTabs = document.querySelectorAll('.filter-tab');
             const requestRows = document.querySelectorAll('.request-row');
             
+            // Apply initial filter for "needs_action" on page load
+            applyInitialFilter();
+            
             filterTabs.forEach(tab => {
                 tab.addEventListener('click', function() {
                     const filter = this.dataset.filter;
@@ -2046,12 +2188,14 @@ $page_title = 'Requests Management';
                         
                         switch(filter) {
                             case 'needs_action':
+                                // Show only incoming pending requests that need action
                                 if (row.dataset.needsAction !== 'true') {
                                     row.classList.add('hidden');
                                 }
                                 break;
                             case 'waiting':
-                                if (row.dataset.needsAction === 'true' || row.dataset.type === 'incoming') {
+                                // Show only outgoing requests (waiting for others' action)
+                                if (row.dataset.type === 'incoming') {
                                     row.classList.add('hidden');
                                 }
                                 break;
@@ -2062,8 +2206,23 @@ $page_title = 'Requests Management';
                     });
                     
                     updateEmptyState();
+                    updateSelectAllCheckboxState();
+                    updateBulkActionsButtons(filter);
                 });
             });
+        }
+        
+        function applyInitialFilter() {
+            // Apply the initial "needs_action" filter when page loads
+            const requestRows = document.querySelectorAll('.request-row');
+            requestRows.forEach(row => {
+                if (row.dataset.needsAction !== 'true') {
+                    row.classList.add('hidden');
+                }
+            });
+            updateEmptyState();
+            updateSelectAllCheckboxState();
+            updateBulkActionsButtons('needs_action');
         }
         
         // Quick Action Functions
@@ -2082,7 +2241,7 @@ $page_title = 'Requests Management';
         }
         
         function quickDeny(requestId) {
-            const reason = prompt('Please enter a reason for denial:');
+            const reason = prompt('Please enter the reason for denial:');
             if (reason) {
                 const form = document.createElement('form');
                 form.method = 'POST';
@@ -2109,8 +2268,17 @@ $page_title = 'Requests Management';
             }
         }
         
-        function refreshRequests() {
-            window.location.reload();
+        function cancelRequest(requestId) {
+            if (confirm('Are you sure you want to cancel this request? This action cannot be undone.')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.innerHTML = `
+                    <input type="hidden" name="action" value="cancel_request">
+                    <input type="hidden" name="request_id" value="${requestId}">
+                `;
+                document.body.appendChild(form);
+                form.submit();
+            }
         }
         
         function updateEmptyState() {
@@ -2159,7 +2327,22 @@ $page_title = 'Requests Management';
                     'X-Requested-With': 'XMLHttpRequest'
                 }
             })
-            .then(response => response.json())
+            .then(response => {
+                // Log the response status and text for debugging
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers.get('content-type'));
+                return response.text().then(text => {
+                    console.log('Raw response:', text);
+                    // Try to parse JSON
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                        console.error('JSON parse error:', e);
+                        console.error('Response text that failed to parse:', text);
+                        throw e;
+                    }
+                });
+            })
             .then(data => {
                 if (data.has_updates) {
                     showNotification('New requests or status changes detected', 'info');
@@ -2531,9 +2714,32 @@ $page_title = 'Requests Management';
                 return row && row.dataset.type === 'incoming' && row.dataset.status === 'approved';
             });
             
+            const hasPendingOutgoing = Array.from(selectedRequests).some(id => {
+                const row = document.querySelector(`tr[data-request-id="${id}"]`);
+                return row && row.dataset.type === 'outgoing' && row.dataset.status === 'pending';
+            });
+            
+            // Update incoming buttons
             bulkApproveBtn.disabled = !hasPendingIncoming;
             bulkDenyBtn.disabled = !hasPendingIncoming;
             bulkMarkBorrowedBtn.disabled = !hasApprovedIncoming;
+            
+            // Update outgoing buttons
+            const bulkCancelBtn = document.getElementById('bulkCancelBtn');
+            if (bulkCancelBtn) {
+                bulkCancelBtn.disabled = !hasPendingOutgoing;
+            }
+            
+            // Update "all" buttons
+            const bulkApproveBtnAll = document.getElementById('bulkApproveBtnAll');
+            const bulkDenyBtnAll = document.getElementById('bulkDenyBtnAll');
+            const bulkMarkBorrowedBtnAll = document.getElementById('bulkMarkBorrowedBtnAll');
+            const bulkCancelBtnAll = document.getElementById('bulkCancelBtnAll');
+            
+            if (bulkApproveBtnAll) bulkApproveBtnAll.disabled = !hasPendingIncoming;
+            if (bulkDenyBtnAll) bulkDenyBtnAll.disabled = !hasPendingIncoming;
+            if (bulkMarkBorrowedBtnAll) bulkMarkBorrowedBtnAll.disabled = !hasApprovedIncoming;
+            if (bulkCancelBtnAll) bulkCancelBtnAll.disabled = !hasPendingOutgoing;
         }
         
         function toggleRequestSelection(requestId) {
@@ -2543,14 +2749,22 @@ $page_title = 'Requests Management';
                 selectedRequests.add(requestId);
             }
             updateBulkActionsBar();
+            updateSelectAllCheckboxState();
         }
         
         function selectAllRequests() {
             const selectAll = document.getElementById('selectAllRequests');
-            const checkboxes = document.querySelectorAll('.request-checkbox');
+            // Only select checkboxes that are in visible rows (not hidden by current filter)
+            const visibleCheckboxes = document.querySelectorAll('.request-row:not(.hidden) .request-checkbox');
+            const allCheckboxes = document.querySelectorAll('.request-checkbox');
             
-            checkboxes.forEach(checkbox => {
+            // Update all checkboxes to match the selectAll state
+            allCheckboxes.forEach(checkbox => {
                 checkbox.checked = selectAll.checked;
+            });
+            
+            // Only update the selectedRequests set with visible checkboxes
+            visibleCheckboxes.forEach(checkbox => {
                 const requestId = parseInt(checkbox.value);
                 if (selectAll.checked) {
                     selectedRequests.add(requestId);
@@ -2567,6 +2781,51 @@ $page_title = 'Requests Management';
             document.querySelectorAll('.request-checkbox').forEach(cb => cb.checked = false);
             document.getElementById('selectAllRequests').checked = false;
             updateBulkActionsBar();
+        }
+        
+        function updateSelectAllCheckboxState() {
+            const selectAll = document.getElementById('selectAllRequests');
+            const visibleCheckboxes = document.querySelectorAll('.request-row:not(.hidden) .request-checkbox');
+            const checkedVisibleCheckboxes = document.querySelectorAll('.request-row:not(.hidden) .request-checkbox:checked');
+            
+            // Update select all checkbox state based on visible checkboxes
+            if (visibleCheckboxes.length === 0) {
+                selectAll.checked = false;
+                selectAll.indeterminate = false;
+            } else if (checkedVisibleCheckboxes.length === 0) {
+                selectAll.checked = false;
+                selectAll.indeterminate = false;
+            } else if (checkedVisibleCheckboxes.length === visibleCheckboxes.length) {
+                selectAll.checked = true;
+                selectAll.indeterminate = false;
+            } else {
+                selectAll.checked = false;
+                selectAll.indeterminate = true;
+            }
+        }
+        
+        function updateBulkActionsButtons(filter) {
+            const incomingActions = document.getElementById('incomingBulkActions');
+            const outgoingActions = document.getElementById('outgoingBulkActions');
+            const allActions = document.getElementById('allBulkActions');
+            
+            // Hide all button groups first
+            incomingActions.classList.add('d-none');
+            outgoingActions.classList.add('d-none');
+            allActions.classList.add('d-none');
+            
+            // Show appropriate button group based on filter
+            switch(filter) {
+                case 'needs_action':
+                    incomingActions.classList.remove('d-none');
+                    break;
+                case 'waiting':
+                    outgoingActions.classList.remove('d-none');
+                    break;
+                case 'all':
+                    allActions.classList.remove('d-none');
+                    break;
+            }
         }
         
         function bulkApprove() {
@@ -2693,6 +2952,46 @@ $page_title = 'Requests Management';
             }
         }
         
+        function bulkCancel() {
+            const pendingOutgoingIds = Array.from(selectedRequests).filter(id => {
+                const row = document.querySelector(`tr[data-request-id="${id}"]`);
+                return row && row.dataset.type === 'outgoing' && row.dataset.status === 'pending';
+            });
+            
+            if (pendingOutgoingIds.length === 0) {
+                showNotification('No pending outgoing requests selected to cancel', 'warning');
+                return;
+            }
+            
+            if (confirm(`Cancel ${pendingOutgoingIds.length} outgoing request(s)? This action cannot be undone.`)) {
+                // Submit bulk cancel via AJAX
+                fetch('requests.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'bulk_cancel',
+                        request_ids: pendingOutgoingIds.join(',')
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification(`${pendingOutgoingIds.length} requests cancelled`, 'success');
+                        clearSelection();
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showNotification(data.error || 'Error cancelling requests', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Bulk cancel error:', error);
+                    showNotification('Error cancelling requests', 'error');
+                });
+            }
+        }
+        
         // Event listeners for bulk actions
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize real-time updates
@@ -2715,6 +3014,11 @@ $page_title = 'Requests Management';
             document.getElementById('bulkApproveBtn')?.addEventListener('click', bulkApprove);
             document.getElementById('bulkDenyBtn')?.addEventListener('click', bulkDeny);
             document.getElementById('bulkMarkBorrowedBtn')?.addEventListener('click', bulkMarkBorrowed);
+            document.getElementById('bulkCancelBtn')?.addEventListener('click', bulkCancel);
+            document.getElementById('bulkApproveBtnAll')?.addEventListener('click', bulkApprove);
+            document.getElementById('bulkDenyBtnAll')?.addEventListener('click', bulkDeny);
+            document.getElementById('bulkMarkBorrowedBtnAll')?.addEventListener('click', bulkMarkBorrowed);
+            document.getElementById('bulkCancelBtnAll')?.addEventListener('click', bulkCancel);
             
             initSmartFilters();
         });
