@@ -374,10 +374,6 @@ if (!$conn || $conn->connect_error) {
                                     <span class="stat-value"><?php echo number_format($branch_data['total_items']); ?></span>
                                     <span class="stat-label">Total Items</span>
                                 </div>
-                                <div class="stat-item">
-                                    <span class="stat-value"><?php echo number_format($branch_data['total_value'], 2); ?></span>
-                                    <span class="stat-label">Total Value</span>
-                                </div>
                             </div>
                         </div>
                         
