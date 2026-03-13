@@ -33,5 +33,6 @@
     "**/vendor": true,
     "**/dist": true,
     "**/build": true
-  }
+  },
+  "workbench.colorTheme": "Default Dark Modern"
 }
