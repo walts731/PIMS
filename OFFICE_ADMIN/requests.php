@@ -750,6 +750,67 @@ if ($office_id && $conn) {
             font-weight: 600;
             color: #191BA9;
         }
+        
+        .search-container {
+            position: relative;
+        }
+        
+        .search-container .input-group {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-radius: 25px;
+            overflow: hidden;
+        }
+        
+        .search-container .input-group-text {
+            background: transparent;
+            border: none;
+            color: #6c757d;
+            padding-left: 1rem;
+        }
+        
+        .search-container .form-control {
+            border: none;
+            border-radius: 25px;
+            padding-left: 0.5rem;
+            font-weight: 500;
+        }
+        
+        .search-container .form-control:focus {
+            box-shadow: none;
+            border-color: #5CC2F2;
+        }
+        
+        .search-container .btn {
+            border: none;
+            border-radius: 0 25px 25px 0;
+            background: rgba(92, 194, 242, 0.1);
+            color: #191BA9;
+        }
+        
+        .search-container .btn:hover {
+            background: rgba(92, 194, 242, 0.2);
+        }
+        
+        .dropdown-menu .dropdown-item {
+            padding: 0;
+        }
+        
+        .dropdown-menu .dropdown-item:hover {
+            background: transparent;
+        }
+        
+        .highlight-search {
+            background-color: #fff3cd;
+            padding: 2px 4px;
+            border-radius: 3px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -832,7 +893,7 @@ $page_title = 'Requests Management';
                 <div class="stats-card">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <div class="stats-number"><?php echo $request_stats['pending_outgoing']; ?></div>
+                            <div class="stats-number" data-stat="pending_outgoing"><?php echo $request_stats['pending_outgoing']; ?></div>
                             <div class="text-muted">Pending Outgoing</div>
                             <small class="text-info">Awaiting approval</small>
                         </div>
@@ -846,7 +907,7 @@ $page_title = 'Requests Management';
                 <div class="stats-card">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <div class="stats-number"><?php echo $request_stats['borrowed_outgoing']; ?></div>
+                            <div class="stats-number" data-stat="borrowed_outgoing"><?php echo $request_stats['borrowed_outgoing']; ?></div>
                             <div class="text-muted">Borrowed Outgoing</div>
                             <small class="text-info">Currently borrowed</small>
                         </div>
@@ -870,6 +931,78 @@ $page_title = 'Requests Management';
                         <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#newRequestModal">
                             <i class="bi bi-plus-circle"></i> New Request
                         </button>
+                    </div>
+                </div>
+                
+                <!-- Advanced Search Bar -->
+                <div class="row mb-3">
+                    <div class="col-md-8">
+                        <div class="search-container">
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-search"></i>
+                                </span>
+                                <input type="text" class="form-control" id="advancedSearchInput" 
+                                       placeholder="Search requests by asset, requester, purpose, or status...">
+                                <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-funnel"></i> Filters
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end" style="min-width: 300px;">
+                                    <li><h6 class="dropdown-header">Search Filters</h6></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li class="dropdown-item">
+                                        <div class="mb-2">
+                                            <label class="form-label small">Request Type</label>
+                                            <select class="form-select form-select-sm" id="filterType">
+                                                <option value="">All Types</option>
+                                                <option value="incoming">Incoming</option>
+                                                <option value="outgoing">Outgoing</option>
+                                            </select>
+                                        </div>
+                                    </li>
+                                    <li class="dropdown-item">
+                                        <div class="mb-2">
+                                            <label class="form-label small">Status</label>
+                                            <select class="form-select form-select-sm" id="filterStatus">
+                                                <option value="">All Statuses</option>
+                                                <option value="pending">Pending</option>
+                                                <option value="approved">Approved</option>
+                                                <option value="borrowed">Borrowed</option>
+                                                <option value="returned">Returned</option>
+                                                <option value="denied">Denied</option>
+                                            </select>
+                                        </div>
+                                    </li>
+                                    <li class="dropdown-item">
+                                        <div class="mb-2">
+                                            <label class="form-label small">Date Range</label>
+                                            <div class="row g-2">
+                                                <div class="col-6">
+                                                    <input type="date" class="form-control form-control-sm" id="filterDateFrom" placeholder="From">
+                                                </div>
+                                                <div class="col-6">
+                                                    <input type="date" class="form-control form-control-sm" id="filterDateTo" placeholder="To">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <button class="dropdown-item" onclick="applyAdvancedFilters()">
+                                            <i class="bi bi-check-circle"></i> Apply Filters
+                                        </button>
+                                        <button class="dropdown-item" onclick="clearAdvancedFilters()">
+                                            <i class="bi bi-x-circle"></i> Clear Filters
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-flex gap-2 align-items-center">
+                            <small class="text-muted" id="searchResultsCount">Showing all requests</small>
+                        </div>
                     </div>
                 </div>
                 <div class="filter-tabs">
@@ -2150,6 +2283,193 @@ $page_title = 'Requests Management';
             }
         });
         
+        // Advanced Search Functionality
+        let searchTimeout;
+        let currentFilters = {
+            text: '',
+            type: '',
+            status: '',
+            dateFrom: '',
+            dateTo: ''
+        };
+        
+        function initAdvancedSearch() {
+            const searchInput = document.getElementById('advancedSearchInput');
+            if (searchInput) {
+                // Real-time search with debounce
+                searchInput.addEventListener('input', function() {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        currentFilters.text = this.value.toLowerCase();
+                        performAdvancedSearch();
+                    }, 300);
+                });
+                
+                // Clear search on escape
+                searchInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') {
+                        this.value = '';
+                        currentFilters.text = '';
+                        performAdvancedSearch();
+                    }
+                });
+            }
+        }
+        
+        function applyAdvancedFilters() {
+            currentFilters.type = document.getElementById('filterType')?.value || '';
+            currentFilters.status = document.getElementById('filterStatus')?.value || '';
+            currentFilters.dateFrom = document.getElementById('filterDateFrom')?.value || '';
+            currentFilters.dateTo = document.getElementById('filterDateTo')?.value || '';
+            
+            performAdvancedSearch();
+            updateSearchResultsCount();
+        }
+        
+        function clearAdvancedFilters() {
+            currentFilters = {
+                text: '',
+                type: '',
+                status: '',
+                dateFrom: '',
+                dateTo: ''
+            };
+            
+            // Reset form fields
+            document.getElementById('advancedSearchInput').value = '';
+            document.getElementById('filterType').value = '';
+            document.getElementById('filterStatus').value = '';
+            document.getElementById('filterDateFrom').value = '';
+            document.getElementById('filterDateTo').value = '';
+            
+            performAdvancedSearch();
+            updateSearchResultsCount();
+        }
+        
+        function performAdvancedSearch() {
+            const rows = document.querySelectorAll('#requestsTable tbody tr.request-row');
+            let visibleCount = 0;
+            
+            rows.forEach(row => {
+                let matches = true;
+                
+                // Text search (asset, requester, purpose, status)
+                if (currentFilters.text) {
+                    const textContent = row.textContent.toLowerCase();
+                    matches = textContent.includes(currentFilters.text);
+                }
+                
+                // Type filter
+                if (matches && currentFilters.type) {
+                    matches = row.dataset.type === currentFilters.type;
+                }
+                
+                // Status filter
+                if (matches && currentFilters.status) {
+                    matches = row.dataset.status === currentFilters.status;
+                }
+                
+                // Date range filter
+                if (matches && (currentFilters.dateFrom || currentFilters.dateTo)) {
+                    const durationCell = row.querySelector('td:nth-child(5)');
+                    if (durationCell) {
+                        const dateText = durationCell.textContent;
+                        const dateMatch = dateText.match(/From: (\w+ \d+, \d+)/);
+                        if (dateMatch) {
+                            const requestDate = new Date(dateMatch[1]);
+                            const fromDate = currentFilters.dateFrom ? new Date(currentFilters.dateFrom) : null;
+                            const toDate = currentFilters.dateTo ? new Date(currentFilters.dateTo) : null;
+                            
+                            if (fromDate && requestDate < fromDate) matches = false;
+                            if (toDate && requestDate > toDate) matches = false;
+                        }
+                    }
+                }
+                
+                // Show/hide row
+                if (matches) {
+                    row.classList.remove('hidden');
+                    visibleCount++;
+                    
+                    // Highlight search text
+                    if (currentFilters.text) {
+                        highlightSearchText(row, currentFilters.text);
+                    } else {
+                        removeHighlight(row);
+                    }
+                } else {
+                    row.classList.add('hidden');
+                    removeHighlight(row);
+                }
+            });
+            
+            updateSearchResultsCount(visibleCount);
+        }
+        
+        function highlightSearchText(row, searchText) {
+            removeHighlight(row);
+            
+            if (!searchText) return;
+            
+            const cells = row.querySelectorAll('td');
+            cells.forEach(cell => {
+                const text = cell.textContent;
+                const regex = new RegExp(`(${searchText})`, 'gi');
+                
+                // Skip cells with HTML we don't want to modify
+                if (cell.querySelector('.btn, .badge, .status-badge, .request-type-badge')) return;
+                
+                const walker = document.createTreeWalker(
+                    cell,
+                    NodeFilter.SHOW_TEXT,
+                    null,
+                    false
+                );
+                
+                const textNodes = [];
+                let node;
+                while (node = walker.nextNode()) {
+                    if (node.nodeValue.trim()) {
+                        textNodes.push(node);
+                    }
+                }
+                
+                textNodes.forEach(textNode => {
+                    const text = textNode.nodeValue;
+                    if (text.toLowerCase().includes(searchText)) {
+                        const span = document.createElement('span');
+                        span.innerHTML = text.replace(regex, '<span class="highlight-search">$1</span>');
+                        textNode.parentNode.replaceChild(span, textNode);
+                    }
+                });
+            });
+        }
+        
+        function removeHighlight(row) {
+            const highlights = row.querySelectorAll('.highlight-search');
+            highlights.forEach(highlight => {
+                const parent = highlight.parentNode;
+                parent.replaceChild(document.createTextNode(highlight.textContent), highlight);
+                parent.normalize();
+            });
+        }
+        
+        function updateSearchResultsCount(visibleCount = null) {
+            const countElement = document.getElementById('searchResultsCount');
+            if (!countElement) return;
+            
+            const totalRows = document.querySelectorAll('#requestsTable tbody tr.request-row').length;
+            const visible = visibleCount !== null ? visibleCount : 
+                          document.querySelectorAll('#requestsTable tbody tr.request-row:not(.hidden)').length;
+            
+            if (currentFilters.text || currentFilters.type || currentFilters.status || 
+                currentFilters.dateFrom || currentFilters.dateTo) {
+                countElement.textContent = `Showing ${visible} of ${totalRows} requests`;
+            } else {
+                countElement.textContent = 'Showing all requests';
+            }
+        }
+        
         // Bulk Actions Functionality
         let selectedRequests = new Set();
         
@@ -2345,6 +2665,12 @@ $page_title = 'Requests Management';
         
         // Event listeners for bulk actions
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize real-time updates
+            startRealTimeUpdates();
+            
+            // Initialize advanced search
+            initAdvancedSearch();
+            
             // Select all checkbox
             document.getElementById('selectAllRequests')?.addEventListener('change', selectAllRequests);
             
