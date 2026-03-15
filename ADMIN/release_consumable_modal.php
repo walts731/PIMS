@@ -19,46 +19,51 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
     exit();
 }
 
+// Debug logging
+error_log("DEBUG: Modal loaded with consumable_id: " . (isset($_GET['id']) ? intval($_GET['id']) : 0));
+error_log("DEBUG: Request method: " . $_SERVER['REQUEST_METHOD']);
+error_log("DEBUG: GET parameters: " . print_r($_GET, true));
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    error_log("DEBUG: POST parameters: " . print_r($_POST, true));
+}
+
 // Get consumable ID from URL parameter
 $consumable_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+$selected_office_id = isset($_GET['office']) ? intval($_GET['office']) : 0;
 $consumable = null;
 
 if ($consumable_id > 0) {
     try {
-        $stmt = $conn->prepare("SELECT c.*, o.office_name, fo.office_name as for_office_name 
-                            FROM consumables c 
-                            LEFT JOIN offices o ON c.office_id = o.id 
-                            LEFT JOIN offices fo ON c.for_office_id = fo.id 
+        $stmt = $conn->prepare("SELECT c.*, o.office_name, fo.office_name as for_office_name
+                            FROM consumables c
+                            LEFT JOIN offices o ON c.office_id = o.id
+                            LEFT JOIN offices fo ON c.for_office_id = fo.id
                             WHERE c.id = ?");
         $stmt->bind_param("i", $consumable_id);
         $stmt->execute();
         $result = $stmt->get_result();
-        
+
         if ($result->num_rows > 0) {
             $consumable = $result->fetch_assoc();
+            error_log("DEBUG: Consumable loaded successfully - ID: {$consumable['id']}, Description: {$consumable['description']}, Quantity: {$consumable['quantity']}, for_office_id: {$consumable['for_office_id']}");
+        } else {
+            error_log("DEBUG: Consumable not found in database - ID: {$consumable_id}");
+            $consumable = null;
         }
         $stmt->close();
     } catch (Exception $e) {
-        error_log("Error fetching consumable: " . $e->getMessage());
+        error_log("DEBUG: Error fetching consumable: " . $e->getMessage());
+        $consumable = null;
     }
+} else {
+    error_log("DEBUG: Invalid consumable ID from URL: {$consumable_id}");
+    $consumable = null;
 }
 
 if (!$consumable) {
+    error_log("DEBUG: Consumable object is null, showing error message");
     echo "<div class='alert alert-danger'>Consumable not found.</div>";
     exit();
-}
-
-// Get offices for dropdown
-$offices = [];
-try {
-    $result = $conn->query("SELECT id, office_name FROM offices WHERE status = 'active' ORDER BY office_name");
-    if ($result) {
-        while ($row = $result->fetch_assoc()) {
-            $offices[] = $row;
-        }
-    }
-} catch (Exception $e) {
-    error_log("Error fetching offices: " . $e->getMessage());
 }
 
 // Handle release form submission
@@ -67,13 +72,31 @@ $message_type = '';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'release') {
     $source_consumable_id = intval($_POST['source_consumable_id'] ?? 0);
+
+    // Fallback: if source_consumable_id is not in POST, use the URL parameter
+    if ($source_consumable_id <= 0 && isset($_GET['id'])) {
+        $source_consumable_id = intval($_GET['id']);
+        error_log("DEBUG: Using URL consumable_id as fallback: {$source_consumable_id}");
+    }
+
     $release_quantity = intval($_POST['release_quantity'] ?? 0);
     $target_office_id = intval($_POST['target_office_id'] ?? 0);
     $received_by = trim($_POST['received_by'] ?? '');
     $remarks = trim($_POST['remarks'] ?? '');
-    
+
+    // Debug logging
+    error_log("DEBUG: Release form submitted");
+    error_log("DEBUG: source_consumable_id: {$source_consumable_id}");
+    error_log("DEBUG: release_quantity: {$release_quantity}");
+    error_log("DEBUG: target_office_id: {$target_office_id}");
+    error_log("DEBUG: received_by: {$received_by}");
+    error_log("DEBUG: URL consumable_id: {$consumable_id}");
+    error_log("DEBUG: POST data: " . print_r($_POST, true));
+    error_log("DEBUG: GET data: " . print_r($_GET, true));
+
     // Validation
     if ($source_consumable_id <= 0) {
+        error_log("DEBUG: Invalid source consumable - source_consumable_id is {$source_consumable_id}");
         $message = "Invalid source consumable.";
         $message_type = "danger";
     } elseif ($release_quantity <= 0) {
@@ -83,89 +106,120 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         $message = "Please select a target office.";
         $message_type = "danger";
     } elseif (empty($received_by)) {
-        $message = "Please enter the name of the person receiving the consumables.";
+        $message = "Please enter name of person receiving consumables.";
         $message_type = "danger";
     } else {
         try {
             // Start transaction
             $conn->begin_transaction();
-            
+
             // Get source consumable data
             $source_stmt = $conn->prepare("SELECT * FROM consumables WHERE id = ? FOR UPDATE");
             $source_stmt->bind_param("i", $source_consumable_id);
             $source_stmt->execute();
             $source_result = $source_stmt->get_result();
-            
+
             if ($source_result->num_rows === 0) {
                 throw new Exception("Source consumable not found.");
             }
-            
+
             $source_data = $source_result->fetch_assoc();
             $source_quantity = $source_data['quantity'];
-            
+
             if ($release_quantity > $source_quantity) {
                 throw new Exception("Cannot release {$release_quantity} items. Only {$source_quantity} items available in stock.");
             }
-            
-            // Check if target office already has this consumable
-            $target_stmt = $conn->prepare("SELECT id, quantity FROM consumables WHERE description = ? AND office_id = ? FOR UPDATE");
-            $target_stmt->bind_param("si", $source_data['description'], $target_office_id);
-            $target_stmt->execute();
-            $target_result = $target_stmt->get_result();
-            
-            if ($target_result->num_rows > 0) {
-                // Update existing consumable in target office
-                $target_data = $target_result->fetch_assoc();
-                $new_target_quantity = $target_data['quantity'] + $release_quantity;
-                
-                $update_target_stmt = $conn->prepare("UPDATE consumables SET quantity = ? WHERE id = ?");
-                $update_target_stmt->bind_param("ii", $new_target_quantity, $target_data['id']);
-                $update_target_stmt->execute();
-                $update_target_stmt->close();
-                
-                $target_action = "Updated existing consumable in target office";
+
+            // Step 1: Check Balance Record for target office
+            // Look for balance records where:
+            // - for_office_id matches the target office (the office receiving the release)
+            // - consumable_description matches the consumable being released
+            // This finds if the target office has any outstanding borrowed items that need to be returned first
+            error_log("DEBUG: Checking balance for target_office_id: {$target_office_id}, consumable_description: '{$source_data['description']}' (escaped: '" . addslashes($source_data['description']) . "')");
+            $balance_check_sql = "SELECT id, consumable_id, consumable_description, office_id, office_name, for_office_id, total_borrowed, total_deducted, current_balance, last_updated, created_at
+                                  FROM consumable_balance
+                                  WHERE for_office_id = {$target_office_id} AND consumable_description = '" . addslashes($source_data['description']) . "'
+                                  FOR UPDATE";
+            $balance_result = $conn->query($balance_check_sql);
+            error_log("DEBUG: Balance check SQL: {$balance_check_sql}");
+            error_log("DEBUG: Balance result num_rows: " . ($balance_result ? $balance_result->num_rows : 'null'));
+
+            $current_balance_for_office = 0;
+            $borrowed_deducted = 0;
+
+            if ($balance_result && $balance_result->num_rows > 0) {
+                $balance_data = $balance_result->fetch_assoc();
+
+                error_log("DEBUG: Found balance record to delete - id: {$balance_data['id']}, office_id: {$balance_data['office_id']}, for_office_id: {$balance_data['for_office_id']}, consumable_description: '{$balance_data['consumable_description']}', current_balance: {$balance_data['current_balance']}, total_borrowed: {$balance_data['total_borrowed']}, total_deducted: {$balance_data['total_deducted']}");
+
+                // Simply delete the balance record without any other operations
+                $delete_stmt = $conn->prepare("DELETE FROM consumable_balance WHERE id = ?");
+                $delete_stmt->bind_param("i", $balance_data['id']);
+                if (!$delete_stmt->execute()) {
+                    error_log("ERROR: Failed to delete balance record: " . $delete_stmt->error);
+                    throw new Exception("Failed to delete balance record: " . $delete_stmt->error);
+                }
+                error_log("DEBUG: Balance record deleted successfully, affected rows: " . $delete_stmt->affected_rows);
+                $delete_stmt->close();
+                error_log("DEBUG: Balance record {$balance_data['id']} deleted");
+
+                // Delete corresponding lend_consumables records since items are being permanently released/transferred
+                $delete_lend_stmt = $conn->prepare("DELETE FROM lend_consumables WHERE consumable_id = ? AND to_office_id = ?");
+                $delete_lend_stmt->bind_param("ii", $balance_data['consumable_id'], $balance_data['for_office_id']);
+                if (!$delete_lend_stmt->execute()) {
+                    error_log("ERROR: Failed to delete lend_consumables records: " . $delete_lend_stmt->error);
+                    throw new Exception("Failed to update lending records: " . $delete_lend_stmt->error);
+                }
+                error_log("DEBUG: Deleted lend_consumables records for consumable_id: {$balance_data['consumable_id']}, to_office_id: {$balance_data['for_office_id']}");
+                $delete_lend_stmt->close();
+
+                $borrowed_deducted = $balance_data['current_balance'];
             } else {
-                // Insert new consumable in target office
-                $insert_target_stmt = $conn->prepare("INSERT INTO consumables (description, quantity, unit_cost, reorder_level, office_id) VALUES (?, ?, ?, ?, ?)");
-                $insert_target_stmt->bind_param("sidii", 
-                    $source_data['description'], 
-                    $release_quantity, 
-                    $source_data['unit_cost'], 
-                    $source_data['reorder_level'], 
-                    $target_office_id
-                );
-                $insert_target_stmt->execute();
-                $insert_target_stmt->close();
-                
-                $target_action = "Created new consumable in target office";
+                $borrowed_deducted = 0;
             }
-            $target_stmt->close();
-            
-            // Update source consumable quantity
+
+            // Step 4: Release to Target Office (remaining quantity after balance deduction)
+            $actual_release_quantity = $release_quantity - $borrowed_deducted;
+
+            if ($actual_release_quantity > 0) {
+                // Check if target office already has this consumable
+                $target_stmt = $conn->prepare("SELECT id, quantity FROM consumables WHERE description = ? AND office_id = ? FOR UPDATE");
+                $target_stmt->bind_param("si", $source_data['description'], $target_office_id);
+                $target_stmt->execute();
+                $target_result = $target_stmt->get_result();
+
+                if ($target_result->num_rows > 0) {
+                    // Update existing consumable in target office
+                    $target_data = $target_result->fetch_assoc();
+                    $new_target_quantity = $target_data['quantity'] + $actual_release_quantity;
+
+                    $update_target_stmt = $conn->prepare("UPDATE consumables SET quantity = ? WHERE id = ?");
+                    $update_target_stmt->bind_param("ii", $new_target_quantity, $target_data['id']);
+                    $update_target_stmt->execute();
+                    $update_target_stmt->close();
+                } else {
+                    // Insert new consumable in target office
+                    $insert_target_stmt = $conn->prepare("INSERT INTO consumables (description, quantity, unit_cost, reorder_level, office_id) VALUES (?, ?, ?, ?, ?)");
+                    $insert_target_stmt->bind_param("sidii",
+                        $source_data['description'],
+                        $actual_release_quantity,
+                        $source_data['unit_cost'],
+                        $source_data['reorder_level'],
+                        $target_office_id
+                    );
+                    $insert_target_stmt->execute();
+                    $insert_target_stmt->close();
+                }
+                $target_stmt->close();
+            }
+
+            // Step 5: Deduct from Source (ID 3 in the example)
             $new_source_quantity = $source_quantity - $release_quantity;
             $update_source_stmt = $conn->prepare("UPDATE consumables SET quantity = ? WHERE id = ?");
             $update_source_stmt->bind_param("ii", $new_source_quantity, $source_consumable_id);
             $update_source_stmt->execute();
             $update_source_stmt->close();
-            
-            // Record release history
-            $total_value = $release_quantity * $source_data['unit_cost'];
-            $history_stmt = $conn->prepare("INSERT INTO consumable_release_history (consumable_id, description, quantity_released, unit_cost, total_value, from_office_id, to_office_id, released_by, received_by, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $history_stmt->bind_param("isddiiisss", 
-                $source_consumable_id,
-                $source_data['description'],
-                $release_quantity,
-                $source_data['unit_cost'],
-                $total_value,
-                $source_data['office_id'],
-                $target_office_id,
-                $_SESSION['user_id'],
-                $received_by,
-                $remarks
-            );
-            $history_stmt->execute();
-            $history_stmt->close();
-            
+
             // Get target office name for logging
             $office_stmt = $conn->prepare("SELECT office_name FROM offices WHERE id = ?");
             $office_stmt->bind_param("i", $target_office_id);
@@ -173,28 +227,36 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             $office_result = $office_stmt->get_result();
             $office_data = $office_result->fetch_assoc();
             $office_stmt->close();
-            
-            // Log the release action
-            $log_remarks = "Released {$release_quantity} '{$source_data['description']}' from office ID {$source_data['office_id']} to {$office_data['office_name']}. {$target_action}. Remarks: " . ($remarks ?: 'No remarks');
+
+            // Log release action
+            $balance_id_for_log = isset($balance_data['id']) ? $balance_data['id'] : 'N/A';
+            $log_remarks = "Released {$release_quantity} '{$source_data['description']}' from office ID {$source_data['office_id']} to {$office_data['office_name']}. Deleted balance record {$balance_id_for_log}, returned {$borrowed_deducted} to supply office, actual release: {$actual_release_quantity}. Remarks: " . ($remarks ?: 'No remarks');
             logSystemAction($_SESSION['user_id'], 'consumable_released', 'consumable_management', $log_remarks);
-            
+
             // Commit transaction
             $conn->commit();
-            
-            $message = "Successfully released {$release_quantity} '{$source_data['description']}' item(s) to {$office_data['office_name']}. Source remaining: {$new_source_quantity}.";
+
+            $balance_info_msg = isset($balance_data['id']) ? "Deleted balance record {$balance_data['id']}" : "No balance record found";
+            $message = "Successfully released {$release_quantity} '{$source_data['description']}' item(s) to {$office_data['office_name']}. {$balance_info_msg}, returned {$borrowed_deducted} to supply office. Source remaining: {$new_source_quantity}.";
             $message_type = "success";
-            
-            // Close modal on success and refresh parent consumables page
+
+            // Close modal on success and refresh parent consumables page with success message
             echo "<script>
                 if (window.parent && window.parent !== window) {
-                    // We're in an iframe, refresh the parent window
-                    window.parent.location.reload();
+                    // We're in an iframe, close modal and redirect parent with success message
+                    window.parent.closeReleaseModal();
+                    setTimeout(() => {
+                        const currentUrl = new URL(window.parent.location.href);
+                        currentUrl.searchParams.set('message', '" . urlencode($message) . "');
+                        currentUrl.searchParams.set('type', 'success');
+                        window.parent.location.href = currentUrl.toString();
+                    }, 500);
                 } else {
-                    // We're not in an iframe, reload current page
-                    window.location.reload();
+                    // We're not in an iframe, redirect to parent page with success message
+                    window.location.href = 'consumables.php?message=" . urlencode($message) . "&type=success';
                 }
             </script>";
-            
+
         } catch (Exception $e) {
             $conn->rollback();
             $message = "Error releasing consumable: " . $e->getMessage();
@@ -203,7 +265,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -249,15 +310,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         <div class="row justify-content-center">
             <div class="col-lg-8">
                 <div class="card shadow">
-                    
-                    
+
+
+
                     <?php if ($message): ?>
                         <div class="alert alert-<?php echo $message_type; ?> m-3" role="alert">
                             <i class="bi bi-<?php echo $message_type == 'success' ? 'check-circle' : 'exclamation-triangle'; ?>"></i>
                             <?php echo htmlspecialchars($message); ?>
                         </div>
                     <?php endif; ?>
-                    
+
                     <div class="card-body">
                         <!-- Source Consumable Information -->
                         <div class="consumable-info">
@@ -267,7 +329,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                                     <strong>Description:</strong> <?php echo htmlspecialchars($consumable['description']); ?>
                                 </div>
                                 <div class="col-md-6">
-                                    <strong>Available Quantity:</strong> 
+                                    <strong>Available Quantity:</strong>
                                     <span class="quantity-display"><?php echo $consumable['quantity']; ?></span>
                                 </div>
                             </div>
@@ -280,76 +342,87 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                                 </div>
                             </div>
                         </div>
-                        
+
+                        <?php
+                        // Check if target office has outstanding balance for this consumable
+                        $balance_info = null;
+                        if (isset($consumable['for_office_id']) && isset($consumable['description'])) {
+                            $balance_check = $conn->prepare("SELECT id, current_balance, office_name FROM consumable_balance WHERE for_office_id = ? AND consumable_description = ?");
+                            $balance_check->bind_param("is", $consumable['for_office_id'], $consumable['description']);
+                            $balance_check->execute();
+                            $balance_result = $balance_check->get_result();
+                            if ($balance_result->num_rows > 0) {
+                                $balance_info = $balance_result->fetch_assoc();
+                                error_log("DEBUG: Balance record found - ID: {$balance_info['id']}, office: {$consumable['for_office_id']}, description: '{$consumable['description']}', balance: {$balance_info['current_balance']}");
+                            } else {
+                                error_log("DEBUG: No balance found for office {$consumable['for_office_id']}, description '{$consumable['description']}'");
+                            }
+                            $balance_check->close();
+                        } else {
+                            error_log("DEBUG: Missing for_office_id or description - for_office_id: " . ($consumable['for_office_id'] ?? 'null') . ", description: " . ($consumable['description'] ?? 'null'));
+                        }
+                        ?>
+
                         <?php if ($consumable['quantity'] > 0): ?>
-                            <form method="POST">
+                            <form method="POST" action="?id=<?php echo $consumable_id; ?>">
                                 <input type="hidden" name="action" value="release">
                                 <input type="hidden" name="source_consumable_id" value="<?php echo $consumable['id']; ?>">
-                                
+
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="mb-3">
                                             <label class="form-label">Release Quantity *</label>
-                                            <input type="number" class="form-control" name="release_quantity" 
+                                            <input type="number" class="form-control" name="release_quantity"
                                                    min="1" max="<?php echo $consumable['quantity']; ?>" required>
                                             <small class="text-muted">Maximum available: <?php echo $consumable['quantity']; ?> items</small>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="mb-3">
-                                            <label class="form-label">Target Office *</label>
-                                            <select class="form-select" name="target_office_id" required>
-                                                <?php if (!empty($consumable['for_office_id'])): ?>
-                                                    <option value="<?php echo $consumable['for_office_id']; ?>" selected>
-                                                        <?php echo htmlspecialchars($consumable['for_office_name']); ?> (Default)
-                                                    </option>
-                                                <?php endif; ?>
-                                                <?php foreach ($offices as $office): ?>
-                                                    <?php if ($office['id'] != $consumable['office_id'] && $office['id'] != $consumable['for_office_id']): ?>
-                                                        <option value="<?php echo $office['id']; ?>">
-                                                            <?php echo htmlspecialchars($office['office_name']); ?>
-                                                        </option>
-                                                    <?php endif; ?>
-                                                <?php endforeach; ?>
-                                            </select>
-                                            <small class="text-muted">
-                                                <?php if (!empty($consumable['for_office_name'])): ?>
-                                                    Default: <?php echo htmlspecialchars($consumable['for_office_name']); ?>
-                                                <?php else: ?>
-                                                    Select office to receive consumables
-                                                <?php endif; ?>
-                                            </small>
+                                            <label class="form-label">Target Office</label>
+                                            <input type="text" class="form-control" value="<?php echo htmlspecialchars($consumable['for_office_name'] ?? 'Unknown'); ?>" readonly>
+                                            <input type="hidden" name="target_office_id" value="<?php echo $consumable['for_office_id'] ?? 0; ?>">
+                                            <small class="text-muted">This consumable is allocated to this office</small>
                                         </div>
                                     </div>
                                 </div>
+
+                                <?php if ($balance_info && $balance_info['current_balance'] > 0): ?>
+                                    <div class="alert alert-warning">
+                                        <i class="bi bi-info-triangle"></i>
+                                        <strong>Outstanding Balance Detected:</strong> <?php echo htmlspecialchars($consumable['for_office_name'] ?? 'Target Office'); ?> has <?php echo $balance_info['current_balance']; ?> borrowed item(s) of this consumable.
+                                        <br><small class="text-muted">Balance Record ID: <?php echo $balance_info['id']; ?> - This balance record will be deleted and all borrowed items will be returned to the supply office before releasing new items.</small>
+                                    </div>
+                                <?php endif; ?>
+
                                 <div class="row">
                                     <div class="col-md-12">
                                         <div class="mb-3">
-                                            <label class="form-label">Received By</label>
-                                            <input type="text" class="form-control" name="received_by" 
+                                            <label class="form-label">Received By *</label>
+                                            <input type="text" class="form-control" name="received_by"
                                                    placeholder="Enter name of person receiving" required>
-                                            <small class="text-muted">Name of person receiving the consumables</small>
+                                            <small class="text-muted">Name of person receiving consumables</small>
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <div class="mb-3">
                                     <label class="form-label">Remarks</label>
-                                    <textarea class="form-control" name="remarks" rows="3" 
+                                    <textarea class="form-control" name="remarks" rows="3"
                                               placeholder="Enter any remarks or notes for this release..."></textarea>
                                 </div>
-                                
+
                                 <div class="alert alert-info">
-                                    <i class="bi bi-info-circle"></i> 
-                                    <strong>Note:</strong> If the target office already has this consumable, the quantity will be added to their existing stock. Otherwise, a new consumable record will be created.
+                                    <i class="bi bi-info-circle"></i>
+                                    <strong>Note:</strong> This will release consumables permanently. If the target office has borrowed items (tracked in consumable_balance), the balance record will be deleted and all borrowed items will be returned to the original supply office, then the remaining quantity will be released to the target office.
                                 </div>
-                                
+
                                 <div class="d-flex justify-content-between">
                                     <button type="button" class="btn btn-secondary" onclick="parent.closeReleaseModal()">
                                         <i class="bi bi-x-circle"></i> Cancel
                                     </button>
-                                    <button type="submit" class="btn btn-success">
-                                        <i class="bi bi-box-arrow-right"></i> Release Consumable
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-arrow-down-left"></i> Release Consumable
                                     </button>
                                 </div>
                             </form>
@@ -369,8 +442,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             </div>
         </div>
     </div>
-    
+
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // No JavaScript needed since target office is fixed
+    </script>
 </body>
 </html>
