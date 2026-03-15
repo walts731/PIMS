@@ -63,6 +63,26 @@ switch ($period_filter) {
         break;
 }
 
+// Create date condition for summary query (without ft alias)
+$summary_date_condition = "";
+switch ($period_filter) {
+    case 'today':
+        $summary_date_condition = " AND DATE(transaction_date) = CURDATE()";
+        break;
+    case 'week':
+        $summary_date_condition = " AND transaction_date >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
+        break;
+    case 'month':
+        $summary_date_condition = " AND transaction_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+        break;
+    case 'year':
+        $summary_date_condition = " AND transaction_date >= DATE_SUB(NOW(), INTERVAL 365 DAY)";
+        break;
+    default:
+        $summary_date_condition = "";
+        break;
+}
+
 
 
 // Get recent fuel in transactions from fuel_transactions table
@@ -71,14 +91,11 @@ $fuel_in_query = "SELECT ft.*, u.first_name, u.last_name
                  LEFT JOIN users u ON ft.user_id = u.id 
                  WHERE ft.transaction_type = 'IN'";
 
-
-
 // Add filters to query
-
 $where_conditions = [];
 
 if (!empty($fuel_type_filter)) {
-    $where_conditions[] = "ft.fuel_type = '" . $fuel_type_filter . "'";
+    $where_conditions[] = "ft.fuel_type = '" . $conn->real_escape_string($fuel_type_filter) . "'";
 }
 
 if (!empty($date_condition)) {
@@ -92,29 +109,12 @@ if (!empty($where_conditions)) {
 $fuel_in_query .= " ORDER BY ft.transaction_date DESC 
                  LIMIT 50";
 
+// Debug: Log the query for troubleshooting
+error_log('Fuel IN Query: ' . $fuel_in_query);
+error_log('Fuel Type Filter: ' . $fuel_type_filter);
+error_log('Period Filter: ' . $period_filter);
+
 $fuel_in_result = $conn->query($fuel_in_query);
-
-
-
-// Get filtered period fuel in summary
-
-$summary_date_condition = "";
-
-switch ($period_filter) {
-    case 'today':
-        $summary_date_condition = " AND DATE(ft.transaction_date) = CURDATE()";
-        break;
-    case 'week':
-        $summary_date_condition = " AND ft.transaction_date >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
-        break;
-    case 'month':
-        $summary_date_condition = " AND ft.transaction_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
-        break;
-    default:
-        $summary_date_condition = "";
-        break;
-
-}
 
 
 
@@ -124,13 +124,16 @@ $today_fuel_in_query = "SELECT fuel_type, SUM(quantity) as total_quantity
 
 // Add fuel type filter to summary if selected
 if (!empty($fuel_type_filter)) {
-    $today_fuel_in_query .= " AND fuel_type = '" . $fuel_type_filter . "'";
+    $today_fuel_in_query .= " AND fuel_type = '" . $conn->real_escape_string($fuel_type_filter) . "'";
 }
 
 // Add date condition to summary
 $today_fuel_in_query .= $summary_date_condition;
 
 $today_fuel_in_query .= " GROUP BY fuel_type";
+
+// Debug: Log the summary query
+error_log('Summary Query: ' . $today_fuel_in_query);
 
 $today_fuel_in_result = $conn->query($today_fuel_in_query);
 
@@ -190,22 +193,28 @@ if (in_array('fuel_in', $existing_tables)) {
 
 
 // If no fuel_in table, get total from fuel_transactions
-
 if (empty($total_fuel_in_all) && in_array('fuel_transactions', $existing_tables)) {
-
     $total_in_trans_query = "SELECT SUM(quantity) as total FROM fuel_transactions WHERE transaction_type = 'IN'";
-
-    $total_in_trans_result = $conn->query($total_in_trans_query);
-
-    if ($total_in_trans_result && $row = $total_in_trans_result->fetch_assoc()) {
-
-        $total_fuel_in_all = $row['total'] ?? 0;
-
+    
+    // Add fuel type filter to total calculation if selected
+    if (!empty($fuel_type_filter)) {
+        $total_in_trans_query .= " AND fuel_type = '" . $conn->real_escape_string($fuel_type_filter) . "'";
     }
-
+    
+    // Add period filter to total calculation if not 'all'
+    if ($period_filter !== 'all' && !empty($summary_date_condition)) {
+        $total_in_trans_query .= $summary_date_condition;
+    }
+    
+    $total_in_trans_result = $conn->query($total_in_trans_query);
+    
+    // Debug: Log the total query
+    error_log('Total Query: ' . $total_in_trans_query);
+    
+    if ($total_in_trans_result && $row = $total_in_trans_result->fetch_assoc()) {
+        $total_fuel_in_all = $row['total'] ?? 0;
+    }
 }
-
-
 
 // Calculate total transactions for display
 
@@ -731,31 +740,27 @@ if ($fuel_in_result) {
 
                             <select class="form-select" id="fuel_type" name="fuel_type" onchange="this.form.submit()">
 
-                                <option value="0" <?php echo $fuel_type_filter === 0 ? 'selected' : ''; ?>>
+                                <option value="" <?php echo empty($fuel_type_filter) ? 'selected' : ''; ?>>
 
                                     All Fuel Types
 
                                 </option>
 
-                                <?php 
-
-                                $fuel_types_result->data_seek(0);
-
-                                while ($fuel_type = $fuel_types_result->fetch_assoc()): ?>
+                                <?php foreach ($fuel_types as $fuel_type): ?>
 
                                     <option value="<?php echo $fuel_type['id']; ?>" 
 
-                                            <?php echo $fuel_type_filter === (int)$fuel_type['id'] ? 'selected' : ''; ?>>
+                                            <?php echo $fuel_type_filter === $fuel_type['id'] ? 'selected' : ''; ?>>
 
                                         <?php echo htmlspecialchars($fuel_type['name']); ?>
 
                                     </option>
 
-                                <?php endwhile; ?>
+                                <?php endforeach; ?>
 
                             </select>
 
-                            <?php if ($fuel_type_filter > 0 || $period_filter !== 'all'): ?>
+                            <?php if (!empty($fuel_type_filter) || $period_filter !== 'all'): ?>
 
                                 <a href="fuel_in.php" class="btn btn-outline-secondary">
 
@@ -777,7 +782,7 @@ if ($fuel_in_result) {
 
                             <small>
 
-                                <?php if ($period_filter !== 'all' || $fuel_type_filter > 0): ?>
+                                <?php if ($period_filter !== 'all' || !empty($fuel_type_filter)): ?>
 
                                     <i class="bi bi-funnel me-1"></i>
 
@@ -803,7 +808,7 @@ if ($fuel_in_result) {
 
                                     }
 
-                                    if ($fuel_type_filter > 0) {
+                                    if (!empty($fuel_type_filter)) {
 
                                         echo '<span class="badge bg-success">Selected Fuel Type</span>';
 
@@ -859,160 +864,7 @@ if ($fuel_in_result) {
 
 
 
-            <!-- Database View Toggle -->
-<div class="mb-3">
-    <div class="btn-group" role="group">
-        <button type="button" class="btn btn-outline-primary active" onclick="showTableView()">
-            <i class="bi bi-table"></i> Table View
-        </button>
-        <button type="button" class="btn btn-outline-info" onclick="showDatabaseView()">
-            <i class="bi bi-database"></i> Database View
-        </button>
-    </div>
-</div>
-
-<!-- Standard Table View -->
-<div id="tableView">
-    <div class="table-responsive">
-        <table class="table table-hover fuel-table">
-            <thead>
-                <tr>
-                    <th>Date/Time</th>
-                    <th>Fuel Type</th>
-                    <th>Quantity (L)</th>
-                    <th>Supplier</th>
-                    <th>Receipt #</th>
-                    <th>Recorded By</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-
-                    <tbody>
-
-                        <?php if ($fuel_in_result->num_rows > 0): ?>
-
-                            <?php while ($transaction = $fuel_in_result->fetch_assoc()): ?>
-
-                                <tr>
-                                    <td><?php echo date('M j, Y g:i A', strtotime($transaction['transaction_date'])); ?></td>
-                                    <td>
-                                        <span class="badge bg-success"><?php echo ucfirst(htmlspecialchars($transaction['fuel_type'])); ?></span>
-                                    </td>
-                                    <td><strong><?php echo number_format($transaction['quantity'], 2); ?></strong></td>
-                                    <td><?php echo htmlspecialchars($transaction['supplier'] ?? 'N/A'); ?></td>
-                                    <td><?php echo htmlspecialchars($transaction['source'] ?? 'N/A'); ?></td>
-                                    <td><?php echo htmlspecialchars($transaction['first_name'] . ' ' . $transaction['last_name']); ?></td>
-                                    <td>
-                                        <button class="btn btn-sm btn-outline-primary" onclick="viewTransaction(<?php echo $transaction['id']; ?>)">
-                                            <i class="bi bi-eye"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteTransaction(<?php echo $transaction['id']; ?>)">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-
-                            <?php endwhile; ?>
-
-                        <?php else: ?>
-
-                            <tr>
-
-                                <td colspan="7" class="text-center py-4">
-
-                                    <div class="text-muted">
-
-                                        <i class="bi bi-arrow-down-circle" style="font-size: 3rem;"></i>
-
-                                        <p class="mt-2 mb-0">No fuel in transactions found</p>
-
-                                        <small>Record your first fuel delivery</small>
-
-                                    </div>
-
-                                </td>
-
-                            </tr>
-
-                        <?php endif; ?>
-
-                    </tbody>
-
-                </table>
-
-            </div>
-
-</div>
-
-<!-- Database View -->
-<div id="databaseView" style="display: none;">
-    <div class="table-responsive">
-        <table class="table table-bordered table-striped">
-            <thead class="table-dark">
-                <tr>
-                    <th>ID</th>
-                    <th>Transaction Type</th>
-                    <th>Fuel Type</th>
-                    <th>Quantity (L)</th>
-                    <th>Transaction Date</th>
-                    <th>Source</th>
-                    <th>Supplier</th>
-                    <th>Tank Number</th>
-                    <th>Recipient Name</th>
-                    <th>Purpose</th>
-                    <th>Vehicle Equipment</th>
-                    <th>User ID</th>
-                    <th>Notes</th>
-                    <th>Created At</th>
-                    <th>Updated At</th>
-                    <th>Recorded By</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php 
-                // Reset result pointer for database view
-                $fuel_in_result->data_seek(0);
-                if ($fuel_in_result->num_rows > 0): 
-                    while ($transaction = $fuel_in_result->fetch_assoc()): 
-                ?>
-                    <tr>
-                        <td><?php echo $transaction['id']; ?></td>
-                        <td><span class="badge bg-success"><?php echo $transaction['transaction_type']; ?></span></td>
-                        <td><span class="badge bg-primary"><?php echo ucfirst($transaction['fuel_type']); ?></span></td>
-                        <td><strong><?php echo number_format($transaction['quantity'], 2); ?></strong></td>
-                        <td><?php echo date('Y-m-d H:i:s', strtotime($transaction['transaction_date'])); ?></td>
-                        <td><?php echo htmlspecialchars($transaction['source'] ?? 'N/A'); ?></td>
-                        <td><?php echo htmlspecialchars($transaction['supplier'] ?? 'N/A'); ?></td>
-                        <td><?php echo htmlspecialchars($transaction['tank_number'] ?? 'N/A'); ?></td>
-                        <td><?php echo htmlspecialchars($transaction['recipient_name'] ?? 'N/A'); ?></td>
-                        <td><?php echo htmlspecialchars($transaction['purpose'] ?? 'N/A'); ?></td>
-                        <td><?php echo htmlspecialchars($transaction['vehicle_equipment'] ?? 'N/A'); ?></td>
-                        <td><?php echo $transaction['user_id']; ?></td>
-                        <td><?php echo htmlspecialchars($transaction['notes'] ?? 'N/A'); ?></td>
-                        <td><?php echo date('Y-m-d H:i:s', strtotime($transaction['created_at'])); ?></td>
-                        <td><?php echo date('Y-m-d H:i:s', strtotime($transaction['updated_at'])); ?></td>
-                        <td><?php echo htmlspecialchars($transaction['first_name'] . ' ' . $transaction['last_name']); ?></td>
-                    </tr>
-                <?php 
-                    endwhile; 
-                else: 
-                ?>
-                    <tr>
-                        <td colspan="16" class="text-center py-4">
-                            <div class="text-muted">
-                                <i class="bi bi-database" style="font-size: 3rem;"></i>
-                                <p class="mt-2 mb-0">No fuel in transactions found</p>
-                                <small>No data in fuel_transactions table</small>
-                            </div>
-                        </td>
-                    </tr>
-                <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<!-- Fuel IN Transactions Table (like fuel_transactions.php) -->
+            <!-- Fuel IN Transactions Table (like fuel_transactions.php) -->
 <div class="container-fluid mt-4">
     <div class="table-container">
         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -1020,7 +872,7 @@ if ($fuel_in_result) {
                 <i class="bi bi-arrow-down-circle text-success me-2"></i>
                 Fuel IN Transaction History
                 <span class="badge bg-success text-white ms-2">
-                    <?php echo count($fuel_in_result); ?> Records
+                    <?php echo $fuel_in_result->num_rows; ?> Records
                 </span>
             </h4>
         </div>
@@ -1032,12 +884,10 @@ if ($fuel_in_result) {
                         <tr>
                             <th><i class="bi bi-calendar3 me-1"></i>Date</th>
                             <th><i class="bi bi-arrow-down-circle me-1"></i>Type</th>
-                            <th><i class="bi bi-truck me-1"></i>Vehicle</th>
-                            <th><i class="bi bi-upc me-1"></i>Plate</th>
                             <th><i class="bi bi-droplet me-1"></i>Quantity (L)</th>
                             <th><i class="bi bi-fuel-pump me-1"></i>Fuel Type</th>
+                            <th><i class="bi bi-building me-1"></i>Supplier</th>
                             <th><i class="bi bi-chat-text me-1"></i>Purpose</th>
-                            <th><i class="bi bi-speedometer2 me-1"></i>Odometer</th>
                             <th><i class="bi bi-person me-1"></i>Added By</th>
                         </tr>
                     </thead>
@@ -1057,12 +907,6 @@ if ($fuel_in_result) {
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="badge bg-light text-success">
-                                        <?php echo htmlspecialchars($transaction['vehicle_equipment'] ?? 'Unknown'); ?>
-                                    </span>
-                                </td>
-                                <td><?php echo htmlspecialchars($transaction['tank_number'] ?? 'N/A'); ?></td>
-                                <td>
                                     <strong class="text-success">
                                         <?php echo number_format($transaction['quantity'], 2); ?>
                                     </strong>
@@ -1072,8 +916,8 @@ if ($fuel_in_result) {
                                         <?php echo htmlspecialchars($transaction['fuel_type'] ?? ''); ?>
                                     </span>
                                 </td>
+                                <td><?php echo htmlspecialchars($transaction['supplier'] ?? 'N/A'); ?></td>
                                 <td><?php echo htmlspecialchars($transaction['purpose'] ?? ''); ?></td>
-                                <td><?php echo number_format($transaction['odometer_reading'] ?? 0); ?></td>
                                 <td><?php echo htmlspecialchars($transaction['first_name'] . ' ' . $transaction['last_name']); ?></td>
                             </tr>
                         <?php endwhile; ?>
@@ -1100,24 +944,6 @@ function deleteTransaction(id) {
         // Implement delete functionality
         alert('Delete transaction ID: ' + id);
     }
-}
-
-function showTableView() {
-    document.getElementById('tableView').style.display = 'block';
-    document.getElementById('databaseView').style.display = 'none';
-    
-    // Update button states
-    document.querySelectorAll('.btn-group button')[0].classList.add('active');
-    document.querySelectorAll('.btn-group button')[1].classList.remove('active');
-}
-
-function showDatabaseView() {
-    document.getElementById('tableView').style.display = 'none';
-    document.getElementById('databaseView').style.display = 'block';
-    
-    // Update button states
-    document.querySelectorAll('.btn-group button')[0].classList.remove('active');
-    document.querySelectorAll('.btn-group button')[1].classList.add('active');
 }
 
 $(document).ready(function() {
