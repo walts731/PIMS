@@ -102,11 +102,32 @@ try {
         }
     }
     
+    // Get total transaction counts from entire database
+    $total_fuel_in_count = 0;
+    $total_fuel_out_count = 0;
+    
+    if (in_array('fuel_transactions', $existing_tables)) {
+        // Count total fuel IN transactions
+        $total_in_count_query = "SELECT COUNT(*) as count FROM fuel_transactions WHERE transaction_type = 'IN'";
+        $total_in_count_result = $conn->query($total_in_count_query);
+        if ($total_in_count_result && $row = $total_in_count_result->fetch_assoc()) {
+            $total_fuel_in_count = $row['count'] ?? 0;
+        }
+        
+        // Count total fuel OUT transactions
+        $total_out_count_query = "SELECT COUNT(*) as count FROM fuel_transactions WHERE transaction_type = 'OUT'";
+        $total_out_count_result = $conn->query($total_out_count_query);
+        if ($total_out_count_result && $row = $total_out_count_result->fetch_assoc()) {
+            $total_fuel_out_count = $row['count'] ?? 0;
+        }
+    }
+    
+    $total_transactions = $total_fuel_in_count + $total_fuel_out_count;
+    
     if (empty($existing_tables)) {
         $error = 'No fuel tables found. Please contact administrator to set up fuel management tables.';
     } else {
-        // Get filter parameters - expanded to show all records
-        $date_from = isset($_GET['date_from']) ? trim((string)$_GET['date_from']) : date('Y-m-01', strtotime('-3 years'));
+        $date_from = isset($_GET['date_from']) ? trim((string)$_GET['date_from']) : date('Y-m-d', strtotime('-1 day'));
         $date_to = isset($_GET['date_to']) ? trim((string)$_GET['date_to']) : date('Y-m-d');
         $office_filter = isset($_GET['office']) ? (int)$_GET['office'] : 0;
         
@@ -547,9 +568,7 @@ try {
                             <div>
                                 <h6 class="text-muted mb-2">Total Transactions</h6>
                                 <h3 class="mb-0 text-info">
-                                    <?php 
-                                    $total_transactions = count($fuel_in_records) + count($fuel_out_records);
-                                    echo $total_transactions; ?>
+                                    <?php echo $total_transactions; ?>
                                     <small>Records</small>
                                 </h3>
                                 <small class="text-muted">
@@ -574,7 +593,17 @@ try {
                                 <?php echo count($fuel_in_records) + count($fuel_out_records); ?> Total
                             </span>
                         </h4>
-                        <div class="d-flex gap-2">
+                        <div class="d-flex gap-2 align-items-center">
+                            <div class="d-inline-block">
+                                <select class="form-select form-select-sm" id="officeFilter" onchange="filterByOffice()">
+                                    <option value="0">All Offices</option>
+                                    <?php foreach ($offices as $office): ?>
+                                        <option value="<?php echo (int)$office['id']; ?>" <?php echo $office_filter === (int)$office['id'] ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($office['office_name']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
                             <a href="fuel_transactions.php" class="btn btn-outline-info btn-sm">
                                 <i class="bi bi-arrow-right me-1"></i>
                                 Detailed View
@@ -689,7 +718,7 @@ try {
                             <div class="col-md-4">
                                 <div class="text-center p-3 bg-light rounded">
                                     <h6 class="text-muted mb-1">Total Transactions</h6>
-                                    <h4 class="mb-0 text-info"><?php echo count($all_transactions); ?></h4>
+                                    <h4 class="mb-0 text-info"><?php echo $total_transactions; ?></h4>
                                 </div>
                             </div>
                             <div class="col-md-4">
@@ -810,9 +839,7 @@ try {
                     <i class="bi bi-list-ul text-primary me-2"></i>
                     All Fuel Transactions
                     <span class="badge bg-primary text-white ms-2">
-                        <?php 
-                        $total_transactions = count($fuel_in_records) + count($fuel_out_records);
-                        echo $total_transactions; ?> 
+                        <?php echo $total_transactions; ?> 
                         Records
                     </span>
                 </h4>
@@ -1169,6 +1196,20 @@ if (!$conn || $conn->connect_error) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <?php require_once 'includes/sidebar-scripts.php'; ?>
     <script>
+        // Office filter function
+        function filterByOffice() {
+            const officeSelect = document.getElementById('officeFilter');
+            const currentUrl = new URL(window.location.href);
+            
+            if (officeSelect.value === '0') {
+                currentUrl.searchParams.delete('office');
+            } else {
+                currentUrl.searchParams.set('office', officeSelect.value);
+            }
+            
+            window.location.href = currentUrl.toString();
+        }
+        
         document.addEventListener('DOMContentLoaded', function() {
             const vehicleFilter = document.getElementById('vehicleFilter');
 

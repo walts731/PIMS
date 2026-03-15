@@ -20,10 +20,45 @@ logSystemAction($_SESSION['user_id'], 'access', 'main_user_dashboard', 'Main use
 
 $stats = [];
 
+// Fetch fuel data for 30 days report
+$fuel_stats = [];
+$fuel_in_last_30 = 0;
+$fuel_out_last_30 = 0;
+$fuel_transactions_last_30 = 0;
+
 if (!$conn || $conn->connect_error) {
     $stats['error'] = 'Database connection failed: ' . ($conn->connect_error ?? 'Unknown error');
 } else {
     try {
+        // Check if fuel_transactions table exists
+        $fuel_table_check = $conn->query("SHOW TABLES LIKE 'fuel_transactions'");
+        if ($fuel_table_check && $fuel_table_check->num_rows > 0) {
+            // Get fuel IN transactions for last 30 days
+            $fuel_in_query = "SELECT COUNT(*) as count, SUM(quantity) as total_quantity 
+                             FROM fuel_transactions 
+                             WHERE transaction_type = 'IN' 
+                             AND DATE(transaction_date) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
+            $fuel_in_result = $conn->query($fuel_in_query);
+            if ($fuel_in_result && $row = $fuel_in_result->fetch_assoc()) {
+                $fuel_in_last_30 = $row['count'] ?? 0;
+                $fuel_in_quantity = $row['total_quantity'] ?? 0;
+            }
+            
+            // Get fuel OUT transactions for last 30 days
+            $fuel_out_query = "SELECT COUNT(*) as count, SUM(quantity) as total_quantity 
+                              FROM fuel_transactions 
+                              WHERE transaction_type = 'OUT' 
+                              AND DATE(transaction_date) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
+            $fuel_out_result = $conn->query($fuel_out_query);
+            if ($fuel_out_result && $row = $fuel_out_result->fetch_assoc()) {
+                $fuel_out_last_30 = $row['count'] ?? 0;
+                $fuel_out_quantity = $row['total_quantity'] ?? 0;
+            }
+            
+            $fuel_transactions_last_30 = $fuel_in_last_30 + $fuel_out_last_30;
+            $fuel_net_balance = $fuel_in_quantity - $fuel_out_quantity;
+        }
+        
         $check_item_status = $conn->query("SHOW COLUMNS FROM asset_items LIKE 'status'");
         $item_has_status = $check_item_status && $check_item_status->num_rows > 0;
 
@@ -90,42 +125,6 @@ if (!$conn || $conn->connect_error) {
         }
         $stats['status_distribution'] = $status_distribution;
         
-        $fuel_report_query = "SELECT 
-                                COUNT(*) as total_fuel_records,
-                                SUM(liters) as total_liters,
-                                SUM(cost) as total_cost,
-                                AVG(cost_per_liter) as avg_cost_per_liter,
-                                MAX(date_filled) as last_fuel_date,
-                                COUNT(DISTINCT vehicle_id) as vehicles_used,
-                                SUM(CASE WHEN transaction_type = 'fuel_in' THEN liters ELSE 0 END) as fuel_in_liters,
-                                SUM(CASE WHEN transaction_type = 'fuel_out' THEN liters ELSE 0 END) as fuel_out_liters,
-                                SUM(CASE WHEN transaction_type = 'fuel_in' THEN cost ELSE 0 END) as fuel_in_cost,
-                                SUM(CASE WHEN transaction_type = 'fuel_out' THEN cost ELSE 0 END) as fuel_out_cost
-                            FROM fuel_records 
-                            WHERE date_filled >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
-        $fuel_result = $conn->query($fuel_report_query);
-        if ($fuel_result) {
-            $stats['fuel_report'] = $fuel_result->fetch_assoc();
-        }
-        
-        $recent_fuel_query = "SELECT 
-                                fr.id,
-                                fr.liters,
-                                fr.cost,
-                                fr.date_filled,
-                                v.vehicle_name,
-                                v.plate_number
-                            FROM fuel_records fr
-                            LEFT JOIN vehicles v ON fr.vehicle_id = v.id
-                            ORDER BY fr.date_filled DESC
-                            LIMIT 3";
-        $recent_fuel_result = $conn->query($recent_fuel_query);
-        $stats['recent_fuel'] = [];
-        if ($recent_fuel_result) {
-            while ($row = $recent_fuel_result->fetch_assoc()) {
-                $stats['recent_fuel'][] = $row;
-            }
-        }
     } catch (Exception $e) {
         $stats['error'] = 'Error fetching dashboard data: ' . $e->getMessage();
         error_log('Main User Dashboard Error: ' . $e->getMessage());
@@ -174,6 +173,12 @@ $page_title = 'Main User Dashboard';
     <link href="../assets/css/theme-custom.css" rel="stylesheet">
     <link href="../ADMIN/dashboard.css" rel="stylesheet">
     <style>
+        /* Purple icon for fuel report */
+        .stat-icon.purple {
+            background: linear-gradient(135deg, #6f42c1, #a855f7);
+            color: white;
+        }
+        
         /* Mobile dashboard value styling */
         @media (max-width: 768px) {
             .stat-value {
@@ -252,7 +257,7 @@ $page_title = 'Main User Dashboard';
             </div>
 
             <div class="row g-3 mb-4">
-                <div class="col-6 col-md-4">
+                <div class="col-6 col-md-3">
                     <div class="stat-card">
                         <div class="stat-icon blue">
                             <i class="bi bi-collection"></i>
@@ -262,7 +267,7 @@ $page_title = 'Main User Dashboard';
                         <div class="stat-sublabel"><?php echo number_format((float)$stats['serviceable_items']); ?> serviceable</div>
                     </div>
                 </div>
-                <div class="col-6 col-md-4">
+                <div class="col-6 col-md-3">
                     <div class="stat-card">
                         <div class="stat-icon green">
                             <span style="font-size: 1.25rem; font-weight: 600;">₱</span>
@@ -272,7 +277,7 @@ $page_title = 'Main User Dashboard';
                         <div class="stat-sublabel"><?php echo number_format((float)$stats['unserviceable_items']); ?> unserviceable</div>
                     </div>
                 </div>
-                <div class="col-12 col-md-4">
+                <div class="col-6 col-md-3">
                     <div class="stat-card">
                         <div class="stat-icon orange">
                             <i class="bi bi-building"></i>
@@ -280,6 +285,23 @@ $page_title = 'Main User Dashboard';
                         <div class="stat-value"><?php echo number_format((float)$stats['total_offices']); ?></div>
                         <div class="stat-label">Offices Covered</div>
                         <div class="stat-sublabel">All offices</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="stat-card fuel-report">
+                        <div class="stat-icon purple">
+                            <i class="bi bi-fuel-pump"></i>
+                        </div>
+                        <div class="stat-value"><?php echo $fuel_transactions_last_30; ?></div>
+                        <div class="stat-label">Fuel Report (30 Days)</div>
+                        <div class="stat-sublabel">
+                            <?php if ($fuel_transactions_last_30 > 0): ?>
+                                <span class="text-success"><?php echo $fuel_in_last_30; ?> IN</span> / 
+                                <span class="text-danger"><?php echo $fuel_out_last_30; ?> OUT</span>
+                            <?php else: ?>
+                                <span class="text-muted">No fuel data available</span>
+                            <?php endif; ?>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -507,6 +529,14 @@ $page_title = 'Main User Dashboard';
                             maintainAspectRatio: false,
                             plugins: {
                                 legend: { position: 'bottom' }
+                            },
+                            onClick: function(evt, activeElements) {
+                                if (activeElements.length > 0) {
+                                    const index = activeElements[0].index;
+                                    const status = statusLabels[index];
+                                    // Navigate to asset items page with status filter
+                                    window.location.href = 'asset_items.php?status=' + encodeURIComponent(status);
+                                }
                             }
                         }
                     });

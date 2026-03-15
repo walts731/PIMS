@@ -26,7 +26,7 @@ $office_name_filter = isset($_GET['office']) ? trim((string)$_GET['office']) : '
 $offices = [];
 
 $status_filter = isset($_GET['status']) ? trim((string)$_GET['status']) : '';
-$allowed_statuses = ['serviceable', 'unserviceable', 'red_tagged', 'borrowed', 'no_tag'];
+$allowed_statuses = ['serviceable', 'unserviceable', 'red_tagged', 'in_use', 'no_tag'];
 if ($status_filter !== '' && !in_array($status_filter, $allowed_statuses, true)) {
     $status_filter = '';
 }
@@ -36,6 +36,21 @@ $categories = [];
 
 $search_filter = isset($_GET['search']) ? trim((string)$_GET['search']) : '';
 
+$par_filter = isset($_GET['par']) ? trim((string)$_GET['par']) : '';
+$ics_filter = isset($_GET['ics']) ? trim((string)$_GET['ics']) : '';
+$consumable_filter = isset($_GET['consumable']) ? trim((string)$_GET['consumable']) : '';
+
+$allowed_form_filters = ['yes', 'no'];
+if ($par_filter !== '' && !in_array($par_filter, $allowed_form_filters, true)) {
+    $par_filter = '';
+}
+if ($ics_filter !== '' && !in_array($ics_filter, $allowed_form_filters, true)) {
+    $ics_filter = '';
+}
+if ($consumable_filter !== '' && !in_array($consumable_filter, $allowed_form_filters, true)) {
+    $consumable_filter = '';
+}
+
 if (!$conn || $conn->connect_error) {
     $error = 'Database connection failed: ' . ($conn->connect_error ?? 'Unknown error');
 } else {
@@ -44,8 +59,8 @@ if (!$conn || $conn->connect_error) {
         $fix_sql = "
             UPDATE asset_items ai 
             JOIN borrow_requests br ON br.asset_id = ai.id 
-            SET ai.status = 'borrowed' 
-            WHERE br.status = 'approved' AND ai.status != 'borrowed'
+            SET ai.status = 'in_use' 
+            WHERE br.status = 'approved' AND ai.status != 'in_use'
         ";
         $conn->query($fix_sql);
         
@@ -74,6 +89,8 @@ if (!$conn || $conn->connect_error) {
                     ai.status as item_status,
                     ai.value as item_value,
                     ai.last_updated,
+                    ai.par_id,
+                    ai.ics_id,
                     a.id,
                     a.description,
                     a.unit,
@@ -103,41 +120,26 @@ if (!$conn || $conn->connect_error) {
                 LEFT JOIN offices o ON o.id = ai.office_id
                 LEFT JOIN borrow_requests br ON br.asset_id = ai.id AND br.status = 'approved'
                 LEFT JOIN offices borrower_office ON borrower_office.id = br.requested_by_office
-                LEFT JOIN users u ON u.id = br.requested_by";
+                LEFT JOIN users u ON u.id = br.requested_by
+                LEFT JOIN par_forms par ON ai.par_id = par.id
+                LEFT JOIN ics_forms ics ON ai.ics_id = ics.id";
 
         $params = [];
         $types = '';
         $where_clauses = [];
 
         if ($status_filter !== '') {
-            if ($status_filter === 'borrowed') {
-                // For borrowed status, filter by asset_items.status = 'borrowed'
-                $where_clauses[] = "ai.status = 'borrowed'";
-            } else {
-                $where_clauses[] = "ai.status = ?";
-                $params[] = $status_filter;
-                $types .= 's';
-            }
+            $where_clauses[] = "ai.status = ?";
+            $params[] = $status_filter;
+            $types .= 's';
         }
 
         if ($office_filter > 0) {
-            if ($status_filter === 'borrowed') {
-                // For borrowed assets, filter by borrower office
-                $where_clauses[] = "borrower_office.id = ?";
-            } else {
-                // For other statuses, filter by owning office
-                $where_clauses[] = "ai.office_id = ?";
-            }
+            $where_clauses[] = "ai.office_id = ?";
             $params[] = $office_filter;
             $types .= 'i';
         } elseif ($office_name_filter !== '') {
-            if ($status_filter === 'borrowed') {
-                // For borrowed assets, filter by borrower office name
-                $where_clauses[] = "borrower_office.office_name = ?";
-            } else {
-                // For other statuses, filter by owning office name
-                $where_clauses[] = "o.office_name = ?";
-            }
+            $where_clauses[] = "o.office_name = ?";
             $params[] = $office_name_filter;
             $types .= 's';
         }
@@ -155,19 +157,37 @@ if (!$conn || $conn->connect_error) {
             $params[] = $search_param;
             $types .= 'ss';
         }
+        
+        if ($par_filter !== '') {
+            if ($par_filter === 'yes') {
+                $where_clauses[] = "ai.par_id IS NOT NULL AND ai.par_id > 0";
+            } else {
+                $where_clauses[] = "(ai.par_id IS NULL OR ai.par_id = 0)";
+            }
+        }
+        
+        if ($ics_filter !== '') {
+            if ($ics_filter === 'yes') {
+                $where_clauses[] = "ai.ics_id IS NOT NULL AND ai.ics_id > 0";
+            } else {
+                $where_clauses[] = "(ai.ics_id IS NULL OR ai.ics_id = 0)";
+            }
+        }
+        
+        if ($consumable_filter !== '') {
+            if ($consumable_filter === 'yes') {
+                $where_clauses[] = "ac.category_name LIKE '%consumable%'";
+            } else {
+                $where_clauses[] = "ac.category_name NOT LIKE '%consumable%'";
+            }
+        }
 
         if (!empty($where_clauses)) {
             $sql .= " WHERE " . implode(' AND ', $where_clauses);
         }
 
         // Group by office for per-office display
-        if ($status_filter === 'borrowed') {
-            // For borrowed assets, group and sort by borrower office
-            $sql .= " GROUP BY borrower_office.id, ai.id ORDER BY borrower_office.office_name ASC, ai.last_updated DESC";
-        } else {
-            // For other statuses, group and sort by owning office
-            $sql .= " GROUP BY o.id, ai.id ORDER BY o.office_name ASC, ai.last_updated DESC";
-        }
+        $sql .= " GROUP BY o.id, ai.id ORDER BY o.office_name ASC, ai.last_updated DESC";
 
         $stmt = $conn->prepare($sql);
         if (!$stmt) {
@@ -381,7 +401,7 @@ if (!$conn || $conn->connect_error) {
                                         $office_display = htmlspecialchars($office_name_filter);
                                     }
                                     $category_display = isset($categories[array_search($category_filter, array_column($categories, 'id'))]['category_name']) ? htmlspecialchars($categories[array_search($category_filter, array_column($categories, 'id'))]['category_name']) : "Category " . $category_filter;
-                                    $office_text = ($status_filter === 'borrowed') ? "borrowed by" : "of";
+                                    $office_text = ($status_filter === 'in_use') ? "borrowed by" : "of";
                                     echo "Viewing " . htmlspecialchars(ucfirst($status_filter)) . " " . $category_display . " assets " . $office_text . " " . $office_display . ".";
                                 } elseif (($office_filter > 0 || $office_name_filter !== '') && $status_filter !== '') {
                                     $office_display = '';
@@ -390,7 +410,7 @@ if (!$conn || $conn->connect_error) {
                                     } elseif ($office_name_filter !== '') {
                                         $office_display = htmlspecialchars($office_name_filter);
                                     }
-                                    $office_text = ($status_filter === 'borrowed') ? "borrowed by" : "of";
+                                    $office_text = ($status_filter === 'in_use') ? "borrowed by" : "of";
                                     echo "Viewing " . htmlspecialchars(ucfirst($status_filter)) . " assets " . $office_text . " " . $office_display . ".";
                                 } elseif (($office_filter > 0 || $office_name_filter !== '') && $category_filter > 0) {
                                     $office_display = '';
@@ -444,7 +464,7 @@ if (!$conn || $conn->connect_error) {
                                     <option value="serviceable" <?php echo $status_filter === 'serviceable' ? 'selected' : ''; ?>>Serviceable</option>
                                     <option value="unserviceable" <?php echo $status_filter === 'unserviceable' ? 'selected' : ''; ?>>Unserviceable</option>
                                     <option value="red_tagged" <?php echo $status_filter === 'red_tagged' ? 'selected' : ''; ?>>Red-Tagged</option>
-                                    <option value="borrowed" <?php echo $status_filter === 'borrowed' ? 'selected' : ''; ?>>Borrowed</option>
+                                    <option value="in_use" <?php echo $status_filter === 'in_use' ? 'selected' : ''; ?>>Borrowed</option>
                                     <option value="no_tag" <?php echo $status_filter === 'no_tag' ? 'selected' : ''; ?>>No Tag</option>
                                 </select>
                             </div>
@@ -456,6 +476,17 @@ if (!$conn || $conn->connect_error) {
                                             <?php echo htmlspecialchars($category['category_name']); ?>
                                         </option>
                                     <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="d-inline-block" style="min-width: 180px;">
+                                <select class="form-select form-select-sm" id="formTypeFilter">
+                                    <option value="" <?php echo ($par_filter === '' && $ics_filter === '' && $consumable_filter === '') ? 'selected' : ''; ?>>All Form Types</option>
+                                    <option value="par_yes" <?php echo $par_filter === 'yes' && $ics_filter === '' && $consumable_filter === '' ? 'selected' : ''; ?>>With PAR</option>
+                                    <option value="par_no" <?php echo $par_filter === 'no' && $ics_filter === '' && $consumable_filter === '' ? 'selected' : ''; ?>>No PAR</option>
+                                    <option value="ics_yes" <?php echo $ics_filter === 'yes' && $par_filter === '' && $consumable_filter === '' ? 'selected' : ''; ?>>With ICS</option>
+                                    <option value="ics_no" <?php echo $ics_filter === 'no' && $par_filter === '' && $consumable_filter === '' ? 'selected' : ''; ?>>No ICS</option>
+                                    <option value="consumable_yes" <?php echo $consumable_filter === 'yes' && $par_filter === '' && $ics_filter === '' ? 'selected' : ''; ?>>Consumable</option>
+                                    <option value="consumable_no" <?php echo $consumable_filter === 'no' && $par_filter === '' && $ics_filter === '' ? 'selected' : ''; ?>>Non-Consumable</option>
                                 </select>
                             </div>
                             <a class="btn btn-outline-primary btn-sm" href="assets.php">
@@ -524,7 +555,7 @@ if (!$conn || $conn->connect_error) {
                                                     $status_class = 'status-red-tagged';
                                                     $display_status = 'Red-Tagged';
                                                     break;
-                                                case 'borrowed':
+                                                case 'in_use':
                                                     $status_class = 'status-borrowed';
                                                     $display_status = 'Borrowed';
                                                     break;
@@ -686,6 +717,7 @@ if (!$conn || $conn->connect_error) {
             const categoryFilter = document.getElementById('categoryFilter');
             const officeFilter = document.getElementById('officeFilter');
             const statusFilter = document.getElementById('statusFilter');
+            const formTypeFilter = document.getElementById('formTypeFilter');
             
             function applyFilters() {
                 const currentUrl = new URL(window.location.href);
@@ -713,6 +745,28 @@ if (!$conn || $conn->connect_error) {
                 } else {
                     currentUrl.searchParams.delete('category_id');
                 }
+                
+                // Apply form type filter
+                const formTypeValue = formTypeFilter.value || '';
+                
+                // Clear all existing form type filters first
+                currentUrl.searchParams.delete('par');
+                currentUrl.searchParams.delete('ics');
+                currentUrl.searchParams.delete('consumable');
+                
+                // Apply the appropriate filter based on selection
+                if (formTypeValue) {
+                    if (formTypeValue.startsWith('par_')) {
+                        const parValue = formTypeValue.replace('par_', '');
+                        currentUrl.searchParams.set('par', parValue);
+                    } else if (formTypeValue.startsWith('ics_')) {
+                        const icsValue = formTypeValue.replace('ics_', '');
+                        currentUrl.searchParams.set('ics', icsValue);
+                    } else if (formTypeValue.startsWith('consumable_')) {
+                        const consumableValue = formTypeValue.replace('consumable_', '');
+                        currentUrl.searchParams.set('consumable', consumableValue);
+                    }
+                }
 
                 window.location.href = currentUrl.toString();
             }
@@ -726,6 +780,9 @@ if (!$conn || $conn->connect_error) {
             }
             if (categoryFilter) {
                 categoryFilter.addEventListener('change', applyFilters);
+            }
+            if (formTypeFilter) {
+                formTypeFilter.addEventListener('change', applyFilters);
             }
         });
 
