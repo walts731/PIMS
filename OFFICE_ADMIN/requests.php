@@ -221,6 +221,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
         case 'bulk_mark_borrowed':
             $request_ids = $_POST['request_ids'] ?? '';
+            error_log("bulk_mark_borrowed called with request_ids: " . $request_ids);
+            
             if (empty($request_ids)) {
                 echo json_encode(['success' => false, 'error' => 'No requests selected']);
                 exit;
@@ -230,8 +232,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $marked_count = 0;
             
             foreach ($id_array as $request_id) {
-                $request_id = (int)trim($request_id);
+                $request_id = (int) trim($request_id);
                 if ($request_id <= 0) continue;
+                
+                error_log("Processing request ID: " . $request_id);
                 
                 $update_query = "UPDATE borrow_requests SET 
                                  status = 'borrowed' 
@@ -240,6 +244,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->bind_param("ii", $request_id, $office_id);
                 
                 if ($stmt->execute() && $stmt->affected_rows > 0) {
+                    error_log("Successfully updated request ID: " . $request_id . " Affected rows: " . $stmt->affected_rows);
+                    
                     // Update asset status to in_use when marked as borrowed
                     $asset_update = "UPDATE asset_items SET status = 'in_use' 
                                     WHERE id = (SELECT asset_id FROM borrow_requests WHERE id = ?)";
@@ -249,8 +255,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     $marked_count++;
                     logSystemAction($_SESSION['user_id'], 'bulk_mark_borrowed', 'borrow_request', "Bulk marked borrow request #$request_id as borrowed");
+                } else {
+                    error_log("Failed to update request ID: " . $request_id . " Error: " . $stmt->error);
                 }
             }
+            
+            error_log("Total marked count: " . $marked_count);
             
             if ($marked_count > 0) {
                 echo json_encode(['success' => true, 'message' => "$marked_count requests marked as borrowed"]);
@@ -261,6 +271,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
         // Real-time Updates Handler
         case 'check_updates':
+            // Clean any previous output
+            if (ob_get_level()) {
+                ob_clean();
+            }
+            
             $last_update = $_GET['last_update'] ?? '';
             $has_updates = false;
             $new_requests = [];
@@ -345,16 +360,116 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 } catch (Exception $e) {
                     error_log("Error checking updates: " . $e->getMessage());
+                    // Return error response
+                    header('Content-Type: application/json');
+                    echo json_encode([
+                        'error' => 'Database error occurred',
+                        'has_updates' => false,
+                        'timestamp' => date('Y-m-d H:i:s')
+                    ]);
+                    exit;
                 }
             }
             
-            echo json_encode([
+            // Set proper content type and output clean JSON
+            header('Content-Type: application/json');
+            $response = [
                 'has_updates' => $has_updates,
                 'new_requests' => $new_requests,
                 'changed_requests' => $changed_requests,
                 'stats' => $current_stats,
                 'timestamp' => date('Y-m-d H:i:s')
-            ]);
+            ];
+            
+            echo json_encode($response);
+            exit;
+            
+        case 'cancel_request':
+            $request_id = $_POST['request_id'] ?? 0;
+            
+            // Verify this is an outgoing request from the current office
+            $verify_query = "SELECT id FROM borrow_requests 
+                           WHERE id = ? AND requested_by_office = ? AND status = 'pending'";
+            $stmt = $conn->prepare($verify_query);
+            $stmt->bind_param("ii", $request_id, $office_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($result->num_rows > 0) {
+                // Update request status to cancelled
+                $update_query = "UPDATE borrow_requests SET 
+                                 status = 'cancelled' 
+                                 WHERE id = ? AND requested_by_office = ?";
+                $stmt = $conn->prepare($update_query);
+                $stmt->bind_param("ii", $request_id, $office_id);
+                
+                if ($stmt->execute()) {
+                    // Update asset status back to serviceable when request is cancelled
+                    $asset_update = "UPDATE asset_items SET status = 'serviceable' 
+                                    WHERE id = (SELECT asset_id FROM borrow_requests WHERE id = ?)";
+                    $stmt2 = $conn->prepare($asset_update);
+                    $stmt2->bind_param("i", $request_id);
+                    $stmt2->execute();
+                    
+                    $_SESSION['success'] = "Request cancelled successfully";
+                    logSystemAction($_SESSION['user_id'], 'cancel', 'borrow_request', "Cancelled borrow request #$request_id");
+                } else {
+                    $_SESSION['error'] = "Error cancelling request";
+                }
+            } else {
+                $_SESSION['error'] = "Request not found or cannot be cancelled";
+            }
+            break;
+            
+        case 'bulk_cancel':
+            $request_ids = $_POST['request_ids'] ?? '';
+            if (empty($request_ids)) {
+                echo json_encode(['success' => false, 'error' => 'No request IDs provided']);
+                exit;
+            }
+            
+            $request_id_array = explode(',', $request_ids);
+            $cancelled_count = 0;
+            
+            foreach ($request_id_array as $request_id) {
+                $request_id = trim($request_id);
+                if (empty($request_id)) continue;
+                
+                // Verify this is an outgoing request from current office
+                $verify_query = "SELECT id FROM borrow_requests 
+                               WHERE id = ? AND requested_by_office = ? AND status = 'pending'";
+                $stmt = $conn->prepare($verify_query);
+                $stmt->bind_param("ii", $request_id, $office_id);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                
+                if ($result->num_rows > 0) {
+                    // Update request status to cancelled
+                    $update_query = "UPDATE borrow_requests SET 
+                                     status = 'cancelled' 
+                                     WHERE id = ? AND requested_by_office = ?";
+                    $stmt = $conn->prepare($update_query);
+                    $stmt->bind_param("ii", $request_id, $office_id);
+                    
+                    if ($stmt->execute()) {
+                        // Update asset status back to serviceable when request is cancelled
+                        $asset_update = "UPDATE asset_items SET status = 'serviceable' 
+                                        WHERE id = (SELECT asset_id FROM borrow_requests WHERE id = ?)";
+                        $stmt2 = $conn->prepare($asset_update);
+                        $stmt2->bind_param("i", $request_id);
+                        $stmt2->execute();
+                        
+                        $cancelled_count++;
+                        logSystemAction($_SESSION['user_id'], 'bulk_cancel', 'borrow_request', "Cancelled borrow request #$request_id");
+                    }
+                }
+            }
+            
+            if ($cancelled_count > 0) {
+                echo json_encode(['success' => true, 'message' => "$cancelled_count requests cancelled"]);
+            } else {
+                echo json_encode(['success' => false, 'error' => 'No requests were cancelled']);
+            }
             exit;
             
         case 'deny_request':
@@ -451,9 +566,11 @@ $request_stats = [
     'pending_incoming' => 0,
     'approved_incoming' => 0,
     'borrowed_incoming' => 0,
+    'denied_incoming' => 0,
     'pending_outgoing' => 0,
     'approved_outgoing' => 0,
-    'borrowed_outgoing' => 0
+    'borrowed_outgoing' => 0,
+    'denied_outgoing' => 0
 ];
 
 if ($office_id && $conn) {
@@ -483,6 +600,8 @@ if ($office_id && $conn) {
                 $request_stats['approved_incoming']++;
             } elseif ($row['status'] === 'borrowed') {
                 $request_stats['borrowed_incoming']++;
+            } elseif ($row['status'] === 'denied') {
+                $request_stats['denied_incoming']++;
             }
         }
         
@@ -694,6 +813,7 @@ if ($office_id && $conn) {
         .status-borrowed { background: #cff4fc; color: #055160; }
         .status-returned { background: #d1ecf1; color: #0c5460; }
         .status-denied { background: #f8d7da; color: #721c24; }
+        .status-cancelled { background: #e2e3e5; color: #495057; }
         
         .quick-action {
             width: 32px;
@@ -749,6 +869,97 @@ if ($office_id && $conn) {
         #selectedCount {
             font-weight: 600;
             color: #191BA9;
+        }
+        
+        .search-container {
+            position: relative;
+        }
+        
+        .search-container .input-group {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-radius: 25px;
+            overflow: hidden;
+        }
+        
+        .search-container .input-group-text {
+            background: transparent;
+            border: none;
+            color: #6c757d;
+            padding-left: 1rem;
+        }
+        
+        .search-container .form-control {
+            border: none;
+            border-radius: 25px;
+            padding-left: 0.5rem;
+            font-weight: 500;
+        }
+        
+        .search-container .form-control:focus {
+            box-shadow: none;
+            border-color: #5CC2F2;
+        }
+        
+        .search-container .btn {
+            border: none;
+            border-radius: 0 25px 25px 0;
+            background: rgba(92, 194, 242, 0.1);
+            color: #191BA9;
+        }
+        
+        .search-container .btn:hover {
+            background: rgba(92, 194, 242, 0.2);
+        }
+        
+        .dropdown-menu .dropdown-item {
+            padding: 0;
+        }
+        
+        .dropdown-menu .dropdown-item:hover {
+            background: transparent;
+        }
+        
+        .highlight-search {
+            background-color: #fff3cd;
+            padding: 2px 4px;
+            border-radius: 3px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        /* Page Footer Styles */
+        .page-footer {
+            margin-top: 3rem;
+            padding: 2rem 0;
+            border-top: 1px solid rgba(0,0,0,0.1);
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        }
+        
+        .footer-content {
+            text-align: center;
+        }
+        
+        .footer-spacer {
+            height: 2rem;
+        }
+        
+        .footer-info {
+            opacity: 0.7;
+        }
+        
+        /* Ensure main content has proper bottom spacing */
+        .main-content {
+            padding-bottom: 2rem;
+        }
+        
+        /* Add some breathing room for the table */
+        #requestsContainer {
+            margin-bottom: 2rem;
         }
     </style>
 </head>
@@ -832,7 +1043,7 @@ $page_title = 'Requests Management';
                 <div class="stats-card">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <div class="stats-number"><?php echo $request_stats['pending_outgoing']; ?></div>
+                            <div class="stats-number" data-stat="pending_outgoing"><?php echo $request_stats['pending_outgoing']; ?></div>
                             <div class="text-muted">Pending Outgoing</div>
                             <small class="text-info">Awaiting approval</small>
                         </div>
@@ -846,7 +1057,7 @@ $page_title = 'Requests Management';
                 <div class="stats-card">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <div class="stats-number"><?php echo $request_stats['borrowed_outgoing']; ?></div>
+                            <div class="stats-number" data-stat="borrowed_outgoing"><?php echo $request_stats['borrowed_outgoing']; ?></div>
                             <div class="text-muted">Borrowed Outgoing</div>
                             <small class="text-info">Currently borrowed</small>
                         </div>
@@ -867,9 +1078,78 @@ $page_title = 'Requests Management';
                         <button class="btn btn-sm btn-outline-primary" onclick="refreshRequests()">
                             <i class="bi bi-arrow-clockwise"></i> Refresh
                         </button>
-                        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#newRequestModal">
-                            <i class="bi bi-plus-circle"></i> New Request
-                        </button>
+                    </div>
+                </div>
+                
+                <!-- Advanced Search Bar -->
+                <div class="row mb-3">
+                    <div class="col-md-8">
+                        <div class="search-container">
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-search"></i>
+                                </span>
+                                <input type="text" class="form-control" id="advancedSearchInput" 
+                                       placeholder="Search requests by asset, requester, purpose, or status...">
+                                <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-funnel"></i> Filters
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end" style="min-width: 300px;">
+                                    <li><h6 class="dropdown-header">Search Filters</h6></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li class="dropdown-item">
+                                        <div class="mb-2">
+                                            <label class="form-label small">Request Type</label>
+                                            <select class="form-select form-select-sm" id="filterType">
+                                                <option value="">All Types</option>
+                                                <option value="incoming">Incoming</option>
+                                                <option value="outgoing">Outgoing</option>
+                                            </select>
+                                        </div>
+                                    </li>
+                                    <li class="dropdown-item">
+                                        <div class="mb-2">
+                                            <label class="form-label small">Status</label>
+                                            <select class="form-select form-select-sm" id="filterStatus">
+                                                <option value="">All Statuses</option>
+                                                <option value="pending">Pending</option>
+                                                <option value="approved">Approved</option>
+                                                <option value="borrowed">Borrowed</option>
+                                                <option value="returned">Returned</option>
+                                                <option value="denied">Denied</option>
+                                            </select>
+                                        </div>
+                                    </li>
+                                    <li class="dropdown-item">
+                                        <div class="mb-2">
+                                            <label class="form-label small">Date Range</label>
+                                            <div class="row g-2">
+                                                <div class="col-6">
+                                                    <input type="date" class="form-control form-control-sm" id="filterDateFrom" placeholder="From">
+                                                </div>
+                                                <div class="col-6">
+                                                    <input type="date" class="form-control form-control-sm" id="filterDateTo" placeholder="To">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <button class="dropdown-item" onclick="applyAdvancedFilters()">
+                                            <i class="bi bi-check-circle"></i> Apply Filters
+                                        </button>
+                                        <button class="dropdown-item" onclick="clearAdvancedFilters()">
+                                            <i class="bi bi-x-circle"></i> Clear Filters
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-flex gap-2 align-items-center">
+                            <small class="text-muted" id="searchResultsCount">Showing all requests</small>
+                        </div>
                     </div>
                 </div>
                 <div class="filter-tabs">
@@ -899,15 +1179,41 @@ $page_title = 'Requests Management';
                                 <span id="selectedCount">0</span> requests selected
                             </span>
                             <div class="btn-group" role="group">
-                                <button class="btn btn-sm btn-outline-success" id="bulkApproveBtn" disabled>
-                                    <i class="bi bi-check-circle"></i> Approve Selected
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger" id="bulkDenyBtn" disabled>
-                                    <i class="bi bi-x-circle"></i> Deny Selected
-                                </button>
-                                <button class="btn btn-sm btn-outline-warning" id="bulkMarkBorrowedBtn" disabled>
-                                    <i class="bi bi-hand-index"></i> Mark Borrowed
-                                </button>
+                                <!-- Buttons for "needs_action" filter (incoming requests) -->
+                                <div id="incomingBulkActions" class="btn-group" role="group">
+                                    <button class="btn btn-sm btn-outline-success" id="bulkApproveBtn" disabled>
+                                        <i class="bi bi-check-circle"></i> Approve Selected
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" id="bulkDenyBtn" disabled>
+                                        <i class="bi bi-x-circle"></i> Deny Selected
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-warning" id="bulkMarkBorrowedBtn" disabled>
+                                        <i class="bi bi-hand-index"></i> Mark Borrowed
+                                    </button>
+                                </div>
+                                
+                                <!-- Buttons for "waiting" filter (outgoing requests) -->
+                                <div id="outgoingBulkActions" class="btn-group d-none" role="group">
+                                    <button class="btn btn-sm btn-outline-danger" id="bulkCancelBtn" disabled>
+                                        <i class="bi bi-x-circle"></i> Cancel Selected
+                                    </button>
+                                </div>
+                                
+                                <!-- Buttons for "all" filter (both incoming and outgoing) -->
+                                <div id="allBulkActions" class="btn-group d-none" role="group">
+                                    <button class="btn btn-sm btn-outline-success" id="bulkApproveBtnAll" disabled>
+                                        <i class="bi bi-check-circle"></i> Approve Selected
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" id="bulkDenyBtnAll" disabled>
+                                        <i class="bi bi-x-circle"></i> Deny Selected
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-warning" id="bulkMarkBorrowedBtnAll" disabled>
+                                        <i class="bi bi-hand-index"></i> Mark Borrowed
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" id="bulkCancelBtnAll" disabled>
+                                        <i class="bi bi-x-circle"></i> Cancel Selected
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         <button class="btn btn-sm btn-outline-secondary" onclick="clearSelection()">
@@ -1037,6 +1343,12 @@ $page_title = 'Requests Management';
                                                     <button class="btn btn-sm btn-primary action-btn" 
                                                             onclick="returnAsset(<?php echo $request['id']; ?>)">
                                                         <i class="bi bi-arrow-return-left"></i> Return
+                                                    </button>
+                                                <?php elseif ($request['request_type'] === 'outgoing' && $request['status'] === 'pending'): ?>
+                                                    <button class="btn btn-sm btn-outline-danger action-btn" 
+                                                            onclick="cancelRequest(<?php echo $request['id']; ?>)"
+                                                            title="Cancel request">
+                                                        <i class="bi bi-x-circle"></i> Cancel
                                                     </button>
                                                 <?php endif; ?>
                                                 <button class="btn btn-sm btn-outline-info action-btn" 
@@ -1869,6 +2181,9 @@ $page_title = 'Requests Management';
             const filterTabs = document.querySelectorAll('.filter-tab');
             const requestRows = document.querySelectorAll('.request-row');
             
+            // Apply initial filter for "needs_action" on page load
+            applyInitialFilter();
+            
             filterTabs.forEach(tab => {
                 tab.addEventListener('click', function() {
                     const filter = this.dataset.filter;
@@ -1883,12 +2198,14 @@ $page_title = 'Requests Management';
                         
                         switch(filter) {
                             case 'needs_action':
+                                // Show only incoming pending requests that need action
                                 if (row.dataset.needsAction !== 'true') {
                                     row.classList.add('hidden');
                                 }
                                 break;
                             case 'waiting':
-                                if (row.dataset.needsAction === 'true' || row.dataset.type === 'incoming') {
+                                // Show only outgoing requests (waiting for others' action)
+                                if (row.dataset.type === 'incoming') {
                                     row.classList.add('hidden');
                                 }
                                 break;
@@ -1899,8 +2216,23 @@ $page_title = 'Requests Management';
                     });
                     
                     updateEmptyState();
+                    updateSelectAllCheckboxState();
+                    updateBulkActionsButtons(filter);
                 });
             });
+        }
+        
+        function applyInitialFilter() {
+            // Apply the initial "needs_action" filter when page loads
+            const requestRows = document.querySelectorAll('.request-row');
+            requestRows.forEach(row => {
+                if (row.dataset.needsAction !== 'true') {
+                    row.classList.add('hidden');
+                }
+            });
+            updateEmptyState();
+            updateSelectAllCheckboxState();
+            updateBulkActionsButtons('needs_action');
         }
         
         // Quick Action Functions
@@ -1919,7 +2251,7 @@ $page_title = 'Requests Management';
         }
         
         function quickDeny(requestId) {
-            const reason = prompt('Please enter a reason for denial:');
+            const reason = prompt('Please enter the reason for denial:');
             if (reason) {
                 const form = document.createElement('form');
                 form.method = 'POST';
@@ -1946,8 +2278,17 @@ $page_title = 'Requests Management';
             }
         }
         
-        function refreshRequests() {
-            window.location.reload();
+        function cancelRequest(requestId) {
+            if (confirm('Are you sure you want to cancel this request? This action cannot be undone.')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.innerHTML = `
+                    <input type="hidden" name="action" value="cancel_request">
+                    <input type="hidden" name="request_id" value="${requestId}">
+                `;
+                document.body.appendChild(form);
+                form.submit();
+            }
         }
         
         function updateEmptyState() {
@@ -1996,7 +2337,22 @@ $page_title = 'Requests Management';
                     'X-Requested-With': 'XMLHttpRequest'
                 }
             })
-            .then(response => response.json())
+            .then(response => {
+                // Log the response status and text for debugging
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers.get('content-type'));
+                return response.text().then(text => {
+                    console.log('Raw response:', text);
+                    // Try to parse JSON
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                        console.error('JSON parse error:', e);
+                        console.error('Response text that failed to parse:', text);
+                        throw e;
+                    }
+                });
+            })
             .then(data => {
                 if (data.has_updates) {
                     showNotification('New requests or status changes detected', 'info');
@@ -2150,6 +2506,193 @@ $page_title = 'Requests Management';
             }
         });
         
+        // Advanced Search Functionality
+        let searchTimeout;
+        let currentFilters = {
+            text: '',
+            type: '',
+            status: '',
+            dateFrom: '',
+            dateTo: ''
+        };
+        
+        function initAdvancedSearch() {
+            const searchInput = document.getElementById('advancedSearchInput');
+            if (searchInput) {
+                // Real-time search with debounce
+                searchInput.addEventListener('input', function() {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        currentFilters.text = this.value.toLowerCase();
+                        performAdvancedSearch();
+                    }, 300);
+                });
+                
+                // Clear search on escape
+                searchInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') {
+                        this.value = '';
+                        currentFilters.text = '';
+                        performAdvancedSearch();
+                    }
+                });
+            }
+        }
+        
+        function applyAdvancedFilters() {
+            currentFilters.type = document.getElementById('filterType')?.value || '';
+            currentFilters.status = document.getElementById('filterStatus')?.value || '';
+            currentFilters.dateFrom = document.getElementById('filterDateFrom')?.value || '';
+            currentFilters.dateTo = document.getElementById('filterDateTo')?.value || '';
+            
+            performAdvancedSearch();
+            updateSearchResultsCount();
+        }
+        
+        function clearAdvancedFilters() {
+            currentFilters = {
+                text: '',
+                type: '',
+                status: '',
+                dateFrom: '',
+                dateTo: ''
+            };
+            
+            // Reset form fields
+            document.getElementById('advancedSearchInput').value = '';
+            document.getElementById('filterType').value = '';
+            document.getElementById('filterStatus').value = '';
+            document.getElementById('filterDateFrom').value = '';
+            document.getElementById('filterDateTo').value = '';
+            
+            performAdvancedSearch();
+            updateSearchResultsCount();
+        }
+        
+        function performAdvancedSearch() {
+            const rows = document.querySelectorAll('#requestsTable tbody tr.request-row');
+            let visibleCount = 0;
+            
+            rows.forEach(row => {
+                let matches = true;
+                
+                // Text search (asset, requester, purpose, status)
+                if (currentFilters.text) {
+                    const textContent = row.textContent.toLowerCase();
+                    matches = textContent.includes(currentFilters.text);
+                }
+                
+                // Type filter
+                if (matches && currentFilters.type) {
+                    matches = row.dataset.type === currentFilters.type;
+                }
+                
+                // Status filter
+                if (matches && currentFilters.status) {
+                    matches = row.dataset.status === currentFilters.status;
+                }
+                
+                // Date range filter
+                if (matches && (currentFilters.dateFrom || currentFilters.dateTo)) {
+                    const durationCell = row.querySelector('td:nth-child(5)');
+                    if (durationCell) {
+                        const dateText = durationCell.textContent;
+                        const dateMatch = dateText.match(/From: (\w+ \d+, \d+)/);
+                        if (dateMatch) {
+                            const requestDate = new Date(dateMatch[1]);
+                            const fromDate = currentFilters.dateFrom ? new Date(currentFilters.dateFrom) : null;
+                            const toDate = currentFilters.dateTo ? new Date(currentFilters.dateTo) : null;
+                            
+                            if (fromDate && requestDate < fromDate) matches = false;
+                            if (toDate && requestDate > toDate) matches = false;
+                        }
+                    }
+                }
+                
+                // Show/hide row
+                if (matches) {
+                    row.classList.remove('hidden');
+                    visibleCount++;
+                    
+                    // Highlight search text
+                    if (currentFilters.text) {
+                        highlightSearchText(row, currentFilters.text);
+                    } else {
+                        removeHighlight(row);
+                    }
+                } else {
+                    row.classList.add('hidden');
+                    removeHighlight(row);
+                }
+            });
+            
+            updateSearchResultsCount(visibleCount);
+        }
+        
+        function highlightSearchText(row, searchText) {
+            removeHighlight(row);
+            
+            if (!searchText) return;
+            
+            const cells = row.querySelectorAll('td');
+            cells.forEach(cell => {
+                const text = cell.textContent;
+                const regex = new RegExp(`(${searchText})`, 'gi');
+                
+                // Skip cells with HTML we don't want to modify
+                if (cell.querySelector('.btn, .badge, .status-badge, .request-type-badge')) return;
+                
+                const walker = document.createTreeWalker(
+                    cell,
+                    NodeFilter.SHOW_TEXT,
+                    null,
+                    false
+                );
+                
+                const textNodes = [];
+                let node;
+                while (node = walker.nextNode()) {
+                    if (node.nodeValue.trim()) {
+                        textNodes.push(node);
+                    }
+                }
+                
+                textNodes.forEach(textNode => {
+                    const text = textNode.nodeValue;
+                    if (text.toLowerCase().includes(searchText)) {
+                        const span = document.createElement('span');
+                        span.innerHTML = text.replace(regex, '<span class="highlight-search">$1</span>');
+                        textNode.parentNode.replaceChild(span, textNode);
+                    }
+                });
+            });
+        }
+        
+        function removeHighlight(row) {
+            const highlights = row.querySelectorAll('.highlight-search');
+            highlights.forEach(highlight => {
+                const parent = highlight.parentNode;
+                parent.replaceChild(document.createTextNode(highlight.textContent), highlight);
+                parent.normalize();
+            });
+        }
+        
+        function updateSearchResultsCount(visibleCount = null) {
+            const countElement = document.getElementById('searchResultsCount');
+            if (!countElement) return;
+            
+            const totalRows = document.querySelectorAll('#requestsTable tbody tr.request-row').length;
+            const visible = visibleCount !== null ? visibleCount : 
+                          document.querySelectorAll('#requestsTable tbody tr.request-row:not(.hidden)').length;
+            
+            if (currentFilters.text || currentFilters.type || currentFilters.status || 
+                currentFilters.dateFrom || currentFilters.dateTo) {
+                countElement.textContent = `Showing ${visible} of ${totalRows} requests`;
+            } else {
+                countElement.textContent = 'Showing all requests';
+            }
+        }
+        
         // Bulk Actions Functionality
         let selectedRequests = new Set();
         
@@ -2181,9 +2724,32 @@ $page_title = 'Requests Management';
                 return row && row.dataset.type === 'incoming' && row.dataset.status === 'approved';
             });
             
+            const hasPendingOutgoing = Array.from(selectedRequests).some(id => {
+                const row = document.querySelector(`tr[data-request-id="${id}"]`);
+                return row && row.dataset.type === 'outgoing' && row.dataset.status === 'pending';
+            });
+            
+            // Update incoming buttons
             bulkApproveBtn.disabled = !hasPendingIncoming;
             bulkDenyBtn.disabled = !hasPendingIncoming;
             bulkMarkBorrowedBtn.disabled = !hasApprovedIncoming;
+            
+            // Update outgoing buttons
+            const bulkCancelBtn = document.getElementById('bulkCancelBtn');
+            if (bulkCancelBtn) {
+                bulkCancelBtn.disabled = !hasPendingOutgoing;
+            }
+            
+            // Update "all" buttons
+            const bulkApproveBtnAll = document.getElementById('bulkApproveBtnAll');
+            const bulkDenyBtnAll = document.getElementById('bulkDenyBtnAll');
+            const bulkMarkBorrowedBtnAll = document.getElementById('bulkMarkBorrowedBtnAll');
+            const bulkCancelBtnAll = document.getElementById('bulkCancelBtnAll');
+            
+            if (bulkApproveBtnAll) bulkApproveBtnAll.disabled = !hasPendingIncoming;
+            if (bulkDenyBtnAll) bulkDenyBtnAll.disabled = !hasPendingIncoming;
+            if (bulkMarkBorrowedBtnAll) bulkMarkBorrowedBtnAll.disabled = !hasApprovedIncoming;
+            if (bulkCancelBtnAll) bulkCancelBtnAll.disabled = !hasPendingOutgoing;
         }
         
         function toggleRequestSelection(requestId) {
@@ -2193,14 +2759,22 @@ $page_title = 'Requests Management';
                 selectedRequests.add(requestId);
             }
             updateBulkActionsBar();
+            updateSelectAllCheckboxState();
         }
         
         function selectAllRequests() {
             const selectAll = document.getElementById('selectAllRequests');
-            const checkboxes = document.querySelectorAll('.request-checkbox');
+            // Only select checkboxes that are in visible rows (not hidden by current filter)
+            const visibleCheckboxes = document.querySelectorAll('.request-row:not(.hidden) .request-checkbox');
+            const allCheckboxes = document.querySelectorAll('.request-checkbox');
             
-            checkboxes.forEach(checkbox => {
+            // Update all checkboxes to match the selectAll state
+            allCheckboxes.forEach(checkbox => {
                 checkbox.checked = selectAll.checked;
+            });
+            
+            // Only update the selectedRequests set with visible checkboxes
+            visibleCheckboxes.forEach(checkbox => {
                 const requestId = parseInt(checkbox.value);
                 if (selectAll.checked) {
                     selectedRequests.add(requestId);
@@ -2217,6 +2791,51 @@ $page_title = 'Requests Management';
             document.querySelectorAll('.request-checkbox').forEach(cb => cb.checked = false);
             document.getElementById('selectAllRequests').checked = false;
             updateBulkActionsBar();
+        }
+        
+        function updateSelectAllCheckboxState() {
+            const selectAll = document.getElementById('selectAllRequests');
+            const visibleCheckboxes = document.querySelectorAll('.request-row:not(.hidden) .request-checkbox');
+            const checkedVisibleCheckboxes = document.querySelectorAll('.request-row:not(.hidden) .request-checkbox:checked');
+            
+            // Update select all checkbox state based on visible checkboxes
+            if (visibleCheckboxes.length === 0) {
+                selectAll.checked = false;
+                selectAll.indeterminate = false;
+            } else if (checkedVisibleCheckboxes.length === 0) {
+                selectAll.checked = false;
+                selectAll.indeterminate = false;
+            } else if (checkedVisibleCheckboxes.length === visibleCheckboxes.length) {
+                selectAll.checked = true;
+                selectAll.indeterminate = false;
+            } else {
+                selectAll.checked = false;
+                selectAll.indeterminate = true;
+            }
+        }
+        
+        function updateBulkActionsButtons(filter) {
+            const incomingActions = document.getElementById('incomingBulkActions');
+            const outgoingActions = document.getElementById('outgoingBulkActions');
+            const allActions = document.getElementById('allBulkActions');
+            
+            // Hide all button groups first
+            incomingActions.classList.add('d-none');
+            outgoingActions.classList.add('d-none');
+            allActions.classList.add('d-none');
+            
+            // Show appropriate button group based on filter
+            switch(filter) {
+                case 'needs_action':
+                    incomingActions.classList.remove('d-none');
+                    break;
+                case 'waiting':
+                    outgoingActions.classList.remove('d-none');
+                    break;
+                case 'all':
+                    allActions.classList.remove('d-none');
+                    break;
+            }
         }
         
         function bulkApprove() {
@@ -2304,10 +2923,16 @@ $page_title = 'Requests Management';
         }
         
         function bulkMarkBorrowed() {
+            console.log('bulkMarkBorrowed called');
+            console.log('selectedRequests:', Array.from(selectedRequests));
+            
             const approvedIncomingIds = Array.from(selectedRequests).filter(id => {
                 const row = document.querySelector(`tr[data-request-id="${id}"]`);
+                console.log(`Checking request ${id}:`, row ? `${row.dataset.type}/${row.dataset.status}` : 'not found');
                 return row && row.dataset.type === 'incoming' && row.dataset.status === 'approved';
             });
+            
+            console.log('approvedIncomingIds:', approvedIncomingIds);
             
             if (approvedIncomingIds.length === 0) {
                 showNotification('No approved incoming requests selected to mark as borrowed', 'warning');
@@ -2343,8 +2968,54 @@ $page_title = 'Requests Management';
             }
         }
         
+        function bulkCancel() {
+            const pendingOutgoingIds = Array.from(selectedRequests).filter(id => {
+                const row = document.querySelector(`tr[data-request-id="${id}"]`);
+                return row && row.dataset.type === 'outgoing' && row.dataset.status === 'pending';
+            });
+            
+            if (pendingOutgoingIds.length === 0) {
+                showNotification('No pending outgoing requests selected to cancel', 'warning');
+                return;
+            }
+            
+            if (confirm(`Cancel ${pendingOutgoingIds.length} outgoing request(s)? This action cannot be undone.`)) {
+                // Submit bulk cancel via AJAX
+                fetch('requests.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'bulk_cancel',
+                        request_ids: pendingOutgoingIds.join(',')
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification(`${pendingOutgoingIds.length} requests cancelled`, 'success');
+                        clearSelection();
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showNotification(data.error || 'Error cancelling requests', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Bulk cancel error:', error);
+                    showNotification('Error cancelling requests', 'error');
+                });
+            }
+        }
+        
         // Event listeners for bulk actions
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize real-time updates
+            startRealTimeUpdates();
+            
+            // Initialize advanced search
+            initAdvancedSearch();
+            
             // Select all checkbox
             document.getElementById('selectAllRequests')?.addEventListener('change', selectAllRequests);
             
@@ -2356,9 +3027,33 @@ $page_title = 'Requests Management';
             });
             
             // Bulk action buttons
-            document.getElementById('bulkApproveBtn')?.addEventListener('click', bulkApprove);
-            document.getElementById('bulkDenyBtn')?.addEventListener('click', bulkDeny);
-            document.getElementById('bulkMarkBorrowedBtn')?.addEventListener('click', bulkMarkBorrowed);
+            const bulkApproveBtn = document.getElementById('bulkApproveBtn');
+            const bulkDenyBtn = document.getElementById('bulkDenyBtn');
+            const bulkMarkBorrowedBtn = document.getElementById('bulkMarkBorrowedBtn');
+            
+            console.log('Setting up event listeners:');
+            console.log('bulkApproveBtn:', bulkApproveBtn);
+            console.log('bulkDenyBtn:', bulkDenyBtn);
+            console.log('bulkMarkBorrowedBtn:', bulkMarkBorrowedBtn);
+            
+            if (bulkApproveBtn) {
+                bulkApproveBtn.addEventListener('click', bulkApprove);
+                console.log('Added listener to bulkApproveBtn');
+            }
+            if (bulkDenyBtn) {
+                bulkDenyBtn.addEventListener('click', bulkDeny);
+                console.log('Added listener to bulkDenyBtn');
+            }
+            if (bulkMarkBorrowedBtn) {
+                bulkMarkBorrowedBtn.addEventListener('click', bulkMarkBorrowed);
+                console.log('Added listener to bulkMarkBorrowedBtn');
+            }
+            
+            document.getElementById('bulkCancelBtn')?.addEventListener('click', bulkCancel);
+            document.getElementById('bulkApproveBtnAll')?.addEventListener('click', bulkApprove);
+            document.getElementById('bulkDenyBtnAll')?.addEventListener('click', bulkDeny);
+            document.getElementById('bulkMarkBorrowedBtnAll')?.addEventListener('click', bulkMarkBorrowed);
+            document.getElementById('bulkCancelBtnAll')?.addEventListener('click', bulkCancel);
             
             initSmartFilters();
         });
@@ -2369,5 +3064,17 @@ $page_title = 'Requests Management';
     
     <!-- Sidebar Scripts -->
     <script src="../assets/js/sidebar.js"></script>
+    
+    <!-- Page Footer -->
+    <footer class="page-footer">
+        <div class="footer-content">
+            <div class="footer-spacer"></div>
+            <div class="footer-info">
+                <small class="text-muted">
+                    © <?php echo date('Y'); ?> PIMS - Property and Inventory Management System
+                </small>
+            </div>
+        </div>
+    </footer>
 </body>
 </html>

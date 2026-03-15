@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bangka — A Filipino Sea Story</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Jost:wght@200;300;400&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --sky-top: #1a3a5c;
+    --sky-mid: #e8845a;
+    --sky-bottom: #f5c07a;
+    --ocean-surface: #1e6b8a;
+    --ocean-deep: #0a2a3d;
+    --underwater-deep: #031520;
+    --scroll-progress: 0;
+  }
+
+  html { scroll-behavior: auto; }
+
+  body {
+    background: #000;
+    font-family: 'Jost', sans-serif;
+    overflow-x: hidden;
+    color: #e8d5b0;
+  }
+
+  /* ─── STICKY SCENE WRAPPER ─── */
+  #scene-wrapper {
+    position: relative;
+    height: 350vh;
+  }
+
+  #scene-canvas {
+    position: sticky;
+    top: 0;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ─── SKY LAYER ─── */
+  #sky {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      #0d2137 0%,
+      #1a3a6e 25%,
+      #d4764d 55%,
+      #f2b06a 75%,
+      #f8cfa0 100%
+    );
+    transition: opacity 0.1s;
+    will-change: opacity;
+  }
+
+  /* ─── SUN ─── */
+  #sun-layer {
+    position: absolute;
+    top: 12%;
+    left: 50%;
+    transform: translateX(-50%);
+    will-change: transform, opacity;
+  }
+
+  .sun-glow {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 40%,
+      #fff9e0 0%,
+      #ffe066 30%,
+      #ffaa33 60%,
+      #ff6600 80%,
+      transparent 100%
+    );
+    box-shadow:
+      0 0 60px 30px rgba(255,180,60,0.4),
+      0 0 120px 80px rgba(255,120,0,0.2),
+      0 0 200px 120px rgba(255,80,0,0.1);
+    position: relative;
+  }
+
+  /* ─── CLOUDS ─── */
+  #cloud-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 200%;
+    height: 60%;
+    will-change: transform;
+    pointer-events: none;
+  }
+
+  .cloud {
+    position: absolute;
+    opacity: 0.85;
+  }
+
+  /* ─── HORIZON HAZE ─── */
+  #horizon {
+    position: absolute;
+    bottom: 42%;
+    left: 0;
+    width: 100%;
+    height: 80px;
+    background: linear-gradient(to top, rgba(248,180,100,0.35), transparent);
+    pointer-events: none;
+    will-change: transform;
+  }
+
+  /* ─── OCEAN SURFACE ─── */
+  #ocean-container {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    /* height set via JS so we can animate it */
+    height: 45%;
+    will-change: transform;
+    overflow: hidden;
+  }
+
+  #ocean-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  /* ─── BOAT LAYER ─── */
+  #boat-layer {
+    position: absolute;
+    bottom: 42%;
+    left: 15%;
+    will-change: transform;
+    z-index: 10;
+  }
+
+  /* ─── UNDERWATER OVERLAY ─── */
+  #underwater {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      #0a3a5a 0%,
+      #062035 40%,
+      #031520 100%
+    );
+    opacity: 0;
+    will-change: opacity;
+    pointer-events: none;
+    z-index: 20;
+  }
+
+  /* Waterline shimmer at top of underwater */
+  #waterline {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 80px;
+    background: linear-gradient(to bottom, rgba(100,220,255,0.3), transparent);
+    opacity: 0;
+    will-change: opacity;
+    z-index: 25;
+  }
+
+  /* ─── LIGHT RAYS ─── */
+  #light-rays {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    will-change: opacity;
+    z-index: 22;
+    pointer-events: none;
+  }
+
+  .ray {
+    position: absolute;
+    top: 0;
+    width: 2px;
+    height: 70%;
+    transform-origin: top center;
+    border-radius: 0 0 50% 50%;
+    background: linear-gradient(to bottom, rgba(120,240,255,0.18), transparent);
+    animation: rayPulse 4s ease-in-out infinite;
+  }
+
+  @keyframes rayPulse {
+    0%, 100% { opacity: 0.6; transform: scaleX(1) rotate(var(--ray-angle)); }
+    50% { opacity: 1; transform: scaleX(2.5) rotate(var(--ray-angle)); }
+  }
+
+  /* ─── BUBBLES ─── */
+  #bubbles-layer {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    will-change: opacity;
+    z-index: 23;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .bubble {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, rgba(180,240,255,0.9), rgba(60,160,220,0.4));
+    border: 1px solid rgba(150,220,255,0.5);
+    animation: bubbleRise var(--bubble-dur, 6s) ease-in infinite;
+    animation-delay: var(--bubble-delay, 0s);
+    bottom: -20px;
+    will-change: transform, opacity;
+  }
+
+  @keyframes bubbleRise {
+    0% { transform: translateY(0) translateX(0); opacity: 0.8; }
+    25% { transform: translateY(-25vh) translateX(8px); opacity: 0.9; }
+    50% { transform: translateY(-50vh) translateX(-5px); opacity: 0.7; }
+    75% { transform: translateY(-75vh) translateX(10px); opacity: 0.5; }
+    100% { transform: translateY(-105vh) translateX(-3px); opacity: 0; }
+  }
+
+  /* ─── UNDERWATER FLORA (subtle) ─── */
+  #flora-layer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 30%;
+    opacity: 0;
+    z-index: 21;
+    will-change: opacity;
+    pointer-events: none;
+  }
+
+  /* ─── CONTENT SECTION ─── */
+  #content-section {
+    position: relative;
+    z-index: 50;
+    background: #031520;
+    padding: 120px 40px;
+    text-align: center;
+  }
+
+  .content-inner {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .content-eyebrow {
+    font-family: 'Jost', sans-serif;
+    font-weight: 200;
+    font-size: clamp(0.65rem, 1.2vw, 0.8rem);
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: rgba(100,200,240,0.7);
+    margin-bottom: 24px;
+  }
+
+  .content-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 300;
+    font-size: clamp(2.8rem, 6vw, 5rem);
+    line-height: 1.1;
+    color: #e8d5b0;
+    margin-bottom: 32px;
+  }
+
+  .content-title em {
+    font-style: italic;
+    color: rgba(100,200,240,0.9);
+  }
+
+  .content-body {
+    font-family: 'Jost', sans-serif;
+    font-weight: 300;
+    font-size: clamp(0.95rem, 1.8vw, 1.1rem);
+    line-height: 1.85;
+    color: rgba(232,213,176,0.7);
+    margin-bottom: 52px;
+  }
+
+  .cta-btn {
+    display: inline-block;
+    padding: 16px 44px;
+    border: 1px solid rgba(100,200,240,0.4);
+    color: rgba(100,200,240,0.9);
+    font-family: 'Jost', sans-serif;
+    font-weight: 300;
+    font-size: 0.8rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: all 0.4s ease;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+  }
+
+  .cta-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(100,200,240,0.08);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s ease;
+  }
+
+  .cta-btn:hover::before { transform: scaleX(1); }
+  .cta-btn:hover { border-color: rgba(100,200,240,0.8); }
+
+  /* divider */
+  .section-divider {
+    width: 1px;
+    height: 80px;
+    background: linear-gradient(to bottom, transparent, rgba(100,200,240,0.4), transparent);
+    margin: 0 auto 80px;
+  }
+
+  /* ─── REDUCED MOTION ─── */
+  @media (prefers-reduced-motion: reduce) {
+    .bubble, .ray, .cloud { animation: none !important; }
+    #boat-layer, #cloud-layer, #sun-layer, #underwater, #waterline, #light-rays, #bubbles-layer, #flora-layer {
+      transition: opacity 0.5s ease !important;
+      animation: none !important;
+    }
+  }
+
+  /* ─── SCROLL HINT ─── */
+  #scroll-hint {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    z-index: 30;
+    will-change: opacity;
+  }
+
+  .scroll-text {
+    font-family: 'Jost', sans-serif;
+    font-weight: 200;
+    font-size: 0.65rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: rgba(232,213,176,0.6);
+  }
+
+  .scroll-arrow {
+    width: 1px;
+    height: 40px;
+    background: linear-gradient(to bottom, rgba(232,213,176,0.6), transparent);
+    animation: arrowPulse 2s ease-in-out infinite;
+  }
+
+  @keyframes arrowPulse {
+    0%, 100% { opacity: 0.4; transform: scaleY(0.8); }
+    50% { opacity: 1; transform: scaleY(1); }
+  }
+
+  /* ─── TITLE OVERLAY ─── */
+  #title-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -60%);
+    text-align: center;
+    z-index: 15;
+    will-change: opacity, transform;
+    pointer-events: none;
+  }
+
+  .title-main {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 300;
+    font-style: italic;
+    font-size: clamp(3rem, 7vw, 6.5rem);
+    color: rgba(248,220,160,0.95);
+    letter-spacing: 0.05em;
+    line-height: 1;
+    text-shadow: 0 4px 40px rgba(0,0,0,0.4);
+  }
+
+  .title-sub {
+    font-family: 'Jost', sans-serif;
+    font-weight: 200;
+    font-size: clamp(0.6rem, 1.2vw, 0.75rem);
+    letter-spacing: 0.5em;
+    text-transform: uppercase;
+    color: rgba(248,220,160,0.55);
+    margin-top: 16px;
+  }
+
+  /* wave animation for svg */
+  @keyframes waveShift {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  #wave-group {
+    animation: waveShift 8s linear infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #wave-group { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     SCENE WRAPPER
+═══════════════════════════════════════════ -->
+<div id="scene-wrapper">
+  <div id="scene-canvas">
+
+    <!-- SKY -->
+    <div id="sky"></div>
+
+    <!-- SUN -->
+    <div id="sun-layer">
+      <div class="sun-glow"></div>
+    </div>
+
+    <!-- CLOUDS -->
+    <div id="cloud-layer">
+      <svg id="clouds-svg" width="200%" height="100%" viewBox="0 0 2400 500" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Cloud 1 (large, left) -->
+        <g opacity="0.75">
+          <ellipse cx="280" cy="160" rx="160" ry="55" fill="#fde8c8"/>
+          <ellipse cx="200" cy="175" rx="90" ry="45" fill="#fde8c8"/>
+          <ellipse cx="360" cy="172" rx="110" ry="42" fill="#fde8c8"/>
+          <ellipse cx="280" cy="158" rx="140" ry="48" fill="#fff4e0"/>
+        </g>
+        <!-- Cloud 2 (medium, mid-left) -->
+        <g opacity="0.6">
+          <ellipse cx="720" cy="110" rx="120" ry="40" fill="#fde8c8"/>
+          <ellipse cx="650" cy="122" rx="70" ry="32" fill="#fde8c8"/>
+          <ellipse cx="790" cy="118" rx="85" ry="35" fill="#fde8c8"/>
+          <ellipse cx="720" cy="108" rx="105" ry="35" fill="#fff4e0"/>
+        </g>
+        <!-- Cloud 3 (small, upper right area) -->
+        <g opacity="0.5">
+          <ellipse cx="1100" cy="80" rx="90" ry="30" fill="#e8d0b0"/>
+          <ellipse cx="1040" cy="90" rx="55" ry="25" fill="#e8d0b0"/>
+          <ellipse cx="1160" cy="87" rx="65" ry="27" fill="#e8d0b0"/>
+        </g>
+        <!-- Cloud 4 -->
+        <g opacity="0.65">
+          <ellipse cx="1500" cy="140" rx="140" ry="48" fill="#fde8c8"/>
+          <ellipse cx="1420" cy="155" rx="80" ry="38" fill="#fde8c8"/>
+          <ellipse cx="1580" cy="150" rx="100" ry="40" fill="#fde8c8"/>
+          <ellipse cx="1500" cy="138" rx="125" ry="44" fill="#fff4e0"/>
+        </g>
+        <!-- Cloud 5 (right side) -->
+        <g opacity="0.55">
+          <ellipse cx="1850" cy="95" rx="110" ry="38" fill="#fde8c8"/>
+          <ellipse cx="1780" cy="107" rx="68" ry="30" fill="#fde8c8"/>
+          <ellipse cx="1920" cy="103" rx="80" ry="33" fill="#fde8c8"/>
+        </g>
+        <!-- Repeat for seamless loop (offset by 1200px = half of 2400) -->
+        <g opacity="0.75">
+          <ellipse cx="1480" cy="160" rx="160" ry="55" fill="#fde8c8"/>
+          <ellipse cx="1400" cy="175" rx="90" ry="45" fill="#fde8c8"/>
+          <ellipse cx="1560" cy="172" rx="110" ry="42" fill="#fde8c8"/>
+          <ellipse cx="1480" cy="158" rx="140" ry="48" fill="#fff4e0"/>
+        </g>
+        <g opacity="0.6">
+          <ellipse cx="1920" cy="110" rx="120" ry="40" fill="#fde8c8"/>
+          <ellipse cx="1850" cy="122" rx="70" ry="32" fill="#fde8c8"/>
+          <ellipse cx="1990" cy="118" rx="85" ry="35" fill="#fde8c8"/>
+          <ellipse cx="1920" cy="108" rx="105" ry="35" fill="#fff4e0"/>
+        </g>
+        <g opacity="0.5">
+          <ellipse cx="2300" cy="80" rx="90" ry="30" fill="#e8d0b0"/>
+          <ellipse cx="2240" cy="90" rx="55" ry="25" fill="#e8d0b0"/>
+          <ellipse cx="2360" cy="87" rx="65" ry="27" fill="#e8d0b0"/>
+        </g>
+      </svg>
+    </div>
+
+    <!-- HORIZON HAZE -->
+    <div id="horizon"></div>
+
+    <!-- TITLE -->
+    <div id="title-overlay">
+      <div class="title-main">Bangka</div>
+      <div class="title-sub">Ang Dagat ng Pilipinas</div>
+    </div>
+
+    <!-- OCEAN -->
+    <div id="ocean-container">
+      <svg id="ocean-svg" viewBox="0 0 1440 400" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="oceanGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#2a9dbe"/>
+            <stop offset="30%" stop-color="#1a6a8a"/>
+            <stop offset="100%" stop-color="#0a2535"/>
+          </linearGradient>
+          <linearGradient id="shimmerGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="rgba(255,220,150,0.15)"/>
+            <stop offset="100%" stop-color="transparent"/>
+          </linearGradient>
+          <filter id="oceanBlur">
+            <feTurbulence type="fractalNoise" baseFrequency="0.02 0.05" numOctaves="3" seed="2" result="noise"/>
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" xChannelSelector="R" yChannelSelector="G"/>
+          </filter>
+        </defs>
+        <!-- Base ocean fill -->
+        <rect width="1440" height="400" fill="url(#oceanGrad)"/>
+        <!-- Shimmer -->
+        <rect width="1440" height="80" fill="url(#shimmerGrad)"/>
+        <!-- Wave paths — doubled for seamless animation -->
+        <g id="wave-group">
+          <!-- Wave 1 - bright crest -->
+          <path d="M0 30 Q90 10 180 30 Q270 50 360 30 Q450 10 540 30 Q630 50 720 30 Q810 10 900 30 Q990 50 1080 30 Q1170 10 1260 30 Q1350 50 1440 30 Q1530 10 1620 30 Q1710 50 1800 30 Q1890 10 1980 30 Q2070 50 2160 30 Q2250 10 2340 30 Q2430 50 2520 30 Q2610 10 2700 30 Q2790 50 2880 30" fill="none" stroke="rgba(180,240,255,0.35)" stroke-width="2"/>
+          <!-- Wave 2 - slightly deeper -->
+          <path d="M0 55 Q120 38 240 55 Q360 72 480 55 Q600 38 720 55 Q840 72 960 55 Q1080 38 1200 55 Q1320 72 1440 55 Q1560 38 1680 55 Q1800 72 1920 55 Q2040 38 2160 55 Q2280 72 2400 55 Q2520 38 2640 55 Q2760 72 2880 55" fill="none" stroke="rgba(100,200,240,0.2)" stroke-width="1.5"/>
+          <!-- Wave 3 -->
+          <path d="M0 75 Q150 60 300 75 Q450 90 600 75 Q750 60 900 75 Q1050 90 1200 75 Q1350 60 1500 75 Q1650 90 1800 75 Q1950 60 2100 75 Q2250 90 2400 75 Q2550 60 2700 75 Q2850 90 2880 75" fill="none" stroke="rgba(80,180,220,0.15)" stroke-width="1"/>
+        </g>
+        <!-- Deep water overlay -->
+        <rect width="1440" height="400" y="0" fill="linear-gradient(to bottom, transparent, rgba(5,20,35,0.6))"/>
+      </svg>
+    </div>
+
+    <!-- BOAT -->
+    <div id="boat-layer">
+      <svg id="bangka-svg" width="280" height="120" viewBox="0 0 280 120" xmlns="http://www.w3.org/2000/svg">
+        <!-- ── OUTRIGGER LEFT (bamboo poles + float) ── -->
+        <g id="outrigger-left">
+          <!-- poles connecting hull to float -->
+          <line x1="75" y1="62" x2="55" y2="82" stroke="#8B6914" stroke-width="3.5" stroke-linecap="round"/>
+          <line x1="115" y1="62" x2="120" y2="82" stroke="#8B6914" stroke-width="3.5" stroke-linecap="round"/>
+          <!-- outrigger float -->
+          <path d="M38 80 Q50 74 75 74 Q100 74 130 76 Q115 86 80 87 Q50 87 38 80 Z" fill="#5c3d10" stroke="#7a5518" stroke-width="1"/>
+          <path d="M38 80 Q50 77 80 77 Q110 77 130 76" fill="none" stroke="rgba(255,200,100,0.2)" stroke-width="1"/>
+        </g>
+
+        <!-- ── MAIN HULL ── -->
+        <g id="hull">
+          <!-- hull shadow/depth -->
+          <path d="M55 68 Q140 82 225 68 Q220 78 140 82 Q60 82 55 68 Z" fill="rgba(0,0,0,0.25)"/>
+          <!-- main hull body -->
+          <path d="M55 55 Q80 48 140 46 Q200 48 225 55 Q230 64 225 68 Q200 72 140 74 Q80 72 55 68 Q50 64 55 55 Z"
+                fill="url(#hullGrad)" stroke="#3d2206" stroke-width="1.5"/>
+          <!-- hull highlight -->
+          <path d="M70 52 Q140 47 210 52" fill="none" stroke="rgba(255,200,120,0.4)" stroke-width="1.5" stroke-linecap="round"/>
+          <!-- bow accent -->
+          <path d="M220 55 Q234 58 238 62 Q234 66 220 68" fill="#4a2a08" stroke="#3d2206" stroke-width="1"/>
+          <!-- stern -->
+          <path d="M55 55 Q44 58 42 62 Q44 66 55 68" fill="#4a2a08" stroke="#3d2206" stroke-width="1"/>
+          <!-- planks detail lines -->
+          <path d="M80 47 Q140 44 200 47" fill="none" stroke="rgba(100,60,10,0.4)" stroke-width="0.8"/>
+          <path d="M75 70 Q140 73 205 70" fill="none" stroke="rgba(100,60,10,0.3)" stroke-width="0.8"/>
+        </g>
+
+        <!-- ── OUTRIGGER RIGHT (bamboo poles + float) ── -->
+        <g id="outrigger-right">
+          <line x1="90" y1="48" x2="72" y2="32" stroke="#8B6914" stroke-width="3" stroke-linecap="round"/>
+          <line x1="130" y1="47" x2="140" y2="32" stroke="#8B6914" stroke-width="3" stroke-linecap="round"/>
+          <!-- float above -->
+          <path d="M55 27 Q75 22 105 22 Q130 22 155 24 Q140 32 105 33 Q72 33 55 27 Z" fill="#5c3d10" stroke="#7a5518" stroke-width="1"/>
+          <path d="M55 27 Q80 25 108 25 Q132 25 155 24" fill="none" stroke="rgba(255,200,100,0.2)" stroke-width="1"/>
+        </g>
+
+        <!-- ── MAST & SAIL ── -->
+        <g id="mast-sail">
+          <!-- mast -->
+          <line x1="145" y1="48" x2="148" y2="8" stroke="#7a5518" stroke-width="3" stroke-linecap="round"/>
+          <!-- boom -->
+          <line x1="148" y1="18" x2="185" y2="32" stroke="#8B6914" stroke-width="2" stroke-linecap="round"/>
+          <!-- sail -->
+          <path d="M148 10 Q168 18 182 30 Q162 35 148 45 Z"
+                fill="rgba(245,220,150,0.85)" stroke="rgba(180,130,50,0.6)" stroke-width="1"/>
+          <!-- sail folds -->
+          <path d="M148 15 Q165 22 178 32" fill="none" stroke="rgba(180,130,50,0.3)" stroke-width="0.8"/>
+          <path d="M148 25 Q160 30 172 38" fill="none" stroke="rgba(180,130,50,0.2)" stroke-width="0.8"/>
+        </g>
+
+        <!-- ── PERSON SILHOUETTE ── -->
+        <g id="person" opacity="0.9">
+          <circle cx="152" cy="44" r="4" fill="#2a1505"/>
+          <path d="M152 48 Q148 54 146 58 M152 48 Q156 54 158 58" stroke="#2a1505" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+          <path d="M149 52 Q152 55 155 52" stroke="#2a1505" stroke-width="2" stroke-linecap="round" fill="none"/>
+        </g>
+
+        <!-- defs for gradients -->
+        <defs>
+          <linearGradient id="hullGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#7a4510"/>
+            <stop offset="50%" stop-color="#5c3010"/>
+            <stop offset="100%" stop-color="#3d2008"/>
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+
+    <!-- UNDERWATER OVERLAY -->
+    <div id="underwater"></div>
+
+    <!-- WATERLINE (top shimmer underwater) -->
+    <div id="waterline"></div>
+
+    <!-- LIGHT RAYS -->
+    <div id="light-rays">
+      <svg width="100%" height="100%" viewBox="0 0 1440 800" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="rayGrad1" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="rgba(100,220,255,0.25)"/>
+            <stop offset="100%" stop-color="transparent"/>
+          </linearGradient>
+          <linearGradient id="rayGrad2" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="rgba(80,200,240,0.18)"/>
+            <stop offset="100%" stop-color="transparent"/>
+          </linearGradient>
+        </defs>
+        <!-- Ray 1 -->
+        <polygon points="580,0 620,0 700,700 560,700" fill="url(#rayGrad1)" opacity="0.5">
+          <animate attributeName="opacity" values="0.3;0.65;0.3" dur="4s" repeatCount="indefinite"/>
+        </polygon>
+        <!-- Ray 2 -->
+        <polygon points="700,0 730,0 780,700 660,700" fill="url(#rayGrad2)" opacity="0.4">
+          <animate attributeName="opacity" values="0.25;0.55;0.25" dur="5.5s" repeatCount="indefinite" begin="1s"/>
+        </polygon>
+        <!-- Ray 3 -->
+        <polygon points="820,0 850,0 940,700 800,700" fill="url(#rayGrad1)" opacity="0.35">
+          <animate attributeName="opacity" values="0.2;0.5;0.2" dur="3.8s" repeatCount="indefinite" begin="2s"/>
+        </polygon>
+        <!-- Ray 4 (wide, faint) -->
+        <polygon points="450,0 510,0 600,700 380,700" fill="url(#rayGrad2)" opacity="0.2">
+          <animate attributeName="opacity" values="0.1;0.3;0.1" dur="6s" repeatCount="indefinite" begin="0.5s"/>
+        </polygon>
+        <!-- Ray 5 -->
+        <polygon points="960,0 990,0 1060,700 930,700" fill="url(#rayGrad1)" opacity="0.3">
+          <animate attributeName="opacity" values="0.2;0.45;0.2" dur="4.5s" repeatCount="indefinite" begin="1.5s"/>
+        </polygon>
+      </svg>
+    </div>
+
+    <!-- BUBBLES -->
+    <div id="bubbles-layer" id="bubbles-layer"></div>
+
+    <!-- UNDERWATER FLORA -->
+    <div id="flora-layer">
+      <svg width="100%" height="100%" viewBox="0 0 1440 240" preserveAspectRatio="xMidYMax meet" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="coralGrad1" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0%" stop-color="#1a5a4a"/>
+            <stop offset="100%" stop-color="#2a8a6a"/>
+          </linearGradient>
+          <linearGradient id="coralGrad2" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0%" stop-color="#3a1a2a"/>
+            <stop offset="100%" stop-color="#8a3a5a"/>
+          </linearGradient>
+        </defs>
+        <!-- Seagrass clusters -->
+        <g opacity="0.7">
+          <!-- Left cluster -->
+          <path d="M80 240 Q75 200 65 170 Q70 195 78 220 Q80 190 88 160 Q84 192 86 220 Q90 185 100 155 Q92 190 92 230 Q96 180 108 148 Q100 185 98 240 Z" fill="url(#coralGrad1)"/>
+          <path d="M130 240 Q126 210 118 182 Q122 205 128 225 Q132 200 140 168 Q136 198 136 225 Q140 195 150 162 Q144 198 144 240 Z" fill="url(#coralGrad1)" opacity="0.6"/>
+          <!-- Coral branch (left) -->
+          <path d="M200 240 L200 200 L185 170 M200 200 L215 165 M200 215 L178 190 M200 215 L222 185" stroke="#8a3a5a" stroke-width="4" stroke-linecap="round" fill="none"/>
+          <circle cx="185" cy="170" r="5" fill="#c05070" opacity="0.8"/>
+          <circle cx="215" cy="165" r="4" fill="#c05070" opacity="0.8"/>
+          <circle cx="178" cy="190" r="3.5" fill="#d06080" opacity="0.7"/>
+          <circle cx="222" cy="185" r="4" fill="#d06080" opacity="0.7"/>
+        </g>
+        <!-- Right cluster -->
+        <g opacity="0.7">
+          <path d="M1280 240 Q1275 195 1265 162 Q1270 188 1278 215 Q1282 185 1292 155 Q1286 190 1288 225 Q1292 178 1306 145 Q1298 182 1296 240 Z" fill="url(#coralGrad1)"/>
+          <path d="M1340 240 Q1336 205 1328 176 Q1332 200 1338 222 Q1342 196 1352 163 Q1346 195 1346 225 Q1350 190 1362 155 Q1354 192 1352 240 Z" fill="url(#coralGrad1)" opacity="0.65"/>
+          <!-- Coral branch right -->
+          <path d="M1220 240 L1220 195 L1205 162 M1220 195 L1237 160 M1220 210 L1198 183 M1220 210 L1242 178" stroke="#7a4a6a" stroke-width="4" stroke-linecap="round" fill="none"/>
+          <circle cx="1205" cy="162" r="5" fill="#b04868" opacity="0.8"/>
+          <circle cx="1237" cy="160" r="4" fill="#b04868" opacity="0.8"/>
+        </g>
+        <!-- Center subtle seagrass -->
+        <path d="M700 240 Q695 215 690 188 Q695 210 700 228 Q705 205 712 178 Q708 208 708 235 Q712 200 722 172 Q716 205 714 240 Z" fill="url(#coralGrad1)" opacity="0.5"/>
+        <!-- Sandy bottom tint -->
+        <rect x="0" y="220" width="1440" height="20" fill="rgba(20,60,50,0.4)" rx="2"/>
+      </svg>
+    </div>
+
+    <!-- SCROLL HINT -->
+    <div id="scroll-hint">
+      <div class="scroll-text">Scroll to sail</div>
+      <div class="scroll-arrow"></div>
+    </div>
+
+  </div><!-- end scene-canvas -->
+</div><!-- end scene-wrapper -->
+
+<!-- ═══════════════════════════════════════════
+     CONTENT SECTION
+═══════════════════════════════════════════ -->
+<section id="content-section">
+  <div class="content-inner">
+    <div class="section-divider"></div>
+    <p class="content-eyebrow">Pilipinas · Dagat · Kultura</p>
+    <h2 class="content-title">Where the sea<br>holds <em>everything</em></h2>
+    <p class="content-body">
+      For thousands of years, the bangka has carried generations across the Philippine archipelago — 
+      more than 7,600 islands shaped by the sea. It is not merely a vessel. It is a bridge between 
+      sky and ocean, between island and island, between what we know and what lies beneath.
+    </p>
+    <a class="cta-btn" href="#">Explore the Depths</a>
+  </div>
+</section>
+
+<script>
+// ═══════════════════════════════════════════
+// BUBBLE FACTORY
+// ═══════════════════════════════════════════
+const bubblesLayer = document.getElementById('bubbles-layer');
+const BUBBLE_COUNT = 28;
+
+for (let i = 0; i < BUBBLE_COUNT; i++) {
+  const b = document.createElement('div');
+  b.className = 'bubble';
+  const size = Math.random() * 10 + 3;
+  const dur = (Math.random() * 5 + 5).toFixed(1);
+  const delay = (Math.random() * 8).toFixed(1);
+  const left = Math.random() * 100;
+  b.style.cssText = `
+    width: ${size}px;
+    height: ${size}px;
+    left: ${left}%;
+    --bubble-dur: ${dur}s;
+    --bubble-delay: -${delay}s;
+  `;
+  bubblesLayer.appendChild(b);
+}
+
+// ═══════════════════════════════════════════
+// EASING FUNCTIONS
+// ═══════════════════════════════════════════
+const easeInOut = t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+const easeOut   = t => 1 - Math.pow(1 - t, 3);
+const easeIn    = t => t * t * t;
+const clamp     = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
+const lerp      = (a, b, t) => a + (b - a) * t;
+const mapRange  = (v, inMin, inMax, outMin, outMax) =>
+  clamp((v - inMin) / (inMax - inMin), 0, 1) * (outMax - outMin) + outMin;
+
+// ═══════════════════════════════════════════
+// ELEMENT REFS
+// ═══════════════════════════════════════════
+const wrapper      = document.getElementById('scene-wrapper');
+const boatLayer    = document.getElementById('boat-layer');
+const cloudLayer   = document.getElementById('cloud-layer');
+const sunLayer     = document.getElementById('sun-layer');
+const skyEl        = document.getElementById('sky');
+const titleOverlay = document.getElementById('title-overlay');
+const underwater   = document.getElementById('underwater');
+const waterline    = document.getElementById('waterline');
+const lightRays    = document.getElementById('light-rays');
+const bubblesEl    = document.getElementById('bubbles-layer');
+const floraEl      = document.getElementById('flora-layer');
+const oceanContainer = document.getElementById('ocean-container');
+const scrollHint   = document.getElementById('scroll-hint');
+const horizonEl    = document.getElementById('horizon');
+
+// ═══════════════════════════════════════════
+// REDUCED MOTION CHECK
+// ═══════════════════════════════════════════
+const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ═══════════════════════════════════════════
+// BOBBING STATE
+// ═══════════════════════════════════════════
+let bobbingTime = 0;
+let lastRaf = null;
+let lastScroll = 0;
+
+// ═══════════════════════════════════════════
+// SCROLL HANDLER
+// ═══════════════════════════════════════════
+function getScrollProgress() {
+  const wrapperRect = wrapper.getBoundingClientRect();
+  const wrapperHeight = wrapper.offsetHeight;
+  const scrolled = -wrapperRect.top;
+  const maxScroll = wrapperHeight - window.innerHeight;
+  return clamp(scrolled / maxScroll, 0, 1);
+}
+
+function animate(timestamp) {
+  const progress = getScrollProgress();
+  const scrollChanged = Math.abs(progress - lastScroll) > 0.0001;
+  lastScroll = progress;
+
+  // Bobbing accumulation (time-based, always runs)
+  bobbingTime += 0.016;
+
+  updateScene(progress, bobbingTime, scrollChanged);
+
+  lastRaf = requestAnimationFrame(animate);
+}
+
+function updateScene(p, t, scrollChanged) {
+  const vw = window.innerWidth;
+
+  // ── Phase boundaries
+  // Phase 1: 0.0 – 0.55 (boat moves right, clouds left)
+  // Phase 2: 0.5 – 0.82 (ocean rises)
+  // Phase 3: 0.78 – 1.0 (underwater reveal)
+
+  // ─── SCROLL HINT ───
+  const hintOpacity = clamp(1 - p * 8, 0, 1);
+  scrollHint.style.opacity = hintOpacity;
+
+  // ─── TITLE FADE ───
+  const titleFade = clamp(1 - p * 4, 0, 1);
+  titleOverlay.style.opacity = titleFade;
+  titleOverlay.style.transform = `translate(-50%, ${-60 + p * 8}%)`;
+
+  if (prefersReduced) {
+    // simplified: just fade underwater on
+    underwater.style.opacity = p > 0.7 ? (p - 0.7) / 0.3 : 0;
+    return;
+  }
+
+  // ─── BOAT MOVEMENT ───
+  const boatPhaseProgress = clamp(p / 0.7, 0, 1);
+  const boatEased = easeInOut(boatPhaseProgress);
+
+  // Move boat from ~15% left to ~78% right of viewport (as % of vw)
+  const boatStartX = vw * 0.0;   // relative to its initial 15% left position
+  const boatEndX   = vw * 0.58;
+  const boatX = lerp(boatStartX, boatEndX, boatEased);
+
+  // Subtle vertical bob (sine wave, amplitude decreases as boat nears right)
+  const bobAmp = lerp(5, 2, boatEased);
+  const bobY = Math.sin(t * 1.8) * bobAmp;
+
+  // Slight tilt
+  const tiltDeg = lerp(0, -3, boatEased) + Math.sin(t * 1.2) * 0.8;
+
+  boatLayer.style.transform = `translateX(${boatX}px) translateY(${bobY}px) rotate(${tiltDeg}deg)`;
+
+  // Boat fades out as underwater takes over
+  const boatFade = clamp(1 - mapRange(p, 0.72, 0.88, 0, 1), 0, 1);
+  boatLayer.style.opacity = boatFade;
+
+  // ─── CLOUD MOVEMENT ───
+  const cloudPhase = clamp(p / 0.8, 0, 1);
+  const cloudEased = easeInOut(cloudPhase);
+  // clouds drift LEFT (negative translateX on the 200%-wide SVG container)
+  const cloudX = lerp(0, -35, cloudEased);
+  cloudLayer.style.transform = `translateX(${cloudX}%)`;
+
+  // ─── SUN PARALLAX ───
+  const sunY = lerp(0, -40, easeOut(clamp(p / 0.6, 0, 1)));
+  const sunFade = clamp(1 - mapRange(p, 0.45, 0.75, 0, 1), 0, 1);
+  sunLayer.style.transform = `translateX(-50%) translateY(${sunY}px)`;
+  sunLayer.style.opacity = sunFade;
+
+  // ─── SKY COLOR TRANSITION ───
+  const skyPhase = clamp(mapRange(p, 0.4, 0.85, 0, 1), 0, 1);
+  const skyOpacity = clamp(1 - skyPhase, 0, 1);
+  skyEl.style.opacity = skyOpacity;
+
+  // ─── HORIZON PARALLAX ───
+  const horizonY = lerp(0, -30, cloudEased);
+  horizonEl.style.transform = `translateY(${horizonY}px)`;
+
+  // ─── OCEAN SURFACE RISING ───
+  // Phase 2: ocean container grows upward
+  const oceanPhase = clamp(mapRange(p, 0.48, 0.82, 0, 1), 0, 1);
+  const oceanEased = easeInOut(oceanPhase);
+  // Ocean height: from ~45% to 100%
+  const oceanHeight = lerp(45, 105, oceanEased);
+  oceanContainer.style.height = `${oceanHeight}%`;
+
+  // ─── UNDERWATER OVERLAY ───
+  const underwaterPhase = clamp(mapRange(p, 0.6, 1.0, 0, 1), 0, 1);
+  const underwaterEased = easeInOut(underwaterPhase);
+  underwater.style.opacity = underwaterEased;
+
+  // ─── WATERLINE SHIMMER ───
+  const waterlinePhase = clamp(mapRange(p, 0.65, 0.9, 0, 1), 0, 1);
+  waterline.style.opacity = easeOut(waterlinePhase) * 0.9;
+
+  // ─── LIGHT RAYS ───
+  const rayPhase = clamp(mapRange(p, 0.72, 1.0, 0, 1), 0, 1);
+  lightRays.style.opacity = easeOut(rayPhase);
+
+  // ─── BUBBLES ───
+  const bubblePhase = clamp(mapRange(p, 0.75, 1.0, 0, 1), 0, 1);
+  bubblesEl.style.opacity = easeOut(bubblePhase);
+
+  // ─── FLORA ───
+  const floraPhase = clamp(mapRange(p, 0.78, 1.0, 0, 1), 0, 1);
+  floraEl.style.opacity = easeOut(floraPhase) * 0.85;
+
+  // ─── CLOUD + SKY FADE ON UNDERWATER ───
+  if (p > 0.65) {
+    const cloudFade = clamp(1 - mapRange(p, 0.65, 0.85, 0, 1), 0, 1);
+    cloudLayer.style.opacity = cloudFade;
+    horizonEl.style.opacity = cloudFade;
+  } else {
+    cloudLayer.style.opacity = 1;
+    horizonEl.style.opacity = 1;
+  }
+}
+
+// ═══════════════════════════════════════════
+// START
+// ═══════════════════════════════════════════
+requestAnimationFrame(animate);
+
+// ─── Resize recalculate ───
+window.addEventListener('resize', () => {
+  // Just let the next rAF handle it
+}, { passive: true });
+</script>
+</body>
+</html>
