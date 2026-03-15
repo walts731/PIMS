@@ -255,8 +255,9 @@ function logLoginAttempt($username, $success, $failure_reason = '') {
  * Check session timeout and logout if expired
  */
 function checkSessionTimeout() {
-    // Get session timeout setting from database (default: 3600 seconds = 1 hour)
-    $session_timeout = getSystemSetting('session_timeout', 3600);
+    // Get session timeout setting from database (default: 30 minutes)
+    $session_timeout_minutes = getSystemSetting('session_timeout', 30);
+    $session_timeout = $session_timeout_minutes * 60; // Convert minutes to seconds
     
     // Check if user is logged in and login_time is set
     if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true && isset($_SESSION['login_time'])) {

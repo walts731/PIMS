@@ -571,9 +571,7 @@ try {
                     <thead>
                         <tr>
                             <th>Description</th>
-                            <th>Total Borrowed</th>
-                            <th>Total Deducted</th>
-                            <th>Current Balance</th>
+                            <th> Balance</th>
                             <th>From Office</th>
                             <th>To Office</th>
                             <th>Last Updated</th>
@@ -586,8 +584,7 @@ try {
                                     <td>
                                         <?php echo htmlspecialchars($record['consumable_description']); ?>
                                     </td>
-                                    <td><?php echo $record['total_borrowed']; ?></td>
-                                    <td><?php echo $record['total_deducted']; ?></td>
+                                    
                                     <td>
                                         <span class="badge bg-<?php echo $record['current_balance'] > 0 ? 'success' : 'secondary'; ?>">
                                             <?php echo $record['current_balance']; ?>
