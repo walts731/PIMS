@@ -82,6 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     $release_quantity = intval($_POST['release_quantity'] ?? 0);
     $target_office_id = intval($_POST['target_office_id'] ?? 0);
     $received_by = trim($_POST['received_by'] ?? '');
+    $release_type = trim($_POST['release_type'] ?? 'with_deduction');
     $remarks = trim($_POST['remarks'] ?? '');
 
     // Debug logging
@@ -146,36 +147,45 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
 
             $current_balance_for_office = 0;
             $borrowed_deducted = 0;
+            $balance_action = "No balance record found";
 
             if ($balance_result && $balance_result->num_rows > 0) {
                 $balance_data = $balance_result->fetch_assoc();
 
-                error_log("DEBUG: Found balance record to delete - id: {$balance_data['id']}, office_id: {$balance_data['office_id']}, for_office_id: {$balance_data['for_office_id']}, consumable_description: '{$balance_data['consumable_description']}', current_balance: {$balance_data['current_balance']}, total_borrowed: {$balance_data['total_borrowed']}, total_deducted: {$balance_data['total_deducted']}");
+                error_log("DEBUG: Found balance record - id: {$balance_data['id']}, office_id: {$balance_data['office_id']}, for_office_id: {$balance_data['for_office_id']}, consumable_description: '{$balance_data['consumable_description']}', current_balance: {$balance_data['current_balance']}, total_borrowed: {$balance_data['total_borrowed']}, total_deducted: {$balance_data['total_deducted']}");
 
-                // Simply delete the balance record without any other operations
-                $delete_stmt = $conn->prepare("DELETE FROM consumable_balance WHERE id = ?");
-                $delete_stmt->bind_param("i", $balance_data['id']);
-                if (!$delete_stmt->execute()) {
-                    error_log("ERROR: Failed to delete balance record: " . $delete_stmt->error);
-                    throw new Exception("Failed to delete balance record: " . $delete_stmt->error);
+                if ($release_type === 'with_deduction') {
+                    // Process balance deduction - delete balance record and return items to supply office
+                    $delete_stmt = $conn->prepare("DELETE FROM consumable_balance WHERE id = ?");
+                    $delete_stmt->bind_param("i", $balance_data['id']);
+                    if (!$delete_stmt->execute()) {
+                        error_log("ERROR: Failed to delete balance record: " . $delete_stmt->error);
+                        throw new Exception("Failed to delete balance record: " . $delete_stmt->error);
+                    }
+                    error_log("DEBUG: Balance record deleted successfully, affected rows: " . $delete_stmt->affected_rows);
+                    $delete_stmt->close();
+                    error_log("DEBUG: Balance record {$balance_data['id']} deleted");
+
+                    // Delete corresponding lend_consumables records since items are being permanently released/transferred
+                    $delete_lend_stmt = $conn->prepare("DELETE FROM lend_consumables WHERE consumable_id = ? AND to_office_id = ?");
+                    $delete_lend_stmt->bind_param("ii", $balance_data['consumable_id'], $balance_data['for_office_id']);
+                    if (!$delete_lend_stmt->execute()) {
+                        error_log("ERROR: Failed to delete lend_consumables records: " . $delete_lend_stmt->error);
+                        throw new Exception("Failed to update lending records: " . $delete_lend_stmt->error);
+                    }
+                    error_log("DEBUG: Deleted lend_consumables records for consumable_id: {$balance_data['consumable_id']}, to_office_id: {$balance_data['for_office_id']}");
+                    $delete_lend_stmt->close();
+
+                    $borrowed_deducted = $balance_data['current_balance'];
+                    $balance_action = "Deleted balance record {$balance_data['id']}";
+                } else {
+                    // Release without deduction - keep balance record intact
+                    $borrowed_deducted = 0;
+                    $balance_action = "Kept balance record {$balance_data['id']} intact";
                 }
-                error_log("DEBUG: Balance record deleted successfully, affected rows: " . $delete_stmt->affected_rows);
-                $delete_stmt->close();
-                error_log("DEBUG: Balance record {$balance_data['id']} deleted");
-
-                // Delete corresponding lend_consumables records since items are being permanently released/transferred
-                $delete_lend_stmt = $conn->prepare("DELETE FROM lend_consumables WHERE consumable_id = ? AND to_office_id = ?");
-                $delete_lend_stmt->bind_param("ii", $balance_data['consumable_id'], $balance_data['for_office_id']);
-                if (!$delete_lend_stmt->execute()) {
-                    error_log("ERROR: Failed to delete lend_consumables records: " . $delete_lend_stmt->error);
-                    throw new Exception("Failed to update lending records: " . $delete_lend_stmt->error);
-                }
-                error_log("DEBUG: Deleted lend_consumables records for consumable_id: {$balance_data['consumable_id']}, to_office_id: {$balance_data['for_office_id']}");
-                $delete_lend_stmt->close();
-
-                $borrowed_deducted = $balance_data['current_balance'];
             } else {
                 $borrowed_deducted = 0;
+                $balance_action = "No balance record found";
             }
 
             // Step 4: Release to Target Office (remaining quantity after balance deduction)
@@ -229,15 +239,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             $office_stmt->close();
 
             // Log release action
-            $balance_id_for_log = isset($balance_data['id']) ? $balance_data['id'] : 'N/A';
-            $log_remarks = "Released {$release_quantity} '{$source_data['description']}' from office ID {$source_data['office_id']} to {$office_data['office_name']}. Deleted balance record {$balance_id_for_log}, returned {$borrowed_deducted} to supply office, actual release: {$actual_release_quantity}. Remarks: " . ($remarks ?: 'No remarks');
+            $log_remarks = "Released {$release_quantity} '{$source_data['description']}' from office ID {$source_data['office_id']} to {$office_data['office_name']}. Release type: {$release_type}. {$balance_action}, returned {$borrowed_deducted} to supply office, actual release: {$actual_release_quantity}. Remarks: " . ($remarks ?: 'No remarks');
             logSystemAction($_SESSION['user_id'], 'consumable_released', 'consumable_management', $log_remarks);
 
             // Commit transaction
             $conn->commit();
 
-            $balance_info_msg = isset($balance_data['id']) ? "Deleted balance record {$balance_data['id']}" : "No balance record found";
-            $message = "Successfully released {$release_quantity} '{$source_data['description']}' item(s) to {$office_data['office_name']}. {$balance_info_msg}, returned {$borrowed_deducted} to supply office. Source remaining: {$new_source_quantity}.";
+            $message = "Successfully released {$release_quantity} '{$source_data['description']}' item(s) to {$office_data['office_name']} using {$release_type}. {$balance_action}, returned {$borrowed_deducted} to supply office. Source remaining: {$new_source_quantity}.";
             $message_type = "success";
 
             // Close modal on success and refresh parent consumables page with success message
@@ -391,7 +399,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                                     <div class="alert alert-warning">
                                         <i class="bi bi-info-triangle"></i>
                                         <strong>Outstanding Balance Detected:</strong> <?php echo htmlspecialchars($consumable['for_office_name'] ?? 'Target Office'); ?> has <?php echo $balance_info['current_balance']; ?> borrowed item(s) of this consumable.
-                                        <br><small class="text-muted">Balance Record ID: <?php echo $balance_info['id']; ?> - This balance record will be deleted and all borrowed items will be returned to the supply office before releasing new items.</small>
+                                        <br><small class="text-muted">Balance Record ID: <?php echo $balance_info['id']; ?> - You can choose to release with balance deduction (recommended) or release additional items while keeping the borrowing history intact.</small>
                                     </div>
                                 <?php endif; ?>
 
@@ -412,9 +420,33 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                                               placeholder="Enter any remarks or notes for this release..."></textarea>
                                 </div>
 
+                                <div class="mb-3">
+                                    <label class="form-label">Release Type *</label>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="release_type" id="release_with_deduction" value="with_deduction" checked>
+                                                <label class="form-check-label" for="release_with_deduction">
+                                                    <strong>Release with Balance Deduction</strong>
+                                                    <br><small class="text-muted">Delete balance record and return borrowed items to supply office</small>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="release_type" id="release_without_deduction" value="without_deduction">
+                                                <label class="form-check-label" for="release_without_deduction">
+                                                    <strong>Release without Balance Deduction</strong>
+                                                    <br><small class="text-muted">Keep balance record intact and release additional items</small>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div class="alert alert-info">
                                     <i class="bi bi-info-circle"></i>
-                                    <strong>Note:</strong> This will release consumables permanently. If the target office has borrowed items (tracked in consumable_balance), the balance record will be deleted and all borrowed items will be returned to the original supply office, then the remaining quantity will be released to the target office.
+                                    <strong>Note:</strong> This will release consumables permanently. If the target office has borrowed items (tracked in consumable_balance), choose "Release with Balance Deduction" to return those items to the supply office first, or "Release without Balance Deduction" to keep the borrowing history intact.
                                 </div>
 
                                 <div class="d-flex justify-content-between">
