@@ -213,18 +213,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             $message = "Successfully lent {$lend_quantity} '{$source_data['description']}' item(s) to {$office_data['office_name']}. Source remaining: {$new_source_quantity}.";
             $message_type = "success";
             
-            // Close modal on success and refresh parent consumables page
+            // Close modal on success and refresh parent consumables page with success message
             echo "<script>
                 if (window.parent && window.parent !== window) {
-                    // We're in an iframe, call parent success function
-                    window.parent.showLendSuccess('{$message}');
+                    // We're in an iframe, close modal and redirect parent with success message
                     window.parent.closeLendModal();
                     setTimeout(() => {
-                        window.parent.location.reload();
-                    }, 1000);
+                        const currentUrl = new URL(window.parent.location.href);
+                        currentUrl.searchParams.set('message', '" . urlencode($message) . "');
+                        currentUrl.searchParams.set('type', 'success');
+                        window.parent.location.href = currentUrl.toString();
+                    }, 500);
                 } else {
-                    // We're not in an iframe, reload current page
-                    window.location.reload();
+                    // We're not in an iframe, redirect to parent page with success message
+                    window.location.href = 'consumables.php?message=" . urlencode($message) . "&type=success';
                 }
             </script>";
             

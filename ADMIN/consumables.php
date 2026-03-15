@@ -22,9 +22,15 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
 // Log consumables page access
 logSystemAction($_SESSION['user_id'], 'access', 'consumables', 'Admin accessed consumables page');
 
-// Handle CRUD operations
+// Handle GET parameters for modal success messages
 $message = '';
 $message_type = '';
+if (isset($_GET['message']) && isset($_GET['type'])) {
+    $message = urldecode($_GET['message']);
+    $message_type = $_GET['type'] === 'success' ? 'success' : 'danger';
+}
+
+// Handle CRUD operations
 
 // CREATE - Add new consumable
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'add') {
@@ -38,14 +44,29 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     
     // Check if consumable with same description already exists in the same office
     $existing_consumable = null;
-    $check_stmt = $conn->prepare("SELECT id, quantity, unit_cost FROM consumables WHERE description = ? AND office_id = ? AND for_office_id = ?");
-    $check_stmt->bind_param("sii", $description, $office_id, $for_office_id);
-    $check_stmt->execute();
-    $check_result = $check_stmt->get_result();
-    if ($check_result->num_rows > 0) {
-        $existing_consumable = $check_result->fetch_assoc();
+    if ($for_office_id > 0) {
+        // Check for existing allocated record in Supply Office
+        $sql = "SELECT id, quantity, unit_cost FROM consumables WHERE description = ? AND office_id = 3 AND for_office_id = ?";
+        $check_stmt = $conn->prepare($sql);
+        $check_stmt->bind_param("si", $description, $for_office_id);
+        $check_stmt->execute();
+        $check_result = $check_stmt->get_result();
+        if ($check_result->num_rows > 0) {
+            $existing_consumable = $check_result->fetch_assoc();
+        }
+        $check_stmt->close();
+    } else {
+        // Check for existing regular record in target office
+        $sql = "SELECT id, quantity, unit_cost FROM consumables WHERE description = ? AND office_id = ? AND for_office_id IS NULL";
+        $check_stmt = $conn->prepare($sql);
+        $check_stmt->bind_param("si", $description, $office_id);
+        $check_stmt->execute();
+        $check_result = $check_stmt->get_result();
+        if ($check_result->num_rows > 0) {
+            $existing_consumable = $check_result->fetch_assoc();
+        }
+        $check_stmt->close();
     }
-    $check_stmt->close();
     
     // Validation
     if (empty($description)) {
@@ -71,17 +92,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             if ($existing_consumable) {
                 // Update existing consumable quantity
                 $new_quantity = $existing_consumable['quantity'] + $quantity;
-                $update_stmt = $conn->prepare("UPDATE consumables SET quantity = ?, units = ?, unit_cost = ?, reorder_level = ?, for_office_id = ? WHERE id = ?");
-                $update_stmt->bind_param("isdiii", $new_quantity, $units, $unit_cost, $reorder_level, $for_office_id, $existing_consumable['id']);
                 
-                if ($update_stmt->execute()) {
+                if ($for_office_id > 0) {
+                    // Update allocated record in Supply Office - use traditional SQL
+                    $sql = "UPDATE consumables SET quantity = {$new_quantity}, units = '{$units}', unit_cost = {$unit_cost}, reorder_level = {$reorder_level} WHERE id = {$existing_consumable['id']}";
+                    $conn->query($sql);
+                } else {
+                    // Update regular record in target office - use traditional SQL
+                    $sql = "UPDATE consumables SET quantity = {$new_quantity}, units = '{$units}', unit_cost = {$unit_cost}, reorder_level = {$reorder_level}, for_office_id = {$for_office_id} WHERE id = {$existing_consumable['id']}";
+                    $conn->query($sql);
+                }
+                
+                if ($conn->error) {
+                    throw new Exception("Failed to update consumable: " . $conn->error);
+                } else {
                     $message = "Consumable quantity updated successfully! Added {$quantity} more items to existing consumable.";
                     $message_type = "success";
                     logSystemAction($_SESSION['user_id'], 'consumable_quantity_updated', 'consumable_management', "Updated quantity for existing consumable: {$description}");
-                } else {
-                    throw new Exception("Failed to update consumable: " . $update_stmt->error);
                 }
-                $update_stmt->close();
             } else {
                 // Insert new consumable
                 $insert_stmt = $conn->prepare("INSERT INTO consumables (description, quantity, units, unit_cost, reorder_level, office_id, for_office_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
@@ -863,26 +891,6 @@ try {
         
         // Show release success message (called from iframe)
         function showReleaseSuccess(message) {
-            // Create success alert
-            const alertDiv = document.createElement('div');
-            alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
-            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-            alertDiv.innerHTML = `
-                <i class="bi bi-check-circle"></i> ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-            document.body.appendChild(alertDiv);
-            
-            // Auto-remove after 5 seconds
-            setTimeout(() => {
-                if (alertDiv.parentNode) {
-                    alertDiv.parentNode.removeChild(alertDiv);
-                }
-            }, 5000);
-        }
-        
-        // Show lend success message (called from iframe)
-        function showLendSuccess(message) {
             // Create success alert
             const alertDiv = document.createElement('div');
             alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';

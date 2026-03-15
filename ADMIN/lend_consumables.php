@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     } else {
         try {
             // Check consumable availability
-            $consumable_stmt = $conn->prepare("SELECT description, quantity, unit_cost, office_id FROM consumables WHERE id = ? AND quantity >= ?");
+            $consumable_stmt = $conn->prepare("SELECT description, quantity, unit_cost, office_id, for_office_id FROM consumables WHERE id = ? AND quantity >= ?");
             $consumable_stmt->bind_param("ii", $consumable_id, $quantity_lent);
             $consumable_stmt->execute();
             $consumable_result = $consumable_stmt->get_result();
@@ -61,25 +61,86 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                 $consumable = $consumable_result->fetch_assoc();
                 $total_value = $quantity_lent * $consumable['unit_cost'];
                 
-                // Insert lend transaction
-                $insert_stmt = $conn->prepare("INSERT INTO lend_consumables (consumable_id, description, quantity_lent, unit_cost, total_value, from_office_id, to_office_id, lent_by, received_by, date_lent, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                $insert_stmt->bind_param("isidiiissss", $consumable_id, $consumable['description'], $quantity_lent, $consumable['unit_cost'], $total_value, $consumable['office_id'], $to_office_id, $lent_by, $received_by, $date_lent, $notes);
+                // Insert detailed transaction record into lend_consumables table
+                $insert_lend_stmt = $conn->prepare("INSERT INTO lend_consumables (consumable_id, description, quantity_lent, unit_cost, total_value, from_office_id, to_office_id, lent_by, received_by, date_lent, status, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'lent', ?, NOW(), NOW())");
+                $insert_lend_stmt->bind_param("isidiiissss", $consumable_id, $consumable['description'], $quantity_lent, $consumable['unit_cost'], $total_value, $consumable['office_id'], $to_office_id, $lent_by, $received_by, $date_lent, $notes);
+                $insert_lend_stmt->execute();
+                $insert_lend_stmt->close();
                 
-                if ($insert_stmt->execute()) {
-                    // Update consumable quantity
-                    $new_quantity = $consumable['quantity'] - $quantity_lent;
-                    $update_stmt = $conn->prepare("UPDATE consumables SET quantity = ? WHERE id = ?");
-                    $update_stmt->bind_param("ii", $new_quantity, $consumable_id);
-                    $update_stmt->execute();
-                    $update_stmt->close();
+                // Check if balance record exists for this consumable and office
+                $balance_stmt = $conn->prepare("SELECT id, total_borrowed, current_balance FROM consumable_balance WHERE consumable_id = ? AND office_id = ? AND for_office_id = ?");
+                $balance_stmt->bind_param("iii", $consumable_id, $consumable['office_id'], $to_office_id);
+                $balance_stmt->execute();
+                $balance_result = $balance_stmt->get_result();
+                
+                if ($balance_result->num_rows > 0) {
+                    // Update existing balance record
+                    $balance = $balance_result->fetch_assoc();
+                    $new_total_borrowed = $balance['total_borrowed'] + $quantity_lent;
+                    $new_current_balance = $balance['current_balance'] + $quantity_lent;
                     
-                    $message = "Consumable lent successfully!";
-                    $message_type = "success";
-                    logSystemAction($_SESSION['user_id'], 'consumable_lent', 'lend_consumables', "Lent {$quantity_lent} units of {$consumable['description']} to office ID {$to_office_id}");
+                    $update_balance_stmt = $conn->prepare("UPDATE consumable_balance SET total_borrowed = ?, current_balance = ?, last_updated = NOW() WHERE id = ?");
+                    $update_balance_stmt->bind_param("iii", $new_total_borrowed, $new_current_balance, $balance['id']);
+                    $update_balance_stmt->execute();
+                    $update_balance_stmt->close();
                 } else {
-                    throw new Exception("Failed to record lend transaction: " . $insert_stmt->error);
+                    // Insert new balance record
+                    $insert_balance_stmt = $conn->prepare("INSERT INTO consumable_balance (consumable_id, consumable_description, office_id, office_name, for_office_id, total_borrowed, total_deducted, current_balance, last_updated, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())");
+                    
+                    // Get office names
+                    $from_office_stmt = $conn->prepare("SELECT office_name FROM offices WHERE id = ?");
+                    $from_office_stmt->bind_param("i", $consumable['office_id']);
+                    $from_office_stmt->execute();
+                    $from_office_result = $from_office_stmt->get_result();
+                    $from_office_name = $from_office_result->fetch_assoc()['office_name'] ?? 'Unknown';
+                    $from_office_stmt->close();
+                    
+                    $insert_balance_stmt->bind_param("isisiiii", $consumable_id, $consumable['description'], $consumable['office_id'], $from_office_name, $to_office_id, $quantity_lent, 0, $quantity_lent);
+                    $insert_balance_stmt->execute();
+                    $insert_balance_stmt->close();
                 }
-                $insert_stmt->close();
+                $balance_stmt->close();
+                
+                // Update consumable quantity
+                $new_quantity = $consumable['quantity'] - $quantity_lent;
+                $update_stmt = $conn->prepare("UPDATE consumables SET quantity = ? WHERE id = ?");
+                $update_stmt->bind_param("ii", $new_quantity, $consumable_id);
+                $update_stmt->execute();
+                $update_stmt->close();
+                
+                // Insert regular inventory record in target office (for_office_id = NULL)
+                $target_check_stmt = $conn->prepare("SELECT id, quantity FROM consumables WHERE description = ? AND office_id = ? AND for_office_id IS NULL FOR UPDATE");
+                $target_check_stmt->bind_param("si", $consumable['description'], $to_office_id);
+                $target_check_stmt->execute();
+                $target_check_result = $target_check_stmt->get_result();
+                
+                if ($target_check_result->num_rows > 0) {
+                    // Update existing regular inventory in target office
+                    $target_consumable = $target_check_result->fetch_assoc();
+                    $new_target_quantity = $target_consumable['quantity'] + $quantity_lent;
+                    
+                    $update_target_stmt = $conn->prepare("UPDATE consumables SET quantity = ? WHERE id = ?");
+                    $update_target_stmt->bind_param("ii", $new_target_quantity, $target_consumable['id']);
+                    $update_target_stmt->execute();
+                    $update_target_stmt->close();
+                } else {
+                    // Insert new regular inventory record in target office
+                    $insert_target_stmt = $conn->prepare("INSERT INTO consumables (description, quantity, unit_cost, reorder_level, office_id, for_office_id) VALUES (?, ?, ?, ?, ?, NULL)");
+                    $insert_target_stmt->bind_param("sidii", 
+                        $consumable['description'], 
+                        $quantity_lent, 
+                        $consumable['unit_cost'], 
+                        0, // Default reorder level
+                        $to_office_id
+                    );
+                    $insert_target_stmt->execute();
+                    $insert_target_stmt->close();
+                }
+                $target_check_stmt->close();
+                
+                $message = "Consumable lent successfully!";
+                $message_type = "success";
+                logSystemAction($_SESSION['user_id'], 'consumable_lent', 'lend_consumables', "Lent {$quantity_lent} units of {$consumable['description']} to office ID {$to_office_id}");
             } else {
                 $message = "Insufficient consumable quantity or consumable not found.";
                 $message_type = "danger";
@@ -92,105 +153,163 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     }
 }
 
-// Handle return transaction
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'return') {
-    $lend_id = intval($_POST['lend_id'] ?? 0);
-    $actual_return_date = $_POST['actual_return_date'] ?? date('Y-m-d');
-    
-    if ($lend_id <= 0) {
-        $message = "Invalid lend transaction ID.";
-        $message_type = "danger";
-    } else {
-        try {
-            // Get lend transaction details
-            $lend_stmt = $conn->prepare("SELECT consumable_id, quantity_lent, status FROM lend_consumables WHERE id = ?");
-            $lend_stmt->bind_param("i", $lend_id);
-            $lend_stmt->execute();
-            $lend_result = $lend_stmt->get_result();
-            
-            if ($lend_result->num_rows > 0) {
-                $lend = $lend_result->fetch_assoc();
-                
-                if ($lend['status'] == 'pending') {
-                    // Update lend transaction
-                    $update_stmt = $conn->prepare("UPDATE lend_consumables SET status = 'returned', actual_return_date = ?, updated_at = NOW() WHERE id = ?");
-                    $update_stmt->bind_param("si", $actual_return_date, $lend_id);
-                    
-                    if ($update_stmt->execute()) {
-                        // Update consumable quantity
-                        $consumable_stmt = $conn->prepare("UPDATE consumables SET quantity = quantity + ? WHERE id = ?");
-                        $consumable_stmt->bind_param("ii", $lend['quantity_lent'], $lend['consumable_id']);
-                        $consumable_stmt->execute();
-                        $consumable_stmt->close();
-                        
-                        $message = "Consumable returned successfully!";
-                        $message_type = "success";
-                        logSystemAction($_SESSION['user_id'], 'consumable_returned', 'lend_consumables', "Returned consumable lend transaction ID {$lend_id}");
-                    } else {
-                        throw new Exception("Failed to update return transaction: " . $update_stmt->error);
-                    }
-                    $update_stmt->close();
-                } else {
-                    $message = "This transaction has already been returned.";
-                    $message_type = "warning";
-                }
-            } else {
-                $message = "Lend transaction not found.";
-                $message_type = "danger";
-            }
-            $lend_stmt->close();
-        } catch (Exception $e) {
-            $message = "Error returning consumable: " . $e->getMessage();
-            $message_type = "danger";
-        }
-    }
-}
 
 // Handle filter parameters
 $to_office_filter = isset($_GET['to_office']) ? intval($_GET['to_office']) : 0;
 $from_office_filter = isset($_GET['from_office']) ? intval($_GET['from_office']) : 3; // Default to Supply Office (ID = 3)
 $search_filter = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-// Get lend transactions with merged quantities for same consumable_id and to_office_id
-$lend_transactions = [];
+// Get consumable balance records with filters
+$balance_records = [];
 try {
+    // First, ensure consumable_balance table exists with for_office_id column
+    $create_table_sql = "CREATE TABLE IF NOT EXISTS `consumable_balance` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `consumable_id` INT NOT NULL,
+        `consumable_description` VARCHAR(255) NOT NULL,
+        `office_id` INT NOT NULL,
+        `office_name` VARCHAR(255) NOT NULL,
+        `for_office_id` INT DEFAULT NULL,
+        `total_borrowed` INT DEFAULT 0,
+        `total_deducted` INT DEFAULT 0,
+        `current_balance` INT DEFAULT 0,
+        `last_updated` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX `idx_consumable_office` (`consumable_id`, `office_id`, `for_office_id`),
+        INDEX `idx_for_office` (`for_office_id`),
+        FOREIGN KEY (`consumable_id`) REFERENCES `consumables`(`id`) ON DELETE CASCADE,
+        FOREIGN KEY (`office_id`) REFERENCES `offices`(`id`) ON DELETE CASCADE,
+        FOREIGN KEY (`for_office_id`) REFERENCES `offices`(`id`) ON DELETE SET NULL
+    )";
+    $conn->query($create_table_sql);
+    
+    // First, calculate and insert main total borrowed records from lend_consumables
+    $main_totals_sql = "SELECT 
+                            lc.consumable_id,
+                            c.description as consumable_description,
+                            lc.from_office_id as office_id,
+                            o1.office_name as office_name,
+                            lc.to_office_id as for_office_id,
+                            o2.office_name as for_office_name,
+                            SUM(lc.quantity_lent) as total_borrowed,
+                            SUM(CASE WHEN lc.status = 'returned' THEN lc.quantity_lent ELSE 0 END) as total_deducted,
+                            SUM(CASE WHEN lc.status = 'lent' THEN lc.quantity_lent ELSE 0 END) - SUM(CASE WHEN lc.status = 'returned' THEN lc.quantity_lent ELSE 0 END) as current_balance
+                        FROM lend_consumables lc
+                        LEFT JOIN consumables c ON lc.consumable_id = c.id
+                        LEFT JOIN offices o1 ON lc.from_office_id = o1.id
+                        LEFT JOIN offices o2 ON lc.to_office_id = o2.id";
+    
+    $main_where_conditions = [];
+    $main_params = [];
+    $main_types = '';
+    
+    if ($from_office_filter > 0) {
+        $main_where_conditions[] = "lc.from_office_id = ?";
+        $main_params[] = $from_office_filter;
+        $main_types .= 'i';
+    }
+    
+    if ($to_office_filter > 0) {
+        $main_where_conditions[] = "lc.to_office_id = ?";
+        $main_params[] = $to_office_filter;
+        $main_types .= 'i';
+    }
+    
+    if (!empty($search_filter)) {
+        $main_where_conditions[] = "(c.description LIKE ? OR o1.office_name LIKE ? OR o2.office_name LIKE ?)";
+        $search_term = '%' . $search_filter . '%';
+        $main_params[] = $search_term;
+        $main_params[] = $search_term;
+        $main_params[] = $search_term;
+        $main_types .= 'sss';
+    }
+    
+    if (!empty($main_where_conditions)) {
+        $main_totals_sql .= " WHERE " . implode(" AND ", $main_where_conditions);
+    }
+    
+    $main_totals_sql .= " GROUP BY lc.consumable_id, c.description, lc.from_office_id, o1.office_name, lc.to_office_id, o2.office_name";
+    
+    // Debug: Log the SQL query
+    error_log("Main totals SQL: " . $main_totals_sql);
+    error_log("Main params: " . print_r($main_params, true));
+    
+    $main_stmt = $conn->prepare($main_totals_sql);
+    if (!empty($main_params)) {
+        $main_stmt->bind_param($main_types, ...$main_params);
+    }
+    $main_stmt->execute();
+    $main_result = $main_stmt->get_result();
+    
+    error_log("Main result count: " . $main_result->num_rows);
+    
+    // Insert/update main total borrowed records
+    $insert_count = 0;
+    $update_count = 0;
+    while ($main_row = $main_result->fetch_assoc()) {
+        $check_main_stmt = $conn->prepare("SELECT id FROM consumable_balance WHERE consumable_id = ? AND office_id = ? AND for_office_id = ?");
+        $check_main_stmt->bind_param("iii", $main_row['consumable_id'], $main_row['office_id'], $main_row['for_office_id']);
+        $check_main_stmt->execute();
+        $check_result = $check_main_stmt->get_result();
+        
+        if ($check_result->num_rows > 0) {
+            // Update existing main record
+            $update_main_stmt = $conn->prepare("UPDATE consumable_balance SET total_borrowed = ?, total_deducted = ?, current_balance = ?, last_updated = NOW() WHERE consumable_id = ? AND office_id = ? AND for_office_id = ?");
+            $update_main_stmt->bind_param("iiiiii", $main_row['total_borrowed'], $main_row['total_deducted'], $main_row['current_balance'], $main_row['consumable_id'], $main_row['office_id'], $main_row['for_office_id']);
+            $update_main_stmt->execute();
+            $update_main_stmt->close();
+            $update_count++;
+        } else {
+            // Insert new main record
+            $insert_main_stmt = $conn->prepare("INSERT INTO consumable_balance (consumable_id, consumable_description, office_id, office_name, for_office_id, total_borrowed, total_deducted, current_balance, last_updated, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())");
+            $insert_main_stmt->bind_param("isisiiii", $main_row['consumable_id'], $main_row['consumable_description'], $main_row['office_id'], $main_row['office_name'], $main_row['for_office_id'], $main_row['total_borrowed'], $main_row['total_deducted'], $main_row['current_balance']);
+            $insert_main_stmt->execute();
+            $insert_main_stmt->close();
+            $insert_count++;
+        }
+        $check_main_stmt->close();
+    }
+    $main_stmt->close();
+    
+    error_log("Inserted: $insert_count, Updated: $update_count main records");
+    
+    // Now get the final balance records for display
     $sql = "SELECT 
-                lc.consumable_id,
-                lc.description,
-                SUM(lc.quantity_lent) as total_quantity_lent,
-                lc.unit_cost,
-                SUM(lc.total_value) as total_value,
-                lc.from_office_id,
-                lc.to_office_id,
-                fo.office_name as to_office_name,
-                o.office_name as from_office_name,
-                lc.status,
-                COUNT(lc.id) as transaction_count,
-                MAX(lc.date_lent) as latest_date_lent,
-                MAX(lc.expected_return_date) as latest_expected_return_date,
-                GROUP_CONCAT(DISTINCT lc.received_by ORDER BY lc.date_lent DESC SEPARATOR ', ') as received_by_list
-            FROM lend_consumables lc
-            LEFT JOIN offices fo ON lc.to_office_id = fo.id
-            LEFT JOIN offices o ON lc.from_office_id = o.id";
+                cb.id,
+                cb.consumable_id,
+                cb.consumable_description,
+                cb.office_id,
+                cb.office_name,
+                cb.for_office_id,
+                cb.total_borrowed,
+                cb.total_deducted,
+                cb.current_balance,
+                cb.last_updated,
+                cb.created_at,
+                fo.office_name as for_office_name,
+                c.unit_cost
+            FROM consumable_balance cb
+            LEFT JOIN offices fo ON cb.for_office_id = fo.id
+            LEFT JOIN consumables c ON cb.consumable_id = c.id";
     
     $where_conditions = [];
     $params = [];
     $types = '';
     
     if ($from_office_filter > 0) {
-        $where_conditions[] = "lc.from_office_id = ?";
+        $where_conditions[] = "cb.office_id = ?";
         $params[] = $from_office_filter;
         $types .= 'i';
     }
     
     if ($to_office_filter > 0) {
-        $where_conditions[] = "lc.to_office_id = ?";
+        $where_conditions[] = "cb.for_office_id = ?";
         $params[] = $to_office_filter;
         $types .= 'i';
     }
     
     if (!empty($search_filter)) {
-        $where_conditions[] = "(lc.description LIKE ? OR fo.office_name LIKE ? OR lc.received_by LIKE ?)";
+        $where_conditions[] = "(cb.consumable_description LIKE ? OR cb.office_name LIKE ? OR fo.office_name LIKE ?)";
         $search_term = '%' . $search_filter . '%';
         $params[] = $search_term;
         $params[] = $search_term;
@@ -202,8 +321,7 @@ try {
         $sql .= " WHERE " . implode(" AND ", $where_conditions);
     }
     
-    $sql .= " GROUP BY lc.consumable_id, lc.from_office_id, lc.to_office_id, lc.description, lc.unit_cost, lc.status
-              ORDER BY lc.date_lent DESC";
+    $sql .= " ORDER BY cb.created_at DESC";
     
     $stmt = $conn->prepare($sql);
     if (!empty($params)) {
@@ -214,13 +332,15 @@ try {
     
     if ($result) {
         while ($row = $result->fetch_assoc()) {
-            $lend_transactions[] = $row;
+            $balance_records[] = $row;
         }
     }
     $stmt->close();
+    
 } catch (Exception $e) {
-    $message = "Error fetching lend transactions: " . $e->getMessage();
+    $message = "Error fetching balance records: " . $e->getMessage();
     $message_type = "danger";
+    error_log("Error in balance records: " . $e->getMessage());
 }
 
 // Get offices for dropdown
@@ -253,13 +373,13 @@ try {
 $stats = [];
 try {
     $sql = "SELECT 
-                COUNT(DISTINCT id) as total_transactions,
+                COUNT(*) as total_balance_records,
                 COUNT(DISTINCT consumable_id) as unique_consumables,
-                SUM(quantity_lent) as total_quantity_lent,
-                SUM(total_value) as total_value_lent,
-                COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_returns,
-                COUNT(CASE WHEN status = 'returned' THEN 1 END) as completed_returns
-            FROM lend_consumables";
+                SUM(total_borrowed) as total_borrowed,
+                SUM(total_deducted) as total_deducted,
+                SUM(current_balance) as total_current_balance,
+                COUNT(CASE WHEN current_balance > 0 THEN 1 END) as active_balances
+            FROM consumable_balance";
     
     $where_conditions = [];
     $params = [];
@@ -267,19 +387,19 @@ try {
     
     // Apply same filter as the main table
     if ($from_office_filter > 0) {
-        $where_conditions[] = "from_office_id = ?";
+        $where_conditions[] = "office_id = ?";
         $params[] = $from_office_filter;
         $types .= 'i';
     }
     
     if ($to_office_filter > 0) {
-        $where_conditions[] = "to_office_id = ?";
+        $where_conditions[] = "for_office_id = ?";
         $params[] = $to_office_filter;
         $types .= 'i';
     }
     
     if (!empty($search_filter)) {
-        $where_conditions[] = "(description LIKE ? OR received_by LIKE ?)";
+        $where_conditions[] = "(consumable_description LIKE ? OR office_name LIKE ?)";
         $search_term = '%' . $search_filter . '%';
         $params[] = $search_term;
         $params[] = $search_term;
@@ -387,35 +507,35 @@ try {
         <div class="row mb-4">
             <div class="col-lg-3 col-md-6">
                 <div class="stats-card">
-                    <div class="stats-number"><?php echo $stats['total_transactions'] ?? 0; ?></div>
-                    <div class="stats-label"><i class="bi bi-arrow-left-right"></i> Total Transactions</div>
+                    <div class="stats-number"><?php echo $stats['total_balance_records'] ?? 0; ?></div>
+                    <div class="stats-label"><i class="bi bi-balance-scale"></i> Balance Records</div>
                 </div>
             </div>
             <div class="col-lg-3 col-md-6">
                 <div class="stats-card">
-                    <div class="stats-number"><?php echo $stats['total_quantity_lent'] ?? 0; ?></div>
-                    <div class="stats-label"><i class="bi bi-box"></i> Total Quantity Borrowed</div>
+                    <div class="stats-number"><?php echo $stats['total_borrowed'] ?? 0; ?></div>
+                    <div class="stats-label"><i class="bi bi-box"></i> Total Borrowed</div>
                 </div>
             </div>
             <div class="col-lg-3 col-md-6">
                 <div class="stats-card">
-                    <div class="stats-number"><?php echo number_format($stats['total_value_lent'] ?? 0, 2); ?></div>
-                    <div class="stats-label"><i class="bi bi-currency-dollar"></i> Total Value Borrowed</div>
+                    <div class="stats-number"><?php echo $stats['total_current_balance'] ?? 0; ?></div>
+                    <div class="stats-label"><i class="bi bi-arrow-left-right"></i> Current Balance</div>
                 </div>
             </div>
             <div class="col-lg-3 col-md-6">
                 <div class="stats-card">
-                    <div class="stats-number"><?php echo $stats['pending_returns'] ?? 0; ?></div>
-                    <div class="stats-label"><i class="bi bi-clock"></i> Pending Returns</div>
+                    <div class="stats-number"><?php echo $stats['active_balances'] ?? 0; ?></div>
+                    <div class="stats-label"><i class="bi bi-check-circle"></i> Active Balances</div>
                 </div>
             </div>
         </div>
         
-        <!-- Lend Transactions Table -->
+        <!-- Balance Records Table -->
         <div class="table-container">
             <div class="row mb-3 align-items-center">
                 <div class="col-md-2">
-                    <h5 class="mb-0"><i class="bi bi-list-ul"></i> Borrow Transactions</h5>
+                    <h5 class="mb-0"><i class="bi bi-list-ul"></i> Balance Records</h5>
                 </div>
                 <div class="col-md-10">
                     <div class="row g-2">
@@ -440,7 +560,7 @@ try {
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Search by description, office, or received by..." value="<?php echo htmlspecialchars($search_filter); ?>">
+                            <input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Search by description or office..." value="<?php echo htmlspecialchars($search_filter); ?>">
                         </div>
                     </div>
                 </div>
@@ -451,34 +571,38 @@ try {
                     <thead>
                         <tr>
                             <th>Description</th>
-                            <th>Total Quantity Borrowed</th>
-                            <th>Unit Cost</th>
-                            <th>Total Value</th>
+                            <th>Total Borrowed</th>
+                            <th>Total Deducted</th>
+                            <th>Current Balance</th>
                             <th>From Office</th>
                             <th>To Office</th>
-                            <th>Latest Date Borrowed</th>
+                            <th>Last Updated</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php if (!empty($lend_transactions)): ?>
-                            <?php foreach ($lend_transactions as $transaction): ?>
+                        <?php if (!empty($balance_records)): ?>
+                            <?php foreach ($balance_records as $record): ?>
                                 <tr>
                                     <td>
-                                        <?php echo htmlspecialchars($transaction['description']); ?>
+                                        <?php echo htmlspecialchars($record['consumable_description']); ?>
                                     </td>
-                                    <td><?php echo $transaction['total_quantity_lent']; ?></td>
-                                    <td><?php echo number_format($transaction['unit_cost'], 2); ?></td>
-                                    <td class="text-value"><?php echo number_format($transaction['total_value'], 2); ?></td>
-                                    <td><?php echo htmlspecialchars($transaction['from_office_name'] ?? 'N/A'); ?></td>
-                                    <td><?php echo htmlspecialchars($transaction['to_office_name'] ?? 'N/A'); ?></td>
-                                    <td><?php echo date('M d, Y', strtotime($transaction['latest_date_lent'])); ?></td>
+                                    <td><?php echo $record['total_borrowed']; ?></td>
+                                    <td><?php echo $record['total_deducted']; ?></td>
+                                    <td>
+                                        <span class="badge bg-<?php echo $record['current_balance'] > 0 ? 'success' : 'secondary'; ?>">
+                                            <?php echo $record['current_balance']; ?>
+                                        </span>
+                                    </td>
+                                    <td><?php echo htmlspecialchars($record['office_name'] ?? 'N/A'); ?></td>
+                                    <td><?php echo htmlspecialchars($record['for_office_name'] ?? 'N/A'); ?></td>
+                                    <td><?php echo date('M d, Y', strtotime($record['last_updated'])); ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php else: ?>
                             <tr>
                                 <td colspan="7" class="text-center text-muted py-4">
                                     <i class="bi bi-inbox fs-1"></i>
-                                    <p class="mt-2">No borrow transactions found. Click "Borrow Consumable" to create your first transaction.</p>
+                                    <p class="mt-2">No balance records found. Click "Borrow Consumable" to create your first balance record.</p>
                                 </td>
                             </tr>
                         <?php endif; ?>
@@ -589,38 +713,6 @@ try {
         </div>
     </div>
     
-    <!-- Return Consumable Modal -->
-    <div class="modal fade" id="returnConsumableModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-box-arrow-in-left"></i> Return Consumable</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <form method="POST">
-                    <div class="modal-body">
-                        <input type="hidden" name="action" value="return">
-                        <input type="hidden" name="lend_id" id="returnLendId">
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Actual Return Date *</label>
-                            <input type="date" class="form-control" name="actual_return_date" value="<?php echo date('Y-m-d'); ?>" required>
-                        </div>
-                        
-                        <div class="alert alert-warning">
-                            <i class="bi bi-exclamation-triangle"></i> This will mark the selected transaction as returned and update the consumable quantity.
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-success">
-                            <i class="bi bi-box-arrow-in-left"></i> Confirm Return
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -797,24 +889,24 @@ try {
             quantityLentInput.addEventListener('input', calculateTotalValue);
         });
         
-        // Export borrow transactions function
+        // Export balance records function
         function exportBorrowTransactions() {
             // Get current table data from DOM
             const table = document.querySelector('table');
             const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
-            let csv = 'Description,Total Quantity Borrowed,Unit Cost,Total Value,From Office,To Office,Latest Date Borrowed\n';
+            let csv = 'Description,Total Borrowed,Total Deducted,Current Balance,From Office,To Office,Last Updated\n';
             
             for (let i = 0; i < rows.length; i++) {
                 const cells = rows[i].getElementsByTagName('td');
-                if (cells.length === 7) { // Skip empty message row
+                if (cells.length === 8) { // Skip empty message row
                     const rowData = [
                         cells[0].textContent.replace(/\s+/g, ' ').trim(), // Description
-                        cells[1].textContent.trim(), // Total Quantity Borrowed
-                        cells[2].textContent.trim(), // Unit Cost
-                        cells[3].textContent.replace(/[^0-9.-]+/g, '').trim(), // Total Value
+                        cells[1].textContent.trim(), // Total Borrowed
+                        cells[2].textContent.trim(), // Total Deducted
+                        cells[3].textContent.trim(), // Current Balance
                         cells[4].textContent.trim(), // From Office
                         cells[5].textContent.trim(), // To Office
-                        cells[6].textContent.trim()  // Latest Date Borrowed
+                        cells[6].textContent.trim()  // Last Updated
                     ];
                     csv += rowData.map(cell => `"${cell}"`).join(',') + '\n';
                 }
@@ -824,66 +916,15 @@ try {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `borrow_transactions_export_${new Date().toISOString().split('T')[0]}.csv`;
+            a.download = `balance_records_export_${new Date().toISOString().split('T')[0]}.csv`;
             a.click();
             window.URL.revokeObjectURL(url);
         }
         
-        // Open return modal function
-        function openReturnModal(consumableId, toOfficeId) {
-            // Find the latest pending lend transaction for this consumable and office
-            fetch(`lend_consumables.php?action=get_pending&consumable_id=${consumableId}&to_office_id=${toOfficeId}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        document.getElementById('returnLendId').value = data.lend_id;
-                        const modal = new bootstrap.Modal(document.getElementById('returnConsumableModal'));
-                        modal.show();
-                    } else {
-                        alert('Error: ' + data.error);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error loading return data');
-                });
-        }
     </script>
 </body>
 </html>
 
 <?php
-// Handle AJAX request for getting pending lend transaction
-if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['action']) && $_GET['action'] == 'get_pending') {
-    $consumable_id = intval($_GET['consumable_id'] ?? 0);
-    $to_office_id = intval($_GET['to_office_id'] ?? 0);
-    
-    if ($consumable_id > 0 && $to_office_id > 0) {
-        try {
-            $query = "SELECT id FROM lend_consumables WHERE consumable_id = ? AND to_office_id = ? AND status = 'pending' ORDER BY date_lent DESC LIMIT 1";
-            $stmt = $conn->prepare($query);
-            $stmt->bind_param("ii", $consumable_id, $to_office_id);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            
-            if ($row = $result->fetch_assoc()) {
-                header('Content-Type: application/json');
-                echo json_encode(['success' => true, 'lend_id' => $row['id']]);
-            } else {
-                header('Content-Type: application/json');
-                echo json_encode(['success' => false, 'error' => 'No pending transaction found']);
-            }
-            $stmt->close();
-            exit;
-        } catch (Exception $e) {
-            header('Content-Type: application/json');
-            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
-            exit;
-        }
-    } else {
-        header('Content-Type: application/json');
-        echo json_encode(['success' => false, 'error' => 'Invalid parameters']);
-        exit;
-    }
-}
+// No AJAX handlers needed for balance system
 ?>
