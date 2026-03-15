@@ -90,26 +90,47 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     } else {
         try {
             if ($existing_consumable) {
-                // Update existing consumable quantity
-                $new_quantity = $existing_consumable['quantity'] + $quantity;
+                // Update existing consumable quantity and calculate WAC
+                $current_quantity = $existing_consumable['quantity'];
+                $current_unit_cost = $existing_consumable['unit_cost'];
+                $added_quantity = $quantity;
+                $added_unit_price = $unit_cost;
+                
+                // Calculate Weighted Average Cost (WAC)
+                if ($current_quantity + $added_quantity > 0) {
+                    if ($current_quantity == 0) {
+                        // If no current stock, use the added price
+                        $new_unit_cost = $added_unit_price;
+                    } else {
+                        // Calculate WAC: ((current_qty * current_cost) + (added_qty * added_price)) / total_qty
+                        $new_unit_cost = (($current_quantity * $current_unit_cost) + ($added_quantity * $added_unit_price)) / ($current_quantity + $added_quantity);
+                    }
+                    // Format to 2 decimal places
+                    $new_unit_cost = round($new_unit_cost, 2);
+                } else {
+                    $new_unit_cost = $added_unit_price;
+                }
+                
+                $new_quantity = $current_quantity + $added_quantity;
                 
                 if ($for_office_id > 0) {
-                    // Update allocated record in Supply Office - use traditional SQL
-                    $sql = "UPDATE consumables SET quantity = {$new_quantity}, units = '{$units}', unit_cost = {$unit_cost}, reorder_level = {$reorder_level} WHERE id = {$existing_consumable['id']}";
-                    $conn->query($sql);
+                    // Update allocated record in Supply Office - use prepared statement
+                    $update_stmt = $conn->prepare("UPDATE consumables SET quantity = ?, unit_cost = ?, updated_at = NOW() WHERE id = ?");
+                    $update_stmt->bind_param("idi", $new_quantity, $new_unit_cost, $existing_consumable['id']);
                 } else {
-                    // Update regular record in target office - use traditional SQL
-                    $sql = "UPDATE consumables SET quantity = {$new_quantity}, units = '{$units}', unit_cost = {$unit_cost}, reorder_level = {$reorder_level}, for_office_id = {$for_office_id} WHERE id = {$existing_consumable['id']}";
-                    $conn->query($sql);
+                    // Update regular record in target office - use prepared statement
+                    $update_stmt = $conn->prepare("UPDATE consumables SET quantity = ?, unit_cost = ?, for_office_id = ?, updated_at = NOW() WHERE id = ?");
+                    $update_stmt->bind_param("idii", $new_quantity, $new_unit_cost, $for_office_id, $existing_consumable['id']);
                 }
                 
-                if ($conn->error) {
-                    throw new Exception("Failed to update consumable: " . $conn->error);
-                } else {
-                    $message = "Consumable quantity updated successfully! Added {$quantity} more items to existing consumable.";
+                if ($update_stmt->execute()) {
+                    $message = "Consumable stock updated successfully! Added {$quantity} more items to existing consumable. New WAC: ₱" . number_format($new_unit_cost, 2);
                     $message_type = "success";
-                    logSystemAction($_SESSION['user_id'], 'consumable_quantity_updated', 'consumable_management', "Updated quantity for existing consumable: {$description}");
+                    logSystemAction($_SESSION['user_id'], 'consumable_stock_added', 'consumable_management', "Added {$quantity} units to consumable: {$description}. New WAC: ₱{$new_unit_cost}");
+                } else {
+                    throw new Exception("Failed to update consumable: " . $update_stmt->error);
                 }
+                $update_stmt->close();
             } else {
                 // Insert new consumable
                 $insert_stmt = $conn->prepare("INSERT INTO consumables (description, quantity, units, unit_cost, reorder_level, office_id, for_office_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
