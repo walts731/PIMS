@@ -19,18 +19,40 @@ if ($_SESSION['role'] !== 'office_admin') {
     exit();
 }
 
+// Generate CSRF token
+function generateCSRFToken() {
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+// Validate CSRF token
+function validateCSRFToken($token) {
+    return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
+}
+
 // Set page title for topbar
 $page_title = 'Requests Management';
 
 // Get office ID from session
 $office_id = $_SESSION['office_id'] ?? null;
 
-// Handle form submissions
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action = $_POST['action'] ?? '';
+// Handle form submissions and AJAX requests
+$action = $_REQUEST['action'] ?? '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' || $action === 'check_updates') {
     
     switch ($action) {
         case 'create_request':
+            // Validate CSRF token first
+            $csrf_token = $_POST['csrf_token'] ?? '';
+            if (!validateCSRFToken($csrf_token)) {
+                $_SESSION['error'] = "Invalid request. Please try again.";
+                header('Location: requests.php');
+                exit();
+            }
+            
             $asset_id = $_POST['asset_id'] ?? 0;
             $requested_to_office = $_POST['requested_to_office'] ?? 0;
             $quantity_requested = $_POST['quantity_requested'] ?? 1;
@@ -47,11 +69,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['error'] = "Cannot request assets from your own office";
             } elseif ($quantity_requested < 1) {
                 $_SESSION['error'] = "Quantity must be at least 1";
+            } elseif (strtotime($start_date) < strtotime('today')) {
+                $_SESSION['error'] = "Start date cannot be in the past";
+            } elseif (strtotime($end_date) < strtotime($start_date)) {
+                $_SESSION['error'] = "End date must be after start date";
             } else {
                 try {
-                    // Check if asset exists and get available quantity
-                    $asset_check = "SELECT ai.status, COALESCE(a.quantity, 1) as total_quantity,
-                                   COALESCE(a.quantity, 1) as available_quantity
+                    // Enhanced asset validation
+                    $asset_check = "SELECT ai.id, ai.status, ai.description, ai.property_no,
+                                   COALESCE(a.quantity, 1) as total_quantity,
+                                   COALESCE(a.quantity, 1) as available_quantity,
+                                   ai.office_id as asset_office_id
                                    FROM asset_items ai
                                    LEFT JOIN assets a ON ai.asset_id = a.id
                                    WHERE ai.id = ?";
@@ -65,29 +93,68 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     } else {
                         $asset_data = $asset_result->fetch_assoc();
                         
+                        // Comprehensive asset validation
                         if ($asset_data['status'] !== 'serviceable') {
-                            $_SESSION['error'] = "Asset is not available";
+                            $_SESSION['error'] = "Asset '{$asset_data['description']}' is not available (Status: {$asset_data['status']})";
+                        } elseif ($asset_data['asset_office_id'] == $office_id) {
+                            $_SESSION['error'] = "Cannot request assets from your own office";
                         } elseif ($quantity_requested > $asset_data['available_quantity']) {
-                            $_SESSION['error'] = "Only {$asset_data['available_quantity']} units available. You requested {$quantity_requested}.";
+                            $_SESSION['error'] = "Only {$asset_data['available_quantity']} units available for '{$asset_data['description']}'. You requested {$quantity_requested}.";
                         } else {
-                            // Insert new borrow request
-                            $insert_query = "INSERT INTO borrow_requests 
-                                             (requested_by, requested_by_office, requested_to_office, asset_id, quantity_requested, purpose, start_date, end_date) 
-                                             VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-                            $stmt = $conn->prepare($insert_query);
-                            $stmt->bind_param("iiisisss", $_SESSION['user_id'], $office_id, $requested_to_office, $asset_id, $quantity_requested, $purpose, $start_date, $end_date);
+                            // Check for overlapping requests for the same asset
+                            $overlap_check = "SELECT COUNT(*) as overlapping_count
+                                              FROM borrow_requests 
+                                              WHERE asset_id = ? 
+                                              AND status IN ('pending', 'approved', 'borrowed')
+                                              AND (
+                                                  (start_date <= ? AND end_date >= ?) OR
+                                                  (start_date <= ? AND end_date >= ?) OR
+                                                  (start_date >= ? AND end_date <= ?)
+                                              )
+                                              AND id != ?";
+                            $stmt = $conn->prepare($overlap_check);
+                            $stmt->bind_param("isssssi", $asset_id, $start_date, $start_date, $end_date, $end_date, $start_date, $end_date, 0);
+                            $stmt->execute();
+                            $overlap_result = $stmt->get_result();
+                            $overlap_data = $overlap_result->fetch_assoc();
                             
-                            if ($stmt->execute()) {
-                                // Update asset status to pending when request is created
-                                $asset_update = "UPDATE asset_items SET status = 'pending' WHERE id = ?";
-                                $stmt2 = $conn->prepare($asset_update);
-                                $stmt2->bind_param("i", $asset_id);
-                                $stmt2->execute();
-                                
-                                $_SESSION['success'] = "Borrow request for {$quantity_requested} unit(s) created successfully";
-                                logSystemAction($_SESSION['user_id'], 'create', 'borrow_request', "Created borrow request for {$quantity_requested} unit(s) of asset #$asset_id");
+                            if ($overlap_data['overlapping_count'] > 0) {
+                                $_SESSION['error'] = "Asset '{$asset_data['description']}' is already requested for the selected dates. Please choose different dates.";
                             } else {
-                                $_SESSION['error'] = "Error creating borrow request";
+                                // Check borrowing limits (e.g., max 5 active requests per user)
+                                $limit_check = "SELECT COUNT(*) as active_count
+                                               FROM borrow_requests 
+                                               WHERE requested_by = ? 
+                                               AND status IN ('pending', 'approved', 'borrowed')";
+                                $stmt = $conn->prepare($limit_check);
+                                $stmt->bind_param("i", $_SESSION['user_id']);
+                                $stmt->execute();
+                                $limit_result = $stmt->get_result();
+                                $limit_data = $limit_result->fetch_assoc();
+                                
+                                if ($limit_data['active_count'] >= 5) {
+                                    $_SESSION['error'] = "You have reached the maximum number of active requests (5). Please complete existing requests first.";
+                                } else {
+                                    // All validations passed - insert new borrow request
+                                    $insert_query = "INSERT INTO borrow_requests 
+                                                     (requested_by, requested_by_office, requested_to_office, asset_id, quantity_requested, purpose, start_date, end_date) 
+                                                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                                    $stmt = $conn->prepare($insert_query);
+                                    $stmt->bind_param("iiisisss", $_SESSION['user_id'], $office_id, $requested_to_office, $asset_id, $quantity_requested, $purpose, $start_date, $end_date);
+                                    
+                                    if ($stmt->execute()) {
+                                        // Update asset status to pending when request is created
+                                        $asset_update = "UPDATE asset_items SET status = 'pending' WHERE id = ?";
+                                        $stmt2 = $conn->prepare($asset_update);
+                                        $stmt2->bind_param("i", $asset_id);
+                                        $stmt2->execute();
+                                        
+                                        $_SESSION['success'] = "Borrow request for {$quantity_requested} unit(s) created successfully";
+                                        logSystemAction($_SESSION['user_id'], 'create', 'borrow_request', "Created borrow request for {$quantity_requested} unit(s) of asset #$asset_id");
+                                    } else {
+                                        $_SESSION['error'] = "Error creating borrow request";
+                                    }
+                                }
                             }
                         }
                     }
@@ -276,6 +343,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ob_clean();
             }
             
+            // Set proper content type first to prevent HTML output
+            header('Content-Type: application/json');
+            
             $last_update = $_GET['last_update'] ?? '';
             $has_updates = false;
             $new_requests = [];
@@ -371,8 +441,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
             
-            // Set proper content type and output clean JSON
-            header('Content-Type: application/json');
             $response = [
                 'has_updates' => $has_updates,
                 'new_requests' => $new_requests,
@@ -1472,20 +1540,30 @@ $page_title = 'Requests Management';
     
     <!-- New Request Modal -->
     <div class="modal fade" id="newRequestModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title"><i class="bi bi-plus-circle"></i> New Borrow Request</h5>
+                    <h5 class="modal-title">
+                        <i class="bi bi-plus-circle d-none d-md-inline"></i> 
+                        <span class="d-md-none">New Request</span>
+                        <span class="d-none d-md-inline">New Borrow Request</span>
+                    </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <form method="POST" action="">
                     <input type="hidden" name="action" value="create_request">
-                    <div class="modal-body">
-                        <div class="row">
-                            <div class="col-md-6">
+                    <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                    <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
+                        <!-- Mobile-friendly layout with better spacing -->
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
                                 <div class="mb-3">
-                                    <label for="requested_to_office" class="form-label">Request To Office <span class="text-danger">*</span></label>
-                                    <select class="form-control" id="requested_to_office" name="requested_to_office" required>
+                                    <label for="requested_to_office" class="form-label fw-semibold">
+                                        Request To Office 
+                                        <span class="text-danger" aria-label="required">*</span>
+                                    </label>
+                                    <select class="form-select" id="requested_to_office" name="requested_to_office" 
+                                            aria-describedby="officeHelp" aria-required="true" required>
                                         <option value="">Select Office</option>
                                         <?php if (!empty($other_offices)): ?>
                                             <?php foreach ($other_offices as $office): ?>
@@ -1497,12 +1575,15 @@ $page_title = 'Requests Management';
                                             <option value="" disabled>No offices available</option>
                                         <?php endif; ?>
                                     </select>
+                                    <div id="officeHelp" class="form-text">
+                                        Select the office you want to borrow assets from
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-12 col-md-6">
                                 <div class="mb-3">
-                                    <label for="asset_category" class="form-label">Asset Category</label>
-                                    <select class="form-control" id="asset_category" name="asset_category">
+                                    <label for="asset_category" class="form-label fw-semibold">Asset Category</label>
+                                    <select class="form-select" id="asset_category" name="asset_category">
                                         <option value="">All Categories</option>
                                         <?php if (!empty($asset_categories)): ?>
                                             <?php foreach ($asset_categories as $category): ?>
@@ -1515,63 +1596,171 @@ $page_title = 'Requests Management';
                                     <small class="text-muted">Filter assets by category</small>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                        </div>
+                        
+                        <div class="row g-3">
+                            <div class="col-12">
                                 <div class="mb-3">
-                                    <label for="asset_id" class="form-label">Asset to Borrow <span class="text-danger">*</span></label>
-                                    <select class="form-control" id="asset_id" name="asset_id" required>
-                                        <option value="">Select Asset</option>
-                                        <?php foreach ($available_assets as $asset): ?>
-                                            <option value="<?php echo $asset['id']; ?>" 
-                                                    data-office-id="<?php echo $asset['office_id']; ?>" 
-                                                    data-category-id="<?php echo $asset['category_id']; ?>"
-                                                    data-available="<?php echo $asset['available_quantity']; ?>" 
-                                                    data-total="<?php echo $asset['total_quantity']; ?>">
-                                                <?php echo htmlspecialchars($asset['description']); ?> (<?php echo htmlspecialchars($asset['asset_code']); ?>)
-                                                - <?php echo htmlspecialchars($asset['office_name']); ?>
-                                                <small class="text-muted">(<?php echo $asset['available_quantity']; ?> of <?php echo $asset['total_quantity']; ?> available)</small>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                    <small class="text-muted">Only available assets from other offices are shown</small>
+                                    <label for="asset_id" class="form-label fw-semibold">
+                                        Asset to Borrow 
+                                        <span class="text-danger" aria-label="required">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <select class="form-select" id="asset_id" name="asset_id" 
+                                                aria-describedby="assetHelp assetAvailability" aria-required="true" required>
+                                            <option value="">Select Asset</option>
+                                            <?php foreach ($available_assets as $asset): ?>
+                                                <option value="<?php echo $asset['id']; ?>" 
+                                                        data-office-id="<?php echo $asset['office_id']; ?>" 
+                                                        data-category-id="<?php echo $asset['category_id']; ?>"
+                                                        data-available="<?php echo $asset['available_quantity']; ?>" 
+                                                        data-total="<?php echo $asset['total_quantity']; ?>">
+                                                    <?php echo htmlspecialchars($asset['description']); ?> (<?php echo htmlspecialchars($asset['asset_code']); ?>)
+                                                    - <?php echo htmlspecialchars($asset['office_name']); ?>
+                                                    <small class="text-muted">(<?php echo $asset['available_quantity']; ?> of <?php echo $asset['total_quantity']; ?> available)</small>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                        <button class="btn btn-outline-secondary" type="button" 
+                                                onclick="showAssetDetails()" title="View Asset Details"
+                                                aria-label="View asset details">
+                                            <i class="bi bi-info-circle"></i>
+                                        </button>
+                                    </div>
+                                    <div id="assetHelp" class="form-text">
+                                        Only available assets from other offices are shown
+                                    </div>
+                                    <div id="assetAvailability" class="form-text fw-semibold"></div>
                                 </div>
                             </div>
                         </div>
-                        <div class="row">
-                            <div class="col-md-4">
+                        
+                        <div class="row g-3">
+                            <div class="col-12 col-md-4">
                                 <div class="mb-3">
-                                    <label for="quantity_requested" class="form-label">Quantity <span class="text-danger">*</span></label>
-                                    <input type="number" class="form-control" id="quantity_requested" name="quantity_requested" min="1" value="1" required>
+                                    <label for="quantity_requested" class="form-label fw-semibold">
+                                        Quantity 
+                                        <span class="text-danger" aria-label="required">*</span>
+                                    </label>
+                                    <input type="number" class="form-control form-control-lg" id="quantity_requested" name="quantity_requested" min="1" value="1" required>
                                     <small class="text-muted" id="quantity_info">Select an asset to see available quantity</small>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-12 col-md-4">
                                 <div class="mb-3">
-                                    <label for="start_date" class="form-label">Start Date <span class="text-danger">*</span></label>
-                                    <input type="date" class="form-control" id="start_date" name="start_date" required>
+                                    <label for="start_date" class="form-label fw-semibold">
+                                        Start Date 
+                                        <span class="text-danger" aria-label="required">*</span>
+                                    </label>
+                                    <input type="date" class="form-control form-control-lg" id="start_date" name="start_date" required>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-12 col-md-4">
                                 <div class="mb-3">
-                                    <label for="end_date" class="form-label">End Date <span class="text-danger">*</span></label>
-                                    <input type="date" class="form-control" id="end_date" name="end_date" required>
+                                    <label for="end_date" class="form-label fw-semibold">
+                                        End Date 
+                                        <span class="text-danger" aria-label="required">*</span>
+                                    </label>
+                                    <input type="date" class="form-control form-control-lg" id="end_date" name="end_date" required>
                                 </div>
                             </div>
                         </div>
-                        <div class="row">
-                            <div class="col-md-12">
+                        
+                        <div class="row g-3">
+                            <div class="col-12">
                                 <div class="mb-3">
-                                    <label for="purpose" class="form-label">Purpose of Borrowing <span class="text-danger">*</span></label>
-                                    <textarea class="form-control" id="purpose" name="purpose" rows="3" 
-                                            placeholder="Please describe the purpose for borrowing this asset..." required></textarea>
+                                    <label for="purpose" class="form-label fw-semibold">
+                                        Purpose of Borrowing 
+                                        <span class="text-danger" aria-label="required">*</span>
+                                    </label>
+                                    <textarea class="form-control form-control-lg" id="purpose" name="purpose" rows="4" 
+                                            placeholder="Please describe the purpose for borrowing this asset..." required
+                                            style="min-height: 100px; resize: vertical;"></textarea>
+                                    <div class="d-flex justify-content-between">
+                                        <small class="text-muted">Minimum 10 characters</small>
+                                        <small class="text-muted" id="charCount">0 / 500</small>
+                                    </div>
                                 </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Progressive Disclosure: Additional Options -->
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm w-100" 
+                                            data-bs-toggle="collapse" data-bs-target="#additionalOptions"
+                                            aria-expanded="false" aria-controls="additionalOptions">
+                                        <i class="bi bi-chevron-down"></i> 
+                                        Additional Options
+                                        <small class="text-muted">(Optional)</small>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="collapse" id="additionalOptions">
+                            <div class="row g-3">
+                                <div class="col-12 col-md-6">
+                                    <div class="mb-3">
+                                        <label for="urgency_level" class="form-label fw-semibold">Urgency Level</label>
+                                        <select class="form-select" id="urgency_level" name="urgency_level">
+                                            <option value="normal">Normal (3-5 business days)</option>
+                                            <option value="urgent">Urgent (1-2 business days)</option>
+                                            <option value="emergency">Emergency (Same day)</option>
+                                        </select>
+                                        <small class="text-muted">Select urgency level for processing priority</small>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <div class="mb-3">
+                                        <label for="delivery_preference" class="form-label fw-semibold">Delivery Preference</label>
+                                        <select class="form-select" id="delivery_preference" name="delivery_preference">
+                                            <option value="pickup">Pickup from Office</option>
+                                            <option value="delivery">Delivery to Location</option>
+                                        </select>
+                                        <small class="text-muted">How would you like to receive the asset?</small>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-6" id="deliveryLocationGroup" style="display: none;">
+                                    <div class="mb-3">
+                                        <label for="delivery_location" class="form-label fw-semibold">Delivery Location</label>
+                                        <input type="text" class="form-control" id="delivery_location" name="delivery_location" 
+                                               placeholder="Enter delivery location...">
+                                        <small class="text-muted">Specify where asset should be delivered</small>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-6" id="emergencyReasonGroup" style="display: none;">
+                                    <div class="mb-3">
+                                        <label for="emergency_reason" class="form-label fw-semibold">
+                                            Emergency Reason 
+                                            <span class="text-danger">*</span>
+                                        </label>
+                                        <textarea class="form-control" id="emergency_reason" name="emergency_reason" rows="2"
+                                                  placeholder="Please explain emergency situation..."></textarea>
+                                        <small class="text-muted">Required for emergency requests</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Mobile-specific tips -->
+                        <div class="d-md-none">
+                            <div class="alert alert-info alert-sm">
+                                <i class="bi bi-phone"></i> 
+                                <strong>Mobile Tip:</strong> Scroll down to see all form fields. Use the info button to view asset details.
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-send"></i> Submit Request
-                        </button>
+                    <div class="modal-footer bg-light sticky-bottom">
+                        <div class="d-flex flex-column flex-md-row gap-2 w-100">
+                            <button type="button" class="btn btn-secondary flex-fill flex-md-grow-0" data-bs-dismiss="modal">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </button>
+                            <button type="submit" class="btn btn-primary flex-fill flex-md-grow-0">
+                                <i class="bi bi-send"></i> Submit Request
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -2174,7 +2363,755 @@ $page_title = 'Requests Management';
             if (categorySelect && assetSelect) {
                 categorySelect.addEventListener('change', filterAssets);
             }
+            
+            // Performance optimizations
+            // Debounce function for filtering
+            function debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
+            
+            // Cache for asset data to avoid repeated DOM queries
+            const assetCache = new Map();
+            let filterTimeout;
+            
+            // Optimized filterAssets with debouncing
+            const debouncedFilterAssets = debounce(function() {
+                filterAssets();
+            }, 300);
+            
+            // Character counter for purpose field
+            const purposeTextarea = document.getElementById('purpose');
+            const charCount = document.getElementById('charCount');
+            
+            if (purposeTextarea && charCount) {
+                purposeTextarea.addEventListener('input', function() {
+                    const length = this.value.length;
+                    charCount.textContent = `${length} / 500`;
+                    
+                    if (length > 500) {
+                        this.value = this.value.substring(0, 500);
+                        charCount.textContent = '500 / 500';
+                        charCount.classList.add('text-danger');
+                    } else if (length < 10) {
+                        charCount.classList.add('text-warning');
+                        charCount.classList.remove('text-danger');
+                    } else {
+                        charCount.classList.remove('text-warning', 'text-danger');
+                    }
+                });
+            }
+            
+            // Lazy loading for asset details
+            function loadAssetDetails(assetId) {
+                if (!assetCache.has(assetId)) {
+                    const assetSelect = document.getElementById('asset_id');
+                    const selectedOption = assetSelect.querySelector(`option[value="${assetId}"]`);
+                    
+                    if (selectedOption) {
+                        const assetData = {
+                            description: selectedOption.text.split('-')[0].trim(),
+                            code: selectedOption.text.match(/\(([^)]+)\)/)?.[1] || '',
+                            available: selectedOption.getAttribute('data-available'),
+                            total: selectedOption.getAttribute('data-total'),
+                            office: selectedOption.text.split('-')[1]?.trim() || ''
+                        };
+                        assetCache.set(assetId, assetData);
+                    }
+                }
+                return assetCache.get(assetId);
+            }
+            
+            // Update filterAssets to use cached data
+            const originalFilterAssets = filterAssets;
+            filterAssets = function() {
+                const startTime = performance.now();
+                
+                originalFilterAssets();
+                
+                // Log performance for debugging
+                const endTime = performance.now();
+                if (endTime - startTime > 100) { // Log if filtering takes more than 100ms
+                    console.log(`Filter assets took ${endTime - startTime} milliseconds`);
+                }
+            };
+            
+            // Use debounced filtering for better performance
+            if (officeSelect) {
+                officeSelect.removeEventListener('change', filterAssets);
+                officeSelect.addEventListener('change', debouncedFilterAssets);
+            }
+            
+            if (categorySelect) {
+                categorySelect.removeEventListener('change', filterAssets);
+                categorySelect.addEventListener('change', debouncedFilterAssets);
+            }
+            
+            // Enhanced real-time validation
+            const newRequestForm = document.querySelector('#newRequestModal form');
+            if (newRequestForm) {
+                // Add form validation on submit
+                newRequestForm.addEventListener('submit', function(e) {
+                    if (!validateFormRealtime()) {
+                        e.preventDefault();
+                        showFormFeedback('error', 'Please fix the errors before submitting');
+                    }
+                });
+                
+                // Real-time field validation
+                const requiredFields = form.querySelectorAll('[required]');
+                requiredFields.forEach(field => {
+                    field.addEventListener('blur', function() {
+                        validateField(this);
+                    });
+                    
+                    field.addEventListener('input', function() {
+                        if (this.classList.contains('is-invalid')) {
+                            validateField(this);
+                        }
+                    });
+                });
+            }
+            
+            // Asset details modal function
+            window.showAssetDetails = function() {
+                const assetSelect = document.getElementById('asset_id');
+                const selectedOption = assetSelect.options[assetSelect.selectedIndex];
+                
+                if (!assetSelect.value) {
+                    showFormFeedback('warning', 'Please select an asset first');
+                    return;
+                }
+                
+                // Use cached asset data for better performance
+                const assetData = loadAssetDetails(assetSelect.value);
+                
+                // Create a simple modal with asset details
+                const modalHtml = `
+                    <div class="modal fade" id="assetDetailsModal" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Asset Details</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p><strong>Asset:</strong> ${assetData?.description || 'N/A'}</p>
+                                    <p><strong>Code:</strong> ${assetData?.code || 'N/A'}</p>
+                                    <p><strong>Available:</strong> ${assetData?.available || '0'} units</p>
+                                    <p><strong>Total:</strong> ${assetData?.total || '0'} units</p>
+                                    <p><strong>Office:</strong> ${assetData?.office || 'N/A'}</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Remove existing modal if present
+                const existingModal = document.getElementById('assetDetailsModal');
+                if (existingModal) {
+                    existingModal.remove();
+                }
+                
+                // Add and show new modal
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                formInputs.forEach(input => {
+                    input.addEventListener('input', function() {
+                        clearTimeout(autoSaveTimeout);
+                        autoSaveTimeout = setTimeout(() => {
+                            saveFormData();
+                        }, 2000); // Auto-save after 2 seconds of inactivity
+                    });
+                });
+                
+                // Clear saved data on successful submission
+                newRequestForm.addEventListener('submit', function() {
+                    clearSavedFormData();
+                });
+                
+                // Show auto-save indicator
+                function showAutoSaveIndicator() {
+                    let indicator = document.getElementById('autoSaveIndicator');
+                    if (!indicator) {
+                        indicator = document.createElement('div');
+                        indicator.id = 'autoSaveIndicator';
+                        indicator.className = 'position-fixed top-0 start-50 translate-middle-x mt-3';
+                        indicator.style.zIndex = '1055';
+                        indicator.innerHTML = `
+                            <div class="alert alert-info alert-sm py-2 px-3 mb-0">
+                                <i class="bi bi-cloud-arrow-up"></i> Draft saved
+                            </div>
+                        `;
+                        document.body.appendChild(indicator);
+                    }
+                    
+                    setTimeout(() => {
+                        indicator.remove();
+                    }, 2000);
+                }
+                
+                // Save form data to localStorage
+                function saveFormData() {
+                    const formData = new FormData(newRequestForm);
+                    const data = {};
+                    
+                    for (let [key, value] of formData.entries()) {
+                        if (key !== 'csrf_token') { // Don't save CSRF token
+                            data[key] = value;
+                        }
+                    }
+                    
+                    localStorage.setItem('newRequestDraft', JSON.stringify(data));
+                    localStorage.setItem('newRequestDraftTime', new Date().toISOString());
+                    showAutoSaveIndicator();
+                }
+                
+                // Load saved form data
+                function loadSavedFormData() {
+                    const savedData = localStorage.getItem('newRequestDraft');
+                    const savedTime = localStorage.getItem('newRequestDraftTime');
+                    
+                    if (savedData) {
+                        const data = JSON.parse(savedData);
+                        const savedDate = new Date(savedTime);
+                        const now = new Date();
+                        const hoursDiff = (now - savedDate) / (1000 * 60 * 60);
+                        
+                        // Only restore if saved within last 24 hours
+                        if (hoursDiff < 24) {
+                            Object.keys(data).forEach(key => {
+                                const input = newRequestForm.querySelector(`[name="${key}"]`);
+                                if (input) {
+                                    input.value = data[key];
+                                    // Trigger change events for dependent fields
+                                    input.dispatchEvent(new Event('change'));
+                                }
+                            });
+                            
+                            // Show restore notification
+                            showFormFeedback('info', 'Draft restored from ' + savedDate.toLocaleString());
+                        } else {
+                            clearSavedFormData();
+                        }
+                    }
+                }
+                
+                // Clear saved form data
+                function clearSavedFormData() {
+                    localStorage.removeItem('newRequestDraft');
+                    localStorage.removeItem('newRequestDraftTime');
+                }
+                
+                // Add clear draft button
+                const modalBody = newRequestModal.querySelector('.modal-body');
+                const clearDraftBtn = document.createElement('button');
+                clearDraftBtn.type = 'button';
+                clearDraftBtn.className = 'btn btn-outline-secondary btn-sm position-absolute top-0 end-0 m-2';
+                clearDraftBtn.innerHTML = '<i class="bi bi-trash"></i> Clear Draft';
+                clearDraftBtn.onclick = function() {
+                    if (confirm('Clear saved draft?')) {
+                        clearSavedFormData();
+                        showFormFeedback('success', 'Draft cleared');
+                        this.style.display = 'none';
+                    }
+                };
+                
+                // Only show clear draft button if there's saved data
+                if (localStorage.getItem('newRequestDraft')) {
+                    modalBody.style.position = 'relative';
+                    modalBody.appendChild(clearDraftBtn);
+                }
+                
+                // Progressive Disclosure Logic
+                const deliveryPreference = document.getElementById('delivery_preference');
+                const deliveryLocationGroup = document.getElementById('deliveryLocationGroup');
+                const urgencyLevel = document.getElementById('urgency_level');
+                const emergencyReasonGroup = document.getElementById('emergencyReasonGroup');
+                const emergencyReason = document.getElementById('emergency_reason');
+                const additionalOptions = document.getElementById('additionalOptions');
+                
+                // Handle delivery preference change
+                if (deliveryPreference && deliveryLocationGroup) {
+                    deliveryPreference.addEventListener('change', function() {
+                        if (this.value === 'delivery') {
+                            deliveryLocationGroup.style.display = 'block';
+                            deliveryLocationGroup.querySelector('input').setAttribute('required', '');
+                        } else {
+                            deliveryLocationGroup.style.display = 'none';
+                            deliveryLocationGroup.querySelector('input').removeAttribute('required');
+                        }
+                    });
+                }
+                
+                // Handle urgency level change
+                if (urgencyLevel && emergencyReasonGroup) {
+                    urgencyLevel.addEventListener('change', function() {
+                        if (this.value === 'emergency') {
+                            emergencyReasonGroup.style.display = 'block';
+                            emergencyReason.setAttribute('required', '');
+                        } else {
+                            emergencyReasonGroup.style.display = 'none';
+                            emergencyReason.removeAttribute('required');
+                        }
+                    });
+                }
+                
+                // Add animation to additional options toggle
+                if (additionalOptions) {
+                    additionalOptions.addEventListener('show.bs.collapse', function() {
+                        const button = document.querySelector('[data-bs-target="#additionalOptions"]');
+                        const icon = button.querySelector('i');
+                        icon.classList.remove('bi-chevron-down');
+                        icon.classList.add('bi-chevron-up');
+                        button.innerHTML = '<i class="bi bi-chevron-up"></i> Additional Options <small class="text-muted">(Expanded)</small>';
+                        
+                        // Smooth scroll to additional options
+                        setTimeout(() => {
+                            additionalOptions.scrollIntoView({ 
+                                behavior: 'smooth', 
+                                block: 'nearest' 
+                            });
+                        }, 100);
+                    });
+                    
+                    additionalOptions.addEventListener('hide.bs.collapse', function() {
+                        const button = document.querySelector('[data-bs-target="#additionalOptions"]');
+                        const icon = button.querySelector('i');
+                        icon.classList.remove('bi-chevron-up');
+                        icon.classList.add('bi-chevron-down');
+                        button.innerHTML = '<i class="bi bi-chevron-down"></i> Additional Options <small class="text-muted">(Optional)</small>';
+                    });
+                }
+                
+                // Advanced animations and micro-interactions
+                // Add hover effects to form inputs
+                const formInputs = document.querySelectorAll('.form-control, .form-select');
+                formInputs.forEach(input => {
+                    // Add focus animations
+                    input.addEventListener('focus', function() {
+                        this.parentElement.classList.add('form-focus');
+                        this.parentElement.style.transform = 'scale(1.02)';
+                        this.parentElement.style.transition = 'all 0.2s ease';
+                    });
+                    
+                    input.addEventListener('blur', function() {
+                        this.parentElement.classList.remove('form-focus');
+                        this.parentElement.style.transform = 'scale(1)';
+                    });
+                    
+                    // Add loading state for select elements
+                    if (input.tagName === 'SELECT') {
+                        input.addEventListener('change', function() {
+                            this.classList.add('loading');
+                            setTimeout(() => {
+                                this.classList.remove('loading');
+                            this.classList.add('success-flash');
+                                setTimeout(() => {
+                                    this.classList.remove('success-flash');
+                                }, 500);
+                            }, 300);
+                        });
+                    }
+                });
+                
+                // Add ripple effect to buttons
+                const buttons = document.querySelectorAll('.btn');
+                buttons.forEach(button => {
+                    button.addEventListener('click', function(e) {
+                        const ripple = document.createElement('span');
+                        ripple.classList.add('ripple');
+                        this.appendChild(ripple);
+                        
+                        const rect = this.getBoundingClientRect();
+                        const size = Math.max(rect.width, rect.height);
+                        const x = e.clientX - rect.left - size / 2;
+                        const y = e.clientY - rect.top - size / 2;
+                        
+                        ripple.style.width = ripple.style.height = size + 'px';
+                        ripple.style.left = x + 'px';
+                        ripple.style.top = y + 'px';
+                        
+                        setTimeout(() => {
+                            ripple.remove();
+                        }, 600);
+                    });
+                });
+                
+                // Add smooth scroll behavior for modal body
+                const modalBody = document.querySelector('#newRequestModal .modal-body');
+                if (modalBody) {
+                    modalBody.style.scrollBehavior = 'smooth';
+                    modalBody.style.scrollPaddingTop = '20px';
+                }
+                
+                // Add progress indicator for form completion
+                function updateFormProgress() {
+                    const totalRequired = form.querySelectorAll('[required]').length;
+                    const totalFilled = Array.from(form.querySelectorAll('[required]')).filter(field => field.value.trim()).length;
+                    const progress = (totalFilled / totalRequired) * 100;
+                    
+                    let progressBar = document.getElementById('formProgressBar');
+                    if (!progressBar) {
+                        progressBar = document.createElement('div');
+                        progressBar.id = 'formProgressBar';
+                        progressBar.className = 'progress mb-3';
+                        progressBar.style.height = '4px';
+                        progressBar.innerHTML = `
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" style="width: 0%">
+                            </div>
+                        `;
+                        
+                        const modalHeader = document.querySelector('#newRequestModal .modal-header');
+                        modalHeader.insertAdjacentElement('afterend', progressBar);
+                    }
+                    
+                    const bar = progressBar.querySelector('.progress-bar');
+                    bar.style.width = progress + '%';
+                    
+                    // Change color based on progress
+                    bar.className = 'progress-bar progress-bar-striped progress-bar-animated';
+                    if (progress < 33) {
+                        bar.classList.add('bg-danger');
+                    } else if (progress < 66) {
+                        bar.classList.add('bg-warning');
+                    } else if (progress < 100) {
+                        bar.classList.add('bg-info');
+                    } else {
+                        bar.classList.add('bg-success');
+                    }
+                }
+                
+                // Update progress on input changes
+                form.addEventListener('input', debounce(updateFormProgress, 500));
+                form.addEventListener('change', updateFormProgress);
+                
+                // Initialize progress on load
+                updateFormProgress();
+                
+                // Keyboard Navigation and Screen Reader Support
+                // Add skip links for keyboard navigation
+                const body = document.body;
+                const skipLinks = `
+                    <a href="#main-content" class="skip-link">Skip to main content</a>
+                    <a href="#requests-container" class="skip-link">Skip to requests</a>
+                    <a href="#newRequestModal" class="skip-link">Skip to new request</a>
+                `;
+                body.insertAdjacentHTML('afterbegin', skipLinks);
+                
+                // Enhanced keyboard navigation
+                document.addEventListener('keydown', function(e) {
+                    // Press '/' to focus search
+                    if (e.key === '/' && !e.ctrlKey && !e.altKey) {
+                        e.preventDefault();
+                        const searchInput = document.getElementById('advancedSearchInput');
+                        if (searchInput) {
+                            searchInput.focus();
+                            showKeyboardHint('Press Enter to search, Escape to clear');
+                        }
+                    }
+                    
+                    // Press 'N' to open new request modal
+                    if (e.key === 'n' && !e.ctrlKey && !e.altKey && !e.shiftKey) {
+                        e.preventDefault();
+                        const newRequestBtn = document.querySelector('[data-bs-target="#newRequestModal"]');
+                        if (newRequestBtn) {
+                            newRequestBtn.click();
+                            showKeyboardHint('Form opened - use Tab to navigate fields');
+                        }
+                    }
+                    
+                    // Press 'Escape' to close modals
+                    if (e.key === 'Escape') {
+                        const openModal = document.querySelector('.modal.show');
+                        if (openModal) {
+                            const closeBtn = openModal.querySelector('.btn-close');
+                            if (closeBtn) {
+                                closeBtn.click();
+                            }
+                        }
+                    }
+                    
+                    // Press '?' to show keyboard help
+                    if (e.key === '?' && !e.ctrlKey && !e.altKey) {
+                        e.preventDefault();
+                        toggleKeyboardHelp();
+                    }
+                });
+                
+                // Keyboard hint system
+                function showKeyboardHint(message) {
+                    let hint = document.getElementById('keyboardHint');
+                    if (!hint) {
+                        hint = document.createElement('div');
+                        hint.id = 'keyboardHint';
+                        hint.className = 'keyboard-hint';
+                        document.body.appendChild(hint);
+                    }
+                    
+                    hint.textContent = message;
+                    hint.classList.add('show');
+                    
+                    setTimeout(() => {
+                        hint.classList.remove('show');
+                    }, 3000);
+                }
+                
+                function toggleKeyboardHelp() {
+                    const existingHelp = document.getElementById('keyboardHelpModal');
+                    if (existingHelp) {
+                        existingHelp.remove();
+                        return;
+                    }
+                    
+                    const helpModal = document.createElement('div');
+                    helpModal.id = 'keyboardHelpModal';
+                    helpModal.className = 'modal fade show';
+                    helpModal.style.display = 'block';
+                    helpModal.innerHTML = `
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Keyboard Shortcuts</h5>
+                                    <button type="button" class="btn-close" onclick="this.closest('.modal').remove()">×</button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="list-group">
+                                        <div class="list-group-item">
+                                            <strong>/</strong> - Focus search box
+                                        </div>
+                                        <div class="list-group-item">
+                                            <strong>N</strong> - New request
+                                        </div>
+                                        <div class="list-group-item">
+                                            <strong>Escape</strong> - Close modal
+                                        </div>
+                                        <div class="list-group-item">
+                                            <strong>Tab/Shift+Tab</strong> - Navigate form fields
+                                        </div>
+                                        <div class="list-group-item">
+                                            <strong>Enter</strong> - Submit form/Apply filters
+                                        </div>
+                                        <div class="list-group-item">
+                                            <strong>?</strong> - Show this help
+                                        </div>
+                                        <div class="list-group-item">
+                                            <strong>Arrow Keys</strong> - Navigate lists
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    document.body.appendChild(helpModal);
+                    
+                    // Close on escape or click outside
+                    helpModal.addEventListener('click', function(e) {
+                        if (e.target === helpModal) {
+                            helpModal.remove();
+                        }
+                    });
+                }
+                
+                // Screen reader announcements
+                function announceToScreenReader(message) {
+                    const announcement = document.createElement('div');
+                    announcement.className = 'screen-reader-info';
+                    announcement.setAttribute('role', 'status');
+                    announcement.setAttribute('aria-live', 'polite');
+                    announcement.textContent = message;
+                    document.body.appendChild(announcement);
+                    
+                    setTimeout(() => {
+                        announcement.remove();
+                    }, 1000);
+                }
+                
+                // Enhanced form validation with screen reader support
+                const originalValidateField = validateField;
+                validateField = function(field) {
+                    const result = originalValidateField(field);
+                    
+                    // Announce validation results to screen readers
+                    if (!result) {
+                        const label = field.previousElementSibling?.querySelector('.form-label')?.textContent || field.name || 'Field';
+                        announceToScreenReader(`Validation error in ${label}: ${message}`);
+                    }
+                    
+                    return result;
+                };
+                
+                // Announce form progress to screen readers
+                const originalUpdateFormProgress = updateFormProgress;
+                updateFormProgress = function() {
+                    originalUpdateFormProgress();
+                    
+                    const progressBar = document.getElementById('formProgressBar');
+                    if (progressBar) {
+                        const progress = progressBar.querySelector('.progress-bar');
+                        const progressPercent = progress.style.width;
+                        announceToScreenReader(`Form completion: ${progressPercent}`);
+                    }
+                };
+                
+                // Announce modal state changes
+                const newRequestModal = document.getElementById('newRequestModal');
+                if (newRequestModal) {
+                    newRequestModal.addEventListener('show.bs.modal', function() {
+                        announceToScreenReader('New request form opened');
+                    });
+                    
+                    newRequestModal.addEventListener('hidden.bs.modal', function() {
+                        announceToScreenReader('New request form closed');
+                    });
+                }
+                
+                // Add ARIA live regions for dynamic content
+                const requestsContainer = document.getElementById('requestsContainer');
+                if (requestsContainer) {
+                    requestsContainer.setAttribute('aria-live', 'polite');
+                    requestsContainer.setAttribute('aria-busy', 'false');
+                }
+                
+                // Announce search results
+                const originalRefreshRequests = refreshRequests;
+                refreshRequests = function() {
+                    announceToScreenReader('Refreshing requests list');
+                    originalRefreshRequests();
+                };
+            }
         });
+        
+        // Validation functions
+        function validateField(field) {
+            const value = field.value.trim();
+            let isValid = true;
+            let message = '';
+            
+            if (field.hasAttribute('required') && !value) {
+                isValid = false;
+                message = 'This field is required';
+            } else if (field.type === 'number') {
+                const num = parseInt(value);
+                const max = field.getAttribute('max');
+                
+                if (isNaN(num) || num < 1) {
+                    isValid = false;
+                    message = 'Please enter a valid number';
+                } else if (max && num > parseInt(max)) {
+                    isValid = false;
+                    message = `Maximum value is ${max}`;
+                }
+            } else if (field.type === 'date') {
+                const date = new Date(value);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                if (date < today) {
+                    isValid = false;
+                    message = 'Date cannot be in the past';
+                }
+            }
+            
+            // Update field appearance
+            if (isValid) {
+                field.classList.remove('is-invalid');
+                field.classList.add('is-valid');
+                removeFieldError(field);
+            } else {
+                field.classList.remove('is-valid');
+                field.classList.add('is-invalid');
+                showFieldError(field, message);
+            }
+            
+            return isValid;
+        }
+        
+        function validateFormRealtime() {
+            const requiredFields = newRequestForm.querySelectorAll('[required]');
+            let isValid = true;
+            
+            requiredFields.forEach(field => {
+                if (!validateField(field)) {
+                    isValid = false;
+                }
+            });
+            
+            // Additional business logic validation
+            const startDate = document.getElementById('start_date').value;
+            const endDate = document.getElementById('end_date').value;
+            
+            if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+                showFieldError(document.getElementById('end_date'), 'End date must be after start date');
+                isValid = false;
+            }
+            
+            return isValid;
+        }
+        
+        function showFieldError(field, message) {
+            removeFieldError(field);
+            
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'invalid-feedback';
+            errorDiv.textContent = message;
+            errorDiv.setAttribute('data-error-for', field.id);
+            
+            field.parentNode.appendChild(errorDiv);
+        }
+        
+        function removeFieldError(field) {
+            const existingError = field.parentNode.querySelector(`[data-error-for="${field.id}"]`);
+            if (existingError) {
+                existingError.remove();
+            }
+        }
+        
+        function showFormFeedback(type, message) {
+            // Create toast element if it doesn't exist
+            let toastContainer = document.getElementById('toastContainer');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.id = 'toastContainer';
+                toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+                toastContainer.style.zIndex = '1050';
+                document.body.appendChild(toastContainer);
+            }
+            
+            const toastId = 'toast_' + Date.now();
+            const toastHtml = `
+                <div id="${toastId}" class="toast align-items-center text-white bg-${type === 'error' ? 'danger' : type === 'warning' ? 'warning' : 'success'} border-0" role="alert">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            ${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                    </div>
+                </div>
+            `;
+            
+            toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+            
+            const toastElement = document.getElementById(toastId);
+            const toast = new bootstrap.Toast(toastElement);
+            toast.show();
+            
+            // Remove toast element after it's hidden
+            toastElement.addEventListener('hidden.bs.toast', () => {
+                toastElement.remove();
+            });
+        }
         
         // Smart Filter Functionality
         function initSmartFilters() {
