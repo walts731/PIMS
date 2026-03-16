@@ -19,6 +19,19 @@ if ($_SESSION['role'] !== 'office_admin') {
     exit();
 }
 
+// Generate CSRF token
+function generateCSRFToken() {
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+// Validate CSRF token
+function validateCSRFToken($token) {
+    return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
+}
+
 // Set page title for topbar
 $page_title = 'Requests Management';
 
@@ -31,6 +44,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     switch ($action) {
         case 'create_request':
+            // Validate CSRF token first
+            $csrf_token = $_POST['csrf_token'] ?? '';
+            if (!validateCSRFToken($csrf_token)) {
+                $_SESSION['error'] = "Invalid request. Please try again.";
+                header('Location: requests.php');
+                exit();
+            }
+            
             $asset_id = $_POST['asset_id'] ?? 0;
             $requested_to_office = $_POST['requested_to_office'] ?? 0;
             $quantity_requested = $_POST['quantity_requested'] ?? 1;
@@ -47,11 +68,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['error'] = "Cannot request assets from your own office";
             } elseif ($quantity_requested < 1) {
                 $_SESSION['error'] = "Quantity must be at least 1";
+            } elseif (strtotime($start_date) < strtotime('today')) {
+                $_SESSION['error'] = "Start date cannot be in the past";
+            } elseif (strtotime($end_date) < strtotime($start_date)) {
+                $_SESSION['error'] = "End date must be after start date";
             } else {
                 try {
-                    // Check if asset exists and get available quantity
-                    $asset_check = "SELECT ai.status, COALESCE(a.quantity, 1) as total_quantity,
-                                   COALESCE(a.quantity, 1) as available_quantity
+                    // Enhanced asset validation
+                    $asset_check = "SELECT ai.id, ai.status, ai.description, ai.property_no,
+                                   COALESCE(a.quantity, 1) as total_quantity,
+                                   COALESCE(a.quantity, 1) as available_quantity,
+                                   ai.office_id as asset_office_id
                                    FROM asset_items ai
                                    LEFT JOIN assets a ON ai.asset_id = a.id
                                    WHERE ai.id = ?";
@@ -65,29 +92,68 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     } else {
                         $asset_data = $asset_result->fetch_assoc();
                         
+                        // Comprehensive asset validation
                         if ($asset_data['status'] !== 'serviceable') {
-                            $_SESSION['error'] = "Asset is not available";
+                            $_SESSION['error'] = "Asset '{$asset_data['description']}' is not available (Status: {$asset_data['status']})";
+                        } elseif ($asset_data['asset_office_id'] == $office_id) {
+                            $_SESSION['error'] = "Cannot request assets from your own office";
                         } elseif ($quantity_requested > $asset_data['available_quantity']) {
-                            $_SESSION['error'] = "Only {$asset_data['available_quantity']} units available. You requested {$quantity_requested}.";
+                            $_SESSION['error'] = "Only {$asset_data['available_quantity']} units available for '{$asset_data['description']}'. You requested {$quantity_requested}.";
                         } else {
-                            // Insert new borrow request
-                            $insert_query = "INSERT INTO borrow_requests 
-                                             (requested_by, requested_by_office, requested_to_office, asset_id, quantity_requested, purpose, start_date, end_date) 
-                                             VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-                            $stmt = $conn->prepare($insert_query);
-                            $stmt->bind_param("iiisisss", $_SESSION['user_id'], $office_id, $requested_to_office, $asset_id, $quantity_requested, $purpose, $start_date, $end_date);
+                            // Check for overlapping requests for the same asset
+                            $overlap_check = "SELECT COUNT(*) as overlapping_count
+                                              FROM borrow_requests 
+                                              WHERE asset_id = ? 
+                                              AND status IN ('pending', 'approved', 'borrowed')
+                                              AND (
+                                                  (start_date <= ? AND end_date >= ?) OR
+                                                  (start_date <= ? AND end_date >= ?) OR
+                                                  (start_date >= ? AND end_date <= ?)
+                                              )
+                                              AND id != ?";
+                            $stmt = $conn->prepare($overlap_check);
+                            $stmt->bind_param("isssssi", $asset_id, $start_date, $start_date, $end_date, $end_date, $start_date, $end_date, 0);
+                            $stmt->execute();
+                            $overlap_result = $stmt->get_result();
+                            $overlap_data = $overlap_result->fetch_assoc();
                             
-                            if ($stmt->execute()) {
-                                // Update asset status to pending when request is created
-                                $asset_update = "UPDATE asset_items SET status = 'pending' WHERE id = ?";
-                                $stmt2 = $conn->prepare($asset_update);
-                                $stmt2->bind_param("i", $asset_id);
-                                $stmt2->execute();
-                                
-                                $_SESSION['success'] = "Borrow request for {$quantity_requested} unit(s) created successfully";
-                                logSystemAction($_SESSION['user_id'], 'create', 'borrow_request', "Created borrow request for {$quantity_requested} unit(s) of asset #$asset_id");
+                            if ($overlap_data['overlapping_count'] > 0) {
+                                $_SESSION['error'] = "Asset '{$asset_data['description']}' is already requested for the selected dates. Please choose different dates.";
                             } else {
-                                $_SESSION['error'] = "Error creating borrow request";
+                                // Check borrowing limits (e.g., max 5 active requests per user)
+                                $limit_check = "SELECT COUNT(*) as active_count
+                                               FROM borrow_requests 
+                                               WHERE requested_by = ? 
+                                               AND status IN ('pending', 'approved', 'borrowed')";
+                                $stmt = $conn->prepare($limit_check);
+                                $stmt->bind_param("i", $_SESSION['user_id']);
+                                $stmt->execute();
+                                $limit_result = $stmt->get_result();
+                                $limit_data = $limit_result->fetch_assoc();
+                                
+                                if ($limit_data['active_count'] >= 5) {
+                                    $_SESSION['error'] = "You have reached the maximum number of active requests (5). Please complete existing requests first.";
+                                } else {
+                                    // All validations passed - insert new borrow request
+                                    $insert_query = "INSERT INTO borrow_requests 
+                                                     (requested_by, requested_by_office, requested_to_office, asset_id, quantity_requested, purpose, start_date, end_date) 
+                                                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                                    $stmt = $conn->prepare($insert_query);
+                                    $stmt->bind_param("iiisisss", $_SESSION['user_id'], $office_id, $requested_to_office, $asset_id, $quantity_requested, $purpose, $start_date, $end_date);
+                                    
+                                    if ($stmt->execute()) {
+                                        // Update asset status to pending when request is created
+                                        $asset_update = "UPDATE asset_items SET status = 'pending' WHERE id = ?";
+                                        $stmt2 = $conn->prepare($asset_update);
+                                        $stmt2->bind_param("i", $asset_id);
+                                        $stmt2->execute();
+                                        
+                                        $_SESSION['success'] = "Borrow request for {$quantity_requested} unit(s) created successfully";
+                                        logSystemAction($_SESSION['user_id'], 'create', 'borrow_request', "Created borrow request for {$quantity_requested} unit(s) of asset #$asset_id");
+                                    } else {
+                                        $_SESSION['error'] = "Error creating borrow request";
+                                    }
+                                }
                             }
                         }
                     }
@@ -1480,12 +1546,17 @@ $page_title = 'Requests Management';
                 </div>
                 <form method="POST" action="">
                     <input type="hidden" name="action" value="create_request">
+                    <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                     <div class="modal-body">
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="requested_to_office" class="form-label">Request To Office <span class="text-danger">*</span></label>
-                                    <select class="form-control" id="requested_to_office" name="requested_to_office" required>
+                                    <label for="requested_to_office" class="form-label fw-semibold">
+                                        Request To Office 
+                                        <span class="text-danger" aria-label="required">*</span>
+                                    </label>
+                                    <select class="form-select" id="requested_to_office" name="requested_to_office" 
+                                            aria-describedby="officeHelp" aria-required="true" required>
                                         <option value="">Select Office</option>
                                         <?php if (!empty($other_offices)): ?>
                                             <?php foreach ($other_offices as $office): ?>
@@ -1497,6 +1568,9 @@ $page_title = 'Requests Management';
                                             <option value="" disabled>No offices available</option>
                                         <?php endif; ?>
                                     </select>
+                                    <div id="officeHelp" class="form-text">
+                                        Select the office you want to borrow assets from
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -1517,22 +1591,36 @@ $page_title = 'Requests Management';
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="asset_id" class="form-label">Asset to Borrow <span class="text-danger">*</span></label>
-                                    <select class="form-control" id="asset_id" name="asset_id" required>
-                                        <option value="">Select Asset</option>
-                                        <?php foreach ($available_assets as $asset): ?>
-                                            <option value="<?php echo $asset['id']; ?>" 
-                                                    data-office-id="<?php echo $asset['office_id']; ?>" 
-                                                    data-category-id="<?php echo $asset['category_id']; ?>"
-                                                    data-available="<?php echo $asset['available_quantity']; ?>" 
-                                                    data-total="<?php echo $asset['total_quantity']; ?>">
-                                                <?php echo htmlspecialchars($asset['description']); ?> (<?php echo htmlspecialchars($asset['asset_code']); ?>)
-                                                - <?php echo htmlspecialchars($asset['office_name']); ?>
-                                                <small class="text-muted">(<?php echo $asset['available_quantity']; ?> of <?php echo $asset['total_quantity']; ?> available)</small>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                    <small class="text-muted">Only available assets from other offices are shown</small>
+                                    <label for="asset_id" class="form-label fw-semibold">
+                                        Asset to Borrow 
+                                        <span class="text-danger" aria-label="required">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <select class="form-select" id="asset_id" name="asset_id" 
+                                                aria-describedby="assetHelp assetAvailability" aria-required="true" required>
+                                            <option value="">Select Asset</option>
+                                            <?php foreach ($available_assets as $asset): ?>
+                                                <option value="<?php echo $asset['id']; ?>" 
+                                                        data-office-id="<?php echo $asset['office_id']; ?>" 
+                                                        data-category-id="<?php echo $asset['category_id']; ?>"
+                                                        data-available="<?php echo $asset['available_quantity']; ?>" 
+                                                        data-total="<?php echo $asset['total_quantity']; ?>">
+                                                    <?php echo htmlspecialchars($asset['description']); ?> (<?php echo htmlspecialchars($asset['asset_code']); ?>)
+                                                    - <?php echo htmlspecialchars($asset['office_name']); ?>
+                                                    <small class="text-muted">(<?php echo $asset['available_quantity']; ?> of <?php echo $asset['total_quantity']; ?> available)</small>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                        <button class="btn btn-outline-secondary" type="button" 
+                                                onclick="showAssetDetails()" title="View Asset Details"
+                                                aria-label="View asset details">
+                                            <i class="bi bi-info-circle"></i>
+                                        </button>
+                                    </div>
+                                    <div id="assetHelp" class="form-text">
+                                        Only available assets from other offices are shown
+                                    </div>
+                                    <div id="assetAvailability" class="form-text fw-semibold"></div>
                                 </div>
                             </div>
                         </div>
@@ -2174,7 +2262,199 @@ $page_title = 'Requests Management';
             if (categorySelect && assetSelect) {
                 categorySelect.addEventListener('change', filterAssets);
             }
+            
+            // Enhanced real-time validation
+            const form = document.querySelector('#newRequestModal form');
+            if (form) {
+                // Add form validation on submit
+                form.addEventListener('submit', function(e) {
+                    if (!validateFormRealtime()) {
+                        e.preventDefault();
+                        showFormFeedback('error', 'Please fix the errors before submitting');
+                    }
+                });
+                
+                // Real-time field validation
+                const requiredFields = form.querySelectorAll('[required]');
+                requiredFields.forEach(field => {
+                    field.addEventListener('blur', function() {
+                        validateField(this);
+                    });
+                    
+                    field.addEventListener('input', function() {
+                        if (this.classList.contains('is-invalid')) {
+                            validateField(this);
+                        }
+                    });
+                });
+            }
+            
+            // Asset details modal function
+            window.showAssetDetails = function() {
+                const assetSelect = document.getElementById('asset_id');
+                const selectedOption = assetSelect.options[assetSelect.selectedIndex];
+                
+                if (!assetSelect.value) {
+                    showFormFeedback('warning', 'Please select an asset first');
+                    return;
+                }
+                
+                // Create a simple modal with asset details
+                const modalHtml = `
+                    <div class="modal fade" id="assetDetailsModal" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Asset Details</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p><strong>Asset:</strong> ${selectedOption.text.split('-')[0].trim()}</p>
+                                    <p><strong>Code:</strong> ${selectedOption.text.match(/\(([^)]+)\)/)[1]}</p>
+                                    <p><strong>Available:</strong> ${selectedOption.getAttribute('data-available')} units</p>
+                                    <p><strong>Total:</strong> ${selectedOption.getAttribute('data-total')} units</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Remove existing modal if present
+                const existingModal = document.getElementById('assetDetailsModal');
+                if (existingModal) {
+                    existingModal.remove();
+                }
+                
+                // Add and show new modal
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                const modal = new bootstrap.Modal(document.getElementById('assetDetailsModal'));
+                modal.show();
+            };
         });
+        
+        // Validation functions
+        function validateField(field) {
+            const value = field.value.trim();
+            let isValid = true;
+            let message = '';
+            
+            if (field.hasAttribute('required') && !value) {
+                isValid = false;
+                message = 'This field is required';
+            } else if (field.type === 'number') {
+                const num = parseInt(value);
+                const max = field.getAttribute('max');
+                
+                if (isNaN(num) || num < 1) {
+                    isValid = false;
+                    message = 'Please enter a valid number';
+                } else if (max && num > parseInt(max)) {
+                    isValid = false;
+                    message = `Maximum value is ${max}`;
+                }
+            } else if (field.type === 'date') {
+                const date = new Date(value);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                if (date < today) {
+                    isValid = false;
+                    message = 'Date cannot be in the past';
+                }
+            }
+            
+            // Update field appearance
+            if (isValid) {
+                field.classList.remove('is-invalid');
+                field.classList.add('is-valid');
+                removeFieldError(field);
+            } else {
+                field.classList.remove('is-valid');
+                field.classList.add('is-invalid');
+                showFieldError(field, message);
+            }
+            
+            return isValid;
+        }
+        
+        function validateFormRealtime() {
+            const form = document.querySelector('#newRequestModal form');
+            const requiredFields = form.querySelectorAll('[required]');
+            let isValid = true;
+            
+            requiredFields.forEach(field => {
+                if (!validateField(field)) {
+                    isValid = false;
+                }
+            });
+            
+            // Additional business logic validation
+            const startDate = document.getElementById('start_date').value;
+            const endDate = document.getElementById('end_date').value;
+            
+            if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+                showFieldError(document.getElementById('end_date'), 'End date must be after start date');
+                isValid = false;
+            }
+            
+            return isValid;
+        }
+        
+        function showFieldError(field, message) {
+            removeFieldError(field);
+            
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'invalid-feedback';
+            errorDiv.textContent = message;
+            errorDiv.setAttribute('data-error-for', field.id);
+            
+            field.parentNode.appendChild(errorDiv);
+        }
+        
+        function removeFieldError(field) {
+            const existingError = field.parentNode.querySelector(`[data-error-for="${field.id}"]`);
+            if (existingError) {
+                existingError.remove();
+            }
+        }
+        
+        function showFormFeedback(type, message) {
+            // Create toast element if it doesn't exist
+            let toastContainer = document.getElementById('toastContainer');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.id = 'toastContainer';
+                toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+                toastContainer.style.zIndex = '1050';
+                document.body.appendChild(toastContainer);
+            }
+            
+            const toastId = 'toast_' + Date.now();
+            const toastHtml = `
+                <div id="${toastId}" class="toast align-items-center text-white bg-${type === 'error' ? 'danger' : type === 'warning' ? 'warning' : 'success'} border-0" role="alert">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            ${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                    </div>
+                </div>
+            `;
+            
+            toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+            
+            const toastElement = document.getElementById(toastId);
+            const toast = new bootstrap.Toast(toastElement);
+            toast.show();
+            
+            // Remove toast element after it's hidden
+            toastElement.addEventListener('hidden.bs.toast', () => {
+                toastElement.remove();
+            });
+        }
         
         // Smart Filter Functionality
         function initSmartFilters() {
