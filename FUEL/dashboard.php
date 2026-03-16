@@ -136,8 +136,6 @@ try {
     <!-- Custom CSS -->
     <link href="../assets/css/index.css" rel="stylesheet">
     <link href="../assets/css/theme-custom.css" rel="stylesheet">
-    <link href="../ADMIN/assets/css/admin.css" rel="stylesheet">
-    <link href="../ADMIN/assets/css/sidebar.css" rel="stylesheet">
     
     <style>
         .fuel-dashboard {
@@ -147,9 +145,15 @@ try {
         }
         
         .main-content {
-            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            margin: 1rem 1rem 1rem 5rem;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             max-height: calc(100vh - 76px);
             overflow-y: auto;
+            overflow-x: hidden;
         }
         
         .stat-card {
@@ -162,6 +166,43 @@ try {
             position: relative;
             overflow: hidden;
         }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        }
+        
+        .stat-card.success::before { background: linear-gradient(90deg, #28a745, #20c997); }
+        .stat-card.danger::before { background: linear-gradient(90deg, #dc3545, #c82333); }
+        .stat-card.info::before { background: linear-gradient(90deg, #17a2b8, #138496); }
+        .stat-card.warning::before { background: linear-gradient(90deg, #ffc107, #e0a800); }
+        
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .stat-icon.success { background: linear-gradient(135deg, #28a745, #20c997); color: white; }
+        .stat-icon.danger { background: linear-gradient(135deg, #dc3545, #c82333); color: white; }
+        .stat-icon.info { background: linear-gradient(135deg, #17a2b8, #138496); color: white; }
+        .stat-icon.warning { background: linear-gradient(135deg, #ffc107, #e0a800); color: white; }
+        
         .module-card {
             background: white;
             border-radius: 15px;
@@ -200,6 +241,52 @@ try {
         .module-icon.purple { background: linear-gradient(135deg, #6f42c1, #563d7c); }
         .module-icon.warning { background: linear-gradient(135deg, #ffc107, #e0a800); }
         
+        .tank-status {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        
+        .tank-status.active { background: #28a745; }
+        .tank-status.inactive { background: #dc3545; }
+        .tank-status.maintenance { background: #ffc107; }
+        
+        .fuel-level-bar {
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        
+        .fuel-level-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745, #20c997);
+            transition: width 0.3s ease;
+        }
+        
+        .transaction-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        
+        .page-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            margin: -2rem -2rem 2rem -2rem;
+            border-radius: 20px 20px 0 0;
+        }
+        
+        .alert {
+            border-radius: 10px;
+            border: none;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+        
         .table-container {
             background: white;
             border-radius: 15px;
@@ -223,11 +310,26 @@ try {
             transition: all 0.3s ease;
         }
         
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .animate-slide-up {
+            animation: slideInUp 0.6s ease-out;
+        }
+        
         .btn-fuel {
             background: linear-gradient(135deg, #667eea, #764ba2);
             border: none;
             color: white;
-            padding: 0.75rem 2rem;
+            padding: 0.75rem 1.5rem;
             border-radius: 25px;
             font-weight: 600;
             transition: all 0.3s ease;
@@ -236,12 +338,7 @@ try {
         .btn-fuel:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
-        }
-        
-        .alert {
-            border-radius: 10px;
-            border: none;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            color: white;
         }
         
         /* Responsive adjustments */
@@ -260,77 +357,100 @@ try {
     $page_title = 'Fuel Dashboard';
     ?>
     <!-- Main Content Wrapper -->
-    <div class="main-wrapper" id="mainWrapper">
-        <?php require_once 'includes/sidebar-toggle.php'; ?>
+    <div class="fuel-main-wrapper" id="mainWrapper">
         <?php require_once 'includes/sidebar.php'; ?>
-        <?php require_once '../ADMIN/includes/topbar.php'; ?>
+        <?php require_once '../MAIN_USER/includes/topbar.php'; ?>
     
-    <!-- Main Content -->
-    <div class="main-content">
-        <!-- Page Header -->
-        <div class="page-header">
-            <div class="row align-items-center">
-                <div class="col-md-8">
-                    <h1 class="mb-2">
-                        <i class="bi bi-speedometer2"></i> Fuel Management System
-                    </h1>
-                    <p class="text-muted mb-0">Manage fuel tanks, transactions, and inventory levels</p>
-                    <?php if ($error): ?>
-                        <div class="alert alert-danger mt-2" role="alert">
-                            <i class="bi bi-exclamation-triangle"></i>
-                            <?php echo htmlspecialchars($error); ?>
-                        </div>
-                    <?php endif; ?>
-                </div>
-                <div class="col-md-4 text-md-end">
-                    <button class="btn btn-primary btn-sm" onclick="refreshFuelData()">
-                        <i class="bi bi-arrow-clockwise"></i> Refresh
-                    </button>
-                    <button class="btn btn-outline-success btn-sm ms-2" onclick="exportFuelData()">
-                        <i class="bi bi-download"></i> Export
-                    </button>
-                    <a href="../index.php" class="btn btn-outline-secondary btn-sm ms-2">
-                        <i class="bi bi-house-door"></i> Home
-                    </a>
+        <!-- Main Content -->
+        <div class="main-content animate-slide-up">
+            <!-- Page Header -->
+            <div class="page-header">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h1 class="mb-2">
+                            <i class="bi bi-speedometer2 me-3"></i>
+                            Fuel Management System
+                        </h1>
+                        <p class="mb-0 opacity-75">Manage fuel tanks, transactions, and inventory levels</p>
+                    </div>
+                    <div class="col-md-4 text-md-end">
+                        <button class="btn btn-outline-light btn-sm" onclick="refreshFuelData()">
+                            <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+                        </button>
+                        <button class="btn btn-outline-light btn-sm ms-2" onclick="exportFuelData()">
+                            <i class="bi bi-download me-1"></i> Export
+                        </button>
+                        <a href="../index.php" class="btn btn-light btn-sm ms-2">
+                            <i class="bi bi-house-door me-1"></i> Home
+                        </a>
+                    </div>
                 </div>
             </div>
-        </div>
+
+            <?php if ($error): ?>
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <?php echo htmlspecialchars($error); ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php endif; ?>
 
             <!-- Statistics Cards -->
-        <div class="row mb-4">
-            <div class="col-lg-2 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo number_format($stats['total_fuel_in'], 2); ?></div>
-                    <div class="stats-label"><i class="bi bi-arrow-down-circle"></i> Total Fuel In (L)</div>
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="stat-card success">
+                        <div class="stat-icon success">
+                            <i class="bi bi-arrow-down-circle"></i>
+                        </div>
+                        <h6 class="text-muted mb-2">Total Fuel In</h6>
+                        <h3 class="mb-0 text-success">
+                            <?php echo number_format($stats['total_fuel_in'], 2); ?>
+                            <small class="text-muted">Liters</small>
+                        </h3>
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="stat-card danger">
+                        <div class="stat-icon danger">
+                            <i class="bi bi-arrow-up-circle"></i>
+                        </div>
+                        <h6 class="text-muted mb-2">Total Fuel Out</h6>
+                        <h3 class="mb-0 text-danger">
+                            <?php echo number_format($stats['total_fuel_out'], 2); ?>
+                            <small class="text-muted">Liters</small>
+                        </h3>
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="stat-card info">
+                        <div class="stat-icon info">
+                            <i class="bi bi-calculator"></i>
+                        </div>
+                        <h6 class="text-muted mb-2">Current Balance</h6>
+                        <h3 class="mb-0 text-info">
+                            <?php echo number_format($stats['current_balance'], 2); ?>
+                            <small class="text-muted">Liters</small>
+                        </h3>
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="stat-card warning">
+                        <div class="stat-icon warning">
+                            <i class="bi bi-fuel-pump"></i>
+                        </div>
+                        <h6 class="text-muted mb-2">Active Tanks</h6>
+                        <h3 class="mb-0 text-warning">
+                            <?php echo $stats['active_tanks']; ?>
+                            <small class="text-muted">Tanks</small>
+                        </h3>
+                    </div>
                 </div>
             </div>
-            <div class="col-lg-2 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo number_format($stats['total_fuel_out'], 2); ?></div>
-                    <div class="stats-label"><i class="bi bi-arrow-up-circle"></i> Total Fuel Out (L)</div>
-                </div>
-            </div>
-            <div class="col-lg-2 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo number_format($stats['current_balance'], 2); ?></div>
-                    <div class="stats-label"><i class="bi bi-calculator"></i> Current Balance (L)</div>
-                </div>
-            </div>
-            <div class="col-lg-2 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $stats['active_tanks']; ?></div>
-                    <div class="stats-label"><i class="bi bi-fuel-pump"></i> Active Tanks</div>
-                </div>
-            </div>
-            <div class="col-lg-2 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $stats['total_transactions']; ?></div>
-                    <div class="stats-label"><i class="bi bi-list-ul"></i> Total Transactions</div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Quick Access Module Cards -->
+            <!-- Quick Access Module Cards -->
             <div class="row g-3 mb-4">
                 <div class="col-6 col-md-3">
                     <a href="?page=inventory" class="module-card">
