@@ -532,7 +532,13 @@
           <path d="M0 75 Q150 60 300 75 Q450 90 600 75 Q750 60 900 75 Q1050 90 1200 75 Q1350 60 1500 75 Q1650 90 1800 75 Q1950 60 2100 75 Q2250 90 2400 75 Q2550 60 2700 75 Q2850 90 2880 75" fill="none" stroke="rgba(80,180,220,0.15)" stroke-width="1"/>
         </g>
         <!-- Deep water overlay -->
-        <rect width="1440" height="400" y="0" fill="linear-gradient(to bottom, transparent, rgba(5,20,35,0.6))"/>
+        <defs>
+          <linearGradient id="deepWaterGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="transparent"/>
+            <stop offset="100%" stop-color="rgba(5,20,35,0.6)"/>
+          </linearGradient>
+        </defs>
+        <rect width="1440" height="400" y="0" fill="url(#deepWaterGrad)"/>
       </svg>
     </div>
 
@@ -651,7 +657,7 @@
     </div>
 
     <!-- BUBBLES -->
-    <div id="bubbles-layer" id="bubbles-layer"></div>
+    <div id="bubbles-layer"></div>
 
     <!-- UNDERWATER FLORA -->
     <div id="flora-layer">
@@ -749,7 +755,6 @@ for (let i = 0; i < BUBBLE_COUNT; i++) {
 // ═══════════════════════════════════════════
 const easeInOut = t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 const easeOut   = t => 1 - Math.pow(1 - t, 3);
-const easeIn    = t => t * t * t;
 const clamp     = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
 const lerp      = (a, b, t) => a + (b - a) * t;
 const mapRange  = (v, inMin, inMax, outMin, outMax) =>
@@ -836,8 +841,8 @@ function updateScene(p, t, scrollChanged) {
   const boatPhaseProgress = clamp(p / 0.7, 0, 1);
   const boatEased = easeInOut(boatPhaseProgress);
 
-  // Move boat from ~15% left to ~78% right of viewport (as % of vw)
-  const boatStartX = vw * 0.0;   // relative to its initial 15% left position
+  // Move boat from its current position to ~58% right of viewport
+  const boatStartX = 0;   // relative to its current CSS position
   const boatEndX   = vw * 0.58;
   const boatX = lerp(boatStartX, boatEndX, boatEased);
 
