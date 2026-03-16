@@ -35,6 +35,7 @@ if (isset($_GET['message']) && isset($_GET['type'])) {
 // CREATE - Add new consumable
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'add') {
     $description = trim($_POST['description'] ?? '');
+    $supplier = trim($_POST['supplier'] ?? '');
     $quantity = intval($_POST['quantity'] ?? 0);
     $units = trim($_POST['units'] ?? '');
     $unit_cost = floatval($_POST['unit_cost'] ?? 0);
@@ -124,6 +125,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                 }
                 
                 if ($update_stmt->execute()) {
+                    // Insert into consumable_add_history
+                    $history_stmt = $conn->prepare("INSERT INTO consumable_add_history 
+                        (consumable_id, description, supplier, quantity_added, units, unit_cost, total_value, office_id, added_by, add_date, source, notes) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)");
+                    $total_value = $added_quantity * $added_unit_price;
+                    $notes = "Stock added to existing consumable. New WAC: ₱" . number_format($new_unit_cost, 2);
+                    $source = 'stock_addition';
+                    $history_stmt->bind_param("issisddiiss", 
+                        $existing_consumable['id'], $description, $supplier, $added_quantity, $units, 
+                        $added_unit_price, $total_value, $office_id, $_SESSION['user_id'], $source, $notes);
+                    $history_stmt->execute();
+                    $history_stmt->close();
+                    
                     $message = "Consumable stock updated successfully! Added {$quantity} more items to existing consumable. New WAC: ₱" . number_format($new_unit_cost, 2);
                     $message_type = "success";
                     logSystemAction($_SESSION['user_id'], 'consumable_stock_added', 'consumable_management', "Added {$quantity} units to consumable: {$description}. New WAC: ₱{$new_unit_cost}");
@@ -133,10 +147,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                 $update_stmt->close();
             } else {
                 // Insert new consumable
-                $insert_stmt = $conn->prepare("INSERT INTO consumables (description, quantity, units, unit_cost, reorder_level, office_id, for_office_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
-                $insert_stmt->bind_param("sisdiii", $description, $quantity, $units, $unit_cost, $reorder_level, $office_id, $for_office_id);
+                $insert_stmt = $conn->prepare("INSERT INTO consumables (description, supplier, quantity, units, unit_cost, reorder_level, office_id, for_office_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                $insert_stmt->bind_param("ssisdiii", $description, $supplier, $quantity, $units, $unit_cost, $reorder_level, $office_id, $for_office_id);
                 
                 if ($insert_stmt->execute()) {
+                    $new_consumable_id = $conn->insert_id;
+                    
+                    // Insert into consumable_add_history for new consumable
+                    $history_stmt = $conn->prepare("INSERT INTO consumable_add_history 
+                        (consumable_id, description, supplier, quantity_added, units, unit_cost, total_value, office_id, added_by, add_date, source, notes) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)");
+                    $total_value = $quantity * $unit_cost;
+                    $notes = "New consumable added to inventory";
+                    $source = 'new_consumable';
+                    $history_stmt->bind_param("issisddiiss", 
+                        $new_consumable_id, $description, $supplier, $quantity, $units, 
+                        $unit_cost, $total_value, $office_id, $_SESSION['user_id'], $source, $notes);
+                    $history_stmt->execute();
+                    $history_stmt->close();
+                    
                     $message = "Consumable added successfully!";
                     $message_type = "success";
                     logSystemAction($_SESSION['user_id'], 'consumable_added', 'consumable_management', "Added consumable: {$description}");
@@ -156,6 +185,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'update') {
     $consumable_id = intval($_POST['consumable_id'] ?? 0);
     $description = trim($_POST['description'] ?? '');
+    $supplier = trim($_POST['supplier'] ?? '');
     $quantity = intval($_POST['quantity'] ?? 0);
     $units = trim($_POST['units'] ?? '');
     $unit_cost = floatval($_POST['unit_cost'] ?? 0);
@@ -184,8 +214,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         $message_type = "danger";
     } else {
         try {
-            $update_stmt = $conn->prepare("UPDATE consumables SET description = ?, quantity = ?, units = ?, unit_cost = ?, reorder_level = ?, for_office_id = ? WHERE id = ?");
-            $update_stmt->bind_param("sisdiii", $description, $quantity, $units, $unit_cost, $reorder_level, $for_office_id, $consumable_id);
+            $update_stmt = $conn->prepare("UPDATE consumables SET description = ?, supplier = ?, quantity = ?, units = ?, unit_cost = ?, reorder_level = ?, for_office_id = ? WHERE id = ?");
+            $update_stmt->bind_param("ssisdiii", $description, $supplier, $quantity, $units, $unit_cost, $reorder_level, $for_office_id, $consumable_id);
             
             if ($update_stmt->execute()) {
                 $message = "Consumable updated successfully!";
@@ -616,25 +646,30 @@ try {
                                     <td><?php echo htmlspecialchars($consumable['office_name'] ?? 'N/A'); ?></td>
                                     <td><?php echo htmlspecialchars($consumable['for_office_name'] ?? 'N/A'); ?></td>
                                     <td>
-                                        <?php if (empty($consumable['for_office_name'])): ?>
-                                            <button class="btn btn-sm btn-outline-info" disabled>
-                                                <i class="bi bi-check-circle"></i> 
+                                        <div class="btn-group" role="group">
+                                            <button class="btn btn-sm btn-outline-info" onclick="viewHistory(<?php echo $consumable['id']; ?>, '<?php echo htmlspecialchars($consumable['description']); ?>')" title="View History">
+                                                <i class="bi bi-clock-history"></i>
                                             </button>
-                                        <?php elseif ($consumable['for_office_id'] == 3): ?>
-                                            <button class="btn btn-sm btn-outline-warning" onclick="editReorderLevel(<?php echo $consumable['id']; ?>, '<?php echo htmlspecialchars($consumable['description']); ?>', <?php echo $consumable['quantity']; ?>)">
-                                                <i class="bi bi-pencil"></i> 
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-primary" onclick="openLendModal(<?php echo $consumable['id']; ?>)">
-                                                <i class="bi bi-arrow-up-right"></i> 
-                                            </button>
-                                        <?php else: ?>
-                                            <button class="btn btn-sm btn-outline-warning" onclick="editReorderLevel(<?php echo $consumable['id']; ?>, '<?php echo htmlspecialchars($consumable['description']); ?>', <?php echo $consumable['quantity']; ?>)">
-                                                <i class="bi bi-pencil"></i> 
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-success" onclick="openReleaseModal(<?php echo $consumable['id']; ?>)">
-                                                <i class="bi bi-box-arrow-right"></i> 
-                                            </button>
-                                        <?php endif; ?>
+                                            <?php if (empty($consumable['for_office_name'])): ?>
+                                                <button class="btn btn-sm btn-outline-secondary" disabled>
+                                                    <i class="bi bi-check-circle"></i>
+                                                </button>
+                                            <?php elseif ($consumable['for_office_id'] == 3): ?>
+                                                <button class="btn btn-sm btn-outline-warning" onclick="editReorderLevel(<?php echo $consumable['id']; ?>, '<?php echo htmlspecialchars($consumable['description']); ?>', <?php echo $consumable['quantity']; ?>)" title="Edit Reorder Level">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-primary" onclick="openLendModal(<?php echo $consumable['id']; ?>)" title="Lend Consumable">
+                                                    <i class="bi bi-arrow-up-right"></i>
+                                                </button>
+                                            <?php else: ?>
+                                                <button class="btn btn-sm btn-outline-warning" onclick="editReorderLevel(<?php echo $consumable['id']; ?>, '<?php echo htmlspecialchars($consumable['description']); ?>', <?php echo $consumable['quantity']; ?>)" title="Edit Reorder Level">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-success" onclick="openReleaseModal(<?php echo $consumable['id']; ?>)" title="Release Consumable">
+                                                    <i class="bi bi-box-arrow-right"></i>
+                                                </button>
+                                            <?php endif; ?>
+                                        </div>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -672,6 +707,11 @@ try {
                         <div class="mb-3">
                             <label class="form-label">Description *</label>
                             <input type="text" class="form-control" name="description" list="descriptionList" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Supplier</label>
+                            <input type="text" class="form-control" name="supplier" placeholder="Enter supplier name">
                         </div>
                         
                         <div class="row">
@@ -837,6 +877,21 @@ try {
         </div>
     </div>
     
+    <!-- View History Modal -->
+    <div class="modal fade" id="viewHistoryModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-clock-history"></i> Consumable History</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <iframe id="viewHistoryFrame" src="" style="width: 100%; height: 600px; border: none;"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- jQuery -->
@@ -891,6 +946,13 @@ try {
         function openLendModal(consumableId) {
             const modal = new bootstrap.Modal(document.getElementById('lendConsumableModal'));
             document.getElementById('lendModalFrame').src = 'lend_consumable_modal.php?id=' + consumableId;
+            modal.show();
+        }
+        
+        // View history modal function
+        function viewHistory(consumableId, description) {
+            const modal = new bootstrap.Modal(document.getElementById('viewHistoryModal'));
+            document.getElementById('viewHistoryFrame').src = 'view_consumable_history.php?id=' + consumableId;
             modal.show();
         }
         

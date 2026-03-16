@@ -234,9 +234,6 @@ try {
                 </div>
                 <div class="col-md-4 text-md-end">
                     <div class="btn-group" role="group">
-                        <a href="consumables.php" class="btn btn-outline-secondary">
-                            <i class="bi bi-arrow-left"></i> Back to Consumables
-                        </a>
                         <div class="btn-group" role="group">
                             <button type="button" class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="bi bi-gear"></i> Actions
