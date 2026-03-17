@@ -2028,10 +2028,22 @@ body {
     border: 1px solid #6c757d;
 }
 
-.status-default { 
-    background: linear-gradient(135deg, #e9ecef 0%, #ced4da 100%); 
-    color: #495057; 
-    border: 1px solid #e9ecef;
+.status-maintenance { 
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); 
+    color: white; 
+    border: 1px solid #007bff;
+}
+
+.status-disposed { 
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); 
+    color: white; 
+    border: 1px solid #dc3545;
+}
+
+.status-borrowed { 
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); 
+    color: white; 
+    border: 1px solid #17a2b8;
 }
 
 .btn-back {
