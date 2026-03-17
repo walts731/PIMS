@@ -68,12 +68,14 @@ try {
                        fo.office_name as from_office_name,
                        to_off.office_name as to_office_name,
                        CONCAT(u.first_name, ' ', u.last_name) as released_by_name,
+                       CONCAT(u2.first_name, ' ', u2.last_name) as received_by_name,
                        h.release_date as transaction_date
                 FROM consumable_release_history h
                 LEFT JOIN consumables c ON h.consumable_id = c.id
                 LEFT JOIN offices fo ON h.from_office_id = fo.id
                 LEFT JOIN offices to_off ON h.to_office_id = to_off.id
                 LEFT JOIN users u ON h.released_by = u.id
+                LEFT JOIN users u2 ON h.received_by = u2.id
                 WHERE h.id = ?";
         
         $stmt = $conn->prepare($sql);
@@ -94,12 +96,14 @@ try {
                        fo.office_name as from_office_name,
                        to_off.office_name as to_office_name,
                        CONCAT(u.first_name, ' ', u.last_name) as lent_by_name,
+                       CONCAT(u2.first_name, ' ', u2.last_name) as received_by_name,
                        l.date_lent as transaction_date
                 FROM lend_consumables l
                 LEFT JOIN consumables c ON l.consumable_id = c.id
                 LEFT JOIN offices fo ON l.from_office_id = fo.id
                 LEFT JOIN offices to_off ON l.to_office_id = to_off.id
                 LEFT JOIN users u ON l.lent_by = u.id
+                LEFT JOIN users u2 ON l.received_by = u2.id
                 WHERE l.id = ?";
         
         $stmt = $conn->prepare($sql);
