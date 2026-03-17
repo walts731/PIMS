@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bangka — Tropical Summer Journey</title>
+<title>Pilar Tourism</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@200;300;400;500&family=Pacifico&family=Dancing+Script:wght@700&display=swap');
 
@@ -330,7 +330,7 @@
   }
   #title-reveal .tr-main {
     font-family: 'Pacifico', cursive;
-    font-size: clamp(3.2rem, 8vw, 7rem);
+    font-size: clamp(2.8rem, 6vw, 5rem);
     font-weight: 400;
     color: #fff;
     line-height: 1.05;
@@ -340,6 +340,9 @@
       0 0 80px rgba(255,200,80,0.35);
     display: block;
     letter-spacing: 0.02em;
+    white-space: nowrap;
+    min-width: 500px;
+    text-align: center;
   }
   #title-reveal .tr-main em {
     font-style: normal;
@@ -521,11 +524,11 @@
     animation: fishSwim var(--fd) linear var(--fdl) infinite;
   }
   @keyframes fishSwim {
-    0%   { transform: translateX(-200px) scaleX(1); }
-    49%  { transform: translateX(calc(100vw + 200px)) scaleX(1); opacity: 0.25; }
-    50%  { transform: translateX(calc(100vw + 200px)) scaleX(-1); opacity: 0; }
-    51%  { transform: translateX(calc(100vw + 200px)) scaleX(-1); opacity: 0.25; }
-    100% { transform: translateX(-200px) scaleX(-1); }
+    0%   { transform: translateX(calc(100vw + 200px)) scaleX(-1); }
+    49%  { transform: translateX(-200px) scaleX(-1); opacity: 0.25; }
+    50%  { transform: translateX(-200px) scaleX(1); opacity: 0; }
+    51%  { transform: translateX(-200px) scaleX(1); opacity: 0.25; }
+    100% { transform: translateX(calc(100vw + 200px)) scaleX(1); }
   }
 
   .gallery-inner {
@@ -756,10 +759,10 @@
 <body>
 
 <div id="cursor"></div>
-<button id="skip-btn" onclick="skipToGallery()">Skip ↓</button>
+<!-- <button id="skip-btn" onclick="skipToGallery()">Skip ↓</button> -->
 
 <!-- Tall scroll driver — scrolling through this moves the boat -->
-<div id="scroll-driver" style="height: 800vh; position: relative;">
+<div id="scroll-driver" style="height: 400vh; position: relative;">
 
 <!-- ════════════════════════════════════════
      ANIMATED SCENE (sticky)
@@ -1124,19 +1127,19 @@
 
   <!-- Animated fish -->
   <svg class="deco-fish" style="--fd:18s;--fdl:0s;top:30%;width:80px;" viewBox="0 0 80 40">
-    <path d="M55 20 Q35 8 10 18 Q35 28 55 20 Z" fill="#FF8C42"/>
-    <path d="M55 20 L72 10 L72 30 Z" fill="#FF6B42"/>
-    <circle cx="15" cy="19" r="3" fill="rgba(0,0,0,0.4)"/>
+    <path d="M25 20 Q45 8 70 18 Q45 28 25 20 Z" fill="#FF8C42"/>
+    <path d="M25 20 L8 10 L8 30 Z" fill="#FF6B42"/>
+    <circle cx="65" cy="19" r="3" fill="rgba(0,0,0,0.4)"/>
   </svg>
   <svg class="deco-fish" style="--fd:25s;--fdl:7s;top:60%;width:55px;" viewBox="0 0 80 40">
-    <path d="M55 20 Q35 10 10 19 Q35 29 55 20 Z" fill="#00D4E0"/>
-    <path d="M55 20 L70 12 L70 28 Z" fill="#00B8C8"/>
-    <circle cx="15" cy="19" r="2.5" fill="rgba(0,0,0,0.4)"/>
+    <path d="M25 20 Q45 10 70 19 Q45 29 25 20 Z" fill="#00D4E0"/>
+    <path d="M25 20 L10 12 L10 28 Z" fill="#00B8C8"/>
+    <circle cx="65" cy="19" r="2.5" fill="rgba(0,0,0,0.4)"/>
   </svg>
   <svg class="deco-fish" style="--fd:22s;--fdl:13s;top:50%;width:45px;" viewBox="0 0 80 40">
-    <path d="M55 20 Q35 10 10 19 Q35 29 55 20 Z" fill="#FFD166"/>
-    <path d="M55 20 L70 12 L70 28 Z" fill="#FFB840"/>
-    <circle cx="15" cy="19" r="2" fill="rgba(0,0,0,0.4)"/>
+    <path d="M25 20 Q45 10 70 19 Q45 29 25 20 Z" fill="#FFD166"/>
+    <path d="M25 20 L10 12 L10 28 Z" fill="#FFB840"/>
+    <circle cx="65" cy="19" r="2" fill="rgba(0,0,0,0.4)"/>
   </svg>
 
   <!-- Corals SVG directly in bar -->
@@ -1284,9 +1287,9 @@
   <div class="gallery-inner">
 
     <header class="gallery-header">
-      <span class="gallery-eyebrow">Philippine Maritime Heritage</span>
-      <h1 class="gallery-title">Bangka — <em>Tropical</em><br>Summer Journey</h1>
-      <p class="gallery-sub">Discover the soul of the islands through crystal waters, living reefs, and the ageless craft of the outrigger.</p>
+      <span class="gallery-eyebrow">Tourism</span>
+      <h1 class="gallery-title">Pilar — <em>Tropical</em><br>Summer Journey</h1>
+      <p class="gallery-sub">Discover the soul of Sorsogon through crystal waters, living reefs, and the ageless craft of the outrigger.</p>
     </header>
 
     <div class="gallery-grid">
