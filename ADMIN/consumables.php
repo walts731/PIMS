@@ -127,14 +127,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                 if ($update_stmt->execute()) {
                     // Insert into consumable_add_history
                     $history_stmt = $conn->prepare("INSERT INTO consumable_add_history 
-                        (consumable_id, description, supplier, quantity_added, units, unit_cost, total_value, office_id, added_by, add_date, source, notes) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)");
+                        (consumable_id, description, supplier, quantity_added, units, unit_cost, total_value, office_id, to_office_id, added_by, add_date, source, notes) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)");
                     $total_value = $added_quantity * $added_unit_price;
                     $notes = "Stock added to existing consumable. New WAC: ₱" . number_format($new_unit_cost, 2);
                     $source = 'stock_addition';
-                    $history_stmt->bind_param("issisddiiss", 
+                    $history_stmt->bind_param("issisddiiiss", 
                         $existing_consumable['id'], $description, $supplier, $added_quantity, $units, 
-                        $added_unit_price, $total_value, $office_id, $_SESSION['user_id'], $source, $notes);
+                        $added_unit_price, $total_value, $office_id, $existing_consumable['for_office_id'], $_SESSION['user_id'], $source, $notes);
                     $history_stmt->execute();
                     $history_stmt->close();
                     
@@ -155,14 +155,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                     
                     // Insert into consumable_add_history for new consumable
                     $history_stmt = $conn->prepare("INSERT INTO consumable_add_history 
-                        (consumable_id, description, supplier, quantity_added, units, unit_cost, total_value, office_id, added_by, add_date, source, notes) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)");
+                        (consumable_id, description, supplier, quantity_added, units, unit_cost, total_value, office_id, to_office_id, added_by, add_date, source, notes) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)");
                     $total_value = $quantity * $unit_cost;
                     $notes = "New consumable added to inventory";
                     $source = 'new_consumable';
-                    $history_stmt->bind_param("issisddiiss", 
+                    $history_stmt->bind_param("issisddiiiss", 
                         $new_consumable_id, $description, $supplier, $quantity, $units, 
-                        $unit_cost, $total_value, $office_id, $_SESSION['user_id'], $source, $notes);
+                        $unit_cost, $total_value, $office_id, $for_office_id, $_SESSION['user_id'], $source, $notes);
                     $history_stmt->execute();
                     $history_stmt->close();
                     
