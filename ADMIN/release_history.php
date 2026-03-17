@@ -36,30 +36,30 @@ try {
     // Union query to get additions, releases, and lends
     $sql = "(SELECT 
                 'addition' as transaction_type,
-                c.id,
+                h.id,
                 c.description,
-                c.quantity as quantity,
-                c.units,
-                c.unit_cost,
-                c.quantity * c.unit_cost as total_value,
-                c.office_id as from_office_id,
-                c.for_office_id as to_office_id,
-                NULL as released_by,
+                h.quantity_added as quantity,
+                h.units,
+                h.unit_cost,
+                h.total_value,
+                h.office_id as from_office_id,
+                h.office_id as to_office_id, -- Same office for additions
+                h.added_by as released_by,
                 CONCAT(u.first_name, ' ', u.last_name) as released_by_name,
                 NULL as received_by,
-                c.created_at as transaction_date,
+                h.add_date as transaction_date,
                 'Consumable added to inventory' as notes,
-                c.created_at,
+                h.add_date as created_at,
                 fo.office_name as from_office_name,
-                to_off.office_name as to_office_name,
+                fo.office_name as to_office_name, -- Same office for additions
                 NULL as expected_return_date,
                 NULL as actual_return_date,
                 NULL as lend_status
-            FROM consumables c
-            LEFT JOIN users u ON 1=0 -- No user for additions, but we need column
-            LEFT JOIN offices fo ON c.office_id = fo.id
-            LEFT JOIN offices to_off ON c.for_office_id = to_off.id
-            WHERE c.created_at IS NOT NULL) 
+            FROM consumable_add_history h
+            LEFT JOIN consumables c ON h.consumable_id = c.id
+            LEFT JOIN users u ON h.added_by = u.id
+            LEFT JOIN offices fo ON h.office_id = fo.id
+            WHERE h.add_date IS NOT NULL) 
             
             UNION ALL
             
