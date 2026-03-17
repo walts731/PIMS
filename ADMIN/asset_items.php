@@ -51,11 +51,13 @@ $items_stmt->close();
 
 // Calculate statistics
 $total_items = count($items);
-$serviceable_items = count(array_filter($items, function($item) { return $item['status'] === 'available'; }));
-$unserviceable_items = count(array_filter($items, function($item) { return $item['status'] === 'in_use'; }));
-$redtagged_items = count(array_filter($items, function($item) { return $item['status'] === 'maintenance'; }));
-$borrowed_items = count(array_filter($items, function($item) { return $item['status'] === 'disposed'; }));
+$serviceable_items = count(array_filter($items, function($item) { return $item['status'] === 'serviceable'; }));
+$unserviceable_items = count(array_filter($items, function($item) { return $item['status'] === 'unserviceable'; }));
+$redtagged_items = count(array_filter($items, function($item) { return $item['status'] === 'red_tagged'; }));
+$borrowed_items = count(array_filter($items, function($item) { return $item['status'] === 'borrowed'; }));
 $notag_items = count(array_filter($items, function($item) { return $item['status'] === 'no_tag'; }));
+$maintenance_items = count(array_filter($items, function($item) { return $item['status'] === 'maintenance'; }));
+$disposed_items = count(array_filter($items, function($item) { return $item['status'] === 'disposed'; }));
 
 ?>
 
@@ -85,7 +87,7 @@ $notag_items = count(array_filter($items, function($item) { return $item['status
     <link href="assets/css/admin-unified.css" rel="stylesheet">
 </head>
 <body>
-    <?php $page_title = 'Asset Items - ' . htmlspecialchars($asset['description']); ?>
+    <?php $page_title = 'Asset Items'; ?>
     <div class="main-wrapper" id="mainWrapper">
         <?php require_once 'includes/sidebar-toggle.php'; ?>
         <?php require_once 'includes/sidebar.php'; ?>
@@ -101,13 +103,22 @@ $notag_items = count(array_filter($items, function($item) { return $item['status
                     <p class="text-muted mb-0">Individual items for: <?php echo htmlspecialchars($asset['description']); ?></p>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <div class="d-flex gap-2 justify-content-md-end">
-                        <a href="assets.php" class="btn btn-primary btn-sm">
-                            <i class="bi bi-arrow-left"></i> Back to Assets
-                        </a>
-                        <button class="btn btn-success btn-sm" onclick="exportAssetItems()">
-                            <i class="bi bi-download"></i> Export
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-gear"></i> Actions
                         </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a href="assets.php" class="dropdown-item">
+                                    <i class="bi bi-box"></i> Assets
+                                </a>
+                            </li>
+                            <li>
+                                <button class="dropdown-item" onclick="exportAssetItems()">
+                                    <i class="bi bi-download"></i> Export
+                                </button>
+                            </li>
+                        </ul>
                     </div>
                 </div>
             </div>
@@ -166,10 +177,22 @@ $notag_items = count(array_filter($items, function($item) { return $item['status
                     <div class="stats-label"><i class="bi bi-dash-circle"></i> No Tag</div>
                 </div>
             </div>
-            <div class="col-6 col-md-3">
+            <div class="col-6 col-md-4">
                 <div class="stats-card">
                     <div class="stats-number"><?php echo $borrowed_items; ?></div>
                     <div class="stats-label"><i class="bi bi-arrow-left-right"></i> Borrowed</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4">
+                <div class="stats-card">
+                    <div class="stats-number"><?php echo $maintenance_items; ?></div>
+                    <div class="stats-label"><i class="bi bi-tools"></i> Maintenance</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4">
+                <div class="stats-card">
+                    <div class="stats-number"><?php echo $disposed_items; ?></div>
+                    <div class="stats-label"><i class="bi bi-trash"></i> Disposed</div>
                 </div>
             </div>
         </div>
@@ -188,6 +211,8 @@ $notag_items = count(array_filter($items, function($item) { return $item['status
                             <option value="Red-Tagged">Red-Tagged</option>
                             <option value="Borrowed">Borrowed</option>
                             <option value="No Tag">No Tag</option>
+                            <option value="Maintenance">Maintenance</option>
+                            <option value="Disposed">Disposed</option>
                         </select>
                     </div>
                 </div>
@@ -203,7 +228,6 @@ $notag_items = count(array_filter($items, function($item) { return $item['status
                                 <th>Status</th>
                                 <th>Value</th>
                                 <th>Acquisition Date</th>
-                                <th>Last Updated</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -236,6 +260,14 @@ $notag_items = count(array_filter($items, function($item) { return $item['status
                                                 $status_class = 'status-notag';
                                                 $display_status = 'No Tag';
                                                 break;
+                                            case 'maintenance':
+                                                $status_class = 'status-maintenance';
+                                                $display_status = 'Maintenance';
+                                                break;
+                                            case 'disposed':
+                                                $status_class = 'status-disposed';
+                                                $display_status = 'Disposed';
+                                                break;
                                         }
                                         ?>
                                         <span class="status-badge <?php echo $status_class; ?>">
@@ -244,7 +276,6 @@ $notag_items = count(array_filter($items, function($item) { return $item['status
                                     </td>
                                     <td class="text-value"><?php echo number_format($item['value'], 2); ?></td>
                                     <td><?php echo date('M j, Y', strtotime($item['acquisition_date'])); ?></td>
-                                    <td><?php echo date('M j, Y', strtotime($item['last_updated'])); ?></td>
                                     <td>
                                         <?php if ($item['status'] === 'no_tag'): ?>
                                             <a href="create_tag.php?id=<?php echo $item['id']; ?>" class="btn btn-outline-warning btn-action" title="Create Tag">
@@ -345,18 +376,7 @@ $notag_items = count(array_filter($items, function($item) { return $item['status
                         }
                     },
                     {
-                        targets: 5, // Last Updated column
-                        orderable: true,
-                        render: function(data, type, row) {
-                            if (type === 'sort' || type === 'type') {
-                                // Convert date string to timestamp for sorting
-                                return new Date(data).getTime();
-                            }
-                            return data;
-                        }
-                    },
-                    {
-                        targets: -1, // Actions column (last column)
+                        targets: 4, // Actions column
                         orderable: false,
                         searchable: false,
                         className: 'text-center'
@@ -393,7 +413,7 @@ $notag_items = count(array_filter($items, function($item) { return $item['status
         function exportAssetItems() {
             // Use DataTables export functionality
             const data = assetItemsTable.data().toArray();
-            let csv = 'Property No,Description,Status,Value,Acquisition Date,Last Updated\n';
+            let csv = 'Property No,Description,Status,Value,Acquisition Date\n';
             
             data.forEach(row => {
                 const rowData = [
@@ -401,8 +421,7 @@ $notag_items = count(array_filter($items, function($item) { return $item['status
                     row[1], // Description
                     row[2].replace(/<[^>]*>/g, '').trim(), // Status
                     row[3].replace(/[^0-9.-]+/g, ''), // Value
-                    row[4], // Acquisition Date
-                    row[5]  // Last Updated
+                    row[4]  // Acquisition Date
                 ];
                 csv += rowData.map(cell => `"${cell.trim()}"`).join(',') + '\n';
             });
