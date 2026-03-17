@@ -213,7 +213,7 @@ try {
 <body>
     <?php
     // Set page title for topbar
-    $page_title = 'Release History';
+    $page_title = 'Consumable History';
     ?>
     <!-- Main Content Wrapper -->
     <div class="main-wrapper" id="mainWrapper">
@@ -228,7 +228,7 @@ try {
             <div class="row align-items-center">
                 <div class="col-md-8">
                     <h1 class="mb-2">
-                        <i class="bi bi-clock-history"></i> Release History
+                        <i class="bi bi-clock-history"></i> History
                     </h1>
                     <p class="text-muted mb-0">Track all consumable release transactions</p>
                 </div>
