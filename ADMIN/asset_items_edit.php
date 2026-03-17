@@ -294,7 +294,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             $update_stmt = $conn->prepare($update_sql);
             $update_stmt->bind_param($types, ...$update_values);
             
-            logSystemAction($_SESSION['user_id'], 'asset_item_edit_sql_debug', 'asset_management', 'SQL=' . $update_sql . ' | image=' . ($final_image_filename === null ? 'NULL' : $final_image_filename));
             if ($update_stmt->execute()) {
                 // Log the update
                 logSystemAction($_SESSION['user_id'], 'asset_item_updated', 'asset_management', "Updated asset item: {$item['description']} (ID: {$item_id})");
@@ -658,11 +657,14 @@ function formatStatus($status) {
     $status_map = [
         'serviceable' => ['Serviceable', 'status-serviceable'],
         'unserviceable' => ['Unserviceable', 'status-unserviceable'],
-        'undermaintenance' => ['Under Maintenance', 'status-undermaintenance'],
+        'maintenance' => ['Maintenance', 'status-maintenance'],
+        'disposed' => ['Disposed', 'status-disposed'],
         'red_tagged' => ['Red Tagged', 'status-red-tagged'],
-        'no_tag' => ['No Tag', 'status-no-tag']
+        'borrowed' => ['Borrowed', 'status-borrowed'],
+        'no_tag' => ['No Tag', 'status-notag']
     ];
-    return $status_map[$status] ?? [$status, 'status-default'];
+    
+    return $status_map[$status] ?? [$status, ''];
 }
 
 // Get item status display
@@ -721,15 +723,28 @@ $status_display = formatStatus($item['status']);
                     <?php endif; ?>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <a href="view_asset_item.php?id=<?php echo $item_id; ?>" class="btn btn-secondary me-2">
-                        <i class="bi bi-arrow-left"></i> Back to View
-                    </a>
-                    <a href="print_inventory_tag.php?id=<?php echo $item_id; ?>" class="btn btn-outline-primary btn-sm me-2" target="_blank">
-                        <i class="bi bi-printer"></i> Print
-                    </a>
-                    <a href="export_asset_pdf.php?id=<?php echo $item_id; ?>" class="btn btn-danger btn-sm" target="_blank">
-                        <i class="bi bi-file-pdf"></i> Export PDF
-                    </a>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-gear"></i> Actions
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a href="view_asset_item.php?id=<?php echo $item_id; ?>" class="dropdown-item">
+                                    <i class="bi bi-arrow-left"></i> Back to View
+                                </a>
+                            </li>
+                            <li>
+                                <a href="print_inventory_tag.php?id=<?php echo $item_id; ?>" class="dropdown-item" target="_blank">
+                                    <i class="bi bi-printer"></i> Print
+                                </a>
+                            </li>
+                            <li>
+                                <a href="export_asset_pdf.php?id=<?php echo $item_id; ?>" class="dropdown-item" target="_blank">
+                                    <i class="bi bi-file-pdf"></i> Export PDF
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
@@ -773,8 +788,10 @@ $status_display = formatStatus($item['status']);
                                     <select class="form-select" name="status" required>
                                         <option value="serviceable" <?php echo $item['status'] === 'serviceable' ? 'selected' : ''; ?>>Serviceable</option>
                                         <option value="unserviceable" <?php echo $item['status'] === 'unserviceable' ? 'selected' : ''; ?>>Unserviceable</option>
-                                        <option value="undermaintenance" <?php echo $item['status'] === 'undermaintenance' ? 'selected' : ''; ?>>Under Maintenance</option>
+                                        <option value="maintenance" <?php echo $item['status'] === 'maintenance' ? 'selected' : ''; ?>>Maintenance</option>
+                                        <option value="disposed" <?php echo $item['status'] === 'disposed' ? 'selected' : ''; ?>>Disposed</option>
                                         <option value="red_tagged" <?php echo $item['status'] === 'red_tagged' ? 'selected' : ''; ?>>Red Tagged</option>
+                                        <option value="borrowed" <?php echo $item['status'] === 'borrowed' ? 'selected' : ''; ?>>Borrowed</option>
                                         <option value="no_tag" <?php echo $item['status'] === 'no_tag' ? 'selected' : ''; ?>>No Tag</option>
                                     </select>
                                 </div>
