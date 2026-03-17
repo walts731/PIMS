@@ -537,12 +537,6 @@ try {
             </div>
             <div class="col-lg-2 col-md-6">
                 <div class="stats-card">
-                    <div class="stats-number"><?php echo $stats['total_categories'] ?? 0; ?></div>
-                    <div class="stats-label"><i class="bi bi-tags"></i> Categories</div>
-                </div>
-            </div>
-            <div class="col-lg-2 col-md-6">
-                <div class="stats-card">
                     <div class="stats-number"><?php echo $stats['no_tag_count'] ?? 0; ?></div>
                     <div class="stats-label"><i class="bi bi-x-circle"></i> No Tag Assets</div>
                 </div>
@@ -603,7 +597,6 @@ try {
                             <th>Description</th>
                             <th>Quantity</th>
                             <th>Office</th>
-                            <th>Created</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -611,28 +604,11 @@ try {
                         <?php if (!empty($assets)): ?>
                             <?php foreach ($assets as $asset): ?>
                                 <tr>
-                                    <td>
-                                        <span class="category-badge">
-                                            <?php echo htmlspecialchars($asset['category_code'] ?? 'N/A'); ?>
-                                        </span>
-                                        <br>
-                                        <small class="text-muted"><?php echo htmlspecialchars($asset['category_name'] ?? 'N/A'); ?></small>
-                                    </td>
-                                    <td>
-                                        <?php if (!empty($asset['sub_category_code'])): ?>
-                                            <span class="subcategory-badge">
-                                                <?php echo htmlspecialchars($asset['sub_category_code']); ?>
-                                            </span>
-                                            <br>
-                                            <small class="text-muted"><?php echo htmlspecialchars($asset['sub_category_name']); ?></small>
-                                        <?php else: ?>
-                                            <span class="text-muted">No subcategory</span>
-                                        <?php endif; ?>
-                                    </td>
+                                    <td><?php echo htmlspecialchars($asset['category_name'] ?? 'N/A'); ?></td>
+                                    <td><?php echo htmlspecialchars($asset['sub_category_name'] ?? 'No subcategory'); ?></td>
                                     <td><?php echo htmlspecialchars($asset['description']); ?></td>
                                     <td><?php echo $asset['quantity']; ?></td>
                                     <td><?php echo htmlspecialchars($asset['office_name'] ?? 'N/A'); ?></td>
-                                    <td><small><?php echo date('M j, Y', strtotime($asset['created_at'])); ?></small></td>
                                     <td>
                                         <a href="asset_items.php?asset_id=<?php echo $asset['id']; ?>" class="btn btn-sm btn-outline-info">
                                             <i class="bi bi-eye"></i> View Items
@@ -642,7 +618,7 @@ try {
                             <?php endforeach; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="7" class="text-center text-muted py-4">
+                                <td colspan="6" class="text-center text-muted py-4">
                                     <i class="bi bi-inbox fs-1"></i>
                                     <p class="mt-2">No assets found. Click "Add Asset" to create your first asset.</p>
                                 </td>
