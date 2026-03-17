@@ -2466,7 +2466,7 @@ $page_title = 'Requests Management';
                 });
                 
                 // Real-time field validation
-                const requiredFields = form.querySelectorAll('[required]');
+                const requiredFields = newRequestForm.querySelectorAll('[required]');
                 requiredFields.forEach(field => {
                     field.addEventListener('blur', function() {
                         validateField(this);
@@ -2613,7 +2613,7 @@ $page_title = 'Requests Management';
                 }
                 
                 // Add clear draft button
-                const modalBody = newRequestModal.querySelector('.modal-body');
+                const newRequestModalBody = newRequestModal.querySelector('.modal-body');
                 const clearDraftBtn = document.createElement('button');
                 clearDraftBtn.type = 'button';
                 clearDraftBtn.className = 'btn btn-outline-secondary btn-sm position-absolute top-0 end-0 m-2';
@@ -2748,16 +2748,16 @@ $page_title = 'Requests Management';
                 });
                 
                 // Add smooth scroll behavior for modal body
-                const modalBody = document.querySelector('#newRequestModal .modal-body');
-                if (modalBody) {
-                    modalBody.style.scrollBehavior = 'smooth';
-                    modalBody.style.scrollPaddingTop = '20px';
+                const requestModalBody = document.querySelector('#newRequestModal .modal-body');
+                if (requestModalBody) {
+                    requestModalBody.style.scrollBehavior = 'smooth';
+                    requestModalBody.style.scrollPaddingTop = '20px';
                 }
                 
                 // Add progress indicator for form completion
                 function updateFormProgress() {
-                    const totalRequired = form.querySelectorAll('[required]').length;
-                    const totalFilled = Array.from(form.querySelectorAll('[required]')).filter(field => field.value.trim()).length;
+                    const totalRequired = newRequestForm.querySelectorAll('[required]').length;
+                    const totalFilled = Array.from(newRequestForm.querySelectorAll('[required]')).filter(field => field.value.trim()).length;
                     const progress = (totalFilled / totalRequired) * 100;
                     
                     let progressBar = document.getElementById('formProgressBar');
@@ -3109,59 +3109,11 @@ $page_title = 'Requests Management';
             
             // Remove toast element after it's hidden
             toastElement.addEventListener('hidden.bs.toast', () => {
-                toastElement.remove();
-            });
-        }
-        
-        // Smart Filter Functionality
-        function initSmartFilters() {
-            const filterTabs = document.querySelectorAll('.filter-tab');
-            const requestRows = document.querySelectorAll('.request-row');
+            })));
             
             // Apply initial filter for "needs_action" on page load
+            console.log('Applying initial filter...');
             applyInitialFilter();
-            
-            filterTabs.forEach(tab => {
-                tab.addEventListener('click', function() {
-                    const filter = this.dataset.filter;
-                    
-                    // Update active tab
-                    filterTabs.forEach(t => t.classList.remove('active'));
-                    this.classList.add('active');
-                    
-                    // Filter requests
-                    requestRows.forEach(row => {
-                        row.classList.remove('hidden');
-                        
-                        switch(filter) {
-                            case 'needs_action':
-                                // Show only incoming pending requests that need action
-                                if (row.dataset.needsAction !== 'true') {
-                                    row.classList.add('hidden');
-                                }
-                                break;
-                            case 'waiting':
-                                // Show only outgoing requests (waiting for others' action)
-                                if (row.dataset.type === 'incoming') {
-                                    row.classList.add('hidden');
-                                }
-                                break;
-                            case 'all':
-                                // Show all requests
-                                break;
-                        }
-                    });
-                    
-                    updateEmptyState();
-                    updateSelectAllCheckboxState();
-                    updateBulkActionsButtons(filter);
-                });
-            });
-        }
-        
-        function applyInitialFilter() {
-            // Apply the initial "needs_action" filter when page loads
-            const requestRows = document.querySelectorAll('.request-row');
             requestRows.forEach(row => {
                 if (row.dataset.needsAction !== 'true') {
                     row.classList.add('hidden');
@@ -3455,60 +3407,28 @@ $page_title = 'Requests Management';
         
         function initAdvancedSearch() {
             const searchInput = document.getElementById('advancedSearchInput');
-            if (searchInput) {
-                // Real-time search with debounce
-                searchInput.addEventListener('input', function() {
-                    clearTimeout(searchTimeout);
-                    searchTimeout = setTimeout(() => {
-                        currentFilters.text = this.value.toLowerCase();
-                        performAdvancedSearch();
-                    }, 300);
-                });
-                
-                // Clear search on escape
-                searchInput.addEventListener('keydown', function(e) {
-                    if (e.key === 'Escape') {
-                        this.value = '';
-                        currentFilters.text = '';
-                        performAdvancedSearch();
-                    }
-                });
-            }
         }
         
-        function applyAdvancedFilters() {
-            currentFilters.type = document.getElementById('filterType')?.value || '';
-            currentFilters.status = document.getElementById('filterStatus')?.value || '';
-            currentFilters.dateFrom = document.getElementById('filterDateFrom')?.value || '';
-            currentFilters.dateTo = document.getElementById('filterDateTo')?.value || '';
-            
-            performAdvancedSearch();
-            updateSearchResultsCount();
+        // Type filter
+        if (matches && currentFilters.type) {
+            matches = row.dataset.type === currentFilters.type;
         }
         
-        function clearAdvancedFilters() {
-            currentFilters = {
-                text: '',
-                type: '',
-                status: '',
-                dateFrom: '',
-                dateTo: ''
-            };
-            
-            // Reset form fields
-            document.getElementById('advancedSearchInput').value = '';
-            document.getElementById('filterType').value = '';
-            document.getElementById('filterStatus').value = '';
-            document.getElementById('filterDateFrom').value = '';
-            document.getElementById('filterDateTo').value = '';
-            
-            performAdvancedSearch();
-            updateSearchResultsCount();
+        // Status filter
+        if (matches && currentFilters.status) {
+            matches = row.dataset.status === currentFilters.status;
         }
         
-        function performAdvancedSearch() {
-            const rows = document.querySelectorAll('#requestsTable tbody tr.request-row');
-            let visibleCount = 0;
+        // Date range filter
+        if (matches && (currentFilters.dateFrom || currentFilters.dateTo)) {
+            const durationCell = row.querySelector('td:nth-child(5)');
+            if (durationCell) {
+                const dateText = durationCell.textContent;
+                const dateMatch = dateText.match(/From: (\w+ \d+, \d+)/);
+                if (dateMatch) {
+                    const requestDate = new Date(dateMatch[1]);
+                    const fromDate = currentFilters.dateFrom ? new Date(currentFilters.dateFrom) : null;
+                    const toDate = currentFilters.dateTo ? new Date(currentFilters.dateTo) : null;
             
             rows.forEach(row => {
                 let matches = true;
@@ -3701,24 +3621,27 @@ $page_title = 'Requests Management';
         
         function selectAllRequests() {
             const selectAll = document.getElementById('selectAllRequests');
-            // Only select checkboxes that are in visible rows (not hidden by current filter)
             const visibleCheckboxes = document.querySelectorAll('.request-row:not(.hidden) .request-checkbox');
             const allCheckboxes = document.querySelectorAll('.request-checkbox');
             
             // Update all checkboxes to match the selectAll state
-            allCheckboxes.forEach(checkbox => {
-                checkbox.checked = selectAll.checked;
-            });
+            for (let i = 0; i < allCheckboxes.length; i++) {
+                allCheckboxes[i].checked = selectAll.checked;
+            }
             
             // Only update the selectedRequests set with visible checkboxes
-            visibleCheckboxes.forEach(checkbox => {
-                const requestId = parseInt(checkbox.value);
+            for (let i = 0; i < visibleCheckboxes.length; i++) {
+                const checkbox = visibleCheckboxes[i];
+                const requestId = parseInt(checkbox.value, 10);
                 if (selectAll.checked) {
                     selectedRequests.add(requestId);
                 } else {
                     selectedRequests.delete(requestId);
                 }
-            });
+            }
+            
+            updateBulkActionsBar();
+        }
             
             updateBulkActionsBar();
         }
@@ -3945,55 +3868,8 @@ $page_title = 'Requests Management';
             }
         }
         
-        // Event listeners for bulk actions
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize real-time updates
-            startRealTimeUpdates();
-            
-            // Initialize advanced search
-            initAdvancedSearch();
-            
-            // Select all checkbox
-            document.getElementById('selectAllRequests')?.addEventListener('change', selectAllRequests);
-            
-            // Individual checkboxes
-            document.querySelectorAll('.request-checkbox').forEach(checkbox => {
-                checkbox.addEventListener('change', function() {
-                    toggleRequestSelection(parseInt(this.value));
-                });
-            });
-            
-            // Bulk action buttons
-            const bulkApproveBtn = document.getElementById('bulkApproveBtn');
-            const bulkDenyBtn = document.getElementById('bulkDenyBtn');
-            const bulkMarkBorrowedBtn = document.getElementById('bulkMarkBorrowedBtn');
-            
-            console.log('Setting up event listeners:');
-            console.log('bulkApproveBtn:', bulkApproveBtn);
-            console.log('bulkDenyBtn:', bulkDenyBtn);
-            console.log('bulkMarkBorrowedBtn:', bulkMarkBorrowedBtn);
-            
-            if (bulkApproveBtn) {
-                bulkApproveBtn.addEventListener('click', bulkApprove);
-                console.log('Added listener to bulkApproveBtn');
-            }
-            if (bulkDenyBtn) {
-                bulkDenyBtn.addEventListener('click', bulkDeny);
-                console.log('Added listener to bulkDenyBtn');
-            }
-            if (bulkMarkBorrowedBtn) {
-                bulkMarkBorrowedBtn.addEventListener('click', bulkMarkBorrowed);
-                console.log('Added listener to bulkMarkBorrowedBtn');
-            }
-            
-            document.getElementById('bulkCancelBtn')?.addEventListener('click', bulkCancel);
-            document.getElementById('bulkApproveBtnAll')?.addEventListener('click', bulkApprove);
-            document.getElementById('bulkDenyBtnAll')?.addEventListener('click', bulkDeny);
-            document.getElementById('bulkMarkBorrowedBtnAll')?.addEventListener('click', bulkMarkBorrowed);
-            document.getElementById('bulkCancelBtnAll')?.addEventListener('click', bulkCancel);
-            
-            initSmartFilters();
-        });
+        // Event listeners for bulk actions - REMOVED DUPLICATE
+        // This section was removed to prevent conflicts with the main DOMContentLoaded listener above
     </script>
     
     <!-- Bootstrap-based Notification Script -->
@@ -4008,7 +3884,7 @@ $page_title = 'Requests Management';
             <div class="footer-spacer"></div>
             <div class="footer-info">
                 <small class="text-muted">
-                    © <?php echo date('Y'); ?> PIMS - Property and Inventory Management System
+                    © <?php echo date('Y'); ?> PIMS - Pilar Inventory Management System
                 </small>
             </div>
         </div>
