@@ -131,6 +131,28 @@ function getActionIcon($action) {
     return $icons[$action] ?? 'circle-fill';
 }
 
+function getActionColor($action) {
+    $colors = [
+        'Created' => '#28a745',           // Green
+        'Updated' => '#007bff',           // Blue
+        'Deleted' => '#dc3545',           // Red
+        'Status Changed' => '#dc3545',    // Red (changed from orange)
+        'Assigned' => '#17a2b8',          // Cyan
+        'Transferred' => '#6f42c1',        // Purple
+        'Maintenance' => '#007bff',       // Blue
+        'Disposed' => '#dc3545',           // Red
+        'Inspected' => '#20c997',          // Teal
+        'Repaired' => '#007bff',           // Blue
+        'Calibrated' => '#6f42c1',        // Purple
+        'Cleaned' => '#28a745',           // Green
+        'Tested' => '#20c997',            // Teal
+        'Approved' => '#28a745',          // Green
+        'Rejected' => '#dc3545'           // Red
+    ];
+    
+    return $colors[$action] ?? '#6c757d';        // Gray default
+}
+
 function formatTimelineDate($date) {
     $timestamp = strtotime($date);
     $now = time();
@@ -558,7 +580,10 @@ function formatStatus($status) {
     $status_map = [
         'serviceable' => ['Serviceable', 'status-serviceable'],
         'unserviceable' => ['Unserviceable', 'status-unserviceable'],
+        'maintenance' => ['Maintenance', 'status-maintenance'],
+        'disposed' => ['Disposed', 'status-disposed'],
         'red_tagged' => ['Red Tagged', 'status-red-tagged'],
+        'borrowed' => ['Borrowed', 'status-borrowed'],
         'no_tag' => ['No Tag', 'status-no-tag']
     ];
     return $status_map[$status] ?? [$status, 'status-default'];
@@ -628,13 +653,12 @@ $status_display = formatStatus($item['status']);
         left: 50%;
         width: 20px;
         height: 20px;
-        background: white;
-        border: 4px solid var(--primary-color);
         border-radius: 50%;
+        background: white;
+        border: 3px solid var(--primary-color);
         transform: translateX(-50%);
-        z-index: 2;
-        box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.1);
         transition: all 0.3s ease;
+        z-index: 1;
     }
     
     .timeline-dot:hover {
@@ -649,6 +673,55 @@ $status_display = formatStatus($item['status']);
         border-radius: 50%;
         animation: pulse 2s infinite;
     }
+    
+    /* Action-specific colors */
+    .timeline-dot.action-created { border-color: #28a745; }
+    .timeline-dot.action-created .timeline-dot-inner { background: #28a745; }
+    .timeline-dot.action-updated { border-color: #007bff; }
+    .timeline-dot.action-updated .timeline-dot-inner { background: #007bff; }
+    .timeline-dot.action-deleted { border-color: #dc3545; }
+    .timeline-dot.action-deleted .timeline-dot-inner { background: #dc3545; }
+    .timeline-dot.action-status-changed { border-color: #dc3545; }
+    .timeline-dot.action-status-changed .timeline-dot-inner { background: #dc3545; }
+    .timeline-dot.action-assigned { border-color: #17a2b8; }
+    .timeline-dot.action-assigned .timeline-dot-inner { background: #17a2b8; }
+    .timeline-dot.action-transferred { border-color: #6f42c1; }
+    .timeline-dot.action-transferred .timeline-dot-inner { background: #6f42c1; }
+    .timeline-dot.action-maintenance { border-color: #007bff; }
+    .timeline-dot.action-maintenance .timeline-dot-inner { background: #007bff; }
+    .timeline-dot.action-disposed { border-color: #dc3545; }
+    .timeline-dot.action-disposed .timeline-dot-inner { background: #dc3545; }
+    .timeline-dot.action-inspected { border-color: #20c997; }
+    .timeline-dot.action-inspected .timeline-dot-inner { background: #20c997; }
+    .timeline-dot.action-repaired { border-color: #007bff; }
+    .timeline-dot.action-repaired .timeline-dot-inner { background: #007bff; }
+    .timeline-dot.action-calibrated { border-color: #6f42c1; }
+    .timeline-dot.action-calibrated .timeline-dot-inner { background: #6f42c1; }
+    .timeline-dot.action-cleaned { border-color: #28a745; }
+    .timeline-dot.action-cleaned .timeline-dot-inner { background: #28a745; }
+    .timeline-dot.action-tested { border-color: #20c997; }
+    .timeline-dot.action-tested .timeline-dot-inner { background: #20c997; }
+    .timeline-dot.action-approved { border-color: #28a745; }
+    .timeline-dot.action-approved .timeline-dot-inner { background: #28a745; }
+    .timeline-dot.action-rejected { border-color: #dc3545; }
+    .timeline-dot.action-rejected .timeline-dot-inner { background: #dc3545; }
+    
+    /* Action-specific content border colors */
+    .timeline-dot.action-created ~ .timeline-content { border-left-color: #28a745; }
+    .timeline-dot.action-updated ~ .timeline-content { border-left-color: #007bff; }
+    .timeline-dot.action-deleted ~ .timeline-content { border-left-color: #dc3545; }
+    .timeline-dot.action-status-changed ~ .timeline-content { border-left-color: #dc3545; }
+    .timeline-dot.action-assigned ~ .timeline-content { border-left-color: #17a2b8; }
+    .timeline-dot.action-transferred ~ .timeline-content { border-left-color: #6f42c1; }
+    .timeline-dot.action-maintenance ~ .timeline-content { border-left-color: #007bff; }
+    .timeline-dot.action-disposed ~ .timeline-content { border-left-color: #dc3545; }
+    .timeline-dot.action-inspected ~ .timeline-content { border-left-color: #20c997; }
+    .timeline-dot.action-repaired ~ .timeline-content { border-left-color: #007bff; }
+    .timeline-dot.action-calibrated ~ .timeline-content { border-left-color: #6f42c1; }
+    .timeline-dot.action-cleaned ~ .timeline-content { border-left-color: #28a745; }
+    .timeline-dot.action-tested ~ .timeline-content { border-left-color: #20c997; }
+    .timeline-dot.action-approved ~ .timeline-content { border-left-color: #28a745; }
+    .timeline-dot.action-rejected ~ .timeline-content { border-left-color: #dc3545; }
     
     @keyframes pulse {
         0% { transform: scale(1); opacity: 1; }
@@ -855,19 +928,34 @@ $status_display = formatStatus($item['status']);
                     </h1>
                     <p class="text-muted mb-0"><?php echo htmlspecialchars($item['description']); ?></p>
                 </div>
-                <div class="col-md-4 text-md-end d-flex flex-nowrap justify-content-end">
-                    <a href="asset_items_edit.php?id=<?php echo $item_id; ?>" class="btn btn-warning btn-sm me-2">
-                        <i class="bi bi-pencil"></i> Edit
-                    </a>
-                    <a href="asset_items.php?asset_id=<?php echo $asset_id; ?>" class="btn btn-back btn-sm me-2">
-                        <i class="bi bi-arrow-left"></i> Back to Items
-                    </a>
-                    <a href="print_inventory_tag.php?id=<?php echo $item_id; ?>" class="btn btn-outline-primary btn-sm me-2" target="_blank">
-                        <i class="bi bi-printer"></i> Print
-                    </a>
-                    <a href="export_asset_pdf.php?id=<?php echo $item_id; ?>" class="btn btn-danger btn-sm" target="_blank">
-                        <i class="bi bi-file-pdf"></i> Export PDF
-                    </a>
+                <div class="col-md-4 text-md-end">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-gear"></i> Actions
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a href="asset_items_edit.php?id=<?php echo $item_id; ?>" class="dropdown-item">
+                                    <i class="bi bi-pencil"></i> Edit
+                                </a>
+                            </li>
+                            <li>
+                                <a href="asset_items.php?asset_id=<?php echo $asset_id; ?>" class="dropdown-item">
+                                    <i class="bi bi-arrow-left"></i> Back to Items
+                                </a>
+                            </li>
+                            <li>
+                                <a href="print_inventory_tag.php?id=<?php echo $item_id; ?>" class="dropdown-item" target="_blank">
+                                    <i class="bi bi-printer"></i> Print
+                                </a>
+                            </li>
+                            <li>
+                                <a href="export_asset_pdf.php?id=<?php echo $item_id; ?>" class="dropdown-item" target="_blank">
+                                    <i class="bi bi-file-pdf"></i> Export PDF
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1331,12 +1419,12 @@ $status_display = formatStatus($item['status']);
                     <div class="timeline">
                         <?php foreach ($item_history as $index => $history): ?>
                             <div class="timeline-item <?php echo $index % 2 === 0 ? 'timeline-left' : 'timeline-right'; ?>">
-                                <div class="timeline-dot">
+                                <div class="timeline-dot action-<?php echo strtolower(str_replace(' ', '-', $history['action'])); ?>">
                                     <div class="timeline-dot-inner"></div>
                                 </div>
                                 <div class="timeline-content">
                                     <div class="timeline-header">
-                                        <div class="timeline-action">
+                                        <div class="timeline-action" style="color: <?php echo getActionColor($history['action']); ?>;">
                                             <i class="bi bi-<?php echo getActionIcon($history['action']); ?>"></i>
                                             <?php echo htmlspecialchars($history['action']); ?>
                                         </div>
@@ -1433,10 +1521,17 @@ $status_display = formatStatus($item['status']);
                     <h5 class="mb-3"><i class="bi bi-qr-code"></i> QR Code</h5>
                     <div class="qr-code">
                         <?php if (!empty($item['qr_code'])): ?>
-                            <img src="../uploads/qr_codes/<?php echo htmlspecialchars($item['qr_code']); ?>" 
-                                 alt="QR Code" 
-                                 class="img-fluid rounded"
-                                 style="max-width: 150px; max-height: 150px;">
+                            <a href="../uploads/qr_codes/<?php echo htmlspecialchars($item['qr_code']); ?>" 
+                               download="qr_code_<?php echo htmlspecialchars($item['property_no'] ?: 'asset_' . $item['id']); ?>.png"
+                               style="text-decoration: none; display: inline-block; cursor: pointer;"
+                               title="Click to download QR Code">
+                                <img src="../uploads/qr_codes/<?php echo htmlspecialchars($item['qr_code']); ?>" 
+                                     alt="QR Code" 
+                                     class="img-fluid rounded"
+                                     style="max-width: 150px; max-height: 150px; transition: transform 0.2s ease;"
+                                     onmouseover="this.style.transform='scale(1.05)'"
+                                     onmouseout="this.style.transform='scale(1)'">
+                            </a>
                         <?php else: ?>
                             <i class="bi bi-qr-code-scan fs-1 text-muted"></i>
                         <?php endif; ?>

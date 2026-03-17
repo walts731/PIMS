@@ -1375,7 +1375,10 @@ try {
         }
         
         function getNextAssetSeriesNumber() {
-            fetch('../api/get_next_series.php', {
+            const category = document.getElementById('assetCategorySelectGen').value || '030';
+            const subcategory = document.getElementById('assetSubcategorySelectGen').value || '01';
+            
+            fetch(`../api/get_next_series.php?category=${category}&subcategory=${subcategory}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1512,12 +1515,12 @@ try {
                 });
                 
                 generatorSubcategorySelect.addEventListener('change', function() {
-                    generateAssetPropertyNumberPreview();
+                    getNextAssetSeriesNumber(); // Get new series for this subcategory
                 });
             }
             
-            // Auto-update preview when any field changes
-            const fields = ['assetCategorySelectGen', 'assetSubcategorySelectGen', 'assetQuantityInput'];
+            // Auto-update preview when any field changes (except quantity which doesn't affect series)
+            const fields = ['assetCategorySelectGen', 'assetSubcategorySelectGen'];
             fields.forEach(fieldId => {
                 const element = document.getElementById(fieldId);
                 if (element) {
@@ -1525,6 +1528,13 @@ try {
                     element.addEventListener('input', generateAssetPropertyNumberPreview);
                 }
             });
+            
+            // Add quantity listener separately since it only affects preview, not series
+            const quantityElement = document.getElementById('assetQuantityInput');
+            if (quantityElement) {
+                quantityElement.addEventListener('change', generateAssetPropertyNumberPreview);
+                quantityElement.addEventListener('input', generateAssetPropertyNumberPreview);
+            }
             
             // Update office display when office changes
             const assetOfficeSelect = document.getElementById('assetOfficeSelect');
