@@ -355,7 +355,7 @@
     font-style: italic;
     color: rgba(255,240,190,0.95);
     display: block;
-    margin-top: 10px;
+    margin-top: 25px;
     letter-spacing: 0.06em;
   }
   /* letter-by-letter stagger on expand */
@@ -583,124 +583,148 @@
     line-height: 1.7;
   }
 
-  /* ─── GRID ─── */
+  /* ─── FEATURED GALLERY SECTIONS ─── */
   .gallery-grid {
-    display: grid;
-    grid-template-columns: repeat(12, 1fr);
-    grid-template-rows: auto;
-    gap: 20px;
-  }
-
-  /* Featured big card */
-  .card:nth-child(1) { grid-column: 1 / 8; grid-row: 1; }
-  .card:nth-child(2) { grid-column: 8 / 13; grid-row: 1; }
-  .card:nth-child(3) { grid-column: 1 / 5; grid-row: 2; }
-  .card:nth-child(4) { grid-column: 5 / 9; grid-row: 2; }
-  .card:nth-child(5) { grid-column: 9 / 13; grid-row: 2; }
-  .card:nth-child(6) { grid-column: 1 / 13; grid-row: 3; }
-
-  @media (max-width: 900px) {
-    .card:nth-child(n) { grid-column: 1 / -1; grid-row: auto; }
-  }
-
-  .card {
+    display: flex;
+    flex-direction: column;
+    gap: 120px;
     position: relative;
-    border-radius: 18px;
+  }
+
+  .featured-section {
+    display: flex;
+    align-items: center;
+    gap: 60px;
+    position: relative;
+    min-height: 500px;
+  }
+
+  .featured-section:nth-child(even) {
+    flex-direction: row-reverse;
+  }
+
+  .featured-image {
+    flex: 1;
+    position: relative;
+    border-radius: 20px;
     overflow: hidden;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
-    cursor: none;
-    transition: border-color 0.3s ease, transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    transition: transform 0.6s cubic-bezier(0.34,1.56,0.64,1);
   }
 
-  .card:hover {
-    border-color: rgba(0,212,224,0.5);
-    transform: translateY(-6px);
+  .featured-image:hover {
+    transform: scale(1.02);
   }
 
-  .card-img-wrap {
+  .featured-image img {
     width: 100%;
-    overflow: hidden;
-  }
-
-  .card:nth-child(1) .card-img-wrap,
-  .card:nth-child(6) .card-img-wrap { height: 320px; }
-  .card:nth-child(2) .card-img-wrap { height: 320px; }
-  .card:nth-child(n+3):nth-child(-n+5) .card-img-wrap { height: 220px; }
-
-  @media (max-width: 900px) {
-    .card .card-img-wrap { height: 240px !important; }
-  }
-
-  .card-img-wrap img {
-    width: 100%;
-    height: 100%;
+    height: 400px;
     object-fit: cover;
-    transition: transform 0.6s cubic-bezier(0.25,0.46,0.45,0.94);
     display: block;
   }
 
-  .card:hover .card-img-wrap img { transform: scale(1.07); }
-
-  /* Color tint overlay per card */
-  .card-tint {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    opacity: 0.25;
-    mix-blend-mode: color;
-  }
-  .card:nth-child(1) .card-tint { background: var(--coral-orange); }
-  .card:nth-child(2) .card-tint { background: var(--sea-surface); }
-  .card:nth-child(3) .card-tint { background: var(--coral-pink); }
-  .card:nth-child(4) .card-tint { background: var(--seaweed); }
-  .card:nth-child(5) .card-tint { background: var(--coral-yellow); }
-  .card:nth-child(6) .card-tint { background: var(--coral-red); }
-
-  .card-body {
-    padding: 22px 24px 26px;
-    background: linear-gradient(to bottom, rgba(0,40,55,0.85), rgba(0,20,30,0.97));
-    backdrop-filter: blur(12px);
+  .featured-content {
+    flex: 1;
+    max-width: 500px;
+    position: relative;
+    z-index: 2;
   }
 
-  .card-tag {
+  .featured-tag {
     display: inline-block;
-    font-size: 0.65rem;
+    font-size: 0.75rem;
     font-weight: 500;
-    letter-spacing: 0.28em;
+    letter-spacing: 0.3em;
     text-transform: uppercase;
     color: var(--sea-surface);
-    margin-bottom: 8px;
+    background: rgba(0,212,224,0.15);
+    border: 1px solid rgba(0,212,224,0.3);
+    padding: 8px 20px;
+    border-radius: 100px;
+    margin-bottom: 20px;
   }
 
-  .card-title {
+  .featured-title {
     font-family: 'Playfair Display', serif;
-    font-size: 1.4rem;
+    font-size: 2.5rem;
+    font-weight: 700;
     color: var(--white);
-    margin-bottom: 8px;
-    line-height: 1.25;
+    margin-bottom: 20px;
+    line-height: 1.1;
+    text-shadow: 0 4px 20px rgba(0,0,0,0.3);
   }
 
-  .card-desc {
+  .featured-desc {
     font-weight: 300;
-    font-size: 0.88rem;
-    color: rgba(180,230,240,0.75);
+    font-size: 1.1rem;
+    color: rgba(200,240,255,0.85);
     line-height: 1.7;
+    margin-bottom: 30px;
   }
 
-  /* ─── WIDE CARD HORIZONTAL LAYOUT ─── */
-  .card:nth-child(6) {
-    display: flex;
-    flex-direction: row;
+  /* ─── ANIMATED ELEMENTS ─── */
+  .animated-element {
+    position: absolute;
+    pointer-events: none;
+    z-index: 1;
   }
-  .card:nth-child(6) .card-img-wrap { flex: 0 0 55%; }
-  .card:nth-child(6) .card-body { flex: 1; display: flex; flex-direction: column; justify-content: center; }
-  .card:nth-child(6) .card-title { font-size: 1.8rem; margin-bottom: 14px; }
-  .card:nth-child(6) .card-desc { font-size: 0.95rem; }
+
+  .floating-fish {
+    width: 60px;
+    height: 30px;
+    opacity: 0.6;
+    animation: fishSwimAround 15s linear infinite;
+  }
+
+  @keyframes fishSwimAround {
+    0%   { transform: translate(0, 0) rotate(0deg); }
+    25%  { transform: translate(100px, -30px) rotate(10deg); }
+    50%  { transform: translate(150px, 20px) rotate(-5deg); }
+    75%  { transform: translate(50px, 40px) rotate(5deg); }
+    100% { transform: translate(0, 0) rotate(0deg); }
+  }
+
+  .bubbles-small {
+    width: 8px;
+    height: 8px;
+    background: radial-gradient(circle, rgba(255,255,255,0.8), rgba(135,235,255,0.4));
+    border-radius: 50%;
+    animation: bubbleRise 4s ease-in infinite;
+  }
+
+  @keyframes bubbleRise {
+    0%   { transform: translateY(0) scale(1); opacity: 0.8; }
+    50%  { transform: translateY(-50px) scale(1.1); opacity: 0.6; }
+    100% { transform: translateY(-100px) scale(0.8); opacity: 0; }
+  }
+
+  .seaweed-sway {
+    width: 40px;
+    height: 80px;
+    opacity: 0.4;
+    animation: seaweedSway 6s ease-in-out infinite;
+    transform-origin: bottom center;
+  }
+
+  @keyframes seaweedSway {
+    0%, 100% { transform: rotate(-8deg); }
+    50%       { transform: rotate(8deg); }
+  }
 
   @media (max-width: 900px) {
-    .card:nth-child(6) { flex-direction: column; }
-    .card:nth-child(6) .card-img-wrap { flex: none; width: 100%; }
+    .featured-section {
+      flex-direction: column !important;
+      gap: 40px;
+      text-align: center;
+    }
+
+    .featured-content {
+      max-width: 100%;
+    }
+
+    .featured-title {
+      font-size: 2rem;
+    }
   }
 
   /* ─── FOOTER TAG ─── */
@@ -742,17 +766,16 @@
   @keyframes btnAppear { to { opacity: 1; } }
   #skip-btn:hover { background: #FFD700; transform: translateY(-2px) scale(1.04); }
 
-  /* ─── CARD ENTRANCE ANIMATION ─── */
-  .card {
+  /* ─── SECTION ENTRANCE ANIMATION ─── */
+  .featured-section {
     opacity: 0;
-    transform: translateY(40px);
-    transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.34,1.2,0.64,1), border-color 0.3s ease;
+    transform: translateY(60px);
+    transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.34,1.2,0.64,1);
   }
-  .card.visible {
+  .featured-section.visible {
     opacity: 1;
     transform: translateY(0);
   }
-  .card:hover { transform: translateY(-6px); }
 
 </style>
 </head>
@@ -1105,7 +1128,7 @@
 <div id="dragged-title">
   <span id="title-rope"></span>
   <div id="title-banner">
-    <span class="t-main">Simply PILAR</span>
+    <span class="t-main">Simply  Pilar</span>
     <span class="t-sub">let's sail</span>
   </div>
 </div>
@@ -1113,7 +1136,7 @@
 <!-- EXPANDED TITLE — revealed at centre when boat drops it -->
 <div id="title-reveal">
   <span class="tr-main"></span>
-  <span class="tr-sub">let's sail</span>
+  <span class="tr-sub">let's dive deeper</span>
 </div>
 
 </div><!-- /scene -->
@@ -1294,75 +1317,271 @@
 
     <div class="gallery-grid">
 
-      <div class="card" style="transition-delay: 0.05s">
-        <div class="card-img-wrap">
+      <div class="featured-section" style="transition-delay: 0.1s">
+        <div class="featured-image">
           <img src="https://picsum.photos/seed/bangka-boat/700/400" alt="Traditional Bangka" loading="lazy">
         </div>
-        <div class="card-tint"></div>
-        <div class="card-body">
-          <span class="card-tag">Heritage</span>
-          <h3 class="card-title">Traditional Bangka</h3>
-          <p class="card-desc">Classic Filipino outrigger boat — the vessel that binds thousands of islands into one people.</p>
+        <div class="featured-content">
+          <span class="featured-tag">Heritage</span>
+          <h2 class="featured-title">Traditional Bangka</h2>
+          <p class="featured-desc">Classic Filipino outrigger boat — the vessel that binds thousands of islands into one people.</p>
+        </div>
+        <!-- Animated fish element -->
+        <div class="animated-element floating-fish" style="top: 20%; left: -80px;">
+          <svg viewBox="0 0 60 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 15 L45 15 L50 10 L55 15 L50 20 L45 15" stroke="#4ECDC4" stroke-width="2" fill="none"/>
+            <circle cx="15" cy="15" r="3" fill="#4ECDC4"/>
+          </svg>
         </div>
       </div>
 
-      <div class="card" style="transition-delay: 0.12s">
-        <div class="card-img-wrap">
-          <img src="https://picsum.photos/seed/tropical-reef/500/400" alt="Tropical Waters" loading="lazy">
+      <div class="featured-section" style="transition-delay: 0.2s">
+        <div class="featured-image">
+          <img src="https://picsum.photos/seed/tropical-reef/700/400" alt="Tropical Waters" loading="lazy">
         </div>
-        <div class="card-tint"></div>
-        <div class="card-body">
-          <span class="card-tag">Marine Life</span>
-          <h3 class="card-title">Tropical Waters</h3>
-          <p class="card-desc">Crystal lagoons alive with colour — the Philippine Sea is among the most biodiverse on Earth.</p>
+        <div class="featured-content">
+          <span class="featured-tag">Marine Life</span>
+          <h2 class="featured-title">Tropical Waters</h2>
+          <p class="featured-desc">Crystal lagoons alive with colour — the Philippine Sea is among the most biodiverse on Earth.</p>
+        </div>
+        <!-- Animated bubbles element -->
+        <div class="animated-element bubbles-small" style="bottom: 20%; right: 10%;"></div>
+        <div class="animated-element bubbles-small" style="bottom: 30%; right: 15%; animation-delay: 1s;"></div>
+        <div class="animated-element bubbles-small" style="bottom: 25%; right: 8%; animation-delay: 2s;"></div>
+      </div>
+
+      <div class="featured-section" style="transition-delay: 0.3s">
+        <div class="featured-image">
+          <img src="https://picsum.photos/seed/island-sunset/700/400" alt="Island Sunset" loading="lazy">
+        </div>
+        <div class="featured-content">
+          <span class="featured-tag">Tradition</span>
+          <h2 class="featured-title">Island Sunset</h2>
+          <p class="featured-desc">When the sun bleeds orange into the sea and bangkas return heavy with the day's catch.</p>
+        </div>
+        <!-- Animated seaweed element -->
+        <div class="animated-element seaweed-sway" style="bottom: 0; left: 5%;">
+          <svg viewBox="0 0 40 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20 80 Q15 60 25 40 Q18 20 22 0" stroke="#2DC653" stroke-width="3" fill="none"/>
+            <path d="M25 80 Q30 65 20 45 Q28 25 24 5" stroke="#2EA043" stroke-width="2" fill="none"/>
+          </svg>
         </div>
       </div>
 
-      <div class="card" style="transition-delay: 0.19s">
-        <div class="card-img-wrap">
-          <img src="https://picsum.photos/seed/island-sunset/500/300" alt="Island Sunset" loading="lazy">
+      <div class="featured-section" style="transition-delay: 0.4s">
+        <div class="featured-image">
+          <img src="https://picsum.photos/seed/coral-garden/700/400" alt="Coral Gardens" loading="lazy">
         </div>
-        <div class="card-tint"></div>
-        <div class="card-body">
-          <span class="card-tag">Golden Hour</span>
-          <h3 class="card-title">Island Sunset</h3>
-          <p class="card-desc">When the sun bleeds orange into the sea and bangkas return heavy with the day's catch.</p>
+        <div class="featured-content">
+          <span class="featured-tag">Reef</span>
+          <h2 class="featured-title">Coral Gardens</h2>
+          <p class="featured-desc">Vibrant colonies of staghorn and brain coral sheltering rainbow clouds of fish.</p>
+        </div>
+        <!-- Mixed animated elements -->
+        <div class="animated-element floating-fish" style="top: 30%; right: -70px; animation-delay: 2s;">
+          <svg viewBox="0 0 60 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 15 L45 15 L50 10 L55 15 L50 20 L45 15" stroke="#FF6B9D" stroke-width="2" fill="none"/>
+            <circle cx="15" cy="15" r="3" fill="#FF6B9D"/>
+          </svg>
+        </div>
+        <div class="animated-element bubbles-small" style="bottom: 15%; left: 8%;"></div>
+      </div>
+
+      <div class="featured-section" style="transition-delay: 0.5s">
+        <div class="featured-image">
+          <img src="https://picsum.photos/seed/fishing-village/700/400" alt="Fishing Village" loading="lazy">
+        </div>
+        <div class="featured-content">
+          <span class="featured-tag">Culture</span>
+          <h2 class="featured-title">Fishing Communities</h2>
+          <p class="featured-desc">Coastal villages where every generation inherits the art of building and sailing the bangka.</p>
+        </div>
+        <!-- Animated seaweed -->
+        <div class="animated-element seaweed-sway" style="bottom: 0; right: 8%; animation-delay: 1s;">
+          <svg viewBox="0 0 40 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20 80 Q15 60 25 40 Q18 20 22 0" stroke="#FFD166" stroke-width="3" fill="none"/>
+            <path d="M25 80 Q30 65 20 45 Q28 25 24 5" stroke="#FF8C42" stroke-width="2" fill="none"/>
+          </svg>
         </div>
       </div>
 
-      <div class="card" style="transition-delay: 0.26s">
-        <div class="card-img-wrap">
-          <img src="https://picsum.photos/seed/coral-garden/500/300" alt="Coral Gardens" loading="lazy">
+      <div class="featured-section" style="transition-delay: 0.6s">
+        <div class="featured-image">
+          <img src="https://picsum.photos/seed/ocean-journey-wide/700/400" alt="Ocean Journey" loading="lazy">
         </div>
-        <div class="card-tint"></div>
-        <div class="card-body">
-          <span class="card-tag">Reef</span>
-          <h3 class="card-title">Coral Gardens</h3>
-          <p class="card-desc">Vibrant colonies of staghorn and brain coral sheltering rainbow clouds of fish.</p>
+        <div class="featured-content">
+          <span class="featured-tag">Voyage</span>
+          <h2 class="featured-title">The Open Ocean</h2>
+          <p class="featured-desc">The vast blue highway that connects 7,641 islands — each with its own voice, rhythm, and maritime spirit — into the magnificent tapestry that is the Philippine archipelago.</p>
+        </div>
+        <!-- Multiple animated elements for grand finale -->
+        <div class="animated-element floating-fish" style="top: 25%; left: -60px;">
+          <svg viewBox="0 0 60 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 15 L45 15 L50 10 L55 15 L50 20 L45 15" stroke="#FFD700" stroke-width="2" fill="none"/>
+            <circle cx="15" cy="15" r="3" fill="#FFD700"/>
+          </svg>
+        </div>
+        <div class="animated-element bubbles-small" style="bottom: 20%; right: 12%;"></div>
+        <div class="animated-element bubbles-small" style="bottom: 28%; right: 18%; animation-delay: 0.5s;"></div>
+        <div class="animated-element bubbles-small" style="bottom: 24%; right: 6%; animation-delay: 1s;"></div>
+        <div class="animated-element seaweed-sway" style="bottom: 0; left: 3%; animation-delay: 2s;">
+          <svg viewBox="0 0 40 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20 80 Q15 60 25 40 Q18 20 22 0" stroke="#00D4E0" stroke-width="3" fill="none"/>
+          </svg>
         </div>
       </div>
 
-      <div class="card" style="transition-delay: 0.33s">
-        <div class="card-img-wrap">
-          <img src="https://picsum.photos/seed/fishing-village/500/300" alt="Fishing Village" loading="lazy">
+      <div class="featured-section" style="transition-delay: 0.7s">
+        <div class="featured-image">
+          <img src="https://picsum.photos/seed/beach-paradise/700/400" alt="Beach Paradise" loading="lazy">
         </div>
-        <div class="card-tint"></div>
-        <div class="card-body">
-          <span class="card-tag">Culture</span>
-          <h3 class="card-title">Fishing Communities</h3>
-          <p class="card-desc">Coastal villages where every generation inherits the art of building and sailing the bangka.</p>
+        <div class="featured-content">
+          <span class="featured-tag">Coastal</span>
+          <h2 class="featured-title">Beach Paradise</h2>
+          <p class="featured-desc">Pristine white sand beaches where turquoise waters meet the shore in perfect harmony.</p>
+        </div>
+        <!-- Animated elements -->
+        <div class="animated-element floating-fish" style="top: 15%; left: -70px; animation-delay: 1s;">
+          <svg viewBox="0 0 60 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 15 L45 15 L50 10 L55 15 L50 20 L45 15" stroke="#00D4E0" stroke-width="2" fill="none"/>
+            <circle cx="15" cy="15" r="3" fill="#00D4E0"/>
+          </svg>
+        </div>
+        <div class="animated-element bubbles-small" style="bottom: 25%; right: 12%;"></div>
+        <div class="animated-element bubbles-small" style="bottom: 18%; right: 8%; animation-delay: 1.5s;"></div>
+      </div>
+
+      <div class="featured-section" style="transition-delay: 0.8s">
+        <div class="featured-image">
+          <img src="https://picsum.photos/seed/mangrove-forest/700/400" alt="Mangrove Forest" loading="lazy">
+        </div>
+        <div class="featured-content">
+          <span class="featured-tag">Ecosystem</span>
+          <h2 class="featured-title">Mangrove Sanctuary</h2>
+          <p class="featured-desc">Vital mangrove forests protecting the coastline while nurturing diverse marine life.</p>
+        </div>
+        <!-- Animated seaweed -->
+        <div class="animated-element seaweed-sway" style="bottom: 0; left: 6%; animation-delay: 0.5s;">
+          <svg viewBox="0 0 40 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20 80 Q15 60 25 40 Q18 20 22 0" stroke="#4A7C2F" stroke-width="3" fill="none"/>
+            <path d="M25 80 Q30 65 20 45 Q28 25 24 5" stroke="#5C9A38" stroke-width="2" fill="none"/>
+          </svg>
+        </div>
+        <div class="animated-element floating-fish" style="top: 35%; right: -60px; animation-delay: 2.5s;">
+          <svg viewBox="0 0 60 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 15 L45 15 L50 10 L55 15 L50 20 L45 15" stroke="#2DC653" stroke-width="2" fill="none"/>
+            <circle cx="15" cy="15" r="3" fill="#2DC653"/>
+          </svg>
         </div>
       </div>
 
-      <div class="card" style="transition-delay: 0.40s">
-        <div class="card-img-wrap">
-          <img src="https://picsum.photos/seed/ocean-journey-wide/900/500" alt="Ocean Journey" loading="lazy">
+      <div class="featured-section" style="transition-delay: 0.9s">
+        <div class="featured-image">
+          <img src="https://picsum.photos/seed/rocky-cliffs/700/400" alt="Rocky Cliffs" loading="lazy">
         </div>
-        <div class="card-tint"></div>
-        <div class="card-body">
-          <span class="card-tag">Voyage</span>
-          <h3 class="card-title">The Open Ocean</h3>
-          <p class="card-desc">The vast blue highway that connects 7,641 islands — each with its own voice, rhythm, and maritime spirit — into the magnificent tapestry that is the Philippine archipelago.</p>
+        <div class="featured-content">
+          <span class="featured-tag">Geology</span>
+          <h2 class="featured-title">Dramatic Cliffs</h2>
+          <p class="featured-desc">Ancient rock formations standing sentinel over the restless Pacific Ocean.</p>
+        </div>
+        <!-- Animated elements -->
+        <div class="animated-element bubbles-small" style="bottom: 22%; left: 10%;"></div>
+        <div class="animated-element bubbles-small" style="bottom: 30%; left: 15%; animation-delay: 0.8s;"></div>
+        <div class="animated-element bubbles-small" style="bottom: 26%; left: 5%; animation-delay: 1.6s;"></div>
+        <div class="animated-element floating-fish" style="top: 28%; left: -75px; animation-delay: 3s;">
+          <svg viewBox="0 0 60 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 15 L45 15 L50 10 L55 15 L50 20 L45 15" stroke="#8B7355" stroke-width="2" fill="none"/>
+            <circle cx="15" cy="15" r="3" fill="#8B7355"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="featured-section" style="transition-delay: 1.0s">
+        <div class="featured-image">
+          <img src="https://picsum.photos/seed/local-market/700/400" alt="Local Market" loading="lazy">
+        </div>
+        <div class="featured-content">
+          <span class="featured-tag">Community</span>
+          <h2 class="featured-title">Local Markets</h2>
+          <p class="featured-desc">Bustling seaside markets where the day's fresh catch becomes tonight's feast.</p>
+        </div>
+        <!-- Mixed animated elements -->
+        <div class="animated-element seaweed-sway" style="bottom: 0; right: 6%; animation-delay: 1.2s;">
+          <svg viewBox="0 0 40 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20 80 Q15 60 25 40 Q18 20 22 0" stroke="#FFB347" stroke-width="3" fill="none"/>
+            <path d="M25 80 Q30 65 20 45 Q28 25 24 5" stroke="#FFD166" stroke-width="2" fill="none"/>
+          </svg>
+        </div>
+        <div class="animated-element floating-fish" style="top: 20%; right: -65px;">
+          <svg viewBox="0 0 60 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 15 L45 15 L50 10 L55 15 L50 20 L45 15" stroke="#FFB347" stroke-width="2" fill="none"/>
+            <circle cx="15" cy="15" r="3" fill="#FFB347"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="featured-section" style="transition-delay: 1.1s">
+        <div class="featured-image">
+          <img src="https://picsum.photos/seed/waterfall-adventure/700/400" alt="Waterfall Adventure" loading="lazy">
+        </div>
+        <div class="featured-content">
+          <span class="featured-tag">Adventure</span>
+          <h2 class="featured-title">Hidden Waterfalls</h2>
+          <p class="featured-desc">Secret cascades flowing through lush tropical forests, nature's private swimming holes.</p>
+        </div>
+        <!-- Animated elements -->
+        <div class="animated-element bubbles-small" style="bottom: 20%; right: 10%;"></div>
+        <div class="animated-element bubbles-small" style="bottom: 28%; right: 16%; animation-delay: 0.6s;"></div>
+        <div class="animated-element bubbles-small" style="bottom: 24%; right: 7%; animation-delay: 1.2s;"></div>
+        <div class="animated-element seaweed-sway" style="bottom: 0; left: 4%; animation-delay: 2.2s;">
+          <svg viewBox="0 0 40 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20 80 Q15 60 25 40 Q18 20 22 0" stroke="#00A896" stroke-width="3" fill="none"/>
+          </svg>
+        </div>
+        <div class="animated-element floating-fish" style="top: 25%; left: -68px; animation-delay: 1.8s;">
+          <svg viewBox="0 0 60 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 15 L45 15 L50 10 L55 15 L50 20 L45 15" stroke="#00B5C8" stroke-width="2" fill="none"/>
+            <circle cx="15" cy="15" r="3" fill="#00B5C8"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="featured-section" style="transition-delay: 1.2s">
+        <div class="featured-image">
+          <img src="https://picsum.photos/seed/sunset-dinner/700/400" alt="Sunset Dinner" loading="lazy">
+        </div>
+        <div class="featured-content">
+          <span class="featured-tag">Experience</span>
+          <h2 class="featured-title">Sunset Dining</h2>
+          <p class="featured-desc">Romantic seaside dinners as the sky transforms into a canvas of fiery colors.</p>
+        </div>
+        <!-- Grand finale animated elements -->
+        <div class="animated-element floating-fish" style="top: 22%; left: -62px;">
+          <svg viewBox="0 0 60 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 15 L45 15 L50 10 L55 15 L50 20 L45 15" stroke="#FF4757" stroke-width="2" fill="none"/>
+            <circle cx="15" cy="15" r="3" fill="#FF4757"/>
+          </svg>
+        </div>
+        <div class="animated-element floating-fish" style="top: 32%; right: -58px; animation-delay: 1.5s;">
+          <svg viewBox="0 0 60 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 15 L45 15 L50 10 L55 15 L50 20 L45 15" stroke="#FF6B9D" stroke-width="2" fill="none"/>
+            <circle cx="15" cy="15" r="3" fill="#FF6B9D"/>
+          </svg>
+        </div>
+        <div class="animated-element bubbles-small" style="bottom: 18%; left: 8%;"></div>
+        <div class="animated-element bubbles-small" style="bottom: 25%; left: 14%; animation-delay: 0.4s;"></div>
+        <div class="animated-element bubbles-small" style="bottom: 21%; left: 6%; animation-delay: 0.9s;"></div>
+        <div class="animated-element bubbles-small" style="bottom: 28%; right: 12%; animation-delay: 1.3s;"></div>
+        <div class="animated-element seaweed-sway" style="bottom: 0; right: 4%; animation-delay: 0.7s;">
+          <svg viewBox="0 0 40 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20 80 Q15 60 25 40 Q18 20 22 0" stroke="#FFD166" stroke-width="3" fill="none"/>
+            <path d="M25 80 Q30 65 20 45 Q28 25 24 5" stroke="#FF8C42" stroke-width="2" fill="none"/>
+          </svg>
+        </div>
+        <div class="animated-element seaweed-sway" style="bottom: 0; left: 2%; animation-delay: 2.8s;">
+          <svg viewBox="0 0 40 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20 80 Q15 60 25 40 Q18 20 22 0" stroke="#C77DFF" stroke-width="3" fill="none"/>
+          </svg>
         </div>
       </div>
 
@@ -1402,9 +1621,9 @@ const titleRope     = document.getElementById('title-rope');
 const titleBanner   = document.getElementById('title-banner');
 
 // Build split-char title for staggered letter reveal
-const TITLE_TEXT = 'Simply PILAR';
+const TITLE_TEXT = 'Simply  Pilar';
 const trMain = titleReveal.querySelector('.tr-main');
-trMain.innerHTML = TITLE_TEXT.split('').map((ch, i) =>
+trMain.innerHTML = TITLE_TEXT.split(' ').map((ch, i) =>
   `<span class="char" style="transition-delay:${0.08 + i * 0.06}s">${ch}</span>`
 ).join('');
 
@@ -1512,12 +1731,12 @@ function skipToGallery() {
 }
 
 // ════════════════════════════════════════
-// GALLERY CARD INTERSECTION REVEAL
+// GALLERY SECTION INTERSECTION REVEAL
 // ════════════════════════════════════════
 const observer = new IntersectionObserver(entries => {
   entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
-}, { threshold: 0.12 });
-document.querySelectorAll('.card').forEach(c => observer.observe(c));
+}, { threshold: 0.15 });
+document.querySelectorAll('.featured-section').forEach(section => observer.observe(section));
 
 // ════════════════════════════════════════
 // GALLERY BUBBLES
