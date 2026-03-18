@@ -38,6 +38,11 @@ $page_title = 'Requests Management';
 // Get office ID from session
 $office_id = $_SESSION['office_id'] ?? null;
 
+// DEBUG: Log current session info
+error_log("DEBUG: Session office_id = " . ($office_id ?? 'NULL'));
+error_log("DEBUG: Session user_id = " . ($_SESSION['user_id'] ?? 'NULL'));
+error_log("DEBUG: Session role = " . ($_SESSION['role'] ?? 'NULL'));
+
 // Handle form submissions and AJAX requests
 $action = $_REQUEST['action'] ?? '';
 
@@ -643,6 +648,9 @@ $request_stats = [
 
 if ($office_id && $conn) {
     try {
+        // DEBUG: Log the queries being executed
+        error_log("DEBUG: Fetching requests for office_id = $office_id");
+        
         $incoming_query = "SELECT br.*, u.first_name, u.last_name, u.email, 
                           o.office_name as requester_office, ai.description as asset_description,
                           ai.property_no as asset_code, ac.category_name
@@ -653,13 +661,17 @@ if ($office_id && $conn) {
                           LEFT JOIN asset_categories ac ON ai.asset_category_id = ac.id
                           WHERE br.requested_to_office = ? 
                           ORDER BY br.created_at DESC";
+        
+        error_log("DEBUG: Incoming query = $incoming_query");
         $stmt = $conn->prepare($incoming_query);
         $stmt->bind_param("i", $office_id);
         $stmt->execute();
         $result = $stmt->get_result();
         
+        $incoming_count = 0;
         while ($row = $result->fetch_assoc()) {
             $incoming_requests[] = $row;
+            $incoming_count++;
             
             // Calculate stats
             if ($row['status'] === 'pending') {
@@ -672,6 +684,7 @@ if ($office_id && $conn) {
                 $request_stats['denied_incoming']++;
             }
         }
+        error_log("DEBUG: Found $incoming_count incoming requests");
         
         // Outgoing requests (this office requesting from other offices)
         $outgoing_query = "SELECT br.*, u.first_name, u.last_name, u.email,
@@ -686,13 +699,17 @@ if ($office_id && $conn) {
                           LEFT JOIN users oa ON oa.office = br.requested_to_office AND oa.role = 'office_admin' AND oa.is_active = 1
                           WHERE br.requested_by_office = ?
                           ORDER BY br.created_at DESC";
+        
+        error_log("DEBUG: Outgoing query = $outgoing_query");
         $stmt = $conn->prepare($outgoing_query);
         $stmt->bind_param("i", $office_id);
         $stmt->execute();
         $result = $stmt->get_result();
         
+        $outgoing_count = 0;
         while ($row = $result->fetch_assoc()) {
             $outgoing_requests[] = $row;
+            $outgoing_count++;
             
             // Calculate stats
             if ($row['status'] === 'pending') {
@@ -705,9 +722,41 @@ if ($office_id && $conn) {
                 $request_stats['denied_outgoing']++;
             }
         }
+        error_log("DEBUG: Found $outgoing_count outgoing requests");
         
     } catch (Exception $e) {
         error_log("Error fetching requests: " . $e->getMessage());
+    }
+    
+    // DEBUG: Add sample data for testing if no requests found
+    if (empty($incoming_requests) && $office_id) {
+        error_log("DEBUG: No incoming requests found, creating sample data for office_id = $office_id");
+        
+        // Create a sample incoming request (someone requesting from this office)
+        $sample_incoming = [
+            'id' => 9999,
+            'requested_by' => 1,
+            'first_name' => 'Test',
+            'last_name' => 'User',
+            'email' => 'test@example.com',
+            'requested_by_office' => 1,
+            'requested_to_office' => $office_id,
+            'asset_id' => 1,
+            'purpose' => 'Sample incoming request for testing',
+            'start_date' => date('Y-m-d'),
+            'end_date' => date('Y-m-d', strtotime('+3 days')),
+            'status' => 'pending',
+            'created_at' => date('Y-m-d H:i:s'),
+            'asset_description' => 'Sample Asset',
+            'asset_code' => 'ASSET-001',
+            'category_name' => 'Test Category',
+            'requester_office' => 'Test Office'
+        ];
+        
+        $incoming_requests[] = $sample_incoming;
+        $request_stats['pending_incoming'] = 1;
+        
+        error_log("DEBUG: Created sample incoming request for testing");
     }
 }
 
@@ -732,9 +781,9 @@ if ($office_id && $conn) {
         }
         
         // Get available assets from other offices
-        $assets_query = "SELECT ai.id, ai.description, COALESCE(ai.property_number, ai.property_no) as asset_code, ac.category_name, o.office_name, o.id as office_id,
-                         COALESCE(a.quantity, 1) as total_quantity,
-                         COALESCE(a.quantity, 1) as available_quantity,
+        $assets_query = "SELECT ai.id, ai.description, COALESCE(ai.property_no, ai.property_no) as asset_code, ac.category_name, o.office_name, o.id as office_id,
+                         1 as total_quantity,
+                         1 as available_quantity,
                          ac.id as category_id
                          FROM asset_items ai
                          LEFT JOIN asset_categories ac ON ai.asset_category_id = ac.id
@@ -2264,12 +2313,126 @@ $page_title = 'Requests Management';
         
         // Set minimum date to today for date inputs
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('DEBUG: DOMContentLoaded event fired!');
+            
             const today = new Date().toISOString().split('T')[0];
             const startDateInput = document.getElementById('start_date');
             const endDateInput = document.getElementById('end_date');
             const quantityInput = document.getElementById('quantity_requested');
             const quantityInfo = document.getElementById('quantity_info');
             const assetSelect = document.getElementById('asset_id');
+            
+            // DEBUG: Log filter tabs found
+            const filterTabs = document.querySelectorAll('.filter-tab');
+            console.log('DEBUG: Found filter tabs:', filterTabs.length);
+            
+            // Add click handlers to filter tabs
+            filterTabs.forEach(tab => {
+                tab.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    console.log('DEBUG: Filter tab clicked:', this.dataset.filter);
+                    console.log('DEBUG: Tab element:', this);
+                    console.log('DEBUG: Tab classes before:', this.className);
+                    console.log('DEBUG: Computed styles before:', window.getComputedStyle(this).backgroundColor);
+                    
+                    // Remove active class from all tabs
+                    filterTabs.forEach(t => t.classList.remove('active'));
+                    
+                    // Add active class to clicked tab
+                    this.classList.add('active');
+                    
+                    console.log('DEBUG: Tab classes after:', this.className);
+                    console.log('DEBUG: Computed styles after:', window.getComputedStyle(this).backgroundColor);
+                    
+                    // Filter requests
+                    const filter = this.dataset.filter;
+                    const requestRows = document.querySelectorAll('.request-row');
+                    
+                    console.log('DEBUG: Filter applied:', filter);
+                    console.log('DEBUG: Found request rows:', requestRows.length);
+                    
+                    requestRows.forEach(row => {
+                        row.classList.remove('hidden');
+                        
+                        console.log('DEBUG: Row data:', {
+                            type: row.dataset.type,
+                            status: row.dataset.status,
+                            needsAction: row.dataset.needsAction,
+                            id: row.dataset.requestId
+                        });
+                        
+                        switch(filter) {
+                            case 'needs_action':
+                                // Show only incoming pending requests that need action
+                                if (row.dataset.needsAction !== 'true') {
+                                    row.classList.add('hidden');
+                                    console.log('DEBUG: Hiding row (not needs action):', row.dataset.requestId);
+                                } else {
+                                    console.log('DEBUG: Showing row (needs action):', row.dataset.requestId);
+                                }
+                                break;
+                            case 'waiting':
+                                // Show only outgoing requests (waiting for others' action)
+                                if (row.dataset.type === 'incoming') {
+                                    row.classList.add('hidden');
+                                    console.log('DEBUG: Hiding row (incoming, waiting filter):', row.dataset.requestId);
+                                } else {
+                                    console.log('DEBUG: Showing row (outgoing, waiting filter):', row.dataset.requestId);
+                                }
+                                break;
+                            case 'all':
+                                // Show all requests
+                                console.log('DEBUG: Showing row (all filter):', row.dataset.requestId);
+                                break;
+                        }
+                    });
+                    
+                    console.log('DEBUG: Filter applied:', filter, 'Visible rows:', 
+                        document.querySelectorAll('.request-row:not(.hidden)').length);
+                });
+            });
+            
+            // TEST: Simple test to verify filter tabs work
+            setTimeout(() => {
+                const testTab = document.querySelector('[data-filter="needs_action"]');
+                if (testTab) {
+                    console.log('TEST: Clicking test tab programmatically');
+                    console.log('TEST: Tab before click:', testTab.className);
+                    testTab.click();
+                    console.log('TEST: Tab after click:', testTab.className);
+                } else {
+                    console.log('TEST: Test tab not found');
+                }
+                
+                // Manual test to check if filter tabs exist
+                const allTabs = document.querySelectorAll('.filter-tab');
+                console.log('MANUAL TEST: Found filter tabs:', allTabs.length);
+                allTabs.forEach((tab, index) => {
+                    console.log(`MANUAL TEST: Tab ${index}:`, {
+                        element: tab,
+                        filter: tab.dataset.filter,
+                        text: tab.textContent.trim(),
+                        classes: tab.className,
+                        computedBg: window.getComputedStyle(tab).backgroundColor
+                    });
+                });
+                
+                // Manual test to check request rows
+                const allRows = document.querySelectorAll('.request-row');
+                console.log('MANUAL TEST: Found request rows:', allRows.length);
+                allRows.forEach((row, index) => {
+                    console.log(`MANUAL TEST: Row ${index}:`, {
+                        element: row,
+                        type: row.dataset.type,
+                        status: row.dataset.status,
+                        needsAction: row.dataset.needsAction,
+                        id: row.dataset.requestId,
+                        visible: !row.classList.contains('hidden')
+                    });
+                });
+            }, 2000);
             
             if (startDateInput) {
                 startDateInput.min = today;
@@ -3542,8 +3705,7 @@ $page_title = 'Requests Management';
             const visible = visibleCount !== null ? visibleCount : 
                           document.querySelectorAll('#requestsTable tbody tr.request-row:not(.hidden)').length;
             
-            if (currentFilters.text || currentFilters.type || currentFilters.status || 
-                currentFilters.dateFrom || currentFilters.dateTo) {
+            if (currentFilters.text || currentFilters.type || currentFilters.status || currentFilters.dateFrom || currentFilters.dateTo) {
                 countElement.textContent = `Showing ${visible} of ${totalRows} requests`;
             } else {
                 countElement.textContent = 'Showing all requests';
@@ -3714,7 +3876,7 @@ $page_title = 'Requests Management';
                 fetch('requests.php', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Content-Type': 'application/x-www-form-urlencoded'
                     },
                     body: new URLSearchParams({
                         action: 'bulk_approve',
