@@ -228,7 +228,87 @@ $category_fields = [
     <!-- Custom CSS -->
     <link href="../assets/css/index.css" rel="stylesheet">
     <link href="../assets/css/theme-custom.css" rel="stylesheet">
+<<<<<<< HEAD
     <link href="assets/css/admin-unified.css" rel="stylesheet">
+=======
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--light-color) 0%, var(--light-accent) 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .page-header {
+            background: white;
+            border-radius: var(--border-radius-xl);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .form-container {
+            background: white;
+            border-radius: var(--border-radius-lg);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+        }
+        
+        .asset-info-card {
+            background: var(--primary-gradient);
+            color: white;
+            border-radius: var(--border-radius-lg);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .category-fields {
+            background: #f8f9fa;
+            border-radius: var(--border-radius-md);
+            padding: 1.5rem;
+            margin-top: 1rem;
+            border-left: 3px solid var(--primary-color);
+        }
+        
+        .btn-back {
+            background: var(--primary-gradient);
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: var(--border-radius-lg);
+            transition: var(--transition);
+        }
+        
+        .btn-back:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(var(--primary-rgb), 0.3);
+            color: white;
+        }
+        
+        .form-label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-control, .form-select {
+            border-radius: var(--border-radius-md);
+            border: 1px solid #dee2e6;
+            transition: var(--transition);
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(var(--primary-rgb), 0.25);
+        }
+        
+        .required {
+            color: #dc3545;
+        }
+    </style>
+>>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
 </head>
 <body>
     <?php
@@ -426,6 +506,71 @@ $category_fields = [
                 <!-- Subcategory-specific fields will be loaded here -->
                 <div id="subcategorySpecificFields"></div>
                 
+<<<<<<< HEAD
+=======
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="mb-3">
+                            <label for="asset_images" class="form-label">Asset Images</label>
+                            
+                            <?php
+                            // Display existing images if any
+                            $existing_images = [];
+                            if (!empty($item['image']) && $item['image'] !== 'NULL') {
+                                $decoded_images = json_decode($item['image'], true);
+                                if (is_array($decoded_images)) {
+                                    $existing_images = $decoded_images;
+                                } elseif (!empty($item['image'])) {
+                                    // Handle case where it's a single filename (not JSON)
+                                    $existing_images = [$item['image']];
+                                }
+                            }
+                            
+                            if (!empty($existing_images)) {
+                                echo '<div class="mb-3">';
+                                echo '<h6>Existing Images:</h6>';
+                                echo '<div class="row">';
+                                
+                                foreach ($existing_images as $index => $image) {
+                                    $image_path = '../uploads/asset_images/' . $image;
+                                    if (file_exists($image_path)) {
+                                        echo '<div class="col-md-3 mb-2 position-relative">';
+                                        echo '<div class="card">';
+                                        echo '<img src="' . $image_path . '" class="card-img-top" style="height: 150px; object-fit: cover;" alt="Asset Image">';
+                                        echo '<div class="card-body p-2">';
+                                        echo '<small class="text-muted d-block text-truncate">' . htmlspecialchars($image) . '</small>';
+                                        echo '</div>';
+                                        echo '<button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1" onclick="deleteImage(\'' . htmlspecialchars($image) . '\')" title="Delete image">';
+                                        echo '<i class="bi bi-trash"></i>';
+                                        echo '</button>';
+                                        echo '</div>';
+                                        echo '</div>';
+                                    }
+                                }
+                                
+                                echo '</div>';
+                                echo '<small class="text-info">Existing images will be preserved. New images will be added to the collection.</small>';
+                                echo '</div>';
+                            }
+                            ?>
+                            
+                            <input type="file" class="form-control" id="asset_images" name="asset_images[]" accept="image/*" multiple>
+                            <small class="form-text text-muted">Upload additional images of the asset (JPG, PNG, GIF - Max 5MB each, Max 5 files)</small>
+                            <div id="imagePreview" class="mt-2"></div>
+                            
+                            <!-- Hidden field to store existing images for JavaScript -->
+                            <?php
+                            // Make sure $existing_images is available here
+                            if (!isset($existing_images)) {
+                                $existing_images = [];
+                            }
+                            ?>
+                            <input type="hidden" id="existingImagesData" value="<?php echo htmlspecialchars(json_encode($existing_images)); ?>">
+                        </div>
+                    </div>
+                </div>
+                
+>>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
                 <div class="row">
                     <div class="col-md-12">
                         <div class="mb-3">
@@ -726,6 +871,7 @@ $category_fields = [
                 loadSubcategoryFields(subcategoryCode);
             });
             
+<<<<<<< HEAD
             // Load fields for current subcategory on page load
             setTimeout(() => {
                 const subcategorySelect = document.getElementById('subcategory_id');
@@ -737,6 +883,16 @@ $category_fields = [
                     console.log('Initial subcategory code:', subcategoryCode);
                     loadSubcategoryFields(subcategoryCode);
                 }
+=======
+            // Load fields for current subcategory on page load (with delay to ensure subcategories are loaded)
+            setTimeout(() => {
+                const subcategorySelect = document.getElementById('subcategory_id');
+                const currentSubcategoryOption = subcategorySelect.options[subcategorySelect.selectedIndex];
+                const currentSubcategoryCode = currentSubcategoryOption ? currentSubcategoryOption.getAttribute('data-subcategory-code') : '';
+                
+                console.log('Initial subcategory code:', currentSubcategoryCode);
+                loadSubcategoryFields(currentSubcategoryCode);
+>>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
             }, 500);
             
             // Image preview functionality - append new images to existing preview

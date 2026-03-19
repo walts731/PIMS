@@ -203,7 +203,12 @@ try {
             </div>
         </div>
         
-<<<<<<< HEAD
+        <!-- Statistics and Filters Section -->
+        <div class="section-card mb-4">
+            <div class="section-title">
+                <i class="bi bi-speedometer2"></i> Overview & Filters
+        </div>
+        
         <!-- Statistics and Filters Section -->
         <div class="section-card mb-4">
             <div class="section-title">
