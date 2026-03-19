@@ -757,7 +757,7 @@ try {
     
     <!-- Add Asset Modal -->
     <div class="modal fade" id="addAssetModal" tabindex="-1">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title"><i class="bi bi-plus-circle"></i> Add New Asset</h5>
@@ -767,86 +767,122 @@ try {
                     <div class="modal-body">
                         <input type="hidden" name="action" value="add">
                         
-                        <div class="mb-3">
-                            <label class="form-label">Category *</label>
-                            <select class="form-select" name="asset_categories_id" id="assetCategorySelect" required>
-                                <option value="">Select Category</option>
-                                <?php foreach ($categories as $category): ?>
-                                    <option value="<?php echo $category['id']; ?>" data-category-code="<?php echo htmlspecialchars($category['category_code']); ?>">
-                                        <?php echo htmlspecialchars($category['category_code'] . ' - ' . $category['category_name']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Subcategory</label>
-                            <select class="form-select" name="asset_subcategory_id" id="assetSubcategorySelect">
-                                <option value="">Select Subcategory</option>
-                                <?php 
-                                // Get all subcategories for generator
-                                $all_subcategories_result = $conn->query("SELECT sc.sub_category_code, sc.sub_category_name, ac.category_code, ac.id as category_id FROM asset_sub_categories sc JOIN asset_categories ac ON sc.asset_categories_id = ac.id WHERE sc.status = 'active' ORDER BY ac.category_code, sc.sub_category_code");
-                                if ($all_subcategories_result) {
-                                    while ($subcategory = $all_subcategories_result->fetch_assoc()) {
-                                        echo '<option value="' . htmlspecialchars($subcategory['sub_category_code']) . '" data-category="' . htmlspecialchars($subcategory['category_code']) . '" data-category-id="' . $subcategory['category_id'] . '">' . htmlspecialchars($subcategory['sub_category_name']) . '</option>';
-                                    }
-                                }
-                                ?>
-                            </select>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Description *</label>
-                            <input type="text" class="form-control" name="description" required>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-4">
+                        <!-- Asset Classification Section -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="bi bi-tags"></i> Asset Classification</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Category *</label>
+                                            <select class="form-select" name="asset_categories_id" id="assetCategorySelect" required>
+                                                <option value="">Select Category</option>
+                                                <?php foreach ($categories as $category): ?>
+                                                    <option value="<?php echo $category['id']; ?>" data-category-code="<?php echo htmlspecialchars($category['category_code']); ?>">
+                                                        <?php echo htmlspecialchars($category['category_code'] . ' - ' . $category['category_name']); ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Subcategory</label>
+                                            <select class="form-select" name="asset_subcategory_id" id="assetSubcategorySelect">
+                                                <option value="">Select Subcategory</option>
+                                                <?php 
+                                                // Get all subcategories for generator
+                                                $all_subcategories_result = $conn->query("SELECT sc.sub_category_code, sc.sub_category_name, ac.category_code, ac.id as category_id FROM asset_sub_categories sc JOIN asset_categories ac ON sc.asset_categories_id = ac.id WHERE sc.status = 'active' ORDER BY ac.category_code, sc.sub_category_code");
+                                                if ($all_subcategories_result) {
+                                                    while ($subcategory = $all_subcategories_result->fetch_assoc()) {
+                                                        echo '<option value="' . htmlspecialchars($subcategory['sub_category_code']) . '" data-category="' . htmlspecialchars($subcategory['category_code']) . '" data-category-id="' . $subcategory['category_id'] . '">' . htmlspecialchars($subcategory['sub_category_name']) . '</option>';
+                                                    }
+                                                }
+                                                ?>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                
                                 <div class="mb-3">
-                                    <label class="form-label">Quantity *</label>
-                                    <input type="number" class="form-control" name="quantity" min="1" required>
+                                    <label class="form-label">Description *</label>
+                                    <input type="text" class="form-control" name="description" required placeholder="Enter asset description">
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                        </div>
+                        
+                        <!-- Asset Details Section -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="bi bi-info-circle"></i> Asset Details</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label class="form-label">Quantity *</label>
+                                            <input type="number" class="form-control" name="quantity" min="1" required placeholder="0">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label class="form-label">Unit *</label>
+                                            <select class="form-select" name="unit" id="assetUnitSelect" required>
+                                                <option value="">Select Unit</option>
+                                                <?php foreach ($common_units as $unit): ?>
+                                                    <option value="<?php echo htmlspecialchars($unit); ?>"><?php echo htmlspecialchars(ucfirst($unit)); ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label class="form-label">Unit Cost *</label>
+                                            <input type="number" class="form-control" name="unit_cost" step="0.01" min="0" required placeholder="0.00">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label class="form-label">Total Value</label>
+                                            <input type="text" class="form-control" id="totalValue" readonly placeholder="0.00">
+                                            <small class="text-muted">Auto-calculated</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Assignment Section -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="bi bi-building"></i> Assignment & Identification</h6>
+                            </div>
+                            <div class="card-body">
                                 <div class="mb-3">
-                                    <label class="form-label">Unit *</label>
-                                    <select class="form-select" name="unit" id="assetUnitSelect" required>
-                                        <option value="">Select Unit</option>
-                                        <?php foreach ($common_units as $unit): ?>
-                                            <option value="<?php echo htmlspecialchars($unit); ?>"><?php echo htmlspecialchars(ucfirst($unit)); ?></option>
+                                    <label class="form-label">Office *</label>
+                                    <select class="form-select" name="office_id" id="assetOfficeSelect" required>
+                                        <option value="">Select Office</option>
+                                        <?php foreach ($offices as $office): ?>
+                                            <option value="<?php echo $office['id']; ?>" data-office-code="<?php echo htmlspecialchars($office['office_code']); ?>">
+                                                <?php echo htmlspecialchars($office['office_name']); ?>
+                                            </option>
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
-                            </div>
-                            <div class="col-md-4">
+                                
                                 <div class="mb-3">
-                                    <label class="form-label">Unit Cost *</label>
-                                    <input type="number" class="form-control" name="unit_cost" step="0.01" min="0" required>
+                                    <label class="form-label">Property Numbers</label>
+                                    <div class="property-number-field">
+                                        <textarea class="form-control" name="property_numbers" id="assetPropertyNumbers" rows="3" readonly placeholder="Click 'Generate Property Numbers' to create property numbers"></textarea>
+                                        <button type="button" class="btn btn-outline-primary mt-2" onclick="showAssetPropertyNumberGenerator()" title="Generate Property Numbers">
+                                            <i class="bi bi-gear"></i> Generate Property Numbers
+                                        </button>
+                                    </div>
+                                    <small class="text-muted">Format: YEAR-FORM-FUND-CATEGORY-SUBCATEGORY+SERIES-OFFICE</small>
                                 </div>
                             </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Office *</label>
-                            <select class="form-select" name="office_id" id="assetOfficeSelect" required>
-                                <option value="">Select Office</option>
-                                <?php foreach ($offices as $office): ?>
-                                    <option value="<?php echo $office['id']; ?>" data-office-code="<?php echo htmlspecialchars($office['office_code']); ?>">
-                                        <?php echo htmlspecialchars($office['office_name']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Property Numbers</label>
-                            <div class="property-number-field">
-                                <textarea class="form-control" name="property_numbers" id="assetPropertyNumbers" rows="3" readonly placeholder="Click 'Generate Property Numbers' to create property numbers"></textarea>
-                                <button type="button" class="btn btn-outline-primary mt-2" onclick="showAssetPropertyNumberGenerator()" title="Generate Property Numbers">
-                                    <i class="bi bi-gear"></i> Generate Property Numbers
-                                </button>
-                            </div>
-                            <small class="text-muted">Format: YEAR-FORM-FUND-CATEGORY-SUBCATEGORY+SERIES-OFFICE</small>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -1651,6 +1687,27 @@ try {
                 
                 // Set initial unit if quantity has a value
                 autoSetUnitBasedOnQuantity();
+            }
+        });
+        
+        // Total value calculation
+        function calculateTotalValue() {
+            const quantity = parseFloat(document.querySelector('input[name="quantity"]').value) || 0;
+            const unitCost = parseFloat(document.querySelector('input[name="unit_cost"]').value) || 0;
+            const totalValue = quantity * unitCost;
+            document.getElementById('totalValue').value = totalValue.toFixed(2);
+        }
+        
+        // Add event listeners for total value calculation
+        document.addEventListener('DOMContentLoaded', function() {
+            const quantityInput = document.querySelector('input[name="quantity"]');
+            const unitCostInput = document.querySelector('input[name="unit_cost"]');
+            
+            if (quantityInput) {
+                quantityInput.addEventListener('input', calculateTotalValue);
+            }
+            if (unitCostInput) {
+                unitCostInput.addEventListener('input', calculateTotalValue);
             }
         });
     </script>
