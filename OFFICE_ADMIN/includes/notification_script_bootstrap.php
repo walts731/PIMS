@@ -18,10 +18,10 @@ document.addEventListener('DOMContentLoaded', function() {
         list: !!notificationList
     });
     
-<<<<<<< HEAD
+
     // Update notification badge
     function updateNotificationBadge() {
-=======
+
     // Debounce mechanism to prevent repeated requests
     let lastRequestTime = 0;
     const requestCooldown = 5000; // 5 seconds between requests
@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         lastRequestTime = now;
         
->>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
+
         fetch('notifications_handler.php?action=get_count', {
             credentials: 'include'
         })
