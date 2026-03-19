@@ -38,6 +38,14 @@ $page_title = 'Requests Management';
 // Get office ID from session
 $office_id = $_SESSION['office_id'] ?? null;
 
+<<<<<<< HEAD
+=======
+// DEBUG: Log current session info
+error_log("DEBUG: Session office_id = " . ($office_id ?? 'NULL'));
+error_log("DEBUG: Session user_id = " . ($_SESSION['user_id'] ?? 'NULL'));
+error_log("DEBUG: Session role = " . ($_SESSION['role'] ?? 'NULL'));
+
+>>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
 // Handle form submissions and AJAX requests
 $action = $_REQUEST['action'] ?? '';
 
@@ -643,6 +651,12 @@ $request_stats = [
 
 if ($office_id && $conn) {
     try {
+<<<<<<< HEAD
+=======
+        // DEBUG: Log the queries being executed
+        error_log("DEBUG: Fetching requests for office_id = $office_id");
+        
+>>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
         $incoming_query = "SELECT br.*, u.first_name, u.last_name, u.email, 
                           o.office_name as requester_office, ai.description as asset_description,
                           ai.property_no as asset_code, ac.category_name
@@ -653,13 +667,25 @@ if ($office_id && $conn) {
                           LEFT JOIN asset_categories ac ON ai.asset_category_id = ac.id
                           WHERE br.requested_to_office = ? 
                           ORDER BY br.created_at DESC";
+<<<<<<< HEAD
+=======
+        
+        error_log("DEBUG: Incoming query = $incoming_query");
+>>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
         $stmt = $conn->prepare($incoming_query);
         $stmt->bind_param("i", $office_id);
         $stmt->execute();
         $result = $stmt->get_result();
         
+<<<<<<< HEAD
         while ($row = $result->fetch_assoc()) {
             $incoming_requests[] = $row;
+=======
+        $incoming_count = 0;
+        while ($row = $result->fetch_assoc()) {
+            $incoming_requests[] = $row;
+            $incoming_count++;
+>>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
             
             // Calculate stats
             if ($row['status'] === 'pending') {
@@ -672,6 +698,10 @@ if ($office_id && $conn) {
                 $request_stats['denied_incoming']++;
             }
         }
+<<<<<<< HEAD
+=======
+        error_log("DEBUG: Found $incoming_count incoming requests");
+>>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
         
         // Outgoing requests (this office requesting from other offices)
         $outgoing_query = "SELECT br.*, u.first_name, u.last_name, u.email,
@@ -686,13 +716,25 @@ if ($office_id && $conn) {
                           LEFT JOIN users oa ON oa.office = br.requested_to_office AND oa.role = 'office_admin' AND oa.is_active = 1
                           WHERE br.requested_by_office = ?
                           ORDER BY br.created_at DESC";
+<<<<<<< HEAD
+=======
+        
+        error_log("DEBUG: Outgoing query = $outgoing_query");
+>>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
         $stmt = $conn->prepare($outgoing_query);
         $stmt->bind_param("i", $office_id);
         $stmt->execute();
         $result = $stmt->get_result();
         
+<<<<<<< HEAD
         while ($row = $result->fetch_assoc()) {
             $outgoing_requests[] = $row;
+=======
+        $outgoing_count = 0;
+        while ($row = $result->fetch_assoc()) {
+            $outgoing_requests[] = $row;
+            $outgoing_count++;
+>>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
             
             // Calculate stats
             if ($row['status'] === 'pending') {
@@ -705,10 +747,48 @@ if ($office_id && $conn) {
                 $request_stats['denied_outgoing']++;
             }
         }
+<<<<<<< HEAD
+=======
+        error_log("DEBUG: Found $outgoing_count outgoing requests");
+>>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
         
     } catch (Exception $e) {
         error_log("Error fetching requests: " . $e->getMessage());
     }
+<<<<<<< HEAD
+=======
+    
+    // DEBUG: Add sample data for testing if no requests found
+    if (empty($incoming_requests) && $office_id) {
+        error_log("DEBUG: No incoming requests found, creating sample data for office_id = $office_id");
+        
+        // Create a sample incoming request (someone requesting from this office)
+        $sample_incoming = [
+            'id' => 9999,
+            'requested_by' => 1,
+            'first_name' => 'Test',
+            'last_name' => 'User',
+            'email' => 'test@example.com',
+            'requested_by_office' => 1,
+            'requested_to_office' => $office_id,
+            'asset_id' => 1,
+            'purpose' => 'Sample incoming request for testing',
+            'start_date' => date('Y-m-d'),
+            'end_date' => date('Y-m-d', strtotime('+3 days')),
+            'status' => 'pending',
+            'created_at' => date('Y-m-d H:i:s'),
+            'asset_description' => 'Sample Asset',
+            'asset_code' => 'ASSET-001',
+            'category_name' => 'Test Category',
+            'requester_office' => 'Test Office'
+        ];
+        
+        $incoming_requests[] = $sample_incoming;
+        $request_stats['pending_incoming'] = 1;
+        
+        error_log("DEBUG: Created sample incoming request for testing");
+    }
+>>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
 }
 
 // Fetch available assets and offices for new request form
@@ -732,9 +812,15 @@ if ($office_id && $conn) {
         }
         
         // Get available assets from other offices
+<<<<<<< HEAD
         $assets_query = "SELECT ai.id, ai.description, COALESCE(ai.property_number, ai.property_no) as asset_code, ac.category_name, o.office_name, o.id as office_id,
                          COALESCE(a.quantity, 1) as total_quantity,
                          COALESCE(a.quantity, 1) as available_quantity,
+=======
+        $assets_query = "SELECT ai.id, ai.description, COALESCE(ai.property_no, ai.property_no) as asset_code, ac.category_name, o.office_name, o.id as office_id,
+                         1 as total_quantity,
+                         1 as available_quantity,
+>>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
                          ac.id as category_id
                          FROM asset_items ai
                          LEFT JOIN asset_categories ac ON ai.asset_category_id = ac.id
@@ -1788,6 +1874,7 @@ $page_title = 'Requests Management';
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+<<<<<<< HEAD
         // Approve Request
         function approveRequest(requestId) {
             document.getElementById('approveRequestId').value = requestId;
@@ -3870,6 +3957,938 @@ $page_title = 'Requests Management';
         
         // Event listeners for bulk actions - REMOVED DUPLICATE
         // This section was removed to prevent conflicts with the main DOMContentLoaded listener above
+=======
+        
+
+console.log('DEBUG: Script tag loaded!');
+
+// ---------------------------------------------------------------------------
+// Modal helpers
+// ---------------------------------------------------------------------------
+
+function approveRequest(requestId) {
+    document.getElementById('approveRequestId').value = requestId;
+    new bootstrap.Modal(document.getElementById('approveModal')).show();
+}
+
+function denyRequest(requestId) {
+    document.getElementById('denyRequestId').value = requestId;
+    new bootstrap.Modal(document.getElementById('denyModal')).show();
+}
+
+function returnAsset(requestId) {
+    document.getElementById('returnRequestId').value = requestId;
+    new bootstrap.Modal(document.getElementById('returnModal')).show();
+}
+
+// ---------------------------------------------------------------------------
+// Quick-action helpers (create hidden form + submit)
+// ---------------------------------------------------------------------------
+
+function quickApprove(requestId) {
+    if (confirm('Are you sure you want to approve this request?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.innerHTML = `
+            <input type="hidden" name="action" value="approve_request">
+            <input type="hidden" name="request_id" value="${requestId}">
+            <input type="hidden" name="notes" value="Approved via quick action">
+        `;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function quickDeny(requestId) {
+    const reason = prompt('Please enter the reason for denial:');
+    if (reason) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.innerHTML = `
+            <input type="hidden" name="action" value="deny_request">
+            <input type="hidden" name="request_id" value="${requestId}">
+            <input type="hidden" name="denial_reason" value="${reason}">
+        `;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function quickMarkBorrowed(requestId) {
+    if (confirm('Mark this asset as borrowed?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.innerHTML = `
+            <input type="hidden" name="action" value="mark_borrowed">
+            <input type="hidden" name="request_id" value="${requestId}">
+        `;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function markBorrowed(requestId) {
+    if (confirm('Are you sure you want to mark this asset as borrowed?')) {
+        const formData = new FormData();
+        formData.append('action', 'mark_borrowed');
+        formData.append('request_id', requestId);
+        fetch('requests.php', { method: 'POST', body: formData })
+            .then(() => window.location.reload())
+            .catch(err => alert('Error marking as borrowed: ' + err.message));
+    }
+}
+
+function cancelRequest(requestId) {
+    if (confirm('Are you sure you want to cancel this request? This action cannot be undone.')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.innerHTML = `
+            <input type="hidden" name="action" value="cancel_request">
+            <input type="hidden" name="request_id" value="${requestId}">
+        `;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Refresh
+// ---------------------------------------------------------------------------
+
+function refreshRequests() {
+    window.location.reload();
+}
+
+// ---------------------------------------------------------------------------
+// View details
+// ---------------------------------------------------------------------------
+
+function viewDetails(requestId) {
+    fetch(`../api/get_request_details_simple.php?request_id=${requestId}`)
+        .then(response => {
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                return response.text().then(text => {
+                    console.error('Expected JSON but got:', text.substring(0, 200));
+                    throw new Error('Server returned non-JSON response.');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) { alert('Error: ' + data.error); return; }
+            populateDetailsModal(data);
+            new bootstrap.Modal(document.getElementById('detailsModal')).show();
+        })
+        .catch(err => alert('Error loading request details: ' + err.message));
+}
+
+// ---------------------------------------------------------------------------
+// Details modal population helpers
+// ---------------------------------------------------------------------------
+
+function getEventIcon(type) {
+    return { created:'bi-send', approved:'bi-check-circle', borrowed:'bi-hand-index',
+              denied:'bi-x-circle', returned:'bi-arrow-return-left' }[type] || 'bi-circle';
+}
+function getEventColor(type) {
+    return { created:'primary', approved:'success', borrowed:'warning',
+              denied:'danger', returned:'info' }[type] || 'secondary';
+}
+function getStatusBadge(status) {
+    return ({
+        pending:   '<span class="badge bg-warning">Pending</span>',
+        approved:  '<span class="badge bg-success">Approved</span>',
+        borrowed:  '<span class="badge bg-warning">Borrowed</span>',
+        denied:    '<span class="badge bg-danger">Denied</span>',
+        returned:  '<span class="badge bg-info">Returned</span>',
+        cancelled: '<span class="badge bg-secondary">Cancelled</span>'
+    }[status]) || '<span class="badge bg-secondary">Unknown</span>';
+}
+function getStatusDescription(status) {
+    return ({
+        pending:   'Request is awaiting approval',
+        approved:  'Request has been approved and ready for pickup',
+        borrowed:  'Asset has been picked up and is in use',
+        denied:    'Request has been denied',
+        returned:  'Asset has been returned',
+        cancelled: 'Request has been cancelled'
+    }[status]) || 'Unknown status';
+}
+function getStatusColor(status) {
+    return ({
+        serviceable:'success', in_use:'primary', available:'info',
+        maintenance:'warning', disposed:'secondary', unserviceable:'danger',
+        no_tag:'secondary', pending_tag:'warning', red_tagged:'danger'
+    }[status]) || 'secondary';
+}
+function ucfirst(str) {
+    if (!str || typeof str !== 'string') return '';
+    return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function populateDetailsModal(data) {
+    const modalBody = document.getElementById('detailsModalBody');
+
+    let lifecycleHtml = '';
+    if (data.lifecycle && data.lifecycle.events) {
+        data.lifecycle.events.forEach((event, index) => {
+            const icon = getEventIcon(event.type);
+            const color = getEventColor(event.type);
+            const formattedDate = new Date(event.timestamp).toLocaleDateString('en-US',
+                { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+            lifecycleHtml += `
+                <div class="timeline-item">
+                    <div class="timeline-marker ${color}"><i class="bi ${icon}"></i></div>
+                    <div class="timeline-content">
+                        <h6 class="mb-1">${event.title}</h6>
+                        <p class="mb-1 text-muted small">${event.description}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                ${event.user ? `<strong>${event.user}</strong><br>
+                                    <small class="text-muted">${event.user_email}</small><br>
+                                    <small class="text-info">${event.office}</small>` : ''}
+                                ${event.notes ? `<br><small class="text-muted">Notes: ${event.notes}</small>` : ''}
+                            </div>
+                            <small class="text-muted">${formattedDate}</small>
+                        </div>
+                    </div>
+                </div>
+                ${index < data.lifecycle.events.length - 1 ? '<div class="timeline-connector"></div>' : ''}
+            `;
+        });
+    }
+
+    const currentStatus = (data.lifecycle && data.lifecycle.current_status)
+        ? data.lifecycle.current_status
+        : { status: data.request.status, title: ucfirst(data.request.status),
+            description: getStatusDescription(data.request.status), timestamp: data.request.created_at };
+
+    const formattedStatusDate = new Date(currentStatus.timestamp).toLocaleDateString('en-US',
+        { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+
+    modalBody.innerHTML = `
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-header bg-light"><h6 class="mb-0"><i class="bi bi-info-circle"></i> Request Overview</h6></div>
+                    <div class="card-body">
+                        <div class="row mb-2"><div class="col-sm-4"><strong>Request ID:</strong></div><div class="col-sm-8">#${data.request.id}</div></div>
+                        <div class="row mb-2"><div class="col-sm-4"><strong>Status:</strong></div><div class="col-sm-8">${getStatusBadge(currentStatus.status)}</div></div>
+                        <div class="row mb-2"><div class="col-sm-4"><strong>Quantity:</strong></div><div class="col-sm-8">${data.request.quantity_requested} unit(s)</div></div>
+                        <div class="row mb-2"><div class="col-sm-4"><strong>Purpose:</strong></div><div class="col-sm-8">${data.request.purpose}</div></div>
+                        <div class="row mb-2"><div class="col-sm-4"><strong>Duration:</strong></div>
+                            <div class="col-sm-8">From: ${new Date(data.request.start_date).toLocaleDateString()}<br>To: ${new Date(data.request.end_date).toLocaleDateString()}</div></div>
+                        <div class="row mb-2"><div class="col-sm-4"><strong>Created:</strong></div><div class="col-sm-8">${new Date(data.request.created_at).toLocaleDateString()}</div></div>
+                        ${data.request.approval_notes ? `<div class="row mb-2"><div class="col-sm-4"><strong>Approval Notes:</strong></div><div class="col-sm-8">${data.request.approval_notes}</div></div>` : ''}
+                        ${data.request.denial_reason   ? `<div class="row mb-2"><div class="col-sm-4"><strong>Denial Reason:</strong></div><div class="col-sm-8">${data.request.denial_reason}</div></div>` : ''}
+                        ${data.request.return_condition? `<div class="row mb-2"><div class="col-sm-4"><strong>Return Condition:</strong></div><div class="col-sm-8">${data.request.return_condition}</div></div>` : ''}
+                        ${data.request.return_notes    ? `<div class="row mb-2"><div class="col-sm-4"><strong>Return Notes:</strong></div><div class="col-sm-8">${data.request.return_notes}</div></div>` : ''}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-header bg-light"><h6 class="mb-0"><i class="bi bi-building"></i> Offices Involved</h6></div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <h6 class="text-primary"><i class="bi bi-arrow-right"></i> Requested From</h6>
+                            <strong>${data.requester.office.name}</strong> (${data.requester.office.code})<br>
+                            <small class="text-muted">${data.requester.name}</small><br>
+                            <small class="text-muted">${data.requester.email}</small>
+                        </div>
+                        <div class="mb-3">
+                            <h6 class="text-success"><i class="bi bi-arrow-left"></i> Requested To</h6>
+                            <strong>${data.approver.office.name}</strong> (${data.approver.office.code})<br>
+                            <small class="text-muted">${data.approver.name || 'N/A'}</small><br>
+                            <small class="text-muted">${data.approver.email || 'N/A'}</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-header bg-light"><h6 class="mb-0"><i class="bi bi-box-seam"></i> Asset Information</h6></div>
+                    <div class="card-body">
+                        ${data.asset ? `
+                        <div class="row mb-2"><div class="col-sm-4"><strong>Description:</strong></div><div class="col-sm-8">${data.asset.description || 'N/A'}</div></div>
+                        <div class="row mb-2"><div class="col-sm-4"><strong>Property No:</strong></div><div class="col-sm-8">${data.asset.code || 'N/A'}</div></div>
+                        <div class="row mb-2"><div class="col-sm-4"><strong>Category:</strong></div><div class="col-sm-8">${data.asset.category.name || 'Uncategorized'}</div></div>
+                        <div class="row mb-2"><div class="col-sm-4"><strong>Current Status:</strong></div>
+                            <div class="col-sm-8"><span class="badge bg-${getStatusColor(data.asset.status || 'unknown')}">${ucfirst((data.asset.status || 'unknown').replace('_',' '))}</span></div></div>
+                        <div class="row mb-2"><div class="col-sm-4"><strong>Requested Qty:</strong></div><div class="col-sm-8">${data.request.quantity_requested} unit(s)</div></div>
+                        ` : '<div class="alert alert-warning"><i class="bi bi-exclamation-triangle"></i> Asset information not available</div>'}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-light"><h6 class="mb-0"><i class="bi bi-clock-history"></i> Request Lifecycle</h6></div>
+                    <div class="card-body">
+                        <div class="timeline">${lifecycleHtml || '<p class="text-muted">No lifecycle events available</p>'}</div>
+                        <div class="mt-3 p-2 bg-light rounded">
+                            <small class="text-muted">
+                                <strong>Current Status:</strong> ${currentStatus.title}<br>
+                                ${currentStatus.description}<br>
+                                <em>Last updated: ${formattedStatusDate}</em>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// ---------------------------------------------------------------------------
+// Toast / form feedback
+// ---------------------------------------------------------------------------
+
+function showFormFeedback(type, message) {
+    let toastContainer = document.getElementById('toastContainer');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toastContainer';
+        toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+        toastContainer.style.zIndex = '1050';
+        document.body.appendChild(toastContainer);
+    }
+
+    const bgClass = type === 'error' ? 'danger' : type === 'warning' ? 'warning' : 'success';
+    const toastId = 'toast_' + Date.now();
+    toastContainer.insertAdjacentHTML('beforeend', `
+        <div id="${toastId}" class="toast align-items-center text-white bg-${bgClass} border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `);
+
+    const toastEl = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastEl);
+    toast.show();
+    // FIX: was `})));` — properly closed now
+    toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+}
+
+// ---------------------------------------------------------------------------
+// Field / form validation (module-scope so all callers can reach it)
+// ---------------------------------------------------------------------------
+
+function validateField(field) {
+    const value = field.value.trim();
+    let isValid = true;
+    let message = '';
+
+    if (field.hasAttribute('required') && !value) {
+        isValid = false; message = 'This field is required';
+    } else if (field.type === 'number') {
+        const num = parseInt(value);
+        const max = field.getAttribute('max');
+        if (isNaN(num) || num < 1) { isValid = false; message = 'Please enter a valid number'; }
+        else if (max && num > parseInt(max)) { isValid = false; message = `Maximum value is ${max}`; }
+    } else if (field.type === 'date') {
+        const date = new Date(value);
+        const today = new Date(); today.setHours(0,0,0,0);
+        if (date < today) { isValid = false; message = 'Date cannot be in the past'; }
+    }
+
+    if (isValid) {
+        field.classList.remove('is-invalid'); field.classList.add('is-valid');
+        removeFieldError(field);
+    } else {
+        field.classList.remove('is-valid'); field.classList.add('is-invalid');
+        showFieldError(field, message);
+    }
+    return isValid;
+}
+
+function validateFormRealtime(form) {
+    let isValid = true;
+    form.querySelectorAll('[required]').forEach(field => {
+        if (!validateField(field)) isValid = false;
+    });
+    const startDate = form.querySelector('#start_date');
+    const endDate   = form.querySelector('#end_date');
+    if (startDate && endDate && startDate.value && endDate.value &&
+        new Date(startDate.value) > new Date(endDate.value)) {
+        showFieldError(endDate, 'End date must be after start date');
+        isValid = false;
+    }
+    return isValid;
+}
+
+function showFieldError(field, message) {
+    removeFieldError(field);
+    const div = document.createElement('div');
+    div.className = 'invalid-feedback';
+    div.textContent = message;
+    div.setAttribute('data-error-for', field.id);
+    field.parentNode.appendChild(div);
+}
+
+function removeFieldError(field) {
+    const existing = field.parentNode.querySelector(`[data-error-for="${field.id}"]`);
+    if (existing) existing.remove();
+}
+
+// ---------------------------------------------------------------------------
+// Empty-state helper
+// ---------------------------------------------------------------------------
+
+function updateEmptyState() {
+    const visibleRows = document.querySelectorAll('.request-row:not(.hidden)');
+    const container   = document.getElementById('requestsContainer');
+    if (!container) return;
+    const emptyState  = container.querySelector('.empty-state');
+
+    if (visibleRows.length === 0 && !emptyState) {
+        const div = document.createElement('div');
+        div.className = 'empty-state';
+        div.innerHTML = `<i class="bi bi-inbox"></i><h5>No Requests Found</h5><p>No requests match the current filter criteria.</p>`;
+        container.appendChild(div);
+    } else if (visibleRows.length > 0 && emptyState) {
+        emptyState.remove();
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Bulk-actions helpers
+// ---------------------------------------------------------------------------
+
+let selectedRequests = new Set();
+
+function updateBulkActionsBar() {
+    const bar          = document.getElementById('bulkActionsBar');
+    const countEl      = document.getElementById('selectedCount');
+    const approveBtn   = document.getElementById('bulkApproveBtn');
+    const denyBtn      = document.getElementById('bulkDenyBtn');
+    const borrowedBtn  = document.getElementById('bulkMarkBorrowedBtn');
+
+    const count = selectedRequests.size;
+    if (countEl) countEl.textContent = count;
+    if (bar) bar.classList.toggle('d-none', count === 0);
+
+    const hasPendingIn  = Array.from(selectedRequests).some(id => {
+        const r = document.querySelector(`tr[data-request-id="${id}"]`);
+        return r && r.dataset.type === 'incoming' && r.dataset.status === 'pending';
+    });
+    const hasApprovedIn = Array.from(selectedRequests).some(id => {
+        const r = document.querySelector(`tr[data-request-id="${id}"]`);
+        return r && r.dataset.type === 'incoming' && r.dataset.status === 'approved';
+    });
+    const hasPendingOut = Array.from(selectedRequests).some(id => {
+        const r = document.querySelector(`tr[data-request-id="${id}"]`);
+        return r && r.dataset.type === 'outgoing' && r.dataset.status === 'pending';
+    });
+
+    if (approveBtn)  approveBtn.disabled  = !hasPendingIn;
+    if (denyBtn)     denyBtn.disabled     = !hasPendingIn;
+    if (borrowedBtn) borrowedBtn.disabled = !hasApprovedIn;
+
+    ['bulkCancelBtn','bulkApproveBtnAll','bulkDenyBtnAll','bulkMarkBorrowedBtnAll','bulkCancelBtnAll'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (id.includes('Cancel'))   el.disabled = !hasPendingOut;
+        if (id.includes('Approve'))  el.disabled = !hasPendingIn;
+        if (id.includes('Deny'))     el.disabled = !hasPendingIn;
+        if (id.includes('Borrowed')) el.disabled = !hasApprovedIn;
+    });
+}
+
+function updateSelectAllCheckboxState() {
+    const selectAll    = document.getElementById('selectAllRequests');
+    if (!selectAll) return;
+    const visible      = document.querySelectorAll('.request-row:not(.hidden) .request-checkbox');
+    const checkedCount = document.querySelectorAll('.request-row:not(.hidden) .request-checkbox:checked').length;
+
+    if (visible.length === 0 || checkedCount === 0) {
+        selectAll.checked = false; selectAll.indeterminate = false;
+    } else if (checkedCount === visible.length) {
+        selectAll.checked = true;  selectAll.indeterminate = false;
+    } else {
+        selectAll.checked = false; selectAll.indeterminate = true;
+    }
+}
+
+function selectAllRequests() {
+    const selectAll = document.getElementById('selectAllRequests');
+    document.querySelectorAll('.request-checkbox').forEach(cb => cb.checked = selectAll.checked);
+    document.querySelectorAll('.request-row:not(.hidden) .request-checkbox').forEach(cb => {
+        const id = parseInt(cb.value, 10);
+        selectAll.checked ? selectedRequests.add(id) : selectedRequests.delete(id);
+    });
+    updateBulkActionsBar();
+}
+
+function clearSelection() {
+    selectedRequests.clear();
+    document.querySelectorAll('.request-checkbox').forEach(cb => cb.checked = false);
+    const selectAll = document.getElementById('selectAllRequests');
+    if (selectAll) { selectAll.checked = false; selectAll.indeterminate = false; }
+    updateBulkActionsBar();
+}
+
+function updateBulkActionsButtons(filter) {
+    const incoming = document.getElementById('incomingBulkActions');
+    const outgoing = document.getElementById('outgoingBulkActions');
+    const all      = document.getElementById('allBulkActions');
+    if (incoming) incoming.classList.add('d-none');
+    if (outgoing) outgoing.classList.add('d-none');
+    if (all)      all.classList.add('d-none');
+    if (filter === 'needs_action' && incoming) incoming.classList.remove('d-none');
+    if (filter === 'waiting'      && outgoing) outgoing.classList.remove('d-none');
+    if (filter === 'all'          && all)      all.classList.remove('d-none');
+}
+
+// Bulk AJAX actions
+
+function bulkApprove() {
+    const ids = Array.from(selectedRequests).filter(id => {
+        const r = document.querySelector(`tr[data-request-id="${id}"]`);
+        return r && r.dataset.type === 'incoming' && r.dataset.status === 'pending';
+    });
+    if (!ids.length) { showNotification('No pending incoming requests selected', 'warning'); return; }
+    if (!confirm(`Approve ${ids.length} request(s)?`)) return;
+    fetch('requests.php', {
+        method: 'POST', headers: {'Content-Type':'application/x-www-form-urlencoded'},
+        body: new URLSearchParams({ action:'bulk_approve', request_ids: ids.join(',') })
+    }).then(r => r.json()).then(data => {
+        if (data.success) { showNotification(data.message, 'success'); clearSelection(); setTimeout(() => location.reload(), 1500); }
+        else showNotification(data.error || 'Error approving', 'error');
+    }).catch(() => showNotification('Error approving requests', 'error'));
+}
+
+function bulkDeny() {
+    const ids = Array.from(selectedRequests).filter(id => {
+        const r = document.querySelector(`tr[data-request-id="${id}"]`);
+        return r && r.dataset.type === 'incoming' && r.dataset.status === 'pending';
+    });
+    if (!ids.length) { showNotification('No pending incoming requests selected', 'warning'); return; }
+    const reason = prompt('Enter denial reason:');
+    if (!reason) return;
+    if (!confirm(`Deny ${ids.length} request(s)?`)) return;
+    fetch('requests.php', {
+        method: 'POST', headers: {'Content-Type':'application/x-www-form-urlencoded'},
+        body: new URLSearchParams({ action:'bulk_deny', request_ids: ids.join(','), reason })
+    }).then(r => r.json()).then(data => {
+        if (data.success) { showNotification(data.message, 'success'); clearSelection(); setTimeout(() => location.reload(), 1500); }
+        else showNotification(data.error || 'Error denying', 'error');
+    }).catch(() => showNotification('Error denying requests', 'error'));
+}
+
+function bulkMarkBorrowed() {
+    const ids = Array.from(selectedRequests).filter(id => {
+        const r = document.querySelector(`tr[data-request-id="${id}"]`);
+        return r && r.dataset.type === 'incoming' && r.dataset.status === 'approved';
+    });
+    if (!ids.length) { showNotification('No approved incoming requests selected', 'warning'); return; }
+    if (!confirm(`Mark ${ids.length} request(s) as borrowed?`)) return;
+    fetch('requests.php', {
+        method: 'POST', headers: {'Content-Type':'application/x-www-form-urlencoded'},
+        body: new URLSearchParams({ action:'bulk_mark_borrowed', request_ids: ids.join(',') })
+    }).then(r => r.json()).then(data => {
+        if (data.success) { showNotification(data.message, 'success'); clearSelection(); setTimeout(() => location.reload(), 1500); }
+        else showNotification(data.error || 'Error marking as borrowed', 'error');
+    }).catch(() => showNotification('Error marking as borrowed', 'error'));
+}
+
+function bulkCancel() {
+    const ids = Array.from(selectedRequests).filter(id => {
+        const r = document.querySelector(`tr[data-request-id="${id}"]`);
+        return r && r.dataset.type === 'outgoing' && r.dataset.status === 'pending';
+    });
+    if (!ids.length) { showNotification('No pending outgoing requests selected', 'warning'); return; }
+    if (!confirm(`Cancel ${ids.length} request(s)?`)) return;
+    fetch('requests.php', {
+        method: 'POST', headers: {'Content-Type':'application/x-www-form-urlencoded'},
+        body: new URLSearchParams({ action:'bulk_cancel', request_ids: ids.join(',') })
+    }).then(r => r.json()).then(data => {
+        if (data.success) { showNotification(data.message, 'success'); clearSelection(); setTimeout(() => location.reload(), 1500); }
+        else showNotification(data.error || 'Error cancelling', 'error');
+    }).catch(() => showNotification('Error cancelling requests', 'error'));
+}
+
+// ---------------------------------------------------------------------------
+// Advanced search
+// ---------------------------------------------------------------------------
+
+let currentFilters = { text:'', type:'', status:'', dateFrom:'', dateTo:'' };
+
+function applyAdvancedFilters() {
+    currentFilters.type     = document.getElementById('filterType')?.value     || '';
+    currentFilters.status   = document.getElementById('filterStatus')?.value   || '';
+    currentFilters.dateFrom = document.getElementById('filterDateFrom')?.value || '';
+    currentFilters.dateTo   = document.getElementById('filterDateTo')?.value   || '';
+    applyFilters();
+}
+
+function clearAdvancedFilters() {
+    ['filterType','filterStatus','filterDateFrom','filterDateTo'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    const searchInput = document.getElementById('advancedSearchInput');
+    if (searchInput) searchInput.value = '';
+    currentFilters = { text:'', type:'', status:'', dateFrom:'', dateTo:'' };
+    applyFilters();
+}
+
+function applyFilters() {
+    let visibleCount = 0;
+    document.querySelectorAll('.request-row').forEach(row => {
+        let matches = true;
+
+        if (currentFilters.text) {
+            matches = row.textContent.toLowerCase().includes(currentFilters.text.toLowerCase());
+        }
+        if (matches && currentFilters.type)   matches = row.dataset.type   === currentFilters.type;
+        if (matches && currentFilters.status) matches = row.dataset.status === currentFilters.status;
+
+        if (matches && (currentFilters.dateFrom || currentFilters.dateTo)) {
+            const cell = row.querySelector('td:nth-child(6)');
+            if (cell) {
+                const m = cell.textContent.match(/From:\s+(\w+ \d+, \d+)/);
+                if (m) {
+                    const d = new Date(m[1]);
+                    if (currentFilters.dateFrom && d < new Date(currentFilters.dateFrom)) matches = false;
+                    if (currentFilters.dateTo   && d > new Date(currentFilters.dateTo))   matches = false;
+                }
+            }
+        }
+
+        row.classList.toggle('hidden', !matches);
+        if (matches) visibleCount++;
+    });
+
+    updateSearchResultsCount(visibleCount);
+    updateEmptyState();
+    updateSelectAllCheckboxState();
+}
+
+function updateSearchResultsCount(visibleCount) {
+    const el = document.getElementById('searchResultsCount');
+    if (!el) return;
+    const total = document.querySelectorAll('.request-row').length;
+    const hasFilter = Object.values(currentFilters).some(v => v !== '');
+    el.textContent = hasFilter ? `Showing ${visibleCount} of ${total} requests` : 'Showing all requests';
+}
+
+// ---------------------------------------------------------------------------
+// Real-time updates (polling)
+// ---------------------------------------------------------------------------
+
+let lastUpdateTime = new Date();
+let pollingInterval;
+
+function startRealTimeUpdates() {
+    if (pollingInterval) clearInterval(pollingInterval);
+    pollingInterval = setInterval(checkForUpdates, 30000);
+}
+
+function checkForUpdates() {
+    fetch('requests.php?action=check_updates&last_update=' + lastUpdateTime.toISOString(),
+          { headers: {'X-Requested-With':'XMLHttpRequest'} })
+        .then(r => r.json())
+        .then(data => {
+            if (!data.has_updates) return;
+            if (data.stats) updateStatsCards(data.stats);
+            if (data.new_requests?.length || data.changed_requests?.length) {
+                showNotification('Requests updated — refreshing…', 'info');
+                setTimeout(() => location.reload(), 1500);
+            }
+            lastUpdateTime = new Date();
+        })
+        .catch(err => console.error('Real-time update error:', err));
+}
+
+function updateStatsCards(stats) {
+    ['pending_incoming','approved_incoming','borrowed_incoming',
+     'pending_outgoing','approved_outgoing','borrowed_outgoing'].forEach(key => {
+        const el = document.querySelector(`[data-stat="${key}"]`);
+        if (el && stats[key] !== undefined) el.textContent = stats[key];
+    });
+}
+
+// ---------------------------------------------------------------------------
+// Asset details popup (used by the info button in the New Request modal)
+// ---------------------------------------------------------------------------
+
+function showAssetDetails() {
+    const assetSelect = document.getElementById('asset_id');
+    if (!assetSelect || !assetSelect.value) {
+        showFormFeedback('warning', 'Please select an asset first');
+        return;
+    }
+    const opt = assetSelect.options[assetSelect.selectedIndex];
+    const assetData = {
+        description: opt.text.split('-')[0].trim(),
+        code:        (opt.text.match(/\(([^)]+)\)/) || [])[1] || '',
+        available:   opt.getAttribute('data-available') || '0',
+        total:       opt.getAttribute('data-total') || '0',
+        office:      (opt.text.split('-')[1] || '').trim()
+    };
+
+    const existing = document.getElementById('assetDetailsModal');
+    if (existing) existing.remove();
+
+    document.body.insertAdjacentHTML('beforeend', `
+        <div class="modal fade" id="assetDetailsModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header"><h5 class="modal-title">Asset Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                    <div class="modal-body">
+                        <p><strong>Asset:</strong> ${assetData.description}</p>
+                        <p><strong>Code:</strong> ${assetData.code}</p>
+                        <p><strong>Available:</strong> ${assetData.available} units</p>
+                        <p><strong>Total:</strong> ${assetData.total} units</p>
+                        <p><strong>Office:</strong> ${assetData.office}</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `);
+    new bootstrap.Modal(document.getElementById('assetDetailsModal')).show();
+}
+
+// ---------------------------------------------------------------------------
+// Keyboard shortcuts (global)
+// ---------------------------------------------------------------------------
+
+document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (e.ctrlKey && e.key === 'a') {
+        e.preventDefault();
+        const sa = document.getElementById('selectAllRequests');
+        if (sa) { sa.checked = !sa.checked; selectAllRequests(); }
+    }
+    if (e.ctrlKey && e.key === 'r') { e.preventDefault(); refreshRequests(); }
+    if (e.key === 'Escape') clearSelection();
+    if (e.ctrlKey && e.key === 'Enter') {
+        e.preventDefault();
+        const btn = document.getElementById('bulkApproveBtn');
+        if (btn && !btn.disabled) bulkApprove();
+    }
+});
+
+// ---------------------------------------------------------------------------
+// DOMContentLoaded — wire everything up
+// ---------------------------------------------------------------------------
+
+document.addEventListener('DOMContentLoaded', function () {
+    console.log('DEBUG: DOMContentLoaded fired');
+
+    // ── Filter tabs ────────────────────────────────────────────────────────
+    const filterTabs = document.querySelectorAll('.filter-tab');
+    console.log('DEBUG: Found filter tabs:', filterTabs.length);
+
+    function applyTabFilter(filter) {
+        document.querySelectorAll('.request-row').forEach(row => {
+            let show = true;
+            if (filter === 'needs_action') show = row.dataset.needsAction === 'true';
+            if (filter === 'waiting')      show = row.dataset.type === 'outgoing';
+            row.classList.toggle('hidden', !show);
+        });
+        updateEmptyState();
+        updateSelectAllCheckboxState();
+        updateBulkActionsButtons(filter);
+        clearSelection();
+    }
+
+    filterTabs.forEach(tab => {
+        tab.addEventListener('click', function () {
+            filterTabs.forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            applyTabFilter(this.dataset.filter);
+            console.log('DEBUG: Filter applied:', this.dataset.filter,
+                '| Visible rows:', document.querySelectorAll('.request-row:not(.hidden)').length);
+        });
+    });
+
+    // Apply default tab (needs_action) on load
+    applyTabFilter('needs_action');
+
+    // ── Checkbox wiring ────────────────────────────────────────────────────
+    const selectAll = document.getElementById('selectAllRequests');
+    if (selectAll) selectAll.addEventListener('change', selectAllRequests);
+
+    document.querySelectorAll('.request-checkbox').forEach(cb => {
+        cb.addEventListener('change', function () {
+            const id = parseInt(this.value, 10);
+            this.checked ? selectedRequests.add(id) : selectedRequests.delete(id);
+            updateBulkActionsBar();
+            updateSelectAllCheckboxState();
+        });
+    });
+
+    // ── Bulk action buttons ────────────────────────────────────────────────
+    const btnMap = {
+        bulkApproveBtn:        bulkApprove,
+        bulkDenyBtn:           bulkDeny,
+        bulkMarkBorrowedBtn:   bulkMarkBorrowed,
+        bulkCancelBtn:         bulkCancel,
+        bulkApproveBtnAll:     bulkApprove,
+        bulkDenyBtnAll:        bulkDeny,
+        bulkMarkBorrowedBtnAll:bulkMarkBorrowed,
+        bulkCancelBtnAll:      bulkCancel,
+    };
+    Object.entries(btnMap).forEach(([id, fn]) => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('click', fn);
+    });
+
+    // ── Advanced search ────────────────────────────────────────────────────
+    const searchInput = document.getElementById('advancedSearchInput');
+    if (searchInput) {
+        let searchTimeout;
+        searchInput.addEventListener('input', function () {
+            clearTimeout(searchTimeout);
+            currentFilters.text = this.value.trim();
+            searchTimeout = setTimeout(applyFilters, 250);
+        });
+    }
+
+    // ── New-request form ───────────────────────────────────────────────────
+    const today         = new Date().toISOString().split('T')[0];
+    const startDateEl   = document.getElementById('start_date');
+    const endDateEl     = document.getElementById('end_date');
+    const quantityEl    = document.getElementById('quantity_requested');
+    const quantityInfo  = document.getElementById('quantity_info');
+    const assetSelect   = document.getElementById('asset_id');
+    const officeSelect  = document.getElementById('requested_to_office');
+    const categorySelect= document.getElementById('asset_category');
+
+    if (startDateEl) startDateEl.min = today;
+    if (endDateEl)   endDateEl.min   = today;
+
+    if (startDateEl && endDateEl) {
+        startDateEl.addEventListener('change', function () {
+            endDateEl.min = this.value;
+            if (endDateEl.value && endDateEl.value < this.value) endDateEl.value = this.value;
+        });
+    }
+
+    if (assetSelect && quantityEl && quantityInfo) {
+        assetSelect.addEventListener('change', function () {
+            const opt = this.options[this.selectedIndex];
+            const avail = opt.getAttribute('data-available');
+            const total = opt.getAttribute('data-total');
+            if (avail && total) {
+                quantityInfo.textContent = `${avail} of ${total} units available`;
+                quantityEl.max = avail;
+                if (parseInt(quantityEl.value) > parseInt(avail)) quantityEl.value = avail;
+            } else {
+                quantityInfo.textContent = 'Select an asset to see available quantity';
+                quantityEl.max = '';
+            }
+        });
+        quantityEl.addEventListener('input', function () {
+            if (this.max && parseInt(this.value) > parseInt(this.max)) this.value = this.max;
+        });
+    }
+
+    function filterAssets() {
+        if (!assetSelect) return;
+        const officeId   = officeSelect?.value   || '';
+        const categoryId = categorySelect?.value || '';
+        assetSelect.querySelectorAll('option').forEach(opt => {
+            if (!opt.value) { opt.style.display = ''; return; }
+            const officeMatch    = !officeId   || opt.getAttribute('data-office-id')   === officeId;
+            const categoryMatch  = !categoryId || opt.getAttribute('data-category-id') === categoryId;
+            opt.style.display = (officeMatch && categoryMatch) ? '' : 'none';
+        });
+        if (assetSelect.value &&
+            assetSelect.options[assetSelect.selectedIndex].style.display === 'none') {
+            assetSelect.value = '';
+            if (quantityInfo) quantityInfo.textContent = 'Select an asset to see available quantity';
+            if (quantityEl)   quantityEl.max = '';
+        }
+    }
+
+    if (officeSelect)   officeSelect.addEventListener('change',   filterAssets);
+    if (categorySelect) categorySelect.addEventListener('change', filterAssets);
+
+    // Character counter
+    const purposeEl = document.getElementById('purpose');
+    const charCount  = document.getElementById('charCount');
+    if (purposeEl && charCount) {
+        purposeEl.addEventListener('input', function () {
+            const len = Math.min(this.value.length, 500);
+            if (this.value.length > 500) this.value = this.value.substring(0, 500);
+            charCount.textContent = `${len} / 500`;
+            charCount.classList.toggle('text-danger',  len === 500);
+            charCount.classList.toggle('text-warning', len < 10 && len > 0);
+        });
+    }
+
+    // Form submit validation
+    const newRequestForm = document.querySelector('#newRequestModal form');
+    if (newRequestForm) {
+        newRequestForm.addEventListener('submit', function (e) {
+            if (!validateFormRealtime(this)) {
+                e.preventDefault();
+                showFormFeedback('error', 'Please fix the errors before submitting');
+            }
+        });
+        newRequestForm.querySelectorAll('[required]').forEach(field => {
+            field.addEventListener('blur',  () => validateField(field));
+            field.addEventListener('input', () => {
+                if (field.classList.contains('is-invalid')) validateField(field);
+            });
+        });
+    }
+
+    // Progressive disclosure (delivery + urgency)
+    const deliveryPref     = document.getElementById('delivery_preference');
+    const deliveryLocGroup = document.getElementById('deliveryLocationGroup');
+    const urgencyLevel     = document.getElementById('urgency_level');
+    const emergencyGroup   = document.getElementById('emergencyReasonGroup');
+    const emergencyReason  = document.getElementById('emergency_reason');
+
+    if (deliveryPref && deliveryLocGroup) {
+        deliveryPref.addEventListener('change', function () {
+            const show = this.value === 'delivery';
+            deliveryLocGroup.style.display = show ? 'block' : 'none';
+            const inp = deliveryLocGroup.querySelector('input');
+            if (inp) show ? inp.setAttribute('required','') : inp.removeAttribute('required');
+        });
+    }
+    if (urgencyLevel && emergencyGroup) {
+        urgencyLevel.addEventListener('change', function () {
+            const show = this.value === 'emergency';
+            emergencyGroup.style.display = show ? 'block' : 'none';
+            if (emergencyReason) show
+                ? emergencyReason.setAttribute('required','')
+                : emergencyReason.removeAttribute('required');
+        });
+    }
+
+    // Additional-options collapse chevron
+    const addOpts = document.getElementById('additionalOptions');
+    const addBtn  = document.querySelector('[data-bs-target="#additionalOptions"]');
+    if (addOpts && addBtn) {
+        addOpts.addEventListener('show.bs.collapse', () => {
+            addBtn.innerHTML = '<i class="bi bi-chevron-up"></i> Additional Options <small class="text-muted">(Expanded)</small>';
+        });
+        addOpts.addEventListener('hide.bs.collapse', () => {
+            addBtn.innerHTML = '<i class="bi bi-chevron-down"></i> Additional Options <small class="text-muted">(Optional)</small>';
+        });
+    }
+
+    // Start polling
+    startRealTimeUpdates();
+
+    console.log('DEBUG: Init complete');
+});
+
+>>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
     </script>
     
     <!-- Bootstrap-based Notification Script -->

@@ -127,6 +127,7 @@ try {
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+<<<<<<< HEAD
     <!-- DataTables CSS removed -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="assets/css/admin-unified.css" rel="stylesheet">
@@ -142,6 +143,10 @@ try {
             padding-left: 2.5rem !important;
         }
     </style>
+=======
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="assets/css/admin-unified.css" rel="stylesheet">
+>>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
 </head>
 <body>
     <?php $page_title = 'No Inventory Tag'; ?>
@@ -166,6 +171,7 @@ try {
                     <?php endif; ?>
                 </div>
                 <div class="col-md-4 text-md-end">
+<<<<<<< HEAD
                     <div class="btn-group" role="group">
                         <button type="button" class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-gear"></i> Actions
@@ -183,11 +189,21 @@ try {
                                 </button>
                             </li>
                         </ul>
+=======
+                    <div class="d-flex gap-2 justify-content-md-end">
+                        <button class="btn btn-outline-secondary btn-sm" onclick="window.location.href='assets.php'">
+                            <i class="bi bi-arrow-left"></i> Back to Assets
+                        </button>
+                        <button class="btn btn-success btn-sm" onclick="exportUntagged()">
+                            <i class="bi bi-download"></i> Export
+                        </button>
+>>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
                     </div>
                 </div>
             </div>
         </div>
         
+<<<<<<< HEAD
         <!-- Statistics and Filters Section -->
         <div class="section-card mb-4">
             <div class="section-title">
@@ -214,6 +230,47 @@ try {
                     </div>
                 </div>
                 <div class="col-md-2">
+=======
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number"><?php echo $stats['total_untagged'] ?? 0; ?></div>
+                    <div class="stats-label"><i class="bi bi-exclamation-triangle"></i> Untagged Assets</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number"><?php echo number_format($stats['total_value'] ?? 0, 2); ?></div>
+                    <div class="stats-label"><i class="bi bi-currency-dollar"></i> Total Value</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number"><?php echo count($asset_items); ?></div>
+                    <div class="stats-label"><i class="bi bi-list-check"></i> Current Results</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number"><?php echo count($offices); ?></div>
+                    <div class="stats-label"><i class="bi bi-building"></i> Total Offices</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section-card mb-4">
+            <div class="section-title">
+                <i class="bi bi-funnel"></i> Search & Filters
+            </div>
+            <form id="filterForm" class="row g-3">
+                <div class="col-md-6">
+                    <div class="search-box">
+                        <i class="bi bi-search"></i>
+                        <input type="text" name="search" id="searchInput" class="form-control" placeholder="Search assets..." value="<?php echo htmlspecialchars($search_filter); ?>">
+                    </div>
+                </div>
+                <div class="col-md-6">
+>>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
                     <select name="office" id="officeFilter" class="form-select">
                         <option value="">All Offices</option>
                         <?php foreach ($offices as $office): ?>
@@ -223,6 +280,7 @@ try {
                         <?php endforeach; ?>
                     </select>
                 </div>
+<<<<<<< HEAD
             </div>
         </div>
 
@@ -245,6 +303,82 @@ try {
                 <tbody>
                     <?php if (!empty($asset_items)): ?>
                         <?php foreach ($asset_items as $item): ?>
+=======
+            </form>
+        </div>
+
+        <div class="section-card mb-4">
+            <div class="section-title">
+                <i class="bi bi-exclamation-triangle"></i> Assets Requiring Inventory Tags
+            </div>
+            
+            <div class="alert alert-warning" role="alert">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <strong>Attention:</strong> The following assets may require inventory tagging for proper tracking and management.
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover" id="untaggedTable">
+                    <thead>
+                        <tr>
+                            <th>Asset Description</th>
+                            <th>Status</th>
+                            <th>Value</th>
+                            <th>Office</th>
+                            <th>Last Updated</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (!empty($asset_items)): ?>
+                            <?php foreach ($asset_items as $item): ?>
+                                <tr>
+                                    <td><?php echo htmlspecialchars($item['asset_description']); ?></td>
+                                    <td>
+                                        <?php
+                                        $status_class = '';
+                                        $status_icon = '';
+                                        switch($item['status']) {
+                                            case 'available':
+                                                $status_class = 'bg-success';
+                                                $status_icon = 'bi-check-circle';
+                                                break;
+                                            case 'in_use':
+                                                $status_class = 'bg-primary';
+                                                $status_icon = 'bi-person';
+                                                break;
+                                            case 'maintenance':
+                                                $status_class = 'bg-warning';
+                                                $status_icon = 'bi-tools';
+                                                break;
+                                            case 'disposed':
+                                                $status_class = 'bg-danger';
+                                                $status_icon = 'bi-trash';
+                                                break;
+                                            case 'no_tag':
+                                                $status_class = 'bg-danger';
+                                                $status_icon = 'bi-exclamation-triangle';
+                                                break;
+                                            default:
+                                                $status_class = 'bg-secondary';
+                                                $status_icon = 'bi-question-circle';
+                                        }
+                                        ?>
+                                        <span class="badge <?php echo $status_class; ?>">
+                                            <i class="bi <?php echo $status_icon; ?>"></i> <?php echo ucfirst(str_replace('_', ' ', $item['status'])); ?>
+                                        </span>
+                                    </td>
+                                    <td class="text-value"><?php echo number_format($item['value'], 2); ?></td>
+                                    <td><?php echo htmlspecialchars($item['office_name'] ?? 'N/A'); ?></td>
+                                    <td><small><?php echo date('M j, Y', strtotime($item['last_updated'])); ?></small></td>
+                                    <td>
+                                        <a href="create_tag.php?id=<?php echo $item['id']; ?>" class="btn btn-outline-warning btn-action" title="Create Tag">
+                                            <i class="bi bi-tag"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+>>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
                             <tr>
                                 <td><?php echo htmlspecialchars($item['asset_description']); ?></td>
                                 <td>
@@ -311,7 +445,10 @@ try {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js">
     </script>
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<<<<<<< HEAD
     <!-- DataTables JS removed -->
+=======
+>>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
     <?php require_once 'includes/sidebar-scripts.php'; ?>
     <script>
         $(document).ready(function() {
