@@ -206,21 +206,32 @@ if (!$conn || $conn->connect_error) {
         }
 
         // ===== INVENTORY TAGS & RED TAGS =====
-        // Check if status column exists
-        $check_tags_status = $conn->query("SHOW COLUMNS FROM inventory_tags LIKE 'status'");
-        $tags_has_status = $check_tags_status && $check_tags_status->num_rows > 0;
+        // Check if inventory_tags table exists
+        $check_inventory_tags_table = $conn->query("SHOW TABLES LIKE 'inventory_tags'");
+        $inventory_tags_exists = $check_inventory_tags_table && $check_inventory_tags_table->num_rows > 0;
         
-        $tags_query = "SELECT 
-            COUNT(*) as total_tags" . 
-            ($tags_has_status ? ",
-            SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_tags,
-            SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_tags" : ",
-            0 as active_tags,
-            0 as pending_tags") . "
-            FROM inventory_tags";
-        $tags_result = $conn->query($tags_query);
-        if ($tags_result) {
-            $stats = array_merge($stats, $tags_result->fetch_assoc());
+        if ($inventory_tags_exists) {
+            // Check if status column exists
+            $check_tags_status = $conn->query("SHOW COLUMNS FROM inventory_tags LIKE 'status'");
+            $tags_has_status = $check_tags_status && $check_tags_status->num_rows > 0;
+            
+            $tags_query = "SELECT 
+                COUNT(*) as total_tags" . 
+                ($tags_has_status ? ",
+                SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_tags,
+                SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_tags" : ",
+                0 as active_tags,
+                0 as pending_tags") . "
+                FROM inventory_tags";
+            $tags_result = $conn->query($tags_query);
+            if ($tags_result) {
+                $stats = array_merge($stats, $tags_result->fetch_assoc());
+            }
+        } else {
+            // Set default values if table doesn't exist
+            $stats['total_tags'] = 0;
+            $stats['active_tags'] = 0;
+            $stats['pending_tags'] = 0;
         }
 
         $check_red_status = $conn->query("SHOW COLUMNS FROM red_tags LIKE 'status'");

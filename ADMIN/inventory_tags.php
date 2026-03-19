@@ -193,25 +193,20 @@ try {
         </div>
         
         <div class="row g-3 mb-4">
-            <div class="col-6 col-md-3">
+            <div class="col-6 col-md-4">
                 <div class="stats-card">
                     <div class="stats-number"><?php echo number_format($stats['total_tags'] ?? 0); ?></div>
                     <div class="stats-label"><i class="bi bi-qr-code"></i> Serviceable Tags</div>
                 </div>
             </div>
-            <div class="col-6 col-md-3">
+            <div class="col-6 col-md-4">
                 <div class="stats-card">
                     <div class="stats-number"><?php echo number_format($stats['offices_with_tags'] ?? 0); ?></div>
                     <div class="stats-label"><i class="bi bi-building"></i> Offices with Tags</div>
                 </div>
             </div>
-            <div class="col-6 col-md-3">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo isset($stats['total_tags']) && $stats['total_tags'] > 0 ? number_format($stats['total_tags'] / $stats['offices_with_tags'], 1) : '0'; ?></div>
-                    <div class="stats-label"><i class="bi bi-graph-up"></i> Avg Tags per Office</div>
-                </div>
-            </div>
-            <div class="col-6 col-md-3">
+           
+            <div class="col-6 col-md-4">
                 <div class="stats-card">
                     <div class="stats-number"><?php echo count($tags); ?></div>
                     <div class="stats-label"><i class="bi bi-list-check"></i> Current Results</div>

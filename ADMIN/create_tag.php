@@ -1,12 +1,20 @@
 <?php
 session_start();
 require_once '../config.php';
+require_once '../includes/system_functions.php';
+require_once '../includes/logger.php';
+
+// Check session timeout
+checkSessionTimeout();
 
 // Check if user is logged in and has appropriate role
 if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['system_admin', 'admin'])) {
     header('Location: ../index.php');
     exit();
 }
+
+// Log create tag page access
+logSystemAction($_SESSION['user_id'], 'access', 'create_tag', 'Admin accessed create tag page');
 
 // Get asset item ID from URL
 $item_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
@@ -220,83 +228,7 @@ $category_fields = [
     <!-- Custom CSS -->
     <link href="../assets/css/index.css" rel="stylesheet">
     <link href="../assets/css/theme-custom.css" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, var(--light-color) 0%, var(--light-accent) 100%);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-        
-        .page-header {
-            background: white;
-            border-radius: var(--border-radius-xl);
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow);
-            border-left: 4px solid var(--primary-color);
-        }
-        
-        .form-container {
-            background: white;
-            border-radius: var(--border-radius-lg);
-            padding: 2rem;
-            box-shadow: var(--shadow);
-            margin-bottom: 2rem;
-        }
-        
-        .asset-info-card {
-            background: var(--primary-gradient);
-            color: white;
-            border-radius: var(--border-radius-lg);
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        
-        .category-fields {
-            background: #f8f9fa;
-            border-radius: var(--border-radius-md);
-            padding: 1.5rem;
-            margin-top: 1rem;
-            border-left: 3px solid var(--primary-color);
-        }
-        
-        .btn-back {
-            background: var(--primary-gradient);
-            border: none;
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: var(--border-radius-lg);
-            transition: var(--transition);
-        }
-        
-        .btn-back:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(var(--primary-rgb), 0.3);
-            color: white;
-        }
-        
-        .form-label {
-            font-weight: 600;
-            color: #495057;
-            margin-bottom: 0.5rem;
-        }
-        
-        .form-control, .form-select {
-            border-radius: var(--border-radius-md);
-            border: 1px solid #dee2e6;
-            transition: var(--transition);
-        }
-        
-        .form-control:focus, .form-select:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 0.2rem rgba(var(--primary-rgb), 0.25);
-        }
-        
-        .required {
-            color: #dc3545;
-        }
-    </style>
+    <link href="assets/css/admin-unified.css" rel="stylesheet">
 </head>
 <body>
     <?php
@@ -321,36 +253,65 @@ $category_fields = [
                     <p class="text-muted mb-0">Creating tag for: <?php echo htmlspecialchars($item['description']); ?></p>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <a href="asset_items.php?asset_id=<?php echo $item['asset_id']; ?>" class="btn btn-back">
-                        <i class="bi bi-arrow-left"></i> Back to Items
-                    </a>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-gear"></i> Actions
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a href="asset_items.php?asset_id=<?php echo $item['asset_id']; ?>" class="dropdown-item">
+                                    <i class="bi bi-arrow-left"></i> Back to Items
+                                </a>
+                            </li>
+                            <li>
+                                <a href="view_asset_item.php?id=<?php echo $item_id; ?>" class="dropdown-item">
+                                    <i class="bi bi-eye"></i> View Asset
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
         
         <!-- Asset Information Card -->
-        <div class="asset-info-card">
+        <div class="detail-card">
             <h5 class="mb-3"><i class="bi bi-info-circle"></i> Asset Information</h5>
             <div class="row">
                 <div class="col-md-6">
-                    <p><strong>Asset Description:</strong> <?php echo htmlspecialchars($item['asset_description']); ?></p>
-                    <p><strong>Value:</strong> ₱<?php echo number_format($item['value'], 2); ?></p>
+                    <div class="mb-3">
+                        <div class="detail-label">Asset Description</div>
+                        <div class="detail-value"><?php echo htmlspecialchars($item['asset_description']); ?></div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="detail-label">Value</div>
+                        <div class="detail-value">₱<?php echo number_format($item['value'], 2); ?></div>
+                    </div>
                 </div>
                 <div class="col-md-6">
-                    <p><strong>Acquisition Date:</strong> <?php echo date('F j, Y', strtotime($item['acquisition_date'])); ?></p>
-                    <p><strong>Office:</strong> <?php echo $item['office_name'] ? htmlspecialchars($item['office_name']) : 'Not assigned'; ?></p>
-                    <p><strong>ICS/PAR No:</strong> 
-                        <?php 
-                        $reference = '';
-                        if ($item['ics_no']) {
-                            $reference = 'ICS No: ' . htmlspecialchars($item['ics_no']);
-                        }
-                        if ($item['par_no']) {
-                            $reference = $reference ? $reference . ' / PAR No: ' . htmlspecialchars($item['par_no']) : 'PAR No: ' . htmlspecialchars($item['par_no']);
-                        }
-                        echo $reference ? $reference : 'Not assigned';
-                        ?>
-                    </p>
+                    <div class="mb-3">
+                        <div class="detail-label">Acquisition Date</div>
+                        <div class="detail-value"><?php echo date('F j, Y', strtotime($item['acquisition_date'])); ?></div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="detail-label">Office</div>
+                        <div class="detail-value"><?php echo $item['office_name'] ? htmlspecialchars($item['office_name']) : 'Not assigned'; ?></div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="detail-label">ICS/PAR No</div>
+                        <div class="detail-value">
+                            <?php 
+                            $reference = '';
+                            if ($item['ics_no']) {
+                                $reference = 'ICS No: ' . htmlspecialchars($item['ics_no']);
+                            }
+                            if ($item['par_no']) {
+                                $reference = $reference ? $reference . ' / PAR No: ' . htmlspecialchars($item['par_no']) : 'PAR No: ' . htmlspecialchars($item['par_no']);
+                            }
+                            echo $reference ? $reference : 'Not assigned';
+                            ?>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -379,7 +340,8 @@ $category_fields = [
         <?php endif; ?>
 
         <!-- Tag Creation Form -->
-        <div class="form-container">
+        <div class="detail-card">
+            <h5 class="mb-4"><i class="bi bi-tag"></i> Tag Creation</h5>
             <form method="POST" action="process_tag.php" id="tagForm" enctype="multipart/form-data">
                 <input type="hidden" name="item_id" value="<?php echo $item_id; ?>">
                 <input type="hidden" name="tag_format_id" value="<?php echo $tag_format['id'] ?? ''; ?>">
@@ -484,19 +446,19 @@ $category_fields = [
                             
                             if (!empty($existing_images)) {
                                 echo '<div class="mb-3">';
-                                echo '<h6>Existing Images:</h6>';
+                                echo '<h6 class="mb-3"><i class="bi bi-images"></i> Existing Images</h6>';
                                 echo '<div class="row">';
                                 
                                 foreach ($existing_images as $index => $image) {
                                     $image_path = '../uploads/asset_images/' . $image;
                                     if (file_exists($image_path)) {
-                                        echo '<div class="col-md-3 mb-2 position-relative">';
-                                        echo '<div class="card">';
+                                        echo '<div class="col-md-3 mb-3">';
+                                        echo '<div class="card image-card">';
                                         echo '<img src="' . $image_path . '" class="card-img-top" style="height: 150px; object-fit: cover;" alt="Asset Image">';
                                         echo '<div class="card-body p-2">';
                                         echo '<small class="text-muted d-block text-truncate">' . htmlspecialchars($image) . '</small>';
                                         echo '</div>';
-                                        echo '<button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1" onclick="deleteImage(\'' . htmlspecialchars($image) . '\')" title="Delete image">';
+                                        echo '<button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-2" onclick="deleteImage(\'' . htmlspecialchars($image) . '\')" title="Delete image">';
                                         echo '<i class="bi bi-trash"></i>';
                                         echo '</button>';
                                         echo '</div>';
@@ -505,7 +467,7 @@ $category_fields = [
                                 }
                                 
                                 echo '</div>';
-                                echo '<small class="text-info">Existing images will be preserved. New images will be added to the collection.</small>';
+                                echo '<small class="text-info"><i class="bi bi-info-circle"></i> Existing images will be preserved. New images will be added to the collection.</small>';
                                 echo '</div>';
                             }
                             ?>
@@ -526,10 +488,10 @@ $category_fields = [
                     </div>
                 </div>
                 
-                <div class="row">
+                <div class="row mt-4">
                     <div class="col-md-12">
                         <div class="d-flex justify-content-end gap-2">
-                            <a href="asset_items.php?asset_id=<?php echo $item['asset_id']; ?>" class="btn btn-secondary">
+                            <a href="asset_items.php?asset_id=<?php echo $item['asset_id']; ?>" class="btn btn-outline-secondary">
                                 <i class="bi bi-x-circle"></i> Cancel
                             </a>
                             <button type="submit" class="btn btn-primary">
@@ -764,14 +726,17 @@ $category_fields = [
                 loadSubcategoryFields(subcategoryCode);
             });
             
-            // Load fields for current subcategory on page load (with delay to ensure subcategories are loaded)
+            // Load fields for current subcategory on page load
             setTimeout(() => {
                 const subcategorySelect = document.getElementById('subcategory_id');
-                const currentSubcategoryOption = subcategorySelect.options[subcategorySelect.selectedIndex];
-                const currentSubcategoryCode = currentSubcategoryOption ? currentSubcategoryOption.getAttribute('data-subcategory-code') : '';
-                
-                console.log('Initial subcategory code:', currentSubcategoryCode);
-                loadSubcategoryFields(currentSubcategoryCode);
+                if (subcategorySelect && subcategorySelect.value) {
+                    // Get the selected option using Select2's data
+                    const selectedOption = $('#subcategory_id option:selected');
+                    const subcategoryCode = selectedOption.attr('data-subcategory-code') || '';
+                    
+                    console.log('Initial subcategory code:', subcategoryCode);
+                    loadSubcategoryFields(subcategoryCode);
+                }
             }, 500);
             
             // Image preview functionality - append new images to existing preview
