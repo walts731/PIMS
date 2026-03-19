@@ -233,6 +233,10 @@ try {
             <i class="bi bi-building"></i>
             Offices
         </a>
+        <a href="units.php" class="sidebar-nav-item <?php echo $current_page == 'units.php' ? 'active' : ''; ?>">
+            <i class="bi bi-rulers"></i>
+            Units
+        </a>
         <a href="forms.php" class="sidebar-nav-item <?php echo $current_page == 'forms.php' ? 'active' : ''; ?>">
             <i class="bi bi-file-earmark-text"></i>
             Forms
