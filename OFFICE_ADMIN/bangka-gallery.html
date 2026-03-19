@@ -3,7 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<<<<<<< HEAD
+<title>Bangka — Tropical Summer Journey</title>
+=======
 <title>Pilar Tourism</title>
+>>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@200;300;400;500&family=Pacifico&family=Dancing+Script:wght@700&display=swap');
 
@@ -251,7 +255,11 @@
   #dragged-title {
     position: absolute;
     top: 30%;
+<<<<<<< HEAD
+    left: -520px;
+=======
     left: -300px;
+>>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
     z-index: 16;
     pointer-events: none;
     will-change: transform, left;
@@ -280,9 +288,15 @@
     padding: 12px 30px 14px;
     white-space: nowrap;
     width: max-content;
+<<<<<<< HEAD
+    min-width: 280px;
+    box-shadow: 0 6px 28px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.6);
+    transform-origin: left center;
+=======
     min-width: 180px;
     box-shadow: 0 6px 28px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.6);
     transform-origin: center;
+>>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
     overflow: visible;
   }
 
@@ -303,8 +317,12 @@
     font-style: italic;
     color: #B05010;
     display: block;
+<<<<<<< HEAD
+    margin-top: 2px;
+=======
     margin-top: 10px;
     margin-left: 3rem;
+>>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
     letter-spacing: 0.08em;
   }
 
@@ -331,11 +349,22 @@
   }
   #title-reveal .tr-main {
     font-family: 'Pacifico', cursive;
+<<<<<<< HEAD
+    font-size: clamp(3.2rem, 8vw, 7rem);
+=======
     font-size: clamp(2.8rem, 6vw, 5rem);
+>>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
     font-weight: 400;
     color: #fff;
     line-height: 1.05;
     text-shadow:
+<<<<<<< HEAD
+      0 2px 0 rgba(0,0,0,0.15),
+      0 8px 40px rgba(255,140,50,0.55),
+      0 0 80px rgba(255,200,80,0.35);
+    display: block;
+    letter-spacing: 0.02em;
+=======
       -4px 5px 0 rgba(0,0,0,0.15),
       0 9px 40px rgba(255,140,50,0.55),
       0 0 80px rgba(255,200,80,0.35);
@@ -344,6 +373,7 @@
     white-space: nowrap;
     min-width: 500px;
     text-align: center;
+>>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
   }
   #title-reveal .tr-main em {
     font-style: normal;
@@ -354,9 +384,15 @@
     font-size: clamp(1.2rem, 2.5vw, 1.8rem);
     font-weight: 700;
     font-style: italic;
+<<<<<<< HEAD
+    color: rgba(255,240,190,0.95);
+    display: block;
+    margin-top: 10px;
+=======
     color: rgba(83, 71, 32, 0.95);
     display: block;
     margin-top: 50px;
+>>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
     letter-spacing: 0.06em;
   }
   /* letter-by-letter stagger on expand */
@@ -525,11 +561,19 @@
     animation: fishSwim var(--fd) linear var(--fdl) infinite;
   }
   @keyframes fishSwim {
+<<<<<<< HEAD
+    0%   { transform: translateX(-200px) scaleX(1); }
+    49%  { transform: translateX(calc(100vw + 200px)) scaleX(1); opacity: 0.25; }
+    50%  { transform: translateX(calc(100vw + 200px)) scaleX(-1); opacity: 0; }
+    51%  { transform: translateX(calc(100vw + 200px)) scaleX(-1); opacity: 0.25; }
+    100% { transform: translateX(-200px) scaleX(-1); }
+=======
     0%   { transform: translateX(calc(100vw + 200px)) scaleX(-1); }
     49%  { transform: translateX(-200px) scaleX(-1); opacity: 0.25; }
     50%  { transform: translateX(-200px) scaleX(1); opacity: 0; }
     51%  { transform: translateX(-200px) scaleX(1); opacity: 0.25; }
     100% { transform: translateX(calc(100vw + 200px)) scaleX(1); }
+>>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
   }
 
   .gallery-inner {
@@ -584,6 +628,126 @@
     line-height: 1.7;
   }
 
+<<<<<<< HEAD
+  /* ─── GRID ─── */
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    grid-template-rows: auto;
+    gap: 20px;
+  }
+
+  /* Featured big card */
+  .card:nth-child(1) { grid-column: 1 / 8; grid-row: 1; }
+  .card:nth-child(2) { grid-column: 8 / 13; grid-row: 1; }
+  .card:nth-child(3) { grid-column: 1 / 5; grid-row: 2; }
+  .card:nth-child(4) { grid-column: 5 / 9; grid-row: 2; }
+  .card:nth-child(5) { grid-column: 9 / 13; grid-row: 2; }
+  .card:nth-child(6) { grid-column: 1 / 13; grid-row: 3; }
+
+  @media (max-width: 900px) {
+    .card:nth-child(n) { grid-column: 1 / -1; grid-row: auto; }
+  }
+
+  .card {
+    position: relative;
+    border-radius: 18px;
+    overflow: hidden;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    cursor: none;
+    transition: border-color 0.3s ease, transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  .card:hover {
+    border-color: rgba(0,212,224,0.5);
+    transform: translateY(-6px);
+  }
+
+  .card-img-wrap {
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .card:nth-child(1) .card-img-wrap,
+  .card:nth-child(6) .card-img-wrap { height: 320px; }
+  .card:nth-child(2) .card-img-wrap { height: 320px; }
+  .card:nth-child(n+3):nth-child(-n+5) .card-img-wrap { height: 220px; }
+
+  @media (max-width: 900px) {
+    .card .card-img-wrap { height: 240px !important; }
+  }
+
+  .card-img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s cubic-bezier(0.25,0.46,0.45,0.94);
+    display: block;
+  }
+
+  .card:hover .card-img-wrap img { transform: scale(1.07); }
+
+  /* Color tint overlay per card */
+  .card-tint {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.25;
+    mix-blend-mode: color;
+  }
+  .card:nth-child(1) .card-tint { background: var(--coral-orange); }
+  .card:nth-child(2) .card-tint { background: var(--sea-surface); }
+  .card:nth-child(3) .card-tint { background: var(--coral-pink); }
+  .card:nth-child(4) .card-tint { background: var(--seaweed); }
+  .card:nth-child(5) .card-tint { background: var(--coral-yellow); }
+  .card:nth-child(6) .card-tint { background: var(--coral-red); }
+
+  .card-body {
+    padding: 22px 24px 26px;
+    background: linear-gradient(to bottom, rgba(0,40,55,0.85), rgba(0,20,30,0.97));
+    backdrop-filter: blur(12px);
+  }
+
+  .card-tag {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 500;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--sea-surface);
+    margin-bottom: 8px;
+  }
+
+  .card-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    color: var(--white);
+    margin-bottom: 8px;
+    line-height: 1.25;
+  }
+
+  .card-desc {
+    font-weight: 300;
+    font-size: 0.88rem;
+    color: rgba(180,230,240,0.75);
+    line-height: 1.7;
+  }
+
+  /* ─── WIDE CARD HORIZONTAL LAYOUT ─── */
+  .card:nth-child(6) {
+    display: flex;
+    flex-direction: row;
+  }
+  .card:nth-child(6) .card-img-wrap { flex: 0 0 55%; }
+  .card:nth-child(6) .card-body { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+  .card:nth-child(6) .card-title { font-size: 1.8rem; margin-bottom: 14px; }
+  .card:nth-child(6) .card-desc { font-size: 0.95rem; }
+
+  @media (max-width: 900px) {
+    .card:nth-child(6) { flex-direction: column; }
+    .card:nth-child(6) .card-img-wrap { flex: none; width: 100%; }
+=======
   /* ─── FEATURED GALLERY SECTIONS ─── */
   .gallery-grid {
     display: flex;
@@ -728,6 +892,7 @@
     .featured-title {
       font-size: 2rem;
     }
+>>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
   }
 
   /* ─── FOOTER TAG ─── */
@@ -769,6 +934,19 @@
   @keyframes btnAppear { to { opacity: 1; } }
   #skip-btn:hover { background: #FFD700; transform: translateY(-2px) scale(1.04); }
 
+<<<<<<< HEAD
+  /* ─── CARD ENTRANCE ANIMATION ─── */
+  .card {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.34,1.2,0.64,1), border-color 0.3s ease;
+  }
+  .card.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .card:hover { transform: translateY(-6px); }
+=======
   /* ─── SECTION ENTRANCE ANIMATION ─── */
   .featured-section {
     opacity: 0;
@@ -779,16 +957,24 @@
     opacity: 1;
     transform: translateY(0);
   }
+>>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
 
 </style>
 </head>
 <body>
 
 <div id="cursor"></div>
+<<<<<<< HEAD
+<button id="skip-btn" onclick="skipToGallery()">Skip ↓</button>
+
+<!-- Tall scroll driver — scrolling through this moves the boat -->
+<div id="scroll-driver" style="height: 800vh; position: relative;">
+=======
 <!-- <button id="skip-btn" onclick="skipToGallery()">Skip ↓</button> -->
 
 <!-- Tall scroll driver — scrolling through this moves the boat -->
 <div id="scroll-driver" style="height: 400vh; position: relative;">
+>>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
 
 <!-- ════════════════════════════════════════
      ANIMATED SCENE (sticky)
@@ -1131,7 +1317,11 @@
 <div id="dragged-title">
   <span id="title-rope"></span>
   <div id="title-banner">
+<<<<<<< HEAD
+    <span class="t-main">Simply PILAR</span>
+=======
     <span class="t-main">Simply Pilar</span>
+>>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
     <span class="t-sub">let's sail</span>
   </div>
 </div>
@@ -1139,7 +1329,11 @@
 <!-- EXPANDED TITLE — revealed at centre when boat drops it -->
 <div id="title-reveal">
   <span class="tr-main"></span>
+<<<<<<< HEAD
+  <span class="tr-sub">let's sail</span>
+=======
   <span class="tr-sub">let's dive deeper</span>
+>>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
 </div>
 
 </div><!-- /scene -->
@@ -1153,6 +1347,21 @@
 
   <!-- Animated fish -->
   <svg class="deco-fish" style="--fd:18s;--fdl:0s;top:30%;width:80px;" viewBox="0 0 80 40">
+<<<<<<< HEAD
+    <path d="M55 20 Q35 8 10 18 Q35 28 55 20 Z" fill="#FF8C42"/>
+    <path d="M55 20 L72 10 L72 30 Z" fill="#FF6B42"/>
+    <circle cx="15" cy="19" r="3" fill="rgba(0,0,0,0.4)"/>
+  </svg>
+  <svg class="deco-fish" style="--fd:25s;--fdl:7s;top:60%;width:55px;" viewBox="0 0 80 40">
+    <path d="M55 20 Q35 10 10 19 Q35 29 55 20 Z" fill="#00D4E0"/>
+    <path d="M55 20 L70 12 L70 28 Z" fill="#00B8C8"/>
+    <circle cx="15" cy="19" r="2.5" fill="rgba(0,0,0,0.4)"/>
+  </svg>
+  <svg class="deco-fish" style="--fd:22s;--fdl:13s;top:50%;width:45px;" viewBox="0 0 80 40">
+    <path d="M55 20 Q35 10 10 19 Q35 29 55 20 Z" fill="#FFD166"/>
+    <path d="M55 20 L70 12 L70 28 Z" fill="#FFB840"/>
+    <circle cx="15" cy="19" r="2" fill="rgba(0,0,0,0.4)"/>
+=======
     <path d="M25 20 Q45 8 70 18 Q45 28 25 20 Z" fill="#FF8C42"/>
     <path d="M25 20 L8 10 L8 30 Z" fill="#FF6B42"/>
     <circle cx="65" cy="19" r="3" fill="rgba(0,0,0,0.4)"/>
@@ -1166,6 +1375,7 @@
     <path d="M25 20 Q45 10 70 19 Q45 29 25 20 Z" fill="#FFD166"/>
     <path d="M25 20 L10 12 L10 28 Z" fill="#FFB840"/>
     <circle cx="65" cy="19" r="2" fill="rgba(0,0,0,0.4)"/>
+>>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
   </svg>
 
   <!-- Corals SVG directly in bar -->
@@ -1313,13 +1523,90 @@
   <div class="gallery-inner">
 
     <header class="gallery-header">
+<<<<<<< HEAD
+      <span class="gallery-eyebrow">Philippine Maritime Heritage</span>
+      <h1 class="gallery-title">Bangka — <em>Tropical</em><br>Summer Journey</h1>
+      <p class="gallery-sub">Discover the soul of the islands through crystal waters, living reefs, and the ageless craft of the outrigger.</p>
+=======
       <span class="gallery-eyebrow">Tourism</span>
       <h1 class="gallery-title">Pilar — <em>Tropical</em><br>Summer Journey</h1>
       <p class="gallery-sub">Discover the soul of Sorsogon through crystal waters, living reefs, and the ageless craft of the outrigger.</p>
+>>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
     </header>
 
     <div class="gallery-grid">
 
+<<<<<<< HEAD
+      <div class="card" style="transition-delay: 0.05s">
+        <div class="card-img-wrap">
+          <img src="https://picsum.photos/seed/bangka-boat/700/400" alt="Traditional Bangka" loading="lazy">
+        </div>
+        <div class="card-tint"></div>
+        <div class="card-body">
+          <span class="card-tag">Heritage</span>
+          <h3 class="card-title">Traditional Bangka</h3>
+          <p class="card-desc">Classic Filipino outrigger boat — the vessel that binds thousands of islands into one people.</p>
+        </div>
+      </div>
+
+      <div class="card" style="transition-delay: 0.12s">
+        <div class="card-img-wrap">
+          <img src="https://picsum.photos/seed/tropical-reef/500/400" alt="Tropical Waters" loading="lazy">
+        </div>
+        <div class="card-tint"></div>
+        <div class="card-body">
+          <span class="card-tag">Marine Life</span>
+          <h3 class="card-title">Tropical Waters</h3>
+          <p class="card-desc">Crystal lagoons alive with colour — the Philippine Sea is among the most biodiverse on Earth.</p>
+        </div>
+      </div>
+
+      <div class="card" style="transition-delay: 0.19s">
+        <div class="card-img-wrap">
+          <img src="https://picsum.photos/seed/island-sunset/500/300" alt="Island Sunset" loading="lazy">
+        </div>
+        <div class="card-tint"></div>
+        <div class="card-body">
+          <span class="card-tag">Golden Hour</span>
+          <h3 class="card-title">Island Sunset</h3>
+          <p class="card-desc">When the sun bleeds orange into the sea and bangkas return heavy with the day's catch.</p>
+        </div>
+      </div>
+
+      <div class="card" style="transition-delay: 0.26s">
+        <div class="card-img-wrap">
+          <img src="https://picsum.photos/seed/coral-garden/500/300" alt="Coral Gardens" loading="lazy">
+        </div>
+        <div class="card-tint"></div>
+        <div class="card-body">
+          <span class="card-tag">Reef</span>
+          <h3 class="card-title">Coral Gardens</h3>
+          <p class="card-desc">Vibrant colonies of staghorn and brain coral sheltering rainbow clouds of fish.</p>
+        </div>
+      </div>
+
+      <div class="card" style="transition-delay: 0.33s">
+        <div class="card-img-wrap">
+          <img src="https://picsum.photos/seed/fishing-village/500/300" alt="Fishing Village" loading="lazy">
+        </div>
+        <div class="card-tint"></div>
+        <div class="card-body">
+          <span class="card-tag">Culture</span>
+          <h3 class="card-title">Fishing Communities</h3>
+          <p class="card-desc">Coastal villages where every generation inherits the art of building and sailing the bangka.</p>
+        </div>
+      </div>
+
+      <div class="card" style="transition-delay: 0.40s">
+        <div class="card-img-wrap">
+          <img src="https://picsum.photos/seed/ocean-journey-wide/900/500" alt="Ocean Journey" loading="lazy">
+        </div>
+        <div class="card-tint"></div>
+        <div class="card-body">
+          <span class="card-tag">Voyage</span>
+          <h3 class="card-title">The Open Ocean</h3>
+          <p class="card-desc">The vast blue highway that connects 7,641 islands — each with its own voice, rhythm, and maritime spirit — into the magnificent tapestry that is the Philippine archipelago.</p>
+=======
       <div class="featured-section" style="transition-delay: 0.1s">
         <div class="featured-image">
           <img src="tourism_images/Heritage/astillero de panlatuan.jpg" alt="Astillero de Panlatuan" loading="lazy">
@@ -1603,6 +1890,7 @@ With its clear waters and peaceful coastal scenery, Bantigue Point is ideal for 
           <svg viewBox="0 0 40 80" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M20 80 Q15 60 25 40 Q18 20 22 0" stroke="#C77DFF" stroke-width="3" fill="none"/>
           </svg>
+>>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
         </div>
       </div>
 
@@ -1642,9 +1930,15 @@ const titleRope     = document.getElementById('title-rope');
 const titleBanner   = document.getElementById('title-banner');
 
 // Build split-char title for staggered letter reveal
+<<<<<<< HEAD
+const TITLE_TEXT = 'Simply PILAR';
+const trMain = titleReveal.querySelector('.tr-main');
+trMain.innerHTML = TITLE_TEXT.split('').map((ch, i) =>
+=======
 const TITLE_TEXT = 'Simply   Pilar';
 const trMain = titleReveal.querySelector('.tr-main');
 trMain.innerHTML = TITLE_TEXT.split(' ').map((ch, i) =>
+>>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
   `<span class="char" style="transition-delay:${0.08 + i * 0.06}s">${ch}</span>`
 ).join('');
 
@@ -1752,12 +2046,21 @@ function skipToGallery() {
 }
 
 // ════════════════════════════════════════
+<<<<<<< HEAD
+// GALLERY CARD INTERSECTION REVEAL
+// ════════════════════════════════════════
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.12 });
+document.querySelectorAll('.card').forEach(c => observer.observe(c));
+=======
 // GALLERY SECTION INTERSECTION REVEAL
 // ════════════════════════════════════════
 const observer = new IntersectionObserver(entries => {
   entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
 }, { threshold: 0.15 });
 document.querySelectorAll('.featured-section').forEach(section => observer.observe(section));
+>>>>>>> 1b538331e37148a87bb4fe58e2b12354b716a520
 
 // ════════════════════════════════════════
 // GALLERY BUBBLES

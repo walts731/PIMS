@@ -444,7 +444,9 @@ try {
                 COUNT(DISTINCT a.office_id) as total_offices,
                 SUM(CASE WHEN ai.status = 'available' THEN 1 ELSE 0 END) as serviceable_count,
                 SUM(CASE WHEN ai.status = 'in_use' THEN 1 ELSE 0 END) as unserviceable_count,
-                SUM(CASE WHEN ai.status = 'no_tag' THEN 1 ELSE 0 END) as no_tag_count
+                SUM(CASE WHEN ai.status = 'no_tag' THEN 1 ELSE 0 END) as no_tag_count,
+                SUM(CASE WHEN ai.status = 'red_tagged' THEN 1 ELSE 0 END) as red_tagged_count,
+                SUM(CASE WHEN ai.status = 'maintenance' THEN 1 ELSE 0 END) as maintenance_count
             FROM asset_items ai
             LEFT JOIN assets a ON ai.asset_id = a.id";
     $result = $conn->query($sql);
@@ -520,25 +522,37 @@ try {
             <div class="col-lg-2 col-md-6">
                 <div class="stats-card">
                     <div class="stats-number"><?php echo $stats['total_quantity'] ?? 0; ?></div>
-                    <div class="stats-label"><i class="bi bi-box"></i> Total Assets</div>
+                    <div class="stats-label"><i class="bi bi-box-fill text-primary"></i> Total Assets</div>
                 </div>
             </div>
             <div class="col-lg-2 col-md-6">
                 <div class="stats-card">
                     <div class="stats-number"><?php echo $stats['serviceable_count'] ?? 0; ?></div>
-                    <div class="stats-label"><i class="bi bi-check-circle"></i> Serviceable</div>
+                    <div class="stats-label"><i class="bi bi-check-circle-fill text-success"></i> Serviceable</div>
                 </div>
             </div>
             <div class="col-lg-2 col-md-6">
                 <div class="stats-card">
                     <div class="stats-number"><?php echo $stats['unserviceable_count'] ?? 0; ?></div>
-                    <div class="stats-label"><i class="bi bi-x-circle"></i> Unserviceable</div>
+                    <div class="stats-label"><i class="bi bi-x-circle-fill text-danger"></i> Unserviceable</div>
                 </div>
             </div>
             <div class="col-lg-2 col-md-6">
                 <div class="stats-card">
                     <div class="stats-number"><?php echo $stats['no_tag_count'] ?? 0; ?></div>
-                    <div class="stats-label"><i class="bi bi-x-circle"></i> No Tag Assets</div>
+                    <div class="stats-label"><i class="bi bi-tag-fill text-secondary"></i> No Tag Assets</div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-6">
+                <div class="stats-card">
+                    <div class="stats-number"><?php echo $stats['red_tagged_count'] ?? 0; ?></div>
+                    <div class="stats-label"><i class="bi bi-exclamation-triangle-fill text-danger"></i> Red-Tagged</div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-6">
+                <div class="stats-card">
+                    <div class="stats-number"><?php echo $stats['maintenance_count'] ?? 0; ?></div>
+                    <div class="stats-label"><i class="bi bi-tools text-warning"></i> Maintenance</div>
                 </div>
             </div>
         </div>
@@ -1227,7 +1241,7 @@ try {
                 // Use DataTables export functionality if DataTables is initialized
                 try {
                     const data = assetsTable.data().toArray();
-                    let csv = 'Category,Subcategory,Description,Quantity,Office,Created,Actions\n';
+                    let csv = 'Category,Subcategory,Description,Quantity,Office\n';
                     
                     data.forEach(row => {
                         const rowData = [
@@ -1235,9 +1249,7 @@ try {
                             row[1].replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim(), // Subcategory
                             row[2], // Description
                             row[3], // Quantity
-                            row[4].replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim(), // Office
-                            row[5], // Created
-                            row[6].replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()  // Actions
+                            row[4].replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()  // Office
                         ];
                         csv += rowData.map(cell => `"${cell.trim()}"`).join(',') + '\n';
                     });
@@ -1264,7 +1276,7 @@ try {
         // Manual export function for when DataTables is not available
         function exportTableManually() {
             console.log('Using manual table export');
-            let csv = 'Category,Subcategory,Description,Quantity,Office,Created\n';
+            let csv = 'Category,Subcategory,Description,Quantity,Office\n';
             
             $('#assetsTable tbody tr').each(function() {
                 const $row = $(this);
@@ -1276,8 +1288,8 @@ try {
                 const rowData = [];
                 $row.find('td').each(function(index) {
                     let cellText = $(this).text().trim();
-                    // Skip actions column for export
-                    if (index < 6) {
+                    // Only include first 5 columns (exclude Actions column)
+                    if (index < 5) {
                         rowData.push(cellText);
                     }
                 });

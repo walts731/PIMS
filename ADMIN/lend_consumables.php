@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     $to_office_id = intval($_POST['to_office_id'] ?? 0);
     $lent_by = $_SESSION['user_id'];
     $received_by = trim($_POST['received_by'] ?? '');
-    $date_lent = $_POST['date_lent'] ?? date('Y-m-d');
+    $date_lent = $_POST['date_lent'] ?? date('Y-m-d H:i:s');
     $notes = trim($_POST['notes'] ?? '');
     
     // Validation
@@ -95,7 +95,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                     $from_office_name = $from_office_result->fetch_assoc()['office_name'] ?? 'Unknown';
                     $from_office_stmt->close();
                     
-                    $insert_balance_stmt->bind_param("isisiiii", $consumable_id, $consumable['description'], $consumable['office_id'], $from_office_name, $to_office_id, $quantity_lent, 0, $quantity_lent);
+                    $total_deducted = 0;
+                    $insert_balance_stmt->bind_param("isisiiii", $consumable_id, $consumable['description'], $consumable['office_id'], $from_office_name, $to_office_id, $quantity_lent, $total_deducted, $quantity_lent);
                     $insert_balance_stmt->execute();
                     $insert_balance_stmt->close();
                 }
@@ -138,6 +139,55 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                 }
                 $target_check_stmt->close();
                 
+                // Only recalculate balance records for this specific consumable when borrowing
+                $recalculate_sql = "SELECT 
+                                        lc.consumable_id,
+                                        c.description as consumable_description,
+                                        lc.from_office_id as office_id,
+                                        o1.office_name as office_name,
+                                        lc.to_office_id as for_office_id,
+                                        o2.office_name as for_office_name,
+                                        SUM(lc.quantity_lent) as total_borrowed,
+                                        SUM(CASE WHEN lc.status = 'returned' THEN lc.quantity_lent ELSE 0 END) as total_deducted,
+                                        SUM(CASE WHEN lc.status = 'lent' THEN lc.quantity_lent ELSE 0 END) - SUM(CASE WHEN lc.status = 'returned' THEN lc.quantity_lent ELSE 0 END) as current_balance
+                                    FROM lend_consumables lc
+                                    LEFT JOIN consumables c ON lc.consumable_id = c.id
+                                    LEFT JOIN offices o1 ON lc.from_office_id = o1.id
+                                    LEFT JOIN offices o2 ON lc.to_office_id = o2.id
+                                    WHERE lc.consumable_id = ? AND lc.from_office_id = ? AND lc.to_office_id = ?
+                                    GROUP BY lc.consumable_id, c.description, lc.from_office_id, o1.office_name, lc.to_office_id, o2.office_name";
+                
+                $recalculate_stmt = $conn->prepare($recalculate_sql);
+                $recalculate_stmt->bind_param("iii", $consumable_id, $consumable['office_id'], $to_office_id);
+                $recalculate_stmt->execute();
+                $recalculate_result = $recalculate_stmt->get_result();
+                
+                if ($recalculate_result->num_rows > 0) {
+                    $recalculate_row = $recalculate_result->fetch_assoc();
+                    
+                    // Update or insert the specific balance record
+                    $check_specific_stmt = $conn->prepare("SELECT id FROM consumable_balance WHERE consumable_id = ? AND office_id = ? AND for_office_id = ?");
+                    $check_specific_stmt->bind_param("iii", $recalculate_row['consumable_id'], $recalculate_row['office_id'], $recalculate_row['for_office_id']);
+                    $check_specific_stmt->execute();
+                    $check_specific_result = $check_specific_stmt->get_result();
+                    
+                    if ($check_specific_result->num_rows > 0) {
+                        // Update existing record
+                        $update_specific_stmt = $conn->prepare("UPDATE consumable_balance SET total_borrowed = ?, total_deducted = ?, current_balance = ?, last_updated = NOW() WHERE consumable_id = ? AND office_id = ? AND for_office_id = ?");
+                        $update_specific_stmt->bind_param("iiiiii", $recalculate_row['total_borrowed'], $recalculate_row['total_deducted'], $recalculate_row['current_balance'], $recalculate_row['consumable_id'], $recalculate_row['office_id'], $recalculate_row['for_office_id']);
+                        $update_specific_stmt->execute();
+                        $update_specific_stmt->close();
+                    } else {
+                        // Insert new record
+                        $insert_specific_stmt = $conn->prepare("INSERT INTO consumable_balance (consumable_id, consumable_description, office_id, office_name, for_office_id, total_borrowed, total_deducted, current_balance, last_updated, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())");
+                        $insert_specific_stmt->bind_param("isisiiii", $recalculate_row['consumable_id'], $recalculate_row['consumable_description'], $recalculate_row['office_id'], $recalculate_row['office_name'], $recalculate_row['for_office_id'], $recalculate_row['total_borrowed'], $recalculate_row['total_deducted'], $recalculate_row['current_balance']);
+                        $insert_specific_stmt->execute();
+                        $insert_specific_stmt->close();
+                    }
+                    $check_specific_stmt->close();
+                }
+                $recalculate_stmt->close();
+                
                 $message = "Consumable lent successfully!";
                 $message_type = "success";
                 logSystemAction($_SESSION['user_id'], 'consumable_lent', 'lend_consumables', "Lent {$quantity_lent} units of {$consumable['description']} to office ID {$to_office_id}");
@@ -173,7 +223,7 @@ try {
         `total_borrowed` INT DEFAULT 0,
         `total_deducted` INT DEFAULT 0,
         `current_balance` INT DEFAULT 0,
-        `last_updated` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        `last_updated` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         INDEX `idx_consumable_office` (`consumable_id`, `office_id`, `for_office_id`),
         INDEX `idx_for_office` (`for_office_id`),
@@ -183,95 +233,9 @@ try {
     )";
     $conn->query($create_table_sql);
     
-    // First, calculate and insert main total borrowed records from lend_consumables
-    $main_totals_sql = "SELECT 
-                            lc.consumable_id,
-                            c.description as consumable_description,
-                            lc.from_office_id as office_id,
-                            o1.office_name as office_name,
-                            lc.to_office_id as for_office_id,
-                            o2.office_name as for_office_name,
-                            SUM(lc.quantity_lent) as total_borrowed,
-                            SUM(CASE WHEN lc.status = 'returned' THEN lc.quantity_lent ELSE 0 END) as total_deducted,
-                            SUM(CASE WHEN lc.status = 'lent' THEN lc.quantity_lent ELSE 0 END) - SUM(CASE WHEN lc.status = 'returned' THEN lc.quantity_lent ELSE 0 END) as current_balance
-                        FROM lend_consumables lc
-                        LEFT JOIN consumables c ON lc.consumable_id = c.id
-                        LEFT JOIN offices o1 ON lc.from_office_id = o1.id
-                        LEFT JOIN offices o2 ON lc.to_office_id = o2.id";
-    
-    $main_where_conditions = [];
-    $main_params = [];
-    $main_types = '';
-    
-    if ($from_office_filter > 0) {
-        $main_where_conditions[] = "lc.from_office_id = ?";
-        $main_params[] = $from_office_filter;
-        $main_types .= 'i';
-    }
-    
-    if ($to_office_filter > 0) {
-        $main_where_conditions[] = "lc.to_office_id = ?";
-        $main_params[] = $to_office_filter;
-        $main_types .= 'i';
-    }
-    
-    if (!empty($search_filter)) {
-        $main_where_conditions[] = "(c.description LIKE ? OR o1.office_name LIKE ? OR o2.office_name LIKE ?)";
-        $search_term = '%' . $search_filter . '%';
-        $main_params[] = $search_term;
-        $main_params[] = $search_term;
-        $main_params[] = $search_term;
-        $main_types .= 'sss';
-    }
-    
-    if (!empty($main_where_conditions)) {
-        $main_totals_sql .= " WHERE " . implode(" AND ", $main_where_conditions);
-    }
-    
-    $main_totals_sql .= " GROUP BY lc.consumable_id, c.description, lc.from_office_id, o1.office_name, lc.to_office_id, o2.office_name";
-    
-    // Debug: Log the SQL query
-    error_log("Main totals SQL: " . $main_totals_sql);
-    error_log("Main params: " . print_r($main_params, true));
-    
-    $main_stmt = $conn->prepare($main_totals_sql);
-    if (!empty($main_params)) {
-        $main_stmt->bind_param($main_types, ...$main_params);
-    }
-    $main_stmt->execute();
-    $main_result = $main_stmt->get_result();
-    
-    error_log("Main result count: " . $main_result->num_rows);
-    
-    // Insert/update main total borrowed records
-    $insert_count = 0;
-    $update_count = 0;
-    while ($main_row = $main_result->fetch_assoc()) {
-        $check_main_stmt = $conn->prepare("SELECT id FROM consumable_balance WHERE consumable_id = ? AND office_id = ? AND for_office_id = ?");
-        $check_main_stmt->bind_param("iii", $main_row['consumable_id'], $main_row['office_id'], $main_row['for_office_id']);
-        $check_main_stmt->execute();
-        $check_result = $check_main_stmt->get_result();
-        
-        if ($check_result->num_rows > 0) {
-            // Update existing main record
-            $update_main_stmt = $conn->prepare("UPDATE consumable_balance SET total_borrowed = ?, total_deducted = ?, current_balance = ?, last_updated = NOW() WHERE consumable_id = ? AND office_id = ? AND for_office_id = ?");
-            $update_main_stmt->bind_param("iiiiii", $main_row['total_borrowed'], $main_row['total_deducted'], $main_row['current_balance'], $main_row['consumable_id'], $main_row['office_id'], $main_row['for_office_id']);
-            $update_main_stmt->execute();
-            $update_main_stmt->close();
-            $update_count++;
-        } else {
-            // Insert new main record
-            $insert_main_stmt = $conn->prepare("INSERT INTO consumable_balance (consumable_id, consumable_description, office_id, office_name, for_office_id, total_borrowed, total_deducted, current_balance, last_updated, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())");
-            $insert_main_stmt->bind_param("isisiiii", $main_row['consumable_id'], $main_row['consumable_description'], $main_row['office_id'], $main_row['office_name'], $main_row['for_office_id'], $main_row['total_borrowed'], $main_row['total_deducted'], $main_row['current_balance']);
-            $insert_main_stmt->execute();
-            $insert_main_stmt->close();
-            $insert_count++;
-        }
-        $check_main_stmt->close();
-    }
-    $main_stmt->close();
-    
-    error_log("Inserted: $insert_count, Updated: $update_count main records");
+    // Fix existing table: remove ON UPDATE CURRENT_TIMESTAMP from last_updated column
+    $alter_table_sql = "ALTER TABLE consumable_balance MODIFY COLUMN last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP";
+    $conn->query($alter_table_sql);
     
     // Now get the final balance records for display
     $sql = "SELECT 
@@ -685,7 +649,7 @@ try {
                             <div class="col-md-12">
                                 <div class="mb-3">
                                     <label class="form-label">Date Borrowed *</label>
-                                    <input type="date" class="form-control" name="date_lent" value="<?php echo date('Y-m-d'); ?>" required>
+                                    <input type="datetime-local" class="form-control" name="date_lent" value="<?php echo date('Y-m-d\TH:i'); ?>" required>
                                 </div>
                             </div>
                         </div>

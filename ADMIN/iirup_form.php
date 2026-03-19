@@ -270,7 +270,7 @@ if ($result && $row = $result->fetch_assoc()) {
 <body>
     <?php
     // Set page title for topbar
-    $page_title = 'Individual Item Request for User Property';
+    $page_title = 'IIRUP';
     ?>
     <!-- Main Content Wrapper -->
     <div class="main-wrapper" id="mainWrapper">

@@ -251,7 +251,7 @@ if ($categories_result) {
 
         <!-- Statistics Cards -->
         <div class="row mb-4">
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <div class="stats-card">
                     <div class="d-flex align-items-center">
                         <div class="flex-grow-1">
@@ -264,7 +264,7 @@ if ($categories_result) {
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <div class="stats-card">
                     <div class="d-flex align-items-center">
                         <div class="flex-grow-1">
@@ -277,19 +277,7 @@ if ($categories_result) {
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="stats-card">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-grow-1">
-                            <h6 class="text-muted mb-2">Average Value</h6>
-                            <div class="stats-number">₱<?php echo $total_unserviceable > 0 ? number_format($total_value / $total_unserviceable, 2) : '0.00'; ?></div>
-                        </div>
-                        <div class="ms-3">
-                            <i class="bi bi-calculator" style="font-size: 2rem; color: #17a2b8;"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
+           
         </div>
 
         <!-- Search Section -->

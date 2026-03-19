@@ -569,7 +569,7 @@ try {
             <div class="col-lg-3 col-md-6">
                 <div class="stats-card">
                     <div class="stats-number"><?php echo number_format($stats['total_value'] ?? 0, 2); ?></div>
-                    <div class="stats-label"><i class="bi bi-currency-dollar"></i> Total Value</div>
+                    <div class="stats-label"><i class="bi bi-currency-peso"></i> Total Value</div>
                 </div>
             </div>
             <div class="col-lg-3 col-md-6">
