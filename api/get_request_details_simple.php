@@ -92,8 +92,8 @@ try {
             
             if ($office_result->num_rows > 0) {
                 $office_data = $office_result->fetch_assoc();
-                $requester_info['office']['name'] = $office_data['office_name'];
-                $requester_info['office']['code'] = $office_data['office_code'];
+                $requester_info['office_name'] = $office_data['office_name'];
+                $requester_info['office_code'] = $office_data['office_code'];
             }
         }
     } catch (Exception $e) {
@@ -111,8 +111,8 @@ try {
             
             if ($office_result->num_rows > 0) {
                 $office_data = $office_result->fetch_assoc();
-                $approver_info['office']['name'] = $office_data['office_name'];
-                $approver_info['office']['code'] = $office_data['office_code'];
+                $approver_info['office_name'] = $office_data['office_name'];
+                $approver_info['office_code'] = $office_data['office_code'];
                 
                 // If this is OMM office, get all OMM users
                 if ($request_data['requested_to_office'] == 4) { // OMM office ID
