@@ -539,8 +539,8 @@ try {
             </div>
             <div class="col-lg-2 col-md-6">
                 <div class="stats-card">
-                    <div class="stats-number"><?php echo $stats['total_categories'] ?? 0; ?></div>
-                    <div class="stats-label"><i class="bi bi-tags"></i> Categories</div>
+                    <div class="stats-number"><?php echo $stats['no_tag_count'] ?? 0; ?></div>
+                    <div class="stats-label"><i class="bi bi-tag-fill text-secondary"></i> No Tag Assets</div>
                 </div>
             </div>
             <div class="col-lg-2 col-md-6">
@@ -1235,30 +1235,424 @@ try {
         
         // Export assets function (updated for DataTables)
         function exportAssets() {
-            // Use DataTables export functionality
-            const data = assetsTable.data().toArray();
-            let csv = 'Category,Description,Quantity,Status,Office,Created\n';
+            console.log('Export function called');
             
-            data.forEach(row => {
-                const rowData = [
-                    row[0].replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim(), // Category
-                    row[1], // Description
-                    row[2], // Quantity
-                    row[3].replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim(), // Status
-                    row[4], // Office
-                    row[5]  // Created
-                ];
-                csv += rowData.map(cell => `"${cell.trim()}"`).join(',') + '\n';
+            if (assetsTable) {
+                // Use DataTables export functionality if DataTables is initialized
+                try {
+                    const data = assetsTable.data().toArray();
+                    let csv = 'Category,Subcategory,Description,Quantity,Office\n';
+                    
+                    data.forEach(row => {
+                        const rowData = [
+                            row[0].replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim(), // Category
+                            row[1].replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim(), // Subcategory
+                            row[2], // Description
+                            row[3], // Quantity
+                            row[4].replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()  // Office
+                        ];
+                        csv += rowData.map(cell => `"${cell.trim()}"`).join(',') + '\n';
+                    });
+                    
+                    // Download CSV
+                    const blob = new Blob([csv], { type: 'text/csv' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'assets_export.csv';
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                } catch (error) {
+                    console.error('DataTables export error:', error);
+                    // Fallback to manual table export
+                    exportTableManually();
+                }
+            } else {
+                // DataTables not initialized, use manual export
+                exportTableManually();
+            }
+        }
+        
+        // Manual export function for when DataTables is not available
+        function exportTableManually() {
+            console.log('Using manual table export');
+            let csv = 'Category,Subcategory,Description,Quantity,Office\n';
+            
+            $('#assetsTable tbody tr').each(function() {
+                const $row = $(this);
+                // Skip empty state rows
+                if ($row.find('td[colspan]').length > 0) {
+                    return;
+                }
+                
+                const rowData = [];
+                $row.find('td').each(function(index) {
+                    let cellText = $(this).text().trim();
+                    // Only include first 5 columns (exclude Actions column)
+                    if (index < 5) {
+                        rowData.push(cellText);
+                    }
+                });
+                
+                if (rowData.length > 0) {
+                    csv += rowData.map(cell => `"${cell}"`).join(',') + '\n';
+                }
             });
             
+            // Download CSV
             const blob = new Blob([csv], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `assets_export_${new Date().toISOString().split('T')[0]}.csv`;
+            a.download = 'assets_export.csv';
             a.click();
             window.URL.revokeObjectURL(url);
         }
+        
+        // Asset Property Number Generator Functions
+        function showAssetPropertyNumberGenerator() {
+            // Close any open modals first
+            const addAssetModal = bootstrap.Modal.getInstance(document.getElementById('addAssetModal'));
+            if (addAssetModal) {
+                addAssetModal.hide();
+            }
+            
+            const quantityInput = document.querySelector('input[name="quantity"]');
+            const quantity = parseInt(quantityInput.value) || 1;
+            
+            // Set quantity in generator
+            document.getElementById('assetQuantityInput').value = quantity;
+            updateAssetQuantityInfo();
+            
+            // Get selected office and update display
+            const officeSelect = document.getElementById('assetOfficeSelect');
+            const officeOption = officeSelect.options[officeSelect.selectedIndex];
+            const officeDisplay = document.getElementById('assetSelectedOfficeDisplay');
+            if (officeDisplay && officeOption) {
+                officeDisplay.value = officeOption.textContent;
+            }
+            
+            // Get selected category and update generator
+            const categorySelect = document.getElementById('assetCategorySelect');
+            const categoryOption = categorySelect.options[categorySelect.selectedIndex];
+            const categoryCode = categoryOption ? categoryOption.getAttribute('data-category-code') : '';
+            const generatorCategorySelect = document.getElementById('assetCategorySelectGen');
+            if (categoryCode && generatorCategorySelect) {
+                generatorCategorySelect.value = categoryCode;
+            }
+            
+            // Set form type based on unit cost
+            const unitCostInput = document.querySelector('input[name="unit_cost"]');
+            const formTypeInput = document.getElementById('assetFormType');
+            if (unitCostInput && formTypeInput) {
+                const unitCost = parseFloat(unitCostInput.value) || 0;
+                const formType = unitCost < 50000 ? '04' : '07';
+                formTypeInput.value = formType;
+                
+                // Update the description text
+                const formTypeDescription = formType === '04' ? 
+                    'Auto-detected: Request for Obligation (Below ₱50,000)' : 
+                    'Auto-detected: Property Acknowledgment Receipt (₱50,000 and above)';
+                formTypeInput.nextElementSibling.textContent = formTypeDescription;
+            }
+            
+            // Get next series number
+            getNextAssetSeriesNumber();
+            
+            // Show modal with higher z-index handling
+            const modal = new bootstrap.Modal(document.getElementById('assetPropertyNumberGeneratorModal'), {
+                backdrop: true,
+                keyboard: true
+            });
+            
+            // Ensure proper modal stacking
+            document.getElementById('assetPropertyNumberGeneratorModal').style.zIndex = '1060';
+            
+            modal.show();
+            
+            // Auto-generate initial preview after a short delay
+            setTimeout(() => {
+                generateAssetPropertyNumberPreview();
+            }, 100);
+        }
+        
+        function updateAssetQuantityInfo() {
+            const quantity = parseInt(document.getElementById('assetQuantityInput').value) || 1;
+            const quantityText = document.getElementById('assetQuantityText');
+            if (quantity === 1) {
+                quantityText.textContent = 'Generating 1 property number';
+            } else {
+                quantityText.textContent = `Generating ${quantity} property numbers`;
+            }
+        }
+        
+        function getNextAssetSeriesNumber() {
+            const category = document.getElementById('assetCategorySelectGen').value || '030';
+            const subcategory = document.getElementById('assetSubcategorySelectGen').value || '01';
+            
+            fetch(`../api/get_next_series.php?category=${category}&subcategory=${subcategory}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.next_series) {
+                    document.getElementById('assetSeriesInput').value = data.next_series;
+                    generateAssetPropertyNumberPreview();
+                }
+            })
+            .catch(error => {
+                console.error('Error getting next property number series:', error);
+                generateAssetPropertyNumberPreview();
+            });
+        }
+        
+        function generateAssetPropertyNumberPreview() {
+            const year = new Date().getFullYear();
+            const formType = document.getElementById('assetFormType').value || '07';
+            const category = document.getElementById('assetCategorySelectGen').value || '030';
+            const subcategory = document.getElementById('assetSubcategorySelectGen').value || '01';
+            const baseSeries = document.getElementById('assetSeriesInput').value || '01';
+            const quantity = parseInt(document.getElementById('assetQuantityInput').value) || 1;
+            
+            // Get office code from main form
+            const officeSelect = document.getElementById('assetOfficeSelect');
+            const officeOption = officeSelect.options[officeSelect.selectedIndex];
+            const officeCode = officeOption ? officeOption.getAttribute('data-office-code') : '01';
+            
+            // Update office display
+            const officeDisplay = document.getElementById('assetSelectedOfficeDisplay');
+            if (officeDisplay && officeOption) {
+                officeDisplay.value = officeOption.textContent;
+            }
+            
+            // Generate multiple property numbers
+            const propertyNumbers = [];
+            for (let i = 0; i < quantity; i++) {
+                const currentSeriesNumber = parseInt(baseSeries) + i;
+                const currentSeries = String(currentSeriesNumber).padStart(2, '0');
+                
+                // Combine subcategory and series without dash
+                const subcategorySeries = subcategory + currentSeries;
+                
+                const propertyNumber = `${year}-${formType}-${category}-${subcategorySeries}-${officeCode}`;
+                propertyNumbers.push(propertyNumber);
+            }
+            
+            // Display in preview
+            const previewElement = document.getElementById('assetPropertyNumberPreview');
+            if (quantity === 1) {
+                previewElement.textContent = propertyNumbers[0];
+            } else {
+                previewElement.innerHTML = propertyNumbers.join('<br>');
+                previewElement.style.fontSize = '14px';
+                previewElement.style.lineHeight = '1.4';
+            }
+        }
+        
+        function applyAssetPropertyNumber() {
+            const previewElement = document.getElementById('assetPropertyNumberPreview');
+            const propertyNumbers = previewElement.innerHTML.split('<br>').filter(num => num.trim());
+            
+            if (propertyNumbers.length === 0 || propertyNumbers[0] === '-') {
+                alert('Please generate property numbers first.');
+                return;
+            }
+            
+            const propertyNumbersField = document.getElementById('assetPropertyNumbers');
+            if (propertyNumbersField && propertyNumbers.length > 0) {
+                propertyNumbersField.value = propertyNumbers.join('\n');
+                
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('assetPropertyNumberGeneratorModal'));
+                modal.hide();
+            }
+        }
+        
+        // Setup subcategory filtering for asset generator
+        document.addEventListener('DOMContentLoaded', function() {
+            // Category/subcategory filtering for the main form
+            const assetCategorySelect = document.getElementById('assetCategorySelect');
+            const assetSubcategorySelect = document.getElementById('assetSubcategorySelect');
+            
+            if (assetCategorySelect && assetSubcategorySelect) {
+                assetCategorySelect.addEventListener('change', function() {
+                    const selectedCategoryCode = this.options[this.selectedIndex].getAttribute('data-category-code');
+                    const options = assetSubcategorySelect.querySelectorAll('option');
+                    
+                    options.forEach(option => {
+                        if (option.value === '') {
+                            option.style.display = 'block';
+                        } else {
+                            const optionCategory = option.getAttribute('data-category');
+                            const shouldShow = optionCategory === selectedCategoryCode || selectedCategoryCode === '';
+                            option.style.display = shouldShow ? 'block' : 'none';
+                        }
+                    });
+                    
+                    // Reset subcategory if it doesn't match the new category
+                    if (assetSubcategorySelect.value && assetSubcategorySelect.options[assetSubcategorySelect.selectedIndex].getAttribute('data-category') !== selectedCategoryCode) {
+                        assetSubcategorySelect.value = '';
+                    }
+                });
+            }
+            
+            // Category/subcategory filtering for the generator
+            const generatorCategorySelect = document.getElementById('assetCategorySelectGen');
+            const generatorSubcategorySelect = document.getElementById('assetSubcategorySelectGen');
+            
+            if (generatorCategorySelect && generatorSubcategorySelect) {
+                generatorCategorySelect.addEventListener('change', function() {
+                    const selectedCategory = this.value;
+                    const options = generatorSubcategorySelect.querySelectorAll('option');
+                    
+                    options.forEach(option => {
+                        if (option.value === '') {
+                            option.style.display = 'block';
+                        } else {
+                            const optionCategory = option.getAttribute('data-category');
+                            const shouldShow = optionCategory === selectedCategory || selectedCategory === '';
+                            option.style.display = shouldShow ? 'block' : 'none';
+                        }
+                    });
+                    
+                    // Reset subcategory if it doesn't match the new category
+                    if (generatorSubcategorySelect.value && generatorSubcategorySelect.options[generatorSubcategorySelect.selectedIndex].getAttribute('data-category') !== selectedCategory) {
+                        generatorSubcategorySelect.value = '';
+                    }
+                    
+                    generateAssetPropertyNumberPreview();
+                });
+                
+                generatorSubcategorySelect.addEventListener('change', function() {
+                    getNextAssetSeriesNumber(); // Get new series for this subcategory
+                });
+            }
+            
+            // Auto-update preview when any field changes (except quantity which doesn't affect series)
+            const fields = ['assetCategorySelectGen', 'assetSubcategorySelectGen'];
+            fields.forEach(fieldId => {
+                const element = document.getElementById(fieldId);
+                if (element) {
+                    element.addEventListener('change', generateAssetPropertyNumberPreview);
+                    element.addEventListener('input', generateAssetPropertyNumberPreview);
+                }
+            });
+            
+            // Add quantity listener separately since it only affects preview, not series
+            const quantityElement = document.getElementById('assetQuantityInput');
+            if (quantityElement) {
+                quantityElement.addEventListener('change', generateAssetPropertyNumberPreview);
+                quantityElement.addEventListener('input', generateAssetPropertyNumberPreview);
+            }
+            
+            // Update office display when office changes
+            const assetOfficeSelect = document.getElementById('assetOfficeSelect');
+            if (assetOfficeSelect) {
+                assetOfficeSelect.addEventListener('change', function() {
+                    const officeOption = this.options[this.selectedIndex];
+                    const officeDisplay = document.getElementById('assetSelectedOfficeDisplay');
+                    if (officeDisplay && officeOption) {
+                        officeDisplay.value = officeOption.textContent;
+                    }
+                    generateAssetPropertyNumberPreview();
+                });
+            }
+        });
+        
+        // Auto-set unit based on quantity with pluralization (same as par_form.php)
+        function autoSetUnitBasedOnQuantity() {
+            const quantityInput = document.querySelector('input[name="quantity"]');
+            const unitSelect = document.getElementById('assetUnitSelect');
+            
+            if (!quantityInput || !unitSelect) return;
+            
+            const quantity = parseFloat(quantityInput.value) || 0;
+            if (quantity <= 0) return;
+            
+            const currentValue = unitSelect.value;
+            
+            // Handle pluralization for common units
+            const pluralMap = {
+                'pc': 'pcs',
+                'piece': 'pieces',
+                'set': 'sets',
+                'unit': 'units',
+                'box': 'boxes',
+                'carton': 'cartons',
+                'pack': 'packs',
+                'package': 'packages',
+                'liter': 'liters',
+                'kilogram': 'kilograms',
+                'meter': 'meters',
+                'square_meter': 'square_meters',
+                'cubic_meter': 'cubic_meters',
+                'pair': 'pairs',
+                'dozen': 'dozens',
+                'roll': 'rolls',
+                'bottle': 'bottles',
+                'bag': 'bags',
+                'container': 'containers',
+                'ream': 'reams'
+            };
+            
+            // Find the appropriate unit based on quantity
+            let targetUnit = '';
+            if (quantity === 1) {
+                // Use singular form
+                for (const [singular, plural] of Object.entries(pluralMap)) {
+                    if (currentValue === plural) {
+                        targetUnit = singular;
+                        break;
+                    } else if (currentValue === singular) {
+                        targetUnit = singular;
+                        break;
+                    }
+                }
+                // If no mapping found, keep current value
+                if (!targetUnit && currentValue) {
+                    targetUnit = currentValue;
+                }
+            } else if (quantity > 1) {
+                // Use plural form
+                for (const [singular, plural] of Object.entries(pluralMap)) {
+                    if (currentValue === singular) {
+                        targetUnit = plural;
+                        break;
+                    } else if (currentValue === plural) {
+                        targetUnit = plural;
+                        break;
+                    }
+                }
+                // If no mapping found, keep current value
+                if (!targetUnit && currentValue) {
+                    targetUnit = currentValue;
+                }
+            }
+            
+            // Set the unit if found
+            if (targetUnit) {
+                // Check if the target unit exists in the dropdown
+                const optionExists = Array.from(unitSelect.options).some(option => option.value === targetUnit);
+                if (optionExists) {
+                    unitSelect.value = targetUnit;
+                }
+            }
+        }
+        
+        // Add event listener for quantity change
+        document.addEventListener('DOMContentLoaded', function() {
+            const quantityInput = document.querySelector('input[name="quantity"]');
+            if (quantityInput) {
+                quantityInput.addEventListener('input', autoSetUnitBasedOnQuantity);
+                quantityInput.addEventListener('change', autoSetUnitBasedOnQuantity);
+                
+                // Set initial unit if quantity has a value
+                autoSetUnitBasedOnQuantity();
+            }
+        });
     </script>
 </body>
 </html>
