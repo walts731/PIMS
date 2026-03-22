@@ -1,4 +1,5 @@
 <?php
+ob_start();
 session_start();
 require_once '../config.php';
 require_once '../includes/system_functions.php';
@@ -20,6 +21,101 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
 }
 
 logSystemAction($_SESSION['user_id'], 'Accessed Inventory Custodian Slip Form', 'forms', 'ics_form.php');
+
+// Function to get singular form of unit name
+function getSingularForm($unitName) {
+    // Common plural to singular conversions
+    $singularRules = [
+        // Regular -s endings
+        'pieces' => 'piece',
+        'sets' => 'set',
+        'units' => 'unit',
+        'boxes' => 'box',
+        'cartons' => 'carton',
+        'packs' => 'pack',
+        'packages' => 'package',
+        'bags' => 'bag',
+        'containers' => 'container',
+        'bottles' => 'bottle',
+        'reams' => 'ream',
+        'pairs' => 'pair',
+        'dozens' => 'dozen',
+        'rolls' => 'roll',
+        'sheets' => 'sheet',
+        'feet' => 'foot',
+        'inches' => 'inch',
+        'meters' => 'meter',
+        'centimeters' => 'centimeter',
+        'kilometers' => 'kilometer',
+        'liters' => 'liter',
+        'milliliters' => 'milliliter',
+        'kilograms' => 'kilogram',
+        'grams' => 'gram',
+        'tons' => 'ton',
+        'hours' => 'hour',
+        'days' => 'day',
+        'months' => 'month',
+        'years' => 'year',
+        'hectares' => 'hectare',
+        // Special cases
+        'pcs' => 'pc',
+        'kgs' => 'kg',
+        'gs' => 'g',
+        'ms' => 'm',
+        'cms' => 'cm',
+        'kms' => 'km',
+        'mls' => 'ml',
+        'm3s' => 'm3',
+        'm2s' => 'm2',
+        'has' => 'ha',
+        'hrs' => 'hr',
+        'mos' => 'mo',
+        'yrs' => 'yr',
+        'fts' => 'ft',
+        'ins' => 'in',
+        // ICS-specific units
+        'gallons' => 'gallon',
+        'canisters' => 'canister',
+        'jars' => 'jar',
+        'tubes' => 'tube',
+        'pounds' => 'pound',
+        'ounces' => 'ounce',
+        'cases' => 'case',
+        'barrels' => 'barrel',
+        'drums' => 'drum'
+    ];
+    
+    $lowerUnitName = strtolower($unitName);
+    return $singularRules[$lowerUnitName] ?? $unitName; // Return original if no rule found
+}
+
+// Get units from database
+$units = [];
+try {
+    $result = $conn->query("SELECT unit_name, unit_code FROM units WHERE status = 'active' ORDER BY unit_name");
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $units[] = $row;
+        }
+    }
+} catch (Exception $e) {
+    error_log("Error fetching units: " . $e->getMessage());
+    // Fallback to common units if database fails
+    $units = [];
+    $common_units_fallback = [
+        'pc', 'pcs', 'piece', 'pieces', 'set', 'sets', 'unit', 'units',
+        'box', 'boxes', 'carton', 'cartons', 'pack', 'packs', 'package', 'packages',
+        'liter', 'liters', 'kilogram', 'kilograms', 'meter', 'meters',
+        'square_meter', 'square_meters', 'cubic_meter', 'cubic_meters',
+        'pair', 'pairs', 'dozen', 'dozens', 'roll', 'rolls',
+        'bottle', 'bottles', 'bag', 'bags', 'container', 'containers', 'ream', 'reams',
+        'gallon', 'gallons', 'canister', 'canisters', 'jar', 'jars', 'tube', 'tubes',
+        'pound', 'pounds', 'ounce', 'ounces', 'case', 'cases', 'barrel', 'barrels', 'drum', 'drums'
+    ];
+    foreach ($common_units_fallback as $unit) {
+        $units[] = ['unit_name' => ucfirst($unit), 'unit_code' => $unit];
+    }
+}
 
 // Get data for dropdowns
 $funds_result = $conn->query("SELECT fund_code, fund_name, fund_cluster FROM funds WHERE status = 'active' ORDER BY fund_code");
@@ -86,38 +182,11 @@ if ($result && $row = $result->fetch_assoc()) {
     $header_image = $row['header_image'];
 }
 
-// Common units for dropdown
-$common_units = [
-    'pc', 'pcs',
-    'piece', 'pieces',
-    'set', 'sets',
-    'unit', 'units',
-    'box', 'boxes',
-    'carton', 'cartons',
-    'pack', 'packs',
-    'bottle', 'bottles',
-    'liter', 'liters',
-    'gallon', 'gallons',
-    'kilogram', 'kilograms',
-    'gram', 'grams',
-    'meter', 'meters',
-    'centimeter', 'centimeters',
-    'foot', 'feet',
-    'inch', 'inches',
-    'roll', 'rolls',
-    'bag', 'bags',
-    'canister', 'canisters',
-    'jar', 'jars',
-    'tube', 'tubes',
-    'pound', 'pounds',
-    'ounce', 'ounces',
-    'dozen', 'dozens',
-    'pair', 'pairs',
-    'ream', 'reams',
-    'case', 'cases',
-    'barrel', 'barrels',
-    'drum', 'drums'
-];
+// Common units for dropdown - kept for compatibility but will use database units
+$common_units = [];
+foreach ($units as $unit) {
+    $common_units[] = $unit['unit_code'];
+}
 
 // Get offices for dropdown
 $offices = [];
@@ -391,8 +460,8 @@ if ($result && $row = $result->fetch_assoc()) {
                                                 <td>
                                                     <select class="form-select form-select-sm" name="unit[]" required>
                                                         <option value="">Select Unit</option>
-                                                        <?php foreach ($common_units as $unit): ?>
-                                                            <option value="<?php echo htmlspecialchars($unit); ?>"><?php echo htmlspecialchars($unit); ?></option>
+                                                        <?php foreach ($units as $unit): ?>
+                                                            <option value="<?php echo htmlspecialchars($unit['unit_code']); ?>" data-unit-name="<?php echo htmlspecialchars($unit['unit_name']); ?>" data-singular="<?php echo htmlspecialchars(getSingularForm($unit['unit_name'])); ?>"><?php echo htmlspecialchars($unit['unit_name']); ?></option>
                                                         <?php endforeach; ?>
                                                     </select>
                                                 </td>
@@ -772,8 +841,9 @@ if ($result && $row = $result->fetch_assoc()) {
             // Create unit dropdown HTML
             const unitOptions = <?php 
                 $options = '<option value="">Select Unit</option>';
-                foreach ($common_units as $unit) {
-                    $options .= '<option value="' . htmlspecialchars($unit) . '">' . htmlspecialchars($unit) . '</option>';
+                foreach ($units as $unit) {
+                    $singular = getSingularForm($unit['unit_name']);
+                    $options .= '<option value="' . htmlspecialchars($unit['unit_code']) . '" data-unit-name="' . htmlspecialchars($unit['unit_name']) . '" data-singular="' . htmlspecialchars($singular) . '">' . htmlspecialchars($unit['unit_name']) . '</option>';
                 }
                 echo json_encode($options);
             ?>;
@@ -800,6 +870,25 @@ if ($result && $row = $result->fetch_assoc()) {
                 const cell = newRow.insertCell(index);
                 cell.innerHTML = cellHtml;
             });
+            
+            // Add unit display listeners to the new row
+            const newQuantityInput = newRow.querySelector('input[name="quantity[]"]');
+            const newUnitSelect = newRow.querySelector('select[name="unit[]"]');
+            
+            if (newQuantityInput) {
+                newQuantityInput.addEventListener('input', function() {
+                    updateUnitDisplayForRow(newRow);
+                });
+                newQuantityInput.addEventListener('change', function() {
+                    updateUnitDisplayForRow(newRow);
+                });
+            }
+            
+            if (newUnitSelect) {
+                newUnitSelect.addEventListener('change', function() {
+                    updateUnitDisplayForRow(newRow);
+                });
+            }
         }
         
         function removeICSRow(button) {
@@ -1069,92 +1158,90 @@ if ($result && $row = $result->fetch_assoc()) {
             alert('Export functionality will be implemented');
         }
         
+        // Function to update unit display based on quantity for ICS form
+        function updateUnitDisplayForRow(row) {
+            const quantityInput = row.querySelector('input[name="quantity[]"]');
+            const unitSelect = row.querySelector('select[name="unit[]"]');
+            
+            if (!quantityInput || !unitSelect) return;
+            
+            const quantity = parseInt(quantityInput.value) || 0;
+            
+            // Remove any existing temporary options
+            const tempOptions = unitSelect.querySelectorAll('option[data-temp-singular]');
+            tempOptions.forEach(opt => opt.remove());
+            
+            // Show all original options
+            const allOptions = unitSelect.querySelectorAll('option');
+            allOptions.forEach(opt => {
+                if (opt.style.display === 'none') {
+                    opt.style.display = '';
+                }
+            });
+            
+            if (quantity === 1) {
+                const selectedOption = unitSelect.options[unitSelect.selectedIndex];
+                if (selectedOption && selectedOption.value) {
+                    const singularName = selectedOption.getAttribute('data-singular');
+                    const originalName = selectedOption.getAttribute('data-unit-name');
+                    
+                    if (singularName && singularName !== originalName) {
+                        // Hide the original option
+                        selectedOption.style.display = 'none';
+                        
+                        // Create and add singular option
+                        const singularOption = document.createElement('option');
+                        singularOption.value = selectedOption.value;
+                        singularOption.textContent = singularName;
+                        singularOption.setAttribute('data-temp-singular', 'true');
+                        singularOption.selected = true;
+                        
+                        unitSelect.add(singularOption);
+                        
+                        console.log('ICS: Changed to singular:', originalName, '->', singularName);
+                    }
+                }
+            }
+        }
+        
+        // Function to update all unit displays in the table
+        function updateAllUnitDisplays() {
+            const table = document.getElementById('icsItemsTable');
+            if (!table) return;
+            
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                updateUnitDisplayForRow(row);
+            });
+        }
+        
         // Initialize form with correct units
         function initializeICSForm() {
             // Set correct units for existing quantity inputs with pluralization
             const quantityInputs = document.querySelectorAll('input[name="quantity[]"]');
             quantityInputs.forEach(input => {
-                const quantity = parseFloat(input.value) || 0;
+                // Add event listeners for quantity changes
+                input.addEventListener('input', function() {
+                    const row = this.closest('tr');
+                    updateUnitDisplayForRow(row);
+                });
+                input.addEventListener('change', function() {
+                    const row = this.closest('tr');
+                    updateUnitDisplayForRow(row);
+                });
+                
+                // Initial unit display update
                 const row = input.closest('tr');
-                const unitSelect = row.querySelector('select[name="unit[]"]');
-                if (unitSelect && quantity > 0) {
-                    const currentValue = unitSelect.value;
-                    
-                    // Handle pluralization for common units
-                    const pluralMap = {
-                        'pc': 'pcs',
-                        'piece': 'pieces',
-                        'set': 'sets',
-                        'box': 'boxes',
-                        'carton': 'cartons',
-                        'pack': 'packs',
-                        'bottle': 'bottles',
-                        'liter': 'liters',
-                        'gallon': 'gallons',
-                        'kilogram': 'kilograms',
-                        'gram': 'grams',
-                        'meter': 'meters',
-                        'centimeter': 'centimeters',
-                        'foot': 'feet',
-                        'inch': 'inches',
-                        'dozen': 'dozens',
-                        'pair': 'pairs',
-                        'roll': 'rolls',
-                        'bag': 'bags',
-                        'canister': 'canisters',
-                        'jar': 'jars',
-                        'tube': 'tubes',
-                        'ream': 'reams',
-                        'case': 'cases',
-                        'barrel': 'barrels',
-                        'drum': 'drums',
-                        'pound': 'pounds',
-                        'ounce': 'ounces'
-                    };
-                    
-                    // Find the appropriate unit based on quantity
-                    let targetUnit = '';
-                    if (quantity === 1) {
-                        // Use singular form
-                        for (const [singular, plural] of Object.entries(pluralMap)) {
-                            if (currentValue === plural) {
-                                targetUnit = singular;
-                                break;
-                            } else if (currentValue === singular) {
-                                targetUnit = singular;
-                                break;
-                            }
-                        }
-                        // If no mapping found, keep current value
-                        if (!targetUnit && currentValue) {
-                            targetUnit = currentValue;
-                        }
-                    } else if (quantity > 1) {
-                        // Use plural form
-                        for (const [singular, plural] of Object.entries(pluralMap)) {
-                            if (currentValue === singular) {
-                                targetUnit = plural;
-                                break;
-                            } else if (currentValue === plural) {
-                                targetUnit = plural;
-                                break;
-                            }
-                        }
-                        // If no mapping found, keep current value
-                        if (!targetUnit && currentValue) {
-                            targetUnit = currentValue;
-                        }
-                    }
-                    
-                    // Set the unit if found
-                    if (targetUnit) {
-                        // Check if the target unit exists in the dropdown
-                        const optionExists = Array.from(unitSelect.options).some(option => option.value === targetUnit);
-                        if (optionExists) {
-                            unitSelect.value = targetUnit;
-                        }
-                    }
-                }
+                updateUnitDisplayForRow(row);
+            });
+            
+            // Add event listeners for unit selection changes
+            const unitSelects = document.querySelectorAll('select[name="unit[]"]');
+            unitSelects.forEach(select => {
+                select.addEventListener('change', function() {
+                    const row = this.closest('tr');
+                    updateUnitDisplayForRow(row);
+                });
             });
         }
         
