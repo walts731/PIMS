@@ -559,47 +559,50 @@ $category_fields = [
                 ]}
             },
             'LAPTOP': {
+                // Basic Information
+                'model': {'label': 'Model', 'type': 'text', 'required': true},
+                'serial_number': {'label': 'Serial Number', 'type': 'text', 'required': true},
                 'processor': {'label': 'Processor', 'type': 'text', 'required': false},
-                'ram': {'label': 'RAM (GB)', 'type': 'number', 'required': false},
+                'ram': {'label': 'RAM (GB)', 'type': 'text', 'required': false},
+                'graphics': {'label': 'Graphics Card', 'type': 'text', 'required': false},
+                
+                // Storage
                 'storage_type': {'label': 'Storage Type', 'type': 'select', 'required': false, 'options': [
                     {'value': 'ssd', 'text': 'SSD'},
                     {'value': 'hdd', 'text': 'HDD'},
                     {'value': 'hybrid', 'text': 'Hybrid'}
                 ]},
-                'storage_capacity': {'label': 'Storage Capacity (GB)', 'type': 'number', 'required': false},
-                'graphics': {'label': 'Graphics Card', 'type': 'text', 'required': false},
-                'operating_system': {'label': 'Operating System', 'type': 'text', 'required': false},
+                'storage_capacity': {'label': 'Storage Capacity (GB)', 'type': 'text', 'required': false},
+                
+                // Display & Features
                 'screen_size': {'label': 'Screen Size (inches)', 'type': 'text', 'required': false},
-                'battery_status': {'label': 'Battery Status', 'type': 'select', 'required': false, 'options': [
-                    {'value': 'good', 'text': 'Good'},
-                    {'value': 'fair', 'text': 'Fair'},
-                    {'value': 'poor', 'text': 'Poor'},
-                    {'value': 'not_working', 'text': 'Not Working'}
-                ]},
-                'webcam': {'label': 'Webcam', 'type': 'select', 'required': false, 'options': [
-                    {'value': 'available', 'text': 'Available'},
-                    {'value': 'not_available', 'text': 'Not Available'},
-                    {'value': 'not_working', 'text': 'Not Working'}
-                ]},
-                'model': {'label': 'Model', 'type': 'text', 'required': true},
-                'serial_number': {'label': 'Serial Number', 'type': 'text', 'required': true},
+                
+                // Software & Warranty
+                'operating_system': {'label': 'Operating System', 'type': 'text', 'required': false},
                 'warranty': {'label': 'Warranty Period', 'type': 'text', 'required': false}
             },
             'COMPUTER': {
+                // Basic Information
+                'model': {'label': 'Model', 'type': 'text', 'required': true},
+                'serial_number': {'label': 'Serial Number', 'type': 'text', 'required': true},
                 'processor': {'label': 'Processor', 'type': 'text', 'required': false},
-                'ram': {'label': 'RAM (GB)', 'type': 'number', 'required': false},
+                'ram': {'label': 'RAM (GB)', 'type': 'text', 'required': false},
+                'graphics': {'label': 'Graphics Card', 'type': 'text', 'required': false},
+                
+                // Storage
                 'storage_type': {'label': 'Storage Type', 'type': 'select', 'required': false, 'options': [
                     {'value': 'ssd', 'text': 'SSD'},
                     {'value': 'hdd', 'text': 'HDD'},
                     {'value': 'hybrid', 'text': 'Hybrid'}
                 ]},
-                'storage_capacity': {'label': 'Storage Capacity (GB)', 'type': 'number', 'required': false},
-                'graphics': {'label': 'Graphics Card', 'type': 'text', 'required': false},
-                'operating_system': {'label': 'Operating System', 'type': 'text', 'required': false},
+                'storage_capacity': {'label': 'Storage Capacity (GB)', 'type': 'text', 'required': false},
+                
+                // Components
                 'case_type': {'label': 'Case Type', 'type': 'text', 'required': false},
                 'power_supply': {'label': 'Power Supply (Watts)', 'type': 'text', 'required': false},
-                'model': {'label': 'Model', 'type': 'text', 'required': true},
-                'serial_number': {'label': 'Serial Number', 'type': 'text', 'required': true},
+                
+                // Software & Warranty
+                'operating_system': {'label': 'Operating System', 'type': 'text', 'required': false},
                 'warranty': {'label': 'Warranty Period', 'type': 'text', 'required': false}
             }
         };
@@ -833,7 +836,8 @@ $category_fields = [
             let fieldCount = 0;
             
             for (const [fieldName, fieldConfig] of Object.entries(fields)) {
-                const isHalfWidth = ['text', 'number', 'date'].includes(fieldConfig.type);
+                // Special handling for storage_type field to make it col-md-6
+                const isHalfWidth = ['text', 'number', 'date'].includes(fieldConfig.type) || fieldName === 'storage_type';
                 const columnClass = isHalfWidth ? 'col-md-6' : 'col-md-12';
                 
                 let fieldHtml = '';
