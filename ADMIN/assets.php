@@ -125,6 +125,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     $asset_subcategory_id = trim($_POST['asset_subcategory_id'] ?? '');
     $property_numbers = trim($_POST['property_numbers'] ?? '');
     
+    // Convert date from mm/dd/yyyy to Y-m-d format for database
+    $date_acquired_input = trim($_POST['date_acquired'] ?? date('m/d/Y'));
+    $date_acquired = date('Y-m-d', strtotime($date_acquired_input));
+    
     // Parse property numbers into array
     $property_numbers_array = [];
     if (!empty($property_numbers)) {
@@ -196,7 +200,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                     for ($i = 1; $i <= $quantity; $i++) {
                         $item_description = mysqli_real_escape_string($conn, $description);
                         $item_status = 'no_tag';
-                        $acquisition_date = date('Y-m-d');
+                        $acquisition_date = mysqli_real_escape_string($conn, $date_acquired);
                         
                         // First create asset item without property number (like PAR)
                         $item_sql = "INSERT INTO asset_items (asset_id, description, status, value, acquisition_date, office_id) 
@@ -278,7 +282,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                     for ($i = 1; $i <= $quantity; $i++) {
                         $item_description = mysqli_real_escape_string($conn, $description);
                         $item_status = 'no_tag';
-                        $acquisition_date = date('Y-m-d');
+                        $acquisition_date = mysqli_real_escape_string($conn, $date_acquired);
                         
                         // First create asset item without property number (like PAR)
                         $item_sql = "INSERT INTO asset_items (asset_id, description, status, value, acquisition_date, office_id) 
@@ -527,6 +531,8 @@ try {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <!-- Bootstrap Date Picker CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.9.0/dist/css/bootstrap-datepicker.min.css">
     <!-- DataTables CSS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
@@ -910,6 +916,15 @@ try {
                                         </div>
                                     </div>
                                 </div>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label class="form-label">Date Acquired</label>
+                                            <input type="text" class="form-control" name="date_acquired" id="dateAcquired" value="<?php echo date('m/d/Y'); ?>" placeholder="mm/dd/yyyy" pattern="(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01])/\d{4}" title="Please enter date in mm/dd/yyyy format">
+                                            <small class="text-muted">When the asset was acquired (mm/dd/yyyy)</small>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
@@ -962,6 +977,8 @@ try {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <!-- Bootstrap Date Picker JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.9.0/dist/js/bootstrap-datepicker.min.js"></script>
     <!-- DataTables JS -->
     <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
@@ -1078,6 +1095,14 @@ try {
         let assetsTable;
         
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize date picker with mm/dd/yyyy format
+            $('#dateAcquired').datepicker({
+                format: 'mm/dd/yyyy',
+                autoclose: true,
+                todayHighlight: true,
+                orientation: 'bottom auto'
+            });
+            
             // Check if table has data rows before initializing DataTables
             const tableBody = $('#assetsTable tbody');
             const hasData = tableBody.find('tr').length > 0 && !tableBody.find('td[colspan]').length;

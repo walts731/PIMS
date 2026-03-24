@@ -78,6 +78,8 @@ $disposed_items = count(array_filter($items, function($item) { return $item['sta
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     <!-- DataTables CSS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
@@ -85,6 +87,19 @@ $disposed_items = count(array_filter($items, function($item) { return $item['sta
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Unified CSS -->
     <link href="assets/css/admin-unified.css" rel="stylesheet">
+    <style>
+        .chart-container {
+            position: relative;
+            height: 200px;
+            width: 100%;
+            max-width: 200px;
+            margin: 0 auto;
+        }
+        #assetStatusChart {
+            max-height: 200px;
+            max-width: 200px;
+        }
+    </style>
 </head>
 <body>
     <?php $page_title = 'Asset Items'; ?>
@@ -124,75 +139,64 @@ $disposed_items = count(array_filter($items, function($item) { return $item['sta
             </div>
         </div>
         
-        <div class="section-card mb-4">
-            <div class="section-title">
-                <i class="bi bi-info-circle"></i> Asset Information
-            </div>
-            <div class="row">
-                <div class="col-md-8">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <p><strong>Category:</strong> <?php echo htmlspecialchars($asset['category_code'] . ' - ' . $asset['category_name']); ?></p>
-                            <p><strong>Unit:</strong> <?php echo htmlspecialchars($asset['unit']); ?></p>
-                            <p><strong>Office:</strong> <?php echo htmlspecialchars($asset['office_name']); ?></p>
-                        </div>
-                        <div class="col-md-6">
-                            <p><strong>Total Quantity:</strong> <?php echo $asset['quantity']; ?></p>
-                            <p><strong>Unit Cost:</strong> <?php echo number_format($asset['unit_cost'], 2); ?></p>
-                            <p><strong>Total Value:</strong> <?php echo number_format($asset['quantity'] * $asset['unit_cost'], 2); ?></p>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="section-card glass-morphism h-100">
+                            <div class="section-title">
+                                <i class="bi bi-pie-chart"></i> Asset Status Distribution
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="assetStatusChart"></canvas>
+                            </div>
+                            <div class="row text-center mt-2">
+                                <div class="col-4">
+                                    <div class="small text-muted">Serviceable</div>
+                                    <div class="fw-bold text-success"><?php echo $serviceable_items; ?></div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="small text-muted">Red Tagged</div>
+                                    <div class="fw-bold text-danger"><?php echo $redtagged_items; ?></div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="small text-muted">Maintenance</div>
+                                    <div class="fw-bold text-warning"><?php echo $maintenance_items; ?></div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="small text-muted">Borrowed</div>
+                                    <div class="fw-bold text-primary"><?php echo $borrowed_items; ?></div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="small text-muted">Disposed</div>
+                                    <div class="fw-bold text-danger"><?php echo $disposed_items; ?></div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="small text-muted">Unserviceable</div>
+                                    <div class="fw-bold text-secondary"><?php echo $unserviceable_items; ?></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="stats-card text-center">
-                        <div class="stats-number"><?php echo $total_items; ?></div>
-                        <div class="stats-label"><i class="bi bi-box"></i> Total Items</div>
+                    <div class="col-md-8">
+                        <div class="section-card h-100">
+                            <div class="section-title">
+                                <i class="bi bi-info-circle"></i> Asset Information
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Category:</strong> <?php echo htmlspecialchars($asset['category_code'] . ' - ' . $asset['category_name']); ?></p>
+                                    <p><strong>Unit:</strong> <?php echo htmlspecialchars($asset['unit']); ?></p>
+                                    <p><strong>Office:</strong> <?php echo htmlspecialchars($asset['office_name']); ?></p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Total Quantity:</strong> <?php echo $asset['quantity']; ?></p>
+                                    <p><strong>Unit Cost:</strong> <?php echo number_format($asset['unit_cost'], 2); ?></p>
+                                    <p><strong>Total Value:</strong> <?php echo number_format($asset['quantity'] * $asset['unit_cost'], 2); ?></p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="row g-3 mb-4">
-            <div class="col-6 col-md-3">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $serviceable_items; ?></div>
-                    <div class="stats-label"><i class="bi bi-check-circle"></i> Serviceable</div>
-                </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $unserviceable_items; ?></div>
-                    <div class="stats-label"><i class="bi bi-x-circle"></i> Unserviceable</div>
-                </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $redtagged_items; ?></div>
-                    <div class="stats-label"><i class="bi bi-exclamation-triangle"></i> Red-Tagged</div>
-                </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $notag_items; ?></div>
-                    <div class="stats-label"><i class="bi bi-dash-circle"></i> No Tag</div>
-                </div>
-            </div>
-            <div class="col-6 col-md-4">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $borrowed_items; ?></div>
-                    <div class="stats-label"><i class="bi bi-arrow-left-right"></i> Borrowed</div>
-                </div>
-            </div>
-            <div class="col-6 col-md-4">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $maintenance_items; ?></div>
-                    <div class="stats-label"><i class="bi bi-tools"></i> Maintenance</div>
-                </div>
-            </div>
-            <div class="col-6 col-md-4">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $disposed_items; ?></div>
-                    <div class="stats-label"><i class="bi bi-trash"></i> Disposed</div>
                 </div>
             </div>
         </div>
@@ -327,6 +331,64 @@ $disposed_items = count(array_filter($items, function($item) { return $item['sta
         let assetItemsTable;
         
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Asset Status Donut Chart
+            const ctx = document.getElementById('assetStatusChart').getContext('2d');
+            const assetStatusChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Serviceable', 'Red Tagged', 'Maintenance', 'Borrowed', 'Disposed', 'Unserviceable', 'No Tag'],
+                    datasets: [{
+                        data: [
+                            <?php echo $serviceable_items; ?>,
+                            <?php echo $redtagged_items; ?>,
+                            <?php echo $maintenance_items; ?>,
+                            <?php echo $borrowed_items; ?>,
+                            <?php echo $disposed_items; ?>,
+                            <?php echo $unserviceable_items; ?>,
+                            <?php echo $notag_items; ?>
+                        ],
+                        backgroundColor: [
+                            '#28a745', // Success (Serviceable)
+                            '#dc3545', // Danger (Red Tagged)
+                            '#ffc107', // Warning (Maintenance)
+                            '#007bff', // Primary (Borrowed)
+                            '#dc3545', // Danger (Disposed)
+                            '#6c757d', // Secondary (Unserviceable)
+                            '#17a2b8'  // Info (No Tag)
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    aspectRatio: 1, // Force square aspect ratio
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `${label}: ${value} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    },
+                    elements: {
+                        arc: {
+                            borderWidth: 2,
+                            borderColor: '#ffffff'
+                        }
+                    }
+                }
+            });
+            
             // Initialize DataTable
             assetItemsTable = $('#assetItemsTable').DataTable({
                 responsive: true,
