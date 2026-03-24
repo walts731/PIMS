@@ -214,6 +214,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['action']) && $_GET['acti
     }
 }
 
+// Get system settings for theme
+$system_settings = [];
+try {
+    $stmt = $conn->prepare("SELECT setting_name, setting_value FROM system_settings");
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while ($row = $result->fetch_assoc()) {
+        $system_settings[$row['setting_name']] = $row['setting_value'];
+    }
+} catch (Exception $e) {
+    // Fallback to default
+    $system_settings['system_name'] = 'PIMS';
+}
+
 // Get units
 $units = [];
 try {
@@ -251,6 +265,20 @@ try {
 } catch (Exception $e) {
     error_log("Error fetching stats: " . $e->getMessage());
 }
+
+// Helper function for unit type badge colors
+function getUnitTypeBadgeColor($type) {
+    $colors = [
+        'count' => 'primary',
+        'weight' => 'success',
+        'length' => 'info',
+        'volume' => 'warning',
+        'area' => 'secondary',
+        'time' => 'dark',
+        'other' => 'light'
+    ];
+    return $colors[$type] ?? 'secondary';
+}
 ?>
 
 <!DOCTYPE html>
@@ -258,7 +286,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Units Management - PIMS</title>
+    <title>Units Management - <?php echo htmlspecialchars($system_settings['system_name'] ?? 'PIMS'); ?></title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
@@ -270,7 +298,83 @@ try {
     <!-- Custom CSS -->
     <link href="../assets/css/index.css" rel="stylesheet">
     <link href="../assets/css/theme-custom.css" rel="stylesheet">
-    <link href="assets/css/admin-unified.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #F7F3F3 0%, #C1EAF2 100%);
+            min-height: 100vh;
+        }
+        
+        .sidebar-overlay {
+            z-index: 1040;
+        }
+        
+        /* Remove scrollbar from sidebar */
+        .sidebar {
+            overflow: hidden;
+        }
+        
+        .sidebar * {
+            scrollbar-width: none; /* Firefox */
+        }
+        
+        .sidebar::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Edge */
+        }
+        
+        /* Fix modal backdrop issues */
+        .modal.show {
+            display: block !important;
+        }
+        
+        .modal-backdrop.show {
+            display: block !important;
+            opacity: 0.5;
+        }
+        
+        /* Ensure modal buttons are clickable */
+        .modal-footer button,
+        .modal-header button,
+        .modal-footer a {
+            z-index: 1061;
+            position: relative;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%);
+            color: white;
+            border-radius: var(--border-radius-lg);
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(25, 27, 169, 0.3);
+        }
+        
+        .metric-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .metric-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .page-header {
+            background: white;
+            border-radius: var(--border-radius-xl);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--primary-color);
+        }
+    </style>
 </head>
 <body>
     <?php
@@ -314,67 +418,73 @@ try {
         <!-- Statistics Cards -->
         <div class="row mb-4">
             <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $stats['total_units'] ?? 0; ?></div>
-                    <div class="stats-label"><i class="bi bi-rulers-fill text-primary"></i> Total Units</div>
+                <div class="metric-card">
+                    <div class="metric-number"><?php echo $stats['total_units'] ?? 0; ?></div>
+                    <div class="metric-label"><i class="bi bi-rulers"></i> Total Units</div>
                 </div>
             </div>
             <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $stats['active_units'] ?? 0; ?></div>
-                    <div class="stats-label"><i class="bi bi-check-circle-fill text-success"></i> Active Units</div>
+                <div class="metric-card">
+                    <div class="metric-number"><?php echo $stats['active_units'] ?? 0; ?></div>
+                    <div class="metric-label"><i class="bi bi-check-circle"></i> Active Units</div>
                 </div>
             </div>
             <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $stats['inactive_units'] ?? 0; ?></div>
-                    <div class="stats-label"><i class="bi bi-x-circle-fill text-danger"></i> Inactive Units</div>
+                <div class="metric-card">
+                    <div class="metric-number"><?php echo $stats['inactive_units'] ?? 0; ?></div>
+                    <div class="metric-label"><i class="bi bi-x-circle"></i> Inactive Units</div>
                 </div>
             </div>
             <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo ($stats['count_units'] ?? 0) + ($stats['weight_units'] ?? 0) + ($stats['length_units'] ?? 0); ?></div>
-                    <div class="stats-label"><i class="bi bi-tags-fill text-info"></i> Common Types</div>
+                <div class="metric-card">
+                    <div class="metric-number"><?php echo ($stats['count_units'] ?? 0) + ($stats['weight_units'] ?? 0) + ($stats['length_units'] ?? 0); ?></div>
+                    <div class="metric-label"><i class="bi bi-tags"></i> Common Types</div>
                 </div>
             </div>
         </div>
         
         <!-- Units Table -->
-        <div class="table-container">
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <h5 class="mb-0"><i class="bi bi-list-ul"></i> Units List</h5>
-                </div>
-                <div class="col-md-6">
-                    <div class="row g-2">
-                        <div class="col-md-4">
-                            <select class="form-select form-select-sm" id="typeFilter">
-                                <option value="">All Types</option>
-                                <option value="count">Count</option>
-                                <option value="weight">Weight</option>
-                                <option value="length">Length</option>
-                                <option value="volume">Volume</option>
-                                <option value="area">Area</option>
-                                <option value="time">Time</option>
-                                <option value="other">Other</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <select class="form-select form-select-sm" id="statusFilter">
-                                <option value="">All Status</option>
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <!-- Search removed - using DataTables built-in search -->
-                        </div>
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-lg rounded-4">
+                    <div class="card-header bg-primary text-white rounded-top-4">
+                        <h6 class="mb-0"><i class="bi bi-rulers"></i> Units Management</h6>
                     </div>
-                </div>
-            </div>
-            
-            <div class="table-responsive">
-                <table class="table table-hover" id="unitsTable">
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <h5 class="mb-0"><i class="bi bi-list-ul"></i> Units List</h5>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="row g-2">
+                                    <div class="col-md-4">
+                                        <select class="form-select form-select-sm" id="typeFilter">
+                                            <option value="">All Types</option>
+                                            <option value="count">Count</option>
+                                            <option value="weight">Weight</option>
+                                            <option value="length">Length</option>
+                                            <option value="volume">Volume</option>
+                                            <option value="area">Area</option>
+                                            <option value="time">Time</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <select class="form-select form-select-sm" id="statusFilter">
+                                            <option value="">All Status</option>
+                                            <option value="active">Active</option>
+                                            <option value="inactive">Inactive</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <!-- Search removed - using DataTables built-in search -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="unitsTable">
                     <thead>
                         <tr>
                             <th>Unit Name</th>
@@ -424,6 +534,9 @@ try {
                         <?php endif; ?>
                     </tbody>
                 </table>
+            </div>
+        </div>
+                </div>
             </div>
         </div>
         
@@ -617,18 +730,34 @@ try {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
-    <?php require_once 'includes/sidebar-scripts.php'; ?>
     <script>
+    <?php require_once 'includes/sidebar-scripts.php'; ?>
+
+    // Fix modal backdrop issues
+    document.addEventListener('DOMContentLoaded', function() {
+        const logoutModal = document.getElementById('logoutModal');
+        if (logoutModal) {
+            logoutModal.addEventListener('show.bs.modal', function () {
+                // Ensure proper backdrop
+                document.body.classList.add('modal-open');
+            });
+            
+            logoutModal.addEventListener('hidden.bs.modal', function () {
+                // Clean up backdrop
+                document.body.classList.remove('modal-open');
+                const backdrop = document.querySelector('.modal-backdrop');
+                if (backdrop) {
+                    backdrop.remove();
+                }
+            });
+        }
+
         // Initialize DataTable
         let unitsTable;
         
-        document.addEventListener('DOMContentLoaded', function() {
             // Check if table has data rows before initializing DataTables
             const tableBody = $('#unitsTable tbody');
             const hasData = tableBody.find('tr').length > 0 && !tableBody.find('td[colspan]').length;
-            
-            console.log('Table has data:', hasData);
-            console.log('Table rows found:', tableBody.find('tr').length);
             
             // Initialize DataTable with error handling
             try {
@@ -736,10 +865,8 @@ try {
                     });
                 } else {
                     // No data - don't initialize DataTables
-                    console.log('No data found, skipping DataTables initialization');
                 }
             } catch (error) {
-                console.error('DataTables initialization error:', error);
                 // Fallback: show basic table without DataTables
             }
         });
@@ -815,22 +942,6 @@ try {
                 unitsTable.button(0).trigger();
             }
         }
-        
-        <?php
-        // Helper function for unit type badge colors
-        function getUnitTypeBadgeColor($type) {
-            $colors = [
-                'count' => 'primary',
-                'weight' => 'success',
-                'length' => 'info',
-                'volume' => 'warning',
-                'area' => 'secondary',
-                'time' => 'dark',
-                'other' => 'light'
-            ];
-            return $colors[$type] ?? 'secondary';
-        }
-        ?>
     </script>
 </body>
 </html>

@@ -1,4 +1,5 @@
 <?php
+ob_start();
 session_start();
 require_once '../config.php';
 require_once '../includes/system_functions.php';
@@ -21,6 +22,94 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
 
 // Log consumables page access
 logSystemAction($_SESSION['user_id'], 'access', 'consumables', 'Admin accessed consumables page');
+
+// Function to get singular form of unit name
+function getSingularForm($unitName) {
+    // Common plural to singular conversions
+    $singularRules = [
+        // Regular -s endings
+        'pieces' => 'piece',
+        'sets' => 'set',
+        'units' => 'unit',
+        'boxes' => 'box',
+        'cartons' => 'carton',
+        'packs' => 'pack',
+        'packages' => 'package',
+        'bags' => 'bag',
+        'containers' => 'container',
+        'bottles' => 'bottle',
+        'reams' => 'ream',
+        'pairs' => 'pair',
+        'dozens' => 'dozen',
+        'rolls' => 'roll',
+        'sheets' => 'sheet',
+        'feet' => 'foot',
+        'inches' => 'inch',
+        'meters' => 'meter',
+        'centimeters' => 'centimeter',
+        'kilometers' => 'kilometer',
+        'liters' => 'liter',
+        'milliliters' => 'milliliter',
+        'kilograms' => 'kilogram',
+        'grams' => 'gram',
+        'tons' => 'ton',
+        'hours' => 'hour',
+        'days' => 'day',
+        'months' => 'month',
+        'years' => 'year',
+        'hectares' => 'hectare',
+        // Special cases
+        'pcs' => 'pc',
+        'kgs' => 'kg',
+        'gs' => 'g',
+        'ms' => 'm',
+        'cms' => 'cm',
+        'kms' => 'km',
+        'mls' => 'ml',
+        'm3s' => 'm3',
+        'm2s' => 'm2',
+        'has' => 'ha',
+        'hrs' => 'hr',
+        'mos' => 'mo',
+        'yrs' => 'yr',
+        'fts' => 'ft',
+        'ins' => 'in',
+        // Additional consumable-specific units
+        'gallons' => 'gallon',
+        'cans' => 'can',
+        'tubes' => 'tube'
+    ];
+    
+    $lowerUnitName = strtolower($unitName);
+    return $singularRules[$lowerUnitName] ?? $unitName; // Return original if no rule found
+}
+
+// Get units from database
+$units = [];
+try {
+    $result = $conn->query("SELECT unit_name, unit_code FROM units WHERE status = 'active' ORDER BY unit_name");
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $units[] = $row;
+        }
+    }
+} catch (Exception $e) {
+    error_log("Error fetching units: " . $e->getMessage());
+    // Fallback to common units if database fails
+    $units = [];
+    $common_units_fallback = [
+        'pc', 'pcs', 'piece', 'pieces', 'set', 'sets', 'unit', 'units',
+        'box', 'boxes', 'carton', 'cartons', 'pack', 'packs', 'package', 'packages',
+        'liter', 'liters', 'kilogram', 'kilograms', 'meter', 'meters',
+        'square_meter', 'square_meters', 'cubic_meter', 'cubic_meters',
+        'pair', 'pairs', 'dozen', 'dozens', 'roll', 'rolls',
+        'bottle', 'bottles', 'bag', 'bags', 'container', 'containers', 'ream', 'reams',
+        'gallon', 'gallons', 'can', 'cans', 'tube', ' tubes'
+    ];
+    foreach ($common_units_fallback as $unit) {
+        $units[] = ['unit_name' => ucfirst($unit), 'unit_code' => $unit];
+    }
+}
 
 // Handle GET parameters for modal success messages
 $message = '';
@@ -724,28 +813,11 @@ try {
                             <div class="col-md-4">
                                 <div class="mb-3">
                                     <label class="form-label">Units *</label>
-                                    <select class="form-select" name="units" required>
+                                    <select class="form-select" name="units" id="consumableUnitSelect" required>
                                         <option value="">Select Unit</option>
-                                        <option value="pcs">pcs</option>
-                                        <option value="sets">sets</option>
-                                        <option value="boxes">boxes</option>
-                                        <option value="packs">packs</option>
-                                        <option value="bottles">bottles</option>
-                                        <option value="liters">liters</option>
-                                        <option value="gallons">gallons</option>
-                                        <option value="kilograms">kilograms</option>
-                                        <option value="grams">grams</option>
-                                        <option value="meters">meters</option>
-                                        <option value="feet">feet</option>
-                                        <option value="inches">inches</option>
-                                        <option value="reams">reams</option>
-                                        <option value="dozens">dozens</option>
-                                        <option value="pairs">pairs</option>
-                                        <option value="rolls">rolls</option>
-                                        <option value="bags">bags</option>
-                                        <option value="cans">cans</option>
-                                        <option value="tubes">tubes</option>
-                                        <option value="units">units</option>
+                                        <?php foreach ($units as $unit): ?>
+                                            <option value="<?php echo htmlspecialchars($unit['unit_code']); ?>" data-unit-name="<?php echo htmlspecialchars($unit['unit_name']); ?>" data-singular="<?php echo htmlspecialchars(getSingularForm($unit['unit_name'])); ?>"><?php echo htmlspecialchars($unit['unit_name']); ?></option>
+                                        <?php endforeach; ?>
                                     </select>
                                 </div>
                             </div>
@@ -963,6 +1035,67 @@ try {
                 modal.hide();
             }
         }
+        
+        // Function to update unit display based on quantity
+        function updateUnitDisplay() {
+            const quantity = parseInt(document.querySelector('input[name="quantity"]').value) || 0;
+            const unitSelect = document.getElementById('consumableUnitSelect');
+            
+            if (!unitSelect) return;
+            
+            // Remove any existing temporary options
+            const tempOptions = unitSelect.querySelectorAll('option[data-temp-singular]');
+            tempOptions.forEach(opt => opt.remove());
+            
+            // Show all original options
+            const allOptions = unitSelect.querySelectorAll('option');
+            allOptions.forEach(opt => {
+                if (opt.style.display === 'none') {
+                    opt.style.display = '';
+                }
+            });
+            
+            if (quantity === 1) {
+                const selectedOption = unitSelect.options[unitSelect.selectedIndex];
+                if (selectedOption && selectedOption.value) {
+                    const singularName = selectedOption.getAttribute('data-singular');
+                    const originalName = selectedOption.getAttribute('data-unit-name');
+                    
+                    if (singularName && singularName !== originalName) {
+                        // Hide the original option
+                        selectedOption.style.display = 'none';
+                        
+                        // Create and add singular option
+                        const singularOption = document.createElement('option');
+                        singularOption.value = selectedOption.value;
+                        singularOption.textContent = singularName;
+                        singularOption.setAttribute('data-temp-singular', 'true');
+                        singularOption.selected = true;
+                        
+                        unitSelect.add(singularOption);
+                        
+                        console.log('Changed to singular:', originalName, '->', singularName);
+                    }
+                }
+            }
+        }
+        
+        // Add event listeners for unit display updates
+        document.addEventListener('DOMContentLoaded', function() {
+            const quantityInput = document.querySelector('input[name="quantity"]');
+            const unitSelect = document.getElementById('consumableUnitSelect');
+            
+            if (quantityInput) {
+                quantityInput.addEventListener('input', updateUnitDisplay);
+                quantityInput.addEventListener('change', updateUnitDisplay);
+                
+                // Set initial unit display if quantity has a value
+                updateUnitDisplay();
+            }
+            if (unitSelect) {
+                unitSelect.addEventListener('change', updateUnitDisplay);
+            }
+        });
         
         // Close lend modal function (called from iframe)
         function closeLendModal() {

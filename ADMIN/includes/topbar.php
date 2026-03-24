@@ -6,16 +6,7 @@
             <?php echo ucfirst($page_title ?? 'Dashboard'); ?>
         </a>
         
-        <div class="navbar-nav ms-auto align-items-center">
-            <!-- Date and Time Display -->
-            <div class="nav-item me-3">
-                <div class="datetime-display">
-                    <span class="date" id="currentDate"></span>
-                    <span class="time-separator"> • </span>
-                    <span class="time" id="currentTime"></span>
-                </div>
-            </div>
-            
+        <div class="navbar-nav ms-auto">
             <!-- Search Bar -->
             <div class="nav-item me-3">
                 <div class="search-container position-relative">
@@ -67,7 +58,7 @@
                                 </div>
                             </div>
                             <div class="notification-footer">
-                                <a href="notifications.php" class="view-all-notifications">View All Notifications</a>
+                                <a href="../ADMIN/notifications.php" class="view-all-notifications">View All Notifications</a>
                             </div>
                         </div>
                     </div>
@@ -102,7 +93,7 @@
                         <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#changePasswordModal"><i class="bi bi-key"></i> Change Password</a></li>
                         <li><a class="dropdown-item" href="system_settings.php"><i class="bi bi-gear"></i> Settings</a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#logoutModal"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+                        <li><a class="dropdown-item" href="../logout.php" onclick="event.preventDefault(); confirmLogout();"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
                     </ul>
                 </div>
             </div>
@@ -401,7 +392,7 @@
 }
 
 .suggestion-asset {
-    background: var(--primary-gradient);
+    background: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%);
     color: white;
 }
 
@@ -427,34 +418,6 @@
     font-size: 0.9rem;
 }
 
-/* Date and Time Display Styles */
-.datetime-display {
-    display: flex;
-    align-items: center;
-    color: white;
-    font-family: 'Inter', sans-serif;
-    min-width: 200px;
-}
-
-.datetime-display .date {
-    font-size: 0.85rem;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    opacity: 0.9;
-}
-
-.datetime-display .time-separator {
-    font-size: 0.85rem;
-    margin: 0 8px;
-    opacity: 0.7;
-}
-
-.datetime-display .time {
-    font-size: 0.9rem;
-    font-weight: 600;
-}
-
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .search-container .form-control {
@@ -467,23 +430,6 @@
     
     .navbar-brand {
         font-size: 1rem;
-    }
-    
-    .datetime-display {
-        min-width: 160px;
-    }
-    
-    .datetime-display .date {
-        font-size: 0.75rem;
-    }
-    
-    .datetime-display .time-separator {
-        font-size: 0.75rem;
-        margin: 0 6px;
-    }
-    
-    .datetime-display .time {
-        font-size: 0.8rem;
     }
 }
 
@@ -499,24 +445,6 @@
     .search-container .form-control::placeholder {
         font-size: 0.8rem;
     }
-    
-    .datetime-display {
-        min-width: 140px;
-    }
-    
-    .datetime-display .date {
-        font-size: 0.7rem;
-        letter-spacing: 0.3px;
-    }
-    
-    .datetime-display .time-separator {
-        font-size: 0.7rem;
-        margin: 0 4px;
-    }
-    
-    .datetime-display .time {
-        font-size: 0.75rem;
-    }
 }
 </style>
 
@@ -531,10 +459,6 @@ document.addEventListener('DOMContentLoaded', function() {
     notificationDropdown = document.getElementById('notificationDropdown');
     notificationList = document.getElementById('notificationList');
     notificationBadge = document.getElementById('notificationBadge');
-    
-    // Initialize date and time display
-    updateDateTime();
-    setInterval(updateDateTime, 1000); // Update every second
     
     // Initialize notification system
     updateNotificationBadge();
@@ -903,28 +827,9 @@ function updateActiveSuggestion(items) {
     });
 }
 
-// Date and Time Update Function
-function updateDateTime() {
-    const now = new Date();
-    
-    // Format date: "Mar 9, 2026"
-    const options = { month: 'short', day: 'numeric', year: 'numeric' };
-    const dateString = now.toLocaleDateString('en-US', options);
-    
-    // Format time: "2:30 PM" or "14:30" based on system preference
-    const timeOptions = { hour: 'numeric', minute: '2-digit', hour12: true };
-    const timeString = now.toLocaleTimeString('en-US', timeOptions);
-    
-    // Update DOM elements
-    const dateElement = document.getElementById('currentDate');
-    const timeElement = document.getElementById('currentTime');
-    
-    if (dateElement) {
-        dateElement.textContent = dateString;
-    }
-    
-    if (timeElement) {
-        timeElement.textContent = timeString;
+function confirmLogout() {
+    if (confirm('Are you sure you want to logout?')) {
+        window.location.href = '../logout.php';
     }
 }
 </script>

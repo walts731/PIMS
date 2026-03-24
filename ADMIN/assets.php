@@ -1,28 +1,4 @@
 <?php
-// Common units for dropdown (same as par_form.php)
-$common_units = [
-    'pc', 'pcs',
-    'piece', 'pieces',
-    'set', 'sets',
-    'unit', 'units',
-    'box', 'boxes',
-    'carton', 'cartons',
-    'pack', 'packs',
-    'package', 'packages',
-    'liter', 'liters',
-    'kilogram', 'kilograms',
-    'meter', 'meters',
-    'square_meter', 'square_meters',
-    'cubic_meter', 'cubic_meters',
-    'pair', 'pairs',
-    'dozen', 'dozens',
-    'roll', 'rolls',
-    'bottle', 'bottles',
-    'bag', 'bags',
-    'container', 'containers',
-    'ream', 'reams'
-];
-
 ob_start();
 session_start();
 require_once '../config.php';
@@ -50,6 +26,89 @@ logSystemAction($_SESSION['user_id'], 'access', 'assets', 'Admin accessed assets
 
 // Initialize asset specific manager
 $assetManager = new AssetSpecificManager($conn);
+
+// Function to get singular form of unit name
+function getSingularForm($unitName) {
+    // Common plural to singular conversions
+    $singularRules = [
+        // Regular -s endings
+        'pieces' => 'piece',
+        'sets' => 'set',
+        'units' => 'unit',
+        'boxes' => 'box',
+        'cartons' => 'carton',
+        'packs' => 'pack',
+        'packages' => 'package',
+        'bags' => 'bag',
+        'containers' => 'container',
+        'bottles' => 'bottle',
+        'reams' => 'ream',
+        'pairs' => 'pair',
+        'dozens' => 'dozen',
+        'rolls' => 'roll',
+        'sheets' => 'sheet',
+        'feet' => 'foot',
+        'inches' => 'inch',
+        'meters' => 'meter',
+        'centimeters' => 'centimeter',
+        'kilometers' => 'kilometer',
+        'liters' => 'liter',
+        'milliliters' => 'milliliter',
+        'kilograms' => 'kilogram',
+        'grams' => 'gram',
+        'tons' => 'ton',
+        'hours' => 'hour',
+        'days' => 'day',
+        'months' => 'month',
+        'years' => 'year',
+        'hectares' => 'hectare',
+        // Special cases
+        'pcs' => 'pc',
+        'kgs' => 'kg',
+        'gs' => 'g',
+        'ms' => 'm',
+        'cms' => 'cm',
+        'kms' => 'km',
+        'mls' => 'ml',
+        'm3s' => 'm3',
+        'm2s' => 'm2',
+        'has' => 'ha',
+        'hrs' => 'hr',
+        'mos' => 'mo',
+        'yrs' => 'yr',
+        'fts' => 'ft',
+        'ins' => 'in'
+    ];
+    
+    $lowerUnitName = strtolower($unitName);
+    return $singularRules[$lowerUnitName] ?? $unitName; // Return original if no rule found
+}
+
+// Get units from database
+$units = [];
+try {
+    $result = $conn->query("SELECT unit_name, unit_code FROM units WHERE status = 'active' ORDER BY unit_name");
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $units[] = $row;
+        }
+    }
+} catch (Exception $e) {
+    error_log("Error fetching units: " . $e->getMessage());
+    // Fallback to common units if database fails
+    $units = [];
+    $common_units_fallback = [
+        'pc', 'pcs', 'piece', 'pieces', 'set', 'sets', 'unit', 'units',
+        'box', 'boxes', 'carton', 'cartons', 'pack', 'packs', 'package', 'packages',
+        'liter', 'liters', 'kilogram', 'kilograms', 'meter', 'meters',
+        'square_meter', 'square_meters', 'cubic_meter', 'cubic_meters',
+        'pair', 'pairs', 'dozen', 'dozens', 'roll', 'rolls',
+        'bottle', 'bottles', 'bag', 'bags', 'container', 'containers', 'ream', 'reams'
+    ];
+    foreach ($common_units_fallback as $unit) {
+        $units[] = ['unit_name' => ucfirst($unit), 'unit_code' => $unit];
+    }
+}
 
 // Handle CRUD operations
 $message = '';
@@ -831,8 +890,8 @@ try {
                                             <label class="form-label">Unit *</label>
                                             <select class="form-select" name="unit" id="assetUnitSelect" required>
                                                 <option value="">Select Unit</option>
-                                                <?php foreach ($common_units as $unit): ?>
-                                                    <option value="<?php echo htmlspecialchars($unit); ?>"><?php echo htmlspecialchars(ucfirst($unit)); ?></option>
+                                                <?php foreach ($units as $unit): ?>
+                                                    <option value="<?php echo htmlspecialchars($unit['unit_code']); ?>" data-unit-name="<?php echo htmlspecialchars($unit['unit_name']); ?>" data-singular="<?php echo htmlspecialchars(getSingularForm($unit['unit_name'])); ?>"><?php echo htmlspecialchars($unit['unit_name']); ?></option>
                                                 <?php endforeach; ?>
                                             </select>
                                         </div>
@@ -918,6 +977,50 @@ try {
         // Asset data for editing
         const assetData = <?php echo json_encode($assets); ?>;
         const categoriesData = <?php echo json_encode($categories); ?>;
+        
+        // Function to update unit display based on quantity
+        function updateUnitDisplay() {
+            const quantity = parseInt(document.querySelector('input[name="quantity"]').value) || 0;
+            const unitSelect = document.getElementById('assetUnitSelect');
+            
+            if (!unitSelect) return;
+            
+            // Remove any existing temporary options
+            const tempOptions = unitSelect.querySelectorAll('option[data-temp-singular]');
+            tempOptions.forEach(opt => opt.remove());
+            
+            // Show all original options
+            const allOptions = unitSelect.querySelectorAll('option');
+            allOptions.forEach(opt => {
+                if (opt.style.display === 'none') {
+                    opt.style.display = '';
+                }
+            });
+            
+            if (quantity === 1) {
+                const selectedOption = unitSelect.options[unitSelect.selectedIndex];
+                if (selectedOption && selectedOption.value) {
+                    const singularName = selectedOption.getAttribute('data-singular');
+                    const originalName = selectedOption.getAttribute('data-unit-name');
+                    
+                    if (singularName && singularName !== originalName) {
+                        // Hide the original option
+                        selectedOption.style.display = 'none';
+                        
+                        // Create and add singular option
+                        const singularOption = document.createElement('option');
+                        singularOption.value = selectedOption.value;
+                        singularOption.textContent = singularName;
+                        singularOption.setAttribute('data-temp-singular', 'true');
+                        singularOption.selected = true;
+                        
+                        unitSelect.add(singularOption);
+                        
+                        console.log('Changed to singular:', originalName, '->', singularName);
+                    }
+                }
+            }
+        }
         
         // Get category code from category ID
         function getCategoryCode(categoryId) {
@@ -1598,95 +1701,12 @@ try {
             }
         });
         
-        // Auto-set unit based on quantity with pluralization (same as par_form.php)
-        function autoSetUnitBasedOnQuantity() {
-            const quantityInput = document.querySelector('input[name="quantity"]');
-            const unitSelect = document.getElementById('assetUnitSelect');
-            
-            if (!quantityInput || !unitSelect) return;
-            
-            const quantity = parseFloat(quantityInput.value) || 0;
-            if (quantity <= 0) return;
-            
-            const currentValue = unitSelect.value;
-            
-            // Handle pluralization for common units
-            const pluralMap = {
-                'pc': 'pcs',
-                'piece': 'pieces',
-                'set': 'sets',
-                'unit': 'units',
-                'box': 'boxes',
-                'carton': 'cartons',
-                'pack': 'packs',
-                'package': 'packages',
-                'liter': 'liters',
-                'kilogram': 'kilograms',
-                'meter': 'meters',
-                'square_meter': 'square_meters',
-                'cubic_meter': 'cubic_meters',
-                'pair': 'pairs',
-                'dozen': 'dozens',
-                'roll': 'rolls',
-                'bottle': 'bottles',
-                'bag': 'bags',
-                'container': 'containers',
-                'ream': 'reams'
-            };
-            
-            // Find the appropriate unit based on quantity
-            let targetUnit = '';
-            if (quantity === 1) {
-                // Use singular form
-                for (const [singular, plural] of Object.entries(pluralMap)) {
-                    if (currentValue === plural) {
-                        targetUnit = singular;
-                        break;
-                    } else if (currentValue === singular) {
-                        targetUnit = singular;
-                        break;
-                    }
-                }
-                // If no mapping found, keep current value
-                if (!targetUnit && currentValue) {
-                    targetUnit = currentValue;
-                }
-            } else if (quantity > 1) {
-                // Use plural form
-                for (const [singular, plural] of Object.entries(pluralMap)) {
-                    if (currentValue === singular) {
-                        targetUnit = plural;
-                        break;
-                    } else if (currentValue === plural) {
-                        targetUnit = plural;
-                        break;
-                    }
-                }
-                // If no mapping found, keep current value
-                if (!targetUnit && currentValue) {
-                    targetUnit = currentValue;
-                }
-            }
-            
-            // Set the unit if found
-            if (targetUnit) {
-                // Check if the target unit exists in the dropdown
-                const optionExists = Array.from(unitSelect.options).some(option => option.value === targetUnit);
-                if (optionExists) {
-                    unitSelect.value = targetUnit;
-                }
-            }
-        }
-        
         // Add event listener for quantity change
         document.addEventListener('DOMContentLoaded', function() {
             const quantityInput = document.querySelector('input[name="quantity"]');
             if (quantityInput) {
-                quantityInput.addEventListener('input', autoSetUnitBasedOnQuantity);
-                quantityInput.addEventListener('change', autoSetUnitBasedOnQuantity);
-                
-                // Set initial unit if quantity has a value
-                autoSetUnitBasedOnQuantity();
+                // Set initial unit display if quantity has a value
+                updateUnitDisplay();
             }
         });
         
@@ -1702,12 +1722,21 @@ try {
         document.addEventListener('DOMContentLoaded', function() {
             const quantityInput = document.querySelector('input[name="quantity"]');
             const unitCostInput = document.querySelector('input[name="unit_cost"]');
+            const unitSelect = document.getElementById('assetUnitSelect');
             
             if (quantityInput) {
                 quantityInput.addEventListener('input', calculateTotalValue);
+                quantityInput.addEventListener('input', updateUnitDisplay);
+                quantityInput.addEventListener('change', updateUnitDisplay);
+                
+                // Set initial unit display if quantity has a value
+                updateUnitDisplay();
             }
             if (unitCostInput) {
                 unitCostInput.addEventListener('input', calculateTotalValue);
+            }
+            if (unitSelect) {
+                unitSelect.addEventListener('change', updateUnitDisplay);
             }
         });
     </script>
