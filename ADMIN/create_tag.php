@@ -195,6 +195,22 @@ $category_fields = [
         'model' => ['label' => 'Model', 'type' => 'text', 'required' => true],
         'serial_number' => ['label' => 'Serial Number', 'type' => 'text', 'required' => true]
     ],
+    '030' => [
+        'processor' => ['label' => 'Processor', 'type' => 'text', 'required' => true],
+        'ram' => ['label' => 'RAM (GB)', 'type' => 'number', 'required' => true],
+        'storage_type' => ['label' => 'Storage Type', 'type' => 'select', 'required' => true, 'options' => [
+            ['value' => 'ssd', 'text' => 'SSD'],
+            ['value' => 'hdd', 'text' => 'HDD'],
+            ['value' => 'hybrid', 'text' => 'Hybrid']
+        ]],
+        'storage_capacity' => ['label' => 'Storage Capacity (GB)', 'type' => 'number', 'required' => true],
+        'graphics' => ['label' => 'Graphics Card', 'type' => 'text', 'required' => false],
+        'operating_system' => ['label' => 'Operating System', 'type' => 'text', 'required' => true],
+        'brand' => ['label' => 'Brand', 'type' => 'text', 'required' => true],
+        'model' => ['label' => 'Model', 'type' => 'text', 'required' => true],
+        'serial_number' => ['label' => 'Serial Number', 'type' => 'text', 'required' => true],
+        'warranty' => ['label' => 'Warranty Period', 'type' => 'text', 'required' => false]
+    ],
     '06' => [
         'software_name' => ['label' => 'Software Name', 'type' => 'text', 'required' => true],
         'version' => ['label' => 'Version', 'type' => 'text', 'required' => true],
@@ -522,7 +538,7 @@ $category_fields = [
         
         // Subcategory-specific fields configuration
         const subcategoryFields = {
-            '03': { // Desktop Computers
+            'COMPUTER DESKTOP': {
                 'monitor_name': {'label': 'Monitor Name', 'type': 'text', 'required': false},
                 'monitor_model': {'label': 'Monitor Model', 'type': 'text', 'required': false},
                 'monitor_serial_number': {'label': 'Monitor Serial Number', 'type': 'text', 'required': false},
@@ -541,8 +557,208 @@ $category_fields = [
                     {'value': 'red_tagged', 'text': 'Red Tagged'},
                     {'value': 'no_tag', 'text': 'No Tag'}
                 ]}
+            },
+            'LAPTOP': {
+                'processor': {'label': 'Processor', 'type': 'text', 'required': false},
+                'ram': {'label': 'RAM (GB)', 'type': 'number', 'required': false},
+                'storage_type': {'label': 'Storage Type', 'type': 'select', 'required': false, 'options': [
+                    {'value': 'ssd', 'text': 'SSD'},
+                    {'value': 'hdd', 'text': 'HDD'},
+                    {'value': 'hybrid', 'text': 'Hybrid'}
+                ]},
+                'storage_capacity': {'label': 'Storage Capacity (GB)', 'type': 'number', 'required': false},
+                'graphics': {'label': 'Graphics Card', 'type': 'text', 'required': false},
+                'operating_system': {'label': 'Operating System', 'type': 'text', 'required': false},
+                'screen_size': {'label': 'Screen Size (inches)', 'type': 'text', 'required': false},
+                'battery_status': {'label': 'Battery Status', 'type': 'select', 'required': false, 'options': [
+                    {'value': 'good', 'text': 'Good'},
+                    {'value': 'fair', 'text': 'Fair'},
+                    {'value': 'poor', 'text': 'Poor'},
+                    {'value': 'not_working', 'text': 'Not Working'}
+                ]},
+                'webcam': {'label': 'Webcam', 'type': 'select', 'required': false, 'options': [
+                    {'value': 'available', 'text': 'Available'},
+                    {'value': 'not_available', 'text': 'Not Available'},
+                    {'value': 'not_working', 'text': 'Not Working'}
+                ]},
+                'model': {'label': 'Model', 'type': 'text', 'required': true},
+                'serial_number': {'label': 'Serial Number', 'type': 'text', 'required': true},
+                'warranty': {'label': 'Warranty Period', 'type': 'text', 'required': false}
+            },
+            'COMPUTER': {
+                'processor': {'label': 'Processor', 'type': 'text', 'required': false},
+                'ram': {'label': 'RAM (GB)', 'type': 'number', 'required': false},
+                'storage_type': {'label': 'Storage Type', 'type': 'select', 'required': false, 'options': [
+                    {'value': 'ssd', 'text': 'SSD'},
+                    {'value': 'hdd', 'text': 'HDD'},
+                    {'value': 'hybrid', 'text': 'Hybrid'}
+                ]},
+                'storage_capacity': {'label': 'Storage Capacity (GB)', 'type': 'number', 'required': false},
+                'graphics': {'label': 'Graphics Card', 'type': 'text', 'required': false},
+                'operating_system': {'label': 'Operating System', 'type': 'text', 'required': false},
+                'case_type': {'label': 'Case Type', 'type': 'text', 'required': false},
+                'power_supply': {'label': 'Power Supply (Watts)', 'type': 'text', 'required': false},
+                'model': {'label': 'Model', 'type': 'text', 'required': true},
+                'serial_number': {'label': 'Serial Number', 'type': 'text', 'required': true},
+                'warranty': {'label': 'Warranty Period', 'type': 'text', 'required': false}
             }
         };
+        
+        // Function to auto-fill subcategory based on property number
+        function autoFillSubcategory(propertyNumber) {
+            if (!propertyNumber) return;
+            
+            console.log('Auto-filling subcategory for property number:', propertyNumber);
+            
+            // Extract subcategory code from property number
+            // Correct format: YEAR-MONTH-05-category_code-SUBCATEGORY_CODE-series
+            // Example: 2026-04-05-030-0102-02 where 01 is subcategory (LAPTOP) and 02 is series
+            let subcategoryCode = '';
+            
+            // Try to match the full format: YEAR-MONTH-05-category_code-SUBCATEGORY_CODE-series
+            const fullFormatMatch = propertyNumber.match(/^(\d{4})-(\d{2})-05-(\d+)-(\d{4})-(\d+)$/);
+            if (fullFormatMatch) {
+                subcategoryCode = fullFormatMatch[4].substring(0, 2); // Take first 2 digits of SUBCATEGORY_CODE (0102 -> 01)
+                console.log('Full format detected, subcategory code:', subcategoryCode);
+            }
+            
+            // Try simplified format: 05-category_code-SUBCATEGORY_CODE-series
+            const simplifiedMatch = propertyNumber.match(/^05-(\d+)-(\d{4})-(\d+)$/);
+            if (simplifiedMatch && !subcategoryCode) {
+                subcategoryCode = simplifiedMatch[2].substring(0, 2); // Take first 2 digits of SUBCATEGORY_CODE (0102 -> 01)
+                console.log('Simplified format detected, subcategory code:', subcategoryCode);
+            }
+            
+            // Try alternative format: 05-category_code-SUBCATEGORY_CODE-series (where SUBCATEGORY_CODE is 2 digits)
+            const altMatch = propertyNumber.match(/^05-(\d+)-(\d{2})-(\d+)$/);
+            if (altMatch && !subcategoryCode) {
+                subcategoryCode = altMatch[2]; // SUBCATEGORY_CODE is exactly 2 digits
+                console.log('Alternative format detected, subcategory code:', subcategoryCode);
+            }
+            
+            // Legacy pattern matching as fallback
+            if (!subcategoryCode) {
+                // Pattern 1: Code-NAME-Number (e.g., CD001-LAPTOP-001)
+                const pattern1Match = propertyNumber.match(/^[A-Z]{2}\d{3}-([A-Z\s]+)-\d+$/);
+                if (pattern1Match) {
+                    const subcategoryName = pattern1Match[1].trim();
+                    console.log('Legacy pattern 1 detected, subcategory name:', subcategoryName);
+                    findAndSelectSubcategoryByName(subcategoryName);
+                    return;
+                }
+                
+                // Pattern 2: Code-NAME (e.g., CD001-LAPTOP)
+                const pattern2Match = propertyNumber.match(/^[A-Z]{2}\d{3}-([A-Z\s]+)$/);
+                if (pattern2Match) {
+                    const subcategoryName = pattern2Match[1].trim();
+                    console.log('Legacy pattern 2 detected, subcategory name:', subcategoryName);
+                    findAndSelectSubcategoryByName(subcategoryName);
+                    return;
+                }
+                
+                // Pattern 3: NAME at the end (e.g., 001-LAPTOP)
+                const pattern3Match = propertyNumber.match(/-\s*([A-Z\s]+)$/);
+                if (pattern3Match) {
+                    const subcategoryName = pattern3Match[1].trim();
+                    console.log('Legacy pattern 3 detected, subcategory name:', subcategoryName);
+                    findAndSelectSubcategoryByName(subcategoryName);
+                    return;
+                }
+            }
+            
+            // If we have a subcategory code, find and select it
+            if (subcategoryCode) {
+                findAndSelectSubcategoryByCode(subcategoryCode);
+            } else {
+                console.log('No subcategory code extracted from property number:', propertyNumber);
+            }
+        }
+        
+        // Function to find and select subcategory by code
+        function findAndSelectSubcategoryByCode(subcategoryCode) {
+            const subcategorySelect = document.getElementById('subcategory_id');
+            if (!subcategorySelect) {
+                console.log('Subcategory select element not found');
+                return;
+            }
+            
+            console.log('Looking for subcategory with code:', subcategoryCode);
+            console.log('Available subcategory options:');
+            
+            // Log all available options for debugging
+            for (let i = 0; i < subcategorySelect.options.length; i++) {
+                const option = subcategorySelect.options[i];
+                const optionCode = option.getAttribute('data-subcategory-code');
+                const optionText = option.textContent;
+                console.log(`  Option ${i}: Code="${optionCode}", Text="${optionText}", Value="${option.value}"`);
+            }
+            
+            // Find matching option by sub_category_code attribute
+            for (let i = 0; i < subcategorySelect.options.length; i++) {
+                const option = subcategorySelect.options[i];
+                const optionCode = option.getAttribute('data-subcategory-code');
+                
+                console.log(`Checking option ${i}: "${optionCode}" === "${subcategoryCode}"?`);
+                
+                if (optionCode === subcategoryCode) {
+                    option.selected = true;
+                    console.log('✓ Selected subcategory by code:', optionCode, 'Text:', option.textContent);
+                    
+                    // Trigger change event to load subcategory-specific fields
+                    const event = new Event('change', { bubbles: true });
+                    subcategorySelect.dispatchEvent(event);
+                    
+                    // Make the dropdown readonly/disabled to prevent changes
+                    subcategorySelect.disabled = true;
+                    
+                    // Update visual indication
+                    const label = document.querySelector('label[for="subcategory_id"]');
+                    if (label) {
+                        label.innerHTML = label.innerHTML.replace('Subcategory', 'Subcategory <small class="text-muted">(Auto-filled from Property Number)</small>');
+                    }
+                    
+                    return; // Found and selected, exit function
+                }
+            }
+            
+            console.log('✗ No matching subcategory found for code:', subcategoryCode);
+        }
+        
+        // Function to find and select subcategory by name (legacy fallback)
+        function findAndSelectSubcategoryByName(subcategoryName) {
+            const subcategorySelect = document.getElementById('subcategory_id');
+            if (!subcategorySelect) return;
+            
+            // Clear current selection
+            subcategorySelect.value = '';
+            
+            // Find matching option
+            for (let i = 0; i < subcategorySelect.options.length; i++) {
+                const option = subcategorySelect.options[i];
+                const optionText = option.textContent || option.innerText;
+                
+                // Check if the option contains the subcategory name
+                if (optionText.toUpperCase().includes(subcategoryName.toUpperCase())) {
+                    option.selected = true;
+                    console.log('Selected subcategory by name:', optionText);
+                    
+                    // Trigger change event to load subcategory-specific fields
+                    const event = new Event('change', { bubbles: true });
+                    subcategorySelect.dispatchEvent(event);
+                    
+                    // Make the dropdown readonly/disabled to prevent changes
+                    subcategorySelect.disabled = true;
+                    
+                    // Update visual indication
+                    const label = document.querySelector('label[for="subcategory_id"]');
+                    if (label) {
+                        label.innerHTML = label.innerHTML.replace('Subcategory', 'Subcategory <small class="text-muted">(Auto-filled from Property Number)</small>');
+                    }
+                    
+                    break;
+                }
+            }
+        }
         
         // Function to load category-specific fields
         function loadCategoryFields(categoryCode) {
@@ -562,14 +778,31 @@ $category_fields = [
                 const isHalfWidth = ['text', 'number', 'date'].includes(fieldConfig.type);
                 const columnClass = isHalfWidth ? 'col-md-6' : 'col-md-12';
                 
-                fieldsHtml += `
+                let fieldHtml = '';
+                if (fieldConfig.type === 'select') {
+                    fieldHtml = `
+                    <div class="${columnClass}">
+                        <div class="mb-3">
+                            <label for="${fieldName}" class="form-label">${fieldConfig.label} ${fieldConfig.required ? '<span class="required">*</span>' : ''}</label>
+                            <select class="form-select" id="${fieldName}" name="${fieldName}" ${fieldConfig.required ? 'required' : ''}>
+                                <option value="">Select ${fieldConfig.label}</option>
+                                ${fieldConfig.options.map(option => `<option value="${option.value}">${option.text}</option>`).join('')}
+                            </select>
+                        </div>
+                    </div>
+                    `;
+                } else {
+                    fieldHtml = `
                     <div class="${columnClass}">
                         <div class="mb-3">
                             <label for="${fieldName}" class="form-label">${fieldConfig.label} ${fieldConfig.required ? '<span class="required">*</span>' : ''}</label>
                             <input type="${fieldConfig.type}" class="form-control" id="${fieldName}" name="${fieldName}" ${fieldConfig.required ? 'required' : ''}>
                         </div>
                     </div>
-                `;
+                    `;
+                }
+                
+                fieldsHtml += fieldHtml;
                 
                 fieldCount++;
             }
@@ -652,7 +885,7 @@ $category_fields = [
         }
         
         // Function to load subcategories dynamically
-        function loadSubcategories(categoryId) {
+        function loadSubcategories(categoryId, callback) {
             const subcategorySelect = document.getElementById('subcategory_id');
             
             if (!categoryId || categoryId <= 0) {
@@ -660,6 +893,7 @@ $category_fields = [
                 subcategorySelect.disabled = true;
                 // Clear subcategory-specific fields
                 loadSubcategoryFields('');
+                if (callback) callback();
                 return;
             }
             
@@ -679,6 +913,9 @@ $category_fields = [
                         });
                         subcategorySelect.disabled = false;
                         console.log('Subcategories loaded successfully, dropdown enabled');
+                        
+                        // Execute callback after subcategories are loaded
+                        if (callback) callback();
                     } else {
                         console.error('Error loading subcategories:', data.error);
                         subcategorySelect.innerHTML = '<option value="">Error loading subcategories</option>';
@@ -694,6 +931,33 @@ $category_fields = [
         
         // Event listener for category change
         document.addEventListener('DOMContentLoaded', function() {
+            // Add event listener for property number changes
+            const propertyNoField = document.getElementById('property_no');
+            if (propertyNoField) {
+                propertyNoField.addEventListener('input', function() {
+                    autoFillSubcategory(this.value);
+                });
+                
+                propertyNoField.addEventListener('blur', function() {
+                    autoFillSubcategory(this.value);
+                });
+            }
+            
+            // Add event listener for category changes
+            document.getElementById('category_id').addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                const categoryCode = selectedOption ? selectedOption.getAttribute('data-category-code') : '';
+                
+                // Load category-specific fields
+                loadCategoryFields(categoryCode);
+                
+                // Load subcategories for the selected category
+                loadSubcategories(this.value);
+                
+                // Clear subcategory-specific fields when category changes
+                loadSubcategoryFields('');
+            });
+            
             // Initialize Select2 for person accountable dropdown
             $('#person_accountable').select2({
                 theme: 'bootstrap-5',
@@ -718,24 +982,55 @@ $category_fields = [
                 const selectedOption = this.options[this.selectedIndex];
                 console.log('Native selected option:', selectedOption);
                 
-                const subcategoryCode = selectedOption ? selectedOption.getAttribute('data-subcategory-code') : '';
-                console.log('Extracted subcategory code:', subcategoryCode);
-                console.log('All data attributes:', selectedOption ? selectedOption.dataset : 'No option selected');
+                // Use subcategory name instead of code
+                const subcategoryName = selectedOption ? selectedOption.textContent.trim() : '';
+                console.log('Extracted subcategory name:', subcategoryName);
                 
-                // Load subcategory-specific fields
-                loadSubcategoryFields(subcategoryCode);
+                // Extract just the name part (remove code if present)
+                const cleanSubcategoryName = subcategoryName.split(' - ').pop().trim();
+                console.log('Clean subcategory name:', cleanSubcategoryName);
+                
+                // Load subcategory-specific fields using the name
+                loadSubcategoryFields(cleanSubcategoryName);
             });
             
-            // Load fields for current subcategory on page load
+            // Category change functionality
+            const categorySelect = document.getElementById('category_id');
+            
+            // Load fields for current category on page load
+            const selectedOption = categorySelect.options[categorySelect.selectedIndex];
+            const categoryCode = selectedOption ? selectedOption.getAttribute('data-category-code') : '';
+            loadCategoryFields(categoryCode);
+            
+            // Load subcategories for current category on page load and auto-fill if property number exists
+            const selectedCategoryId = categorySelect.value;
+            if (selectedCategoryId) {
+                // Check if there's a property number to auto-fill from
+                const propertyNoValue = propertyNoField ? propertyNoField.value.trim() : '';
+                
+                if (propertyNoValue) {
+                    // Load subcategories with callback to auto-fill after loading
+                    loadSubcategories(selectedCategoryId, function() {
+                        console.log('Subcategories loaded, now auto-filling from property number:', propertyNoValue);
+                        autoFillSubcategory(propertyNoValue);
+                    });
+                } else {
+                    // Just load subcategories without auto-fill
+                    loadSubcategories(selectedCategoryId);
+                }
+            }
+            
+            // Load fields for current subcategory on page load (if already selected)
             setTimeout(() => {
                 const subcategorySelect = document.getElementById('subcategory_id');
                 if (subcategorySelect && subcategorySelect.value) {
-                    // Get the selected option using Select2's data
-                    const selectedOption = $('#subcategory_id option:selected');
-                    const subcategoryCode = selectedOption.attr('data-subcategory-code') || '';
+                    // Get the selected option text and extract the name
+                    const selectedOption = subcategorySelect.options[subcategorySelect.selectedIndex];
+                    const subcategoryName = selectedOption ? selectedOption.textContent.trim() : '';
+                    const cleanSubcategoryName = subcategoryName.split(' - ').pop().trim();
                     
-                    console.log('Initial subcategory code:', subcategoryCode);
-                    loadSubcategoryFields(subcategoryCode);
+                    console.log('Initial subcategory name:', cleanSubcategoryName);
+                    loadSubcategoryFields(cleanSubcategoryName);
                 }
             }, 500);
             
@@ -911,37 +1206,7 @@ $category_fields = [
                 });
             }
             
-            // Category change functionality
-            const categorySelect = document.getElementById('category_id');
-            
-            // Load fields for current category on page load
-            const selectedOption = categorySelect.options[categorySelect.selectedIndex];
-            const categoryCode = selectedOption.getAttribute('data-category-code');
-            loadCategoryFields(categoryCode);
-            
-            // Load subcategories for current category on page load
-            const selectedCategoryId = categorySelect.value;
-            if (selectedCategoryId) {
-                loadSubcategories(selectedCategoryId);
-            }
-            
-            // Event listener for category change
-            categorySelect.addEventListener('change', function() {
-                const selectedOption = this.options[this.selectedIndex];
-                const categoryCode = selectedOption.getAttribute('data-category-code');
-                const categoryId = this.value;
-                
-                console.log('Category changed to:', categoryCode, 'ID:', categoryId);
-                
-                // Load category-specific fields
-                loadCategoryFields(categoryCode);
-                
-                // Load subcategories dynamically
-                loadSubcategories(categoryId);
-            });
-            
-            // Auto-fill property number if empty
-            const propertyNoField = document.getElementById('property_no');
+            // Auto-fill property number if empty and handle subcategory auto-fill
             if (propertyNoField && !propertyNoField.value.trim()) {
                 // Add increment field for property number generation
                 const incrementField = document.createElement('input');
@@ -970,11 +1235,23 @@ $category_fields = [
                         infoDiv.className = 'form-text text-muted';
                         infoDiv.textContent = 'Property number auto-generated';
                         propertyNoField.parentNode.appendChild(infoDiv);
+                        
+                        // Auto-fill subcategory based on generated property number after subcategories are loaded
+                        const selectedCategoryId = categorySelect.value;
+                        if (selectedCategoryId) {
+                            loadSubcategories(selectedCategoryId, function() {
+                                console.log('Subcategories loaded for generated property number, now auto-filling:', data.tag_number);
+                                autoFillSubcategory(data.tag_number);
+                            });
+                        }
                     }
                 })
                 .catch(error => {
                     console.error('Error generating property number:', error);
                 });
+            } else if (propertyNoField && propertyNoField.value.trim()) {
+                // Auto-fill subcategory for existing property number (this is already handled above)
+                console.log('Property number exists, auto-fill already handled in initialization');
             }
         });
     </script>
