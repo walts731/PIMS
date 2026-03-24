@@ -870,6 +870,52 @@ $category_fields = [
             container.innerHTML = fieldsHtml;
         }
         
+        // Function to generate property number based on category
+        function generatePropertyNumberForCategory(categoryCode) {
+            const propertyNoField = document.getElementById('property_no');
+            if (!propertyNoField || !categoryCode) return;
+            
+            console.log('Generating property number for category:', categoryCode);
+            
+            // Get next series for this category
+            fetch(`../api/get_next_series.php?category=${categoryCode}&subcategory=00`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const currentYear = new Date().getFullYear();
+                        const currentMonth = String(new Date().getMonth() + 1).padStart(2, '0');
+                        
+                        // Format: YYYY-MM-05-category_code-0000-series
+                        const newPropertyNumber = `${currentYear}-${currentMonth}-05-${categoryCode}-0000-${data.next_series}`;
+                        
+                        propertyNoField.value = newPropertyNumber;
+                        propertyNoField.readOnly = true;
+                        propertyNoField.classList.add('bg-light');
+                        
+                        // Update info text
+                        let infoDiv = propertyNoField.parentNode.querySelector('.form-text');
+                        if (infoDiv) {
+                            infoDiv.textContent = 'Property number auto-generated based on category';
+                        } else {
+                            infoDiv = document.createElement('small');
+                            infoDiv.className = 'form-text text-muted';
+                            infoDiv.textContent = 'Property number auto-generated based on category';
+                            propertyNoField.parentNode.appendChild(infoDiv);
+                        }
+                        
+                        console.log('Generated new property number:', newPropertyNumber);
+                        
+                        // Auto-fill subcategory after property number is updated
+                        setTimeout(() => {
+                            autoFillSubcategory(newPropertyNumber);
+                        }, 100);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error generating property number:', error);
+                });
+        }
+        
         // Function to get category name from code
         function getCategoryName(categoryCode) {
             const categoryNames = {
@@ -956,6 +1002,9 @@ $category_fields = [
                 
                 // Clear subcategory-specific fields when category changes
                 loadSubcategoryFields('');
+                
+                // Generate new property number based on new category
+                generatePropertyNumberForCategory(categoryCode);
             });
             
             // Initialize Select2 for person accountable dropdown
@@ -1015,8 +1064,13 @@ $category_fields = [
                         autoFillSubcategory(propertyNoValue);
                     });
                 } else {
-                    // Just load subcategories without auto-fill
-                    loadSubcategories(selectedCategoryId);
+                    // Just load subcategories and generate property number for current category
+                    loadSubcategories(selectedCategoryId, function() {
+                        console.log('No property number exists, generating for current category:', categoryCode);
+                        if (categoryCode) {
+                            generatePropertyNumberForCategory(categoryCode);
+                        }
+                    });
                 }
             }
             
@@ -1208,47 +1262,8 @@ $category_fields = [
             
             // Auto-fill property number if empty and handle subcategory auto-fill
             if (propertyNoField && !propertyNoField.value.trim()) {
-                // Add increment field for property number generation
-                const incrementField = document.createElement('input');
-                incrementField.type = 'hidden';
-                incrementField.name = 'increment_property_counter';
-                incrementField.value = '1';
-                document.querySelector('form').appendChild(incrementField);
-                
-                // Generate property number via AJAX
-                fetch('../includes/system_functions.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: 'action=generateNextTag&tag_type=property_no'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success && data.tag_number) {
-                        propertyNoField.value = data.tag_number;
-                        propertyNoField.readOnly = true;
-                        propertyNoField.classList.add('bg-light');
-                        
-                        // Add info text
-                        const infoDiv = document.createElement('small');
-                        infoDiv.className = 'form-text text-muted';
-                        infoDiv.textContent = 'Property number auto-generated';
-                        propertyNoField.parentNode.appendChild(infoDiv);
-                        
-                        // Auto-fill subcategory based on generated property number after subcategories are loaded
-                        const selectedCategoryId = categorySelect.value;
-                        if (selectedCategoryId) {
-                            loadSubcategories(selectedCategoryId, function() {
-                                console.log('Subcategories loaded for generated property number, now auto-filling:', data.tag_number);
-                                autoFillSubcategory(data.tag_number);
-                            });
-                        }
-                    }
-                })
-                .catch(error => {
-                    console.error('Error generating property number:', error);
-                });
+                // Property number generation is now handled in the category initialization above
+                console.log('Property number will be generated when category is loaded');
             } else if (propertyNoField && propertyNoField.value.trim()) {
                 // Auto-fill subcategory for existing property number (this is already handled above)
                 console.log('Property number exists, auto-fill already handled in initialization');
