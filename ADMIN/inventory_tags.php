@@ -219,13 +219,13 @@ try {
                 <i class="bi bi-funnel"></i> Search & Filters
             </div>
             <form id="filterForm" class="row g-3">
-                <div class="col-md-3">
-                    <div class="search-box">
-                        <i class="bi bi-search"></i>
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
                         <input type="text" name="search" id="searchInput" class="form-control" placeholder="Search by tag, property no, description, or employee..." value="<?php echo htmlspecialchars($search); ?>">
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <select name="office" id="officeFilter" class="form-select">
                         <option value="">All Offices</option>
                         <?php foreach ($offices as $office): ?>
@@ -235,7 +235,7 @@ try {
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <select name="category" id="categoryFilter" class="form-select">
                         <option value="">All Categories</option>
                         <?php foreach ($categories as $category): ?>
@@ -245,13 +245,7 @@ try {
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <div class="col-md-3">
-                    <select name="status" id="statusFilter" class="form-select">
-                        <option value="">All Serviceable Items</option>
-                        <option value="serviceable" <?php echo $status_filter == 'serviceable' ? 'selected' : ''; ?>>Serviceable</option>
-                    </select>
-                </div>
-            </form>
+                            </form>
         </div>
 
         <div class="section-card mb-4">
@@ -300,7 +294,7 @@ try {
                                         </td>
                                         <td>
                                             <span class="category-badge">
-                                                <?php echo htmlspecialchars($tag['category_code']); ?>
+                                                <?php echo htmlspecialchars($tag['category_name']); ?>
                                             </span>
                                         </td>
                                         <td><?php echo htmlspecialchars($tag['office_name'] ?? 'N/A'); ?></td>
@@ -486,7 +480,6 @@ try {
             const searchInput = document.getElementById('searchInput');
             const officeFilter = document.getElementById('officeFilter');
             const categoryFilter = document.getElementById('categoryFilter');
-            const statusFilter = document.getElementById('statusFilter');
             const filterForm = document.getElementById('filterForm');
 
             // Function to submit form with current filter values
@@ -520,10 +513,6 @@ try {
 
             if (categoryFilter) {
                 categoryFilter.addEventListener('change', applyFilters);
-            }
-
-            if (statusFilter) {
-                statusFilter.addEventListener('change', applyFilters);
             }
         });
     </script>
