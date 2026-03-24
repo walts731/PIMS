@@ -646,8 +646,6 @@ CREATE TABLE `borrow_requests` (
 -- Stand-in structure for view `branch_summary`
 -- (See below for the actual view)
 --
-CREATE TABLE `branch_summary` (
-);
 
 -- --------------------------------------------------------
 
@@ -1004,6 +1002,7 @@ INSERT INTO `fuel_transactions` (`id`, `transaction_type`, `fuel_type`, `quantit
 --
 -- Triggers `fuel_transactions`
 --
+
 DELIMITER $$
 CREATE TRIGGER `tr_fuel_in_inventory_update` AFTER INSERT ON `fuel_transactions` FOR EACH ROW BEGIN
         IF NEW.transaction_type = 'IN' AND NEW.tank_number IS NOT NULL THEN
@@ -1012,9 +1011,10 @@ CREATE TRIGGER `tr_fuel_in_inventory_update` AFTER INSERT ON `fuel_transactions`
                 last_updated = NOW()
             WHERE tank_number = NEW.tank_number;
         END IF;
-    END
-$$
+    END$$
 DELIMITER ;
+
+
 DELIMITER $$
 CREATE TRIGGER `tr_fuel_out_inventory_update` AFTER INSERT ON `fuel_transactions` FOR EACH ROW BEGIN
         IF NEW.transaction_type = 'OUT' AND NEW.tank_number IS NOT NULL THEN
@@ -1023,9 +1023,9 @@ CREATE TRIGGER `tr_fuel_out_inventory_update` AFTER INSERT ON `fuel_transactions
                 last_updated = NOW()
             WHERE tank_number = NEW.tank_number AND current_level >= NEW.quantity;
         END IF;
-    END
-$$
+    END$$
 DELIMITER ;
+
 DELIMITER $$
 CREATE TRIGGER `tr_fuel_transaction_delete_reverse` AFTER DELETE ON `fuel_transactions` FOR EACH ROW BEGIN
         IF OLD.tank_number IS NOT NULL THEN
@@ -1043,9 +1043,9 @@ CREATE TRIGGER `tr_fuel_transaction_delete_reverse` AFTER DELETE ON `fuel_transa
                 WHERE tank_number = OLD.tank_number;
             END IF;
         END IF;
-    END
-$$
+    END$$
 DELIMITER ;
+
 
 -- --------------------------------------------------------
 
@@ -1111,8 +1111,6 @@ INSERT INTO `funds` (`id`, `fund_code`, `fund_name`, `fund_cluster`, `descriptio
 -- Stand-in structure for view `fund_allocation_summary`
 -- (See below for the actual view)
 --
-CREATE TABLE `fund_allocation_summary` (
-);
 
 -- --------------------------------------------------------
 
@@ -1120,8 +1118,6 @@ CREATE TABLE `fund_allocation_summary` (
 -- Stand-in structure for view `fund_summary`
 -- (See below for the actual view)
 --
-CREATE TABLE `fund_summary` (
-);
 
 -- --------------------------------------------------------
 
