@@ -272,6 +272,20 @@ try {
             $find_office_stmt->close();
         }
         
+        // Validate subcategory_id exists before updating assets table
+        $valid_subcategory_id = null;
+        if ($subcategory_id > 0) {
+            $check_subcategory_sql = "SELECT id FROM asset_sub_categories WHERE id = ? LIMIT 1";
+            $check_subcategory_stmt = $conn->prepare($check_subcategory_sql);
+            $check_subcategory_stmt->bind_param("i", $subcategory_id);
+            $check_subcategory_stmt->execute();
+            $check_subcategory_result = $check_subcategory_stmt->get_result();
+            if ($check_subcategory_result->num_rows > 0) {
+                $valid_subcategory_id = $subcategory_id;
+            }
+            $check_subcategory_stmt->close();
+        }
+        
         $update_assets_sql = "UPDATE assets SET 
                               asset_categories_id = ?,
                               asset_subcategory_id = ?,
@@ -279,7 +293,7 @@ try {
                               updated_at = CURRENT_TIMESTAMP
                               WHERE id = ?";
         $update_assets_stmt = $conn->prepare($update_assets_sql);
-        $update_assets_stmt->bind_param("iiii", $category_id, $subcategory_id, $office_id_for_assets, $asset_id);
+        $update_assets_stmt->bind_param("iiii", $category_id, $valid_subcategory_id, $office_id_for_assets, $asset_id);
         $update_assets_stmt->execute();
     }
     

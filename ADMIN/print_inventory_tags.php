@@ -53,15 +53,21 @@ if (empty($tag_id_array)) {
 $placeholders = str_repeat('?,', count($tag_id_array) - 1) . '?';
 $types = str_repeat('i', count($tag_id_array));
 
-$sql = "SELECT ai.*, a.description as asset_description, a.unit_cost,
+$sql = "SELECT ai.*, 
+               a.description as asset_description, a.unit_cost,
                ac.category_name, ac.category_code,
+               subcat.sub_category_name, subcat.sub_category_code,
                o.office_name, o.address,
-               e.employee_no, e.firstname, e.lastname, e.position
+               e.employee_no, e.firstname, e.lastname, e.position,
+               desk.monitor_name, desk.monitor_model, desk.monitor_serial_number, 
+               desk.ups_name, desk.ups_model, desk.ups_serial_number
         FROM asset_items ai 
         LEFT JOIN assets a ON ai.asset_id = a.id 
         LEFT JOIN asset_categories ac ON COALESCE(ai.category_id, a.asset_categories_id) = ac.id 
+        LEFT JOIN asset_sub_categories subcat ON ai.asset_subcategory_id = subcat.id
         LEFT JOIN offices o ON ai.office_id = o.id 
         LEFT JOIN employees e ON ai.employee_id = e.id 
+        LEFT JOIN asset_desktop_computers desk ON ai.id = desk.asset_item_id
         WHERE ai.id IN ($placeholders)
         ORDER BY ai.inventory_tag";
 
@@ -85,28 +91,56 @@ require_once '../includes/logger.php';
 $tag_list = implode(', ', array_column($tags, 'inventory_tag'));
 logSystemAction($_SESSION['user_id'], 'print', 'inventory_tags', "Printed multiple inventory tags: $tag_list");
 
-// Function to get additional specific data for each tag
-function getTagSpecificData($conn, $tag_id, $category_code) {
+// Prepare all stickers data
+$all_stickers = [];
+
+foreach ($tags as $tag) {
+    // Get additional specific data based on category
     $model_no = '';
     $serial_no = '';
-    
-    if ($category_code === 'ITS') {
+
+    // Calculate unit quantity based on how many asset items share the same asset_id
+    $unit_value = 1;
+    $unit_sets = 1;
+    $asset_id = $tag['asset_id'] ?? '';
+
+    if (!empty($asset_id)) {
+        // Get all asset items with this asset_id, ordered by ID
+        $items_sql = "SELECT id FROM asset_items WHERE asset_id = ? ORDER BY id";
+        $items_stmt = $conn->prepare($items_sql);
+        $items_stmt->bind_param("i", $asset_id);
+        $items_stmt->execute();
+        $items_result = $items_stmt->get_result();
+        
+        $all_items = [];
+        while ($row = $items_result->fetch_assoc()) {
+            $all_items[] = $row['id'];
+        }
+        $items_stmt->close();
+        
+        // Calculate current position and total
+        $unit_sets = count($all_items);
+        $current_position = array_search($tag['id'], $all_items) + 1; // +1 because array is 0-indexed
+        $unit_value = $current_position;
+    }
+
+    if ($tag['category_code'] === '030') {
         // Computer Equipment
-        $comp_sql = "SELECT processor as model_no, serial_number FROM asset_computers WHERE asset_item_id = ?";
+        $comp_sql = "SELECT model, serial_number FROM asset_computers WHERE asset_item_id = ?";
         $comp_stmt = $conn->prepare($comp_sql);
-        $comp_stmt->bind_param("i", $tag_id);
+        $comp_stmt->bind_param("i", $tag['id']);
         $comp_stmt->execute();
         $comp_result = $comp_stmt->get_result();
         if ($comp_row = $comp_result->fetch_assoc()) {
-            $model_no = $comp_row['model_no'] ?? '';
+            $model_no = $comp_row['model'] ?? '';
             $serial_no = $comp_row['serial_number'] ?? '';
         }
         $comp_stmt->close();
-    } elseif ($category_code === 'VH') {
+    } elseif ($tag['category_code'] === '07') {
         // Vehicles
         $veh_sql = "SELECT model, serial_number FROM asset_vehicles WHERE asset_item_id = ?";
         $veh_stmt = $conn->prepare($veh_sql);
-        $veh_stmt->bind_param("i", $tag_id);
+        $veh_stmt->bind_param("i", $tag['id']);
         $veh_stmt->execute();
         $veh_result = $veh_stmt->get_result();
         if ($veh_row = $veh_result->fetch_assoc()) {
@@ -114,11 +148,11 @@ function getTagSpecificData($conn, $tag_id, $category_code) {
             $serial_no = $veh_row['serial_number'] ?? '';
         }
         $veh_stmt->close();
-    } elseif ($category_code === 'ME') {
+    } elseif ($tag['category_code'] === '04') {
         // Machinery & Equipment
         $mach_sql = "SELECT model_number as model_no, serial_number FROM asset_machinery WHERE asset_item_id = ?";
         $mach_stmt = $conn->prepare($mach_sql);
-        $mach_stmt->bind_param("i", $tag_id);
+        $mach_stmt->bind_param("i", $tag['id']);
         $mach_stmt->execute();
         $mach_result = $mach_stmt->get_result();
         if ($mach_row = $mach_result->fetch_assoc()) {
@@ -126,11 +160,11 @@ function getTagSpecificData($conn, $tag_id, $category_code) {
             $serial_no = $mach_row['serial_number'] ?? '';
         }
         $mach_stmt->close();
-    } elseif ($category_code === 'OE') {
+    } elseif ($tag['category_code'] === '05') {
         // Office Equipment
         $oe_sql = "SELECT model, serial_number FROM asset_office_equipment WHERE asset_item_id = ?";
         $oe_stmt = $conn->prepare($oe_sql);
-        $oe_stmt->bind_param("i", $tag_id);
+        $oe_stmt->bind_param("i", $tag['id']);
         $oe_stmt->execute();
         $oe_result = $oe_stmt->get_result();
         if ($oe_row = $oe_result->fetch_assoc()) {
@@ -139,12 +173,227 @@ function getTagSpecificData($conn, $tag_id, $category_code) {
         }
         $oe_stmt->close();
     }
+
+    // Format dates
+    $acquisition_date = $tag['acquisition_date'] ? date('M d, Y', strtotime($tag['acquisition_date'])) : '';
+    $date_counted = $tag['date_counted'] ? date('M d, Y', strtotime($tag['date_counted'])) : '';
+
+    // Person accountable
+    $person_accountable = '';
+    if ($tag['firstname'] && $tag['lastname']) {
+        $person_accountable = $tag['firstname'] . ' ' . $tag['lastname'];
+        if ($tag['employee_no']) {
+            $person_accountable .= ' (' . $tag['employee_no'] . ')';
+        }
+    } elseif ($tag['employee_no']) {
+        $person_accountable = $tag['employee_no'];
+    }
+
+    // Status checkboxes
+    $serviceable_checked = ($tag['status'] === 'serviceable') ? '☑' : '☐';
+    $unserviceable_checked = ($tag['status'] === 'unserviceable' || $tag['status'] === 'red_tagged') ? '☑' : '☐';
+
+    // Main asset sticker
+    $all_stickers[] = [
+        'tag' => $tag,
+        'type' => 'main',
+        'description' => $tag['description'],
+        'model_no' => $model_no,
+        'serial_no' => $serial_no,
+        'property_no' => $tag['property_no'] ?? 'N/A',
+        'qr_code' => $tag['qr_code'] ?? null,
+        'acquisition_date' => $acquisition_date,
+        'date_counted' => $date_counted,
+        'person_accountable' => $person_accountable,
+        'serviceable_checked' => $serviceable_checked,
+        'unserviceable_checked' => $unserviceable_checked,
+        'unit_value' => $unit_value,
+        'unit_sets' => $unit_sets
+    ];
+
+    // Additional stickers for Desktop Computers
+    if ($tag['sub_category_name'] === 'Desktop Computers') {
+        // Monitor sticker
+        if (!empty($tag['monitor_name']) || !empty($tag['monitor_model'])) {
+            $monitor_desc = trim(($tag['monitor_name'] ?? '') . ' ' . ($tag['monitor_model'] ?? ''));
+            $all_stickers[] = [
+                'tag' => $tag,
+                'type' => 'monitor',
+                'description' => $monitor_desc ?: 'Monitor',
+                'model_no' => $tag['monitor_model'] ?? '',
+                'serial_no' => $tag['monitor_serial_number'] ?? '',
+                'property_no' => ($tag['property_no'] ?? 'N/A') . '-MON',
+                'qr_code' => $tag['qr_code'] ?? null,
+                'acquisition_date' => $acquisition_date,
+                'date_counted' => $date_counted,
+                'person_accountable' => $person_accountable,
+                'serviceable_checked' => $serviceable_checked,
+                'unserviceable_checked' => $unserviceable_checked,
+                'unit_value' => $unit_value,
+                'unit_sets' => $unit_sets
+            ];
+        }
+
+        // UPS sticker
+        if (!empty($tag['ups_name']) || !empty($tag['ups_model'])) {
+            $ups_desc = trim(($tag['ups_name'] ?? '') . ' ' . ($tag['ups_model'] ?? ''));
+            $all_stickers[] = [
+                'tag' => $tag,
+                'type' => 'ups',
+                'description' => $ups_desc ?: 'UPS',
+                'model_no' => $tag['ups_model'] ?? '',
+                'serial_no' => $tag['ups_serial_number'] ?? '',
+                'property_no' => ($tag['property_no'] ?? 'N/A') . '-UPS',
+                'qr_code' => $tag['qr_code'] ?? null,
+                'acquisition_date' => $acquisition_date,
+                'date_counted' => $date_counted,
+                'person_accountable' => $person_accountable,
+                'serviceable_checked' => $serviceable_checked,
+                'unserviceable_checked' => $unserviceable_checked,
+                'unit_value' => $unit_value,
+                'unit_sets' => $unit_sets
+            ];
+        }
+    }
+}
+
+// Function to generate sticker HTML
+function generateStickerHTML($sticker, $system_settings)
+{
+    $tag = $sticker['tag'];
     
-    return ['model_no' => $model_no, 'serial_no' => $serial_no];
+    // Get logo path
+    $logo_path = '../img/trans_logo.png'; // default
+    if (!empty($system_settings['system_logo'])) {
+        if (file_exists('../' . $system_settings['system_logo'])) {
+            $logo_path = '../' . $system_settings['system_logo'];
+        } elseif (file_exists($system_settings['system_logo'])) {
+            $logo_path = $system_settings['system_logo'];
+        }
+    }
+
+    $sticker_type_label = '';
+    if ($sticker['type'] === 'monitor') {
+        $sticker_type_label = ' - MONITOR';
+    } elseif ($sticker['type'] === 'ups') {
+        $sticker_type_label = ' - UPS';
+    }
+
+    return '
+    <div class="tag-container" style="page-break-inside: avoid; margin-bottom: 20px;">
+        <div class="tag-header">
+        <div class="property">
+                <small>No. ' . htmlspecialchars($sticker['property_no']) . '</small>
+            </div>
+            <div class="header-row">
+                <div class="seal">
+                    <img src="' . $logo_path . '" alt="LGU Logo" class="header-logo">
+                </div>
+                <div class="header-text">
+                    <h2>BAYAN NG PILAR</h2>
+                    <h3>LALAWIGAN NG SORSOGON</h3>
+                </div>
+                <div class="tag-number">
+                    <br>
+                    ' . ($sticker['qr_code'] ?
+        '<img src="../uploads/qr_codes/' . htmlspecialchars($sticker['qr_code']) . '" alt="QR Code" class="tag-qr-code">' :
+        '<div class="qr-placeholder"><i class="bi bi-qr-code-scan"></i></div>'
+    ) . '
+                </div>
+            </div>
+             <div class="field-row">
+                <div class=" office-name-field">' . htmlspecialchars($tag['office_name'] ?? '') . '</div>
+            </div>
+             <div class="field-row office-location-row">
+                <div class="field-label text-right">Office/Location:</div>
+            </div>
+        </div>
+        
+        <div class="tag-body">
+           
+            
+            <div class="field-row">
+                <div class="field-label">Description:</div>
+                <div class="field-value">' . htmlspecialchars($sticker['description']) . $sticker_type_label . '</div>
+            </div>
+            
+            <div class="two-column">
+                <div class="field-row">
+                    <div class="field-label">Model:</div>
+                    <div class="field-value">' . htmlspecialchars($sticker['model_no']) . '</div>
+                </div>
+                <div class="field-row">
+                    <div class="field-label">Serial:</div>
+                    <div class="field-value">' . htmlspecialchars($sticker['serial_no']) . '</div>
+                </div>
+            </div>
+            
+            <div class="checkbox-row">
+                <div class="checkbox-item">
+                    <div>Serviceable:</div>
+                    <div class="checkbox">' . $sticker['serviceable_checked'] . '</div>
+                </div>
+                <div class="checkbox-item">
+                    <div>Unserviceable:</div>
+                    <div class="checkbox">' . $sticker['unserviceable_checked'] . '</div>
+                </div>
+            </div>
+            
+            <div class="two-column">
+                <div class="field-row">
+                    <div class="field-label">Unit/Quantity:</div>
+                    <div class="field-value">' . (
+                        (function() use ($sticker, $tag) {
+                            $unit_label = $tag['unit'] ?? 'pcs';
+                            if ($sticker['unit_sets'] > 1) {
+                                return htmlspecialchars($sticker['unit_value']) . ' of ' . htmlspecialchars($sticker['unit_sets']) . ' ' . htmlspecialchars($unit_label);
+                            }
+                            return htmlspecialchars($sticker['unit_value']) . ' ' . htmlspecialchars($unit_label);
+                        })()
+                    ) . '</div>
+                </div>
+                <div class="field-row">
+                    <div class="field-label">Acquisition Date/Cost:</div>
+                    <div class="field-value">' . htmlspecialchars($sticker['acquisition_date']) . ' / ' . htmlspecialchars($tag['unit_cost']) . '</div>
+                </div>
+            </div>
+            
+            <div class="field-row">
+                <div class="field-label">Accountable:</div>
+                <div class="field-value">' . htmlspecialchars($sticker['person_accountable']) . '</div>
+            </div>
+            
+            <div class="two-column">
+                <div class="field-row">
+                    <div class="field-label">Date: (Acquired)</div>
+                    <div class="field-value">' . htmlspecialchars($sticker['acquisition_date']) . '</div>
+                </div>
+                <div class="field-row">
+                    <div class="field-label">Date: (Counted)</div>
+                    <div class="field-value">' . htmlspecialchars($sticker['date_counted']) . '</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="signature-section">
+            <div class="signature-row">
+                <div class="signature-box">
+                    <div class="signature-line"></div>
+                    <div class="signature-label">COA Representative</div>
+                </div>
+                <div class="signature-box">
+                    <div class="signature-line"></div>
+                    <div class="signature-label">Signature of the Inventory Committee</div>
+                </div>
+            </div>
+        </div>
+    </div>';
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -154,13 +403,13 @@ function getTagSpecificData($conn, $tag_id, $category_code) {
             size: Letter;
             margin: 0.5in;
         }
-        
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: 'Times New Roman', serif;
             font-size: 12px;
@@ -168,396 +417,420 @@ function getTagSpecificData($conn, $tag_id, $category_code) {
             color: #000;
             background: white;
         }
-        
+
         .print-container {
             width: 100%;
             max-width: 8.5in;
             margin: 0 auto;
-            padding: 10px;
+            padding: 20px;
             position: relative;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: 1fr 1fr 1fr;
-            gap: 15px;
-            min-height: 100vh;
         }
-        
+
+        .stickers-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: flex-start;
+        }
+
         .tag-container {
-            width: 100%;
-            height: 3.5in;
+            width: 3.5in;
+            height: 3in;
             border: 2px solid #000;
             padding: 12px;
             background: white;
             page-break-inside: avoid;
             display: flex;
             flex-direction: column;
+            margin-bottom: 15px;
         }
-        
+
+        @media print {
+            .stickers-wrapper {
+                display: block;
+                column-count: 2;
+                column-gap: 15px;
+            }
+
+            .tag-container {
+                break-inside: avoid;
+                display: inline-block;
+                width: 100%;
+                margin-bottom: 0;
+                margin-top: 0;
+            }
+
+            .tag-container:nth-child(even) {
+                break-before: column;
+            }
+        }
+
         .tag-header {
             text-align: center;
-            border-bottom: 2px solid #000;
             padding-bottom: 8px;
             margin-bottom: 10px;
         }
-        
+
+        .property {
+            text-align: right;
+            margin-top: 5px;
+            font-size: 8px;
+        }
+
         .header-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
         }
-        
+
         .seal {
-            width: 40px;
-            height: 40px;
-            border: 2px solid #000;
+            width: 35px;
+            height: 35px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 6px;
+            font-size: 5px;
             text-align: center;
             font-weight: bold;
+            flex-shrink: 0;
         }
-        
-        .seal-logo {
-            max-width: 36px;
-            max-height: 36px;
-            border-radius: 50%;
-            object-fit: contain;
-        }
-        
+
         .header-text {
-            flex: 1;
+            flex: 0.8;
             text-align: center;
-            margin: 0 10px;
+            margin: 0 8px 0 2px;
         }
-        
+
         .header-logo {
-            max-width: 36px;
-            max-height: 36px;
+            max-width: 31px;
+            max-height: 31px;
             border-radius: 50%;
             object-fit: contain;
         }
-        
+
         .header-text h2 {
             margin: 0;
-            font-size: 12px;
+            font-size: 9px;
             font-weight: bold;
             text-transform: uppercase;
         }
-        
+
         .header-text h3 {
             margin: 2px 0 0 0;
-            font-size: 10px;
+            font-size: 7px;
             font-weight: bold;
             text-transform: uppercase;
         }
-        
+
         .tag-number {
-            font-size: 12px;
+            font-size: 10px;
             font-weight: bold;
             text-align: right;
         }
-        
+
         .tag-qr-code {
-            width: 40px;
-            height: 40px;
-            border: 1px solid #000;
-            border-radius: 4px;
+            width: 35px;
+            height: 35px;
             object-fit: contain;
         }
-        
+
         .qr-placeholder {
-            width: 40px;
-            height: 40px;
-            border: 1px solid #000;
+            width: 35px;
+            height: 35px;
             border-radius: 4px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            font-size: 18px;
             color: #666;
         }
-        
+
         .tag-body {
             flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 5px;
-            font-size: 8px;
-        }
-        
-        .field-row {
-            display: flex;
-            margin-bottom: 5px;
-            align-items: flex-start;
-        }
-        
-        .field-label {
-            width: 120px;
-            font-weight: bold;
-            flex-shrink: 0;
+            gap: 6px;
             font-size: 7px;
         }
-        
+
+        .field-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 5px;
+        }
+
+        .field-label {
+            width: 60px;
+            font-weight: bold;
+            flex-shrink: 0;
+            font-size: 6px;
+            text-align: left;
+        }
+
+        .office-location-row {
+            justify-content: center;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
         .field-value {
             flex: 1;
             border-bottom: 1px solid #000;
-            min-height: 12px;
+            min-height: 8px;
             padding: 1px 2px;
-            font-size: 7px;
+            font-size: 6px;
+            width: fit-content;
+            max-width: 100%;
         }
-        
+
+        .field-value-no-border {
+            flex: 1;
+            min-height: 8px;
+            padding: 1px 2px;
+            font-size: 6px;
+            width: fit-content;
+            max-width: 100%;
+        }
+
         .checkbox-row {
             display: flex;
-            gap: 15px;
+            gap: 20px;
             margin-bottom: 5px;
         }
-        
+
         .checkbox-item {
             display: flex;
             align-items: center;
-            gap: 3px;
+            gap: 50px;
         }
-        
+
         .checkbox {
-            font-size: 10px;
-            width: 12px;
-            height: 12px;
-            border: 1px solid #000;
+            font-size: 9px;
             display: flex;
             align-items: center;
             justify-content: center;
+            position: relative;
+            flex-shrink: 0;
         }
         
+        .checkbox::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: -20px;
+            right: -20px;
+            height: 8px;
+            border-bottom: 1px solid #000;
+        }
+
         .two-column {
             display: flex;
             gap: 10px;
         }
-        
+
         .two-column .field-row {
             flex: 1;
         }
-        
+
         .signature-section {
             margin-top: auto;
-            border-top: 1px solid #000;
-            padding-top: 5px;
+            padding-top: 6px;
         }
-        
+
         .signature-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 5px;
+            gap: 10px;
         }
-        
+
         .signature-box {
-            width: 45%;
+            flex: 1;
             text-align: center;
         }
-        
+
         .signature-line {
             border-bottom: 1px solid #000;
-            height: 15px;
-            margin-bottom: 3px;
+            height: 12px;
+            margin-bottom: 2px;
         }
-        
+
         .signature-label {
-            font-size: 6px;
+            font-size: 5px;
             font-style: italic;
         }
-        
-        @media print {
-            body {
-                margin: 0;
-                padding: 0;
-                font-size: 10px;
-            }
-            
-            .print-container {
-                padding: 5px;
-                max-width: 8.5in;
-                width: 8.5in;
-            }
-            
-            @page {
-                size: Letter;
-                margin: 0.25in;
-                orientation: portrait;
-            }
-            
-            html {
-                overflow: hidden;
-            }
-            
-            header, nav, .no-print {
-                display: none !important;
-            }
-            
-            .tag-container {
-                page-break-inside: avoid;
-                break-inside: avoid;
-            }
+
+        .office-name-field {
+            text-decoration: underline;
+            font-weight: bold;
+            font-size: 8px;
+            color: #000;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            width: 200px;
+            height: 12px;
+            margin-bottom: 3px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 2px;
         }
-    </style>
+
+    @media print {
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        .print-container {
+            padding: 0;
+        }
+
+        @page {
+            size: Letter;
+            margin: 0.5in;
+        }
+
+        html {
+            overflow: hidden;
+        }
+
+        header,
+        nav,
+        .no-print {
+            display: none !important;
+        }
+        
+        .field-value-no-border {
+            flex: 1;
+            min-height: 8px;
+            padding: 1px 2px;
+            font-size: 6px;
+            width: fit-content;
+            max-width: 100%;
+        }
+    }
+</style>
 </head>
+
 <body>
-    <div class="print-container">
-        <?php foreach ($tags as $tag): ?>
-            <?php
-            // Get specific data for this tag
-            $specific_data = getTagSpecificData($conn, $tag['id'], $tag['category_code']);
-            $model_no = $specific_data['model_no'];
-            $serial_no = $specific_data['serial_no'];
-            $unit_value = 1;
-            
-            // Format dates
-            $acquisition_date = $tag['acquisition_date'] ? date('M d, Y', strtotime($tag['acquisition_date'])) : '';
-            $date_counted = $tag['date_counted'] ? date('M d, Y', strtotime($tag['date_counted'])) : '';
-            
-            // Person accountable
-            $person_accountable = '';
-            if ($tag['firstname'] && $tag['lastname']) {
-                $person_accountable = $tag['firstname'] . ' ' . $tag['lastname'];
-                if ($tag['employee_no']) {
-                    $person_accountable .= ' (' . $tag['employee_no'] . ')';
-                }
-            } elseif ($tag['employee_no']) {
-                $person_accountable = $tag['employee_no'];
-            }
-            
-            // Status checkboxes
-            $serviceable_checked = ($tag['status'] === 'serviceable') ? '☑' : '☐';
-            $unserviceable_checked = ($tag['status'] === 'unserviceable' || $tag['status'] === 'red_tagged') ? '☑' : '☐';
-            ?>
-            
-            <div class="tag-container">
-                <div class="tag-header">
-                    <div class="header-row">
-                        <div class="seal">
-                            <?php 
-                            $logo_path = '../img/trans_logo.png'; // default
-                            if (!empty($system_settings['system_logo'])) {
-                                if (file_exists('../' . $system_settings['system_logo'])) {
-                                    $logo_path = '../' . $system_settings['system_logo'];
-                                } elseif (file_exists($system_settings['system_logo'])) {
-                                    $logo_path = $system_settings['system_logo'];
-                                }
-                            }
-                            ?>
-                            <img src="<?php echo $logo_path; ?>" alt="LGU Logo" class="header-logo">
-                        </div>
-                        <div class="header-text">
-                            
-                            <h2>BAYAN NG PILAR</h2>
-                            <h3>LALAWIGAN NG SORSOGON</h3>
-                        </div>
-                        <div class="tag-number">
-                            <?php if (!empty($tag['qr_code'])): ?>
-                                <img src="../uploads/qr_codes/<?php echo htmlspecialchars($tag['qr_code']); ?>" 
-                                     alt="QR Code" 
-                                     class="tag-qr-code">
-                            <?php else: ?>
-                                <div class="qr-placeholder">
-                                    <i class="bi bi-qr-code-scan"></i>
-                                </div>
-                            <?php endif; ?>
-                            <br>
-                            <small>No. <?php echo htmlspecialchars($tag['inventory_tag']); ?></small>
-                        </div>
-                    </div>
+    <div class="no-print" style="position: sticky; top: 0; z-index: 999; background: #fff; border-bottom: 1px solid #ddd; padding: 10px;">
+        <div style="display:flex; align-items:center; justify-content: space-between; gap: 10px; max-width: 1100px; margin: 0 auto;">
+            <div style="display:flex; align-items:center; gap: 15px;">
+                <div style="font-family: Arial, sans-serif; font-size: 14px;">
+                    <strong>Print Preview</strong>
                 </div>
-                
-                <div class="tag-body">
-                    <div class="field-row">
-                        <div class="field-label">Office/Location:</div>
-                        <div class="field-value"><?php echo htmlspecialchars($tag['office_name'] ?? ''); ?></div>
-                    </div>
-                    
-                    <div class="field-row">
-                        <div class="field-label">Description of the property:</div>
-                        <div class="field-value"><?php echo htmlspecialchars($tag['description']); ?></div>
-                    </div>
-                    
-                    <div class="two-column">
-                        <div class="field-row">
-                            <div class="field-label">Model No.:</div>
-                            <div class="field-value"><?php echo htmlspecialchars($model_no); ?></div>
-                        </div>
-                        <div class="field-row">
-                            <div class="field-label">Serial No.:</div>
-                            <div class="field-value"><?php echo htmlspecialchars($serial_no); ?></div>
-                        </div>
-                    </div>
-                    
-                    <div class="checkbox-row">
-                        <div class="checkbox-item">
-                            <div class="checkbox"><?php echo $serviceable_checked; ?></div>
-                            <div>Serviceable</div>
-                        </div>
-                        <div class="checkbox-item">
-                            <div class="checkbox"><?php echo $unserviceable_checked; ?></div>
-                            <div>Unserviceable</div>
-                        </div>
-                    </div>
-                    
-                    <div class="two-column">
-                        <div class="field-row">
-                            <div class="field-label">Unit/Quantity:</div>
-                            <div class="field-value"><?php echo htmlspecialchars($unit_value); ?></div>
-                        </div>
-                        <div class="field-row">
-                            <div class="field-label">Acquisition Date/Cost:</div>
-                            <div class="field-value"><?php echo htmlspecialchars($acquisition_date); ?> / <?php echo htmlspecialchars($tag['unit_cost']); ?></div>
-                        </div>
-                    </div>
-                    
-                    <div class="field-row">
-                        <div class="field-label">Person Accountable:</div>
-                        <div class="field-value"><?php echo htmlspecialchars($person_accountable); ?></div>
-                    </div>
-                    
-                    <div class="two-column">
-                        <div class="field-row">
-                            <div class="field-label">Date: (Acquired)</div>
-                            <div class="field-value"><?php echo htmlspecialchars($acquisition_date); ?></div>
-                        </div>
-                        <div class="field-row">
-                            <div class="field-label">Date: (Counted)</div>
-                            <div class="field-value"><?php echo htmlspecialchars($date_counted); ?></div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="signature-section">
-                    <div class="signature-row">
-                        <div class="signature-box">
-                            <div class="signature-line"></div>
-                            <div class="signature-label">COA Representative</div>
-                        </div>
-                        <div class="signature-box">
-                            <div class="signature-line"></div>
-                            <div class="signature-label">Signature of the Inventory Committee</div>
-                        </div>
-                    </div>
+                <div style="display:flex; align-items:center; gap: 8px; font-family: Arial, sans-serif; font-size: 12px;">
+                    <span>Zoom:</span>
+                    <button type="button" onclick="zoomOut()" style="border: 1px solid #6c757d; background: #f8f9fa; color: #495057; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 16px; line-height: 1;">−</button>
+                    <span id="zoomLevel" style="min-width: 45px; text-align: center; font-weight: bold;">100%</span>
+                    <button type="button" onclick="zoomIn()" style="border: 1px solid #6c757d; background: #f8f9fa; color: #495057; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 16px; line-height: 1;">+</button>
+                    <button type="button" onclick="resetZoom()" style="border: 1px solid #6c757d; background: #f8f9fa; color: #495057; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">Reset</button>
                 </div>
             </div>
-        <?php endforeach; ?>
+            <div style="display:flex; gap: 8px;">
+                <button type="button" onclick="window.print();" style="border: 1px solid #0d6efd; background: #0d6efd; color: #fff; padding: 6px 12px; border-radius: 6px; cursor: pointer;">Print</button>
+                <button type="button" onclick="window.close();" style="border: 1px solid #6c757d; background: #6c757d; color: #fff; padding: 6px 12px; border-radius: 6px; cursor: pointer;">Close</button>
+            </div>
+        </div>
     </div>
-    
+    <div class="print-container">
+        <div class="stickers-wrapper">
+            <?php
+            // Generate HTML for each sticker
+            foreach ($all_stickers as $sticker) {
+                echo generateStickerHTML($sticker, $system_settings);
+            }
+            ?>
+        </div>
+    </div>
+
     <script>
-        // Auto-print when page loads
-        window.onload = function() {
-            setTimeout(function() {
-                window.print();
-            }, 500);
-        };
-        
-        // Close window after printing
-        window.onafterprint = function() {
-            window.close();
-        };
+        // Zoom functionality
+        let currentZoom = 200;
+        const zoomStep = 10;
+        const minZoom = 50;
+        const maxZoom = 200;
+
+        function updateZoom() {
+            const printContainer = document.querySelector('.print-container');
+            const zoomLevelDisplay = document.getElementById('zoomLevel');
+            
+            printContainer.style.transform = `scale(${currentZoom / 100})`;
+            printContainer.style.transformOrigin = 'top left';
+            printContainer.style.transition = 'transform 0.2s ease-in-out';
+            
+            // Adjust container height to accommodate zoom
+            const scaledHeight = printContainer.scrollHeight * (currentZoom / 100);
+            document.body.style.minHeight = scaledHeight + 'px';
+            
+            zoomLevelDisplay.textContent = currentZoom + '%';
+        }
+
+        function zoomIn() {
+            if (currentZoom < maxZoom) {
+                currentZoom += zoomStep;
+                updateZoom();
+            }
+        }
+
+        function zoomOut() {
+            if (currentZoom > minZoom) {
+                currentZoom -= zoomStep;
+                updateZoom();
+            }
+        }
+
+        function resetZoom() {
+            currentZoom = 100;
+            updateZoom();
+        }
+
+        // Keyboard shortcuts for zoom
+        document.addEventListener('keydown', function(e) {
+            // Ctrl + Plus or Ctrl + = to zoom in
+            if (e.ctrlKey && (e.key === '+' || e.key === '=')) {
+                e.preventDefault();
+                zoomIn();
+            }
+            // Ctrl + Minus to zoom out
+            else if (e.ctrlKey && e.key === '-') {
+                e.preventDefault();
+                zoomOut();
+            }
+            // Ctrl + 0 to reset zoom
+            else if (e.ctrlKey && e.key === '0') {
+                e.preventDefault();
+                resetZoom();
+            }
+        });
+
+        // Mouse wheel zoom with Ctrl key
+        document.addEventListener('wheel', function(e) {
+            if (e.ctrlKey) {
+                e.preventDefault();
+                if (e.deltaY < 0) {
+                    zoomIn();
+                } else {
+                    zoomOut();
+                }
+            }
+        });
+
+        // Reset zoom when printing
+        window.addEventListener('beforeprint', function() {
+            currentZoom = 100;
+            updateZoom();
+        });
+
+        // Initialize zoom on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateZoom();
+        });
     </script>
 </body>
+
 </html>

@@ -559,47 +559,50 @@ $category_fields = [
                 ]}
             },
             'LAPTOP': {
+                // Basic Information
+                'model': {'label': 'Model', 'type': 'text', 'required': true},
+                'serial_number': {'label': 'Serial Number', 'type': 'text', 'required': true},
                 'processor': {'label': 'Processor', 'type': 'text', 'required': false},
-                'ram': {'label': 'RAM (GB)', 'type': 'number', 'required': false},
+                'ram': {'label': 'RAM (GB)', 'type': 'text', 'required': false},
+                'graphics': {'label': 'Graphics Card', 'type': 'text', 'required': false},
+                
+                // Storage
                 'storage_type': {'label': 'Storage Type', 'type': 'select', 'required': false, 'options': [
                     {'value': 'ssd', 'text': 'SSD'},
                     {'value': 'hdd', 'text': 'HDD'},
                     {'value': 'hybrid', 'text': 'Hybrid'}
                 ]},
-                'storage_capacity': {'label': 'Storage Capacity (GB)', 'type': 'number', 'required': false},
-                'graphics': {'label': 'Graphics Card', 'type': 'text', 'required': false},
-                'operating_system': {'label': 'Operating System', 'type': 'text', 'required': false},
+                'storage_capacity': {'label': 'Storage Capacity (GB)', 'type': 'text', 'required': false},
+                
+                // Display & Features
                 'screen_size': {'label': 'Screen Size (inches)', 'type': 'text', 'required': false},
-                'battery_status': {'label': 'Battery Status', 'type': 'select', 'required': false, 'options': [
-                    {'value': 'good', 'text': 'Good'},
-                    {'value': 'fair', 'text': 'Fair'},
-                    {'value': 'poor', 'text': 'Poor'},
-                    {'value': 'not_working', 'text': 'Not Working'}
-                ]},
-                'webcam': {'label': 'Webcam', 'type': 'select', 'required': false, 'options': [
-                    {'value': 'available', 'text': 'Available'},
-                    {'value': 'not_available', 'text': 'Not Available'},
-                    {'value': 'not_working', 'text': 'Not Working'}
-                ]},
-                'model': {'label': 'Model', 'type': 'text', 'required': true},
-                'serial_number': {'label': 'Serial Number', 'type': 'text', 'required': true},
+                
+                // Software & Warranty
+                'operating_system': {'label': 'Operating System', 'type': 'text', 'required': false},
                 'warranty': {'label': 'Warranty Period', 'type': 'text', 'required': false}
             },
             'COMPUTER': {
+                // Basic Information
+                'model': {'label': 'Model', 'type': 'text', 'required': true},
+                'serial_number': {'label': 'Serial Number', 'type': 'text', 'required': true},
                 'processor': {'label': 'Processor', 'type': 'text', 'required': false},
-                'ram': {'label': 'RAM (GB)', 'type': 'number', 'required': false},
+                'ram': {'label': 'RAM (GB)', 'type': 'text', 'required': false},
+                'graphics': {'label': 'Graphics Card', 'type': 'text', 'required': false},
+                
+                // Storage
                 'storage_type': {'label': 'Storage Type', 'type': 'select', 'required': false, 'options': [
                     {'value': 'ssd', 'text': 'SSD'},
                     {'value': 'hdd', 'text': 'HDD'},
                     {'value': 'hybrid', 'text': 'Hybrid'}
                 ]},
-                'storage_capacity': {'label': 'Storage Capacity (GB)', 'type': 'number', 'required': false},
-                'graphics': {'label': 'Graphics Card', 'type': 'text', 'required': false},
-                'operating_system': {'label': 'Operating System', 'type': 'text', 'required': false},
+                'storage_capacity': {'label': 'Storage Capacity (GB)', 'type': 'text', 'required': false},
+                
+                // Components
                 'case_type': {'label': 'Case Type', 'type': 'text', 'required': false},
                 'power_supply': {'label': 'Power Supply (Watts)', 'type': 'text', 'required': false},
-                'model': {'label': 'Model', 'type': 'text', 'required': true},
-                'serial_number': {'label': 'Serial Number', 'type': 'text', 'required': true},
+                
+                // Software & Warranty
+                'operating_system': {'label': 'Operating System', 'type': 'text', 'required': false},
                 'warranty': {'label': 'Warranty Period', 'type': 'text', 'required': false}
             }
         };
@@ -833,7 +836,8 @@ $category_fields = [
             let fieldCount = 0;
             
             for (const [fieldName, fieldConfig] of Object.entries(fields)) {
-                const isHalfWidth = ['text', 'number', 'date'].includes(fieldConfig.type);
+                // Special handling for storage_type field to make it col-md-6
+                const isHalfWidth = ['text', 'number', 'date'].includes(fieldConfig.type) || fieldName === 'storage_type';
                 const columnClass = isHalfWidth ? 'col-md-6' : 'col-md-12';
                 
                 let fieldHtml = '';
@@ -868,6 +872,52 @@ $category_fields = [
             fieldsHtml += '</div></div>';
             console.log('Generated HTML:', fieldsHtml);
             container.innerHTML = fieldsHtml;
+        }
+        
+        // Function to generate property number based on category
+        function generatePropertyNumberForCategory(categoryCode) {
+            const propertyNoField = document.getElementById('property_no');
+            if (!propertyNoField || !categoryCode) return;
+            
+            console.log('Generating property number for category:', categoryCode);
+            
+            // Get next series for this category
+            fetch(`../api/get_next_series.php?category=${categoryCode}&subcategory=00`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const currentYear = new Date().getFullYear();
+                        const currentMonth = String(new Date().getMonth() + 1).padStart(2, '0');
+                        
+                        // Format: YYYY-MM-05-category_code-0000-series
+                        const newPropertyNumber = `${currentYear}-${currentMonth}-05-${categoryCode}-0000-${data.next_series}`;
+                        
+                        propertyNoField.value = newPropertyNumber;
+                        propertyNoField.readOnly = true;
+                        propertyNoField.classList.add('bg-light');
+                        
+                        // Update info text
+                        let infoDiv = propertyNoField.parentNode.querySelector('.form-text');
+                        if (infoDiv) {
+                            infoDiv.textContent = 'Property number auto-generated based on category';
+                        } else {
+                            infoDiv = document.createElement('small');
+                            infoDiv.className = 'form-text text-muted';
+                            infoDiv.textContent = 'Property number auto-generated based on category';
+                            propertyNoField.parentNode.appendChild(infoDiv);
+                        }
+                        
+                        console.log('Generated new property number:', newPropertyNumber);
+                        
+                        // Auto-fill subcategory after property number is updated
+                        setTimeout(() => {
+                            autoFillSubcategory(newPropertyNumber);
+                        }, 100);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error generating property number:', error);
+                });
         }
         
         // Function to get category name from code
@@ -956,6 +1006,9 @@ $category_fields = [
                 
                 // Clear subcategory-specific fields when category changes
                 loadSubcategoryFields('');
+                
+                // Generate new property number based on new category
+                generatePropertyNumberForCategory(categoryCode);
             });
             
             // Initialize Select2 for person accountable dropdown
@@ -1015,8 +1068,13 @@ $category_fields = [
                         autoFillSubcategory(propertyNoValue);
                     });
                 } else {
-                    // Just load subcategories without auto-fill
-                    loadSubcategories(selectedCategoryId);
+                    // Just load subcategories and generate property number for current category
+                    loadSubcategories(selectedCategoryId, function() {
+                        console.log('No property number exists, generating for current category:', categoryCode);
+                        if (categoryCode) {
+                            generatePropertyNumberForCategory(categoryCode);
+                        }
+                    });
                 }
             }
             
@@ -1208,47 +1266,8 @@ $category_fields = [
             
             // Auto-fill property number if empty and handle subcategory auto-fill
             if (propertyNoField && !propertyNoField.value.trim()) {
-                // Add increment field for property number generation
-                const incrementField = document.createElement('input');
-                incrementField.type = 'hidden';
-                incrementField.name = 'increment_property_counter';
-                incrementField.value = '1';
-                document.querySelector('form').appendChild(incrementField);
-                
-                // Generate property number via AJAX
-                fetch('../includes/system_functions.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: 'action=generateNextTag&tag_type=property_no'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success && data.tag_number) {
-                        propertyNoField.value = data.tag_number;
-                        propertyNoField.readOnly = true;
-                        propertyNoField.classList.add('bg-light');
-                        
-                        // Add info text
-                        const infoDiv = document.createElement('small');
-                        infoDiv.className = 'form-text text-muted';
-                        infoDiv.textContent = 'Property number auto-generated';
-                        propertyNoField.parentNode.appendChild(infoDiv);
-                        
-                        // Auto-fill subcategory based on generated property number after subcategories are loaded
-                        const selectedCategoryId = categorySelect.value;
-                        if (selectedCategoryId) {
-                            loadSubcategories(selectedCategoryId, function() {
-                                console.log('Subcategories loaded for generated property number, now auto-filling:', data.tag_number);
-                                autoFillSubcategory(data.tag_number);
-                            });
-                        }
-                    }
-                })
-                .catch(error => {
-                    console.error('Error generating property number:', error);
-                });
+                // Property number generation is now handled in the category initialization above
+                console.log('Property number will be generated when category is loaded');
             } else if (propertyNoField && propertyNoField.value.trim()) {
                 // Auto-fill subcategory for existing property number (this is already handled above)
                 console.log('Property number exists, auto-fill already handled in initialization');
