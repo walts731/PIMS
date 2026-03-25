@@ -167,43 +167,11 @@ $generated_inventory_tag = '';
 if ($tag_format) {
     $generated_inventory_tag = generateTagNumber($tag_format);
 }
-$category_fields = [
-    '07' => [
-        'brand' => ['label' => 'Brand', 'type' => 'text', 'required' => true],
-        'model' => ['label' => 'Model', 'type' => 'text', 'required' => true],
-        'plate_number' => ['label' => 'Plate Number', 'type' => 'text', 'required' => true],
-        'color' => ['label' => 'Color', 'type' => 'text', 'required' => false],
-        'engine_number' => ['label' => 'Engine Number', 'type' => 'text', 'required' => true],
-        'chassis_number' => ['label' => 'Chassis Number', 'type' => 'text', 'required' => true],
-        'year_model' => ['label' => 'Year Model', 'type' => 'number', 'required' => false]
-    ],
-    '05-030' => [
-        'processor' => ['label' => 'Processor', 'type' => 'text', 'required' => true],
-        'ram' => ['label' => 'RAM (GB)', 'type' => 'number', 'required' => true],
-        'storage_type' => ['label' => 'Storage Type', 'type' => 'select', 'required' => true, 'options' => [
-            ['value' => 'ssd', 'text' => 'SSD'],
-            ['value' => 'hdd', 'text' => 'HDD'],
-            ['value' => 'hybrid', 'text' => 'Hybrid']
-        ]],
-        'storage_capacity' => ['label' => 'Storage Capacity (GB)', 'type' => 'number', 'required' => true],
-        'graphics' => ['label' => 'Graphics Card', 'type' => 'text', 'required' => false],
-        'operating_system' => ['label' => 'Operating System', 'type' => 'text', 'required' => true],
-        'brand' => ['label' => 'Brand', 'type' => 'text', 'required' => true],
-        'warranty' => ['label' => 'Warranty Period', 'type' => 'text', 'required' => false]
-    ],
-    '06' => [
-        'software_name' => ['label' => 'Software Name', 'type' => 'text', 'required' => true],
-        'version' => ['label' => 'Version', 'type' => 'text', 'required' => true],
-        'license_key' => ['label' => 'License Key', 'type' => 'text', 'required' => false],
-        'expiry_date' => ['label' => 'Expiry Date', 'type' => 'date', 'required' => false]
-    ],
-    '03' => [
-        'lot_number' => ['label' => 'Lot Number', 'type' => 'text', 'required' => true],
-        'area_size' => ['label' => 'Area Size (sqm)', 'type' => 'text', 'required' => true],
-        'location' => ['label' => 'Location', 'type' => 'text', 'required' => true],
-        'tax_declaration' => ['label' => 'Tax Declaration No', 'type' => 'text', 'required' => false]
-    ]
-];
+// Include category-specific fields configuration
+require_once 'includes/category_fields.php';
+
+// Include subcategory-specific fields configuration
+require_once 'includes/subcategory_fields.php';
 ?>
 
 <!DOCTYPE html>
@@ -523,83 +491,11 @@ $category_fields = [
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <?php require_once 'includes/sidebar-scripts.php'; ?>
+    <?php require_once 'includes/specific_fields_js.php'; ?>
     <script>
-        // Category-specific fields configuration
-        const categoryFields = <?php echo json_encode($category_fields); ?>;
         
         // Existing desktop computer data for pre-populating fields
         window.existingDesktopData = <?php echo json_encode($desktop_data); ?>;
-        
-        // Subcategory-specific fields configuration
-        const subcategoryFields = {
-            'COMPUTER DESKTOP': {
-                'monitor_name': {'label': 'Monitor Name', 'type': 'text', 'required': false},
-                'monitor_model': {'label': 'Monitor Model', 'type': 'text', 'required': false},
-                'monitor_serial_number': {'label': 'Monitor Serial Number', 'type': 'text', 'required': false},
-                'monitor_status': {'label': 'Monitor Status', 'type': 'select', 'required': false, 'options': [
-                    {'value': 'serviceable', 'text': 'Serviceable'},
-                    {'value': 'unserviceable', 'text': 'Unserviceable'},
-                    {'value': 'red_tagged', 'text': 'Red Tagged'},
-                    {'value': 'no_tag', 'text': 'No Tag'}
-                ]},
-                'ups_name': {'label': 'UPS Name', 'type': 'text', 'required': false},
-                'ups_model': {'label': 'UPS Model', 'type': 'text', 'required': false},
-                'ups_serial_number': {'label': 'UPS Serial Number', 'type': 'text', 'required': false},
-                'ups_status': {'label': 'UPS Status', 'type': 'select', 'required': false, 'options': [
-                    {'value': 'serviceable', 'text': 'Serviceable'},
-                    {'value': 'unserviceable', 'text': 'Unserviceable'},
-                    {'value': 'red_tagged', 'text': 'Red Tagged'},
-                    {'value': 'no_tag', 'text': 'No Tag'}
-                ]}
-            },
-            'LAPTOP': {
-                // Basic Information
-                'model': {'label': 'Model', 'type': 'text', 'required': true},
-                'serial_number': {'label': 'Serial Number', 'type': 'text', 'required': true},
-                'processor': {'label': 'Processor', 'type': 'text', 'required': false},
-                'ram': {'label': 'RAM (GB)', 'type': 'text', 'required': false},
-                'graphics': {'label': 'Graphics Card', 'type': 'text', 'required': false},
-                
-                // Storage
-                'storage_type': {'label': 'Storage Type', 'type': 'select', 'required': false, 'options': [
-                    {'value': 'ssd', 'text': 'SSD'},
-                    {'value': 'hdd', 'text': 'HDD'},
-                    {'value': 'hybrid', 'text': 'Hybrid'}
-                ]},
-                'storage_capacity': {'label': 'Storage Capacity (GB)', 'type': 'text', 'required': false},
-                
-                // Display & Features
-                'screen_size': {'label': 'Screen Size (inches)', 'type': 'text', 'required': false},
-                
-                // Software & Warranty
-                'operating_system': {'label': 'Operating System', 'type': 'text', 'required': false},
-                'warranty': {'label': 'Warranty Period', 'type': 'text', 'required': false}
-            },
-            'COMPUTER': {
-                // Basic Information
-                'model': {'label': 'Model', 'type': 'text', 'required': true},
-                'serial_number': {'label': 'Serial Number', 'type': 'text', 'required': true},
-                'processor': {'label': 'Processor', 'type': 'text', 'required': false},
-                'ram': {'label': 'RAM (GB)', 'type': 'text', 'required': false},
-                'graphics': {'label': 'Graphics Card', 'type': 'text', 'required': false},
-                
-                // Storage
-                'storage_type': {'label': 'Storage Type', 'type': 'select', 'required': false, 'options': [
-                    {'value': 'ssd', 'text': 'SSD'},
-                    {'value': 'hdd', 'text': 'HDD'},
-                    {'value': 'hybrid', 'text': 'Hybrid'}
-                ]},
-                'storage_capacity': {'label': 'Storage Capacity (GB)', 'type': 'text', 'required': false},
-                
-                // Components
-                'case_type': {'label': 'Case Type', 'type': 'text', 'required': false},
-                'power_supply': {'label': 'Power Supply (Watts)', 'type': 'text', 'required': false},
-                
-                // Software & Warranty
-                'operating_system': {'label': 'Operating System', 'type': 'text', 'required': false},
-                'warranty': {'label': 'Warranty Period', 'type': 'text', 'required': false}
-            }
-        };
         
         // Function to auto-fill subcategory based on property number
         function autoFillSubcategory(propertyNumber) {
