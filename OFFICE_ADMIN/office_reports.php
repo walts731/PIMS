@@ -181,17 +181,17 @@ if ($office_id && $conn) {
         
         // Top Consumables by Usage
         $top_consumables_query = "SELECT 
-                                    c.description,
-                                    SUM(crh.quantity_released) as total_used,
+                                    ch.consumable_description,
+                                    SUM(ch.quantity_consumed) as total_used,
                                     c.unit
-                                 FROM consumables c
-                                 LEFT JOIN consumable_release_history crh ON c.id = crh.consumable_id
-                                 WHERE c.office_id = ? OR crh.to_office_id = ?
-                                 GROUP BY c.id, c.description, c.unit
+                                 FROM consume_history ch
+                                 LEFT JOIN consumables c ON ch.consumable_id = c.id
+                                 WHERE ch.office_id = ?
+                                 GROUP BY ch.consumable_id, ch.consumable_description, c.unit
                                  ORDER BY total_used DESC
                                  LIMIT 5";
         $stmt = $conn->prepare($top_consumables_query);
-        $stmt->bind_param("ii", $office_id, $office_id);
+        $stmt->bind_param("i", $office_id);
         $stmt->execute();
         $result = $stmt->get_result();
         while ($row = $result->fetch_assoc()) {
@@ -407,6 +407,7 @@ $report_data['asset_stats']['total_asset_value'] = number_format($report_data['a
     <div class="main-wrapper" id="mainWrapper">
         <?php require_once 'includes/sidebar.php'; ?>
         <?php require_once 'includes/topbar.php'; ?>
+        <?php require_once 'includes/notification_js.php'; ?>
     
     <!-- Main Content -->
     <div class="main-content">
@@ -946,7 +947,7 @@ $report_data['asset_stats']['total_asset_value'] = number_format($report_data['a
             
             // Top Consumables Chart
             const topConsumablesCtx = document.getElementById('topConsumablesChart').getContext('2d');
-            const topConsumableNames = <?php echo json_encode(array_column($report_data['top_consumables'], 'description')); ?>;
+            const topConsumableNames = <?php echo json_encode(array_column($report_data['top_consumables'], 'consumable_description')); ?>;
             const topConsumableValues = <?php echo json_encode(array_column($report_data['top_consumables'], 'total_used')); ?>;
             
             new Chart(topConsumablesCtx, {

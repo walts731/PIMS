@@ -1093,6 +1093,7 @@ $page_title = 'Requests Management';
     <div class="main-wrapper" id="mainWrapper">
         <?php require_once 'includes/sidebar.php'; ?>
         <?php require_once 'includes/topbar.php'; ?>
+        <?php require_once 'includes/notification_js.php'; ?>
         
         <!-- Main Content -->
     <div class="main-content">

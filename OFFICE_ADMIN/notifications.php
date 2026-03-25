@@ -786,6 +786,9 @@ $unread_count = $unread_result->fetch_assoc()['count'];
         </div>
     </div>
     
+    <?php require_once 'includes/sidebar.php'; ?>
+    <?php require_once 'includes/topbar.php'; ?>
+    <?php require_once 'includes/notification_js.php'; ?>
     <?php require_once 'includes/logout-modal.php'; ?>
     <?php require_once 'includes/change-password-modal.php'; ?>
     

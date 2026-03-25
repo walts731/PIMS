@@ -48,7 +48,7 @@ if (!$conn || $conn->connect_error) {
         $asset_query = "SELECT 
             ai.id,
             ai.description,
-            ai.property_number,
+            ai.property_no,
             ai.inventory_tag,
             ai.status,
             ai.value,
@@ -83,7 +83,7 @@ if (!$conn || $conn->connect_error) {
         }
         
         if (!empty($filters['search'])) {
-            $asset_query .= " AND (ai.description LIKE ? OR ai.property_number LIKE ? OR ai.inventory_tag LIKE ?)";
+            $asset_query .= " AND (ai.description LIKE ? OR ai.property_no LIKE ? OR ai.inventory_tag LIKE ?)";
             $search_term = "%" . $filters['search'] . "%";
             $params[] = $search_term;
             $params[] = $search_term;
@@ -229,7 +229,7 @@ function exportInventoryData() {
     $asset_query = "SELECT 
         ai.id,
         ai.description,
-        ai.property_number,
+        ai.property_no,
         ai.inventory_tag,
         ai.status,
         ai.acquisition_date,
@@ -263,7 +263,7 @@ function exportInventoryData() {
     }
     
     if (!empty($filters['search'])) {
-        $asset_query .= " AND (ai.description LIKE ? OR ai.property_number LIKE ? OR ai.inventory_tag LIKE ?)";
+        $asset_query .= " AND (ai.description LIKE ? OR ai.property_no LIKE ? OR ai.inventory_tag LIKE ?)";
         $search_term = "%" . $filters['search'] . "%";
         $params[] = $search_term;
         $params[] = $search_term;
@@ -318,7 +318,7 @@ function exportInventoryData() {
         fputcsv($output, [
             $asset['id'],
             $asset['description'],
-            $asset['property_number'] ?? 'N/A',
+            $asset['property_no'] ?? 'N/A',
             $asset['inventory_tag'] ?? 'N/A',
             $asset['status'],
             $asset['end_user'] ?? $asset['employee_name'] ?? 'N/A',
@@ -533,6 +533,7 @@ function exportInventoryData() {
     <div class="main-wrapper" id="mainWrapper">
         <?php require_once 'includes/sidebar.php'; ?>
         <?php require_once 'includes/topbar.php'; ?>
+        <?php require_once 'includes/notification_js.php'; ?>
     
     <!-- Main Content -->
     <div class="main-content">
@@ -686,7 +687,7 @@ function exportInventoryData() {
                                         <tr>
                                             <td><?php echo $asset['id']; ?></td>
                                             <td><?php echo htmlspecialchars($asset['description']); ?></td>
-                                            <td><?php echo htmlspecialchars($asset['property_number'] ?? 'N/A'); ?></td>
+                                            <td><?php echo htmlspecialchars($asset['property_no'] ?? 'N/A'); ?></td>
                                             <td><?php echo htmlspecialchars($asset['inventory_tag'] ?? 'N/A'); ?></td>
                                             <td>
                                                 <span class="status-badge status-<?php echo $asset['status']; ?>">

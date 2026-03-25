@@ -3,11 +3,10 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 25, 2026 at 03:35 AM
+-- Generation Time: Mar 25, 2026 at 04:07 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
-SET FOREIGN_KEY_CHECKS=0;
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
 SET time_zone = "+00:00";
@@ -753,7 +752,9 @@ CREATE TABLE `consumables` (
 
 INSERT INTO `consumables` (`id`, `description`, `quantity`, `units`, `unit_cost`, `reorder_level`, `unit`, `office_id`, `created_at`, `updated_at`, `for_office_id`, `supplier`) VALUES
 (1, 'bond paper A4', 35, 'reams', 250.00, 10, 'pcs', 3, '2026-03-25 01:40:07', '2026-03-25 02:31:58', 4, 'J&F suppliers'),
-(2, 'bond paper A4', 15, 'pieces', 250.00, 10, 'pcs', 4, '2026-03-25 02:31:58', '2026-03-25 02:31:58', NULL, NULL);
+(2, 'bond paper A4', 15, 'pieces', 250.00, 10, 'pcs', 4, '2026-03-25 02:31:58', '2026-03-25 02:31:58', NULL, NULL),
+(3, 'A4 Paper', 17, 'reams', 250.00, 5, 'pcs', 3, '2026-03-25 02:43:44', '2026-03-25 02:44:06', 5, 'test'),
+(4, 'A4 Paper', 13, 'pieces', 250.00, 5, 'pcs', 5, '2026-03-25 02:44:06', '2026-03-25 02:44:06', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -783,7 +784,8 @@ CREATE TABLE `consumable_add_history` (
 --
 
 INSERT INTO `consumable_add_history` (`id`, `consumable_id`, `description`, `quantity_added`, `units`, `unit_cost`, `total_value`, `office_id`, `to_office_id`, `added_by`, `add_date`, `source`, `notes`, `supplier`) VALUES
-(1, 1, 'bond paper A4', 50, 'reams', 250.00, 12500.00, 3, 4, 5, '2026-03-25 09:40:07', 'new_consumable', 'New consumable added to inventory', 'J&F suppliers');
+(1, 1, 'bond paper A4', 50, 'reams', 250.00, 12500.00, 3, 4, 5, '2026-03-25 09:40:07', 'new_consumable', 'New consumable added to inventory', 'J&F suppliers'),
+(2, 3, 'A4 Paper', 30, 'reams', 250.00, 7500.00, 3, 5, 19, '2026-03-25 10:43:44', 'new_consumable', 'New consumable added to inventory', 'test');
 
 -- --------------------------------------------------------
 
@@ -853,6 +855,31 @@ CREATE TABLE `consumable_release_history_view` (
 ,`notes` text
 ,`created_at` timestamp
 );
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `consume_history`
+--
+
+CREATE TABLE `consume_history` (
+  `id` int(11) NOT NULL,
+  `consumable_id` int(11) NOT NULL,
+  `consumable_description` varchar(255) NOT NULL,
+  `quantity_consumed` int(11) NOT NULL DEFAULT 1,
+  `remaining_quantity` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `user_name` varchar(101) NOT NULL,
+  `user_email` varchar(100) NOT NULL,
+  `office_id` int(11) NOT NULL,
+  `office_name` varchar(100) NOT NULL,
+  `consumed_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `purpose` text DEFAULT NULL,
+  `reference_number` varchar(50) DEFAULT NULL,
+  `approved_by` int(11) DEFAULT NULL,
+  `approved_by_name` varchar(101) DEFAULT NULL,
+  `notes` text DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -12119,7 +12146,24 @@ INSERT INTO `system_logs` (`id`, `user_id`, `action`, `module`, `description`, `
 (10588, 19, 'access', 'consumables', 'Admin accessed consumables page', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:31:59'),
 (10589, 19, 'logout', 'authentication', 'User logged out: admin admin (AD@pims.com) with role: admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:32:11'),
 (10590, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:32:26'),
-(10591, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:32:26');
+(10591, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:32:26'),
+(10592, 17, 'logout', 'authentication', 'User logged out: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:42:21'),
+(10593, 18, 'login_success', 'authentication', 'User logged in: OM admin (OM@pims.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:42:29'),
+(10594, 18, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:42:29'),
+(10595, 18, 'logout', 'authentication', 'User logged out: OM admin (OM@pims.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:42:50'),
+(10596, 19, 'login_success', 'authentication', 'User logged in: admin admin (AD@pims.com) with role: admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:42:57'),
+(10597, 19, 'access', 'admin_dashboard', 'Admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:42:57'),
+(10598, 19, 'access', 'consumables', 'Admin accessed consumables page', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:43:01'),
+(10599, 19, 'access', 'consumables', 'Admin accessed consumables page', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:43:44'),
+(10600, 19, 'consumable_added', 'consumable_management', 'Added consumable: A4 Paper', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:43:44'),
+(10601, 19, 'consumable_released', 'consumable_management', 'Released 13 \'A4 Paper\' from office ID 3 to OVM. Release type: with_deduction. No balance record found, returned 0 to supply office, actual release: 13. Remarks: test', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:44:06'),
+(10602, 19, 'access', 'consumables', 'Admin accessed consumables page', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:44:06'),
+(10603, 19, 'access', 'consumable_history', 'Viewed history for consumable: A4 Paper', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:44:22'),
+(10604, 19, 'access', 'consumables', 'Admin accessed consumables page', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:44:31'),
+(10605, 19, 'access', 'admin_dashboard', 'Admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:44:37'),
+(10606, 19, 'logout', 'authentication', 'User logged out: admin admin (AD@pims.com) with role: admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:44:44'),
+(10607, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:44:53'),
+(10608, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:44:54');
 
 -- --------------------------------------------------------
 
@@ -12339,6 +12383,61 @@ CREATE TABLE `user_password_history` (
 -- --------------------------------------------------------
 
 --
+-- Stand-in structure for view `v_consumable_usage_trends`
+-- (See below for the actual view)
+--
+CREATE TABLE `v_consumable_usage_trends` (
+`consumable_id` int(11)
+,`consumable_description` varchar(255)
+,`units` varchar(50)
+,`consumption_count` bigint(21)
+,`total_consumed` decimal(32,0)
+,`avg_consumption_per_transaction` decimal(14,4)
+,`lowest_stock_level` int(11)
+,`last_consumed_date` timestamp
+);
+
+-- --------------------------------------------------------
+
+--
+-- Stand-in structure for view `v_consumption_summary`
+-- (See below for the actual view)
+--
+CREATE TABLE `v_consumption_summary` (
+`id` int(11)
+,`consumable_id` int(11)
+,`consumable_description` varchar(255)
+,`quantity_consumed` int(11)
+,`remaining_quantity` int(11)
+,`user_name` varchar(101)
+,`user_email` varchar(100)
+,`office_name` varchar(100)
+,`consumed_at` timestamp
+,`purpose` text
+,`reference_number` varchar(50)
+,`consumable_units` varchar(50)
+,`consumable_unit_cost` decimal(10,2)
+,`total_cost` decimal(20,2)
+);
+
+-- --------------------------------------------------------
+
+--
+-- Stand-in structure for view `v_monthly_office_consumption`
+-- (See below for the actual view)
+--
+CREATE TABLE `v_monthly_office_consumption` (
+`month_year` varchar(7)
+,`office_id` int(11)
+,`office_name` varchar(100)
+,`total_transactions` bigint(21)
+,`total_quantity_consumed` decimal(32,0)
+,`total_cost` decimal(42,2)
+);
+
+-- --------------------------------------------------------
+
+--
 -- Structure for view `asset_category_tables`
 --
 DROP TABLE IF EXISTS `asset_category_tables`;
@@ -12362,6 +12461,33 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 DROP TABLE IF EXISTS `consumable_release_history_view`;
 
 CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `consumable_release_history_view`  AS SELECT `h`.`id` AS `id`, `h`.`consumable_id` AS `consumable_id`, `h`.`description` AS `description`, `h`.`quantity_released` AS `quantity_released`, `h`.`unit_cost` AS `unit_cost`, `h`.`total_value` AS `total_value`, `h`.`from_office_id` AS `from_office_id`, `fo`.`office_name` AS `from_office_name`, `h`.`to_office_id` AS `to_office_id`, `to_off`.`office_name` AS `to_office_name`, `h`.`released_by` AS `released_by`, `u`.`first_name` AS `first_name`, `u`.`last_name` AS `last_name`, concat(`u`.`first_name`,' ',`u`.`last_name`) AS `released_by_name`, `h`.`release_date` AS `release_date`, `h`.`notes` AS `notes`, `h`.`created_at` AS `created_at` FROM (((`consumable_release_history` `h` left join `offices` `fo` on(`h`.`from_office_id` = `fo`.`id`)) left join `offices` `to_off` on(`h`.`to_office_id` = `to_off`.`id`)) left join `users` `u` on(`h`.`released_by` = `u`.`id`)) ;
+
+-- --------------------------------------------------------
+
+--
+-- Structure for view `v_consumable_usage_trends`
+--
+DROP TABLE IF EXISTS `v_consumable_usage_trends`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v_consumable_usage_trends`  AS SELECT `ch`.`consumable_id` AS `consumable_id`, `ch`.`consumable_description` AS `consumable_description`, `c`.`units` AS `units`, count(0) AS `consumption_count`, sum(`ch`.`quantity_consumed`) AS `total_consumed`, avg(`ch`.`quantity_consumed`) AS `avg_consumption_per_transaction`, min(`ch`.`remaining_quantity`) AS `lowest_stock_level`, max(`ch`.`consumed_at`) AS `last_consumed_date` FROM (`consume_history` `ch` left join `consumables` `c` on(`ch`.`consumable_id` = `c`.`id`)) GROUP BY `ch`.`consumable_id`, `ch`.`consumable_description`, `c`.`units` ORDER BY sum(`ch`.`quantity_consumed`) DESC ;
+
+-- --------------------------------------------------------
+
+--
+-- Structure for view `v_consumption_summary`
+--
+DROP TABLE IF EXISTS `v_consumption_summary`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v_consumption_summary`  AS SELECT `ch`.`id` AS `id`, `ch`.`consumable_id` AS `consumable_id`, `ch`.`consumable_description` AS `consumable_description`, `ch`.`quantity_consumed` AS `quantity_consumed`, `ch`.`remaining_quantity` AS `remaining_quantity`, `ch`.`user_name` AS `user_name`, `ch`.`user_email` AS `user_email`, `ch`.`office_name` AS `office_name`, `ch`.`consumed_at` AS `consumed_at`, `ch`.`purpose` AS `purpose`, `ch`.`reference_number` AS `reference_number`, `c`.`units` AS `consumable_units`, `c`.`unit_cost` AS `consumable_unit_cost`, `ch`.`quantity_consumed`* `c`.`unit_cost` AS `total_cost` FROM (`consume_history` `ch` left join `consumables` `c` on(`ch`.`consumable_id` = `c`.`id`)) ORDER BY `ch`.`consumed_at` DESC ;
+
+-- --------------------------------------------------------
+
+--
+-- Structure for view `v_monthly_office_consumption`
+--
+DROP TABLE IF EXISTS `v_monthly_office_consumption`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v_monthly_office_consumption`  AS SELECT date_format(`ch`.`consumed_at`,'%Y-%m') AS `month_year`, `ch`.`office_id` AS `office_id`, `ch`.`office_name` AS `office_name`, count(0) AS `total_transactions`, sum(`ch`.`quantity_consumed`) AS `total_quantity_consumed`, sum(`ch`.`quantity_consumed` * `c`.`unit_cost`) AS `total_cost` FROM (`consume_history` `ch` left join `consumables` `c` on(`ch`.`consumable_id` = `c`.`id`)) GROUP BY date_format(`ch`.`consumed_at`,'%Y-%m'), `ch`.`office_id`, `ch`.`office_name` ORDER BY date_format(`ch`.`consumed_at`,'%Y-%m') DESC, `ch`.`office_name` ASC ;
 
 --
 -- Indexes for dumped tables
@@ -12505,6 +12631,20 @@ ALTER TABLE `consumable_balance`
 --
 ALTER TABLE `consumable_release_history`
   ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `consume_history`
+--
+ALTER TABLE `consume_history`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_consumable_id` (`consumable_id`),
+  ADD KEY `idx_user_id` (`user_id`),
+  ADD KEY `idx_office_id` (`office_id`),
+  ADD KEY `idx_consumed_at` (`consumed_at`),
+  ADD KEY `idx_reference_number` (`reference_number`),
+  ADD KEY `idx_consumable_date` (`consumable_id`,`consumed_at`),
+  ADD KEY `idx_office_date` (`office_id`,`consumed_at`),
+  ADD KEY `idx_user_date` (`user_id`,`consumed_at`);
 
 --
 -- Indexes for table `employees`
@@ -12904,13 +13044,13 @@ ALTER TABLE `branches`
 -- AUTO_INCREMENT for table `consumables`
 --
 ALTER TABLE `consumables`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `consumable_add_history`
 --
 ALTER TABLE `consumable_add_history`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `consumable_balance`
@@ -12923,6 +13063,12 @@ ALTER TABLE `consumable_balance`
 --
 ALTER TABLE `consumable_release_history`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `consume_history`
+--
+ALTER TABLE `consume_history`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `employees`
@@ -13162,7 +13308,7 @@ ALTER TABLE `software`
 -- AUTO_INCREMENT for table `system_logs`
 --
 ALTER TABLE `system_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10592;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10609;
 
 --
 -- AUTO_INCREMENT for table `system_settings`
@@ -13199,7 +13345,18 @@ ALTER TABLE `users`
 --
 ALTER TABLE `user_password_history`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-SET FOREIGN_KEY_CHECKS=1;
+
+--
+-- Constraints for dumped tables
+--
+
+--
+-- Constraints for table `consume_history`
+--
+ALTER TABLE `consume_history`
+  ADD CONSTRAINT `fk_consume_history_consumable` FOREIGN KEY (`consumable_id`) REFERENCES `consumables` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_consume_history_office` FOREIGN KEY (`office_id`) REFERENCES `offices` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_consume_history_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

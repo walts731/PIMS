@@ -1,6 +1,26 @@
 <?php
-require_once '../config.php';
-require_once '../includes/logger.php';
+// Try multiple path resolutions for config file
+$configPaths = [
+    __DIR__ . '/../config.php',                           // includes → OFFICE_ADMIN → root
+    dirname(__DIR__) . '/config.php',                      // Go up one level using dirname
+    realpath(__DIR__ . '/../config.php'),                  // Absolute path to root config
+];
+
+$configLoaded = false;
+foreach ($configPaths as $index => $configPath) {
+    if (file_exists($configPath)) {
+        require_once $configPath;
+        $configLoaded = true;
+        break;
+    }
+}
+
+if (!$configLoaded) {
+    error_log("ERROR: Could not load config file from NotificationBatcher.php");
+    // Continue without config - class will handle missing $conn gracefully
+}
+
+require_once __DIR__ . '/../../includes/logger.php';
 
 /**
  * Notification Batching System for PIMS Office Admin
