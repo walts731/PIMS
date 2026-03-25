@@ -969,10 +969,11 @@ $status_display = formatStatus($item['status']);
                         <h5 class="mb-3"><i class="bi bi-info-circle"></i> Item Information</h5>
                         <div class="row">
                             <div class="col-md-6">
-                                <div class="mb-3">
-                                    <div class="detail-label">Property No</div>
-                                    <div class="detail-value"><?php echo $item['property_no'] ? htmlspecialchars($item['property_no']) : '<span class="text-muted">Not assigned</span>'; ?></div>
+                                 <div class="mb-3">
+                                    <div class="detail-label">Description</div>
+                                    <div class="detail-value"><?php echo htmlspecialchars($item['description']); ?></div>
                                 </div>
+                                
                                 <div class="mb-3">
                                     <div class="detail-label">Model</div>
                                     <div class="detail-value"><?php 
@@ -1023,16 +1024,17 @@ $status_display = formatStatus($item['status']);
                                         ?>
                                     </div>
                                 </div>
-                                <div class="mb-3">
-                                    <div class="detail-label">Description</div>
-                                    <div class="detail-value"><?php echo htmlspecialchars($item['description']); ?></div>
+                               <div class="mb-3">
+                                    <div class="detail-label">Value</div>
+                                    <div class="detail-value text-value">₱<?php echo number_format($item['value'] ?? 0, 2); ?></div>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <div class="detail-label">Value</div>
-                                    <div class="detail-value text-value">₱<?php echo number_format($item['value'] ?? 0, 2); ?></div>
+                                    <div class="detail-label">Property No</div>
+                                    <div class="detail-value"><?php echo $item['property_no'] ? htmlspecialchars($item['property_no']) : '<span class="text-muted">Not assigned</span>'; ?></div>
                                 </div>
+                                
                                 <div class="mb-3">
                                     <div class="detail-label">Category</div>
                                     <div class="detail-value"><?php echo htmlspecialchars($item['category_code'] . ' - ' . $item['category_name']); ?></div>
