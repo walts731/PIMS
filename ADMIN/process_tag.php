@@ -144,6 +144,52 @@ if (empty($item_id) || empty($category_id) || empty($office_name) || empty($prop
     exit();
 }
 
+// Additional validation for Computer Equipment category - subcategory is required
+$category_check_sql = "SELECT category_code FROM asset_categories WHERE id = ?";
+$category_check_stmt = $conn->prepare($category_check_sql);
+$category_check_stmt->bind_param("i", $category_id);
+$category_check_stmt->execute();
+$category_check_result = $category_check_stmt->get_result();
+$category_check = $category_check_result->fetch_assoc();
+
+// Debug: Log subcategory validation
+logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "Subcategory validation - Category: " . ($category_check['category_code'] ?? 'NULL') . ", Subcategory ID: '$subcategory_id'");
+
+if ($category_check && $category_check['category_code'] === '05-030') {
+    // For Computer Equipment, try to auto-detect subcategory if not provided
+    if (empty($subcategory_id)) {
+        logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "Subcategory ID empty, trying to auto-detect from property number");
+        
+        // Try to find subcategory by property number pattern
+        if (!empty($property_no)) {
+            logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "Property number: $property_no");
+            
+            // Look for COMPUTER DESKTOP subcategory
+            $auto_subcat_sql = "SELECT id FROM asset_sub_categories WHERE asset_categories_id = ? AND sub_category_name = 'COMPUTER DESKTOP' LIMIT 1";
+            $auto_subcat_stmt = $conn->prepare($auto_subcat_sql);
+            $auto_subcat_stmt->bind_param("i", $category_id);
+            $auto_subcat_stmt->execute();
+            $auto_subcat_result = $auto_subcat_stmt->get_result();
+            $auto_subcat = $auto_subcat_result->fetch_assoc();
+            
+            if ($auto_subcat) {
+                $subcategory_id = $auto_subcat['id'];
+                logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "Auto-detected subcategory ID: $subcategory_id");
+            } else {
+                logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "Could not auto-detect COMPUTER DESKTOP subcategory");
+                $_SESSION['error'] = 'Please select a subcategory for Computer Equipment assets';
+                header('Location: create_tag.php?id=' . $item_id);
+                exit();
+            }
+        } else {
+            logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "No property number available for auto-detection");
+            $_SESSION['error'] = 'Please select a subcategory for Computer Equipment assets';
+            header('Location: create_tag.php?id=' . $item_id);
+            exit();
+        }
+    }
+}
+
 try {
     // Start transaction
     $conn->begin_transaction();
@@ -175,12 +221,6 @@ try {
     $end_user_safe = mysqli_real_escape_string($conn, $end_user);
     $office_name_safe = mysqli_real_escape_string($conn, $office_name);
     
-    // Get model and serial_number from form data
-    $model = trim($_POST['model'] ?? '');
-    $serial_number = trim($_POST['serial_number'] ?? '');
-    $model_safe = mysqli_real_escape_string($conn, $model);
-    $serial_number_safe = mysqli_real_escape_string($conn, $serial_number);
-    
     $update_sql = "UPDATE asset_items SET 
                    property_no = '$property_no_safe', 
                    inventory_tag = $inventory_tag_safe, 
@@ -191,15 +231,13 @@ try {
                    asset_subcategory_id = " . ($subcategory_id > 0 ? $subcategory_id : 'NULL') . ",
                    office_name = '$office_name_safe',
                    end_user = '$end_user_safe',
-                   model = " . (!empty($model) ? "'$model_safe'" : 'NULL') . ",
-                   serial_number = " . (!empty($serial_number) ? "'$serial_number_safe'" : 'NULL') . ",
                    status = 'serviceable',
                    last_updated = CURRENT_TIMESTAMP
                    WHERE id = $item_id";
     
     // Debug: Log the SQL and values before execution
     logSystemAction($_SESSION['user_id'], 'Tag Update SQL Debug', 'forms', "SQL: $update_sql");
-    logSystemAction($_SESSION['user_id'], 'Tag Update Values Debug', 'forms', "Values: property_no='{$property_no}', inventory_tag='{$inventory_tag}', date_counted='{$date_counted}', image='{$image_filename}', employee_id={$person_accountable}, asset_category_id={$category_id}, asset_subcategory_id={$subcategory_id}, end_user='{$end_user}' (length: " . strlen($end_user) . "), model='{$model}', serial_number='{$serial_number}', item_id={$item_id}");
+    logSystemAction($_SESSION['user_id'], 'Tag Update Values Debug', 'forms', "Values: property_no='{$property_no}', inventory_tag='{$inventory_tag}', date_counted='{$date_counted}', image='{$image_filename}', employee_id={$person_accountable}, asset_category_id={$category_id}, asset_subcategory_id={$subcategory_id}, end_user='{$end_user}' (length: " . strlen($end_user) . "), item_id={$item_id}");
     
     // Execute the traditional SQL
     $update_result = mysqli_query($conn, $update_sql);
@@ -330,8 +368,18 @@ try {
     $subcategory_result = $subcategory_stmt->get_result();
     $subcategory = $subcategory_result->fetch_assoc();
     
+    // Debug: Log category and subcategory information
+    logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "Category: " . json_encode($category));
+    logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "Subcategory: " . json_encode($subcategory));
+    logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "Subcategory ID: $subcategory_id");
+    logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "POST data: " . json_encode($_POST));
+    
     // Handle category-specific fields
-    if ($category && $category['category_code'] === '030') {
+    logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "Checking category condition...");
+    logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "Category code: " . ($category['category_code'] ?? 'NULL'));
+    logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "Category condition result: " . ($category && $category['category_code'] === '05-030' ? 'TRUE' : 'FALSE'));
+    
+    if ($category && $category['category_code'] === '05-030') {
         // Collect all form data
         $processor = trim($_POST['processor'] ?? '');
         $ram_capacity = trim($_POST['ram'] ?? '');
@@ -398,7 +446,13 @@ try {
         mysqli_query($conn, $computer_history_sql);
         
         // Handle Desktop Computers subcategory-specific fields
-        if ($subcategory && $subcategory['sub_category_code'] === '03') {
+        logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "Checking desktop computer condition...");
+        logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "Subcategory name: " . ($subcategory['sub_category_name'] ?? 'NULL'));
+        logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "Condition result: " . ($subcategory && $subcategory['sub_category_name'] === 'COMPUTER DESKTOP' ? 'TRUE' : 'FALSE'));
+        
+        if ($subcategory && $subcategory['sub_category_name'] === 'COMPUTER DESKTOP') {
+            logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "Desktop computer condition MET - processing fields...");
+            
             $monitor_name = trim($_POST['monitor_name'] ?? '');
             $monitor_model = trim($_POST['monitor_model'] ?? '');
             $monitor_serial_number = trim($_POST['monitor_serial_number'] ?? '');
@@ -408,6 +462,31 @@ try {
             $monitor_status = trim($_POST['monitor_status'] ?? 'serviceable');
             $ups_status = trim($_POST['ups_status'] ?? 'serviceable');
             
+            // Ensure status values are valid ENUM values, default to 'serviceable' if empty
+            $monitor_status = empty($monitor_status) ? 'serviceable' : $monitor_status;
+            $ups_status = empty($ups_status) ? 'serviceable' : $ups_status;
+            
+            // Validate that status values are allowed ENUM values
+            $allowed_statuses = ['serviceable', 'unserviceable', 'red_tagged', 'no_tag', 'disposed'];
+            if (!in_array($monitor_status, $allowed_statuses)) {
+                $monitor_status = 'serviceable';
+            }
+            if (!in_array($ups_status, $allowed_statuses)) {
+                $ups_status = 'serviceable';
+            }
+            
+            logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "Desktop fields collected - Monitor: '$monitor_name', UPS: '$ups_name', Monitor Status: '$monitor_status', UPS Status: '$ups_status'");
+            
+            // Convert empty strings to NULL for database
+            $monitor_name_db = empty($monitor_name) ? 'NULL' : "'$monitor_name'";
+            $monitor_model_db = empty($monitor_model) ? 'NULL' : "'$monitor_model'";
+            $monitor_serial_number_db = empty($monitor_serial_number) ? 'NULL' : "'$monitor_serial_number'";
+            $ups_name_db = empty($ups_name) ? 'NULL' : "'$ups_name'";
+            $ups_model_db = empty($ups_model) ? 'NULL' : "'$ups_model'";
+            $ups_serial_number_db = empty($ups_serial_number) ? 'NULL' : "'$ups_serial_number'";
+            
+            logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "Desktop fields processed for DB - Monitor: $monitor_name_db, UPS: $ups_name_db");
+            
             // Escape values for traditional SQL
             $monitor_name_safe = mysqli_real_escape_string($conn, $monitor_name);
             $monitor_model_safe = mysqli_real_escape_string($conn, $monitor_model);
@@ -415,31 +494,55 @@ try {
             $ups_name_safe = mysqli_real_escape_string($conn, $ups_name);
             $ups_model_safe = mysqli_real_escape_string($conn, $ups_model);
             $ups_serial_number_safe = mysqli_real_escape_string($conn, $ups_serial_number);
-            $monitor_status_safe = mysqli_real_escape_string($conn, $monitor_status);
-            $ups_status_safe = mysqli_real_escape_string($conn, $ups_status);
+            
+            // Status values are already validated and guaranteed to be safe ENUM values
+            $monitor_status_safe = $monitor_status; // No need to escape, already validated
+            $ups_status_safe = $ups_status; // No need to escape, already validated
             
             // Insert or update desktop computer-specific information using traditional SQL
-            $desktop_sql = "INSERT INTO asset_desktop_computers 
-                           (asset_item_id, monitor_name, monitor_model, monitor_serial_number, monitor_status, ups_name, ups_model, ups_serial_number, ups_status, created_by, created_at)
-                           VALUES ($item_id, '$monitor_name_safe', '$monitor_model_safe', '$monitor_serial_number_safe', '$monitor_status_safe', '$ups_name_safe', '$ups_model_safe', '$ups_serial_number_safe', '$ups_status_safe', " . $_SESSION['user_id'] . ", CURRENT_TIMESTAMP)
-                           ON DUPLICATE KEY UPDATE
-                           monitor_name = '$monitor_name_safe',
-                           monitor_model = '$monitor_model_safe',
-                           monitor_serial_number = '$monitor_serial_number_safe',
-                           monitor_status = '$monitor_status_safe',
-                           ups_name = '$ups_name_safe',
-                           ups_model = '$ups_model_safe',
-                           ups_serial_number = '$ups_serial_number_safe',
-                           ups_status = '$ups_status_safe',
-                           updated_by = " . $_SESSION['user_id'] . ",
-                           updated_at = CURRENT_TIMESTAMP";
+            // First check if record exists
+            $check_sql = "SELECT id FROM asset_desktop_computers WHERE asset_item_id = $item_id";
+            $check_result = mysqli_query($conn, $check_sql);
+            
+            logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "Checking existing desktop record for item_id: $item_id");
+            
+            if (mysqli_num_rows($check_result) > 0) {
+                // Update existing record
+                $desktop_sql = "UPDATE asset_desktop_computers SET 
+                               monitor_name = " . (empty($monitor_name) ? 'NULL' : "'$monitor_name_safe'") . ",
+                               monitor_model = " . (empty($monitor_model) ? 'NULL' : "'$monitor_model_safe'") . ",
+                               monitor_serial_number = " . (empty($monitor_serial_number) ? 'NULL' : "'$monitor_serial_number_safe'") . ",
+                               monitor_status = '$monitor_status_safe',
+                               ups_name = " . (empty($ups_name) ? 'NULL' : "'$ups_name_safe'") . ",
+                               ups_model = " . (empty($ups_model) ? 'NULL' : "'$ups_model_safe'") . ",
+                               ups_serial_number = " . (empty($ups_serial_number) ? 'NULL' : "'$ups_serial_number_safe'") . ",
+                               ups_status = '$ups_status_safe',
+                               updated_by = " . $_SESSION['user_id'] . ",
+                               updated_at = CURRENT_TIMESTAMP
+                               WHERE asset_item_id = $item_id";
+                
+                logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "Updating existing desktop record");
+            } else {
+                // Insert new record
+                $desktop_sql = "INSERT INTO asset_desktop_computers 
+                               (asset_item_id, monitor_name, monitor_model, monitor_serial_number, monitor_status, ups_name, ups_model, ups_serial_number, ups_status, created_by, created_at)
+                               VALUES ($item_id, " . (empty($monitor_name) ? 'NULL' : "'$monitor_name_safe'") . ", " . (empty($monitor_model) ? 'NULL' : "'$monitor_model_safe'") . ", " . (empty($monitor_serial_number) ? 'NULL' : "'$monitor_serial_number_safe'") . ", '$monitor_status_safe', " . (empty($ups_name) ? 'NULL' : "'$ups_name_safe'") . ", " . (empty($ups_model) ? 'NULL' : "'$ups_model_safe'") . ", " . (empty($ups_serial_number) ? 'NULL' : "'$ups_serial_number_safe'") . ", '$ups_status_safe', " . $_SESSION['user_id'] . ", CURRENT_TIMESTAMP)";
+                
+                logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "Inserting new desktop record");
+            }
+            
+            logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "Desktop SQL: $desktop_sql");
             
             // Execute the traditional SQL
             $desktop_result = mysqli_query($conn, $desktop_sql);
             
+            logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "Desktop SQL result: " . ($desktop_result ? 'SUCCESS' : 'FAILED'));
             if (!$desktop_result) {
+                logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "SQL Error: " . mysqli_error($conn));
                 throw new Exception('Failed to save desktop computer details: ' . mysqli_error($conn));
             }
+            
+            logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "Desktop computer details saved successfully");
             
             // Log desktop computer-specific field updates
             $desktop_details = sprintf(
@@ -458,6 +561,8 @@ try {
             
             $desktop_history_sql = "INSERT INTO asset_item_history (item_id, action, details, created_by, created_at) VALUES ($item_id, 'Desktop Computer Specs Updated', '" . mysqli_real_escape_string($conn, $desktop_details) . "', " . $_SESSION['user_id'] . ", CURRENT_TIMESTAMP)";
             mysqli_query($conn, $desktop_history_sql);
+        } else {
+            logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "Desktop computer condition NOT MET - skipping desktop fields");
         }
     }
     elseif ($category && $category['category_code'] === '07') {
