@@ -69,7 +69,7 @@ $where_clause = 'WHERE ' . implode(' AND ', $where_conditions);
 // Get inventory tags
 $tags = [];
 try {
-    $sql = "SELECT ai.id, ai.inventory_tag, ai.property_no, ai.description, ai.status, ai.date_counted, ai.image, ai.qr_code,
+    $sql = "SELECT ai.id, ai.inventory_tag, ai.property_no, ai.model, ai.serial_number, ai.description, ai.status, ai.date_counted, ai.image, ai.qr_code,
                    a.description as asset_description, a.unit_cost,
                    ac.category_name, ac.category_code,
                    o.office_name,
@@ -272,6 +272,8 @@ try {
                                         <input type="checkbox" id="selectAll" onchange="toggleAllCheckboxes()">
                                     </th>
                                     <th>Property No</th>
+                                    <th>Model</th>
+                                    <th>Serial Number</th>
                                     <th>Description</th>
                                     <th>Category</th>
                                     <th>Office</th>
@@ -287,6 +289,8 @@ try {
                                             <input type="checkbox" name="selected_tags[]" value="<?php echo $tag['id']; ?>" class="tag-checkbox">
                                         </td>
                                         <td><?php echo htmlspecialchars($tag['property_no'] ?? 'N/A'); ?></td>
+                                        <td><?php echo htmlspecialchars($tag['model'] ?? 'Not specified'); ?></td>
+                                        <td><?php echo htmlspecialchars($tag['serial_number'] ?? 'Not specified'); ?></td>
                                         <td>
                                             <?php echo htmlspecialchars($tag['description']); ?>
                                             <br>

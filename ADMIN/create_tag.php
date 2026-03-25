@@ -170,32 +170,6 @@ $category_fields = [
         'year_model' => ['label' => 'Year Model', 'type' => 'number', 'required' => false]
     ],
     '030' => [
-        'processor' => ['label' => 'Processor', 'type' => 'text', 'required' => false],
-        'ram' => ['label' => 'RAM (GB)', 'type' => 'text', 'required' => false],
-        'storage' => ['label' => 'Storage', 'type' => 'text', 'required' => false],
-        'model' => ['label' => 'Model', 'type' => 'text', 'required' => true],
-        'operating_system' => ['label' => 'Operating System', 'type' => 'text', 'required' => false],
-        'serial_number' => ['label' => 'Serial Number', 'type' => 'text', 'required' => true]
-    ],
-    '02' => [
-        'material' => ['label' => 'Material', 'type' => 'text', 'required' => true],
-        'dimensions' => ['label' => 'Dimensions (LxWxH)', 'type' => 'text', 'required' => false],
-        'color' => ['label' => 'Color', 'type' => 'text', 'required' => false],
-        'manufacturer' => ['label' => 'Manufacturer', 'type' => 'text', 'required' => false]
-    ],
-    '04' => [
-        'manufacturer' => ['label' => 'Manufacturer', 'type' => 'text', 'required' => true],
-        'model' => ['label' => 'Model', 'type' => 'text', 'required' => true],
-        'capacity' => ['label' => 'Capacity', 'type' => 'text', 'required' => false],
-        'power_rating' => ['label' => 'Power Rating', 'type' => 'text', 'required' => false],
-        'serial_number' => ['label' => 'Serial Number', 'type' => 'text', 'required' => true]
-    ],
-    '05' => [
-        'brand' => ['label' => 'Brand', 'type' => 'text', 'required' => true],
-        'model' => ['label' => 'Model', 'type' => 'text', 'required' => true],
-        'serial_number' => ['label' => 'Serial Number', 'type' => 'text', 'required' => true]
-    ],
-    '030' => [
         'processor' => ['label' => 'Processor', 'type' => 'text', 'required' => true],
         'ram' => ['label' => 'RAM (GB)', 'type' => 'number', 'required' => true],
         'storage_type' => ['label' => 'Storage Type', 'type' => 'select', 'required' => true, 'options' => [
@@ -404,6 +378,21 @@ $category_fields = [
                         <div class="mb-3">
                             <label for="property_no" class="form-label">Property Number <span class="required">*</span></label>
                             <input type="text" class="form-control" id="property_no" name="property_no" value="<?php echo htmlspecialchars($item['property_no'] ?? ''); ?>" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="model" class="form-label">Model <span class="required">*</span></label>
+                            <input type="text" class="form-control" id="model" name="model" value="<?php echo htmlspecialchars($item['model'] ?? ''); ?>" placeholder="Enter model number/name" required>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="serial_number" class="form-label">Serial Number <span class="required">*</span></label>
+                            <input type="text" class="form-control" id="serial_number" name="serial_number" value="<?php echo htmlspecialchars($item['serial_number'] ?? ''); ?>" placeholder="Enter serial number" required>
                         </div>
                     </div>
                     <div class="col-md-6">

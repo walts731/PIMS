@@ -127,19 +127,17 @@ try {
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
-    <!-- DataTables CSS removed -->
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="assets/css/admin-unified.css" rel="stylesheet">
     <style>
-        .search-box .bi-search {
-            left: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #6c757d;
-            z-index: 1;
+        .stats-card {
+            transition: all 0.3s ease;
         }
-        .search-box .form-control {
-            padding-left: 2.5rem !important;
+        .stats-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
     </style>
 </head>
@@ -188,7 +186,7 @@ try {
             </div>
         </div>
         
-        <!-- Statistics and Filters Section -->
+        <!-- Statistics Section -->
         <div class="section-card mb-4">
             <div class="section-title">
                 <i class="bi bi-speedometer2"></i> Overview & Filters
@@ -207,31 +205,35 @@ try {
                         <div class="stats-label"><i class="bi bi-cash-stack text-success"></i> Total Value</div>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="search-box position-relative">
-                        <i class="bi bi-search position-absolute"></i>
-                        <input type="text" name="search" id="searchInput" class="form-control ps-4" placeholder="Search assets..." value="<?php echo htmlspecialchars($search_filter); ?>">
+                <div class="col-12 col-md-6">
+                    <div class="d-flex align-items-end h-100">
+                        <div class="w-100">
+                            <label for="officeFilter" class="form-label fw-bold">Filter by Office:</label>
+                            <select id="officeFilter" class="form-select">
+                                <option value="">All Offices</option>
+                                <?php foreach ($offices as $office): ?>
+                                    <option value="<?php echo $office['id']; ?>" <?php echo ($office_filter == $office['id']) ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($office['office_name']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
                     </div>
                 </div>
-                <div class="col-md-2">
-                    <select name="office" id="officeFilter" class="form-select">
-                        <option value="">All Offices</option>
-                        <?php foreach ($offices as $office): ?>
-                            <option value="<?php echo $office['id']; ?>" <?php echo $office_filter == $office['id'] ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($office['office_name']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
             </div>
-        </div>
 
         <div class="alert alert-warning" role="alert">
             <i class="bi bi-exclamation-triangle-fill"></i>
             <strong>Attention:</strong> The following assets may require inventory tagging for proper tracking and management.
         </div>
-        <div class="table-responsive">
-            <table class="table table-hover" id="untaggedTable">
+        
+        <!-- Data Table Card -->
+        <div class="section-card mb-4">
+            <div class="section-title">
+                <i class="bi bi-table"></i> Asset Items
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover" id="untaggedTable">
                 <thead>
                     <tr>
                         <th>Asset Description</th>
@@ -301,6 +303,7 @@ try {
                     <?php endif; ?>
                 </tbody>
             </table>
+            </div>
         </div>
     </div>
     </div>
@@ -311,110 +314,73 @@ try {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js">
     </script>
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    <!-- DataTables JS removed -->
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     <?php require_once 'includes/sidebar-scripts.php'; ?>
     <script>
         $(document).ready(function() {
-            // Add basic table styling
-            $('#untaggedTable').addClass('table-striped');
+            // Initialize DataTable with simplified DOM (search stays inside)
+            var table = $('#untaggedTable').DataTable({
+                pageLength: 25,
+                responsive: true,
+                ordering: true,
+                searching: true, // Keep search functionality inside DataTables
+                paging: true,
+                info: true,
+                language: {
+                    search: "Search assets:",
+                    lengthMenu: "Show _MENU_ entries",
+                    info: "Showing _START_ to _END_ of _TOTAL_ assets",
+                    paginate: {
+                        first: "First",
+                        last: "Last",
+                        next: "Next",
+                        previous: "Previous"
+                    },
+                    emptyTable: "No asset items requiring inventory tags found."
+                },
+                dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' + // Only length menu and search
+                     '<"row"<"col-sm-12"tr>>' +
+                     '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+                initComplete: function() {
+                    // Apply initial filters from URL parameters
+                    var initialSearch = '<?php echo htmlspecialchars($search_filter); ?>';
+                    if (initialSearch !== '') {
+                        table.search(initialSearch).draw();
+                    }
+                    
+                    var initialOffice = '<?php echo $office_filter; ?>';
+                    if (initialOffice !== '0') {
+                        $('#officeFilter').val(initialOffice);
+                        applyFilters();
+                    }
+                    
+                    // Update stats on table events
+                    table.on('draw', updateStats);
+                    table.on('search', updateStats);
+                    updateStats();
+                }
+            });
             
-            // Initialize filters
-            initializeFilters();
+            // External filter event handlers
+            $('#officeFilter').on('change', applyFilters);
+            
+            // Apply filters function
+            function applyFilters() {
+                var officeValue = $('#officeFilter').val();
+                
+                // Reset all column searches first
+                table.columns().search('');
+                
+                // Apply office filter (column 3)
+                if (officeValue !== '') {
+                    table.column(3).search(officeValue);
+                }
+                
+                table.draw();
+            }
         });
-        
-        function initializeFilters() {
-            // Apply initial search from URL parameter
-            var initialSearch = '<?php echo htmlspecialchars($search_filter); ?>';
-            if (initialSearch !== '') {
-                $('#searchInput').val(initialSearch);
-                performSearch();
-            }
-            
-            // Initialize office filter from URL parameter
-            var initialOffice = '<?php echo $office_filter; ?>';
-            if (initialOffice !== '0') {
-                $('#officeFilter').val(initialOffice);
-                performSearch();
-            }
-            
-            // Set up event listeners
-            $('#searchInput').on('input', performSearch);
-            $('#officeFilter').on('change', performSearch);
-        }
-        
-        function performSearch() {
-            var searchTerm = $('#searchInput').val().toLowerCase();
-            var officeFilter = $('#officeFilter').val();
-            
-            $('#untaggedTable tbody tr').each(function() {
-                var $row = $(this);
-                var showRow = true;
-                
-                // Skip empty state row
-                if ($row.find('td[colspan]').length > 0) {
-                    return;
-                }
-                
-                // Search filter
-                if (searchTerm) {
-                    var rowText = $row.text().toLowerCase();
-                    if (rowText.indexOf(searchTerm) === -1) {
-                        showRow = false;
-                    }
-                }
-                
-                // Office filter
-                if (officeFilter && showRow) {
-                    var officeCell = $row.find('td:eq(3)'); // Office column (index 3)
-                    if (officeCell.text().trim() !== $('#officeFilter option:selected').text().trim()) {
-                        showRow = false;
-                    }
-                }
-                
-                $row.toggle(showRow);
-            });
-        }
-
-        // Export untagged assets function
-        function exportUntagged() {
-            console.log('Export function called');
-            
-            let csv = 'Asset Description,Status,Value,Office,Last Updated\n';
-            
-            $('#untaggedTable tbody tr').each(function() {
-                const $row = $(this);
-                // Skip empty state rows
-                if ($row.find('td[colspan]').length > 0) {
-                    return;
-                }
-                
-                const rowData = [];
-                $row.find('td').each(function(index) {
-                    let cellText = $(this).text().trim();
-                    // Only include first 5 columns (exclude Actions column)
-                    if (index < 5) {
-                        // Clean up text for CSV and escape quotes
-                        cellText = cellText.replace(/[\n\r"]/g, ' ').replace(/\s+/g, ' ').trim();
-                        // Escape any remaining quotes in the cell content
-                        cellText = cellText.replace(/"/g, '""');
-                        rowData.push(cellText);
-                    }
-                });
-                
-                if (rowData.length > 0) {
-                    csv += rowData.map(cell => `"${cell}"`).join(',') + '\n';
-                }
-            });
-            
-            // Download CSV
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'untagged_assets_' + new Date().toISOString().split('T')[0] + '.csv';
-            a.click();
-            window.URL.revokeObjectURL(url);
-        }
     </script>
 </body>
 </html>

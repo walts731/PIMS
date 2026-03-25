@@ -175,6 +175,12 @@ try {
     $end_user_safe = mysqli_real_escape_string($conn, $end_user);
     $office_name_safe = mysqli_real_escape_string($conn, $office_name);
     
+    // Get model and serial_number from form data
+    $model = trim($_POST['model'] ?? '');
+    $serial_number = trim($_POST['serial_number'] ?? '');
+    $model_safe = mysqli_real_escape_string($conn, $model);
+    $serial_number_safe = mysqli_real_escape_string($conn, $serial_number);
+    
     $update_sql = "UPDATE asset_items SET 
                    property_no = '$property_no_safe', 
                    inventory_tag = $inventory_tag_safe, 
@@ -185,13 +191,15 @@ try {
                    asset_subcategory_id = " . ($subcategory_id > 0 ? $subcategory_id : 'NULL') . ",
                    office_name = '$office_name_safe',
                    end_user = '$end_user_safe',
+                   model = " . (!empty($model) ? "'$model_safe'" : 'NULL') . ",
+                   serial_number = " . (!empty($serial_number) ? "'$serial_number_safe'" : 'NULL') . ",
                    status = 'serviceable',
                    last_updated = CURRENT_TIMESTAMP
                    WHERE id = $item_id";
     
     // Debug: Log the SQL and values before execution
     logSystemAction($_SESSION['user_id'], 'Tag Update SQL Debug', 'forms', "SQL: $update_sql");
-    logSystemAction($_SESSION['user_id'], 'Tag Update Values Debug', 'forms', "Values: property_no='{$property_no}', inventory_tag='{$inventory_tag}', date_counted='{$date_counted}', image='{$image_filename}', employee_id={$person_accountable}, category_id={$category_id}, end_user='{$end_user}' (length: " . strlen($end_user) . "), item_id={$item_id}");
+    logSystemAction($_SESSION['user_id'], 'Tag Update Values Debug', 'forms', "Values: property_no='{$property_no}', inventory_tag='{$inventory_tag}', date_counted='{$date_counted}', image='{$image_filename}', employee_id={$person_accountable}, category_id={$category_id}, end_user='{$end_user}' (length: " . strlen($end_user) . "), model='{$model}', serial_number='{$serial_number}', item_id={$item_id}");
     
     // Execute the traditional SQL
     $update_result = mysqli_query($conn, $update_sql);
@@ -324,49 +332,70 @@ try {
     
     // Handle category-specific fields
     if ($category && $category['category_code'] === '030') {
+        // Collect all form data
         $processor = trim($_POST['processor'] ?? '');
-        $ram_capacity = trim($_POST['ram'] ?? '');  // Form field 'ram' maps to 'ram_capacity'
-        $storage_capacity = trim($_POST['storage'] ?? '');  // Form field 'storage' maps to 'storage_capacity'
-        $storage_type = 'ssd';  // Default storage type, could be made configurable
+        $ram_capacity = trim($_POST['ram'] ?? '');
+        $storage_capacity = trim($_POST['storage_capacity'] ?? '');
+        $storage_type = trim($_POST['storage_type'] ?? 'ssd');
         $model = trim($_POST['model'] ?? '');
+        $graphics_card = trim($_POST['graphics'] ?? '');
         $operating_system = trim($_POST['operating_system'] ?? '');
         $serial_number = trim($_POST['serial_number'] ?? '');
+        $brand = trim($_POST['brand'] ?? '');
+        $warranty = trim($_POST['warranty'] ?? '');
         
-        // Insert or update computer equipment-specific information
+        // Escape values for traditional SQL
+        $processor_safe = mysqli_real_escape_string($conn, $processor);
+        $ram_capacity_safe = mysqli_real_escape_string($conn, $ram_capacity);
+        $storage_capacity_safe = mysqli_real_escape_string($conn, $storage_capacity);
+        $storage_type_safe = mysqli_real_escape_string($conn, $storage_type);
+        $model_safe = mysqli_real_escape_string($conn, $model);
+        $graphics_card_safe = mysqli_real_escape_string($conn, $graphics_card);
+        $operating_system_safe = mysqli_real_escape_string($conn, $operating_system);
+        $serial_number_safe = mysqli_real_escape_string($conn, $serial_number);
+        $brand_safe = mysqli_real_escape_string($conn, $brand);
+        $warranty_safe = mysqli_real_escape_string($conn, $warranty);
+        
+        // Insert or update computer equipment-specific information using traditional SQL
         $computer_sql = "INSERT INTO asset_computers 
-                       (asset_item_id, processor, ram_capacity, storage_type, storage_capacity, model, operating_system, serial_number, created_by, created_at)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                       (asset_item_id, processor, ram_capacity, storage_type, storage_capacity, model, graphics_card, operating_system, serial_number, created_by, created_at)
+                       VALUES ($item_id, '$processor_safe', '$ram_capacity_safe', '$storage_type_safe', '$storage_capacity_safe', '$model_safe', '$graphics_card_safe', '$operating_system_safe', '$serial_number_safe', " . $_SESSION['user_id'] . ", CURRENT_TIMESTAMP)
                        ON DUPLICATE KEY UPDATE
-                       processor = VALUES(processor),
-                       ram_capacity = VALUES(ram_capacity),
-                       storage_type = VALUES(storage_type),
-                       storage_capacity = VALUES(storage_capacity),
-                       model = VALUES(model),
-                       operating_system = VALUES(operating_system),
-                       serial_number = VALUES(serial_number),
-                       updated_by = VALUES(created_by),
+                       processor = '$processor_safe',
+                       ram_capacity = '$ram_capacity_safe',
+                       storage_type = '$storage_type_safe',
+                       storage_capacity = '$storage_capacity_safe',
+                       model = '$model_safe',
+                       graphics_card = '$graphics_card_safe',
+                       operating_system = '$operating_system_safe',
+                       serial_number = '$serial_number_safe',
+                       updated_by = " . $_SESSION['user_id'] . ",
                        updated_at = CURRENT_TIMESTAMP";
         
-        $computer_stmt = $conn->prepare($computer_sql);
-        $computer_stmt->bind_param("isssssssi", $item_id, $processor, $ram_capacity, $storage_type, $storage_capacity, $model, $operating_system, $serial_number, $_SESSION['user_id']);
-        $computer_stmt->execute();
+        // Execute the traditional SQL
+        $computer_result = mysqli_query($conn, $computer_sql);
+        
+        if (!$computer_result) {
+            throw new Exception('Failed to save computer equipment details: ' . mysqli_error($conn));
+        }
         
         // Log computer equipment-specific field updates
         $computer_details = sprintf(
-            "Computer Equipment specs saved - Processor: %s, RAM: %s, Storage: %s %s, Model: %s, OS: %s, Serial: %s",
+            "Computer Equipment specs saved - Processor: %s, RAM: %s, Storage: %s %s, Model: %s, Graphics: %s, OS: %s, Serial: %s, Brand: %s, Warranty: %s",
             $processor ?: 'Not specified',
             $ram_capacity ?: 'Not specified',
             $storage_capacity ?: 'Not specified',
             $storage_type ?: 'Not specified',
             $model ?: 'Not specified',
+            $graphics_card ?: 'Not specified',
             $operating_system ?: 'Not specified',
-            $serial_number ?: 'Not specified'
+            $serial_number ?: 'Not specified',
+            $brand ?: 'Not specified',
+            $warranty ?: 'Not specified'
         );
         
-        $computer_history_sql = "INSERT INTO asset_item_history (item_id, action, details, created_by, created_at) VALUES (?, 'Computer Specs Updated', ?, ?, CURRENT_TIMESTAMP)";
-        $computer_history_stmt = $conn->prepare($computer_history_sql);
-        $computer_history_stmt->bind_param("isi", $item_id, $computer_details, $_SESSION['user_id']);
-        $computer_history_stmt->execute();
+        $computer_history_sql = "INSERT INTO asset_item_history (item_id, action, details, created_by, created_at) VALUES ($item_id, 'Computer Specs Updated', '" . mysqli_real_escape_string($conn, $computer_details) . "', " . $_SESSION['user_id'] . ", CURRENT_TIMESTAMP)";
+        mysqli_query($conn, $computer_history_sql);
         
         // Handle Desktop Computers subcategory-specific fields
         if ($subcategory && $subcategory['sub_category_code'] === '03') {
@@ -379,25 +408,38 @@ try {
             $monitor_status = trim($_POST['monitor_status'] ?? 'serviceable');
             $ups_status = trim($_POST['ups_status'] ?? 'serviceable');
             
-            // Insert or update desktop computer-specific information
+            // Escape values for traditional SQL
+            $monitor_name_safe = mysqli_real_escape_string($conn, $monitor_name);
+            $monitor_model_safe = mysqli_real_escape_string($conn, $monitor_model);
+            $monitor_serial_number_safe = mysqli_real_escape_string($conn, $monitor_serial_number);
+            $ups_name_safe = mysqli_real_escape_string($conn, $ups_name);
+            $ups_model_safe = mysqli_real_escape_string($conn, $ups_model);
+            $ups_serial_number_safe = mysqli_real_escape_string($conn, $ups_serial_number);
+            $monitor_status_safe = mysqli_real_escape_string($conn, $monitor_status);
+            $ups_status_safe = mysqli_real_escape_string($conn, $ups_status);
+            
+            // Insert or update desktop computer-specific information using traditional SQL
             $desktop_sql = "INSERT INTO asset_desktop_computers 
                            (asset_item_id, monitor_name, monitor_model, monitor_serial_number, monitor_status, ups_name, ups_model, ups_serial_number, ups_status, created_by, created_at)
-                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                           VALUES ($item_id, '$monitor_name_safe', '$monitor_model_safe', '$monitor_serial_number_safe', '$monitor_status_safe', '$ups_name_safe', '$ups_model_safe', '$ups_serial_number_safe', '$ups_status_safe', " . $_SESSION['user_id'] . ", CURRENT_TIMESTAMP)
                            ON DUPLICATE KEY UPDATE
-                           monitor_name = VALUES(monitor_name),
-                           monitor_model = VALUES(monitor_model),
-                           monitor_serial_number = VALUES(monitor_serial_number),
-                           monitor_status = VALUES(monitor_status),
-                           ups_name = VALUES(ups_name),
-                           ups_model = VALUES(ups_model),
-                           ups_serial_number = VALUES(ups_serial_number),
-                           ups_status = VALUES(ups_status),
-                           updated_by = VALUES(created_by),
+                           monitor_name = '$monitor_name_safe',
+                           monitor_model = '$monitor_model_safe',
+                           monitor_serial_number = '$monitor_serial_number_safe',
+                           monitor_status = '$monitor_status_safe',
+                           ups_name = '$ups_name_safe',
+                           ups_model = '$ups_model_safe',
+                           ups_serial_number = '$ups_serial_number_safe',
+                           ups_status = '$ups_status_safe',
+                           updated_by = " . $_SESSION['user_id'] . ",
                            updated_at = CURRENT_TIMESTAMP";
             
-            $desktop_stmt = $conn->prepare($desktop_sql);
-            $desktop_stmt->bind_param("issssssssi", $item_id, $monitor_name, $monitor_model, $monitor_serial_number, $monitor_status, $ups_name, $ups_model, $ups_serial_number, $ups_status, $_SESSION['user_id']);
-            $desktop_stmt->execute();
+            // Execute the traditional SQL
+            $desktop_result = mysqli_query($conn, $desktop_sql);
+            
+            if (!$desktop_result) {
+                throw new Exception('Failed to save desktop computer details: ' . mysqli_error($conn));
+            }
             
             // Log desktop computer-specific field updates
             $desktop_details = sprintf(
@@ -414,10 +456,8 @@ try {
             
             logSystemAction($_SESSION['user_id'], 'update', 'asset_desktop_computers', $desktop_details);
             
-            $desktop_history_sql = "INSERT INTO asset_item_history (item_id, action, details, created_by, created_at) VALUES (?, 'Desktop Computer Specs Updated', ?, ?, CURRENT_TIMESTAMP)";
-            $desktop_history_stmt = $conn->prepare($desktop_history_sql);
-            $desktop_history_stmt->bind_param("isi", $item_id, $desktop_details, $_SESSION['user_id']);
-            $desktop_history_stmt->execute();
+            $desktop_history_sql = "INSERT INTO asset_item_history (item_id, action, details, created_by, created_at) VALUES ($item_id, 'Desktop Computer Specs Updated', '" . mysqli_real_escape_string($conn, $desktop_details) . "', " . $_SESSION['user_id'] . ", CURRENT_TIMESTAMP)";
+            mysqli_query($conn, $desktop_history_sql);
         }
     }
     elseif ($category && $category['category_code'] === '07') {
@@ -430,23 +470,34 @@ try {
         $chassis_number = trim($_POST['chassis_number'] ?? '');
         $year_model = intval($_POST['year_model'] ?? 0);
         
+        // Escape values for traditional SQL
+        $brand_safe = mysqli_real_escape_string($conn, $brand);
+        $model_safe = mysqli_real_escape_string($conn, $model);
+        $plate_number_safe = mysqli_real_escape_string($conn, $plate_number);
+        $color_safe = mysqli_real_escape_string($conn, $color);
+        $engine_number_safe = mysqli_real_escape_string($conn, $engine_number);
+        $chassis_number_safe = mysqli_real_escape_string($conn, $chassis_number);
+        
         $vehicle_sql = "INSERT INTO asset_vehicles 
                        (asset_item_id, brand, model, plate_number, color, engine_number, chassis_number, year_manufactured, created_by, created_at)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                       VALUES ($item_id, '$brand_safe', '$model_safe', '$plate_number_safe', '$color_safe', '$engine_number_safe', '$chassis_number_safe', $year_model, " . $_SESSION['user_id'] . ", CURRENT_TIMESTAMP)
                        ON DUPLICATE KEY UPDATE
-                       brand = VALUES(brand),
-                       model = VALUES(model),
-                       plate_number = VALUES(plate_number),
-                       color = VALUES(color),
-                       engine_number = VALUES(engine_number),
-                       chassis_number = VALUES(chassis_number),
-                       year_manufactured = VALUES(year_manufactured),
-                       updated_by = VALUES(created_by),
+                       brand = '$brand_safe',
+                       model = '$model_safe',
+                       plate_number = '$plate_number_safe',
+                       color = '$color_safe',
+                       engine_number = '$engine_number_safe',
+                       chassis_number = '$chassis_number_safe',
+                       year_manufactured = $year_model,
+                       updated_by = " . $_SESSION['user_id'] . ",
                        updated_at = CURRENT_TIMESTAMP";
         
-        $vehicle_stmt = $conn->prepare($vehicle_sql);
-        $vehicle_stmt->bind_param("isssssiii", $item_id, $brand, $model, $plate_number, $color, $engine_number, $chassis_number, $year_model, $_SESSION['user_id']);
-        $vehicle_stmt->execute();
+        // Execute the traditional SQL
+        $vehicle_result = mysqli_query($conn, $vehicle_sql);
+        
+        if (!$vehicle_result) {
+            throw new Exception('Failed to save vehicle details: ' . mysqli_error($conn));
+        }
     }
     elseif ($category && $category['category_code'] === '02') {
         // Furniture & Fixtures specific fields
@@ -455,45 +506,66 @@ try {
         $furniture_color = trim($_POST['color'] ?? '');
         $manufacturer = trim($_POST['manufacturer'] ?? '');
         
+        // Escape values for traditional SQL
+        $material_safe = mysqli_real_escape_string($conn, $material);
+        $dimensions_safe = mysqli_real_escape_string($conn, $dimensions);
+        $furniture_color_safe = mysqli_real_escape_string($conn, $furniture_color);
+        $manufacturer_safe = mysqli_real_escape_string($conn, $manufacturer);
+        
         $furniture_sql = "INSERT INTO asset_furniture 
                        (asset_item_id, material, dimensions, color, manufacturer, created_by, created_at)
-                       VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                       VALUES ($item_id, '$material_safe', '$dimensions_safe', '$furniture_color_safe', '$manufacturer_safe', " . $_SESSION['user_id'] . ", CURRENT_TIMESTAMP)
                        ON DUPLICATE KEY UPDATE
-                       material = VALUES(material),
-                       dimensions = VALUES(dimensions),
-                       color = VALUES(color),
-                       manufacturer = VALUES(manufacturer),
-                       updated_by = VALUES(created_by),
+                       material = '$material_safe',
+                       dimensions = '$dimensions_safe',
+                       color = '$furniture_color_safe',
+                       manufacturer = '$manufacturer_safe',
+                       updated_by = " . $_SESSION['user_id'] . ",
                        updated_at = CURRENT_TIMESTAMP";
         
-        $furniture_stmt = $conn->prepare($furniture_sql);
-        $furniture_stmt->bind_param("issssi", $item_id, $material, $dimensions, $furniture_color, $manufacturer, $_SESSION['user_id']);
-        $furniture_stmt->execute();
+        // Execute the traditional SQL
+        $furniture_result = mysqli_query($conn, $furniture_sql);
+        
+        if (!$furniture_result) {
+            throw new Exception('Failed to save furniture details: ' . mysqli_error($conn));
+        }
     }
     elseif ($category && $category['category_code'] === '04') {
         // Machinery & Equipment specific fields
+        $machine_type = trim($_POST['machine_type'] ?? '');
         $manufacturer = trim($_POST['manufacturer'] ?? '');
         $model = trim($_POST['model'] ?? '');
         $capacity = trim($_POST['capacity'] ?? '');
-        $power_rating = trim($_POST['power_rating'] ?? '');
+        $power_requirements = trim($_POST['power_rating'] ?? '');
         $serial_number = trim($_POST['serial_number'] ?? '');
+        
+        // Escape values for traditional SQL
+        $machine_type_safe = mysqli_real_escape_string($conn, $machine_type);
+        $manufacturer_safe = mysqli_real_escape_string($conn, $manufacturer);
+        $model_safe = mysqli_real_escape_string($conn, $model);
+        $capacity_safe = mysqli_real_escape_string($conn, $capacity);
+        $power_requirements_safe = mysqli_real_escape_string($conn, $power_requirements);
+        $serial_number_safe = mysqli_real_escape_string($conn, $serial_number);
         
         $machinery_sql = "INSERT INTO asset_machinery 
                        (asset_item_id, machine_type, manufacturer, model_number, capacity, power_requirements, serial_number, created_by, created_at)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                       VALUES ($item_id, '$machine_type_safe', '$manufacturer_safe', '$model_safe', '$capacity_safe', '$power_requirements_safe', '$serial_number_safe', " . $_SESSION['user_id'] . ", CURRENT_TIMESTAMP)
                        ON DUPLICATE KEY UPDATE
-                       machine_type = VALUES(machine_type),
-                       manufacturer = VALUES(manufacturer),
-                       model_number = VALUES(model_number),
-                       capacity = VALUES(capacity),
-                       power_requirements = VALUES(power_requirements),
-                       serial_number = VALUES(serial_number),
-                       updated_by = VALUES(created_by),
+                       machine_type = '$machine_type_safe',
+                       manufacturer = '$manufacturer_safe',
+                       model_number = '$model_safe',
+                       capacity = '$capacity_safe',
+                       power_requirements = '$power_requirements_safe',
+                       serial_number = '$serial_number_safe',
+                       updated_by = " . $_SESSION['user_id'] . ",
                        updated_at = CURRENT_TIMESTAMP";
         
-        $machinery_stmt = $conn->prepare($machinery_sql);
-        $machinery_stmt->bind_param("issssssi", $item_id, $manufacturer, $manufacturer, $model, $capacity, $power_rating, $serial_number, $_SESSION['user_id']);
-        $machinery_stmt->execute();
+        // Execute the traditional SQL
+        $machinery_result = mysqli_query($conn, $machinery_sql);
+        
+        if (!$machinery_result) {
+            throw new Exception('Failed to save machinery details: ' . mysqli_error($conn));
+        }
     }
     elseif ($category && $category['category_code'] === '05') {
         // Office Equipment specific fields
@@ -501,62 +573,85 @@ try {
         $model = trim($_POST['model'] ?? '');
         $serial_number = trim($_POST['serial_number'] ?? '');
         
+        // Escape values for traditional SQL
+        $brand_safe = mysqli_real_escape_string($conn, $brand);
+        $model_safe = mysqli_real_escape_string($conn, $model);
+        $serial_number_safe = mysqli_real_escape_string($conn, $serial_number);
+        
         $office_equipment_sql = "INSERT INTO asset_office_equipment 
                        (asset_item_id, brand, model, serial_number, created_by, created_at)
-                       VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                       VALUES ($item_id, '$brand_safe', '$model_safe', '$serial_number_safe', " . $_SESSION['user_id'] . ", CURRENT_TIMESTAMP)
                        ON DUPLICATE KEY UPDATE
-                       brand = VALUES(brand),
-                       model = VALUES(model),
-                       serial_number = VALUES(serial_number),
-                       updated_by = VALUES(created_by),
+                       brand = '$brand_safe',
+                       model = '$model_safe',
+                       serial_number = '$serial_number_safe',
+                       updated_by = " . $_SESSION['user_id'] . ",
                        updated_at = CURRENT_TIMESTAMP";
         
-        $office_equipment_stmt = $conn->prepare($office_equipment_sql);
-        $office_equipment_stmt->bind_param("isssi", $item_id, $brand, $model, $serial_number, $_SESSION['user_id']);
-        $office_equipment_stmt->execute();
+        // Execute the traditional SQL
+        $office_equipment_result = mysqli_query($conn, $office_equipment_sql);
+        
+        if (!$office_equipment_result) {
+            throw new Exception('Failed to save office equipment details: ' . mysqli_error($conn));
+        }
     }
     elseif ($category && $category['category_code'] === '06') {
         // Software specific fields
         $software_name = trim($_POST['software_name'] ?? '');
         $version = trim($_POST['version'] ?? '');
         $license_key = trim($_POST['license_key'] ?? '');
-        $expiry_date = !empty($_POST['expiry_date']) ? $_POST['expiry_date'] : null;
+        $expiry_date = !empty($_POST['expiry_date']) ? "'" . mysqli_real_escape_string($conn, $_POST['expiry_date']) . "'" : 'NULL';
+        
+        // Escape values for traditional SQL
+        $software_name_safe = mysqli_real_escape_string($conn, $software_name);
+        $version_safe = mysqli_real_escape_string($conn, $version);
+        $license_key_safe = mysqli_real_escape_string($conn, $license_key);
         
         $software_sql = "INSERT INTO asset_software 
                        (asset_item_id, software_name, version, license_key, license_expiry, created_by, created_at)
-                       VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                       VALUES ($item_id, '$software_name_safe', '$version_safe', '$license_key_safe', $expiry_date, " . $_SESSION['user_id'] . ", CURRENT_TIMESTAMP)
                        ON DUPLICATE KEY UPDATE
-                       software_name = VALUES(software_name),
-                       version = VALUES(version),
-                       license_key = VALUES(license_key),
-                       license_expiry = VALUES(license_expiry),
-                       updated_by = VALUES(created_by),
+                       software_name = '$software_name_safe',
+                       version = '$version_safe',
+                       license_key = '$license_key_safe',
+                       license_expiry = $expiry_date,
+                       updated_by = " . $_SESSION['user_id'] . ",
                        updated_at = CURRENT_TIMESTAMP";
         
-        $software_stmt = $conn->prepare($software_sql);
-        $software_stmt->bind_param("issssi", $item_id, $software_name, $version, $license_key, $expiry_date, $_SESSION['user_id']);
-        $software_stmt->execute();
+        // Execute the traditional SQL
+        $software_result = mysqli_query($conn, $software_sql);
+        
+        if (!$software_result) {
+            throw new Exception('Failed to save software details: ' . mysqli_error($conn));
+        }
     }
     elseif ($category && $category['category_code'] === '03') {
         // Land specific fields
-        $lot_number = trim($_POST['lot_number'] ?? '');
-        $area_size = trim($_POST['area_size'] ?? '');
-        $location = trim($_POST['location'] ?? '');
-        $tax_declaration = trim($_POST['tax_declaration'] ?? '');
+        $lot_area = trim($_POST['lot_number'] ?? '');
+        $address = trim($_POST['location'] ?? '');
+        $tax_declaration_number = trim($_POST['tax_declaration'] ?? '');
+        
+        // Escape values for traditional SQL
+        $lot_area_safe = mysqli_real_escape_string($conn, $lot_area);
+        $address_safe = mysqli_real_escape_string($conn, $address);
+        $tax_declaration_number_safe = mysqli_real_escape_string($conn, $tax_declaration_number);
         
         $land_sql = "INSERT INTO asset_land 
                        (asset_item_id, lot_area, address, tax_declaration_number, created_by, created_at)
-                       VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                       VALUES ($item_id, '$lot_area_safe', '$address_safe', '$tax_declaration_number_safe', " . $_SESSION['user_id'] . ", CURRENT_TIMESTAMP)
                        ON DUPLICATE KEY UPDATE
-                       lot_area = VALUES(lot_area),
-                       address = VALUES(address),
-                       tax_declaration_number = VALUES(tax_declaration_number),
-                       updated_by = VALUES(created_by),
+                       lot_area = '$lot_area_safe',
+                       address = '$address_safe',
+                       tax_declaration_number = '$tax_declaration_number_safe',
+                       updated_by = " . $_SESSION['user_id'] . ",
                        updated_at = CURRENT_TIMESTAMP";
         
-        $land_stmt = $conn->prepare($land_sql);
-        $land_stmt->bind_param("isssi", $item_id, $area_size, $location, $tax_declaration, $_SESSION['user_id']);
-        $land_stmt->execute();
+        // Execute the traditional SQL
+        $land_result = mysqli_query($conn, $land_sql);
+        
+        if (!$land_result) {
+            throw new Exception('Failed to save land details: ' . mysqli_error($conn));
+        }
     }
     
     // Get employee information for logging
