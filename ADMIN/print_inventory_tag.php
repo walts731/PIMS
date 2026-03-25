@@ -41,7 +41,7 @@ try {
 }
 
 // Get tag details with additional fields
-$sql = "SELECT ai.*, 
+$sql = "SELECT ai.*, ai.model, ai.serial_number, 
                a.description as asset_description, a.unit_cost,
                ac.category_name, ac.category_code,
                subcat.sub_category_name, subcat.sub_category_code,
@@ -179,12 +179,15 @@ $unserviceable_checked = ($tag['status'] === 'unserviceable' || $tag['status'] =
 // Prepare stickers data
 $stickers = [];
 
-// Main asset sticker
+// Main asset sticker - use model and serial_number from asset_items table first
+$main_model = $tag['model'] ?? '';
+$main_serial = $tag['serial_number'] ?? '';
+
 $stickers[] = [
     'type' => 'main',
     'description' => $tag['description'],
-    'model_no' => $model_no,
-    'serial_no' => $serial_no,
+    'model_no' => $main_model ?: $model_no, // Use main model, fallback to category-specific if empty
+    'serial_no' => $main_serial ?: $serial_no, // Use main serial, fallback to category-specific if empty
     'property_no' => $tag['property_no'] ?? 'N/A',
     'qr_code' => $tag['qr_code'] ?? null
 ];

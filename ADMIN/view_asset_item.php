@@ -19,12 +19,12 @@ if ($item_id === 0) {
 
 // Get asset item details with related information
 $item = null;
-$item_sql = "SELECT ai.*, 
+$item_sql = "SELECT ai.id, ai.asset_id, ai.property_no, ai.model, ai.serial_number, ai.description, ai.status, ai.date_counted, ai.image, ai.qr_code, ai.created_at, ai.last_updated, ai.value, ai.acquisition_date, ai.end_user,
                    a.description as asset_description, a.unit, a.quantity as asset_quantity, a.unit_cost,
                    ac.category_name, ac.category_code,
                    subcat.sub_category_name, subcat.sub_category_code,
                    o.office_name,
-                   comp.processor, comp.ram_capacity, comp.storage_type, comp.storage_capacity, comp.model,
+                   comp.processor, comp.ram_capacity, comp.storage_type, comp.storage_capacity, comp.model as computer_model,
                    comp.operating_system, comp.serial_number as computer_serial_number,
                    desk.monitor_name, desk.monitor_model, desk.monitor_serial_number, desk.monitor_status,
                    desk.ups_name, desk.ups_model, desk.ups_serial_number, desk.ups_status,
@@ -974,6 +974,35 @@ $status_display = formatStatus($item['status']);
                                     <div class="detail-value"><?php echo $item['property_no'] ? htmlspecialchars($item['property_no']) : '<span class="text-muted">Not assigned</span>'; ?></div>
                                 </div>
                                 <div class="mb-3">
+                                    <div class="detail-label">Model</div>
+                                    <div class="detail-value"><?php 
+                                    $display_model = $item['model'] ? htmlspecialchars($item['model']) : '';
+                                    if (empty($display_model)) {
+                                        // Fallback to category-specific model if main model is empty
+                                        if ($item['category_code'] === '030') {
+                                            // Computer Equipment - use model from asset_computers table
+                                            $display_model = $item['computer_model'] ? htmlspecialchars($item['computer_model']) : '<span class="text-muted">Not specified</span>';
+                                        } elseif ($item['category_code'] === '07') {
+                                            // Vehicles
+                                            $display_model = $item['vehicle_model'] ? htmlspecialchars($item['vehicle_model']) : '<span class="text-muted">Not specified</span>';
+                                        } elseif ($item['category_code'] === '04') {
+                                            // Machinery & Equipment
+                                            $display_model = $item['model_number'] ? htmlspecialchars($item['model_number']) : '<span class="text-muted">Not specified</span>';
+                                        } elseif ($item['category_code'] === '05') {
+                                            // Office Equipment
+                                            $display_model = $item['office_model'] ? htmlspecialchars($item['office_model']) : '<span class="text-muted">Not specified</span>';
+                                        } else {
+                                            $display_model = '<span class="text-muted">Not specified</span>';
+                                        }
+                                    }
+                                    echo $display_model;
+                                    ?></div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="detail-label">Serial Number</div>
+                                    <div class="detail-value"><?php echo $item['serial_number'] ? htmlspecialchars($item['serial_number']) : '<span class="text-muted">Not specified</span>'; ?></div>
+                                </div>
+                                <div class="mb-3">
                                     <div class="detail-label">ICS No/PAR No</div>
                                     <div class="detail-value">
                                         <?php 
@@ -992,19 +1021,19 @@ $status_display = formatStatus($item['status']);
                                     <div class="detail-label">Description</div>
                                     <div class="detail-value"><?php echo htmlspecialchars($item['description']); ?></div>
                                 </div>
-                                <div class="mb-3">
-                                    <div class="detail-label">Status</div>
-                                    <div class="detail-value">
-                                        <span class="status-badge <?php echo $status_display[1]; ?>">
-                                            <?php echo $status_display[0]; ?>
-                                        </span>
-                                    </div>
-                                </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <div class="detail-label">Value</div>
-                                    <div class="detail-value text-value">₱<?php echo number_format($item['value'], 2); ?></div>
+                                    <div class="detail-value text-value">₱<?php echo number_format($item['value'] ?? 0, 2); ?></div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="detail-label">Category</div>
+                                    <div class="detail-value"><?php echo htmlspecialchars($item['category_code'] . ' - ' . $item['category_name']); ?></div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="detail-label">Unit</div>
+                                    <div class="detail-value"><?php echo htmlspecialchars($item['unit']); ?></div>
                                 </div>
                                 <div class="mb-3">
                                     <div class="detail-label">Acquisition Date</div>
@@ -1019,22 +1048,6 @@ $status_display = formatStatus($item['status']);
                     </div>
                     
                     <div class="detail-section">
-                        <h5 class="mb-3"><i class="bi bi-archive"></i> Asset Information</h5>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <div class="detail-label">Category</div>
-                                    <div class="detail-value"><?php echo htmlspecialchars($item['category_code'] . ' - ' . $item['category_name']); ?></div>
-                                </div>
-                                <div class="mb-3">
-                                    <div class="detail-label">Unit</div>
-                                    <div class="detail-value"><?php echo htmlspecialchars($item['unit']); ?></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="detail-section">
                         <h5 class="mb-3"><i class="bi bi-geo-alt"></i> Location & Assignment</h5>
                         <div class="row">
                             <div class="col-md-6">
@@ -1042,20 +1055,26 @@ $status_display = formatStatus($item['status']);
                                     <div class="detail-label">Office</div>
                                     <div class="detail-value"><?php echo $item['office_name'] ? htmlspecialchars($item['office_name']) : '<span class="text-muted">Not assigned</span>'; ?></div>
                                 </div>
+                                <div class="mb-3">
+                                    <div class="detail-label">Status</div>
+                                    <div class="detail-value">
+                                        <span class="status-badge <?php echo $status_display[1]; ?>">
+                                            <?php echo $status_display[0]; ?>
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <div class="detail-label">Assigned Employee</div>
                                     <div class="detail-value">
                                         <?php if ($item['employee_no']): ?>
-                                            <?php echo htmlspecialchars($item['employee_no'] . ' - ' . $item['firstname'] . ' ' . $item['lastname']); ?>
+                                            <?php echo htmlspecialchars($item['firstname'] . ' ' . $item['lastname']); ?>
                                         <?php else: ?>
                                             <span class="text-muted">Not assigned</span>
                                         <?php endif; ?>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="col-md-6">
                                 <div class="mb-3">
                                     <div class="detail-label">End User</div>
                                     <div class="detail-value">
@@ -1067,6 +1086,7 @@ $status_display = formatStatus($item['status']);
                                     </div>
                                 </div>
                             </div>
+                            
                         </div>
                     </div>
                     
@@ -1100,7 +1120,28 @@ $status_display = formatStatus($item['status']);
                                 </div>
                                 <div class="mb-3">
                                     <div class="detail-label">Model</div>
-                                    <div class="detail-value"><?php echo $item['model'] ? htmlspecialchars($item['model']) : '<span class="text-muted">Not specified</span>'; ?></div>
+                                    <div class="detail-value"><?php 
+                                    $display_model = $item['model'] ? htmlspecialchars($item['model']) : '';
+                                    if (empty($display_model)) {
+                                        // Fallback to category-specific model if main model is empty
+                                        if ($item['category_code'] === '030') {
+                                            // Computer Equipment - use model from asset_computers table
+                                            $display_model = $item['computer_model'] ? htmlspecialchars($item['computer_model']) : '<span class="text-muted">Not specified</span>';
+                                        } elseif ($item['category_code'] === '07') {
+                                            // Vehicles
+                                            $display_model = $item['vehicle_model'] ? htmlspecialchars($item['vehicle_model']) : '<span class="text-muted">Not specified</span>';
+                                        } elseif ($item['category_code'] === '04') {
+                                            // Machinery & Equipment
+                                            $display_model = $item['model_number'] ? htmlspecialchars($item['model_number']) : '<span class="text-muted">Not specified</span>';
+                                        } elseif ($item['category_code'] === '05') {
+                                            // Office Equipment
+                                            $display_model = $item['office_model'] ? htmlspecialchars($item['office_model']) : '<span class="text-muted">Not specified</span>';
+                                        } else {
+                                            $display_model = '<span class="text-muted">Not specified</span>';
+                                        }
+                                    }
+                                    echo $display_model;
+                                    ?></div>
                                 </div>
                             </div>
                         </div>
@@ -1536,6 +1577,14 @@ $status_display = formatStatus($item['status']);
                             <i class="bi bi-qr-code-scan fs-1 text-muted"></i>
                         <?php endif; ?>
                     </div>
+                    <a href="print_qrcode.php?id=<?php echo $item['id']; ?>" 
+                       target="_blank"
+                       class="btn btn-outline-primary btn-sm"
+                       style="text-decoration: none; display: inline-flex; align-items: center; gap: 5px;"
+                       title="Print QR Code">
+                        <i class="bi bi-printer"></i>
+                        Print
+                    </a>
                     <p class="mt-2 mb-0 text-muted">Property No: <?php echo $item['property_no'] ? htmlspecialchars($item['property_no']) : 'Not assigned'; ?></p>
                 </div>
                 

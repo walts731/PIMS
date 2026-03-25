@@ -804,7 +804,7 @@ try {
                                                 $all_subcategories_result = $conn->query("SELECT sc.id, sc.sub_category_code, sc.sub_category_name, ac.category_code, ac.id as category_id FROM asset_sub_categories sc JOIN asset_categories ac ON sc.asset_categories_id = ac.id WHERE sc.status = 'active' ORDER BY ac.category_code, sc.sub_category_code");
                                                 if ($all_subcategories_result) {
                                                     while ($subcategory = $all_subcategories_result->fetch_assoc()) {
-                                                        echo '<option value="' . $subcategory['id'] . '" data-category="' . htmlspecialchars($subcategory['category_code']) . '" data-category-id="' . $subcategory['category_id'] . '">' . htmlspecialchars($subcategory['sub_category_name']) . '</option>';
+                                                        echo '<option value="' . $subcategory['id'] . '" data-category="' . htmlspecialchars($subcategory['category_code']) . '" data-category-id="' . $subcategory['category_id'] . '" data-subcategory-code="' . htmlspecialchars($subcategory['sub_category_code']) . '">' . htmlspecialchars($subcategory['sub_category_code'] . ' - ' . $subcategory['sub_category_name']) . '</option>';
                                                     }
                                                 }
                                                 ?>
@@ -985,12 +985,22 @@ try {
                     const categoryOption = categorySelect.options[categorySelect.selectedIndex];
                     const categoryCode = categoryOption ? categoryOption.getAttribute('data-category-code') : '000';
                     
-                    // Get subcategory code
+                    // Get subcategory code - FIXED: Extract actual subcategory code
                     let subcategoryCode = '00';
                     if (subcategorySelect.value) {
                         const subcategoryOption = subcategorySelect.options[subcategorySelect.selectedIndex];
-                        // For now, we'll use a simple approach - get subcategory from data attributes if available
-                        subcategoryCode = '01'; // Default
+                        // Try to get subcategory code from data-subcategory-code attribute first
+                        subcategoryCode = subcategoryOption ? subcategoryOption.getAttribute('data-subcategory-code') || '00' : '00';
+                        
+                        // If no data-subcategory-code attribute, try to extract from option text
+                        if (!subcategoryCode || subcategoryCode === '00') {
+                            const optionText = subcategoryOption ? subcategoryOption.textContent : '';
+                            // Extract code from text like "01 - LAPTOP" or "LAPTOP (01)"
+                            const codeMatch = optionText.match(/^(\d{2})\s*-\s*|\((\d{2})\)/);
+                            if (codeMatch) {
+                                subcategoryCode = codeMatch[1] || codeMatch[2] || '00';
+                            }
+                        }
                     }
                     
                     // Get office code
@@ -1011,6 +1021,9 @@ try {
                     
                     // Set the property numbers in the field
                     propertyNumbersField.value = propertyNumbers.join('\n');
+                    
+                    console.log('Generated property numbers:', propertyNumbers);
+                    console.log('Used subcategory code:', subcategoryCode);
                     
                     return true;
                 } catch (error) {
