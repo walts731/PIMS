@@ -1,26 +1,8 @@
 <?php
 // Subcategory-specific fields configuration
 $subcategory_fields = [
-    'COMPUTER DESKTOP' => [
-        'monitor_name' => ['label' => 'Monitor Name', 'type' => 'text', 'required' => false],
-        'monitor_model' => ['label' => 'Monitor Model', 'type' => 'text', 'required' => false],
-        'monitor_serial_number' => ['label' => 'Monitor Serial Number', 'type' => 'text', 'required' => false],
-        'monitor_status' => ['label' => 'Monitor Status', 'type' => 'select', 'required' => false, 'options' => [
-            ['value' => 'serviceable', 'text' => 'Serviceable'],
-            ['value' => 'unserviceable', 'text' => 'Unserviceable'],
-            ['value' => 'red_tagged', 'text' => 'Red Tagged'],
-            ['value' => 'no_tag', 'text' => 'No Tag']
-        ]],
-        'ups_name' => ['label' => 'UPS Name', 'type' => 'text', 'required' => false],
-        'ups_model' => ['label' => 'UPS Model', 'type' => 'text', 'required' => false],
-        'ups_serial_number' => ['label' => 'UPS Serial Number', 'type' => 'text', 'required' => false],
-        'ups_status' => ['label' => 'UPS Status', 'type' => 'select', 'required' => false, 'options' => [
-            ['value' => 'serviceable', 'text' => 'Serviceable'],
-            ['value' => 'unserviceable', 'text' => 'Unserviceable'],
-            ['value' => 'red_tagged', 'text' => 'Red Tagged'],
-            ['value' => 'no_tag', 'text' => 'No Tag']
-        ]]
-    ],
+    // Note: COMPUTER DESKTOP now uses the general peripherals system
+    // Peripherals can be added dynamically for any asset type
     'LAPTOP' => [
         // Basic Information
         'model' => ['label' => 'Model', 'type' => 'text', 'required' => true],

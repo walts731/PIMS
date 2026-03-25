@@ -401,6 +401,63 @@ require_once 'includes/subcategory_fields.php';
                 <!-- Subcategory-specific fields will be loaded here -->
                 <div id="subcategorySpecificFields"></div>
                 
+                <!-- Peripherals Section -->
+                <div class="detail-card mt-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="mb-0"><i class="bi bi-pc-display"></i> Peripherals</h6>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="addPeripheral()">
+                            <i class="bi bi-plus-circle"></i> Add Peripheral
+                        </button>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered" id="peripheralsTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 25%;">Name *</th>
+                                    <th style="width: 20%;">Model</th>
+                                    <th style="width: 20%;">Serial Number</th>
+                                    <th style="width: 20%;">Status</th>
+                                    <th style="width: 15%;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <input type="text" class="form-control form-control-sm" name="peripheral_name[]" placeholder="e.g., Monitor, Keyboard" required>
+                                    </td>
+                                    <td>
+                                        <input type="text" class="form-control form-control-sm" name="peripheral_model[]" placeholder="Model number">
+                                    </td>
+                                    <td>
+                                        <input type="text" class="form-control form-control-sm" name="peripheral_serial_number[]" placeholder="Serial number">
+                                    </td>
+                                    <td>
+                                        <select class="form-select form-select-sm" name="peripheral_status[]">
+                                            <option value="serviceable" selected>Serviceable</option>
+                                            <option value="unserviceable">Unserviceable</option>
+                                            <option value="red_tagged">Red Tagged</option>
+                                            <option value="no_tag">No Tag</option>
+                                            <option value="disposed">Disposed</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="removePeripheral(this)" title="Remove">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <small class="text-muted">
+                        <i class="bi bi-info-circle"></i> 
+                        Add peripherals attached to this asset (monitors, keyboards, mice, etc.). 
+                        At least one peripheral name is required if you add peripherals.
+                    </small>
+                </div>
+                
                 <div class="row">
                     <div class="col-md-12">
                         <div class="mb-3">
@@ -1226,6 +1283,120 @@ require_once 'includes/subcategory_fields.php';
                 // Auto-fill subcategory for existing property number (this is already handled above)
                 console.log('Property number exists, auto-fill already handled in initialization');
             }
+        });
+        
+        // Peripherals Management Functions
+        function addPeripheral() {
+            const table = document.getElementById('peripheralsTable');
+            const tbody = table.getElementsByTagName('tbody')[0];
+            
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `
+                <td>
+                    <input type="text" class="form-control form-control-sm" name="peripheral_name[]" placeholder="e.g., Monitor, Keyboard" required>
+                </td>
+                <td>
+                    <input type="text" class="form-control form-control-sm" name="peripheral_model[]" placeholder="Model number">
+                </td>
+                <td>
+                    <input type="text" class="form-control form-control-sm" name="peripheral_serial_number[]" placeholder="Serial number">
+                </td>
+                <td>
+                    <select class="form-select form-select-sm" name="peripheral_status[]">
+                        <option value="serviceable" selected>Serviceable</option>
+                        <option value="unserviceable">Unserviceable</option>
+                        <option value="red_tagged">Red Tagged</option>
+                        <option value="no_tag">No Tag</option>
+                        <option value="disposed">Disposed</option>
+                    </select>
+                </td>
+                <td>
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removePeripheral(this)" title="Remove">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            `;
+            
+            tbody.appendChild(newRow);
+            
+            // Scroll to the new row
+            newRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // Focus on the name field of the new row
+            const nameInput = newRow.querySelector('input[name="peripheral_name[]"]');
+            if (nameInput) {
+                nameInput.focus();
+            }
+        }
+        
+        function removePeripheral(button) {
+            const row = button.closest('tr');
+            const tbody = row.parentElement;
+            
+            // Don't remove the last row
+            if (tbody.children.length > 1) {
+                row.remove();
+            } else {
+                // Clear the last row instead of removing it
+                const inputs = row.querySelectorAll('input, select');
+                inputs.forEach(input => {
+                    if (input.type === 'select') {
+                        input.selectedIndex = 0; // Reset to first option
+                    } else {
+                        input.value = '';
+                    }
+                });
+                
+                // Show a subtle message
+                const nameInput = row.querySelector('input[name="peripheral_name[]"]');
+                if (nameInput) {
+                    nameInput.style.borderColor = '#ffc107';
+                    nameInput.placeholder = 'Cannot remove last row - clear fields instead';
+                    setTimeout(() => {
+                        nameInput.style.borderColor = '';
+                        nameInput.placeholder = 'e.g., Monitor, Keyboard';
+                    }, 2000);
+                }
+            }
+        }
+        
+        // Validate peripherals before form submission
+        document.getElementById('tagForm').addEventListener('submit', function(e) {
+            const peripheralNames = document.querySelectorAll('input[name="peripheral_name[]"]');
+            const peripheralModels = document.querySelectorAll('input[name="peripheral_model[]"]');
+            const peripheralSerials = document.querySelectorAll('input[name="peripheral_serial_number[]"]');
+            const peripheralStatuses = document.querySelectorAll('select[name="peripheral_status[]"]');
+            
+            // Check if any peripheral has been filled out
+            let hasAnyPeripheralData = false;
+            let validPeripherals = true;
+            
+            for (let i = 0; i < peripheralNames.length; i++) {
+                const name = peripheralNames[i].value.trim();
+                const model = peripheralModels[i].value.trim();
+                const serial = peripheralSerials[i].value.trim();
+                
+                if (name || model || serial) {
+                    hasAnyPeripheralData = true;
+                    
+                    // If name is empty but other fields are filled, it's invalid
+                    if (!name) {
+                        peripheralNames[i].style.borderColor = '#dc3545';
+                        validPeripherals = false;
+                    } else {
+                        peripheralNames[i].style.borderColor = '';
+                    }
+                }
+            }
+            
+            if (!validPeripherals) {
+                e.preventDefault();
+                alert('Please fill in the peripheral name for all entries that have other fields filled out.');
+                return false;
+            }
+            
+            // If no peripherals are added, that's fine (peripherals are optional)
+            return true;
         });
     </script>
 </body>
