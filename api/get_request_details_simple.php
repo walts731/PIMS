@@ -6,6 +6,10 @@ session_start();
 require_once '../config.php';
 require_once '../includes/system_functions.php';
 
+// Debug: Log session state
+error_log("Session state in API: " . print_r($_SESSION, true));
+error_log("Request ID: " . ($_GET['request_id'] ?? 'not set'));
+
 // Disable error display to prevent HTML from corrupting JSON output
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
@@ -13,17 +17,19 @@ ini_set('log_errors', 1);
 
 // Check if user is logged in
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+    error_log("API: User not logged in");
     http_response_code(401);
     ob_clean();
-    echo json_encode(['error' => 'Unauthorized']);
+    echo json_encode(['error' => 'Unauthorized', 'debug' => 'User not logged in']);
     exit();
 }
 
 // Check if user has correct role
 if ($_SESSION['role'] !== 'office_admin') {
+    error_log("API: User role not office_admin: " . ($_SESSION['role'] ?? 'no role'));
     http_response_code(403);
     ob_clean();
-    echo json_encode(['error' => 'Forbidden']);
+    echo json_encode(['error' => 'Forbidden', 'debug' => 'Role: ' . ($_SESSION['role'] ?? 'no role')]);
     exit();
 }
 
@@ -31,31 +37,45 @@ if ($_SESSION['role'] !== 'office_admin') {
 $request_id = $_GET['request_id'] ?? 0;
 
 if (empty($request_id) || !is_numeric($request_id)) {
+    error_log("API: Invalid request ID: " . $request_id);
     http_response_code(400);
     ob_clean();
-    echo json_encode(['error' => 'Invalid request ID']);
+    echo json_encode(['error' => 'Invalid request ID', 'debug' => 'Request ID: ' . $request_id]);
     exit();
 }
 
-$office_id = $_SESSION['office_id'];
+$office_id = $_SESSION['office_id'] ?? 'not set';
+error_log("API: Office ID: " . $office_id);
 
 try {
     // Start with a basic query and build it up
     $query = "SELECT br.* FROM borrow_requests br WHERE br.id = ? AND (br.requested_by_office = ? OR br.requested_to_office = ?)";
     
+    error_log("API: Query: " . $query);
+    error_log("API: Params - request_id: $request_id, office_id: $office_id");
+    
     $stmt = $conn->prepare($query);
+    if (!$stmt) {
+        throw new Exception("Failed to prepare statement: " . $conn->error);
+    }
+    
     $stmt->bind_param("iii", $request_id, $office_id, $office_id);
-    $stmt->execute();
+    if (!$stmt->execute()) {
+        throw new Exception("Failed to execute statement: " . $stmt->error);
+    }
+    
     $result = $stmt->get_result();
     
     if ($result->num_rows === 0) {
+        error_log("API: No request found for ID: $request_id, Office: $office_id");
         http_response_code(404);
         ob_clean();
-        echo json_encode(['error' => 'Request not found']);
+        echo json_encode(['error' => 'Request not found', 'debug' => "No request found for ID: $request_id, Office: $office_id"]);
         exit();
     }
     
     $request_data = $result->fetch_assoc();
+    error_log("API: Found request data: " . print_r($request_data, true));
     
     // Now try to get additional information with error handling
     $requester_info = ['name' => 'Unknown', 'email' => 'Unknown', 'office' => ['name' => 'Unknown', 'code' => 'Unknown']];
@@ -337,11 +357,12 @@ try {
     
 } catch (Exception $e) {
     error_log("Error fetching request details: " . $e->getMessage());
+    error_log("Exception trace: " . $e->getTraceAsString());
     http_response_code(500);
     
     // Clean any output buffer to ensure clean JSON
     ob_clean();
-    echo json_encode(['error' => 'Internal server error: ' . $e->getMessage()]);
+    echo json_encode(['error' => 'Internal server error: ' . $e->getMessage(), 'debug' => 'Exception caught']);
 }
 
 function getStatusDescription($status) {

@@ -1488,6 +1488,9 @@ $page_title = 'Requests Management';
                             <i class="bi bi-inbox"></i>
                             <h5>No Requests Found</h5>
                             <p>No requests match the current filter criteria.</p>
+                            <?php if (empty($office)): ?>
+                                <p>Please select an office to view requests.</p>
+                            <?php endif; ?>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -2003,6 +2006,16 @@ function refreshRequests() {
 }
 
 // ---------------------------------------------------------------------------
+// Create test request for empty offices
+// ---------------------------------------------------------------------------
+
+function createTestRequest() {
+    if (confirm('Create sample requests for testing? This will add 3 sample borrow requests for your office.')) {
+        window.location.href = 'create_sample_requests.php';
+    }
+}
+
+// ---------------------------------------------------------------------------
 // View details
 // ---------------------------------------------------------------------------
 
@@ -2159,10 +2172,21 @@ function populateDetailsModal(data) {
                         ${data.asset ? `
                         <div class="row mb-2"><div class="col-sm-4"><strong>Description:</strong></div><div class="col-sm-8">${data.asset.description || 'N/A'}</div></div>
                         <div class="row mb-2"><div class="col-sm-4"><strong>Property No:</strong></div><div class="col-sm-8">${data.asset.code || 'N/A'}</div></div>
+                        <div class="row mb-2"><div class="col-sm-4"><strong>Inventory Tag:</strong></div><div class="col-sm-8">${data.asset.inventory_tag || 'N/A'}</div></div>
                         <div class="row mb-2"><div class="col-sm-4"><strong>Category:</strong></div><div class="col-sm-8">${data.asset.category.name || 'Uncategorized'}</div></div>
+                        <div class="row mb-2"><div class="col-sm-4"><strong>Model:</strong></div><div class="col-sm-8">${data.asset.model || 'N/A'}</div></div>
+                        <div class="row mb-2"><div class="col-sm-4"><strong>Serial Number:</strong></div><div class="col-sm-8">${data.asset.serial_number || 'N/A'}</div></div>
+                        <div class="row mb-2"><div class="col-sm-4"><strong>Unit:</strong></div><div class="col-sm-8">${data.asset.unit || 'N/A'}</div></div>
                         <div class="row mb-2"><div class="col-sm-4"><strong>Current Status:</strong></div>
                             <div class="col-sm-8"><span class="badge bg-${getStatusColor(data.asset.status || 'unknown')}">${ucfirst((data.asset.status || 'unknown').replace('_',' '))}</span></div></div>
+                        <div class="row mb-2"><div class="col-sm-4"><strong>Value:</strong></div><div class="col-sm-8">₱${parseFloat(data.asset.unit_value || 0).toLocaleString('en-PH', {minimumFractionDigits: 2})}</div></div>
+                        <div class="row mb-2"><div class="col-sm-4"><strong>Date Acquired:</strong></div><div class="col-sm-8">${data.asset.date_acquired ? new Date(data.asset.date_acquired).toLocaleDateString() : 'N/A'}</div></div>
+                        <div class="row mb-2"><div class="col-sm-4"><strong>Assigned Office:</strong></div><div class="col-sm-8">${data.asset.office_name || 'N/A'}</div></div>
+                        <div class="row mb-2"><div class="col-sm-4"><strong>Current User:</strong></div><div class="col-sm-8">${data.asset.end_user || 'Unassigned'}</div></div>
+                        <div class="row mb-2"><div class="col-sm-4"><strong>Employee ID:</strong></div><div class="col-sm-8">${data.asset.employee_id || 'N/A'}</div></div>
+                        <div class="row mb-2"><div class="col-sm-4"><strong>Last Counted:</strong></div><div class="col-sm-8">${data.asset.date_counted ? new Date(data.asset.date_counted).toLocaleDateString() : 'N/A'}</div></div>
                         <div class="row mb-2"><div class="col-sm-4"><strong>Requested Qty:</strong></div><div class="col-sm-8">${data.request.quantity_requested} unit(s)</div></div>
+                        ${data.asset.image ? `<div class="row mb-2"><div class="col-sm-4"><strong>Asset Image:</strong></div><div class="col-sm-8"><button type="button" class="btn btn-sm btn-outline-primary" onclick="viewAssetImage('${data.asset.image}')"><i class="bi bi-image"></i> View Image</button></div></div>` : ''}
                         ` : '<div class="alert alert-warning"><i class="bi bi-exclamation-triangle"></i> Asset information not available</div>'}
                     </div>
                 </div>
@@ -2988,6 +3012,122 @@ document.addEventListener('DOMContentLoaded', function () {
 
     console.log('DEBUG: Init complete');
 });
+
+// ---------------------------------------------------------------------------
+// Asset Image Viewer
+// ---------------------------------------------------------------------------
+
+function viewAssetImage(imageData) {
+    try {
+        let imageUrls = [];
+        
+        // Parse the image data (it might be a JSON array string or a single image path)
+        if (typeof imageData === 'string') {
+            try {
+                imageUrls = JSON.parse(imageData);
+                if (!Array.isArray(imageUrls)) {
+                    imageUrls = [imageData];
+                }
+            } catch (e) {
+                // If it's not valid JSON, treat it as a single image path
+                imageUrls = [imageData];
+            }
+        } else if (Array.isArray(imageData)) {
+            imageUrls = imageData;
+        } else {
+            imageUrls = [imageData];
+        }
+        
+        if (imageUrls.length === 0) {
+            alert('No images available for this asset');
+            return;
+        }
+        
+        // Create modal HTML
+        let modalHtml = `
+            <div class="modal fade" id="assetImageModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title"><i class="bi bi-image"></i> Asset Images</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body text-center">
+                            <div id="imageCarousel" class="carousel slide" data-bs-ride="carousel">
+                                <div class="carousel-inner">
+        `;
+        
+        // Add images to carousel
+        imageUrls.forEach((imageUrl, index) => {
+            const fullPath = imageUrl.startsWith('http') ? imageUrl : `../uploads/asset_images/${imageUrl}`;
+            const isActive = index === 0 ? 'active' : '';
+            
+            modalHtml += `
+                <div class="carousel-item ${isActive}">
+                    <img src="${fullPath}" class="img-fluid rounded" style="max-height: 500px; object-fit: contain;" 
+                         onerror="this.src='../img/no-image.png'; this.onerror=null;" 
+                         alt="Asset Image ${index + 1}">
+                    <div class="carousel-caption">
+                        <h6>Image ${index + 1} of ${imageUrls.length}</h6>
+                    </div>
+                </div>
+            `;
+        });
+        
+        // Add carousel controls if multiple images
+        if (imageUrls.length > 1) {
+            modalHtml += `
+                                </div>
+                                <button class="carousel-control-prev" type="button" data-bs-target="#imageCarousel" data-bs-slide="prev">
+                                    <span class="carousel-control-prev-icon"></span>
+                                </button>
+                                <button class="carousel-control-next" type="button" data-bs-target="#imageCarousel" data-bs-slide="next">
+                                    <span class="carousel-control-next-icon"></span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            `;
+        } else {
+            modalHtml += `
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            `;
+        }
+        
+        // Remove existing modal if present
+        const existingModal = document.getElementById('assetImageModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        
+        // Add modal to page and show it
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        const modal = new bootstrap.Modal(document.getElementById('assetImageModal'));
+        modal.show();
+        
+        // Clean up modal after it's hidden
+        document.getElementById('assetImageModal').addEventListener('hidden.bs.modal', function() {
+            this.remove();
+        });
+        
+    } catch (error) {
+        console.error('Error viewing asset image:', error);
+        alert('Error loading asset image. Please try again.');
+    }
+}
 
     </script>
     
