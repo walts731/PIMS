@@ -24,12 +24,17 @@ $category_id = intval($_POST['category_id']);
 $subcategory_id = intval($_POST['subcategory_id'] ?? 0);
 $office_name = trim($_POST['office_name'] ?? '');
 $property_no = trim($_POST['property_no']);
+$ics_par_no = trim($_POST['ics_par_no'] ?? '');
 $inventory_tag = trim($_POST['inventory_tag'] ?? '');
 $person_accountable = intval($_POST['person_accountable']);
 $end_user = trim($_POST['end_user'] ?? '');
 $date_counted = trim($_POST['date_counted']);
 $tag_format_id = intval($_POST['tag_format_id']);
 $current_number = intval($_POST['current_number']);
+
+// Collect model and serial number from form (available for all asset types)
+$model = trim($_POST['model'] ?? '');
+$serial_number = trim($_POST['serial_number'] ?? '');
 
 // Debug: Log the form data we received
 logSystemAction($_SESSION['user_id'], 'Tag Form Data Received', 'forms', "Item ID: {$item_id}, End User: '{$end_user}', Person Accountable: {$person_accountable}");
@@ -213,8 +218,11 @@ try {
     
     // Update asset item with tag information using traditional SQL
     $property_no_safe = mysqli_real_escape_string($conn, $property_no);
+    $ics_par_no_safe = !empty($ics_par_no) ? "'" . mysqli_real_escape_string($conn, $ics_par_no) . "'" : 'NULL';
     $inventory_tag_safe = !empty($inventory_tag) ? "'" . mysqli_real_escape_string($conn, $inventory_tag) . "'" : 'NULL';
     $date_counted_safe = mysqli_real_escape_string($conn, $date_counted);
+    $model_safe = !empty($model) ? "'" . mysqli_real_escape_string($conn, $model) . "'" : 'NULL';
+    $serial_number_safe = !empty($serial_number) ? "'" . mysqli_real_escape_string($conn, $serial_number) . "'" : 'NULL';
     // Convert image filenames array to JSON for storage
     $image_filename_json = !empty($all_images) ? json_encode($all_images) : 'NULL';
     $image_filename_safe = mysqli_real_escape_string($conn, $image_filename_json);
@@ -223,8 +231,11 @@ try {
     
     $update_sql = "UPDATE asset_items SET 
                    property_no = '$property_no_safe', 
+                   ics_par_no = $ics_par_no_safe,
                    inventory_tag = $inventory_tag_safe, 
                    date_counted = '$date_counted_safe',
+                   model = $model_safe,
+                   serial_number = $serial_number_safe,
                    image = '$image_filename_safe',
                    employee_id = $person_accountable, 
                    asset_category_id = $category_id,
@@ -237,7 +248,7 @@ try {
     
     // Debug: Log the SQL and values before execution
     logSystemAction($_SESSION['user_id'], 'Tag Update SQL Debug', 'forms', "SQL: $update_sql");
-    logSystemAction($_SESSION['user_id'], 'Tag Update Values Debug', 'forms', "Values: property_no='{$property_no}', inventory_tag='{$inventory_tag}', date_counted='{$date_counted}', image='{$image_filename}', employee_id={$person_accountable}, asset_category_id={$category_id}, asset_subcategory_id={$subcategory_id}, end_user='{$end_user}' (length: " . strlen($end_user) . "), item_id={$item_id}");
+    logSystemAction($_SESSION['user_id'], 'Tag Update Values Debug', 'forms', "Values: property_no='{$property_no}', ics_par_no='{$ics_par_no}', inventory_tag='{$inventory_tag}', date_counted='{$date_counted}', model='{$model}', serial_number='{$serial_number}', image='{$image_filename}', employee_id={$person_accountable}, asset_category_id={$category_id}, asset_subcategory_id={$subcategory_id}, end_user='{$end_user}' (length: " . strlen($end_user) . "), item_id={$item_id}");
     
     // Execute the traditional SQL
     $update_result = mysqli_query($conn, $update_sql);

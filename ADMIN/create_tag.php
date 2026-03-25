@@ -189,8 +189,6 @@ $category_fields = [
         'graphics' => ['label' => 'Graphics Card', 'type' => 'text', 'required' => false],
         'operating_system' => ['label' => 'Operating System', 'type' => 'text', 'required' => true],
         'brand' => ['label' => 'Brand', 'type' => 'text', 'required' => true],
-        'model' => ['label' => 'Model', 'type' => 'text', 'required' => true],
-        'serial_number' => ['label' => 'Serial Number', 'type' => 'text', 'required' => true],
         'warranty' => ['label' => 'Warranty Period', 'type' => 'text', 'required' => false]
     ],
     '06' => [
@@ -294,21 +292,6 @@ $category_fields = [
                         <div class="detail-label">Office</div>
                         <div class="detail-value"><?php echo $item['office_name'] ? htmlspecialchars($item['office_name']) : 'Not assigned'; ?></div>
                     </div>
-                    <div class="mb-3">
-                        <div class="detail-label">ICS/PAR No</div>
-                        <div class="detail-value">
-                            <div class="row">
-                                <div class="col-md-6 mb-2">
-                                    <label for="ics_no" class="form-label small">ICS No:</label>
-                                    <input type="text" class="form-control form-control-sm" id="ics_no" name="ics_no" value="<?php echo htmlspecialchars($item['ics_no'] ?? ''); ?>" placeholder="Enter ICS number">
-                                </div>
-                                <div class="col-md-6 mb-2">
-                                    <label for="par_no" class="form-label small">PAR No:</label>
-                                    <input type="text" class="form-control form-control-sm" id="par_no" name="par_no" value="<?php echo htmlspecialchars($item['par_no'] ?? ''); ?>" placeholder="Enter PAR number">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -382,13 +365,21 @@ $category_fields = [
                 </div>
                 
                 <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <div class="mb-3">
                             <label for="property_no" class="form-label">Property Number <span class="required">*</span></label>
                             <input type="text" class="form-control" id="property_no" name="property_no" value="<?php echo htmlspecialchars($item['property_no'] ?? ''); ?>" required>
+                            <small class="form-text text-muted">Auto-generated based on category and subcategory</small>
                         </div>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="ics_par_no" class="form-label">ICS/PAR No</label>
+                            <input type="text" class="form-control" id="ics_par_no" name="ics_par_no" value="<?php echo htmlspecialchars($item['ics_par_no'] ?? ''); ?>" placeholder="Enter ICS or PAR number">
+                            <small class="form-text text-muted">Inventory Custodian Slip or Property Acknowledgment Receipt number</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
                         <div class="mb-3">
                             <label for="end_user" class="form-label">End User <span class="required">*</span></label>
                             <input type="text" class="form-control" id="end_user" name="end_user" placeholder="Enter end user name" required>
@@ -414,6 +405,24 @@ $category_fields = [
                         <div class="mb-3">
                             <label for="date_counted" class="form-label">Date Counted <span class="required">*</span></label>
                             <input type="date" class="form-control" id="date_counted" name="date_counted" value="<?php echo date('Y-m-d'); ?>" required>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- General Asset Information -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="model" class="form-label">Model</label>
+                            <input type="text" class="form-control" id="model" name="model" value="<?php echo htmlspecialchars($item['model'] ?? ''); ?>" placeholder="Enter asset model">
+                            <small class="form-text text-muted">Asset model number or designation</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="serial_number" class="form-label">Serial Number</label>
+                            <input type="text" class="form-control" id="serial_number" name="serial_number" value="<?php echo htmlspecialchars($item['serial_number'] ?? ''); ?>" placeholder="Enter serial number">
+                            <small class="form-text text-muted">Unique serial number for the asset</small>
                         </div>
                     </div>
                 </div>
