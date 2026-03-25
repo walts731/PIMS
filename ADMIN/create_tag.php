@@ -223,7 +223,7 @@ $category_fields = [
 <body>
     <?php
     // Set page title for topbar
-    $page_title = 'Create Tag - ' . htmlspecialchars($item['description']);
+    $page_title = 'Create Asset Tag';
     ?>
     <!-- Main Content Wrapper -->
     <div class="main-wrapper" id="mainWrapper">
@@ -240,7 +240,6 @@ $category_fields = [
                     <h1 class="mb-2">
                         <i class="bi bi-tag"></i> Create Asset Tag
                     </h1>
-                    <p class="text-muted mb-0">Creating tag for: <?php echo htmlspecialchars($item['description']); ?></p>
                 </div>
                 <div class="col-md-4 text-md-end">
                     <div class="btn-group" role="group">
@@ -290,16 +289,16 @@ $category_fields = [
                     <div class="mb-3">
                         <div class="detail-label">ICS/PAR No</div>
                         <div class="detail-value">
-                            <?php 
-                            $reference = '';
-                            if ($item['ics_no']) {
-                                $reference = 'ICS No: ' . htmlspecialchars($item['ics_no']);
-                            }
-                            if ($item['par_no']) {
-                                $reference = $reference ? $reference . ' / PAR No: ' . htmlspecialchars($item['par_no']) : 'PAR No: ' . htmlspecialchars($item['par_no']);
-                            }
-                            echo $reference ? $reference : 'Not assigned';
-                            ?>
+                            <div class="row">
+                                <div class="col-md-6 mb-2">
+                                    <label for="ics_no" class="form-label small">ICS No:</label>
+                                    <input type="text" class="form-control form-control-sm" id="ics_no" name="ics_no" value="<?php echo htmlspecialchars($item['ics_no'] ?? ''); ?>" placeholder="Enter ICS number">
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label for="par_no" class="form-label small">PAR No:</label>
+                                    <input type="text" class="form-control form-control-sm" id="par_no" name="par_no" value="<?php echo htmlspecialchars($item['par_no'] ?? ''); ?>" placeholder="Enter PAR number">
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
