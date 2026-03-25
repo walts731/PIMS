@@ -909,28 +909,33 @@ $unread_count = $unread_result->fetch_assoc()['count'];
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-            const notificationCards = document.querySelectorAll('.notification-card');
-            const notificationIds = Array.from(notificationCards).map(card => card.dataset.id);
-            
-            // Delete all notifications
-            const deletePromises = notificationIds.map(id => 
-                fetch('notifications_handler.php?action=delete', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: `notification_id=${id}`
-                })
-            );
-            
-            Promise.all(deletePromises)
-                .then(() => {
-                    updateNotificationBadge();
-                    location.reload();
-                })
-                .catch(error => {
-                    console.error('Error clearing notifications:', error);
-                });
+                    const notificationCards = document.querySelectorAll('.notification-card');
+                    const notificationIds = Array.from(notificationCards).map(card => card.dataset.id);
+                    
+                    // Delete all notifications
+                    const deletePromises = notificationIds.map(id => 
+                        fetch('notifications_handler.php?action=delete', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                            },
+                            body: `notification_id=${id}`
+                        })
+                    );
+                    
+                    Promise.all(deletePromises)
+                        .then(() => {
+                            updateNotificationBadge();
+                            location.reload();
+                        })
+                        .catch(error => {
+                            console.error('Error clearing notifications:', error);
+                        });
+                }
+            })
+            .catch(error => {
+                console.error('Error clearing all notifications:', error);
+            });
         }
         
         function quickApproveRequest(requestId) {
