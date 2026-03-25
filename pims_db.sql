@@ -3,15 +3,14 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 24, 2026 at 02:25 AM
--- Server version: 10.6.15-MariaDB
+-- Generation Time: Mar 25, 2026 at 03:34 AM
+-- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
+SET FOREIGN_KEY_CHECKS=0;
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
 SET time_zone = "+00:00";
-
-
 
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
@@ -48,7 +47,10 @@ CREATE TABLE `assets` (
 
 INSERT INTO `assets` (`id`, `asset_categories_id`, `asset_subcategory_id`, `description`, `unit`, `quantity`, `unit_cost`, `office_id`, `created_at`, `updated_at`) VALUES
 (1, 2, 3, 'ASUS Vivobook 16', 'units', 1, 42995.00, 4, '2026-03-23 12:42:03', '2026-03-23 12:56:45'),
-(2, 2, NULL, 'HP Laptop 15s', 'units', 1, 31200.00, 5, '2026-03-23 13:05:52', '2026-03-23 13:05:52');
+(2, 2, NULL, 'HP Laptop 15s', 'units', 1, 31200.00, 5, '2026-03-23 13:05:52', '2026-03-24 02:44:48'),
+(3, 2, NULL, 'Lenovo ThinkPad E14', 'units', 2, 54500.00, 12, '2026-03-24 03:34:58', '2026-03-24 07:16:04'),
+(4, 2, 11, 'Epson EcoTank L3250', 'units', 3, 10750.00, 4, '2026-03-24 07:37:18', '2026-03-24 07:37:18'),
+(5, 2, NULL, 'Samsung 55\" UHD TV', 'units', 2, 28500.00, 4, '2026-03-24 07:44:35', '2026-03-24 07:51:50');
 
 -- --------------------------------------------------------
 
@@ -268,6 +270,8 @@ CREATE TABLE `asset_items` (
   `ics_id` int(11) DEFAULT NULL,
   `par_id` int(11) DEFAULT NULL,
   `description` varchar(255) NOT NULL,
+  `model` varchar(100) DEFAULT NULL,
+  `serial_number` varchar(50) DEFAULT NULL,
   `unit` varchar(50) DEFAULT NULL,
   `property_no` varchar(100) DEFAULT NULL,
   `inventory_tag` varchar(100) DEFAULT NULL,
@@ -289,9 +293,16 @@ CREATE TABLE `asset_items` (
 -- Dumping data for table `asset_items`
 --
 
-INSERT INTO `asset_items` (`id`, `asset_id`, `asset_subcategory_id`, `asset_category_id`, `employee_id`, `end_user`, `category_id`, `ics_id`, `par_id`, `description`, `unit`, `property_no`, `inventory_tag`, `date_counted`, `image`, `qr_code`, `status`, `disposal_reason`, `disposal_date`, `value`, `acquisition_date`, `office_id`, `office_name`, `created_at`, `last_updated`) VALUES
-(1, 1, 3, NULL, 6, 'Elton John Moises', 2, NULL, NULL, 'ASUS Vivobook 16', NULL, '2026-04-05-030-0101-01', NULL, '2026-03-23', '[\"asset_1_0_1774270603.jpg\"]', 'qr_asset_1_1774270605.png', 'serviceable', NULL, NULL, 42995.00, '2026-02-15', 4, 'OMM', '2026-03-23 12:42:03', '2026-03-23 12:56:45'),
-(2, 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'HP Laptop 15s', NULL, '2026-04-05-030-0102-02', NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 31200.00, '2026-03-01', 5, NULL, '2026-03-23 13:05:52', '2026-03-23 13:05:52');
+INSERT INTO `asset_items` (`id`, `asset_id`, `asset_subcategory_id`, `asset_category_id`, `employee_id`, `end_user`, `category_id`, `ics_id`, `par_id`, `description`, `model`, `serial_number`, `unit`, `property_no`, `inventory_tag`, `date_counted`, `image`, `qr_code`, `status`, `disposal_reason`, `disposal_date`, `value`, `acquisition_date`, `office_id`, `office_name`, `created_at`, `last_updated`) VALUES
+(1, 1, 3, NULL, 6, 'Elton John Moises', 2, NULL, NULL, 'ASUS Vivobook 16', NULL, NULL, NULL, '2026-04-05-030-0101-01', NULL, '2026-03-23', '[\"asset_1_0_1774270603.jpg\"]', 'qr_asset_1_1774270605.png', 'serviceable', NULL, NULL, 42995.00, '2026-02-15', 4, 'OMM', '2026-03-23 12:42:03', '2026-03-23 12:56:45'),
+(2, 2, NULL, NULL, 1, 'Roberto Cruz', 2, NULL, NULL, 'HP Laptop 15s', NULL, NULL, NULL, '2026-04-05-030-0102-02', NULL, '2026-03-24', '[\"asset_2_0_1774320286.jpg\"]', 'qr_asset_2_1774320288.png', 'serviceable', NULL, NULL, 31200.00, '2026-03-01', 5, 'OVM', '2026-03-23 13:05:52', '2026-03-24 02:44:48'),
+(3, 3, NULL, NULL, 7, 'John Legend', 2, NULL, NULL, 'Lenovo ThinkPad E14', NULL, NULL, NULL, '2026-07-05-030-0103-03', NULL, '2026-03-24', '[\"asset_3_0_1774336559.jpg\"]', 'qr_asset_3_1774336564.png', 'serviceable', NULL, NULL, 54500.00, '2026-01-20', 12, 'OSB', '2026-03-24 03:34:58', '2026-03-24 07:16:04'),
+(4, 3, NULL, NULL, 7, 'Joshua Escano', 2, NULL, NULL, 'Lenovo ThinkPad E14', NULL, NULL, NULL, '2026-07-05-030-0101-03', NULL, '2026-03-24', '[\"asset_4_0_1774335556.jpg\"]', 'qr_asset_4_1774335559.png', 'serviceable', NULL, NULL, 54500.00, '2026-01-20', 12, 'OSB', '2026-03-24 03:38:56', '2026-03-24 06:59:19'),
+(5, 4, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Epson EcoTank L3250', NULL, NULL, NULL, '2026-04-05-030-0101-01', NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 10750.00, '2026-03-10', 4, NULL, '2026-03-24 07:37:18', '2026-03-24 07:37:18'),
+(6, 4, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Epson EcoTank L3250', NULL, NULL, NULL, '2026-04-05-030-0102-01', NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 10750.00, '2026-03-10', 4, NULL, '2026-03-24 07:37:18', '2026-03-24 07:37:18'),
+(7, 4, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Epson EcoTank L3250', NULL, NULL, NULL, '2026-04-05-030-0103-01', NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 10750.00, '2026-03-10', 4, NULL, '2026-03-24 07:37:18', '2026-03-24 07:37:18'),
+(8, 5, NULL, NULL, 6, 'Jake Paul', 2, NULL, NULL, 'Samsung 55\\\" UHD TV', 'BU8000', '0AS13CHX400501L', NULL, '2026-04-05-030-0701-01', NULL, '2026-03-24', '[\"asset_8_0_1774338708.jpg\"]', 'qr_asset_8_1774338710.png', 'maintenance', NULL, NULL, 28500.00, '2026-02-16', 4, 'OMM', '2026-03-24 07:44:35', '2026-03-25 01:31:52'),
+(9, 5, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Samsung 55\\\" UHD TV', NULL, NULL, NULL, '2026-04-05-030-0702-01', NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 28500.00, '2026-02-16', 4, NULL, '2026-03-24 07:44:35', '2026-03-24 07:44:35');
 
 --
 -- Triggers `asset_items`
@@ -340,7 +351,15 @@ CREATE TABLE `asset_item_history` (
 
 INSERT INTO `asset_item_history` (`id`, `item_id`, `action`, `details`, `old_value`, `new_value`, `created_by`, `created_at`) VALUES
 (1, 1, 'QR Code Generated', 'QR code generated for asset item: qr_asset_1_1774270605.png', NULL, NULL, 5, '2026-03-23 12:56:45'),
-(2, 1, 'Tag Created', 'Created tag for item ID 1: Property No: 2026-04-05-030-0101-01, Inventory Tag: , Date Counted: 2026-03-23, Category: 05-030 - ITS, Person Accountable: EMP20260001 (Walton loneza), Images: asset_1_0_1774270603.jpg', NULL, NULL, 5, '2026-03-23 12:56:45');
+(2, 1, 'Tag Created', 'Created tag for item ID 1: Property No: 2026-04-05-030-0101-01, Inventory Tag: , Date Counted: 2026-03-23, Category: 05-030 - ITS, Person Accountable: EMP20260001 (Walton loneza), Images: asset_1_0_1774270603.jpg', NULL, NULL, 5, '2026-03-23 12:56:45'),
+(4, 2, 'QR Code Generated', 'QR code generated for asset item: qr_asset_2_1774320288.png', NULL, NULL, 5, '2026-03-24 02:44:48'),
+(5, 2, 'Tag Created', 'Created tag for item ID 2: Property No: 2026-04-05-030-0102-02, Inventory Tag: , Date Counted: 2026-03-24, Category: 05-030 - ITS, Person Accountable: EMP0001 (Juan Dela Cruz), Images: asset_2_0_1774320286.jpg', NULL, NULL, 5, '2026-03-24 02:44:48'),
+(6, 4, 'QR Code Generated', 'QR code generated for asset item: qr_asset_4_1774335559.png', NULL, NULL, 5, '2026-03-24 06:59:19'),
+(7, 4, 'Tag Created', 'Created tag for item ID 4: Property No: 2026-07-05-030-0101-03, Inventory Tag: , Date Counted: 2026-03-24, Category: 05-030 - ITS, Person Accountable: EMP20260002 (Elton John Moises), Images: asset_4_0_1774335556.jpg', NULL, NULL, 5, '2026-03-24 06:59:19'),
+(8, 3, 'QR Code Generated', 'QR code generated for asset item: qr_asset_3_1774336564.png', NULL, NULL, 5, '2026-03-24 07:16:04'),
+(9, 3, 'Tag Created', 'Created tag for item ID 3: Property No: 2026-07-05-030-0103-03, Inventory Tag: , Date Counted: 2026-03-24, Category: 05-030 - ITS, Person Accountable: EMP20260002 (Elton John Moises), Images: asset_3_0_1774336559.jpg', NULL, NULL, 5, '2026-03-24 07:16:04'),
+(10, 8, 'QR Code Generated', 'QR code generated for asset item: qr_asset_8_1774338710.png', NULL, NULL, 5, '2026-03-24 07:51:50'),
+(11, 8, 'Tag Created', 'Created tag for item ID 8: Property No: 2026-04-05-030-0701-01, Inventory Tag: , Date Counted: 2026-03-24, Category: 05-030 - ITS, Person Accountable: EMP20260001 (Walton loneza), Images: asset_8_0_1774338708.jpg', NULL, NULL, 5, '2026-03-24 07:51:50');
 
 -- --------------------------------------------------------
 
@@ -669,9 +688,43 @@ CREATE TABLE `borrow_requests` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `branches`
+--
+
+CREATE TABLE `branches` (
+  `id` int(11) NOT NULL,
+  `branch_name` varchar(100) NOT NULL,
+  `branch_code` varchar(20) NOT NULL,
+  `description` text DEFAULT NULL,
+  `head_personnel` varchar(100) DEFAULT NULL,
+  `contact_number` varchar(20) DEFAULT NULL,
+  `location` text DEFAULT NULL,
+  `office_id` int(11) DEFAULT NULL,
+  `status` enum('active','inactive') NOT NULL DEFAULT 'active',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Stand-in structure for view `branch_summary`
 -- (See below for the actual view)
-
+--
+CREATE TABLE `branch_summary` (
+`id` int(11)
+,`branch_name` varchar(100)
+,`branch_code` varchar(20)
+,`description` text
+,`head_personnel` varchar(100)
+,`contact_number` varchar(20)
+,`location` text
+,`status` enum('active','inactive')
+,`office_name` varchar(100)
+,`office_code` varchar(10)
+,`created_at` timestamp
+,`updated_at` timestamp
+);
 
 -- --------------------------------------------------------
 
@@ -693,6 +746,14 @@ CREATE TABLE `consumables` (
   `for_office_id` int(11) DEFAULT NULL,
   `supplier` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `consumables`
+--
+
+INSERT INTO `consumables` (`id`, `description`, `quantity`, `units`, `unit_cost`, `reorder_level`, `unit`, `office_id`, `created_at`, `updated_at`, `for_office_id`, `supplier`) VALUES
+(1, 'bond paper A4', 35, 'reams', 250.00, 10, 'pcs', 3, '2026-03-25 01:40:07', '2026-03-25 02:31:58', 4, 'J&F suppliers'),
+(2, 'bond paper A4', 15, 'pieces', 250.00, 10, 'pcs', 4, '2026-03-25 02:31:58', '2026-03-25 02:31:58', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -716,6 +777,13 @@ CREATE TABLE `consumable_add_history` (
   `notes` text DEFAULT NULL,
   `supplier` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `consumable_add_history`
+--
+
+INSERT INTO `consumable_add_history` (`id`, `consumable_id`, `description`, `quantity_added`, `units`, `unit_cost`, `total_value`, `office_id`, `to_office_id`, `added_by`, `add_date`, `source`, `notes`, `supplier`) VALUES
+(1, 1, 'bond paper A4', 50, 'reams', 250.00, 12500.00, 3, 4, 5, '2026-03-25 09:40:07', 'new_consumable', 'New consumable added to inventory', 'J&F suppliers');
 
 -- --------------------------------------------------------
 
@@ -1132,22 +1200,6 @@ INSERT INTO `funds` (`id`, `fund_code`, `fund_name`, `fund_cluster`, `descriptio
 -- --------------------------------------------------------
 
 --
--- Stand-in structure for view `fund_allocation_summary`
--- (See below for the actual view)
---
-
-
--- --------------------------------------------------------
-
---
--- Stand-in structure for view `fund_summary`
--- (See below for the actual view)
---
-
-
--- --------------------------------------------------------
-
---
 -- Table structure for table `ics_form`
 --
 
@@ -1418,29 +1470,29 @@ DELIMITER ;
 -- --------------------------------------------------------
 
 --
--- Stand-in structure for view `itr_summary`
--- (See below for the actual view)
+-- Table structure for table `itr_summary`
 --
+
 CREATE TABLE `itr_summary` (
-`id` int(11)
-,`entity_name` varchar(255)
-,`fund_cluster` varchar(100)
-,`itr_no` varchar(50)
-,`from_office` varchar(255)
-,`to_office` varchar(255)
-,`transfer_date` date
-,`transfer_type` enum('Donation','Reassignment','Relocate','Others')
-,`end_user` varchar(100)
-,`purpose` text
-,`status` enum('draft','submitted','approved','released','received','cancelled')
-,`total_amount` decimal(12,2)
-,`item_count` bigint(21)
-,`created_by` int(11)
-,`first_name` varchar(50)
-,`last_name` varchar(50)
-,`created_at` timestamp
-,`updated_at` timestamp
-);
+  `id` int(11) DEFAULT NULL,
+  `entity_name` varchar(255) DEFAULT NULL,
+  `fund_cluster` varchar(100) DEFAULT NULL,
+  `itr_no` varchar(50) DEFAULT NULL,
+  `from_office` varchar(255) DEFAULT NULL,
+  `to_office` varchar(255) DEFAULT NULL,
+  `transfer_date` date DEFAULT NULL,
+  `transfer_type` enum('Donation','Reassignment','Relocate','Others') DEFAULT NULL,
+  `end_user` varchar(100) DEFAULT NULL,
+  `purpose` text DEFAULT NULL,
+  `status` enum('draft','submitted','approved','released','received','cancelled') DEFAULT NULL,
+  `total_amount` decimal(12,2) DEFAULT NULL,
+  `item_count` bigint(21) DEFAULT NULL,
+  `created_by` int(11) DEFAULT NULL,
+  `first_name` varchar(50) DEFAULT NULL,
+  `last_name` varchar(50) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -1881,28 +1933,28 @@ DELIMITER ;
 -- --------------------------------------------------------
 
 --
--- Stand-in structure for view `ris_summary`
--- (See below for the actual view)
+-- Table structure for table `ris_summary`
 --
+
 CREATE TABLE `ris_summary` (
-`id` int(11)
-,`ris_no` varchar(50)
-,`sai_no` varchar(50)
-,`code` varchar(50)
-,`division` varchar(100)
-,`office` varchar(100)
-,`responsibility_center` varchar(100)
-,`date` date
-,`purpose` text
-,`status` enum('draft','submitted','approved','issued','received','cancelled')
-,`total_amount` decimal(12,2)
-,`item_count` bigint(21)
-,`created_by` int(11)
-,`first_name` varchar(50)
-,`last_name` varchar(50)
-,`created_at` timestamp
-,`updated_at` timestamp
-);
+  `id` int(11) DEFAULT NULL,
+  `ris_no` varchar(50) DEFAULT NULL,
+  `sai_no` varchar(50) DEFAULT NULL,
+  `code` varchar(50) DEFAULT NULL,
+  `division` varchar(100) DEFAULT NULL,
+  `office` varchar(100) DEFAULT NULL,
+  `responsibility_center` varchar(100) DEFAULT NULL,
+  `date` date DEFAULT NULL,
+  `purpose` text DEFAULT NULL,
+  `status` enum('draft','submitted','approved','issued','received','cancelled') DEFAULT NULL,
+  `total_amount` decimal(12,2) DEFAULT NULL,
+  `item_count` bigint(21) DEFAULT NULL,
+  `created_by` int(11) DEFAULT NULL,
+  `first_name` varchar(50) DEFAULT NULL,
+  `last_name` varchar(50) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -2306,7 +2358,13 @@ INSERT INTO `security_logs` (`id`, `event_type`, `description`, `severity`, `use
 (207, 'session_timeout', 'Session timeout for user: Walton Loneza (waltonloneza@gmail.com)', 'medium', 5, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-22 05:27:43'),
 (208, 'session_timeout', 'Session timeout for user: Walton Loneza (waltonloneza@gmail.com)', 'medium', 5, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-22 05:59:38'),
 (209, 'session_timeout', 'Session timeout for user: Walton Loneza (waltonloneza@gmail.com)', 'medium', 5, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-23 13:03:38'),
-(210, 'session_timeout', 'Session timeout for user: Walton Loneza (waltonloneza@gmail.com)', 'medium', 5, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 01:14:16');
+(210, 'session_timeout', 'Session timeout for user: Walton Loneza (waltonloneza@gmail.com)', 'medium', 5, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 01:14:16'),
+(211, 'session_timeout', 'Session timeout for user: Walton Loneza (waltonloneza@gmail.com)', 'medium', 5, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 01:53:41'),
+(212, 'session_timeout', 'Session timeout for user: Walton Loneza (waltonloneza@gmail.com)', 'medium', 5, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:23:55'),
+(213, 'session_timeout', 'Session timeout for user: Walton Loneza (waltonloneza@gmail.com)', 'medium', 5, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:54:43'),
+(214, 'session_timeout', 'Session timeout for user: Walton Loneza (waltonloneza@gmail.com)', 'medium', 5, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:14:36'),
+(215, 'session_timeout', 'Session timeout for user: Walton Loneza (waltonloneza@gmail.com)', 'medium', 5, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:47:18'),
+(216, 'session_timeout', 'Session timeout for user: Walton Loneza (waltonloneza@gmail.com)', 'medium', 5, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-25 01:33:58');
 
 -- --------------------------------------------------------
 
@@ -11886,7 +11944,182 @@ INSERT INTO `system_logs` (`id`, `user_id`, `action`, `module`, `description`, `
 (10411, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 01:23:15'),
 (10412, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 01:23:16'),
 (10413, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 01:23:16'),
-(10414, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 01:23:16');
+(10414, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 01:23:16'),
+(10415, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 01:25:51'),
+(10416, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 01:25:54'),
+(10417, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 01:27:26'),
+(10418, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 01:27:33'),
+(10419, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 01:29:25'),
+(10420, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 01:29:30'),
+(10421, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 01:42:52'),
+(10422, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 01:42:54'),
+(10423, 5, 'session_timeout', 'authentication', 'Session expired for user: Walton Loneza (waltonloneza@gmail.com) after 2353 seconds', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 01:53:41'),
+(10424, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 01:53:51'),
+(10425, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 01:53:51'),
+(10426, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 01:54:41'),
+(10427, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 01:57:48'),
+(10428, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 01:58:22'),
+(10429, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:03:31'),
+(10430, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:04:02'),
+(10431, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:07:16'),
+(10432, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:07:30'),
+(10433, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:07:42'),
+(10434, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:09:13'),
+(10435, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:11:37'),
+(10436, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:13:34'),
+(10437, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:14:23'),
+(10438, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:17:33'),
+(10439, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:17:53'),
+(10440, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:19:05'),
+(10441, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:19:12'),
+(10442, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:20:22'),
+(10443, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:20:38'),
+(10444, 5, 'session_timeout', 'authentication', 'Session expired for user: Walton Loneza (waltonloneza@gmail.com) after 1804 seconds', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:23:55'),
+(10445, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:24:12'),
+(10446, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:24:12'),
+(10447, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:24:13'),
+(10448, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:24:21'),
+(10449, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:24:37'),
+(10450, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:32:44'),
+(10451, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:34:28'),
+(10452, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:35:27'),
+(10453, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:36:51'),
+(10454, 5, 'Tag Form Data Received', 'forms', 'Item ID: 2, End User: \'Elton John Moises\', Person Accountable: 1', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:39:07'),
+(10458, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:39:08'),
+(10459, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:44:05'),
+(10460, 5, 'Tag Form Data Received', 'forms', 'Item ID: 2, End User: \'Roberto Cruz\', Person Accountable: 1', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:44:46'),
+(10461, 5, 'Tag Update SQL Debug', 'forms', 'SQL: UPDATE asset_items SET \r\n                   property_no = \'2026-04-05-030-0102-02\', \r\n                   inventory_tag = NULL, \r\n                   date_counted = \'2026-03-24\',\r\n                   image = \'[\\\"asset_2_0_1774320286.jpg\\\"]\',\r\n                   employee_id = 1, \r\n                   category_id = 2,\r\n                   asset_subcategory_id = NULL,\r\n                   office_name = \'OVM\',\r\n                   end_user = \'Roberto Cruz\',\r\n                   status = \'serviceable\',\r\n                   last_updated = CURRENT_TIMESTAMP\r\n                   WHERE id = 2', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:44:46'),
+(10462, 5, 'Tag Update Values Debug', 'forms', 'Values: property_no=\'2026-04-05-030-0102-02\', inventory_tag=\'\', date_counted=\'2026-03-24\', image=\'asset_2_0_1774320286.jpg\', employee_id=1, category_id=2, end_user=\'Roberto Cruz\' (length: 12), item_id=2', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:44:46'),
+(10463, 5, 'Asset item updated successfully', 'assets', 'Item ID: 2, End User: Roberto Cruz, Rows affected: 1', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:44:46'),
+(10464, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:49:18'),
+(10465, 5, 'session_timeout', 'authentication', 'Session expired for user: Walton Loneza (waltonloneza@gmail.com) after 1831 seconds', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:54:43'),
+(10466, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:54:53'),
+(10467, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:54:54'),
+(10468, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:54:55'),
+(10469, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:57:15'),
+(10470, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:59:48'),
+(10471, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:59:48'),
+(10472, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:59:50'),
+(10473, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 03:02:01'),
+(10474, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 03:02:02'),
+(10475, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 03:02:03'),
+(10476, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 03:08:31'),
+(10477, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 03:08:32'),
+(10478, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 03:08:34'),
+(10479, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 03:10:48'),
+(10480, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 03:15:28'),
+(10481, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 03:15:28'),
+(10482, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 03:15:29'),
+(10483, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 03:25:38'),
+(10484, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 03:25:38'),
+(10485, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 03:25:39'),
+(10486, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 03:29:58'),
+(10487, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 03:32:25'),
+(10488, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 03:32:25'),
+(10489, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 03:32:27'),
+(10490, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 03:33:46'),
+(10491, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 03:34:58'),
+(10492, 5, 'asset_added', 'asset_management', 'Added asset: Lenovo ThinkPad E14', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 03:34:58'),
+(10493, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 03:38:10'),
+(10494, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 03:38:10'),
+(10495, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 03:38:12'),
+(10496, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 03:38:56'),
+(10497, 5, 'asset_quantity_updated', 'asset_management', 'Updated quantity for existing asset: Lenovo ThinkPad E14', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 03:38:56'),
+(10498, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 03:38:56'),
+(10499, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 03:39:23'),
+(10500, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 03:39:42'),
+(10501, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 03:41:17'),
+(10502, 5, 'access', 'no_inventory_tag', 'Admin accessed no inventory tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 03:41:26'),
+(10503, NULL, 'login_failed', 'authentication', 'Invalid email format: ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 06:37:29'),
+(10504, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 06:37:42'),
+(10505, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 06:37:42'),
+(10506, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 06:37:45'),
+(10507, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 06:37:50'),
+(10508, 5, 'access', 'no_inventory_tag', 'Admin accessed no inventory tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 06:38:06'),
+(10509, 5, 'access', 'inventory_tags', 'Admin accessed inventory tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 06:38:20'),
+(10510, 5, 'print', 'inventory_tags', 'Printed multiple inventory tags: , ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 06:46:58'),
+(10511, 5, 'access', 'inventory_tags', 'Admin accessed inventory tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 06:47:26'),
+(10512, 5, 'access', 'inventory_tags', 'Admin accessed inventory tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 06:50:58'),
+(10513, 5, 'access', 'inventory_tags', 'Admin accessed inventory tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 06:52:35');
+INSERT INTO `system_logs` (`id`, `user_id`, `action`, `module`, `description`, `ip_address`, `user_agent`, `timestamp`) VALUES
+(10514, 5, 'print', 'inventory_tag', 'Printed inventory tag (no inventory_tag set) - Item ID: 2', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 06:52:57'),
+(10515, 5, 'print', 'inventory_tag', 'Printed inventory tag (no inventory_tag set) - Item ID: 2', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 06:53:18'),
+(10516, 5, 'print', 'inventory_tag', 'Printed inventory tag (no inventory_tag set) - Item ID: 1', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 06:53:21'),
+(10517, 5, 'print', 'inventory_tags', 'Printed multiple inventory tags: , ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 06:53:46'),
+(10518, 5, 'access', 'inventory_tags', 'Admin accessed inventory tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 06:56:52'),
+(10519, 5, 'print', 'inventory_tags', 'Printed multiple inventory tags: , ', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 06:56:54'),
+(10520, 5, 'access', 'no_inventory_tag', 'Admin accessed no inventory tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 06:57:11'),
+(10521, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 06:57:13'),
+(10522, 5, 'Tag Form Data Received', 'forms', 'Item ID: 4, End User: \'Joshua Escano\', Person Accountable: 7', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 06:59:16'),
+(10523, 5, 'Tag Update SQL Debug', 'forms', 'SQL: UPDATE asset_items SET \r\n                   property_no = \'2026-07-05-030-0101-03\', \r\n                   inventory_tag = NULL, \r\n                   date_counted = \'2026-03-24\',\r\n                   image = \'[\\\"asset_4_0_1774335556.jpg\\\"]\',\r\n                   employee_id = 7, \r\n                   category_id = 2,\r\n                   asset_subcategory_id = NULL,\r\n                   office_name = \'OSB\',\r\n                   end_user = \'Joshua Escano\',\r\n                   status = \'serviceable\',\r\n                   last_updated = CURRENT_TIMESTAMP\r\n                   WHERE id = 4', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 06:59:16'),
+(10524, 5, 'Tag Update Values Debug', 'forms', 'Values: property_no=\'2026-07-05-030-0101-03\', inventory_tag=\'\', date_counted=\'2026-03-24\', image=\'asset_4_0_1774335556.jpg\', employee_id=7, category_id=2, end_user=\'Joshua Escano\' (length: 13), item_id=4', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 06:59:16'),
+(10525, 5, 'Asset item updated successfully', 'assets', 'Item ID: 4, End User: Joshua Escano, Rows affected: 1', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 06:59:16'),
+(10526, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:00:45'),
+(10527, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:06:39'),
+(10528, 5, 'access', 'no_inventory_tag', 'Admin accessed no inventory tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:06:41'),
+(10529, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:06:43'),
+(10530, 5, 'session_timeout', 'authentication', 'Session expired for user: Walton Loneza (waltonloneza@gmail.com) after 2214 seconds', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:14:36'),
+(10531, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:14:48'),
+(10532, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:14:48'),
+(10533, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:14:49'),
+(10534, 5, 'access', 'no_inventory_tag', 'Admin accessed no inventory tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:14:53'),
+(10535, 5, 'access', 'inventory_tags', 'Admin accessed inventory tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:14:55'),
+(10536, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:14:59'),
+(10537, 5, 'access', 'no_inventory_tag', 'Admin accessed no inventory tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:15:02'),
+(10538, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:15:04'),
+(10539, 5, 'Tag Form Data Received', 'forms', 'Item ID: 3, End User: \'John Legend\', Person Accountable: 7', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:15:59'),
+(10540, 5, 'Tag Update SQL Debug', 'forms', 'SQL: UPDATE asset_items SET \r\n                   property_no = \'2026-07-05-030-0103-03\', \r\n                   inventory_tag = NULL, \r\n                   date_counted = \'2026-03-24\',\r\n                   image = \'[\\\"asset_3_0_1774336559.jpg\\\"]\',\r\n                   employee_id = 7, \r\n                   category_id = 2,\r\n                   asset_subcategory_id = NULL,\r\n                   office_name = \'OSB\',\r\n                   end_user = \'John Legend\',\r\n                   status = \'serviceable\',\r\n                   last_updated = CURRENT_TIMESTAMP\r\n                   WHERE id = 3', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:15:59'),
+(10541, 5, 'Tag Update Values Debug', 'forms', 'Values: property_no=\'2026-07-05-030-0103-03\', inventory_tag=\'\', date_counted=\'2026-03-24\', image=\'asset_3_0_1774336559.jpg\', employee_id=7, category_id=2, end_user=\'John Legend\' (length: 11), item_id=3', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:15:59'),
+(10542, 5, 'Asset item updated successfully', 'assets', 'Item ID: 3, End User: John Legend, Rows affected: 1', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:15:59'),
+(10543, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:30:38'),
+(10544, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:37:18'),
+(10545, 5, 'asset_added', 'asset_management', 'Added asset: Epson EcoTank L3250', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:37:18'),
+(10546, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:37:18'),
+(10547, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:37:24'),
+(10548, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:37:49'),
+(10549, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:43:38'),
+(10550, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:44:35'),
+(10551, 5, 'asset_added', 'asset_management', 'Added asset: Samsung 55\\\" UHD TV', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:44:35'),
+(10552, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:44:35'),
+(10553, 5, 'session_timeout', 'authentication', 'Session expired for user: Walton Loneza (waltonloneza@gmail.com) after 1950 seconds', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:47:18'),
+(10554, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:47:29'),
+(10555, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:47:29'),
+(10556, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:47:30'),
+(10557, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:47:38'),
+(10558, 5, 'access', 'create_tag', 'Admin accessed create tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:50:03'),
+(10559, 5, 'Tag Form Data Received', 'forms', 'Item ID: 8, End User: \'Jake Paul\', Person Accountable: 6', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:51:48'),
+(10560, 5, 'Tag Update SQL Debug', 'forms', 'SQL: UPDATE asset_items SET \r\n                   property_no = \'2026-04-05-030-0701-01\', \r\n                   inventory_tag = NULL, \r\n                   date_counted = \'2026-03-24\',\r\n                   image = \'[\\\"asset_8_0_1774338708.jpg\\\"]\',\r\n                   employee_id = 6, \r\n                   category_id = 2,\r\n                   asset_subcategory_id = NULL,\r\n                   office_name = \'OMM\',\r\n                   end_user = \'Jake Paul\',\r\n                   model = \'BU8000\',\r\n                   serial_number = \'0AS13CHX400501L\',\r\n                   status = \'serviceable\',\r\n                   last_updated = CURRENT_TIMESTAMP\r\n                   WHERE id = 8', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:51:48'),
+(10561, 5, 'Tag Update Values Debug', 'forms', 'Values: property_no=\'2026-04-05-030-0701-01\', inventory_tag=\'\', date_counted=\'2026-03-24\', image=\'asset_8_0_1774338708.jpg\', employee_id=6, category_id=2, end_user=\'Jake Paul\' (length: 9), model=\'BU8000\', serial_number=\'0AS13CHX400501L\', item_id=8', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:51:48'),
+(10562, 5, 'Asset item updated successfully', 'assets', 'Item ID: 8, End User: Jake Paul, Rows affected: 1', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:51:48'),
+(10563, 5, 'print', 'inventory_tag', 'Printed inventory tag (no inventory_tag set) - Item ID: 8', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:54:07'),
+(10564, 5, 'print', 'inventory_tag', 'Printed inventory tag (no inventory_tag set) - Item ID: 8', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 08:01:47'),
+(10565, 5, 'print', 'inventory_tag', 'Printed inventory tag (no inventory_tag set) - Item ID: 8', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 08:10:34'),
+(10566, 5, 'print', 'inventory_tag', 'Printed inventory tag (no inventory_tag set) - Item ID: 8', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 08:43:53'),
+(10567, 5, 'logout', 'authentication', 'User logged out: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 08:53:42'),
+(10568, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-25 00:43:04'),
+(10569, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-25 00:43:05'),
+(10570, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-25 00:47:03'),
+(10571, 5, 'print', 'inventory_tag', 'Printed inventory tag (no inventory_tag set) - Item ID: 8', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-25 01:09:51'),
+(10572, 5, 'print', 'inventory_tag', 'Printed inventory tag (no inventory_tag set) - Item ID: 8', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-25 01:13:31'),
+(10573, 5, 'export_pdf', 'asset_items', 'Exported asset item PDF: ID 8 - Samsung 55\\&quot; UHD TV', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-25 01:29:26'),
+(10574, 5, 'asset_item_edit_upload_debug', 'asset_management', 'FILES[asset_images]={\"name\":[\"\"],\"type\":[\"\"],\"error\":[4],\"size\":[0]}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-25 01:31:52'),
+(10575, 5, 'asset_item_updated', 'asset_management', 'Updated asset item: Samsung 55\\\" UHD TV (ID: 8)', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-25 01:31:52'),
+(10576, 5, 'session_timeout', 'authentication', 'Session expired for user: Walton Loneza (waltonloneza@gmail.com) after 3054 seconds', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-25 01:33:58'),
+(10577, 5, 'login_success', 'authentication', 'User logged in: Walton Loneza (waltonloneza@gmail.com) with role: admin', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-25 01:34:09'),
+(10578, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-25 01:34:09'),
+(10579, 5, 'access', 'assets', 'Admin accessed assets page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-25 01:34:11'),
+(10580, 5, 'access', 'admin_dashboard', 'Admin accessed dashboard', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-25 01:34:23'),
+(10581, 5, 'access', 'no_inventory_tag', 'Admin accessed no inventory tag page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-25 01:37:02'),
+(10582, 5, 'access', 'inventory_tags', 'Admin accessed inventory tags page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-25 01:38:32'),
+(10583, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-25 01:39:39'),
+(10584, 5, 'access', 'consumables', 'Admin accessed consumables page', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-25 01:40:07'),
+(10585, 5, 'consumable_added', 'consumable_management', 'Added consumable: bond paper A4', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-25 01:40:07'),
+(10586, 19, 'access', 'consumables', 'Admin accessed consumables page', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:31:38'),
+(10587, 19, 'consumable_released', 'consumable_management', 'Released 15 \'bond paper A4\' from office ID 3 to OMM. Release type: with_deduction. No balance record found, returned 0 to supply office, actual release: 15. Remarks: test', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:31:58'),
+(10588, 19, 'access', 'consumables', 'Admin accessed consumables page', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:31:59'),
+(10589, 19, 'logout', 'authentication', 'User logged out: admin admin (AD@pims.com) with role: admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:32:11'),
+(10590, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:32:26'),
+(10591, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:32:26');
 
 -- --------------------------------------------------------
 
@@ -11963,7 +12196,7 @@ INSERT INTO `tag_formats` (`id`, `tag_type`, `format_components`, `auto_incremen
 (5, 'ris_no', '\"[{\\\"type\\\":\\\"year\\\"},{\\\"type\\\":\\\"form_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"text\\\",\\\"separator\\\":\\\"-\\\",\\\"value\\\":\\\"05\\\"},{\\\"type\\\":\\\"category_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"sub_category_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"digits\\\",\\\"separator\\\":\\\"-\\\",\\\"digits\\\":4}]\"', 1, 4, '/', 9, 'active', 1, 1, '2026-01-09 09:44:09', '2026-02-18 05:18:20'),
 (6, 'sai_no', '\"[{\\\"type\\\":\\\"year\\\"},{\\\"type\\\":\\\"form_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"text\\\",\\\"separator\\\":\\\"-\\\",\\\"value\\\":\\\"05\\\"},{\\\"type\\\":\\\"category_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"sub_category_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"digits\\\",\\\"separator\\\":\\\"-\\\",\\\"digits\\\":4}]\"', 1, 4, '/', 30, 'active', 1, 1, '2026-01-09 09:44:49', '2026-02-18 05:18:20'),
 (7, 'code', '\"[{\\\"type\\\":\\\"form_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"text\\\",\\\"separator\\\":\\\"-\\\",\\\"value\\\":\\\"05\\\"},{\\\"type\\\":\\\"category_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"sub_category_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"digits\\\",\\\"separator\\\":\\\"-\\\",\\\"digits\\\":4},{\\\"type\\\":\\\"month\\\",\\\"separator\\\":\\\"-\\\"}]\"', 1, 4, '/', 30, 'active', 1, 1, '2026-01-09 09:45:35', '2026-02-18 05:18:20'),
-(8, 'inventory_tag', '\"[{\\\"type\\\":\\\"year\\\"},{\\\"type\\\":\\\"form_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"text\\\",\\\"separator\\\":\\\"-\\\",\\\"value\\\":\\\"05\\\"},{\\\"type\\\":\\\"category_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"sub_category_code\\\",\\\"separator\\\":\\\"-\\\"}]\"', 1, 2, '/', 44, 'active', NULL, 5, '2026-01-23 02:53:48', '2026-03-23 12:56:45'),
+(8, 'inventory_tag', '\"[{\\\"type\\\":\\\"year\\\"},{\\\"type\\\":\\\"form_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"text\\\",\\\"separator\\\":\\\"-\\\",\\\"value\\\":\\\"05\\\"},{\\\"type\\\":\\\"category_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"sub_category_code\\\",\\\"separator\\\":\\\"-\\\"}]\"', 1, 2, '/', 48, 'active', NULL, 5, '2026-01-23 02:53:48', '2026-03-24 07:51:50'),
 (9, 'red_tag_control', '\"[{\\\"type\\\":\\\"office_code\\\"},{\\\"type\\\":\\\"text\\\",\\\"separator\\\":\\\"-\\\",\\\"value\\\":\\\"RT\\\"},{\\\"type\\\":\\\"year\\\",\\\"separator\\\":\\\"-\\\",\\\"year_format\\\":\\\"short\\\"},{\\\"type\\\":\\\"digits\\\",\\\"separator\\\":\\\"-\\\",\\\"digits\\\":3}]\"', 1, 3, '-', 33, 'active', 1, 1, '2026-02-01 08:06:12', '2026-03-18 01:24:57'),
 (10, 'red_tag_no', '\"[{\\\"type\\\":\\\"year\\\"},{\\\"type\\\":\\\"form_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"text\\\",\\\"separator\\\":\\\"-\\\",\\\"value\\\":\\\"05\\\"},{\\\"type\\\":\\\"category_code\\\",\\\"separator\\\":\\\"-\\\"},{\\\"type\\\":\\\"sub_category_code\\\",\\\"separator\\\":\\\"-\\\"}]\"', 1, 2, '/', 61, 'active', 1, 1, '2026-02-01 08:06:37', '2026-03-18 01:24:57');
 
@@ -12130,42 +12363,6 @@ DROP TABLE IF EXISTS `consumable_release_history_view`;
 
 CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `consumable_release_history_view`  AS SELECT `h`.`id` AS `id`, `h`.`consumable_id` AS `consumable_id`, `h`.`description` AS `description`, `h`.`quantity_released` AS `quantity_released`, `h`.`unit_cost` AS `unit_cost`, `h`.`total_value` AS `total_value`, `h`.`from_office_id` AS `from_office_id`, `fo`.`office_name` AS `from_office_name`, `h`.`to_office_id` AS `to_office_id`, `to_off`.`office_name` AS `to_office_name`, `h`.`released_by` AS `released_by`, `u`.`first_name` AS `first_name`, `u`.`last_name` AS `last_name`, concat(`u`.`first_name`,' ',`u`.`last_name`) AS `released_by_name`, `h`.`release_date` AS `release_date`, `h`.`notes` AS `notes`, `h`.`created_at` AS `created_at` FROM (((`consumable_release_history` `h` left join `offices` `fo` on(`h`.`from_office_id` = `fo`.`id`)) left join `offices` `to_off` on(`h`.`to_office_id` = `to_off`.`id`)) left join `users` `u` on(`h`.`released_by` = `u`.`id`)) ;
 
--- --------------------------------------------------------
-
---
--- Structure for view `fund_allocation_summary`
---
-DROP TABLE IF EXISTS `fund_allocation_summary`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `fund_allocation_summary`  AS SELECT `fa`.`id` AS `id`, `fa`.`fund_id` AS `fund_id`, `fa`.`office_id` AS `office_id`, `o`.`office_name` AS `office_name`, `f`.`fund_code` AS `fund_code`, `f`.`fund_name` AS `fund_name`, `f`.`fund_cluster` AS `fund_cluster`, `fa`.`allocated_amount` AS `allocated_amount`, `fa`.`utilized_amount` AS `utilized_amount`, `fa`.`remaining_balance` AS `remaining_balance`, `fa`.`allocation_date` AS `allocation_date`, `fa`.`status` AS `status`, round(`fa`.`utilized_amount` / `fa`.`allocated_amount` * 100,2) AS `utilization_percentage`, `fa`.`created_at` AS `created_at`, `fa`.`updated_at` AS `updated_at` FROM ((`fund_allocations` `fa` join `funds` `f` on(`fa`.`fund_id` = `f`.`id`)) join `offices` `o` on(`fa`.`office_id` = `o`.`id`)) ;
-
--- --------------------------------------------------------
-
---
--- Structure for view `fund_summary`
---
-DROP TABLE IF EXISTS `fund_summary`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `fund_summary`  AS SELECT `f`.`id` AS `id`, `f`.`fund_code` AS `fund_code`, `f`.`fund_name` AS `fund_name`, `f`.`fund_cluster` AS `fund_cluster`, `f`.`description` AS `description`, `f`.`department` AS `department`, `f`.`budget_year` AS `budget_year`, `f`.`initial_amount` AS `initial_amount`, `f`.`current_balance` AS `current_balance`, `f`.`status` AS `status`, `f`.`start_date` AS `start_date`, `f`.`end_date` AS `end_date`, count(`ft`.`id`) AS `transaction_count`, coalesce(sum(case when `ft`.`transaction_type` = 'expenditure' then `ft`.`amount` else 0 end),0) AS `total_expenditures`, coalesce(sum(case when `ft`.`transaction_type` = 'allocation' then `ft`.`amount` else 0 end),0) AS `total_allocations`, `f`.`created_at` AS `created_at`, `f`.`updated_at` AS `updated_at` FROM (`funds` `f` left join `fund_transactions` `ft` on(`f`.`id` = `ft`.`fund_id`)) GROUP BY `f`.`id` ;
-
--- --------------------------------------------------------
-
---
--- Structure for view `itr_summary`
---
-DROP TABLE IF EXISTS `itr_summary`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `itr_summary`  AS SELECT `itr`.`id` AS `id`, `itr`.`entity_name` AS `entity_name`, `itr`.`fund_cluster` AS `fund_cluster`, `itr`.`itr_no` AS `itr_no`, `itr`.`from_office` AS `from_office`, `itr`.`to_office` AS `to_office`, `itr`.`transfer_date` AS `transfer_date`, `itr`.`transfer_type` AS `transfer_type`, `itr`.`end_user` AS `end_user`, `itr`.`purpose` AS `purpose`, `itr`.`status` AS `status`, `itr`.`total_amount` AS `total_amount`, count(`ii`.`id`) AS `item_count`, `itr`.`created_by` AS `created_by`, `u`.`first_name` AS `first_name`, `u`.`last_name` AS `last_name`, `itr`.`created_at` AS `created_at`, `itr`.`updated_at` AS `updated_at` FROM ((`itr_forms` `itr` left join `itr_items` `ii` on(`itr`.`id` = `ii`.`form_id`)) left join `users` `u` on(`itr`.`created_by` = `u`.`id`)) GROUP BY `itr`.`id` ;
-
--- --------------------------------------------------------
-
---
--- Structure for view `ris_summary`
---
-DROP TABLE IF EXISTS `ris_summary`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `ris_summary`  AS SELECT `rf`.`id` AS `id`, `rf`.`ris_no` AS `ris_no`, `rf`.`sai_no` AS `sai_no`, `rf`.`code` AS `code`, `rf`.`division` AS `division`, `rf`.`office` AS `office`, `rf`.`responsibility_center` AS `responsibility_center`, `rf`.`date` AS `date`, `rf`.`purpose` AS `purpose`, `rf`.`status` AS `status`, `rf`.`total_amount` AS `total_amount`, count(`ri`.`id`) AS `item_count`, `rf`.`created_by` AS `created_by`, `u`.`first_name` AS `first_name`, `u`.`last_name` AS `last_name`, `rf`.`created_at` AS `created_at`, `rf`.`updated_at` AS `updated_at` FROM ((`ris_forms` `rf` left join `ris_items` `ri` on(`rf`.`id` = `ri`.`ris_form_id`)) left join `users` `u` on(`rf`.`created_by` = `u`.`id`)) GROUP BY `rf`.`id` ;
-
 --
 -- Indexes for dumped tables
 --
@@ -12174,171 +12371,91 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 -- Indexes for table `assets`
 --
 ALTER TABLE `assets`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_asset_category` (`asset_categories_id`),
-  ADD KEY `idx_asset_office` (`office_id`),
-  ADD KEY `idx_asset_description` (`description`),
-  ADD KEY `idx_asset_subcategory_id` (`asset_subcategory_id`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `asset_buildings`
 --
 ALTER TABLE `asset_buildings`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `asset_id` (`asset_item_id`),
-  ADD KEY `idx_building_type` (`building_type`),
-  ADD KEY `idx_address` (`city`,`state`),
-  ADD KEY `created_by` (`created_by`),
-  ADD KEY `updated_by` (`updated_by`),
-  ADD KEY `idx_asset_item_id` (`asset_item_id`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `asset_categories`
 --
 ALTER TABLE `asset_categories`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `category_name` (`category_name`),
-  ADD UNIQUE KEY `category_code` (`category_code`),
-  ADD KEY `idx_category_code` (`category_code`),
-  ADD KEY `idx_status` (`status`),
-  ADD KEY `created_by` (`created_by`),
-  ADD KEY `updated_by` (`updated_by`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `asset_computers`
 --
 ALTER TABLE `asset_computers`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `asset_id` (`asset_item_id`),
-  ADD KEY `idx_asset_id` (`asset_item_id`),
-  ADD KEY `idx_serial_number` (`serial_number`),
-  ADD KEY `idx_mac_address` (`mac_address`),
-  ADD KEY `idx_warranty_expiry` (`warranty_expiry`),
-  ADD KEY `created_by` (`created_by`),
-  ADD KEY `updated_by` (`updated_by`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `asset_desktop_computers`
 --
 ALTER TABLE `asset_desktop_computers`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `unique_asset_item` (`asset_item_id`),
-  ADD KEY `idx_monitor_status` (`monitor_status`),
-  ADD KEY `idx_ups_status` (`ups_status`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `asset_furniture`
 --
 ALTER TABLE `asset_furniture`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `asset_id` (`asset_item_id`),
-  ADD KEY `idx_furniture_type` (`furniture_type`),
-  ADD KEY `idx_location` (`location_building`,`location_floor`),
-  ADD KEY `created_by` (`created_by`),
-  ADD KEY `updated_by` (`updated_by`),
-  ADD KEY `idx_asset_item_id` (`asset_item_id`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `asset_items`
 --
 ALTER TABLE `asset_items`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_asset_item_asset` (`asset_id`),
-  ADD KEY `idx_asset_item_status` (`status`),
-  ADD KEY `idx_asset_item_office` (`office_id`),
-  ADD KEY `fk_asset_items_ics` (`ics_id`),
-  ADD KEY `idx_par_id` (`par_id`),
-  ADD KEY `idx_asset_items_property_no` (`property_no`),
-  ADD KEY `idx_asset_items_employee_id` (`employee_id`),
-  ADD KEY `idx_asset_items_category_id` (`category_id`),
-  ADD KEY `idx_asset_subcategory_id` (`asset_subcategory_id`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `asset_item_history`
 --
 ALTER TABLE `asset_item_history`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `created_by` (`created_by`),
-  ADD KEY `idx_asset_item_history_item_id` (`item_id`),
-  ADD KEY `idx_asset_item_history_created_at` (`created_at`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `asset_land`
 --
 ALTER TABLE `asset_land`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `asset_id` (`asset_item_id`),
-  ADD KEY `idx_land_type` (`land_type`),
-  ADD KEY `idx_address` (`city`,`state`),
-  ADD KEY `created_by` (`created_by`),
-  ADD KEY `updated_by` (`updated_by`),
-  ADD KEY `idx_asset_item_id` (`asset_item_id`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `asset_machinery`
 --
 ALTER TABLE `asset_machinery`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `asset_id` (`asset_item_id`),
-  ADD KEY `idx_serial_number` (`serial_number`),
-  ADD KEY `idx_next_maintenance` (`next_maintenance_date`),
-  ADD KEY `created_by` (`created_by`),
-  ADD KEY `updated_by` (`updated_by`),
-  ADD KEY `idx_asset_item_id` (`asset_item_id`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `asset_office_equipment`
 --
 ALTER TABLE `asset_office_equipment`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `asset_id` (`asset_item_id`),
-  ADD KEY `idx_equipment_type` (`equipment_type`),
-  ADD KEY `idx_serial_number` (`serial_number`),
-  ADD KEY `idx_warranty_expiry` (`warranty_expiry`),
-  ADD KEY `created_by` (`created_by`),
-  ADD KEY `updated_by` (`updated_by`),
-  ADD KEY `idx_asset_item_id` (`asset_item_id`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `asset_software`
 --
 ALTER TABLE `asset_software`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `asset_id` (`asset_item_id`),
-  ADD KEY `idx_software_name` (`software_name`),
-  ADD KEY `idx_license_expiry` (`license_expiry`),
-  ADD KEY `created_by` (`created_by`),
-  ADD KEY `updated_by` (`updated_by`),
-  ADD KEY `idx_asset_item_id` (`asset_item_id`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `asset_sub_categories`
 --
 ALTER TABLE `asset_sub_categories`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_asset_categories_id` (`asset_categories_id`),
-  ADD KEY `idx_status` (`status`),
-  ADD KEY `fk_sub_categories_created_by` (`created_by`),
-  ADD KEY `fk_sub_categories_updated_by` (`updated_by`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `asset_vehicles`
 --
 ALTER TABLE `asset_vehicles`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `asset_id` (`asset_item_id`),
-  ADD KEY `idx_plate_number` (`plate_number`),
-  ADD KEY `idx_registration_expiry` (`registration_expiry`),
-  ADD KEY `created_by` (`created_by`),
-  ADD KEY `updated_by` (`updated_by`),
-  ADD KEY `idx_asset_item_id` (`asset_item_id`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `backups`
 --
 ALTER TABLE `backups`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `created_by` (`created_by`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `backup_execution_logs`
@@ -12350,480 +12467,296 @@ ALTER TABLE `backup_execution_logs`
 -- Indexes for table `borrow_form_submissions`
 --
 ALTER TABLE `borrow_form_submissions`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_status` (`status`),
-  ADD KEY `idx_date_borrowed` (`date_borrowed`),
-  ADD KEY `idx_submitted_at` (`submitted_at`),
-  ADD KEY `idx_guest_name` (`guest_name`),
-  ADD KEY `idx_barangay` (`barangay`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `borrow_requests`
 --
 ALTER TABLE `borrow_requests`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `branches`
+--
+ALTER TABLE `branches`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_requested_by` (`requested_by`),
-  ADD KEY `idx_requested_by_office` (`requested_by_office`),
-  ADD KEY `idx_requested_to_office` (`requested_to_office`),
-  ADD KEY `idx_asset_id` (`asset_id`),
-  ADD KEY `idx_status` (`status`),
-  ADD KEY `idx_created_at` (`created_at`),
-  ADD KEY `idx_start_date` (`start_date`),
-  ADD KEY `idx_end_date` (`end_date`),
-  ADD KEY `fk_borrow_requests_approved_by` (`approved_by`),
-  ADD KEY `fk_borrow_requests_denied_by` (`denied_by`),
-  ADD KEY `idx_borrow_requests_composite` (`status`,`requested_to_office`,`created_at`),
-  ADD KEY `idx_borrow_requests_outgoing` (`status`,`requested_by_office`,`created_at`);
+  ADD KEY `office_id` (`office_id`);
 
 --
 -- Indexes for table `consumables`
 --
 ALTER TABLE `consumables`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `office_id` (`office_id`),
-  ADD KEY `idx_consumables_for_office` (`for_office_id`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `consumable_add_history`
 --
 ALTER TABLE `consumable_add_history`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `consumable_id` (`consumable_id`),
-  ADD KEY `office_id` (`office_id`),
-  ADD KEY `added_by` (`added_by`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `consumable_balance`
 --
 ALTER TABLE `consumable_balance`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_consumable_office` (`consumable_id`,`office_id`,`for_office_id`),
-  ADD KEY `idx_for_office` (`for_office_id`),
-  ADD KEY `office_id` (`office_id`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `consumable_release_history`
 --
 ALTER TABLE `consumable_release_history`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `released_by` (`released_by`),
-  ADD KEY `idx_consumable_id` (`consumable_id`),
-  ADD KEY `idx_release_date` (`release_date`),
-  ADD KEY `idx_from_office` (`from_office_id`),
-  ADD KEY `idx_to_office` (`to_office_id`),
-  ADD KEY `idx_received_by` (`received_by`),
-  ADD KEY `idx_release_option` (`release_option`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `employees`
 --
 ALTER TABLE `employees`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `email` (`email`),
-  ADD UNIQUE KEY `employee_no` (`employee_no`),
-  ADD KEY `office_id` (`office_id`),
-  ADD KEY `idx_employees_employment_status` (`employment_status`),
-  ADD KEY `idx_employees_clearance_status` (`clearance_status`),
-  ADD KEY `idx_employees_employee_no` (`employee_no`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `failed_login_attempts`
 --
 ALTER TABLE `failed_login_attempts`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_username` (`username`),
-  ADD KEY `idx_ip_address` (`ip_address`),
-  ADD KEY `idx_attempt_time` (`attempt_time`),
-  ADD KEY `idx_is_blocked` (`is_blocked`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `forms`
 --
 ALTER TABLE `forms`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `form_code` (`form_code`),
-  ADD UNIQUE KEY `uc_forms_code` (`code`),
-  ADD KEY `idx_form_code` (`form_code`),
-  ADD KEY `idx_status` (`status`),
-  ADD KEY `created_by` (`created_by`),
-  ADD KEY `updated_by` (`updated_by`),
-  ADD KEY `idx_code` (`code`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `fuel_in`
 --
 ALTER TABLE `fuel_in`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_fuel_in_date` (`date_time`),
-  ADD KEY `idx_fuel_in_type` (`fuel_type`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `fuel_inventory`
 --
 ALTER TABLE `fuel_inventory`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uk_tank_number` (`tank_number`),
-  ADD KEY `idx_fuel_type` (`fuel_type`),
-  ADD KEY `idx_status` (`status`),
-  ADD KEY `fk_fuel_inventory_updated_by` (`updated_by`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `fuel_out`
 --
 ALTER TABLE `fuel_out`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_fuel_out_date` (`fo_date`),
-  ADD KEY `idx_fuel_out_type` (`fo_fuel_type`);
-
---
--- Indexes for table `fuel_stock`
---
-ALTER TABLE `fuel_stock`
-  ADD PRIMARY KEY (`fuel_type_id`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `fuel_transactions`
 --
 ALTER TABLE `fuel_transactions`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_transaction_date` (`transaction_date`),
-  ADD KEY `idx_fuel_type` (`fuel_type`),
-  ADD KEY `idx_transaction_type` (`transaction_type`),
-  ADD KEY `idx_employee_id` (`employee_id`),
-  ADD KEY `idx_user_id` (`user_id`),
-  ADD KEY `idx_tank_number` (`tank_number`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `fuel_types`
 --
 ALTER TABLE `fuel_types`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uk_fuel_type_name` (`name`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `funds`
 --
 ALTER TABLE `funds`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `fund_code` (`fund_code`),
-  ADD KEY `idx_fund_code` (`fund_code`),
-  ADD KEY `idx_fund_cluster` (`fund_cluster`),
-  ADD KEY `idx_budget_year` (`budget_year`),
-  ADD KEY `idx_status` (`status`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `ics_form`
 --
 ALTER TABLE `ics_form`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_form_id` (`form_id`),
-  ADD KEY `idx_office_id` (`office_id`),
-  ADD KEY `idx_ics_no` (`ics_no`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `ics_forms`
 --
 ALTER TABLE `ics_forms`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `ics_no` (`ics_no`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `ics_items`
 --
 ALTER TABLE `ics_items`
-  ADD PRIMARY KEY (`item_id`),
-  ADD KEY `idx_ics_id` (`ics_id`),
-  ADD KEY `idx_asset_id` (`asset_id`),
-  ADD KEY `form_id` (`form_id`);
+  ADD PRIMARY KEY (`item_id`);
 
 --
 -- Indexes for table `iirup_forms`
 --
 ALTER TABLE `iirup_forms`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `form_number` (`form_number`),
-  ADD KEY `idx_status` (`status`),
-  ADD KEY `idx_created_by` (`created_by`),
-  ADD KEY `idx_as_of_year` (`as_of_year`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `iirup_items`
 --
 ALTER TABLE `iirup_items`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `form_id` (`form_id`),
-  ADD KEY `idx_property_no` (`property_no`),
-  ADD KEY `idx_dept_office` (`dept_office`),
-  ADD KEY `idx_item_order` (`item_order`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `infrastructure`
 --
 ALTER TABLE `infrastructure`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_classification` (`classification`),
-  ADD KEY `idx_location` (`location`),
-  ADD KEY `idx_date_constructed` (`date_constructed`),
-  ADD KEY `idx_created_by` (`created_by`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `itr_forms`
 --
 ALTER TABLE `itr_forms`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `itr_no` (`itr_no`),
-  ADD KEY `created_by` (`created_by`),
-  ADD KEY `updated_by` (`updated_by`),
-  ADD KEY `idx_itr_no` (`itr_no`),
-  ADD KEY `idx_entity_name` (`entity_name`),
-  ADD KEY `idx_from_office` (`from_office`),
-  ADD KEY `idx_to_office` (`to_office`),
-  ADD KEY `idx_status` (`status`),
-  ADD KEY `idx_transfer_date` (`transfer_date`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `itr_items`
 --
 ALTER TABLE `itr_items`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_form_id` (`form_id`),
-  ADD KEY `idx_item_no` (`item_no`),
-  ADD KEY `idx_description` (`description`(255));
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `lend_consumables`
 --
 ALTER TABLE `lend_consumables`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `from_office_id` (`from_office_id`),
-  ADD KEY `to_office_id` (`to_office_id`),
-  ADD KEY `lent_by` (`lent_by`),
-  ADD KEY `idx_consumable_id` (`consumable_id`),
-  ADD KEY `idx_status` (`status`),
-  ADD KEY `idx_date_lent` (`date_lent`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `login_logs`
 --
 ALTER TABLE `login_logs`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `username` (`username`),
-  ADD KEY `ip_address` (`ip_address`),
-  ADD KEY `success` (`success`),
-  ADD KEY `attempt_time` (`attempt_time`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `notifications`
 --
 ALTER TABLE `notifications`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_user_id` (`user_id`),
-  ADD KEY `idx_is_read` (`is_read`),
-  ADD KEY `idx_created_at` (`created_at`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `notification_settings`
 --
 ALTER TABLE `notification_settings`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `unique_user` (`user_id`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `offices`
 --
 ALTER TABLE `offices`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `office_name` (`office_name`),
-  ADD UNIQUE KEY `office_code` (`office_code`),
-  ADD KEY `idx_office_code` (`office_code`),
-  ADD KEY `idx_status` (`status`),
-  ADD KEY `updated_by` (`updated_by`),
-  ADD KEY `created_by` (`created_by`),
-  ADD KEY `fk_offices_branch` (`branch`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `online_backup_configs`
 --
 ALTER TABLE `online_backup_configs`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `created_by` (`created_by`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `par_form`
 --
 ALTER TABLE `par_form`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_form_id` (`form_id`),
-  ADD KEY `idx_office_id` (`office_id`),
-  ADD KEY `idx_par_no` (`par_no`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `par_forms`
 --
 ALTER TABLE `par_forms`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `par_no` (`par_no`),
-  ADD KEY `created_by` (`created_by`),
-  ADD KEY `updated_by` (`updated_by`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `par_items`
 --
 ALTER TABLE `par_items`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_form_id` (`form_id`),
-  ADD KEY `idx_asset_id` (`asset_id`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `password_policies`
 --
 ALTER TABLE `password_policies`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `policy_name` (`policy_name`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `password_resets`
 --
 ALTER TABLE `password_resets`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_email` (`email`),
-  ADD KEY `idx_token` (`token`),
-  ADD KEY `idx_expires` (`expires_at`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `permissions`
 --
 ALTER TABLE `permissions`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `name` (`name`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `red_tags`
 --
 ALTER TABLE `red_tags`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `control_no` (`control_no`),
-  ADD UNIQUE KEY `red_tag_no` (`red_tag_no`),
-  ADD KEY `office_id` (`office_id`),
-  ADD KEY `asset_id` (`asset_item_id`),
-  ADD KEY `created_by` (`created_by`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `ris_forms`
 --
 ALTER TABLE `ris_forms`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `ris_no` (`ris_no`),
-  ADD UNIQUE KEY `sai_no` (`sai_no`),
-  ADD UNIQUE KEY `code` (`code`),
-  ADD KEY `created_by` (`created_by`),
-  ADD KEY `idx_ris_no` (`ris_no`),
-  ADD KEY `idx_sai_no` (`sai_no`),
-  ADD KEY `idx_code` (`code`),
-  ADD KEY `idx_status` (`status`),
-  ADD KEY `idx_date` (`date`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `ris_items`
 --
 ALTER TABLE `ris_items`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_ris_form_id` (`ris_form_id`),
-  ADD KEY `idx_stock_no` (`stock_no`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `role_permissions`
 --
 ALTER TABLE `role_permissions`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `unique_role_permission` (`role`,`permission_id`),
-  ADD KEY `permission_id` (`permission_id`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `scheduled_backups`
 --
 ALTER TABLE `scheduled_backups`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `enabled` (`enabled`),
-  ADD KEY `next_run` (`next_run`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `security_alerts`
 --
 ALTER TABLE `security_alerts`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_alert_type` (`alert_type`),
-  ADD KEY `idx_status` (`status`),
-  ADD KEY `idx_category` (`category`),
-  ADD KEY `idx_created_at` (`created_at`),
-  ADD KEY `fk_alert_affected_user` (`affected_user_id`),
-  ADD KEY `fk_alert_resolved_by` (`resolved_by`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `security_audit_logs`
 --
 ALTER TABLE `security_audit_logs`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_audit_id` (`audit_id`),
-  ADD KEY `idx_category` (`category`),
-  ADD KEY `idx_performed_by` (`performed_by`),
-  ADD KEY `idx_created_at` (`created_at`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `security_logs`
 --
 ALTER TABLE `security_logs`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `event_type` (`event_type`),
-  ADD KEY `severity` (`severity`),
-  ADD KEY `timestamp` (`timestamp`),
-  ADD KEY `user_id` (`user_id`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `security_metrics`
 --
 ALTER TABLE `security_metrics`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `unique_date` (`metric_date`),
-  ADD KEY `idx_metric_date` (`metric_date`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `software`
 --
 ALTER TABLE `software`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_software_name` (`software_name`),
-  ADD KEY `idx_category` (`category`),
-  ADD KEY `idx_vendor` (`vendor`),
-  ADD KEY `idx_license_type` (`license_type`),
-  ADD KEY `idx_status` (`status`),
-  ADD KEY `idx_purchase_date` (`purchase_date`),
-  ADD KEY `idx_renewal_date` (`renewal_date`),
-  ADD KEY `idx_created_by` (`created_by`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `system_logs`
 --
 ALTER TABLE `system_logs`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `user_id` (`user_id`),
-  ADD KEY `action` (`action`),
-  ADD KEY `module` (`module`),
-  ADD KEY `timestamp` (`timestamp`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `system_settings`
 --
 ALTER TABLE `system_settings`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `setting_name` (`setting_name`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `tag_formats`
 --
 ALTER TABLE `tag_formats`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `tag_type` (`tag_type`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `thresholds`
@@ -12835,27 +12768,19 @@ ALTER TABLE `thresholds`
 -- Indexes for table `units`
 --
 ALTER TABLE `units`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `unique_unit_code` (`unit_code`),
-  ADD KEY `idx_unit_type` (`unit_type`),
-  ADD KEY `idx_status` (`status`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `users`
 --
 ALTER TABLE `users`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `username` (`username`),
-  ADD UNIQUE KEY `email` (`email`),
-  ADD KEY `idx_office` (`office`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `user_password_history`
 --
 ALTER TABLE `user_password_history`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_user_id` (`user_id`),
-  ADD KEY `idx_created_at` (`created_at`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -12865,7 +12790,7 @@ ALTER TABLE `user_password_history`
 -- AUTO_INCREMENT for table `assets`
 --
 ALTER TABLE `assets`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `asset_buildings`
@@ -12901,13 +12826,13 @@ ALTER TABLE `asset_furniture`
 -- AUTO_INCREMENT for table `asset_items`
 --
 ALTER TABLE `asset_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `asset_item_history`
 --
 ALTER TABLE `asset_item_history`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `asset_land`
@@ -12970,16 +12895,22 @@ ALTER TABLE `borrow_requests`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `branches`
+--
+ALTER TABLE `branches`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `consumables`
 --
 ALTER TABLE `consumables`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `consumable_add_history`
 --
 ALTER TABLE `consumable_add_history`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `consumable_balance`
@@ -12991,7 +12922,7 @@ ALTER TABLE `consumable_balance`
 -- AUTO_INCREMENT for table `consumable_release_history`
 --
 ALTER TABLE `consumable_release_history`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `employees`
@@ -13213,7 +13144,7 @@ ALTER TABLE `security_audit_logs`
 -- AUTO_INCREMENT for table `security_logs`
 --
 ALTER TABLE `security_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=211;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=217;
 
 --
 -- AUTO_INCREMENT for table `security_metrics`
@@ -13231,7 +13162,7 @@ ALTER TABLE `software`
 -- AUTO_INCREMENT for table `system_logs`
 --
 ALTER TABLE `system_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10415;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10592;
 
 --
 -- AUTO_INCREMENT for table `system_settings`
@@ -13268,336 +13199,7 @@ ALTER TABLE `users`
 --
 ALTER TABLE `user_password_history`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- Constraints for dumped tables
---
-
---
--- Constraints for table `assets`
---
-ALTER TABLE `assets`
-  ADD CONSTRAINT `assets_ibfk_1` FOREIGN KEY (`asset_categories_id`) REFERENCES `asset_categories` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `assets_ibfk_2` FOREIGN KEY (`office_id`) REFERENCES `offices` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `fk_assets_asset_subcategory` FOREIGN KEY (`asset_subcategory_id`) REFERENCES `asset_sub_categories` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
-
---
--- Constraints for table `asset_buildings`
---
-ALTER TABLE `asset_buildings`
-  ADD CONSTRAINT `asset_buildings_ibfk_1` FOREIGN KEY (`asset_item_id`) REFERENCES `assets` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `asset_buildings_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `asset_buildings_ibfk_3` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `asset_categories`
---
-ALTER TABLE `asset_categories`
-  ADD CONSTRAINT `asset_categories_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `asset_categories_ibfk_2` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `asset_computers`
---
-ALTER TABLE `asset_computers`
-  ADD CONSTRAINT `asset_computers_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `asset_computers_ibfk_3` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `asset_desktop_computers`
---
-ALTER TABLE `asset_desktop_computers`
-  ADD CONSTRAINT `fk_desktop_computers_asset_item` FOREIGN KEY (`asset_item_id`) REFERENCES `asset_items` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Constraints for table `asset_furniture`
---
-ALTER TABLE `asset_furniture`
-  ADD CONSTRAINT `asset_furniture_ibfk_1` FOREIGN KEY (`asset_item_id`) REFERENCES `assets` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `asset_furniture_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `asset_furniture_ibfk_3` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `asset_items`
---
-ALTER TABLE `asset_items`
-  ADD CONSTRAINT `asset_items_ibfk_1` FOREIGN KEY (`asset_id`) REFERENCES `assets` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `asset_items_ibfk_2` FOREIGN KEY (`office_id`) REFERENCES `offices` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `fk_asset_items_asset_subcategory` FOREIGN KEY (`asset_subcategory_id`) REFERENCES `asset_sub_categories` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_asset_items_category` FOREIGN KEY (`category_id`) REFERENCES `asset_categories` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `fk_asset_items_ics` FOREIGN KEY (`ics_id`) REFERENCES `ics_forms` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `fk_asset_items_par_id` FOREIGN KEY (`par_id`) REFERENCES `par_forms` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `asset_item_history`
---
-ALTER TABLE `asset_item_history`
-  ADD CONSTRAINT `asset_item_history_ibfk_1` FOREIGN KEY (`item_id`) REFERENCES `asset_items` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `asset_item_history_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`);
-
---
--- Constraints for table `asset_land`
---
-ALTER TABLE `asset_land`
-  ADD CONSTRAINT `asset_land_ibfk_1` FOREIGN KEY (`asset_item_id`) REFERENCES `assets` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `asset_land_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `asset_land_ibfk_3` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `asset_machinery`
---
-ALTER TABLE `asset_machinery`
-  ADD CONSTRAINT `asset_machinery_ibfk_1` FOREIGN KEY (`asset_item_id`) REFERENCES `assets` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `asset_machinery_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `asset_machinery_ibfk_3` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `asset_office_equipment`
---
-ALTER TABLE `asset_office_equipment`
-  ADD CONSTRAINT `asset_office_equipment_ibfk_1` FOREIGN KEY (`asset_item_id`) REFERENCES `assets` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `asset_office_equipment_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `asset_office_equipment_ibfk_3` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `asset_software`
---
-ALTER TABLE `asset_software`
-  ADD CONSTRAINT `asset_software_ibfk_1` FOREIGN KEY (`asset_item_id`) REFERENCES `assets` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `asset_software_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `asset_software_ibfk_3` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `asset_sub_categories`
---
-ALTER TABLE `asset_sub_categories`
-  ADD CONSTRAINT `fk_sub_categories_asset_categories` FOREIGN KEY (`asset_categories_id`) REFERENCES `asset_categories` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_sub_categories_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_sub_categories_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
-
---
--- Constraints for table `asset_vehicles`
---
-ALTER TABLE `asset_vehicles`
-  ADD CONSTRAINT `asset_vehicles_ibfk_1` FOREIGN KEY (`asset_item_id`) REFERENCES `assets` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `asset_vehicles_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `asset_vehicles_ibfk_3` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `backups`
---
-ALTER TABLE `backups`
-  ADD CONSTRAINT `backups_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`);
-
---
--- Constraints for table `borrow_requests`
---
-ALTER TABLE `borrow_requests`
-  ADD CONSTRAINT `fk_borrow_requests_approved_by` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `fk_borrow_requests_asset_id` FOREIGN KEY (`asset_id`) REFERENCES `asset_items` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_borrow_requests_denied_by` FOREIGN KEY (`denied_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `fk_borrow_requests_requested_by` FOREIGN KEY (`requested_by`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_borrow_requests_requested_by_office` FOREIGN KEY (`requested_by_office`) REFERENCES `offices` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_borrow_requests_requested_to_office` FOREIGN KEY (`requested_to_office`) REFERENCES `offices` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `consumables`
---
-ALTER TABLE `consumables`
-  ADD CONSTRAINT `consumables_ibfk_1` FOREIGN KEY (`office_id`) REFERENCES `offices` (`id`),
-  ADD CONSTRAINT `consumables_ibfk_2` FOREIGN KEY (`for_office_id`) REFERENCES `offices` (`id`);
-
---
--- Constraints for table `consumable_add_history`
---
-ALTER TABLE `consumable_add_history`
-  ADD CONSTRAINT `consumable_add_history_ibfk_1` FOREIGN KEY (`consumable_id`) REFERENCES `consumables` (`id`),
-  ADD CONSTRAINT `consumable_add_history_ibfk_2` FOREIGN KEY (`office_id`) REFERENCES `offices` (`id`),
-  ADD CONSTRAINT `consumable_add_history_ibfk_3` FOREIGN KEY (`added_by`) REFERENCES `users` (`id`);
-
---
--- Constraints for table `consumable_balance`
---
-ALTER TABLE `consumable_balance`
-  ADD CONSTRAINT `consumable_balance_ibfk_1` FOREIGN KEY (`consumable_id`) REFERENCES `consumables` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `consumable_balance_ibfk_2` FOREIGN KEY (`office_id`) REFERENCES `offices` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `consumable_balance_ibfk_3` FOREIGN KEY (`for_office_id`) REFERENCES `offices` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `consumable_release_history`
---
-ALTER TABLE `consumable_release_history`
-  ADD CONSTRAINT `consumable_release_history_ibfk_1` FOREIGN KEY (`consumable_id`) REFERENCES `consumables` (`id`),
-  ADD CONSTRAINT `consumable_release_history_ibfk_2` FOREIGN KEY (`from_office_id`) REFERENCES `offices` (`id`),
-  ADD CONSTRAINT `consumable_release_history_ibfk_3` FOREIGN KEY (`to_office_id`) REFERENCES `offices` (`id`),
-  ADD CONSTRAINT `consumable_release_history_ibfk_4` FOREIGN KEY (`released_by`) REFERENCES `users` (`id`);
-
---
--- Constraints for table `employees`
---
-ALTER TABLE `employees`
-  ADD CONSTRAINT `employees_ibfk_1` FOREIGN KEY (`office_id`) REFERENCES `offices` (`id`);
-
---
--- Constraints for table `forms`
---
-ALTER TABLE `forms`
-  ADD CONSTRAINT `forms_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `forms_ibfk_2` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `fuel_in`
---
-ALTER TABLE `fuel_in`
-  ADD CONSTRAINT `fuel_in_ibfk_1` FOREIGN KEY (`fuel_type`) REFERENCES `fuel_types` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `fuel_inventory`
---
-ALTER TABLE `fuel_inventory`
-  ADD CONSTRAINT `fk_fuel_inventory_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `fuel_out`
---
-ALTER TABLE `fuel_out`
-  ADD CONSTRAINT `fuel_out_ibfk_1` FOREIGN KEY (`fo_fuel_type`) REFERENCES `fuel_types` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `fuel_stock`
---
-ALTER TABLE `fuel_stock`
-  ADD CONSTRAINT `fuel_stock_ibfk_1` FOREIGN KEY (`fuel_type_id`) REFERENCES `fuel_types` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `ics_form`
---
-ALTER TABLE `ics_form`
-  ADD CONSTRAINT `ics_form_ibfk_1` FOREIGN KEY (`form_id`) REFERENCES `forms` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `ics_form_ibfk_2` FOREIGN KEY (`office_id`) REFERENCES `offices` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `ics_items`
---
-ALTER TABLE `ics_items`
-  ADD CONSTRAINT `ics_items_ibfk_1` FOREIGN KEY (`form_id`) REFERENCES `ics_forms` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `iirup_items`
---
-ALTER TABLE `iirup_items`
-  ADD CONSTRAINT `iirup_items_ibfk_1` FOREIGN KEY (`form_id`) REFERENCES `iirup_forms` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `itr_forms`
---
-ALTER TABLE `itr_forms`
-  ADD CONSTRAINT `itr_forms_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`),
-  ADD CONSTRAINT `itr_forms_ibfk_2` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`);
-
---
--- Constraints for table `itr_items`
---
-ALTER TABLE `itr_items`
-  ADD CONSTRAINT `itr_items_ibfk_1` FOREIGN KEY (`form_id`) REFERENCES `itr_forms` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `lend_consumables`
---
-ALTER TABLE `lend_consumables`
-  ADD CONSTRAINT `lend_consumables_ibfk_1` FOREIGN KEY (`consumable_id`) REFERENCES `consumables` (`id`),
-  ADD CONSTRAINT `lend_consumables_ibfk_2` FOREIGN KEY (`from_office_id`) REFERENCES `offices` (`id`),
-  ADD CONSTRAINT `lend_consumables_ibfk_3` FOREIGN KEY (`to_office_id`) REFERENCES `offices` (`id`),
-  ADD CONSTRAINT `lend_consumables_ibfk_4` FOREIGN KEY (`lent_by`) REFERENCES `users` (`id`);
-
---
--- Constraints for table `notifications`
---
-ALTER TABLE `notifications`
-  ADD CONSTRAINT `notifications_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `notification_settings`
---
-ALTER TABLE `notification_settings`
-  ADD CONSTRAINT `notification_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `offices`
---
-ALTER TABLE `offices`
-  ADD CONSTRAINT `fk_offices_branch` FOREIGN KEY (`branch`) REFERENCES `offices` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `offices_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `offices_ibfk_2` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `offices_ibfk_3` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`);
-
---
--- Constraints for table `online_backup_configs`
---
-ALTER TABLE `online_backup_configs`
-  ADD CONSTRAINT `online_backup_configs_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`);
-
---
--- Constraints for table `par_form`
---
-ALTER TABLE `par_form`
-  ADD CONSTRAINT `par_form_ibfk_1` FOREIGN KEY (`form_id`) REFERENCES `forms` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `par_form_ibfk_2` FOREIGN KEY (`office_id`) REFERENCES `offices` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `par_items`
---
-ALTER TABLE `par_items`
-  ADD CONSTRAINT `par_items_ibfk_1` FOREIGN KEY (`form_id`) REFERENCES `par_forms` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `red_tags`
---
-ALTER TABLE `red_tags`
-  ADD CONSTRAINT `fk_red_tags_asset_item_id` FOREIGN KEY (`asset_item_id`) REFERENCES `asset_items` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
-
---
--- Constraints for table `ris_forms`
---
-ALTER TABLE `ris_forms`
-  ADD CONSTRAINT `ris_forms_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`);
-
---
--- Constraints for table `ris_items`
---
-ALTER TABLE `ris_items`
-  ADD CONSTRAINT `ris_items_ibfk_1` FOREIGN KEY (`ris_form_id`) REFERENCES `ris_forms` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `role_permissions`
---
-ALTER TABLE `role_permissions`
-  ADD CONSTRAINT `role_permissions_ibfk_1` FOREIGN KEY (`permission_id`) REFERENCES `permissions` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `security_alerts`
---
-ALTER TABLE `security_alerts`
-  ADD CONSTRAINT `fk_alert_affected_user` FOREIGN KEY (`affected_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `fk_alert_resolved_by` FOREIGN KEY (`resolved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `security_audit_logs`
---
-ALTER TABLE `security_audit_logs`
-  ADD CONSTRAINT `fk_audit_performed_by` FOREIGN KEY (`performed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `users`
---
-ALTER TABLE `users`
-  ADD CONSTRAINT `users_ibfk_1` FOREIGN KEY (`office`) REFERENCES `offices` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
-
---
--- Constraints for table `user_password_history`
---
-ALTER TABLE `user_password_history`
-  ADD CONSTRAINT `fk_password_history_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+SET FOREIGN_KEY_CHECKS=1;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
