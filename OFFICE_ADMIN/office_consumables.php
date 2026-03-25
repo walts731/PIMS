@@ -367,16 +367,7 @@ $page_title = 'Office Consumables';
                             </tr>
                         </thead>
                         <tbody>
-                            <?php if (empty($consumables)): ?>
-                            <tr>
-                                <td colspan="4" class="text-center text-muted py-4">
-                                    <i class="bi bi-inbox" style="font-size: 2rem;"></i>
-                                    <p class="mt-2 mb-0">No consumables found in your office.</p>
-                                    <small>Click "Add Consumable" to add your first item.</small>
-                                </td>
-                            </tr>
-                            <?php else: ?>
-                                <?php foreach ($consumables as $consumable): ?>
+                            <?php foreach ($consumables as $consumable): ?>
                                 <tr>
                                     <td>
                                         <div class="d-flex align-items-center">
@@ -428,7 +419,6 @@ $page_title = 'Office Consumables';
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
-                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
@@ -590,7 +580,7 @@ $page_title = 'Office Consumables';
             pageLength: 10,
             lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]],
             language: {
-                emptyTable: "No consumables data available in your office",
+                emptyTable: '<div class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:2rem;"></i><p class="mt-2 mb-0">No consumables found in your office.</p><small>Send a \"Request\" to add your first item.</small></div>',
                 zeroRecords: "No consumables found matching your search"
             }
         });

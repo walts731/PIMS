@@ -118,7 +118,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' || $action === 'check_updates') {
                                               )
                                               AND id != ?";
                             $stmt = $conn->prepare($overlap_check);
-                            $stmt->bind_param("isssssi", $asset_id, $start_date, $start_date, $end_date, $end_date, $start_date, $end_date, 0);
+                            $exclude_id = 0;
+                            $stmt->bind_param("issssssi", $asset_id, $start_date, $start_date, $end_date, $end_date, $start_date, $end_date, $exclude_id);
                             $stmt->execute();
                             $overlap_result = $stmt->get_result();
                             $overlap_data = $overlap_result->fetch_assoc();
@@ -141,11 +142,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' || $action === 'check_updates') {
                                     $_SESSION['error'] = "You have reached the maximum number of active requests (5). Please complete existing requests first.";
                                 } else {
                                     // All validations passed - insert new borrow request
+                                    // Generate unique ID for the request
+                                    $request_id = time() + rand(1000, 9999); // Simple unique ID based on timestamp
+
                                     $insert_query = "INSERT INTO borrow_requests 
-                                                     (requested_by, requested_by_office, requested_to_office, asset_id, quantity_requested, purpose, start_date, end_date) 
-                                                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                                                     (id, requested_by, requested_by_office, requested_to_office, asset_id, quantity_requested, purpose, start_date, end_date) 
+                                                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
                                     $stmt = $conn->prepare($insert_query);
-                                    $stmt->bind_param("iiisisss", $_SESSION['user_id'], $office_id, $requested_to_office, $asset_id, $quantity_requested, $purpose, $start_date, $end_date);
+                                    $stmt->bind_param("iiisissss", $request_id, $_SESSION['user_id'], $office_id, $requested_to_office, $asset_id, $quantity_requested, $purpose, $start_date, $end_date);
                                     
                                     if ($stmt->execute()) {
                                         // Update asset status to pending when request is created
@@ -1650,34 +1654,86 @@ $page_title = 'Requests Management';
                         <div class="row g-3">
                             <div class="col-12">
                                 <div class="mb-3">
-                                    <label for="asset_id" class="form-label fw-semibold">
+                                    <label class="form-label fw-semibold">
                                         Asset to Borrow 
                                         <span class="text-danger" aria-label="required">*</span>
                                     </label>
-                                    <div class="input-group">
-                                        <select class="form-select" id="asset_id" name="asset_id" 
-                                                aria-describedby="assetHelp assetAvailability" aria-required="true" required>
-                                            <option value="">Select Asset</option>
-                                            <?php foreach ($available_assets as $asset): ?>
-                                                <option value="<?php echo $asset['id']; ?>" 
-                                                        data-office-id="<?php echo $asset['office_id']; ?>" 
-                                                        data-category-id="<?php echo $asset['category_id']; ?>"
-                                                        data-available="<?php echo $asset['available_quantity']; ?>" 
-                                                        data-total="<?php echo $asset['total_quantity']; ?>">
-                                                    <?php echo htmlspecialchars($asset['description']); ?> (<?php echo htmlspecialchars($asset['asset_code']); ?>)
-                                                    - <?php echo htmlspecialchars($asset['office_name']); ?>
-                                                    <small class="text-muted">(<?php echo $asset['available_quantity']; ?> of <?php echo $asset['total_quantity']; ?> available)</small>
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                        <button class="btn btn-outline-secondary" type="button" 
-                                                onclick="showAssetDetails()" title="View Asset Details"
-                                                aria-label="View asset details">
-                                            <i class="bi bi-info-circle"></i>
-                                        </button>
+                                    
+                                    <!-- Assets Table -->
+                                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                                        <table class="table table-hover table-striped" id="assetsTable">
+                                            <thead class="table-light sticky-top">
+                                                <tr>
+                                                    <th style="width: 50px;">Select</th>
+                                                    <th>Description</th>
+                                                    <th>Property No.</th>
+                                                    <th>Category</th>
+                                                    <th>Office</th>
+                                                    <th class="text-center">Available</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="assetsTableBody">
+                                                <?php if (empty($available_assets)): ?>
+                                                    <tr>
+                                                        <td colspan="6" class="text-center text-muted py-4">
+                                                            <i class="bi bi-inbox fs-4 d-block mb-2"></i>
+                                                            No assets available for borrowing from other offices.
+                                                        </td>
+                                                    </tr>
+                                                <?php else: ?>
+                                                    <?php foreach ($available_assets as $asset): ?>
+                                                        <tr class="asset-row" 
+                                                            data-asset-id="<?php echo $asset['id']; ?>"
+                                                            data-office-id="<?php echo $asset['office_id']; ?>"
+                                                            data-category-id="<?php echo $asset['category_id']; ?>"
+                                                            data-available="<?php echo $asset['available_quantity']; ?>"
+                                                            data-total="<?php echo $asset['total_quantity']; ?>"
+                                                            data-description="<?php echo htmlspecialchars($asset['description']); ?>"
+                                                            data-asset-code="<?php echo htmlspecialchars($asset['asset_code']); ?>"
+                                                            data-office-name="<?php echo htmlspecialchars($asset['office_name']); ?>">
+                                                            <td class="text-center">
+                                                                <input type="radio" name="selected_asset" 
+                                                                       value="<?php echo $asset['id']; ?>"
+                                                                       class="form-check-input asset-selector">
+                                                            </td>
+                                                            <td>
+                                                                <strong><?php echo htmlspecialchars($asset['description']); ?></strong>
+                                                            </td>
+                                                            <td>
+                                                                <code><?php echo htmlspecialchars($asset['asset_code']); ?></code>
+                                                            </td>
+                                                            <td>
+                                                                <span class="badge bg-info">
+                                                                    <?php echo htmlspecialchars($asset['category_name'] ?? 'Uncategorized'); ?>
+                                                                </span>
+                                                            </td>
+                                                            <td>
+                                                                <i class="bi bi-building"></i>
+                                                                <?php echo htmlspecialchars($asset['office_name']); ?>
+                                                            </td>
+                                                            <td class="text-center">
+                                                                <span class="badge bg-success">
+                                                                    <?php echo $asset['available_quantity']; ?> of <?php echo $asset['total_quantity']; ?>
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    <?php endforeach; ?>
+                                                <?php endif; ?>
+                                            </tbody>
+                                        </table>
                                     </div>
+                                    
+                                    <!-- Hidden input to store selected asset -->
+                                    <input type="hidden" id="asset_id" name="asset_id" required>
+                                    
+                                    <!-- Selected Asset Display -->
+                                    <div id="selectedAssetDisplay" class="alert alert-info d-none">
+                                        <h6 class="mb-2">Selected Asset:</h6>
+                                        <div id="selectedAssetInfo"></div>
+                                    </div>
+                                    
                                     <div id="assetHelp" class="form-text">
-                                        Only available assets from other offices are shown
+                                        Only available assets from other offices are shown. Click on a row to select an asset.
                                     </div>
                                     <div id="assetAvailability" class="form-text fw-semibold"></div>
                                 </div>
@@ -1851,11 +1907,13 @@ function approveRequest(requestId) {
 }
 
 function denyRequest(requestId) {
+    console.log('denyRequest called with requestId:', requestId);
     document.getElementById('denyRequestId').value = requestId;
     new bootstrap.Modal(document.getElementById('denyModal')).show();
 }
 
 function returnAsset(requestId) {
+    console.log('returnAsset called with requestId:', requestId);
     document.getElementById('returnRequestId').value = requestId;
     new bootstrap.Modal(document.getElementById('returnModal')).show();
 }
@@ -1865,6 +1923,7 @@ function returnAsset(requestId) {
 // ---------------------------------------------------------------------------
 
 function quickApprove(requestId) {
+    console.log('quickApprove called with requestId:', requestId);
     if (confirm('Are you sure you want to approve this request?')) {
         const form = document.createElement('form');
         form.method = 'POST';
@@ -1879,6 +1938,7 @@ function quickApprove(requestId) {
 }
 
 function quickDeny(requestId) {
+    console.log('quickDeny called with requestId:', requestId);
     const reason = prompt('Please enter the reason for denial:');
     if (reason) {
         const form = document.createElement('form');
@@ -1886,7 +1946,7 @@ function quickDeny(requestId) {
         form.innerHTML = `
             <input type="hidden" name="action" value="deny_request">
             <input type="hidden" name="request_id" value="${requestId}">
-            <input type="hidden" name="denial_reason" value="${reason}">
+            <input type="hidden" name="reason" value="${reason}">
         `;
         document.body.appendChild(form);
         form.submit();
@@ -1894,6 +1954,7 @@ function quickDeny(requestId) {
 }
 
 function quickMarkBorrowed(requestId) {
+    console.log('quickMarkBorrowed called with requestId:', requestId);
     if (confirm('Mark this asset as borrowed?')) {
         const form = document.createElement('form');
         form.method = 'POST';
@@ -1907,6 +1968,7 @@ function quickMarkBorrowed(requestId) {
 }
 
 function markBorrowed(requestId) {
+    console.log('markBorrowed called with requestId:', requestId);
     if (confirm('Are you sure you want to mark this asset as borrowed?')) {
         const formData = new FormData();
         formData.append('action', 'mark_borrowed');
@@ -1918,6 +1980,7 @@ function markBorrowed(requestId) {
 }
 
 function cancelRequest(requestId) {
+    console.log('cancelRequest called with requestId:', requestId);
     if (confirm('Are you sure you want to cancel this request? This action cannot be undone.')) {
         const form = document.createElement('form');
         form.method = 'POST';
@@ -1943,6 +2006,7 @@ function refreshRequests() {
 // ---------------------------------------------------------------------------
 
 function viewDetails(requestId) {
+    console.log('viewDetails called with requestId:', requestId);
     fetch(`../api/get_request_details_simple.php?request_id=${requestId}`)
         .then(response => {
             const contentType = response.headers.get('content-type');
@@ -2763,6 +2827,163 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Start polling
     startRealTimeUpdates();
+
+    // ---------------------------------------------------------------------------
+    // Asset Table Functionality
+    // ---------------------------------------------------------------------------
+
+    // Asset table selection and filtering
+    const requestedToOffice = document.getElementById('requested_to_office');
+    const assetCategory = document.getElementById('asset_category');
+    const assetsTableBody = document.getElementById('assetsTableBody');
+    const assetIdHidden = document.getElementById('asset_id');
+    const selectedAssetDisplay = document.getElementById('selectedAssetDisplay');
+    const selectedAssetInfo = document.getElementById('selectedAssetInfo');
+    const assetAvailability = document.getElementById('assetAvailability');
+
+    // Filter assets based on office and category selection
+    function filterAssetTable() {
+        const officeId = requestedToOffice?.value || '';
+        const categoryId = assetCategory?.value || '';
+        
+        console.log('DEBUG: Filtering assets - Office ID:', officeId, 'Category ID:', categoryId);
+        
+        const rows = document.querySelectorAll('.asset-row');
+        let visibleCount = 0;
+        
+        rows.forEach(row => {
+            const rowOfficeId = row.dataset.officeId || '';
+            const rowCategoryId = row.dataset.categoryId || '';
+            
+            const officeMatch = !officeId || rowOfficeId === officeId;
+            const categoryMatch = !categoryId || rowCategoryId === categoryId;
+            
+            const isVisible = officeMatch && categoryMatch;
+            row.style.display = isVisible ? '' : 'none';
+            
+            if (isVisible) visibleCount++;
+            
+            console.log('DEBUG: Asset row - Row Office:', rowOfficeId, 'Filter Office:', officeId, 'Match:', officeMatch, 'Visible:', isVisible);
+        });
+        
+        console.log('DEBUG: Visible assets count:', visibleCount);
+        
+        // Show message if no results
+        const noResultsRow = assetsTableBody.querySelector('.no-results-row');
+        if (visibleCount === 0 && !noResultsRow) {
+            const noRow = document.createElement('tr');
+            noRow.className = 'no-results-row';
+            noRow.innerHTML = `
+                <td colspan="6" class="text-center text-muted py-4">
+                    <i class="bi bi-inbox fs-4 d-block mb-2"></i>
+                    No assets found matching your criteria.
+                </td>
+            `;
+            assetsTableBody.appendChild(noRow);
+        } else if (visibleCount > 0 && noResultsRow) {
+            noResultsRow.remove();
+        }
+        
+        // Clear selection if no assets are visible
+        if (visibleCount === 0) {
+            assetIdHidden.value = '';
+            selectedAssetDisplay.classList.add('d-none');
+            if (quantityInfo) quantityInfo.textContent = 'Select an asset to see available quantity';
+            if (quantityEl) quantityEl.max = '';
+        }
+    }
+
+    // Handle asset row selection
+    function selectAssetRow(row) {
+        // Remove previous selection
+        document.querySelectorAll('.asset-row').forEach(r => {
+            r.classList.remove('table-primary');
+        });
+        
+        // Add selection to clicked row
+        row.classList.add('table-primary');
+        
+        // Get asset data
+        const assetId = row.dataset.assetId;
+        const description = row.dataset.description;
+        const assetCode = row.dataset.assetCode;
+        const officeName = row.dataset.officeName;
+        const available = row.dataset.available;
+        const total = row.dataset.total;
+        
+        // Update hidden input
+        assetIdHidden.value = assetId;
+        
+        // Update selected asset display
+        selectedAssetInfo.innerHTML = `
+            <strong>${description}</strong> (${assetCode})<br>
+            <small class="text-muted">
+                <i class="bi bi-building"></i> ${officeName} | 
+                <i class="bi bi-box"></i> ${available} of ${total} available
+            </small>
+        `;
+        selectedAssetDisplay.classList.remove('d-none');
+        
+        // Update quantity info
+        if (quantityInfo) {
+            quantityInfo.textContent = `${available} of ${total} units available`;
+        }
+        if (quantityEl) {
+            quantityEl.max = available;
+            if (parseInt(quantityEl.value) > parseInt(available)) {
+                quantityEl.value = available;
+            }
+        }
+        
+        // Check radio button
+        const radio = row.querySelector('.asset-selector');
+        if (radio) radio.checked = true;
+    }
+
+    // Add click handlers to asset rows
+    document.querySelectorAll('.asset-row').forEach(row => {
+        row.addEventListener('click', function(e) {
+            // Don't select if clicking on radio button directly
+            if (!e.target.classList.contains('asset-selector')) {
+                selectAssetRow(this);
+            }
+        });
+        
+        // Handle radio button change
+        const radio = row.querySelector('.asset-selector');
+        if (radio) {
+            radio.addEventListener('change', function() {
+                if (this.checked) {
+                    selectAssetRow(row);
+                }
+            });
+        }
+    });
+
+    // Add event listeners for filters
+    if (requestedToOffice) requestedToOffice.addEventListener('change', filterAssetTable);
+    if (assetCategory) assetCategory.addEventListener('change', filterAssetTable);
+
+    // Clear selection when modal is hidden
+    const newRequestModal = document.getElementById('newRequestModal');
+    if (newRequestModal) {
+        newRequestModal.addEventListener('hidden.bs.modal', function() {
+            // Reset table selection
+            document.querySelectorAll('.asset-row').forEach(row => {
+                row.classList.remove('table-primary');
+            });
+            
+            // Reset form elements
+            if (requestedToOffice) requestedToOffice.value = '';
+            if (assetCategory) assetCategory.value = '';
+            if (assetIdHidden) assetIdHidden.value = '';
+            if (selectedAssetDisplay) selectedAssetDisplay.classList.add('d-none');
+            if (quantityInfo) quantityInfo.textContent = 'Select an asset to see available quantity';
+            if (quantityEl) quantityEl.max = '';
+            
+            filterAssetTable();
+        });
+    }
 
     console.log('DEBUG: Init complete');
 });
