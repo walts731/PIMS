@@ -19,7 +19,7 @@ if ($item_id === 0) {
 
 // Get asset item details with related information
 $item = null;
-$item_sql = "SELECT ai.id, ai.asset_id, ai.property_no, ai.model, ai.serial_number, ai.description, ai.status, ai.date_counted, ai.image, ai.qr_code, ai.created_at, ai.last_updated, ai.value, ai.acquisition_date, ai.end_user,
+$item_sql = "SELECT ai.id, ai.asset_id, ai.property_no, ai.ics_par_no, ai.model, ai.serial_number, ai.description, ai.status, ai.date_counted, ai.image, ai.qr_code, ai.created_at, ai.last_updated, ai.value, ai.acquisition_date, ai.end_user,
                    a.description as asset_description, a.unit, a.quantity as asset_quantity, a.unit_cost,
                    ac.category_name, ac.category_code,
                    subcat.sub_category_name, subcat.sub_category_code,
@@ -1013,6 +1013,12 @@ $status_display = formatStatus($item['status']);
                                         if ($item['par_no']) {
                                             $reference = $reference ? $reference . ' / PAR No: ' . htmlspecialchars($item['par_no']) : 'PAR No: ' . htmlspecialchars($item['par_no']);
                                         }
+                                        
+                                        // If both ics_no and par_no are empty, check for ics_par_no
+                                        if (!$reference && !empty($item['ics_par_no'])) {
+                                            $reference = htmlspecialchars($item['ics_par_no']);
+                                        }
+                                        
                                         echo $reference ? $reference : '<span class="text-muted">Not assigned</span>';
                                         ?>
                                     </div>
