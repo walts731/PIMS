@@ -36,11 +36,6 @@ $office_id = $_SESSION['office_id'] ?? null;
 
 if ($office_id && $conn) {
     try {
-        // Debug: Check session and office_id values
-        error_log("DEBUG: Session office_id = " . ($office_id ?? 'NULL'));
-        error_log("DEBUG: Session office = " . ($_SESSION['office'] ?? 'NOT SET'));
-        error_log("DEBUG: Session email = " . ($_SESSION['email'] ?? 'NOT SET'));
-        
         // Fetch consumables for this office
         $query = "SELECT c.*, o.office_name, 
                         COALESCE(crh.release_date, c.created_at) as release_date
@@ -518,8 +513,19 @@ $page_title = 'Office Consumables';
                             </div>
                         </div>
                         <div class="mb-3">
+                            <label for="consumePurpose" class="form-label">Purpose</label>
+                            <select class="form-control" id="consumePurpose" name="purpose" required>
+                                <option value="">Select purpose...</option>
+                                <option value="Office Use">Office Use</option>
+                                <option value="Maintenance">Maintenance</option>
+                                <option value="Emergency">Emergency</option>
+                                <option value="Project">Project</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
                             <label for="consumeNotes" class="form-label">Notes</label>
-                            <textarea class="form-control" id="consumeNotes" name="notes" rows="3" placeholder="Reason for consumption..."></textarea>
+                            <textarea class="form-control" id="consumeNotes" name="notes" rows="3" placeholder="Additional details..."></textarea>
                         </div>
                     </form>
                 </div>
@@ -648,6 +654,7 @@ $page_title = 'Office Consumables';
             document.getElementById('consumeDescription').value = '<?php echo addslashes($consumable['description']); ?>';
             document.getElementById('consumeCurrentQuantity').value = <?php echo $consumable['quantity']; ?>;
             document.getElementById('consumeQuantity').value = '';
+            document.getElementById('consumePurpose').value = '';
             document.getElementById('consumeNotes').value = '';
             
             // Get or create modal instance
@@ -665,51 +672,49 @@ $page_title = 'Office Consumables';
     
     // Confirm consume
     function confirmConsume() {
-        console.log('DEBUG: confirmConsume() called');
-        
         const consumableId = document.getElementById('consumeConsumableId').value;
         const quantity = document.getElementById('consumeQuantity').value;
+        const purpose = document.getElementById('consumePurpose').value;
         const notes = document.getElementById('consumeNotes').value;
         
-        console.log('DEBUG: Form data - ID:', consumableId, 'Quantity:', quantity, 'Notes:', notes);
+        if (!consumableId) {
+            alert('Error: Consumable ID is missing. Please try again.');
+            return;
+        }
         
         if (!quantity || quantity <= 0) {
-            console.log('DEBUG: Quantity validation failed');
             alert('Please enter a valid quantity to consume.');
             return;
         }
         
-        if (!confirm('Are you sure you want to consume this consumable? This will reduce the available quantity.')) {
-            console.log('DEBUG: User cancelled consumption');
+        if (!purpose) {
+            alert('Please select a purpose for consumption.');
             return;
         }
         
-        console.log('DEBUG: Sending API request...');
+        if (!confirm('Are you sure you want to consume this consumable? This will reduce the available quantity.')) {
+            return;
+        }
         
         fetch('api/consume_consumable.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
-            body: `consumable_id=${consumableId}&quantity=${quantity}&notes=${encodeURIComponent(notes)}`
+            body: `consumable_id=${consumableId}&quantity=${quantity}&purpose=${encodeURIComponent(purpose)}&notes=${encodeURIComponent(notes)}`
         })
         .then(response => {
-            console.log('DEBUG: Raw response:', response);
             return response.json();
         })
         .then(data => {
-            console.log('DEBUG: Parsed response:', data);
             if (data.success) {
-                console.log('DEBUG: Consumption successful, hiding modal');
                 bootstrap.Modal.getInstance(document.getElementById('consumeModal')).hide();
                 location.reload();
             } else {
-                console.log('DEBUG: Consumption failed:', data.message);
                 alert('Error: ' + data.message);
             }
         })
         .catch(error => {
-            console.error('DEBUG: Fetch error:', error);
             alert('An error occurred while consuming the consumable.');
         });
     }
