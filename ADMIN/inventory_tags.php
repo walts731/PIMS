@@ -126,23 +126,6 @@ try {
     error_log("Error fetching categories: " . $e->getMessage());
 }
 
-// Get statistics
-$stats = [];
-try {
-    $sql = "SELECT 
-                COUNT(DISTINCT ai.id) as total_tags,
-                COUNT(DISTINCT CASE WHEN ai.status = 'serviceable' THEN ai.id END) as serviceable,
-                COUNT(DISTINCT CASE WHEN ai.status = 'unserviceable' THEN ai.id END) as unserviceable,
-                COUNT(DISTINCT ai.office_id) as offices_with_tags
-              FROM asset_items ai 
-              WHERE ai.property_no IS NOT NULL AND ai.property_no != '' AND ai.status = 'serviceable'";
-    $result = $conn->query($sql);
-    if ($result) {
-        $stats = $result->fetch_assoc();
-    }
-} catch (Exception $e) {
-    error_log("Error fetching stats: " . $e->getMessage());
-}
 ?>
 
 <!DOCTYPE html>
@@ -192,28 +175,7 @@ try {
             </div>
         </div>
         
-        <div class="row g-3 mb-4">
-            <div class="col-6 col-md-4">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo number_format($stats['total_tags'] ?? 0); ?></div>
-                    <div class="stats-label"><i class="bi bi-qr-code"></i> Serviceable Tags</div>
-                </div>
-            </div>
-            <div class="col-6 col-md-4">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo number_format($stats['offices_with_tags'] ?? 0); ?></div>
-                    <div class="stats-label"><i class="bi bi-building"></i> Offices with Tags</div>
-                </div>
-            </div>
-           
-            <div class="col-6 col-md-4">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo count($tags); ?></div>
-                    <div class="stats-label"><i class="bi bi-list-check"></i> Current Results</div>
-                </div>
-            </div>
-        </div>
-
+        
         <div class="section-card mb-4">
             <div class="section-title">
                 <i class="bi bi-funnel"></i> Search & Filters
@@ -272,8 +234,6 @@ try {
                                         <input type="checkbox" id="selectAll" onchange="toggleAllCheckboxes()">
                                     </th>
                                     <th>Property No</th>
-                                    <th>Model</th>
-                                    <th>Serial Number</th>
                                     <th>Description</th>
                                     <th>Category</th>
                                     <th>Office</th>
@@ -289,12 +249,8 @@ try {
                                             <input type="checkbox" name="selected_tags[]" value="<?php echo $tag['id']; ?>" class="tag-checkbox">
                                         </td>
                                         <td><?php echo htmlspecialchars($tag['property_no'] ?? 'N/A'); ?></td>
-                                        <td><?php echo htmlspecialchars($tag['model'] ?? 'Not specified'); ?></td>
-                                        <td><?php echo htmlspecialchars($tag['serial_number'] ?? 'Not specified'); ?></td>
                                         <td>
                                             <?php echo htmlspecialchars($tag['description']); ?>
-                                            <br>
-                                            <small class="text-muted"><?php echo htmlspecialchars($tag['asset_description']); ?></small>
                                         </td>
                                         <td>
                                             <span class="category-badge">
@@ -303,10 +259,8 @@ try {
                                         </td>
                                         <td><?php echo htmlspecialchars($tag['office_name'] ?? 'N/A'); ?></td>
                                         <td>
-                                            <?php if ($tag['employee_no']): ?>
-                                                <?php echo htmlspecialchars($tag['employee_no']); ?>
-                                                <br>
-                                                <small class="text-muted"><?php echo htmlspecialchars($tag['firstname'] . ' ' . $tag['lastname']); ?></small>
+                                            <?php if ($tag['firstname'] && $tag['lastname']): ?>
+                                                <?php echo htmlspecialchars($tag['firstname'] . ' ' . $tag['lastname']); ?>
                                             <?php else: ?>
                                                 <span class="text-muted">Not assigned</span>
                                             <?php endif; ?>

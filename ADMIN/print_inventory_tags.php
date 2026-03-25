@@ -193,13 +193,16 @@ foreach ($tags as $tag) {
     $serviceable_checked = ($tag['status'] === 'serviceable') ? '☑' : '☐';
     $unserviceable_checked = ($tag['status'] === 'unserviceable' || $tag['status'] === 'red_tagged') ? '☑' : '☐';
 
-    // Main asset sticker
+    // Main asset sticker - use model and serial_number from asset_items table first
+    $main_model = $tag['model'] ?? '';
+    $main_serial = $tag['serial_number'] ?? '';
+
     $all_stickers[] = [
         'tag' => $tag,
         'type' => 'main',
         'description' => $tag['description'],
-        'model_no' => $model_no,
-        'serial_no' => $serial_no,
+        'model_no' => $main_model ?: $model_no, // Use main model, fallback to category-specific if empty
+        'serial_no' => $main_serial ?: $serial_no, // Use main serial, fallback to category-specific if empty
         'property_no' => $tag['property_no'] ?? 'N/A',
         'qr_code' => $tag['qr_code'] ?? null,
         'acquisition_date' => $acquisition_date,

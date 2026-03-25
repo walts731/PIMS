@@ -137,21 +137,33 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     $asset_subcategory_code = trim($_POST['asset_subcategory_id'] ?? '');
     $asset_subcategory_id = null;
     
+    // Debug: Log the raw POST value for subcategory
+    error_log("DEBUG: Raw POST asset_subcategory_id value: '" . $_POST['asset_subcategory_id'] . "'");
+    error_log("DEBUG: Trimmed asset_subcategory_code: '$asset_subcategory_code'");
+    error_log("DEBUG: Is numeric check: " . (is_numeric($asset_subcategory_code) ? 'true' : 'false'));
+    
     if (!empty($asset_subcategory_code)) {
         // Check if it's already an ID (numeric) or a code
         if (is_numeric($asset_subcategory_code)) {
             $asset_subcategory_id = intval($asset_subcategory_code);
+            error_log("DEBUG: Using numeric ID: $asset_subcategory_id");
         } else {
             // It's a code, convert to ID
+            error_log("DEBUG: Treating as code, looking up ID for: '$asset_subcategory_code'");
             $subcat_stmt = $conn->prepare("SELECT id FROM asset_sub_categories WHERE sub_category_code = ? AND status = 'active'");
             $subcat_stmt->bind_param("s", $asset_subcategory_code);
             $subcat_stmt->execute();
             $subcat_result = $subcat_stmt->get_result();
             if ($subcat_row = $subcat_result->fetch_assoc()) {
                 $asset_subcategory_id = $subcat_row['id'];
+                error_log("DEBUG: Found ID from code: $asset_subcategory_id");
+            } else {
+                error_log("DEBUG: No ID found for code: '$asset_subcategory_code'");
             }
             $subcat_stmt->close();
         }
+    } else {
+        error_log("DEBUG: asset_subcategory_code is empty");
     }
     $property_numbers = trim($_POST['property_numbers'] ?? '');
     
@@ -292,7 +304,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                 $sql = "INSERT INTO assets (asset_categories_id, asset_subcategory_id, description, unit, quantity, unit_cost, office_id) 
                         VALUES ('$asset_categories_id', " . ($asset_subcategory_id ? "'$asset_subcategory_id'" : "NULL") . ", '$description', '$unit', '$quantity', '$unit_cost', '$office_id')";
                 
-                error_log("DEBUG: SQL Query: " . $sql);
+                error_log("DEBUG: Final SQL Query: " . $sql);
+                error_log("DEBUG: asset_subcategory_id value being inserted: " . ($asset_subcategory_id ? "'$asset_subcategory_id'" : "NULL"));
                 
                 if ($conn->query($sql)) {
                     $asset_id = $conn->insert_id;
@@ -770,7 +783,7 @@ try {
                     <h5 class="modal-title"><i class="bi bi-plus-circle"></i> Add New Asset</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <form method="POST">
+                <form method="POST" onsubmit="console.log('Form submitted - Subcategory value:', document.getElementById('assetSubcategorySelect').value); return true;">
                     <div class="modal-body">
                         <input type="hidden" name="action" value="add">
                         
