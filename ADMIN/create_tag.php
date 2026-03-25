@@ -92,6 +92,14 @@ if ($selected_category_id > 0) {
         $subcategories[] = $subcategory_row;
     }
     $subcategories_stmt->close();
+    
+    // Debug: Log loaded subcategories
+    logSystemAction($_SESSION['user_id'], 'debug', 'create_tag', "Loaded " . count($subcategories) . " subcategories for category ID $selected_category_id");
+    foreach ($subcategories as $subcat) {
+        logSystemAction($_SESSION['user_id'], 'debug', 'create_tag', "Subcategory: ID " . $subcat['id'] . " - " . $subcat['sub_category_code'] . " - " . $subcat['sub_category_name']);
+    }
+} else {
+    logSystemAction($_SESSION['user_id'], 'debug', 'create_tag', "No category selected ($selected_category_id), no subcategories loaded");
 }
 
 // Get active employees for dropdown
@@ -169,7 +177,7 @@ $category_fields = [
         'chassis_number' => ['label' => 'Chassis Number', 'type' => 'text', 'required' => true],
         'year_model' => ['label' => 'Year Model', 'type' => 'number', 'required' => false]
     ],
-    '030' => [
+    '05-030' => [
         'processor' => ['label' => 'Processor', 'type' => 'text', 'required' => true],
         'ram' => ['label' => 'RAM (GB)', 'type' => 'number', 'required' => true],
         'storage_type' => ['label' => 'Storage Type', 'type' => 'select', 'required' => true, 'options' => [
@@ -352,8 +360,8 @@ $category_fields = [
                     </div>
                     <div class="col-md-4">
                         <div class="mb-3">
-                            <label for="subcategory_id" class="form-label">Subcategory</label>
-                            <select class="form-select" id="subcategory_id" name="subcategory_id" <?php echo $selected_category_id == 0 ? 'disabled' : ''; ?>>
+                            <label for="subcategory_id" class="form-label">Subcategory <span class="required">*</span></label>
+                            <select class="form-select" id="subcategory_id" name="subcategory_id" <?php echo $selected_category_id == 0 ? 'disabled' : ''; ?> required>
                                 <option value="">Select Subcategory</option>
                                 <?php foreach ($subcategories as $subcategory): ?>
                                     <option value="<?php echo $subcategory['id']; ?>" <?php echo ($subcategory['id'] == $item['asset_subcategory_id']) ? 'selected' : ''; ?>>
@@ -361,6 +369,7 @@ $category_fields = [
                                     </option>
                                 <?php endforeach; ?>
                             </select>
+                            <small class="form-text text-muted">Please select a subcategory for this asset</small>
                         </div>
                     </div>
                     <div class="col-md-4">
@@ -377,21 +386,6 @@ $category_fields = [
                         <div class="mb-3">
                             <label for="property_no" class="form-label">Property Number <span class="required">*</span></label>
                             <input type="text" class="form-control" id="property_no" name="property_no" value="<?php echo htmlspecialchars($item['property_no'] ?? ''); ?>" required>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label for="model" class="form-label">Model <span class="required">*</span></label>
-                            <input type="text" class="form-control" id="model" name="model" value="<?php echo htmlspecialchars($item['model'] ?? ''); ?>" placeholder="Enter model number/name" required>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label for="serial_number" class="form-label">Serial Number <span class="required">*</span></label>
-                            <input type="text" class="form-control" id="serial_number" name="serial_number" value="<?php echo htmlspecialchars($item['serial_number'] ?? ''); ?>" placeholder="Enter serial number" required>
                         </div>
                     </div>
                     <div class="col-md-6">
@@ -524,6 +518,9 @@ $category_fields = [
         // Category-specific fields configuration
         const categoryFields = <?php echo json_encode($category_fields); ?>;
         
+        // Existing desktop computer data for pre-populating fields
+        window.existingDesktopData = <?php echo json_encode($desktop_data); ?>;
+        
         // Subcategory-specific fields configuration
         const subcategoryFields = {
             'COMPUTER DESKTOP': {
@@ -603,21 +600,35 @@ $category_fields = [
             
             // Extract subcategory code from property number
             // Correct format: YEAR-MONTH-05-category_code-SUBCATEGORY_CODE-series
-            // Example: 2026-04-05-030-0102-02 where 01 is subcategory (LAPTOP) and 02 is series
+            // Example: 2026-04-05-030-00203-06 where 00203 is subcategory code
             let subcategoryCode = '';
             
             // Try to match the full format: YEAR-MONTH-05-category_code-SUBCATEGORY_CODE-series
-            const fullFormatMatch = propertyNumber.match(/^(\d{4})-(\d{2})-05-(\d+)-(\d{4})-(\d+)$/);
+            const fullFormatMatch = propertyNumber.match(/^(\d{4})-(\d{2})-05-(\d+)-(\d+)-(\d+)$/);
             if (fullFormatMatch) {
-                subcategoryCode = fullFormatMatch[4].substring(0, 2); // Take first 2 digits of SUBCATEGORY_CODE (0102 -> 01)
+                subcategoryCode = fullFormatMatch[4]; // Take the full SUBCATEGORY_CODE (00203)
                 console.log('Full format detected, subcategory code:', subcategoryCode);
+                
+                // Try to find exact match first, then try 2-digit extraction
+                findAndSelectSubcategoryByCode(subcategoryCode);
+                
+                // If exact match not found, try first 2 digits
+                setTimeout(() => {
+                    const subcategorySelect = document.getElementById('subcategory_id');
+                    if (!subcategorySelect.value) {
+                        const twoDigitCode = subcategoryCode.substring(0, 2);
+                        console.log('Exact match not found, trying 2-digit code:', twoDigitCode);
+                        findAndSelectSubcategoryByCode(twoDigitCode);
+                    }
+                }, 100);
             }
             
             // Try simplified format: 05-category_code-SUBCATEGORY_CODE-series
-            const simplifiedMatch = propertyNumber.match(/^05-(\d+)-(\d{4})-(\d+)$/);
+            const simplifiedMatch = propertyNumber.match(/^05-(\d+)-(\d+)-(\d+)$/);
             if (simplifiedMatch && !subcategoryCode) {
-                subcategoryCode = simplifiedMatch[2].substring(0, 2); // Take first 2 digits of SUBCATEGORY_CODE (0102 -> 01)
+                subcategoryCode = simplifiedMatch[2]; // Take the full SUBCATEGORY_CODE
                 console.log('Simplified format detected, subcategory code:', subcategoryCode);
+                findAndSelectSubcategoryByCode(subcategoryCode);
             }
             
             // Try alternative format: 05-category_code-SUBCATEGORY_CODE-series (where SUBCATEGORY_CODE is 2 digits)
@@ -625,6 +636,7 @@ $category_fields = [
             if (altMatch && !subcategoryCode) {
                 subcategoryCode = altMatch[2]; // SUBCATEGORY_CODE is exactly 2 digits
                 console.log('Alternative format detected, subcategory code:', subcategoryCode);
+                findAndSelectSubcategoryByCode(subcategoryCode);
             }
             
             // Legacy pattern matching as fallback
@@ -691,9 +703,52 @@ $category_fields = [
                 
                 console.log(`Checking option ${i}: "${optionCode}" === "${subcategoryCode}"?`);
                 
+                // Try exact match first
                 if (optionCode === subcategoryCode) {
                     option.selected = true;
-                    console.log('✓ Selected subcategory by code:', optionCode, 'Text:', option.textContent);
+                    console.log('✓ Selected subcategory by exact code match:', optionCode, 'Text:', option.textContent);
+                    
+                    // Trigger change event to load subcategory-specific fields
+                    const event = new Event('change', { bubbles: true });
+                    subcategorySelect.dispatchEvent(event);
+                    
+                    // Make the dropdown readonly/disabled to prevent changes
+                    subcategorySelect.disabled = true;
+                    
+                    // Update visual indication
+                    const label = document.querySelector('label[for="subcategory_id"]');
+                    if (label) {
+                        label.innerHTML = label.innerHTML.replace('Subcategory', 'Subcategory <small class="text-muted">(Auto-filled from Property Number)</small>');
+                    }
+                    
+                    return; // Found and selected, exit function
+                }
+                
+                // Try partial match - if subcategoryCode is longer (e.g., "00203"), try matching first 2 digits
+                if (subcategoryCode.length > 2 && optionCode === subcategoryCode.substring(0, 2)) {
+                    option.selected = true;
+                    console.log('✓ Selected subcategory by partial code match:', optionCode, 'from', subcategoryCode, 'Text:', option.textContent);
+                    
+                    // Trigger change event to load subcategory-specific fields
+                    const event = new Event('change', { bubbles: true });
+                    subcategorySelect.dispatchEvent(event);
+                    
+                    // Make the dropdown readonly/disabled to prevent changes
+                    subcategorySelect.disabled = true;
+                    
+                    // Update visual indication
+                    const label = document.querySelector('label[for="subcategory_id"]');
+                    if (label) {
+                        label.innerHTML = label.innerHTML.replace('Subcategory', 'Subcategory <small class="text-muted">(Auto-filled from Property Number)</small>');
+                    }
+                    
+                    return; // Found and selected, exit function
+                }
+                
+                // Try matching if optionCode is contained within subcategoryCode
+                if (subcategoryCode.includes(optionCode)) {
+                    option.selected = true;
+                    console.log('✓ Selected subcategory by containment match:', optionCode, 'contained in', subcategoryCode, 'Text:', option.textContent);
                     
                     // Trigger change event to load subcategory-specific fields
                     const event = new Event('change', { bubbles: true });
@@ -760,7 +815,13 @@ $category_fields = [
                 return;
             }
             
-            let fieldsHtml = '<div class="category-fields"><h6 class="mb-3"><i class="bi bi-gear"></i> ' + getCategoryName(categoryCode) + ' Specific Fields</h6><div class="row">';
+            const categoryName = getCategoryName(categoryCode);
+            if (!categoryName) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            let fieldsHtml = '<div class="category-fields"><h6 class="mb-3"><i class="bi bi-gear"></i> ' + categoryName + ' Specific Fields</h6><div class="row">';
             
             const fields = categoryFields[categoryCode];
             let fieldCount = 0;
@@ -911,15 +972,15 @@ $category_fields = [
         // Function to get category name from code
         function getCategoryName(categoryCode) {
             const categoryNames = {
-                '07': 'Vehicles',
-                '030': 'Computer Equipment',
-                '02': 'Furniture & Fixtures',
-                '04': 'Machinery & Equipment',
-                '05': 'Office Equipment',
+                '01': 'Land',
+                '02': 'Land Improvements',
+                '03': 'Infrastructure',
+                '04': 'Buildings',
+                '05': 'Machinery & Equipment',
                 '06': 'Software',
-                '03': 'Land'
+                '07': 'Furniture & Fixtures'
             };
-            return categoryNames[categoryCode] || 'Unknown';
+            return categoryNames[categoryCode] || null;
         }
         
         // Function to load subcategories dynamically
