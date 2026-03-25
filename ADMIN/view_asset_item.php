@@ -1157,7 +1157,7 @@ $status_display = formatStatus($item['status']);
                     <?php endif; ?>
                     
                     <!-- Desktop Computers Specific Fields -->
-                    <?php if ($item['sub_category_name'] === 'Desktop Computers'): ?>
+                    <?php if ($item['sub_category_name'] === 'COMPUTER DESKTOP'): ?>
                     <div class="detail-section">
                         <h5 class="mb-3"><i class="bi bi-display"></i> Desktop Computer Specifications</h5>
                         <div class="row">
