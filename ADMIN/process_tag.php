@@ -187,7 +187,7 @@ try {
                    date_counted = '$date_counted_safe',
                    image = '$image_filename_safe',
                    employee_id = $person_accountable, 
-                   category_id = $category_id,
+                   asset_category_id = $category_id,
                    asset_subcategory_id = " . ($subcategory_id > 0 ? $subcategory_id : 'NULL') . ",
                    office_name = '$office_name_safe',
                    end_user = '$end_user_safe',
@@ -199,7 +199,7 @@ try {
     
     // Debug: Log the SQL and values before execution
     logSystemAction($_SESSION['user_id'], 'Tag Update SQL Debug', 'forms', "SQL: $update_sql");
-    logSystemAction($_SESSION['user_id'], 'Tag Update Values Debug', 'forms', "Values: property_no='{$property_no}', inventory_tag='{$inventory_tag}', date_counted='{$date_counted}', image='{$image_filename}', employee_id={$person_accountable}, category_id={$category_id}, end_user='{$end_user}' (length: " . strlen($end_user) . "), model='{$model}', serial_number='{$serial_number}', item_id={$item_id}");
+    logSystemAction($_SESSION['user_id'], 'Tag Update Values Debug', 'forms', "Values: property_no='{$property_no}', inventory_tag='{$inventory_tag}', date_counted='{$date_counted}', image='{$image_filename}', employee_id={$person_accountable}, asset_category_id={$category_id}, asset_subcategory_id={$subcategory_id}, end_user='{$end_user}' (length: " . strlen($end_user) . "), model='{$model}', serial_number='{$serial_number}', item_id={$item_id}");
     
     // Execute the traditional SQL
     $update_result = mysqli_query($conn, $update_sql);
