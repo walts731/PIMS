@@ -19,7 +19,7 @@ if ($item_id === 0) {
 
 // Get asset item details with related information
 $item = null;
-$item_sql = "SELECT ai.id, ai.asset_id, ai.property_no, ai.model, ai.serial_number, ai.description, ai.status, ai.date_counted, ai.image, ai.qr_code, ai.created_at, ai.last_updated, ai.value, ai.acquisition_date, ai.end_user,
+$item_sql = "SELECT ai.id, ai.asset_id, ai.property_no, ai.ics_par_no, ai.model, ai.serial_number, ai.description, ai.status, ai.date_counted, ai.image, ai.qr_code, ai.created_at, ai.last_updated, ai.value, ai.acquisition_date, ai.end_user,
                    a.description as asset_description, a.unit, a.quantity as asset_quantity, a.unit_cost,
                    ac.category_name, ac.category_code,
                    subcat.sub_category_name, subcat.sub_category_code,
@@ -969,10 +969,11 @@ $status_display = formatStatus($item['status']);
                         <h5 class="mb-3"><i class="bi bi-info-circle"></i> Item Information</h5>
                         <div class="row">
                             <div class="col-md-6">
-                                <div class="mb-3">
-                                    <div class="detail-label">Property No</div>
-                                    <div class="detail-value"><?php echo $item['property_no'] ? htmlspecialchars($item['property_no']) : '<span class="text-muted">Not assigned</span>'; ?></div>
+                                 <div class="mb-3">
+                                    <div class="detail-label">Description</div>
+                                    <div class="detail-value"><?php echo htmlspecialchars($item['description']); ?></div>
                                 </div>
+                                
                                 <div class="mb-3">
                                     <div class="detail-label">Model</div>
                                     <div class="detail-value"><?php 
@@ -1013,20 +1014,27 @@ $status_display = formatStatus($item['status']);
                                         if ($item['par_no']) {
                                             $reference = $reference ? $reference . ' / PAR No: ' . htmlspecialchars($item['par_no']) : 'PAR No: ' . htmlspecialchars($item['par_no']);
                                         }
+                                        
+                                        // If both ics_no and par_no are empty, check for ics_par_no
+                                        if (!$reference && !empty($item['ics_par_no'])) {
+                                            $reference = htmlspecialchars($item['ics_par_no']);
+                                        }
+                                        
                                         echo $reference ? $reference : '<span class="text-muted">Not assigned</span>';
                                         ?>
                                     </div>
                                 </div>
-                                <div class="mb-3">
-                                    <div class="detail-label">Description</div>
-                                    <div class="detail-value"><?php echo htmlspecialchars($item['description']); ?></div>
+                               <div class="mb-3">
+                                    <div class="detail-label">Value</div>
+                                    <div class="detail-value text-value">₱<?php echo number_format($item['value'] ?? 0, 2); ?></div>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <div class="detail-label">Value</div>
-                                    <div class="detail-value text-value">₱<?php echo number_format($item['value'] ?? 0, 2); ?></div>
+                                    <div class="detail-label">Property No</div>
+                                    <div class="detail-value"><?php echo $item['property_no'] ? htmlspecialchars($item['property_no']) : '<span class="text-muted">Not assigned</span>'; ?></div>
                                 </div>
+                                
                                 <div class="mb-3">
                                     <div class="detail-label">Category</div>
                                     <div class="detail-value"><?php echo htmlspecialchars($item['category_code'] . ' - ' . $item['category_name']); ?></div>
