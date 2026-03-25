@@ -648,6 +648,210 @@ if ($result && $row = $result->fetch_assoc()) {
         mainDeptOfficeInput.style.border = '1px solid #28a745';
     }
     <?php endif; ?>
+    
+    // Asset search functionality with desktop computer specifications
+    let currentSearchTimeout;
+    
+    document.addEventListener('input', function(e) {
+        if (e.target.name === 'particulars[]') {
+            clearTimeout(currentSearchTimeout);
+            const searchInput = e.target;
+            const dropdown = searchInput.parentElement.querySelector('.autocomplete-dropdown');
+            
+            currentSearchTimeout = setTimeout(() => {
+                const query = searchInput.value.trim();
+                
+                if (query.length < 2) {
+                    dropdown.style.display = 'none';
+                    return;
+                }
+                
+                fetch('api/search_assets.php?q=' + encodeURIComponent(query))
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            console.error('Search error:', data.error);
+                            return;
+                        }
+                        
+                        dropdown.innerHTML = '';
+                        
+                        if (data.length === 0) {
+                            dropdown.innerHTML = '<div class="autocomplete-item">No assets found</div>';
+                        } else {
+                            data.forEach(asset => {
+                                const item = document.createElement('div');
+                                item.className = 'autocomplete-item';
+                                item.innerHTML = `
+                                    <strong>${asset.display_text}</strong>
+                                    <small>
+                                        Property No: ${asset.property_no || 'N/A'} | 
+                                        Inventory Tag: ${asset.inventory_tag || 'N/A'} | 
+                                        Office: ${asset.office_name || 'N/A'}
+                                        ${asset.employee_name ? ' | Employee: ' + asset.employee_name : ''}
+                                    </small>
+                                `;
+                                
+                                item.addEventListener('click', function() {
+                                    selectAsset(searchInput, asset);
+                                    dropdown.style.display = 'none';
+                                });
+                                
+                                dropdown.appendChild(item);
+                            });
+                        }
+                        
+                        dropdown.style.display = 'block';
+                    })
+                    .catch(error => {
+                        console.error('Search error:', error);
+                    });
+            }, 300);
+        }
+    });
+    
+    function selectAsset(input, asset) {
+        // Find the current row
+        const row = input.closest('tr');
+        
+        // Fill the row with asset data
+        input.value = asset.display_text;
+        
+        // Fill other fields in the row
+        const propertyNoInput = row.querySelector('input[name="property_no[]"]');
+        if (propertyNoInput) {
+            propertyNoInput.value = asset.property_no || '';
+        }
+        
+        const qtyInput = row.querySelector('input[name="qty[]"]');
+        if (qtyInput) {
+            qtyInput.value = 1;
+        }
+        
+        const unitCostInput = row.querySelector('input[name="unit_cost[]"]');
+        if (unitCostInput) {
+            unitCostInput.value = asset.value || 0;
+        }
+        
+        const totalCostInput = row.querySelector('input[name="total_cost[]"]');
+        if (totalCostInput) {
+            totalCostInput.value = asset.value || 0;
+        }
+        
+        const dateAcquiredInput = row.querySelector('input[name="date_acquired[]"]');
+        if (dateAcquiredInput && asset.acquisition_date) {
+            dateAcquiredInput.value = asset.acquisition_date;
+        }
+        
+        const deptOfficeSelect = row.querySelector('select[name="dept_office[]"]');
+        if (deptOfficeSelect && asset.office_name) {
+            // Check if option exists, if not add it
+            let optionExists = false;
+            for (let option of deptOfficeSelect.options) {
+                if (option.value === asset.office_name) {
+                    optionExists = true;
+                    break;
+                }
+            }
+            
+            if (!optionExists) {
+                const newOption = document.createElement('option');
+                newOption.value = asset.office_name;
+                newOption.textContent = asset.office_name;
+                deptOfficeSelect.appendChild(newOption);
+            }
+            
+            deptOfficeSelect.value = asset.office_name;
+        }
+        
+        // Store asset data for potential use
+        input.dataset.assetId = asset.id;
+        input.dataset.assetData = JSON.stringify(asset);
+        
+        // Highlight the filled fields
+        const inputs = row.querySelectorAll('input, select');
+        inputs.forEach(inp => {
+            if (inp.value) {
+                inp.style.backgroundColor = '#e8f5e8';
+                inp.style.border = '1px solid #28a745';
+            }
+        });
+    }
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.autocomplete-container')) {
+            document.querySelectorAll('.autocomplete-dropdown').forEach(dropdown => {
+                dropdown.style.display = 'none';
+            });
+        }
+    });
+    
+    // Keyboard navigation for autocomplete
+    document.addEventListener('keydown', function(e) {
+        if (e.target.name === 'particulars[]') {
+            const dropdown = e.target.parentElement.querySelector('.autocomplete-dropdown');
+            const items = dropdown.querySelectorAll('.autocomplete-item');
+            let selectedIndex = -1;
+            
+            // Find current selected item
+            items.forEach((item, index) => {
+                if (item.classList.contains('selected')) {
+                    selectedIndex = index;
+                }
+            });
+            
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                selectedIndex = (selectedIndex + 1) % items.length;
+                updateSelection(items, selectedIndex);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                selectedIndex = selectedIndex <= 0 ? items.length - 1 : selectedIndex - 1;
+                updateSelection(items, selectedIndex);
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (selectedIndex >= 0 && items[selectedIndex]) {
+                    items[selectedIndex].click();
+                }
+            } else if (e.key === 'Escape') {
+                dropdown.style.display = 'none';
+            }
+        }
+    });
+    
+    function updateSelection(items, selectedIndex) {
+        items.forEach((item, index) => {
+            item.classList.toggle('selected', index === selectedIndex);
+        });
+    }
+    
+    function clearParticulars(button) {
+        const container = button.parentElement;
+        const input = container.querySelector('input[name="particulars[]"]');
+        const dropdown = container.querySelector('.autocomplete-dropdown');
+        
+        if (input) {
+            input.value = '';
+            input.style.backgroundColor = '';
+            input.style.border = '';
+            delete input.dataset.assetId;
+            delete input.dataset.assetData;
+        }
+        
+        dropdown.style.display = 'none';
+        
+        // Clear other fields in the same row
+        const row = container.closest('tr');
+        const otherInputs = row.querySelectorAll('input:not([name="particulars[]"]), select');
+        otherInputs.forEach(inp => {
+            if (inp.type !== 'hidden') {
+                inp.value = '';
+                inp.style.backgroundColor = '';
+                inp.style.border = '';
+            }
+        });
+    }
 </script>
     <?php endif; ?>
 </body>

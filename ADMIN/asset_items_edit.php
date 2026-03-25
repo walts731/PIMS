@@ -282,6 +282,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         }
     }
     
+    if (isset($_POST['ics_par_no'])) {
+        $ics_par_no = trim($_POST['ics_par_no']);
+        if (!empty($ics_par_no)) {
+            $update_fields[] = "ics_par_no = ?";
+            $update_values[] = $ics_par_no;
+            $types .= 's';
+        } else {
+            $update_fields[] = "ics_par_no = NULL";
+        }
+    }
+    
     // Update last_updated timestamp
     $update_fields[] = "last_updated = NOW()";
     
@@ -765,18 +776,10 @@ $status_display = formatStatus($item['status']);
                                     <div class="detail-value"><?php echo $item['property_no'] ? htmlspecialchars($item['property_no']) : '<span class="text-muted">Not assigned</span>'; ?></div>
                                 </div>
                                 <div class="mb-3">
-                                    <div class="detail-label">ICS No/PAR No</div>
+                                    <div class="detail-label">ICS/PAR No</div>
                                     <div class="detail-value">
-                                        <?php 
-                                        $reference = '';
-                                        if ($item['ics_no']) {
-                                            $reference = 'ICS No: ' . htmlspecialchars($item['ics_no']);
-                                        }
-                                        if ($item['par_no']) {
-                                            $reference = $reference ? $reference . ' / PAR No: ' . htmlspecialchars($item['par_no']) : 'PAR No: ' . htmlspecialchars($item['par_no']);
-                                        }
-                                        echo $reference ? $reference : '<span class="text-muted">Not assigned</span>';
-                                        ?>
+                                        <input type="text" class="form-control" name="ics_par_no" value="<?php echo htmlspecialchars($item['ics_par_no'] ?? ''); ?>" placeholder="Enter ICS or PAR number">
+                                        <small class="text-muted">Inventory Custodian Slip or Property Acknowledgment Receipt number</small>
                                     </div>
                                 </div>
                                 <div class="mb-3">
