@@ -128,15 +128,23 @@
 
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
 
-                <li><a class="dropdown-item" href="profile.php"><i class="bi bi-person"></i> Profile</a></li>
-
-                <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#changePasswordModal"><i class="bi bi-key"></i> Change Password</a></li>
-
+                <li><h6 class="dropdown-header">Account</h6></li>
+                <li><a class="dropdown-item" href="profile.php"><i class="bi bi-person"></i> My Profile</a></li>
                 <li><a class="dropdown-item" href="settings.php"><i class="bi bi-gear"></i> Settings</a></li>
-
+                <li><a class="dropdown-item" href="#" onclick="showSessionManagement()"><i class="bi bi-laptop"></i> Active Sessions</a></li>
+                
+                <li><h6 class="dropdown-header">Quick Actions</h6></li>
+                <li><a class="dropdown-item" href="#" onclick="toggleTheme()"><i class="bi bi-moon"></i> Toggle Theme</a></li>
+                <li><a class="dropdown-item" href="#" onclick="showKeyboardShortcuts()"><i class="bi bi-keyboard"></i> Keyboard Shortcuts</a></li>
+                <li><a class="dropdown-item" href="#" onclick="exportMyData()"><i class="bi bi-download"></i> Export My Data</a></li>
+                
+                <li><h6 class="dropdown-header">Support</h6></li>
+                <li><a class="dropdown-item" href="#" onclick="showHelp()"><i class="bi bi-question-circle"></i> Help Center</a></li>
+                <li><a class="dropdown-item" href="#" onclick="reportIssue()"><i class="bi bi-bug"></i> Report Issue</a></li>
+                
                 <li><hr class="dropdown-divider"></li>
-
-                <li><a class="dropdown-item" href="../logout.php" onclick="event.preventDefault(); confirmLogout();"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+                <li><a class="dropdown-item text-primary" href="#" data-bs-toggle="modal" data-bs-target="#changePasswordModal"><i class="bi bi-key"></i> Change Password</a></li>
+                <li><a class="dropdown-item text-danger" href="../logout.php" onclick="event.preventDefault(); confirmLogout();"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
 
             </ul>
 
@@ -654,9 +662,514 @@ function confirmLogout() {
         window.location.href = '../logout.php';
     }
 }
+
+// Enhanced profile dropdown functions
+function toggleTheme() {
+    const body = document.body;
+    const currentTheme = body.getAttribute('data-theme') || 'light';
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    
+    body.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    
+    // Show notification
+    showNotification(`Theme changed to ${newTheme}`, 'success');
+}
+
+function showKeyboardShortcuts() {
+    const shortcuts = `
+        <div class="modal fade" id="keyboardShortcutsModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="bi bi-keyboard"></i> Keyboard Shortcuts</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Navigation</h6>
+                                <table class="table table-sm">
+                                    <tr><td><kbd>Ctrl</kbd> + <kbd>K</kbd></td><td>Quick search</td></tr>
+                                    <tr><td><kbd>Ctrl</kbd> + <kbd>/</kbd></td><td>Show shortcuts</td></tr>
+                                    <tr><td><kbd>Ctrl</kbd> + <kbd>N</kbd></td><td>New item/request</td></tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Actions</h6>
+                                <table class="table table-sm">
+                                    <tr><td><kbd>Ctrl</kbd> + <kbd>S</kbd></td><td>Save</td></tr>
+                                    <tr><td><kbd>Ctrl</kbd> + <kbd>P</kbd></td><td>Print/Export</td></tr>
+                                    <tr><td><kbd>Esc</kbd></td><td>Close modal</td></tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if present
+    const existingModal = document.getElementById('keyboardShortcutsModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to body and show
+    document.body.insertAdjacentHTML('beforeend', shortcuts);
+    const modal = new bootstrap.Modal(document.getElementById('keyboardShortcutsModal'));
+    modal.show();
+}
+
+function exportMyData() {
+    if (confirm('This will export your personal data including profile information and activity logs. Continue?')) {
+        // Create loading notification
+        showNotification('Preparing your data export...', 'info');
+        
+        // Simulate export process
+        fetch('export_user_data.php', {
+            method: 'POST',
+            credentials: 'include'
+        })
+        .then(response => response.blob())
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `my_data_export_${new Date().toISOString().split('T')[0]}.zip`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            showNotification('Your data has been exported successfully!', 'success');
+        })
+        .catch(error => {
+            console.error('Export error:', error);
+            showNotification('Error exporting data. Please try again.', 'error');
+        });
+    }
+}
+
+function showHelp() {
+    window.open('../help/index.html', '_blank', 'width=800,height=600,scrollbars=yes');
+}
+
+function reportIssue() {
+    const issueModal = `
+        <div class="modal fade" id="reportIssueModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="bi bi-bug"></i> Report an Issue</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="issueForm">
+                            <div class="mb-3">
+                                <label class="form-label">Issue Type</label>
+                                <select class="form-select" name="issue_type" required>
+                                    <option value="">Select type...</option>
+                                    <option value="bug">Bug Report</option>
+                                    <option value="feature">Feature Request</option>
+                                    <option value="performance">Performance Issue</option>
+                                    <option value="ui">UI/UX Issue</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Description</label>
+                                <textarea class="form-control" name="description" rows="4" required 
+                                          placeholder="Please describe the issue in detail..."></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Steps to Reproduce</label>
+                                <textarea class="form-control" name="steps" rows="3" 
+                                          placeholder="1. Go to...\n2. Click on...\n3. See error..."></textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" onclick="submitIssue()">Submit Issue</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if present
+    const existingModal = document.getElementById('reportIssueModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to body and show
+    document.body.insertAdjacentHTML('beforeend', issueModal);
+    const modal = new bootstrap.Modal(document.getElementById('reportIssueModal'));
+    modal.show();
+}
+
+function submitIssue() {
+    const form = document.getElementById('issueForm');
+    const formData = new FormData(form);
+    
+    // Add current page info
+    formData.append('current_page', window.location.href);
+    formData.append('user_agent', navigator.userAgent);
+    
+    fetch('report_issue.php', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('reportIssueModal')).hide();
+            showNotification('Issue reported successfully. We\'ll look into it!', 'success');
+        } else {
+            showNotification('Error reporting issue. Please try again.', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Report error:', error);
+        showNotification('Error reporting issue. Please try again.', 'error');
+    });
+}
+
+function showSessionManagement() {
+    // Load active sessions
+    showNotification('Loading active sessions...', 'info');
+    
+    fetch('session_management.php?action=get_sessions', {
+        credentials: 'include'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displaySessionModal(data.sessions);
+        } else {
+            showNotification('Error loading sessions: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Session management error:', error);
+        showNotification('Error loading sessions. Please try again.', 'error');
+    });
+}
+
+function displaySessionModal(sessions) {
+    const sessionModal = `
+        <div class="modal fade" id="sessionManagementModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="bi bi-laptop"></i> Active Sessions</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            Manage your active sessions across different devices and browsers.
+                        </div>
+                        
+                        <div class="sessions-list">
+                            ${sessions.length === 0 ? 
+                                '<p class="text-muted">No active sessions found.</p>' :
+                                sessions.map(session => `
+                                    <div class="session-item border rounded p-3 mb-3 ${session.is_current ? 'border-primary bg-light' : ''}">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="flex-grow-1">
+                                                <div class="d-flex align-items-center mb-2">
+                                                    <i class="bi bi-${getDeviceIcon(session.user_agent)} me-2"></i>
+                                                    <strong>${session.device_type || 'Unknown Device'}</strong>
+                                                    ${session.is_current ? '<span class="badge bg-primary ms-2">Current Session</span>' : ''}
+                                                </div>
+                                                <div class="small text-muted">
+                                                    <div><i class="bi bi-browser-chrome"></i> ${session.browser || 'Unknown Browser'}</div>
+                                                    <div><i class="bi bi-geo-alt"></i> ${session.ip_address || 'Unknown IP'}</div>
+                                                    <div><i class="bi bi-clock"></i> Last active: ${formatTime(session.last_activity)}</div>
+                                                    <div><i class="bi bi-calendar"></i> Started: ${formatTime(session.created_at)}</div>
+                                                </div>
+                                            </div>
+                                            ${!session.is_current ? `
+                                                <button class="btn btn-sm btn-outline-danger" onclick="revokeSession('${session.session_id}')">
+                                                    <i class="bi bi-x-circle"></i> Revoke
+                                                </button>
+                                            ` : ''}
+                                        </div>
+                                    </div>
+                                `).join('')
+                            }
+                        </div>
+                        
+                        <div class="mt-3">
+                            <button class="btn btn-warning" onclick="revokeAllSessions()">
+                                <i class="bi bi-shield-exclamation"></i> Sign Out All Other Sessions
+                            </button>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if present
+    const existingModal = document.getElementById('sessionManagementModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to body and show
+    document.body.insertAdjacentHTML('beforeend', sessionModal);
+    const modal = new bootstrap.Modal(document.getElementById('sessionManagementModal'));
+    modal.show();
+}
+
+function getDeviceIcon(userAgent) {
+    if (!userAgent) return 'device-unknown';
+    
+    if (userAgent.includes('Mobile') || userAgent.includes('Android') || userAgent.includes('iPhone')) {
+        return 'phone';
+    } else if (userAgent.includes('Tablet') || userAgent.includes('iPad')) {
+        return 'tablet';
+    } else if (userAgent.includes('Windows') || userAgent.includes('Mac') || userAgent.includes('Linux')) {
+        return 'laptop';
+    }
+    return 'device-unknown';
+}
+
+function formatTime(timestamp) {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} minutes ago`;
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    if (diffDays < 7) return `${diffDays} days ago`;
+    
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+}
+
+function revokeSession(sessionId) {
+    if (!confirm('Are you sure you want to revoke this session? The user will be logged out.')) {
+        return;
+    }
+    
+    fetch('session_management.php?action=revoke_session', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `session_id=${sessionId}`,
+        credentials: 'include'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Session revoked successfully', 'success');
+            showSessionManagement(); // Refresh the sessions list
+        } else {
+            showNotification('Error revoking session: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Revoke session error:', error);
+        showNotification('Error revoking session. Please try again.', 'error');
+    });
+}
+
+function revokeAllSessions() {
+    if (!confirm('Are you sure you want to sign out all other sessions? You will remain logged in on this device.')) {
+        return;
+    }
+    
+    fetch('session_management.php?action=revoke_all_other', {
+        method: 'POST',
+        credentials: 'include'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(`Signed out ${data.revoked_count} other sessions`, 'success');
+            showSessionManagement(); // Refresh the sessions list
+        } else {
+            showNotification('Error revoking sessions: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Revoke all sessions error:', error);
+        showNotification('Error revoking sessions. Please try again.', 'error');
+    });
+}
+
+function showNotification(message, type = 'info') {
+    const alertClass = type === 'success' ? 'alert-success' : 
+                      type === 'error' ? 'alert-danger' : 
+                      type === 'warning' ? 'alert-warning' : 'alert-info';
+    
+    const notification = document.createElement('div');
+    notification.className = `alert ${alertClass} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3`;
+    notification.style.zIndex = '9999';
+    notification.style.minWidth = '300px';
+    notification.innerHTML = `
+        <i class="bi bi-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'}"></i>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 5000);
+}
+
+// Essential User Profile Dropdown Functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const userDropdown = document.getElementById('userDropdown');
+    
+    if (userDropdown) {
+        // Initialize Bootstrap dropdown
+        let bootstrapDropdown = null;
+        
+        // Try to initialize Bootstrap dropdown
+        if (typeof bootstrap !== 'undefined' && bootstrap.Dropdown) {
+            bootstrapDropdown = new bootstrap.Dropdown(userDropdown);
+            console.log('✓ Bootstrap dropdown initialized');
+        }
+        
+        // Add click event listener to the dropdown toggle
+        userDropdown.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            try {
+                // Use Bootstrap API if available
+                if (bootstrapDropdown) {
+                    bootstrapDropdown.toggle();
+                    console.log('✓ Bootstrap toggle() called');
+                } else {
+                    // Fallback: Manual toggle
+                    const dropdownMenu = userDropdown.nextElementSibling;
+                    if (dropdownMenu && dropdownMenu.classList.contains('dropdown-menu')) {
+                        const isVisible = dropdownMenu.style.display !== 'none' && dropdownMenu.style.display !== '';
+                        dropdownMenu.style.display = isVisible ? 'none' : 'block';
+                        userDropdown.setAttribute('aria-expanded', !isVisible);
+                        console.log(`✓ Manual toggle: ${!isVisible ? 'opened' : 'closed'}`);
+                    }
+                }
+            } catch (error) {
+                console.error('Dropdown error:', error);
+            }
+        });
+        
+        // Close dropdown when clicking outside (but not on dropdown items)
+        document.addEventListener('click', function(e) {
+            // Don't close if clicking on the dropdown toggle or its menu
+            if (userDropdown.contains(e.target)) {
+                return;
+            }
+            
+            // Close if clicking outside
+            const dropdownMenu = userDropdown.nextElementSibling;
+            if (dropdownMenu && dropdownMenu.classList.contains('dropdown-menu')) {
+                if (bootstrapDropdown) {
+                    // Let Bootstrap handle closing
+                    return;
+                } else {
+                    // Manual close
+                    dropdownMenu.style.display = 'none';
+                    userDropdown.setAttribute('aria-expanded', 'false');
+                }
+            }
+        });
+        
+        // Handle dropdown item clicks without interfering with dropdown functionality
+        const dropdownMenu = userDropdown.nextElementSibling;
+        if (dropdownMenu) {
+            const dropdownItems = dropdownMenu.querySelectorAll('.dropdown-item');
+            
+            dropdownItems.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    // Allow normal link behavior for dropdown items
+                    // Don't prevent default - let links work normally
+                    console.log('Dropdown item clicked:', this.textContent.trim());
+                    
+                    // Close dropdown after a short delay to allow navigation
+                    setTimeout(() => {
+                        if (bootstrapDropdown) {
+                            bootstrapDropdown.hide();
+                        } else {
+                            dropdownMenu.style.display = 'none';
+                            userDropdown.setAttribute('aria-expanded', 'false');
+                        }
+                    }, 100);
+                });
+            });
+        }
+        
+        // Handle escape key to close dropdown
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                if (bootstrapDropdown) {
+                    bootstrapDropdown.hide();
+                } else {
+                    const dropdownMenu = userDropdown.nextElementSibling;
+                    if (dropdownMenu && dropdownMenu.classList.contains('dropdown-menu')) {
+                        dropdownMenu.style.display = 'none';
+                        userDropdown.setAttribute('aria-expanded', 'false');
+                    }
+                }
+            }
+        });
+        
+        console.log('✓ User profile dropdown functionality initialized');
+    }
+});
 </script>
 
 <style>
+/* User Dropdown Styles */
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2rem;
+}
+
+.user-info {
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.user-name {
+    font-weight: 600;
+    color: #333;
+    font-size: 0.9rem;
+}
+
+.user-role .badge {
+    font-size: 0.75rem;
+}
+
 /* Notification Dropdown Styles */
 .notification-dropdown {
     width: 350px;
