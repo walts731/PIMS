@@ -2179,14 +2179,13 @@ function populateDetailsModal(data) {
                         <div class="row mb-2"><div class="col-sm-4"><strong>Unit:</strong></div><div class="col-sm-8">${data.asset.unit || 'N/A'}</div></div>
                         <div class="row mb-2"><div class="col-sm-4"><strong>Current Status:</strong></div>
                             <div class="col-sm-8"><span class="badge bg-${getStatusColor(data.asset.status || 'unknown')}">${ucfirst((data.asset.status || 'unknown').replace('_',' '))}</span></div></div>
-                        <div class="row mb-2"><div class="col-sm-4"><strong>Value:</strong></div><div class="col-sm-8">₱${parseFloat(data.asset.unit_value || 0).toLocaleString('en-PH', {minimumFractionDigits: 2})}</div></div>
                         <div class="row mb-2"><div class="col-sm-4"><strong>Date Acquired:</strong></div><div class="col-sm-8">${data.asset.date_acquired ? new Date(data.asset.date_acquired).toLocaleDateString() : 'N/A'}</div></div>
                         <div class="row mb-2"><div class="col-sm-4"><strong>Assigned Office:</strong></div><div class="col-sm-8">${data.asset.office_name || 'N/A'}</div></div>
                         <div class="row mb-2"><div class="col-sm-4"><strong>Current User:</strong></div><div class="col-sm-8">${data.asset.end_user || 'Unassigned'}</div></div>
                         <div class="row mb-2"><div class="col-sm-4"><strong>Employee ID:</strong></div><div class="col-sm-8">${data.asset.employee_id || 'N/A'}</div></div>
                         <div class="row mb-2"><div class="col-sm-4"><strong>Last Counted:</strong></div><div class="col-sm-8">${data.asset.date_counted ? new Date(data.asset.date_counted).toLocaleDateString() : 'N/A'}</div></div>
                         <div class="row mb-2"><div class="col-sm-4"><strong>Requested Qty:</strong></div><div class="col-sm-8">${data.request.quantity_requested} unit(s)</div></div>
-                        ${data.asset.image ? `<div class="row mb-2"><div class="col-sm-4"><strong>Asset Image:</strong></div><div class="col-sm-8"><button type="button" class="btn btn-sm btn-outline-primary" onclick="viewAssetImage('${data.asset.image}')"><i class="bi bi-image"></i> View Image</button></div></div>` : ''}
+                        ${data.asset.image ? `<div class="row mb-2"><div class="col-sm-4"><strong>Asset Image:</strong></div><div class="col-sm-8"><button type="button" class="btn btn-sm btn-outline-primary" onclick="viewAssetImage(this)" data-image="${data.asset.image.replace(/"/g, '&quot;')}"><i class="bi bi-image"></i> View Image</button></div></div>` : ''}
                         ` : '<div class="alert alert-warning"><i class="bi bi-exclamation-triangle"></i> Asset information not available</div>'}
                     </div>
                 </div>
@@ -3017,8 +3016,15 @@ document.addEventListener('DOMContentLoaded', function () {
 // Asset Image Viewer
 // ---------------------------------------------------------------------------
 
-function viewAssetImage(imageData) {
+function viewAssetImage(button) {
     try {
+        // Get image data from data attribute
+        const imageData = button.getAttribute('data-image');
+        if (!imageData) {
+            alert('No image data available');
+            return;
+        }
+        
         let imageUrls = [];
         
         // Parse the image data (it might be a JSON array string or a single image path)
