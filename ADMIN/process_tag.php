@@ -770,6 +770,59 @@ try {
         }
     }
     
+    // Process Peripherals (for all asset types)
+    if (isset($_POST['peripheral_name']) && is_array($_POST['peripheral_name'])) {
+        $peripheral_names = $_POST['peripheral_name'];
+        $peripheral_models = $_POST['peripheral_model'] ?? [];
+        $peripheral_serial_numbers = $_POST['peripheral_serial_number'] ?? [];
+        $peripheral_statuses = $_POST['peripheral_status'] ?? [];
+        
+        // First, delete existing peripherals for this asset item
+        $delete_peripherals_sql = "DELETE FROM peripherals WHERE asset_item_id = $item_id";
+        mysqli_query($conn, $delete_peripherals_sql);
+        
+        // Insert new peripherals
+        $peripherals_added = 0;
+        foreach ($peripheral_names as $index => $name) {
+            $name = trim($name);
+            
+            // Only insert if name is not empty (peripherals are optional)
+            if (!empty($name)) {
+                $model = isset($peripheral_models[$index]) ? trim($peripheral_models[$index]) : '';
+                $serial_number = isset($peripheral_serial_numbers[$index]) ? trim($peripheral_serial_numbers[$index]) : '';
+                $status = isset($peripheral_statuses[$index]) ? trim($peripheral_statuses[$index]) : 'serviceable';
+                
+                // Validate status
+                $allowed_statuses = ['serviceable', 'unserviceable', 'red_tagged', 'no_tag', 'disposed'];
+                if (!in_array($status, $allowed_statuses)) {
+                    $status = 'serviceable';
+                }
+                
+                // Escape values for traditional SQL
+                $name_safe = mysqli_real_escape_string($conn, $name);
+                $model_safe = !empty($model) ? "'" . mysqli_real_escape_string($conn, $model) . "'" : 'NULL';
+                $serial_number_safe = !empty($serial_number) ? "'" . mysqli_real_escape_string($conn, $serial_number) . "'" : 'NULL';
+                $status_safe = mysqli_real_escape_string($conn, $status);
+                
+                $peripheral_sql = "INSERT INTO peripherals 
+                           (asset_item_id, name, model, serial_number, status, created_by, created_at)
+                           VALUES ($item_id, '$name_safe', $model_safe, $serial_number_safe, '$status_safe', " . $_SESSION['user_id'] . ", CURRENT_TIMESTAMP)";
+                
+                $peripheral_result = mysqli_query($conn, $peripheral_sql);
+                
+                if ($peripheral_result) {
+                    $peripherals_added++;
+                } else {
+                    throw new Exception('Failed to save peripheral: ' . mysqli_error($conn));
+                }
+            }
+        }
+        
+        if ($peripherals_added > 0) {
+            logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "Added $peripherals_added peripherals for asset item ID: $item_id");
+        }
+    }
+    
     // Get employee information for logging
     $employee_sql = "SELECT employee_no, firstname, lastname FROM employees WHERE id = ?";
     $employee_stmt = $conn->prepare($employee_sql);

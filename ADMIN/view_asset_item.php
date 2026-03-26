@@ -1156,123 +1156,127 @@ $status_display = formatStatus($item['status']);
                     </div>
                     <?php endif; ?>
                     
-                    <!-- Desktop Computers Specific Fields -->
-                    <?php if ($item['sub_category_name'] === 'COMPUTER DESKTOP'): ?>
+                    <!-- Peripherals Section -->
+                    <?php 
+                    // Fetch peripherals for this asset
+                    $peripherals_sql = "SELECT p.name, p.model, p.serial_number, p.status, p.created_at 
+                                       FROM peripherals p 
+                                       WHERE p.asset_item_id = ? 
+                                       ORDER BY p.name, p.created_at";
+                    $peripherals_stmt = $conn->prepare($peripherals_sql);
+                    $peripherals_stmt->bind_param("i", $item['id']);
+                    $peripherals_stmt->execute();
+                    $peripherals_result = $peripherals_stmt->get_result();
+                    $peripherals = [];
+                    while ($row = $peripherals_result->fetch_assoc()) {
+                        $peripherals[] = $row;
+                    }
+                    $peripherals_stmt->close();
+                    
+                    if (!empty($peripherals)): ?>
                     <div class="detail-section">
-                        <h5 class="mb-3"><i class="bi bi-display"></i> Desktop Computer Specifications</h5>
+                        <h5 class="mb-3"><i class="bi bi-pc-display"></i> Peripherals</h5>
                         <div class="row">
-                            <?php 
-                            // Check if Monitor has any details specified
-                            $has_monitor_details = !empty($item['monitor_name']) || !empty($item['monitor_model']) || !empty($item['monitor_serial_number']);
-                            ?>
-                            <?php if ($has_monitor_details): ?>
-                            <div class="col-md-6">
-                                <h6 class="text-muted mb-3">Monitor Details</h6>
-                                <div class="mb-3">
-                                    <div class="detail-label">Monitor Name</div>
-                                    <div class="detail-value"><?php echo $item['monitor_name'] ? htmlspecialchars($item['monitor_name']) : '<span class="text-muted">Not specified</span>'; ?></div>
-                                </div>
-                                <div class="mb-3">
-                                    <div class="detail-label">Monitor Model</div>
-                                    <div class="detail-value"><?php echo $item['monitor_model'] ? htmlspecialchars($item['monitor_model']) : '<span class="text-muted">Not specified</span>'; ?></div>
-                                </div>
-                                <div class="mb-3">
-                                    <div class="detail-label">Monitor Serial Number</div>
-                                    <div class="detail-value"><?php echo $item['monitor_serial_number'] ? htmlspecialchars($item['monitor_serial_number']) : '<span class="text-muted">Not specified</span>'; ?></div>
-                                </div>
-                                <div class="mb-3">
-                                    <div class="detail-label">Monitor Status</div>
-                                    <div class="detail-value">
-                                        <?php 
-                                        if ($item['monitor_status']): ?>
-                                            <?php
-                                            $status_class = '';
-                                            switch ($item['monitor_status']) {
-                                                case 'serviceable':
-                                                    $status_class = 'status-serviceable';
-                                                    break;
-                                                case 'unserviceable':
-                                                    $status_class = 'status-unserviceable';
-                                                    break;
-                                                case 'red_tagged':
-                                                    $status_class = 'status-red-tagged';
-                                                    break;
-                                                case 'no_tag':
-                                                    $status_class = 'status-no-tag';
-                                                    break;
-                                            }
-                                            ?>
-                                            <span class="status-badge <?php echo $status_class; ?>">
-                                                <?php echo ucfirst(str_replace('_', ' ', $item['monitor_status'])); ?>
-                                            </span>
-                                        <?php else: ?>
-                                            <span class="text-muted">Not specified</span>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                            </div>
-                            <?php endif; ?>
-                            
-                            <?php 
-                            // Check if UPS has any details specified
-                            $has_ups_details = !empty($item['ups_name']) || !empty($item['ups_model']) || !empty($item['ups_serial_number']);
-                            ?>
-                            <?php if ($has_ups_details): ?>
-                            <div class="col-md-6">
-                                <h6 class="text-muted mb-3">UPS Details</h6>
-                                <div class="mb-3">
-                                    <div class="detail-label">UPS Name</div>
-                                    <div class="detail-value"><?php echo $item['ups_name'] ? htmlspecialchars($item['ups_name']) : '<span class="text-muted">Not specified</span>'; ?></div>
-                                </div>
-                                <div class="mb-3">
-                                    <div class="detail-label">UPS Model</div>
-                                    <div class="detail-value"><?php echo $item['ups_model'] ? htmlspecialchars($item['ups_model']) : '<span class="text-muted">Not specified</span>'; ?></div>
-                                </div>
-                                <div class="mb-3">
-                                    <div class="detail-label">UPS Serial Number</div>
-                                    <div class="detail-value"><?php echo $item['ups_serial_number'] ? htmlspecialchars($item['ups_serial_number']) : '<span class="text-muted">Not specified</span>'; ?></div>
-                                </div>
-                                <div class="mb-3">
-                                    <div class="detail-label">UPS Status</div>
-                                    <div class="detail-value">
-                                        <?php 
-                                        if ($item['ups_status']): ?>
-                                            <?php
-                                            $status_class = '';
-                                            switch ($item['ups_status']) {
-                                                case 'serviceable':
-                                                    $status_class = 'status-serviceable';
-                                                    break;
-                                                case 'unserviceable':
-                                                    $status_class = 'status-unserviceable';
-                                                    break;
-                                                case 'red_tagged':
-                                                    $status_class = 'status-red-tagged';
-                                                    break;
-                                                case 'no_tag':
-                                                    $status_class = 'status-no-tag';
-                                                    break;
-                                            }
-                                            ?>
-                                            <span class="status-badge <?php echo $status_class; ?>">
-                                                <?php echo ucfirst(str_replace('_', ' ', $item['ups_status'])); ?>
-                                            </span>
-                                        <?php else: ?>
-                                            <span class="text-muted">Not specified</span>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                            </div>
-                            <?php endif; ?>
-                            
-                            <?php if (!$has_monitor_details && !$has_ups_details): ?>
                             <div class="col-12">
-                                <div class="alert alert-info">
-                                    <i class="bi bi-info-circle me-2"></i>
-                                    No monitor or UPS details specified for this desktop computer.
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered table-hover">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>Model</th>
+                                                <th>Serial Number</th>
+                                                <th>Status</th>
+                                                <th>Added Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php foreach ($peripherals as $peripheral): ?>
+                                            <tr>
+                                                <td>
+                                                    <strong><?php echo htmlspecialchars($peripheral['name']); ?></strong>
+                                                </td>
+                                                <td>
+                                                    <?php echo $peripheral['model'] ? htmlspecialchars($peripheral['model']) : '<span class="text-muted">Not specified</span>'; ?>
+                                                </td>
+                                                <td>
+                                                    <?php echo $peripheral['serial_number'] ? htmlspecialchars($peripheral['serial_number']) : '<span class="text-muted">Not specified</span>'; ?>
+                                                </td>
+                                                <td>
+                                                    <?php
+                                                    $status_class = '';
+                                                    switch ($peripheral['status']) {
+                                                        case 'serviceable':
+                                                            $status_class = 'status-serviceable';
+                                                            break;
+                                                        case 'unserviceable':
+                                                            $status_class = 'status-unserviceable';
+                                                            break;
+                                                        case 'red_tagged':
+                                                            $status_class = 'status-red-tagged';
+                                                            break;
+                                                        case 'no_tag':
+                                                            $status_class = 'status-no-tag';
+                                                            break;
+                                                        case 'disposed':
+                                                            $status_class = 'status-disposed';
+                                                            break;
+                                                    }
+                                                    ?>
+                                                    <span class="status-badge <?php echo $status_class; ?>">
+                                                        <?php echo ucfirst(str_replace('_', ' ', $peripheral['status'])); ?>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <?php echo date('M d, Y', strtotime($peripheral['created_at'])); ?>
+                                                </td>
+                                            </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <div class="mt-3">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="small text-muted">
+                                                <i class="bi bi-info-circle me-1"></i>
+                                                Total Peripherals: <strong><?php echo count($peripherals); ?></strong>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-8">
+                                            <?php
+                                            // Count by status
+                                            $status_counts = [];
+                                            foreach ($peripherals as $peripheral) {
+                                                $status_counts[$peripheral['status']] = ($status_counts[$peripheral['status']] ?? 0) + 1;
+                                            }
+                                            
+                                            foreach ($status_counts as $status => $count) {
+                                                $status_class = '';
+                                                switch ($status) {
+                                                    case 'serviceable':
+                                                        $status_class = 'status-serviceable';
+                                                        break;
+                                                    case 'unserviceable':
+                                                        $status_class = 'status-unserviceable';
+                                                        break;
+                                                    case 'red_tagged':
+                                                        $status_class = 'status-red-tagged';
+                                                        break;
+                                                    case 'no_tag':
+                                                        $status_class = 'status-no-tag';
+                                                        break;
+                                                    case 'disposed':
+                                                        $status_class = 'status-disposed';
+                                                        break;
+                                                }
+                                                echo '<span class="status-badge ' . $status_class . ' me-2">' . ucfirst(str_replace('_', ' ', $status)) . ': ' . $count . '</span>';
+                                            }
+                                            ?>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <?php endif; ?>
                         </div>
                     </div>
                     <?php endif; ?>
@@ -1776,44 +1780,61 @@ $status_display = formatStatus($item['status']);
                             </div>
                         </button>
                         
-                        <?php if ($item['sub_category_name'] === 'Desktop Computers' && $has_monitor_details && ($item['monitor_status'] === 'serviceable' || $item['monitor_status'] === null)): ?>
-                        <button type="button" class="btn btn-outline-success btn-lg" onclick="addMonitorToIirup()">
-                            <i class="bi bi-display"></i>
-                            <div class="mt-2">
-                                <strong>Monitor</strong>
-                                <div class="small text-muted"><?php echo htmlspecialchars($item['monitor_name'] ?: 'Monitor'); ?></div>
-                                <div class="small text-success">Available for IIRUP</div>
+                        <!-- Dynamic Peripherals Display -->
+                        <?php if (!empty($peripherals)): ?>
+                            <?php foreach ($peripherals as $index => $peripheral): ?>
+                                <?php 
+                                $is_available = in_array($peripheral['status'], ['serviceable', null]) || $peripheral['status'] === '';
+                                $button_class = $is_available ? 'btn-outline-success' : 'btn-outline-secondary';
+                                $button_disabled = $is_available ? '' : 'disabled';
+                                $status_text = $is_available ? 'Available for IIRUP' : 'Not available (' . ucfirst(str_replace('_', ' ', $peripheral['status'] ?: 'no_status')) . ')';
+                                $status_color = $is_available ? 'text-success' : 'text-warning';
+                                
+                                // Choose appropriate icon based on peripheral name
+                                $icon_class = 'bi-pc-display'; // default
+                                if (stripos($peripheral['name'], 'monitor') !== false) {
+                                    $icon_class = 'bi-display';
+                                } elseif (stripos($peripheral['name'], 'keyboard') !== false) {
+                                    $icon_class = 'bi-keyboard';
+                                } elseif (stripos($peripheral['name'], 'mouse') !== false) {
+                                    $icon_class = 'bi-mouse';
+                                } elseif (stripos($peripheral['name'], 'ups') !== false) {
+                                    $icon_class = 'bi-battery-charging';
+                                } elseif (stripos($peripheral['name'], 'printer') !== false) {
+                                    $icon_class = 'bi-printer';
+                                } elseif (stripos($peripheral['name'], 'scanner') !== false) {
+                                    $icon_class = 'bi-upc-scan';
+                                } elseif (stripos($peripheral['name'], 'camera') !== false) {
+                                    $icon_class = 'bi-camera';
+                                } elseif (stripos($peripheral['name'], 'speaker') !== false || stripos($peripheral['name'], 'audio') !== false) {
+                                    $icon_class = 'bi-speaker';
+                                }
+                                ?>
+                                <button type="button" class="btn <?php echo $button_class; ?> btn-lg" 
+                                        onclick="addPeripheralToIirup(<?php echo $index; ?>)"
+                                        data-peripheral-name="<?php echo htmlspecialchars($peripheral['name']); ?>"
+                                        data-peripheral-model="<?php echo htmlspecialchars($peripheral['model'] ?? ''); ?>"
+                                        data-peripheral-serial="<?php echo htmlspecialchars($peripheral['serial_number'] ?? ''); ?>"
+                                        data-peripheral-status="<?php echo htmlspecialchars($peripheral['status']); ?>"
+                                        <?php echo $button_disabled; ?>>
+                                    <i class="bi <?php echo $icon_class; ?>"></i>
+                                    <div class="mt-2">
+                                        <strong><?php echo htmlspecialchars($peripheral['name']); ?></strong>
+                                        <?php if (!empty($peripheral['model'])): ?>
+                                            <div class="small text-muted"><?php echo htmlspecialchars($peripheral['model']); ?></div>
+                                        <?php endif; ?>
+                                        <?php if (!empty($peripheral['serial_number'])): ?>
+                                            <div class="small text-muted">S/N: <?php echo htmlspecialchars($peripheral['serial_number']); ?></div>
+                                        <?php endif; ?>
+                                        <div class="small <?php echo $status_color; ?>"><?php echo $status_text; ?></div>
+                                    </div>
+                                </button>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="alert alert-info text-center">
+                                <i class="bi bi-info-circle me-2"></i>
+                                No peripherals available for this asset.
                             </div>
-                        </button>
-                        <?php elseif ($item['sub_category_name'] === 'Desktop Computers' && $has_monitor_details): ?>
-                        <button type="button" class="btn btn-outline-secondary btn-lg" disabled>
-                            <i class="bi bi-display"></i>
-                            <div class="mt-2">
-                                <strong>Monitor</strong>
-                                <div class="small text-muted"><?php echo htmlspecialchars($item['monitor_name'] ?: 'Monitor'); ?></div>
-                                <div class="small text-warning">Not available (<?php echo ucfirst(str_replace('_', ' ', $item['monitor_status'] ?: 'no_status')); ?>)</div>
-                            </div>
-                        </button>
-                        <?php endif; ?>
-                        
-                        <?php if ($item['sub_category_name'] === 'Desktop Computers' && $has_ups_details && ($item['ups_status'] === 'serviceable' || $item['ups_status'] === null)): ?>
-                        <button type="button" class="btn btn-outline-warning btn-lg" onclick="addUpsToIirup()">
-                            <i class="bi bi-battery-charging"></i>
-                            <div class="mt-2">
-                                <strong>UPS</strong>
-                                <div class="small text-muted"><?php echo htmlspecialchars($item['ups_name'] ?: 'UPS'); ?></div>
-                                <div class="small text-success">Available for IIRUP</div>
-                            </div>
-                        </button>
-                        <?php elseif ($item['sub_category_name'] === 'Desktop Computers' && $has_ups_details): ?>
-                        <button type="button" class="btn btn-outline-secondary btn-lg" disabled>
-                            <i class="bi bi-battery-charging"></i>
-                            <div class="mt-2">
-                                <strong>UPS</strong>
-                                <div class="small text-muted"><?php echo htmlspecialchars($item['ups_name'] ?: 'UPS'); ?></div>
-                                <div class="small text-warning">Not available (<?php echo ucfirst(str_replace('_', ' ', $item['ups_status'] ?: 'no_status')); ?>)</div>
-                            </div>
-                        </button>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -1931,29 +1952,40 @@ $status_display = formatStatus($item['status']);
             openIirupForm(assetData);
         }
         
-        function addMonitorToIirup() {
+        function addPeripheralToIirup(peripheralIndex) {
+            // Get peripheral data from the button attributes
+            const button = document.querySelector(`[onclick="addPeripheralToIirup(${peripheralIndex})"]`);
+            const peripheralName = button.getAttribute('data-peripheral-name');
+            const peripheralModel = button.getAttribute('data-peripheral-model');
+            const peripheralSerial = button.getAttribute('data-peripheral-serial');
+            const peripheralStatus = button.getAttribute('data-peripheral-status');
+            
             // Close the modal
             bootstrap.Modal.getInstance(document.getElementById('iirupComponentModal')).hide();
             
-            // Prepare monitor data for IIRUP form
-            const monitorData = {
+            // Prepare peripheral data for IIRUP form
+            const peripheralData = {
                 id: <?php echo $item_id; ?>,
-                description: '<?php echo addslashes('Monitor - ' . ($item['monitor_name'] ?: $item['description'])); ?>',
+                description: peripheralName + (peripheralModel ? ' - ' + peripheralModel : ''),
                 property_no: '<?php echo addslashes($item['property_no'] ?? ''); ?>',
                 inventory_tag: '<?php echo addslashes($item['inventory_tag'] ?? ''); ?>',
                 acquisition_date: '<?php echo $item['acquisition_date']; ?>',
-                value: '<?php echo $item['monitor_value'] ?? $item['value']; ?>',
-                unit_cost: '<?php echo $item['monitor_unit_cost'] ?? $item['unit_cost']; ?>',
+                value: '<?php echo $item['value']; ?>',
+                unit_cost: '<?php echo $item['unit_cost']; ?>',
                 office_name: '<?php echo addslashes($item['office_name'] ?? ''); ?>',
                 employee_name: '<?php echo addslashes(trim(($item['firstname'] ?? '') . ' ' . ($item['lastname'] ?? ''))); ?>',
-                category_name: 'Computer Equipment',
-                category_code: '030',
-                asset_description: '<?php echo addslashes($item['monitor_model'] ?: 'Monitor'); ?>',
-                unit: 'SET',
-                component_type: 'monitor'
+                category_name: '<?php echo addslashes($item['category_name'] ?? ''); ?>',
+                category_code: '<?php echo addslashes($item['category_code'] ?? ''); ?>',
+                asset_description: peripheralName,
+                unit: '<?php echo addslashes($item['unit']); ?>',
+                component_type: 'peripheral',
+                peripheral_name: peripheralName,
+                peripheral_model: peripheralModel,
+                peripheral_serial_number: peripheralSerial,
+                peripheral_status: peripheralStatus
             };
             
-            openIirupForm(monitorData);
+            openIirupForm(peripheralData);
         }
         
         function addUpsToIirup() {
