@@ -3,11 +3,10 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 25, 2026 at 03:34 AM
+-- Generation Time: Mar 26, 2026 at 03:57 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
-SET FOREIGN_KEY_CHECKS=0;
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
 SET time_zone = "+00:00";
@@ -274,6 +273,7 @@ CREATE TABLE `asset_items` (
   `serial_number` varchar(50) DEFAULT NULL,
   `unit` varchar(50) DEFAULT NULL,
   `property_no` varchar(100) DEFAULT NULL,
+  `ics_par_no` varchar(100) DEFAULT NULL,
   `inventory_tag` varchar(100) DEFAULT NULL,
   `date_counted` date DEFAULT NULL,
   `image` varchar(255) DEFAULT NULL,
@@ -293,16 +293,16 @@ CREATE TABLE `asset_items` (
 -- Dumping data for table `asset_items`
 --
 
-INSERT INTO `asset_items` (`id`, `asset_id`, `asset_subcategory_id`, `asset_category_id`, `employee_id`, `end_user`, `category_id`, `ics_id`, `par_id`, `description`, `model`, `serial_number`, `unit`, `property_no`, `inventory_tag`, `date_counted`, `image`, `qr_code`, `status`, `disposal_reason`, `disposal_date`, `value`, `acquisition_date`, `office_id`, `office_name`, `created_at`, `last_updated`) VALUES
-(1, 1, 3, NULL, 6, 'Elton John Moises', 2, NULL, NULL, 'ASUS Vivobook 16', NULL, NULL, NULL, '2026-04-05-030-0101-01', NULL, '2026-03-23', '[\"asset_1_0_1774270603.jpg\"]', 'qr_asset_1_1774270605.png', 'serviceable', NULL, NULL, 42995.00, '2026-02-15', 4, 'OMM', '2026-03-23 12:42:03', '2026-03-23 12:56:45'),
-(2, 2, NULL, NULL, 1, 'Roberto Cruz', 2, NULL, NULL, 'HP Laptop 15s', NULL, NULL, NULL, '2026-04-05-030-0102-02', NULL, '2026-03-24', '[\"asset_2_0_1774320286.jpg\"]', 'qr_asset_2_1774320288.png', 'serviceable', NULL, NULL, 31200.00, '2026-03-01', 5, 'OVM', '2026-03-23 13:05:52', '2026-03-24 02:44:48'),
-(3, 3, NULL, NULL, 7, 'John Legend', 2, NULL, NULL, 'Lenovo ThinkPad E14', NULL, NULL, NULL, '2026-07-05-030-0103-03', NULL, '2026-03-24', '[\"asset_3_0_1774336559.jpg\"]', 'qr_asset_3_1774336564.png', 'serviceable', NULL, NULL, 54500.00, '2026-01-20', 12, 'OSB', '2026-03-24 03:34:58', '2026-03-24 07:16:04'),
-(4, 3, NULL, NULL, 7, 'Joshua Escano', 2, NULL, NULL, 'Lenovo ThinkPad E14', NULL, NULL, NULL, '2026-07-05-030-0101-03', NULL, '2026-03-24', '[\"asset_4_0_1774335556.jpg\"]', 'qr_asset_4_1774335559.png', 'serviceable', NULL, NULL, 54500.00, '2026-01-20', 12, 'OSB', '2026-03-24 03:38:56', '2026-03-24 06:59:19'),
-(5, 4, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Epson EcoTank L3250', NULL, NULL, NULL, '2026-04-05-030-0101-01', NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 10750.00, '2026-03-10', 4, NULL, '2026-03-24 07:37:18', '2026-03-24 07:37:18'),
-(6, 4, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Epson EcoTank L3250', NULL, NULL, NULL, '2026-04-05-030-0102-01', NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 10750.00, '2026-03-10', 4, NULL, '2026-03-24 07:37:18', '2026-03-24 07:37:18'),
-(7, 4, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Epson EcoTank L3250', NULL, NULL, NULL, '2026-04-05-030-0103-01', NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 10750.00, '2026-03-10', 4, NULL, '2026-03-24 07:37:18', '2026-03-24 07:37:18'),
-(8, 5, NULL, NULL, 6, 'Jake Paul', 2, NULL, NULL, 'Samsung 55\\\" UHD TV', 'BU8000', '0AS13CHX400501L', NULL, '2026-04-05-030-0701-01', NULL, '2026-03-24', '[\"asset_8_0_1774338708.jpg\"]', 'qr_asset_8_1774338710.png', 'maintenance', NULL, NULL, 28500.00, '2026-02-16', 4, 'OMM', '2026-03-24 07:44:35', '2026-03-25 01:31:52'),
-(9, 5, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Samsung 55\\\" UHD TV', NULL, NULL, NULL, '2026-04-05-030-0702-01', NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 28500.00, '2026-02-16', 4, NULL, '2026-03-24 07:44:35', '2026-03-24 07:44:35');
+INSERT INTO `asset_items` (`id`, `asset_id`, `asset_subcategory_id`, `asset_category_id`, `employee_id`, `end_user`, `category_id`, `ics_id`, `par_id`, `description`, `model`, `serial_number`, `unit`, `property_no`, `ics_par_no`, `inventory_tag`, `date_counted`, `image`, `qr_code`, `status`, `disposal_reason`, `disposal_date`, `value`, `acquisition_date`, `office_id`, `office_name`, `created_at`, `last_updated`) VALUES
+(1, 1, 3, NULL, 6, 'Elton John Moises', 2, NULL, NULL, 'ASUS Vivobook 16', NULL, NULL, NULL, '2026-04-05-030-0101-01', NULL, NULL, '2026-03-23', '[\"asset_1_0_1774270603.jpg\"]', 'qr_asset_1_1774270605.png', 'serviceable', NULL, NULL, 42995.00, '2026-02-15', 4, 'OMM', '2026-03-23 12:42:03', '2026-03-26 02:22:22'),
+(2, 2, NULL, NULL, 1, 'Roberto Cruz', 2, NULL, NULL, 'HP Laptop 15s', NULL, NULL, NULL, '2026-04-05-030-0102-02', NULL, NULL, '2026-03-24', '[\"asset_2_0_1774320286.jpg\"]', 'qr_asset_2_1774320288.png', 'pending_tag', NULL, NULL, 31200.00, '2026-03-01', 5, 'OVM', '2026-03-23 13:05:52', '2026-03-26 02:48:10'),
+(3, 3, NULL, NULL, 7, 'John Legend', 2, NULL, NULL, 'Lenovo ThinkPad E14', NULL, NULL, NULL, '2026-07-05-030-0103-03', NULL, NULL, '2026-03-24', '[\"asset_3_0_1774336559.jpg\"]', 'qr_asset_3_1774336564.png', 'serviceable', NULL, NULL, 54500.00, '2026-01-20', 12, 'OSB', '2026-03-24 03:34:58', '2026-03-24 07:16:04'),
+(4, 3, NULL, NULL, 7, 'Joshua Escano', 2, NULL, NULL, 'Lenovo ThinkPad E14', NULL, NULL, NULL, '2026-07-05-030-0101-03', NULL, NULL, '2026-03-24', '[\"asset_4_0_1774335556.jpg\"]', 'qr_asset_4_1774335559.png', 'serviceable', NULL, NULL, 54500.00, '2026-01-20', 12, 'OSB', '2026-03-24 03:38:56', '2026-03-24 06:59:19'),
+(5, 4, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Epson EcoTank L3250', NULL, NULL, NULL, '2026-04-05-030-0101-01', NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 10750.00, '2026-03-10', 4, NULL, '2026-03-24 07:37:18', '2026-03-24 07:37:18'),
+(6, 4, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Epson EcoTank L3250', NULL, NULL, NULL, '2026-04-05-030-0102-01', NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 10750.00, '2026-03-10', 4, NULL, '2026-03-24 07:37:18', '2026-03-24 07:37:18'),
+(7, 4, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Epson EcoTank L3250', NULL, NULL, NULL, '2026-04-05-030-0103-01', NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 10750.00, '2026-03-10', 4, NULL, '2026-03-24 07:37:18', '2026-03-24 07:37:18'),
+(8, 5, NULL, NULL, 6, 'Jake Paul', 2, NULL, NULL, 'Samsung 55\\\" UHD TV', 'BU8000', '0AS13CHX400501L', NULL, '2026-04-05-030-0701-01', NULL, NULL, '2026-03-24', '[\"asset_8_0_1774338708.jpg\"]', 'qr_asset_8_1774338710.png', 'maintenance', NULL, NULL, 28500.00, '2026-02-16', 4, 'OMM', '2026-03-24 07:44:35', '2026-03-25 01:31:52'),
+(9, 5, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Samsung 55\\\" UHD TV', NULL, NULL, NULL, '2026-04-05-030-0702-01', NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 28500.00, '2026-02-16', 4, NULL, '2026-03-24 07:44:35', '2026-03-24 07:44:35');
 
 --
 -- Triggers `asset_items`
@@ -679,11 +679,21 @@ CREATE TABLE `borrow_requests` (
   `denied_at` datetime DEFAULT NULL,
   `denial_reason` text DEFAULT NULL,
   `returned_at` datetime DEFAULT NULL,
-  `return_condition` enum('excellent','good','fair','poor') DEFAULT NULL,
+  `return_condition` enum('undamaged','minor damage','significant damage') DEFAULT NULL,
   `return_notes` text DEFAULT NULL,
+  `return_photo` varchar(255) DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Table for managing asset borrow requests between offices';
+
+--
+-- Dumping data for table `borrow_requests`
+--
+
+INSERT INTO `borrow_requests` (`id`, `requested_by`, `requested_by_office`, `requested_to_office`, `asset_id`, `quantity_requested`, `quantity_approved`, `purpose`, `start_date`, `end_date`, `status`, `approved_by`, `approved_at`, `approval_notes`, `denied_by`, `denied_at`, `denial_reason`, `returned_at`, `return_condition`, `return_notes`, `return_photo`, `created_at`, `updated_at`) VALUES
+(1774428434, 17, 5, 4, 1, 1, NULL, 'test', '2026-03-25', '2026-03-25', 'returned', 18, '2026-03-26 09:17:42', 'Approved via quick action', NULL, NULL, NULL, '2026-03-26 10:07:08', 'undamaged', 'ok', NULL, '2026-03-25 16:16:32', '2026-03-26 10:07:08'),
+(1774499929, 17, 5, 4, 1, 1, NULL, 'tester', '2026-03-26', '2026-03-26', 'returned', 18, '2026-03-26 10:21:25', 'Approved via quick action', NULL, NULL, NULL, '2026-03-26 10:22:22', 'undamaged', 'test', NULL, '2026-03-26 10:20:38', '2026-03-26 10:22:22'),
+(1774503243, 18, 4, 5, 2, 1, NULL, 'test', '2026-03-26', '2026-03-26', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-03-26 10:48:10', '2026-03-26 10:48:10');
 
 -- --------------------------------------------------------
 
@@ -753,7 +763,9 @@ CREATE TABLE `consumables` (
 
 INSERT INTO `consumables` (`id`, `description`, `quantity`, `units`, `unit_cost`, `reorder_level`, `unit`, `office_id`, `created_at`, `updated_at`, `for_office_id`, `supplier`) VALUES
 (1, 'bond paper A4', 35, 'reams', 250.00, 10, 'pcs', 3, '2026-03-25 01:40:07', '2026-03-25 02:31:58', 4, 'J&F suppliers'),
-(2, 'bond paper A4', 15, 'pieces', 250.00, 10, 'pcs', 4, '2026-03-25 02:31:58', '2026-03-25 02:31:58', NULL, NULL);
+(2, 'bond paper A4', 15, 'pieces', 250.00, 10, 'pcs', 4, '2026-03-25 02:31:58', '2026-03-25 02:31:58', NULL, NULL),
+(3, 'A4 Paper', 17, 'reams', 250.00, 5, 'pcs', 3, '2026-03-25 02:43:44', '2026-03-25 02:44:06', 5, 'test'),
+(4, 'A4 Paper', 11, 'pieces', 250.00, 5, 'pcs', 5, '2026-03-25 02:44:06', '2026-03-25 06:09:25', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -783,7 +795,8 @@ CREATE TABLE `consumable_add_history` (
 --
 
 INSERT INTO `consumable_add_history` (`id`, `consumable_id`, `description`, `quantity_added`, `units`, `unit_cost`, `total_value`, `office_id`, `to_office_id`, `added_by`, `add_date`, `source`, `notes`, `supplier`) VALUES
-(1, 1, 'bond paper A4', 50, 'reams', 250.00, 12500.00, 3, 4, 5, '2026-03-25 09:40:07', 'new_consumable', 'New consumable added to inventory', 'J&F suppliers');
+(1, 1, 'bond paper A4', 50, 'reams', 250.00, 12500.00, 3, 4, 5, '2026-03-25 09:40:07', 'new_consumable', 'New consumable added to inventory', 'J&F suppliers'),
+(2, 3, 'A4 Paper', 30, 'reams', 250.00, 7500.00, 3, 5, 19, '2026-03-25 10:43:44', 'new_consumable', 'New consumable added to inventory', 'test');
 
 -- --------------------------------------------------------
 
@@ -853,6 +866,39 @@ CREATE TABLE `consumable_release_history_view` (
 ,`notes` text
 ,`created_at` timestamp
 );
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `consume_history`
+--
+
+CREATE TABLE `consume_history` (
+  `id` int(11) NOT NULL,
+  `consumable_id` int(11) NOT NULL,
+  `consumable_description` varchar(255) NOT NULL,
+  `quantity_consumed` int(11) NOT NULL DEFAULT 1,
+  `remaining_quantity` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `user_name` varchar(101) NOT NULL,
+  `user_email` varchar(100) NOT NULL,
+  `office_id` int(11) NOT NULL,
+  `office_name` varchar(100) NOT NULL,
+  `consumed_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `purpose` text DEFAULT NULL,
+  `reference_number` varchar(50) DEFAULT NULL,
+  `approved_by` int(11) DEFAULT NULL,
+  `approved_by_name` varchar(101) DEFAULT NULL,
+  `notes` text DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `consume_history`
+--
+
+INSERT INTO `consume_history` (`id`, `consumable_id`, `consumable_description`, `quantity_consumed`, `remaining_quantity`, `user_id`, `user_name`, `user_email`, `office_id`, `office_name`, `consumed_at`, `purpose`, `reference_number`, `approved_by`, `approved_by_name`, `notes`) VALUES
+(1, 4, 'A4 Paper', 1, 12, 17, 'Joshua Escaño', 'joshuamarifrancis@gmail.com', 5, 'OVM', '2026-03-25 06:01:42', 'Office Use', NULL, NULL, NULL, 'test'),
+(2, 4, 'A4 Paper', 1, 11, 17, 'Joshua Escaño', 'joshuamarifrancis@gmail.com', 5, 'OVM', '2026-03-25 06:09:25', 'Office Use', NULL, NULL, NULL, 'tester');
 
 -- --------------------------------------------------------
 
@@ -1556,6 +1602,14 @@ CREATE TABLE `notifications` (
   `read_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `notifications`
+--
+
+INSERT INTO `notifications` (`id`, `user_id`, `title`, `message`, `type`, `priority`, `related_id`, `related_type`, `is_read`, `created_at`, `read_at`) VALUES
+(1, 17, 'Consumable Used', '1 units of \'A4 Paper\' consumed. Remaining stock: 12', 'info', 'low', 4, 'consumable', 1, '2026-03-25 06:01:42', '2026-03-25 07:37:46'),
+(2, 17, 'Consumable Used', '1 units of \'A4 Paper\' consumed. Remaining stock: 11', 'info', 'low', 4, 'consumable', 1, '2026-03-25 06:09:25', '2026-03-25 07:37:41');
+
 -- --------------------------------------------------------
 
 --
@@ -1762,6 +1816,34 @@ CREATE TABLE `password_resets` (
 INSERT INTO `password_resets` (`id`, `email`, `token`, `expires_at`, `created_at`, `is_used`) VALUES
 (15, 'wjll2022-2920-98466@bicol-u.edu.ph', 'e0f3d647ee489b60aebc048e0ff23a379e4e12e2cfb23ceb3ca7d73049992a2b', '2026-01-07 02:02:15', '2026-01-07 00:02:15', 0),
 (17, 'waltonloneza@gmail.com', '686d6ee5df06e2a900ce04636b45b154aeeffc324742703abb67faacfd4c463e', '2026-01-07 02:04:59', '2026-01-07 00:04:59', 1);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `peripherals`
+--
+
+CREATE TABLE `peripherals` (
+  `id` int(11) NOT NULL,
+  `asset_item_id` int(11) NOT NULL,
+  `name` varchar(255) NOT NULL COMMENT 'Peripheral name (e.g., Monitor, Keyboard, Mouse)',
+  `model` varchar(255) DEFAULT NULL COMMENT 'Model number or designation',
+  `serial_number` varchar(255) DEFAULT NULL COMMENT 'Unique serial number',
+  `status` enum('serviceable','unserviceable','red_tagged','no_tag','disposed') NOT NULL DEFAULT 'serviceable' COMMENT 'Current status of the peripheral',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `created_by` int(11) DEFAULT NULL COMMENT 'User who created the record',
+  `updated_by` int(11) DEFAULT NULL COMMENT 'User who last updated the record'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Peripheral devices attached to assets (monitors, keyboards, mice, etc.)';
+
+--
+-- Dumping data for table `peripherals`
+--
+
+INSERT INTO `peripherals` (`id`, `asset_item_id`, `name`, `model`, `serial_number`, `status`, `created_at`, `updated_at`, `created_by`, `updated_by`) VALUES
+(1, 1, 'Dell UltraSharp Monitor', 'U2419H', 'DLU2419H001234', 'serviceable', '2026-03-25 08:12:39', '2026-03-25 08:12:39', NULL, NULL),
+(2, 2, 'Logitech Keyboard', 'K840', 'LGK840001234', 'serviceable', '2026-03-25 08:12:39', '2026-03-25 08:12:39', NULL, NULL),
+(3, 3, 'HP Mouse', 'X1000', 'HPX1000001234', 'serviceable', '2026-03-25 08:12:39', '2026-03-25 08:12:39', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -2364,7 +2446,17 @@ INSERT INTO `security_logs` (`id`, `event_type`, `description`, `severity`, `use
 (213, 'session_timeout', 'Session timeout for user: Walton Loneza (waltonloneza@gmail.com)', 'medium', 5, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 02:54:43'),
 (214, 'session_timeout', 'Session timeout for user: Walton Loneza (waltonloneza@gmail.com)', 'medium', 5, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:14:36'),
 (215, 'session_timeout', 'Session timeout for user: Walton Loneza (waltonloneza@gmail.com)', 'medium', 5, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-24 07:47:18'),
-(216, 'session_timeout', 'Session timeout for user: Walton Loneza (waltonloneza@gmail.com)', 'medium', 5, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-25 01:33:58');
+(216, 'session_timeout', 'Session timeout for user: Walton Loneza (waltonloneza@gmail.com)', 'medium', 5, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-25 01:33:58'),
+(217, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 03:17:48'),
+(218, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 03:51:22'),
+(219, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 05:19:04'),
+(220, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 05:50:45'),
+(221, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 06:26:56'),
+(222, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 07:01:43'),
+(223, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 08:00:53'),
+(224, 'session_timeout', 'Session timeout for user: OM admin (OM@pims.com)', 'medium', 18, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 01:30:58'),
+(225, 'session_timeout', 'Session timeout for user: OM admin (OM@pims.com)', 'medium', 18, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:02:18'),
+(226, 'session_timeout', 'Session timeout for user: OM admin (OM@pims.com)', 'medium', 18, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:51:15');
 
 -- --------------------------------------------------------
 
@@ -12119,7 +12211,113 @@ INSERT INTO `system_logs` (`id`, `user_id`, `action`, `module`, `description`, `
 (10588, 19, 'access', 'consumables', 'Admin accessed consumables page', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:31:59'),
 (10589, 19, 'logout', 'authentication', 'User logged out: admin admin (AD@pims.com) with role: admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:32:11'),
 (10590, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:32:26'),
-(10591, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:32:26');
+(10591, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:32:26'),
+(10592, 17, 'logout', 'authentication', 'User logged out: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:42:21'),
+(10593, 18, 'login_success', 'authentication', 'User logged in: OM admin (OM@pims.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:42:29'),
+(10594, 18, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:42:29'),
+(10595, 18, 'logout', 'authentication', 'User logged out: OM admin (OM@pims.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:42:50'),
+(10596, 19, 'login_success', 'authentication', 'User logged in: admin admin (AD@pims.com) with role: admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:42:57'),
+(10597, 19, 'access', 'admin_dashboard', 'Admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:42:57'),
+(10598, 19, 'access', 'consumables', 'Admin accessed consumables page', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:43:01'),
+(10599, 19, 'access', 'consumables', 'Admin accessed consumables page', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:43:44'),
+(10600, 19, 'consumable_added', 'consumable_management', 'Added consumable: A4 Paper', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:43:44'),
+(10601, 19, 'consumable_released', 'consumable_management', 'Released 13 \'A4 Paper\' from office ID 3 to OVM. Release type: with_deduction. No balance record found, returned 0 to supply office, actual release: 13. Remarks: test', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:44:06'),
+(10602, 19, 'access', 'consumables', 'Admin accessed consumables page', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:44:06'),
+(10603, 19, 'access', 'consumable_history', 'Viewed history for consumable: A4 Paper', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:44:22'),
+(10604, 19, 'access', 'consumables', 'Admin accessed consumables page', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:44:31'),
+(10605, 19, 'access', 'admin_dashboard', 'Admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:44:37'),
+(10606, 19, 'logout', 'authentication', 'User logged out: admin admin (AD@pims.com) with role: admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:44:44'),
+(10607, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:44:53'),
+(10608, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 02:44:54'),
+(10609, 17, 'session_timeout', 'authentication', 'Session expired for user: Joshua Escaño (joshuamarifrancis@gmail.com) after 1975 seconds', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 03:17:48'),
+(10610, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 03:18:01'),
+(10611, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 03:18:01'),
+(10612, 17, 'session_timeout', 'authentication', 'Session expired for user: Joshua Escaño (joshuamarifrancis@gmail.com) after 2001 seconds', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 03:51:22'),
+(10613, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 03:51:36'),
+(10614, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 03:51:36'),
+(10615, 17, 'session_timeout', 'authentication', 'Session expired for user: Joshua Escaño (joshuamarifrancis@gmail.com) after 5248 seconds', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 05:19:04'),
+(10616, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 05:19:20'),
+(10617, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 05:19:20'),
+(10618, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 05:21:19'),
+(10619, 17, 'session_timeout', 'authentication', 'Session expired for user: Joshua Escaño (joshuamarifrancis@gmail.com) after 1885 seconds', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 05:50:45'),
+(10620, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 05:50:57'),
+(10621, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 05:50:58'),
+(10622, 17, 'consumable_consumed', 'consumables', 'Consumed 1 units of A4 Paper. Remaining: 12. Notes: test', NULL, NULL, '2026-03-25 06:01:42'),
+(10623, 17, 'notification_created', 'consumable', 'Consumption notification created for A4 Paper', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 06:01:42'),
+(10624, 17, 'consumable_consumed', 'consumables', 'Consumed 1 units of A4 Paper. Remaining: 11. Notes: tester', NULL, NULL, '2026-03-25 06:09:25'),
+(10625, 17, 'notification_created', 'consumable', 'Consumption notification created for A4 Paper', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 06:09:25'),
+(10626, 17, 'session_timeout', 'authentication', 'Session expired for user: Joshua Escaño (joshuamarifrancis@gmail.com) after 2159 seconds', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 06:26:56'),
+(10627, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 06:27:07'),
+(10628, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 06:27:07'),
+(10629, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 06:27:28'),
+(10630, 17, 'access', 'inventory_reports', 'Office admin accessed inventory reports', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 06:29:18'),
+(10631, 17, 'access', 'inventory_reports', 'Office admin accessed inventory reports', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 06:34:58'),
+(10632, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 06:35:24'),
+(10633, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 06:38:25'),
+(10634, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 06:44:56'),
+(10635, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 06:45:20'),
+(10636, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 06:51:02'),
+(10637, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 06:51:33'),
+(10638, 17, 'session_timeout', 'authentication', 'Session expired for user: Joshua Escaño (joshuamarifrancis@gmail.com) after 2076 seconds', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 07:01:43'),
+(10639, 17, 'login_failed', 'authentication', 'Invalid password for user: Joshua Escaño (joshuamarifrancis@gmail.com)', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 07:01:55'),
+(10640, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 07:02:09'),
+(10641, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 07:02:09'),
+(10642, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 07:04:42'),
+(10643, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 07:06:00'),
+(10644, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 07:06:20'),
+(10645, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 07:08:35'),
+(10646, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 07:08:45'),
+(10647, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 07:14:56'),
+(10648, 17, 'session_timeout', 'authentication', 'Session expired for user: Joshua Escaño (joshuamarifrancis@gmail.com) after 3524 seconds', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 08:00:53'),
+(10649, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 08:01:03'),
+(10650, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 08:01:03'),
+(10651, 17, 'logout', 'authentication', 'User logged out: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 08:16:46'),
+(10652, 18, 'login_success', 'authentication', 'User logged in: OM admin (OM@pims.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 08:16:56'),
+(10653, 18, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 08:16:56'),
+(10654, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 00:28:23'),
+(10655, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 00:28:23'),
+(10656, 17, 'logout', 'authentication', 'User logged out: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 00:58:05'),
+(10657, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 00:58:20'),
+(10658, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 00:58:20'),
+(10659, 17, 'logout', 'authentication', 'User logged out: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 00:58:28'),
+(10660, 18, 'login_success', 'authentication', 'User logged in: OM admin (OM@pims.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 00:58:36'),
+(10661, 18, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 00:58:36'),
+(10662, 18, 'session_timeout', 'authentication', 'Session expired for user: OM admin (OM@pims.com) after 1942 seconds', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 01:30:58'),
+(10663, 17, 'login_failed', 'authentication', 'Invalid password for user: Joshua Escaño (joshuamarifrancis@gmail.com)', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 01:31:11'),
+(10664, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 01:31:22'),
+(10665, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 01:31:22'),
+(10666, 17, 'logout', 'authentication', 'User logged out: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 01:31:41'),
+(10667, 18, 'login_success', 'authentication', 'User logged in: OM admin (OM@pims.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 01:31:47'),
+(10668, 18, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 01:31:47'),
+(10669, 18, 'borrow', 'borrow_request', 'Marked asset as borrowed for request #1774428434', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 01:47:44'),
+(10670, 18, 'session_timeout', 'authentication', 'Session expired for user: OM admin (OM@pims.com) after 1831 seconds', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:02:18'),
+(10671, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:05:16'),
+(10672, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:05:16'),
+(10673, 17, 'logout', 'authentication', 'User logged out: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:05:35'),
+(10674, 18, 'login_failed', 'authentication', 'Invalid password for user: OM admin (OM@pims.com)', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:05:46'),
+(10675, 18, 'login_success', 'authentication', 'User logged in: OM admin (OM@pims.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:05:57'),
+(10676, 18, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:05:57'),
+(10677, 18, 'return', 'borrow_request', 'Returned asset for request #1774428434', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:07:08'),
+(10678, 18, 'logout', 'authentication', 'User logged out: OM admin (OM@pims.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:15:14'),
+(10679, 19, 'login_success', 'authentication', 'User logged in: admin admin (AD@pims.com) with role: admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:15:27'),
+(10680, 19, 'access', 'admin_dashboard', 'Admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:15:28'),
+(10681, 19, 'access', 'employees', 'Admin accessed employees page', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:15:33'),
+(10682, 19, 'view', 'employees', 'Viewed employee: Elton John Moises', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:15:39'),
+(10683, 19, 'access', 'employees', 'Admin accessed employees page', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:16:15'),
+(10684, 19, 'access', 'employees', 'Admin accessed employees page', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:16:22'),
+(10685, 19, 'access', 'employees', 'Admin accessed employees page', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:16:42'),
+(10686, 19, 'logout', 'authentication', 'User logged out: admin admin (AD@pims.com) with role: admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:16:53'),
+(10687, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:17:02'),
+(10688, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:17:02'),
+(10689, 17, 'create', 'borrow_request', 'Created borrow request for 1 unit(s) of asset #1', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:20:38'),
+(10690, 17, 'logout', 'authentication', 'User logged out: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:21:06'),
+(10691, 18, 'login_success', 'authentication', 'User logged in: OM admin (OM@pims.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:21:13'),
+(10692, 18, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:21:14'),
+(10693, 18, 'approve', 'borrow_request', 'Approved borrow request #1774499929', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:21:25'),
+(10694, 18, 'borrow', 'borrow_request', 'Marked asset as borrowed for request #1774499929', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:21:39'),
+(10695, 18, 'return', 'borrow_request', 'Returned asset for request #1774499929 with photo', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:22:22'),
+(10696, 18, 'create', 'borrow_request', 'Created borrow request for 1 unit(s) of asset #2', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:48:10'),
+(10697, 18, 'session_timeout', 'authentication', 'Session expired for user: OM admin (OM@pims.com) after 1802 seconds', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:51:15');
 
 -- --------------------------------------------------------
 
@@ -12339,6 +12537,61 @@ CREATE TABLE `user_password_history` (
 -- --------------------------------------------------------
 
 --
+-- Stand-in structure for view `v_consumable_usage_trends`
+-- (See below for the actual view)
+--
+CREATE TABLE `v_consumable_usage_trends` (
+`consumable_id` int(11)
+,`consumable_description` varchar(255)
+,`units` varchar(50)
+,`consumption_count` bigint(21)
+,`total_consumed` decimal(32,0)
+,`avg_consumption_per_transaction` decimal(14,4)
+,`lowest_stock_level` int(11)
+,`last_consumed_date` timestamp
+);
+
+-- --------------------------------------------------------
+
+--
+-- Stand-in structure for view `v_consumption_summary`
+-- (See below for the actual view)
+--
+CREATE TABLE `v_consumption_summary` (
+`id` int(11)
+,`consumable_id` int(11)
+,`consumable_description` varchar(255)
+,`quantity_consumed` int(11)
+,`remaining_quantity` int(11)
+,`user_name` varchar(101)
+,`user_email` varchar(100)
+,`office_name` varchar(100)
+,`consumed_at` timestamp
+,`purpose` text
+,`reference_number` varchar(50)
+,`consumable_units` varchar(50)
+,`consumable_unit_cost` decimal(10,2)
+,`total_cost` decimal(20,2)
+);
+
+-- --------------------------------------------------------
+
+--
+-- Stand-in structure for view `v_monthly_office_consumption`
+-- (See below for the actual view)
+--
+CREATE TABLE `v_monthly_office_consumption` (
+`month_year` varchar(7)
+,`office_id` int(11)
+,`office_name` varchar(100)
+,`total_transactions` bigint(21)
+,`total_quantity_consumed` decimal(32,0)
+,`total_cost` decimal(42,2)
+);
+
+-- --------------------------------------------------------
+
+--
 -- Structure for view `asset_category_tables`
 --
 DROP TABLE IF EXISTS `asset_category_tables`;
@@ -12362,6 +12615,33 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 DROP TABLE IF EXISTS `consumable_release_history_view`;
 
 CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `consumable_release_history_view`  AS SELECT `h`.`id` AS `id`, `h`.`consumable_id` AS `consumable_id`, `h`.`description` AS `description`, `h`.`quantity_released` AS `quantity_released`, `h`.`unit_cost` AS `unit_cost`, `h`.`total_value` AS `total_value`, `h`.`from_office_id` AS `from_office_id`, `fo`.`office_name` AS `from_office_name`, `h`.`to_office_id` AS `to_office_id`, `to_off`.`office_name` AS `to_office_name`, `h`.`released_by` AS `released_by`, `u`.`first_name` AS `first_name`, `u`.`last_name` AS `last_name`, concat(`u`.`first_name`,' ',`u`.`last_name`) AS `released_by_name`, `h`.`release_date` AS `release_date`, `h`.`notes` AS `notes`, `h`.`created_at` AS `created_at` FROM (((`consumable_release_history` `h` left join `offices` `fo` on(`h`.`from_office_id` = `fo`.`id`)) left join `offices` `to_off` on(`h`.`to_office_id` = `to_off`.`id`)) left join `users` `u` on(`h`.`released_by` = `u`.`id`)) ;
+
+-- --------------------------------------------------------
+
+--
+-- Structure for view `v_consumable_usage_trends`
+--
+DROP TABLE IF EXISTS `v_consumable_usage_trends`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v_consumable_usage_trends`  AS SELECT `ch`.`consumable_id` AS `consumable_id`, `ch`.`consumable_description` AS `consumable_description`, `c`.`units` AS `units`, count(0) AS `consumption_count`, sum(`ch`.`quantity_consumed`) AS `total_consumed`, avg(`ch`.`quantity_consumed`) AS `avg_consumption_per_transaction`, min(`ch`.`remaining_quantity`) AS `lowest_stock_level`, max(`ch`.`consumed_at`) AS `last_consumed_date` FROM (`consume_history` `ch` left join `consumables` `c` on(`ch`.`consumable_id` = `c`.`id`)) GROUP BY `ch`.`consumable_id`, `ch`.`consumable_description`, `c`.`units` ORDER BY sum(`ch`.`quantity_consumed`) DESC ;
+
+-- --------------------------------------------------------
+
+--
+-- Structure for view `v_consumption_summary`
+--
+DROP TABLE IF EXISTS `v_consumption_summary`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v_consumption_summary`  AS SELECT `ch`.`id` AS `id`, `ch`.`consumable_id` AS `consumable_id`, `ch`.`consumable_description` AS `consumable_description`, `ch`.`quantity_consumed` AS `quantity_consumed`, `ch`.`remaining_quantity` AS `remaining_quantity`, `ch`.`user_name` AS `user_name`, `ch`.`user_email` AS `user_email`, `ch`.`office_name` AS `office_name`, `ch`.`consumed_at` AS `consumed_at`, `ch`.`purpose` AS `purpose`, `ch`.`reference_number` AS `reference_number`, `c`.`units` AS `consumable_units`, `c`.`unit_cost` AS `consumable_unit_cost`, `ch`.`quantity_consumed`* `c`.`unit_cost` AS `total_cost` FROM (`consume_history` `ch` left join `consumables` `c` on(`ch`.`consumable_id` = `c`.`id`)) ORDER BY `ch`.`consumed_at` DESC ;
+
+-- --------------------------------------------------------
+
+--
+-- Structure for view `v_monthly_office_consumption`
+--
+DROP TABLE IF EXISTS `v_monthly_office_consumption`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v_monthly_office_consumption`  AS SELECT date_format(`ch`.`consumed_at`,'%Y-%m') AS `month_year`, `ch`.`office_id` AS `office_id`, `ch`.`office_name` AS `office_name`, count(0) AS `total_transactions`, sum(`ch`.`quantity_consumed`) AS `total_quantity_consumed`, sum(`ch`.`quantity_consumed` * `c`.`unit_cost`) AS `total_cost` FROM (`consume_history` `ch` left join `consumables` `c` on(`ch`.`consumable_id` = `c`.`id`)) GROUP BY date_format(`ch`.`consumed_at`,'%Y-%m'), `ch`.`office_id`, `ch`.`office_name` ORDER BY date_format(`ch`.`consumed_at`,'%Y-%m') DESC, `ch`.`office_name` ASC ;
 
 --
 -- Indexes for dumped tables
@@ -12505,6 +12785,20 @@ ALTER TABLE `consumable_balance`
 --
 ALTER TABLE `consumable_release_history`
   ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `consume_history`
+--
+ALTER TABLE `consume_history`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_consumable_id` (`consumable_id`),
+  ADD KEY `idx_user_id` (`user_id`),
+  ADD KEY `idx_office_id` (`office_id`),
+  ADD KEY `idx_consumed_at` (`consumed_at`),
+  ADD KEY `idx_reference_number` (`reference_number`),
+  ADD KEY `idx_consumable_date` (`consumable_id`,`consumed_at`),
+  ADD KEY `idx_office_date` (`office_id`,`consumed_at`),
+  ADD KEY `idx_user_date` (`user_id`,`consumed_at`);
 
 --
 -- Indexes for table `employees`
@@ -12673,6 +12967,19 @@ ALTER TABLE `password_policies`
 --
 ALTER TABLE `password_resets`
   ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `peripherals`
+--
+ALTER TABLE `peripherals`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `idx_asset_item_id` (`asset_item_id`),
+  ADD KEY `idx_name` (`name`),
+  ADD KEY `idx_serial_number` (`serial_number`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_created_at` (`created_at`),
+  ADD KEY `fk_peripherals_created_by` (`created_by`),
+  ADD KEY `fk_peripherals_updated_by` (`updated_by`);
 
 --
 -- Indexes for table `permissions`
@@ -12892,7 +13199,7 @@ ALTER TABLE `borrow_form_submissions`
 -- AUTO_INCREMENT for table `borrow_requests`
 --
 ALTER TABLE `borrow_requests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1774503244;
 
 --
 -- AUTO_INCREMENT for table `branches`
@@ -12904,13 +13211,13 @@ ALTER TABLE `branches`
 -- AUTO_INCREMENT for table `consumables`
 --
 ALTER TABLE `consumables`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `consumable_add_history`
 --
 ALTER TABLE `consumable_add_history`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `consumable_balance`
@@ -12922,6 +13229,12 @@ ALTER TABLE `consumable_balance`
 -- AUTO_INCREMENT for table `consumable_release_history`
 --
 ALTER TABLE `consumable_release_history`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `consume_history`
+--
+ALTER TABLE `consume_history`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
@@ -13042,7 +13355,7 @@ ALTER TABLE `login_logs`
 -- AUTO_INCREMENT for table `notifications`
 --
 ALTER TABLE `notifications`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `notification_settings`
@@ -13091,6 +13404,12 @@ ALTER TABLE `password_policies`
 --
 ALTER TABLE `password_resets`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+
+--
+-- AUTO_INCREMENT for table `peripherals`
+--
+ALTER TABLE `peripherals`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `permissions`
@@ -13144,7 +13463,7 @@ ALTER TABLE `security_audit_logs`
 -- AUTO_INCREMENT for table `security_logs`
 --
 ALTER TABLE `security_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=217;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=227;
 
 --
 -- AUTO_INCREMENT for table `security_metrics`
@@ -13162,7 +13481,7 @@ ALTER TABLE `software`
 -- AUTO_INCREMENT for table `system_logs`
 --
 ALTER TABLE `system_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10592;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10698;
 
 --
 -- AUTO_INCREMENT for table `system_settings`
@@ -13199,7 +13518,26 @@ ALTER TABLE `users`
 --
 ALTER TABLE `user_password_history`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-SET FOREIGN_KEY_CHECKS=1;
+
+--
+-- Constraints for dumped tables
+--
+
+--
+-- Constraints for table `consume_history`
+--
+ALTER TABLE `consume_history`
+  ADD CONSTRAINT `fk_consume_history_consumable` FOREIGN KEY (`consumable_id`) REFERENCES `consumables` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_consume_history_office` FOREIGN KEY (`office_id`) REFERENCES `offices` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_consume_history_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `peripherals`
+--
+ALTER TABLE `peripherals`
+  ADD CONSTRAINT `fk_peripherals_asset_item` FOREIGN KEY (`asset_item_id`) REFERENCES `asset_items` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_peripherals_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_peripherals_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

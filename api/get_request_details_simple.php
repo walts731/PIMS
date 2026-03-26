@@ -185,7 +185,12 @@ try {
     
     // Get asset information
     try {
+        error_log('=== DEBUG: Asset Information Retrieval ===');
+        error_log('DEBUG: Asset ID from request_data: ' . ($request_data['asset_id'] ?? 'NULL'));
+        
         if ($request_data['asset_id']) {
+            error_log('DEBUG: Asset ID exists, preparing query...');
+            
             $asset_query = "SELECT ai.description, 
                           ai.property_no as asset_code, 
                           ai.serial_number, ai.model, 
@@ -201,15 +206,31 @@ try {
                           FROM asset_items ai
                           LEFT JOIN asset_categories ac ON ai.asset_category_id = ac.id
                           WHERE ai.id = ?";
+            
+            error_log('DEBUG: Asset query: ' . $asset_query);
+            error_log('DEBUG: Asset ID parameter: ' . $request_data['asset_id']);
+            
             $asset_stmt = $conn->prepare($asset_query);
+            if (!$asset_stmt) {
+                error_log('DEBUG: Failed to prepare asset statement: ' . $conn->error);
+                throw new Exception("Failed to prepare asset statement: " . $conn->error);
+            }
+            
             $asset_stmt->bind_param("i", $request_data['asset_id']);
+            error_log('DEBUG: Asset statement prepared and bound');
+            
             $asset_stmt->execute();
+            error_log('DEBUG: Asset statement executed');
+            
             $asset_result = $asset_stmt->get_result();
+            error_log('DEBUG: Asset result rows: ' . $asset_result->num_rows);
             
             if ($asset_result->num_rows > 0) {
                 $asset_data = $asset_result->fetch_assoc();
-                $asset_info['description'] = $asset_data['description'];
-                $asset_info['code'] = $asset_data['asset_code'];
+                error_log('DEBUG: Asset data fetched: ' . print_r($asset_data, true));
+                
+                $asset_info['description'] = $asset_data['description'] ?? 'Unknown';
+                $asset_info['code'] = $asset_data['asset_code'] ?? 'Unknown';
                 $asset_info['serial_number'] = $asset_data['serial_number'] ?? '';
                 $asset_info['model'] = $asset_data['model'] ?? '';
                 $asset_info['status'] = $asset_data['status'] ?? '';
@@ -230,10 +251,17 @@ try {
                     'code' => $asset_data['category_code'] ?? ''
                 ];
                 $asset_info['total_quantity'] = 1; // Default to 1 for individual items
+                
+                error_log('DEBUG: Asset info array built: ' . print_r($asset_info, true));
+            } else {
+                error_log('DEBUG: No asset data found for asset_id: ' . $request_data['asset_id']);
             }
+        } else {
+            error_log('DEBUG: No asset_id in request_data');
         }
     } catch (Exception $e) {
-        error_log("Error getting asset info: " . $e->getMessage());
+        error_log('DEBUG: Error getting asset info: ' . $e->getMessage());
+        error_log('DEBUG: Exception trace: ' . $e->getTraceAsString());
     }
     
     // Format the response with lifecycle events
@@ -337,7 +365,8 @@ try {
             'approval_notes' => $request_data['approval_notes'],
             'denial_reason' => $request_data['denial_reason'],
             'return_condition' => $request_data['return_condition'],
-            'return_notes' => $request_data['return_notes']
+            'return_notes' => $request_data['return_notes'],
+            'return_photo' => $request_data['return_photo']
         ],
         'requester' => $requester_info,
         'approver' => $approver_info,
@@ -347,6 +376,10 @@ try {
             'current_status' => $current_status
         ]
     ];
+    
+    error_log('=== DEBUG: Final Response ===');
+    error_log('DEBUG: Asset info in response: ' . print_r($asset_info, true));
+    error_log('DEBUG: Full response structure: ' . print_r($response, true));
     
     header('Content-Type: application/json');
     
