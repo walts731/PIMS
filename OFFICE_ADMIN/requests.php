@@ -3,6 +3,7 @@ session_start();
 require_once '../config.php';
 require_once '../includes/system_functions.php';
 require_once '../includes/logger.php';
+require_once 'includes/notification_functions.php';
 
 // Check session timeout
 checkSessionTimeout();
@@ -159,6 +160,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' || $action === 'check_updates') {
                                         $stmt2->bind_param("i", $asset_id);
                                         $stmt2->execute();
                                         
+                                        // Create notification for the target office admin
+                                        $asset_info_query = "SELECT ai.description as asset_name, o.office_name as requester_office 
+                                                           FROM asset_items ai 
+                                                           JOIN offices o ON ai.office_id = o.id 
+                                                           WHERE ai.id = ?";
+                                        $asset_stmt = $conn->prepare($asset_info_query);
+                                        $asset_stmt->bind_param("i", $asset_id);
+                                        $asset_stmt->execute();
+                                        $asset_result = $asset_stmt->get_result();
+                                        $asset_data = $asset_result->fetch_assoc();
+                                        
+                                        if ($asset_data) {
+                                            // Get target office admin directly
+                                            $office_admin_id = getOfficeAdminId($requested_to_office);
+                                            if ($office_admin_id) {
+                                                $title = "New Borrow Request";
+                                                $message = "Borrow request received from {$asset_data['requester_office']} for '{$asset_data['asset_name']}'";
+                                                createOfficeNotification($office_admin_id, $title, $message, 'info', $request_id, 'borrow_request', 'medium');
+                                            }
+                                        }
+                                        
                                         $_SESSION['success'] = "Borrow request for {$quantity_requested} unit(s) created successfully";
                                         logSystemAction($_SESSION['user_id'], 'create', 'borrow_request', "Created borrow request for {$quantity_requested} unit(s) of asset #$asset_id");
                                     } else {
@@ -194,6 +216,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' || $action === 'check_updates') {
                 $stmt2 = $conn->prepare($asset_update);
                 $stmt2->bind_param("i", $request_id);
                 $stmt2->execute();
+                
+                // Create notification for the requester
+                $request_info_query = "SELECT br.requested_by, br.requested_by_office, ai.description as asset_name
+                                     FROM borrow_requests br
+                                     JOIN asset_items ai ON br.asset_id = ai.id
+                                     WHERE br.id = ?";
+                $req_stmt = $conn->prepare($request_info_query);
+                $req_stmt->bind_param("i", $request_id);
+                $req_stmt->execute();
+                $req_result = $req_stmt->get_result();
+                $req_data = $req_result->fetch_assoc();
+                
+                if ($req_data) {
+                    $title = "Borrow Request Approved";
+                    $message = "Your borrow request for '{$req_data['asset_name']}' has been approved";
+                    createOfficeNotification($req_data['requested_by'], $title, $message, 'success', $request_id, 'borrow_request', 'medium');
+                }
                 
                 $_SESSION['success'] = "Request approved successfully";
                 logSystemAction($_SESSION['user_id'], 'approve', 'borrow_request', "Approved borrow request #$request_id");
@@ -581,6 +620,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' || $action === 'check_updates') {
                 $stmt2->bind_param("i", $request_id);
                 $stmt2->execute();
                 
+                // Create notification for the requester
+                $request_info_query = "SELECT br.requested_by, br.requested_by_office, ai.description as asset_name
+                                     FROM borrow_requests br
+                                     JOIN asset_items ai ON br.asset_id = ai.id
+                                     WHERE br.id = ?";
+                $req_stmt = $conn->prepare($request_info_query);
+                $req_stmt->bind_param("i", $request_id);
+                $req_stmt->execute();
+                $req_result = $req_stmt->get_result();
+                $req_data = $req_result->fetch_assoc();
+                
+                if ($req_data) {
+                    $title = "Borrow Request Denied";
+                    $message = "Your borrow request for '{$req_data['asset_name']}' has been denied. Reason: " . htmlspecialchars($reason);
+                    createOfficeNotification($req_data['requested_by'], $title, $message, 'warning', $request_id, 'borrow_request', 'high');
+                }
+                
                 $_SESSION['success'] = "Request denied successfully";
                 logSystemAction($_SESSION['user_id'], 'deny', 'borrow_request', "Denied borrow request #$request_id");
             } else {
@@ -632,6 +688,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' || $action === 'check_updates') {
                 $stmt2 = $conn->prepare($asset_update);
                 $stmt2->bind_param("i", $request_id);
                 $stmt2->execute();
+                
+                // Create notification for the requester
+                $request_info_query = "SELECT br.requested_by, br.requested_by_office, ai.description as asset_name
+                                     FROM borrow_requests br
+                                     JOIN asset_items ai ON br.asset_id = ai.id
+                                     WHERE br.id = ?";
+                $req_stmt = $conn->prepare($request_info_query);
+                $req_stmt->bind_param("i", $request_id);
+                $req_stmt->execute();
+                $req_result = $req_stmt->get_result();
+                $req_data = $req_result->fetch_assoc();
+                
+                if ($req_data) {
+                    $title = "Asset Returned";
+                    $message = "Your borrowed asset '{$req_data['asset_name']}' has been returned. Condition: " . ucfirst($condition);
+                    createOfficeNotification($req_data['requested_by'], $title, $message, 'info', $request_id, 'borrow_request', 'low');
+                }
                 
                 $_SESSION['success'] = "Asset returned successfully" . ($return_photo_path ? " (photo uploaded)" : "");
                 logSystemAction($_SESSION['user_id'], 'return', 'borrow_request', "Returned asset for request #$request_id" . ($return_photo_path ? " with photo" : ""));

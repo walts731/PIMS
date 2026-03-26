@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 26, 2026 at 03:57 AM
+-- Generation Time: Mar 26, 2026 at 07:22 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -294,8 +294,8 @@ CREATE TABLE `asset_items` (
 --
 
 INSERT INTO `asset_items` (`id`, `asset_id`, `asset_subcategory_id`, `asset_category_id`, `employee_id`, `end_user`, `category_id`, `ics_id`, `par_id`, `description`, `model`, `serial_number`, `unit`, `property_no`, `ics_par_no`, `inventory_tag`, `date_counted`, `image`, `qr_code`, `status`, `disposal_reason`, `disposal_date`, `value`, `acquisition_date`, `office_id`, `office_name`, `created_at`, `last_updated`) VALUES
-(1, 1, 3, NULL, 6, 'Elton John Moises', 2, NULL, NULL, 'ASUS Vivobook 16', NULL, NULL, NULL, '2026-04-05-030-0101-01', NULL, NULL, '2026-03-23', '[\"asset_1_0_1774270603.jpg\"]', 'qr_asset_1_1774270605.png', 'serviceable', NULL, NULL, 42995.00, '2026-02-15', 4, 'OMM', '2026-03-23 12:42:03', '2026-03-26 02:22:22'),
-(2, 2, NULL, NULL, 1, 'Roberto Cruz', 2, NULL, NULL, 'HP Laptop 15s', NULL, NULL, NULL, '2026-04-05-030-0102-02', NULL, NULL, '2026-03-24', '[\"asset_2_0_1774320286.jpg\"]', 'qr_asset_2_1774320288.png', 'pending_tag', NULL, NULL, 31200.00, '2026-03-01', 5, 'OVM', '2026-03-23 13:05:52', '2026-03-26 02:48:10'),
+(1, 1, 3, NULL, 6, 'Elton John Moises', 2, NULL, NULL, 'ASUS Vivobook 16', NULL, NULL, NULL, '2026-04-05-030-0101-01', NULL, NULL, '2026-03-23', '[\"asset_1_0_1774270603.jpg\"]', 'qr_asset_1_1774270605.png', 'pending_tag', NULL, NULL, 42995.00, '2026-02-15', 4, 'OMM', '2026-03-23 12:42:03', '2026-03-26 05:49:39'),
+(2, 2, NULL, NULL, 1, 'Roberto Cruz', 2, NULL, NULL, 'HP Laptop 15s', NULL, NULL, NULL, '2026-04-05-030-0102-02', NULL, NULL, '2026-03-24', '[\"asset_2_0_1774320286.jpg\"]', 'qr_asset_2_1774320288.png', 'serviceable', NULL, NULL, 31200.00, '2026-03-01', 5, 'OVM', '2026-03-23 13:05:52', '2026-03-26 03:36:20'),
 (3, 3, NULL, NULL, 7, 'John Legend', 2, NULL, NULL, 'Lenovo ThinkPad E14', NULL, NULL, NULL, '2026-07-05-030-0103-03', NULL, NULL, '2026-03-24', '[\"asset_3_0_1774336559.jpg\"]', 'qr_asset_3_1774336564.png', 'serviceable', NULL, NULL, 54500.00, '2026-01-20', 12, 'OSB', '2026-03-24 03:34:58', '2026-03-24 07:16:04'),
 (4, 3, NULL, NULL, 7, 'Joshua Escano', 2, NULL, NULL, 'Lenovo ThinkPad E14', NULL, NULL, NULL, '2026-07-05-030-0101-03', NULL, NULL, '2026-03-24', '[\"asset_4_0_1774335556.jpg\"]', 'qr_asset_4_1774335559.png', 'serviceable', NULL, NULL, 54500.00, '2026-01-20', 12, 'OSB', '2026-03-24 03:38:56', '2026-03-24 06:59:19'),
 (5, 4, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Epson EcoTank L3250', NULL, NULL, NULL, '2026-04-05-030-0101-01', NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 10750.00, '2026-03-10', 4, NULL, '2026-03-24 07:37:18', '2026-03-24 07:37:18'),
@@ -669,6 +669,7 @@ CREATE TABLE `borrow_requests` (
   `quantity_requested` int(11) NOT NULL DEFAULT 1,
   `quantity_approved` int(11) DEFAULT NULL,
   `purpose` text NOT NULL,
+  `urgency_level` enum('normal','urgent','emergency') NOT NULL DEFAULT 'normal',
   `start_date` date NOT NULL,
   `end_date` date NOT NULL,
   `status` enum('pending','approved','denied','returned','borrowed','cancelled') NOT NULL DEFAULT 'pending',
@@ -690,10 +691,11 @@ CREATE TABLE `borrow_requests` (
 -- Dumping data for table `borrow_requests`
 --
 
-INSERT INTO `borrow_requests` (`id`, `requested_by`, `requested_by_office`, `requested_to_office`, `asset_id`, `quantity_requested`, `quantity_approved`, `purpose`, `start_date`, `end_date`, `status`, `approved_by`, `approved_at`, `approval_notes`, `denied_by`, `denied_at`, `denial_reason`, `returned_at`, `return_condition`, `return_notes`, `return_photo`, `created_at`, `updated_at`) VALUES
-(1774428434, 17, 5, 4, 1, 1, NULL, 'test', '2026-03-25', '2026-03-25', 'returned', 18, '2026-03-26 09:17:42', 'Approved via quick action', NULL, NULL, NULL, '2026-03-26 10:07:08', 'undamaged', 'ok', NULL, '2026-03-25 16:16:32', '2026-03-26 10:07:08'),
-(1774499929, 17, 5, 4, 1, 1, NULL, 'tester', '2026-03-26', '2026-03-26', 'returned', 18, '2026-03-26 10:21:25', 'Approved via quick action', NULL, NULL, NULL, '2026-03-26 10:22:22', 'undamaged', 'test', NULL, '2026-03-26 10:20:38', '2026-03-26 10:22:22'),
-(1774503243, 18, 4, 5, 2, 1, NULL, 'test', '2026-03-26', '2026-03-26', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-03-26 10:48:10', '2026-03-26 10:48:10');
+INSERT INTO `borrow_requests` (`id`, `requested_by`, `requested_by_office`, `requested_to_office`, `asset_id`, `quantity_requested`, `quantity_approved`, `purpose`, `urgency_level`, `start_date`, `end_date`, `status`, `approved_by`, `approved_at`, `approval_notes`, `denied_by`, `denied_at`, `denial_reason`, `returned_at`, `return_condition`, `return_notes`, `return_photo`, `created_at`, `updated_at`) VALUES
+(1774428434, 17, 5, 4, 1, 1, NULL, 'test', 'normal', '2026-03-25', '2026-03-25', 'returned', 18, '2026-03-26 09:17:42', 'Approved via quick action', NULL, NULL, NULL, '2026-03-26 10:07:08', 'undamaged', 'ok', NULL, '2026-03-25 16:16:32', '2026-03-26 10:07:08'),
+(1774499929, 17, 5, 4, 1, 1, NULL, 'tester', 'normal', '2026-03-26', '2026-03-26', 'returned', 18, '2026-03-26 10:21:25', 'Approved via quick action', NULL, NULL, NULL, '2026-03-26 10:22:22', 'undamaged', 'test', NULL, '2026-03-26 10:20:38', '2026-03-26 10:22:22'),
+(1774503243, 18, 4, 5, 2, 1, NULL, 'test', 'normal', '2026-03-26', '2026-03-26', 'returned', 17, '2026-03-26 11:35:58', 'Approved via quick action', NULL, NULL, NULL, '2026-03-26 11:36:20', 'undamaged', 'testteststs', 'return_1774503243_1774496180.jpg', '2026-03-26 10:48:10', '2026-03-26 11:36:20'),
+(1774512150, 17, 5, 4, 1, 1, NULL, 'test', 'emergency', '2026-03-26', '2026-03-26', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-03-26 13:49:39', '2026-03-26 13:49:39');
 
 -- --------------------------------------------------------
 
@@ -2456,7 +2458,10 @@ INSERT INTO `security_logs` (`id`, `event_type`, `description`, `severity`, `use
 (223, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-25 08:00:53'),
 (224, 'session_timeout', 'Session timeout for user: OM admin (OM@pims.com)', 'medium', 18, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 01:30:58'),
 (225, 'session_timeout', 'Session timeout for user: OM admin (OM@pims.com)', 'medium', 18, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:02:18'),
-(226, 'session_timeout', 'Session timeout for user: OM admin (OM@pims.com)', 'medium', 18, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:51:15');
+(226, 'session_timeout', 'Session timeout for user: OM admin (OM@pims.com)', 'medium', 18, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:51:15'),
+(227, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 04:05:58'),
+(228, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 05:50:39'),
+(229, 'session_timeout', 'Session timeout for user: OM admin (OM@pims.com)', 'medium', 18, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 06:21:16');
 
 -- --------------------------------------------------------
 
@@ -12317,7 +12322,25 @@ INSERT INTO `system_logs` (`id`, `user_id`, `action`, `module`, `description`, `
 (10694, 18, 'borrow', 'borrow_request', 'Marked asset as borrowed for request #1774499929', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:21:39'),
 (10695, 18, 'return', 'borrow_request', 'Returned asset for request #1774499929 with photo', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:22:22'),
 (10696, 18, 'create', 'borrow_request', 'Created borrow request for 1 unit(s) of asset #2', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:48:10'),
-(10697, 18, 'session_timeout', 'authentication', 'Session expired for user: OM admin (OM@pims.com) after 1802 seconds', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:51:15');
+(10697, 18, 'session_timeout', 'authentication', 'Session expired for user: OM admin (OM@pims.com) after 1802 seconds', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:51:15'),
+(10698, 18, 'login_success', 'authentication', 'User logged in: OM admin (OM@pims.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 03:11:03'),
+(10699, 18, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 03:11:03'),
+(10700, 18, 'logout', 'authentication', 'User logged out: OM admin (OM@pims.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 03:35:41'),
+(10701, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 03:35:51'),
+(10702, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 03:35:51'),
+(10703, 17, 'approve', 'borrow_request', 'Approved borrow request #1774503243', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 03:35:58'),
+(10704, 17, 'borrow', 'borrow_request', 'Marked asset as borrowed for request #1774503243', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 03:36:03'),
+(10705, 17, 'return', 'borrow_request', 'Returned asset for request #1774503243 with photo', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 03:36:20'),
+(10706, 17, 'session_timeout', 'authentication', 'Session expired for user: Joshua Escaño (joshuamarifrancis@gmail.com) after 1807 seconds', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 04:05:58'),
+(10707, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 05:20:26'),
+(10708, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 05:20:26'),
+(10709, 17, 'create', 'borrow_request', 'Created borrow request for 1 unit(s) of asset #1', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 05:49:39'),
+(10710, 17, 'session_timeout', 'authentication', 'Session expired for user: Joshua Escaño (joshuamarifrancis@gmail.com) after 1813 seconds', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 05:50:39'),
+(10711, 18, 'login_success', 'authentication', 'User logged in: OM admin (OM@pims.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 05:51:03'),
+(10712, 18, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 05:51:03'),
+(10713, 18, 'session_timeout', 'authentication', 'Session expired for user: OM admin (OM@pims.com) after 1813 seconds', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 06:21:16'),
+(10714, 18, 'login_success', 'authentication', 'User logged in: OM admin (OM@pims.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 06:22:17'),
+(10715, 18, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 06:22:17');
 
 -- --------------------------------------------------------
 
@@ -13199,7 +13222,7 @@ ALTER TABLE `borrow_form_submissions`
 -- AUTO_INCREMENT for table `borrow_requests`
 --
 ALTER TABLE `borrow_requests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1774503244;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1774512474;
 
 --
 -- AUTO_INCREMENT for table `branches`
@@ -13355,7 +13378,7 @@ ALTER TABLE `login_logs`
 -- AUTO_INCREMENT for table `notifications`
 --
 ALTER TABLE `notifications`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT for table `notification_settings`
@@ -13463,7 +13486,7 @@ ALTER TABLE `security_audit_logs`
 -- AUTO_INCREMENT for table `security_logs`
 --
 ALTER TABLE `security_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=227;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=230;
 
 --
 -- AUTO_INCREMENT for table `security_metrics`
@@ -13481,7 +13504,7 @@ ALTER TABLE `software`
 -- AUTO_INCREMENT for table `system_logs`
 --
 ALTER TABLE `system_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10698;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10716;
 
 --
 -- AUTO_INCREMENT for table `system_settings`
