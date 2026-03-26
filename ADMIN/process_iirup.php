@@ -313,8 +313,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Commit transaction
         $conn->commit();
         
-        // Log the action for audit trail
+        // Log action for audit trail
         logSystemAction($_SESSION['user_id'], "Created IIRUP Form: $form_number", 'forms', "Form ID: $form_id, Items: $total_items");
+        
+        // Clear form data session storage to reset data restoration
+        unset($_SESSION['iirup_form_data']);
         
         $_SESSION['success'] = "IIRUP Form created successfully! Form Number: $form_number";
         header('Location: iirup_form.php');
