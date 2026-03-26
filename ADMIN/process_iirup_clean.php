@@ -4,9 +4,6 @@ require_once '../config.php';
 require_once '../includes/system_functions.php';
 require_once '../includes/logger.php';
 
-// Debug: Log that file was accessed
-error_log("IIRUP Process file accessed at " . date('Y-m-d H:i:s') . " from IP: " . ($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
-
 // Check session timeout
 checkSessionTimeout();
 
@@ -105,70 +102,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $control_nos = $_POST['control_no'];
         $dates_received = $_POST['date_received'];
         
-        // Get peripheral data from hidden fields
-        $component_type = $_POST['component_type'] ?? 'main_asset';
-        $id = $_POST['id'] ?? ''; // This could be asset_id or peripheral_id
-        $asset_id = $_POST['asset_id'] ?? ''; // Asset ID for reference
-        $peripheral_name = $_POST['peripheral_name'] ?? '';
-        $peripheral_model = $_POST['peripheral_model'] ?? '';
-        $peripheral_serial_number = $_POST['peripheral_serial_number'] ?? '';
-        $peripheral_status = $_POST['peripheral_status'] ?? '';
-        
-        // Debug logging (minimal)
-        error_log("IIRUP Form Data - Component Type: $component_type, ID: $id, Asset ID: $asset_id, Peripheral Name: $peripheral_name");
-        
-        // If this is a peripheral, include peripheral processing logic
-        if ($component_type === 'peripheral') {
-            error_log("Processing peripheral status update");
-            
-            // Process peripheral status update
-            $peripheral_id = !empty($id) ? $id : $asset_id;
-            
-            if ($peripheral_id && is_numeric($peripheral_id)) {
-                // Check if peripheral exists
-                $check_sql = "SELECT id, status, name, model, serial_number FROM peripherals WHERE id = ?";
-                $stmt = $conn->prepare($check_sql);
-                $stmt->bind_param("i", $peripheral_id);
-                $stmt->execute();
-                $result = $stmt->get_result();
-                
-                if ($result && $result->num_rows > 0) {
-                    $peripheral_record = $result->fetch_assoc();
-                    $current_status = $peripheral_record['status'];
-                    
-                    error_log("Found peripheral: ID $peripheral_id, Name {$peripheral_record['name']}, Current Status: $current_status");
-                    
-                    // Update peripheral status to unserviceable
-                    $update_sql = "UPDATE peripherals SET status = 'unserviceable', updated_at = NOW(), updated_by = ? WHERE id = ?";
-                    $update_stmt = $conn->prepare($update_sql);
-                    $update_stmt->bind_param("ii", $_SESSION['user_id'], $peripheral_id);
-                    
-                    if ($update_stmt->execute()) {
-                        $affected_rows = $update_stmt->affected_rows;
-                        if ($affected_rows > 0) {
-                            error_log("✓ Peripheral status successfully updated to unserviceable for peripheral_id: $peripheral_id");
-                            logSystemAction($_SESSION['user_id'], "Updated peripheral status to unserviceable via IIRUP", 'peripherals', "Peripheral ID: $peripheral_id, Name: {$peripheral_record['name']}");
-                        } else {
-                            error_log("⚠ Peripheral status update: No rows affected (may already be unserviceable)");
-                        }
-                    } else {
-                        error_log("✗ Peripheral status update failed: " . $update_stmt->error);
-                    }
-                    
-                    $update_stmt->close();
-                } else {
-                    error_log("✗ No peripheral record found with ID: $peripheral_id");
-                }
-                
-                $stmt->close();
-            } else {
-                error_log("✗ Invalid peripheral ID: '$peripheral_id'");
-            }
-        }
-        
         // Insert items into iirup_items table
         $asset_ids_to_update = [];
-        $component_updates = []; // Track component-specific updates
         
         foreach ($particulars as $index => $particular) {
             if (!empty($particular)) {
@@ -215,15 +150,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 $conn->query($item_sql);
                 
-                // Extract asset ID and component type from the data
-                $asset_id = null;
-                $item_component_type = null;
-                $property_no = $property_nos[$index] ?? '';
-                
                 // Try to extract asset ID from property number or description
                 $property_no = $property_nos[$index] ?? '';
                 
                 // First try to find asset by property number from the dedicated field
+                $asset_id = null;
                 if (!empty($property_no)) {
                     $asset_id = getAssetIdByPropertyNo($property_no);
                 }
@@ -245,8 +176,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
         }
-        
-        error_log("IIRUP Processing Summary - Main assets to update: " . count($asset_ids_to_update));
         
         // Update asset items status to unserviceable
         error_log("About to process asset items status updates. Main assets: " . count($asset_ids_to_update));
@@ -307,16 +236,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $history_stmt->close();
                     }
                 }
+
+                // Log the action for audit trail
+                logSystemAction($_SESSION['user_id'], 'Updated asset status to unserviceable', 'assets', 
+                              'asset_ids: ' . implode(',', $assets_to_update) . ', form_id: ' . $form_id);
+            } else {
+                error_log("No main asset IDs to process after filtering");
             }
         }
         
-        // Commit transaction
-        $conn->commit();
+        // Log the action
+        logSystemAction($_SESSION['user_id'], 'Created IIRUP Form', 'forms', 'form_id: ' . $form_id . ', form_number: ' . $form_number);
         
-        // Log the action for audit trail
-        logSystemAction($_SESSION['user_id'], "Created IIRUP Form: $form_number", 'forms', "Form ID: $form_id, Items: $total_items");
-        
-        $_SESSION['success'] = "IIRUP Form created successfully! Form Number: $form_number";
+        $_SESSION['success'] = "IIRUP Form '$form_number' has been created successfully!";
         header('Location: iirup_form.php');
         exit();
         

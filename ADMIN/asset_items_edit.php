@@ -64,6 +64,21 @@ if ($item_row = $item_result->fetch_assoc()) {
 }
 $item_stmt->close();
 
+// Get peripherals for this asset item
+$peripherals = [];
+$peripherals_sql = "SELECT id, name, model, serial_number, status, created_at 
+                    FROM peripherals 
+                    WHERE asset_item_id = ? 
+                    ORDER BY name, created_at";
+$peripherals_stmt = $conn->prepare($peripherals_sql);
+$peripherals_stmt->bind_param("i", $item_id);
+$peripherals_stmt->execute();
+$peripherals_result = $peripherals_stmt->get_result();
+while ($row = $peripherals_result->fetch_assoc()) {
+    $peripherals[] = $row;
+}
+$peripherals_stmt->close();
+
 if (!$item) {
     $_SESSION['error'] = 'Asset item not found';
     header('Location: asset_items.php');
@@ -312,6 +327,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                 // Update category-specific fields based on category
                 updateCategorySpecificFields($item_id, $item['category_code'], $_POST);
                 
+                // Update peripherals if provided
+                updatePeripherals($item_id, $_POST);
+                
                 $_SESSION['success'] = 'Asset item updated successfully!';
                 header('Location: asset_items_edit.php?id=' . $item_id);
                 exit();
@@ -322,6 +340,67 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         } catch (Exception $e) {
             $_SESSION['error'] = 'Error updating asset item: ' . $e->getMessage();
         }
+    }
+}
+
+// Function to update peripherals
+function updatePeripherals($item_id, $post_data) {
+    global $conn;
+    
+    try {
+        // Handle existing peripherals updates
+        if (isset($post_data['peripheral_id']) && is_array($post_data['peripheral_id'])) {
+            foreach ($post_data['peripheral_id'] as $index => $peripheral_id) {
+                if (!empty($peripheral_id)) {
+                    $name = trim($post_data['peripheral_name'][$index] ?? '');
+                    $model = trim($post_data['peripheral_model'][$index] ?? '');
+                    $serial_number = trim($post_data['peripheral_serial_number'][$index] ?? '');
+                    $status = $post_data['peripheral_status'][$index] ?? 'serviceable';
+                    
+                    if (!empty($name)) {
+                        $update_sql = "UPDATE peripherals SET name = ?, model = ?, serial_number = ?, status = ?, updated_at = NOW(), updated_by = ? WHERE id = ?";
+                        $update_stmt = $conn->prepare($update_sql);
+                        $update_stmt->bind_param("ssssii", $name, $model, $serial_number, $status, $_SESSION['user_id'], $peripheral_id);
+                        $update_stmt->execute();
+                        $update_stmt->close();
+                    }
+                }
+            }
+        }
+        
+        // Handle new peripheral additions
+        if (isset($post_data['new_peripheral_name']) && is_array($post_data['new_peripheral_name'])) {
+            foreach ($post_data['new_peripheral_name'] as $index => $name) {
+                $name = trim($name);
+                if (!empty($name)) {
+                    $model = trim($post_data['new_peripheral_model'][$index] ?? '');
+                    $serial_number = trim($post_data['new_peripheral_serial_number'][$index] ?? '');
+                    $status = $post_data['new_peripheral_status'][$index] ?? 'serviceable';
+                    
+                    $insert_sql = "INSERT INTO peripherals (asset_item_id, name, model, serial_number, status, created_at, created_by) VALUES (?, ?, ?, ?, ?, NOW(), ?)";
+                    $insert_stmt = $conn->prepare($insert_sql);
+                    $insert_stmt->bind_param("issssi", $item_id, $name, $model, $serial_number, $status, $_SESSION['user_id']);
+                    $insert_stmt->execute();
+                    $insert_stmt->close();
+                }
+            }
+        }
+        
+        // Handle peripheral deletions
+        if (isset($post_data['delete_peripheral']) && is_array($post_data['delete_peripheral'])) {
+            foreach ($post_data['delete_peripheral'] as $peripheral_id) {
+                if (!empty($peripheral_id)) {
+                    $delete_sql = "DELETE FROM peripherals WHERE id = ?";
+                    $delete_stmt = $conn->prepare($delete_sql);
+                    $delete_stmt->bind_param("i", $peripheral_id);
+                    $delete_stmt->execute();
+                    $delete_stmt->close();
+                }
+            }
+        }
+        
+    } catch (Exception $e) {
+        error_log("Error updating peripherals: " . $e->getMessage());
     }
 }
 
@@ -1091,6 +1170,70 @@ $status_display = formatStatus($item['status']);
                     </div>
                     <?php endif; ?>
                     
+                    <!-- Peripherals Section -->
+                    <div class="detail-section">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0"><i class="bi bi-pc-display"></i> Peripherals</h5>
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="addNewPeripheral()">
+                                <i class="bi bi-plus-circle"></i> Add Peripheral
+                            </button>
+                        </div>
+                        
+                        <?php if (!empty($peripherals)): ?>
+                            <div id="existingPeripherals">
+                                <?php foreach ($peripherals as $index => $peripheral): ?>
+                                <div class="peripheral-item border rounded p-3 mb-3" data-peripheral-id="<?php echo $peripheral['id']; ?>">
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <div class="mb-2">
+                                                <label class="form-label">Name *</label>
+                                                <input type="text" class="form-control form-control-sm" name="peripheral_name[]" value="<?php echo htmlspecialchars($peripheral['name']); ?>" required>
+                                                <input type="hidden" name="peripheral_id[]" value="<?php echo $peripheral['id']; ?>">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="mb-2">
+                                                <label class="form-label">Model</label>
+                                                <input type="text" class="form-control form-control-sm" name="peripheral_model[]" value="<?php echo htmlspecialchars($peripheral['model'] ?? ''); ?>">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="mb-2">
+                                                <label class="form-label">Serial Number</label>
+                                                <input type="text" class="form-control form-control-sm" name="peripheral_serial_number[]" value="<?php echo htmlspecialchars($peripheral['serial_number'] ?? ''); ?>">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="mb-2">
+                                                <label class="form-label">Status</label>
+                                                <select class="form-select form-select-sm" name="peripheral_status[]">
+                                                    <option value="serviceable" <?php echo ($peripheral['status'] === 'serviceable') ? 'selected' : ''; ?>>Serviceable</option>
+                                                    <option value="unserviceable" <?php echo ($peripheral['status'] === 'unserviceable') ? 'selected' : ''; ?>>Unserviceable</option>
+                                                    <option value="maintenance" <?php echo ($peripheral['status'] === 'maintenance') ? 'selected' : ''; ?>>Maintenance</option>
+                                                    <option value="disposed" <?php echo ($peripheral['status'] === 'disposed') ? 'selected' : ''; ?>>Disposed</option>
+                                                    <option value="borrowed" <?php echo ($peripheral['status'] === 'borrowed') ? 'selected' : ''; ?>>Borrowed</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-1">
+                                            <div class="mb-2">
+                                                <label class="form-label">&nbsp;</label>
+                                                <button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="removePeripheral(this)">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                                <input type="hidden" name="delete_peripheral[]" value="">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <!-- New Peripherals Container -->
+                        <div id="newPeripheralsContainer"></div>
+                    </div>
+                    
                     <!-- Action Buttons -->
                     <div class="detail-section">
                         <div class="d-flex justify-content-end gap-2">
@@ -1428,6 +1571,78 @@ $status_display = formatStatus($item['status']);
                     $('.page-header').after(alertDiv);
                 }
             });
+        }
+        
+        // Peripheral management functions
+        let newPeripheralCount = 0;
+        
+        function addNewPeripheral() {
+            newPeripheralCount++;
+            const container = document.getElementById('newPeripheralsContainer');
+            const peripheralHtml = `
+                <div class="peripheral-item border rounded p-3 mb-3" id="newPeripheral${newPeripheralCount}">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="mb-2">
+                                <label class="form-label">Name *</label>
+                                <input type="text" class="form-control form-control-sm" name="new_peripheral_name[]" required>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-2">
+                                <label class="form-label">Model</label>
+                                <input type="text" class="form-control form-control-sm" name="new_peripheral_model[]">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-2">
+                                <label class="form-label">Serial Number</label>
+                                <input type="text" class="form-control form-control-sm" name="new_peripheral_serial_number[]">
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="mb-2">
+                                <label class="form-label">Status</label>
+                                <select class="form-select form-select-sm" name="new_peripheral_status[]">
+                                    <option value="serviceable">Serviceable</option>
+                                    <option value="unserviceable">Unserviceable</option>
+                                    <option value="maintenance">Maintenance</option>
+                                    <option value="disposed">Disposed</option>
+                                    <option value="borrowed">Borrowed</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-1">
+                            <div class="mb-2">
+                                <label class="form-label">&nbsp;</label>
+                                <button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="removeNewPeripheral('newPeripheral${newPeripheralCount}')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', peripheralHtml);
+        }
+        
+        function removePeripheral(button) {
+            const peripheralItem = button.closest('.peripheral-item');
+            const peripheralId = peripheralItem.dataset.peripheralId;
+            const deleteInput = peripheralItem.querySelector('input[name="delete_peripheral[]"]');
+            
+            if (confirm('Are you sure you want to delete this peripheral?')) {
+                // Mark for deletion
+                deleteInput.value = peripheralId;
+                peripheralItem.style.display = 'none';
+            }
+        }
+        
+        function removeNewPeripheral(peripheralId) {
+            const peripheralItem = document.getElementById(peripheralId);
+            if (confirm('Are you sure you want to remove this new peripheral?')) {
+                peripheralItem.remove();
+            }
         }
     </script>
 </body>

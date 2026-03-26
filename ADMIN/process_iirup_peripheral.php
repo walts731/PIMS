@@ -4,9 +4,6 @@ require_once '../config.php';
 require_once '../includes/system_functions.php';
 require_once '../includes/logger.php';
 
-// Debug: Log that file was accessed
-error_log("IIRUP Process file accessed at " . date('Y-m-d H:i:s') . " from IP: " . ($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
-
 // Check session timeout
 checkSessionTimeout();
 
@@ -27,7 +24,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Start transaction
         $conn->begin_transaction();
         
-        // Get form data
+        // Get peripheral data from form
+        $component_type = $_POST['component_type'] ?? 'main_asset';
+        $id = $_POST['id'] ?? '';
+        $asset_id = $_POST['asset_id'] ?? '';
+        $peripheral_name = $_POST['peripheral_name'] ?? '';
+        $peripheral_model = $_POST['peripheral_model'] ?? '';
+        $peripheral_serial_number = $_POST['peripheral_serial_number'] ?? '';
+        $peripheral_status = $_POST['peripheral_status'] ?? '';
+        
+        // Get form data for IIRUP processing
         $as_of_year = $_POST['as_of_year'];
         $accountable_officer = $_POST['accountable_officer'];
         $designation = $_POST['designation'];
@@ -105,23 +111,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $control_nos = $_POST['control_no'];
         $dates_received = $_POST['date_received'];
         
-        // Get peripheral data from hidden fields
-        $component_type = $_POST['component_type'] ?? 'main_asset';
-        $id = $_POST['id'] ?? ''; // This could be asset_id or peripheral_id
-        $asset_id = $_POST['asset_id'] ?? ''; // Asset ID for reference
-        $peripheral_name = $_POST['peripheral_name'] ?? '';
-        $peripheral_model = $_POST['peripheral_model'] ?? '';
-        $peripheral_serial_number = $_POST['peripheral_serial_number'] ?? '';
-        $peripheral_status = $_POST['peripheral_status'] ?? '';
-        
-        // Debug logging (minimal)
-        error_log("IIRUP Form Data - Component Type: $component_type, ID: $id, Asset ID: $asset_id, Peripheral Name: $peripheral_name");
-        
-        // If this is a peripheral, include peripheral processing logic
+        // Process peripheral status update first
+        $peripheral_updated = false;
         if ($component_type === 'peripheral') {
-            error_log("Processing peripheral status update");
-            
-            // Process peripheral status update
             $peripheral_id = !empty($id) ? $id : $asset_id;
             
             if ($peripheral_id && is_numeric($peripheral_id)) {
@@ -136,8 +128,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $peripheral_record = $result->fetch_assoc();
                     $current_status = $peripheral_record['status'];
                     
-                    error_log("Found peripheral: ID $peripheral_id, Name {$peripheral_record['name']}, Current Status: $current_status");
-                    
                     // Update peripheral status to unserviceable
                     $update_sql = "UPDATE peripherals SET status = 'unserviceable', updated_at = NOW(), updated_by = ? WHERE id = ?";
                     $update_stmt = $conn->prepare($update_sql);
@@ -146,30 +136,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if ($update_stmt->execute()) {
                         $affected_rows = $update_stmt->affected_rows;
                         if ($affected_rows > 0) {
-                            error_log("✓ Peripheral status successfully updated to unserviceable for peripheral_id: $peripheral_id");
+                            $peripheral_updated = true;
                             logSystemAction($_SESSION['user_id'], "Updated peripheral status to unserviceable via IIRUP", 'peripherals', "Peripheral ID: $peripheral_id, Name: {$peripheral_record['name']}");
-                        } else {
-                            error_log("⚠ Peripheral status update: No rows affected (may already be unserviceable)");
                         }
-                    } else {
-                        error_log("✗ Peripheral status update failed: " . $update_stmt->error);
                     }
                     
                     $update_stmt->close();
-                } else {
-                    error_log("✗ No peripheral record found with ID: $peripheral_id");
                 }
                 
                 $stmt->close();
-            } else {
-                error_log("✗ Invalid peripheral ID: '$peripheral_id'");
             }
         }
         
         // Insert items into iirup_items table
-        $asset_ids_to_update = [];
-        $component_updates = []; // Track component-specific updates
-        
         foreach ($particulars as $index => $particular) {
             if (!empty($particular)) {
                 $item_order = $index + 1;
@@ -214,109 +193,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 )";
                 
                 $conn->query($item_sql);
-                
-                // Extract asset ID and component type from the data
-                $asset_id = null;
-                $item_component_type = null;
-                $property_no = $property_nos[$index] ?? '';
-                
-                // Try to extract asset ID from property number or description
-                $property_no = $property_nos[$index] ?? '';
-                
-                // First try to find asset by property number from the dedicated field
-                if (!empty($property_no)) {
-                    $asset_id = getAssetIdByPropertyNo($property_no);
-                }
-                
-                // If not found, try to extract from particulars description
-                if (!$asset_id && !empty($particular)) {
-                    $asset_id = extractAssetIdFromDescription($particular);
-                }
-                
-                // Debug logging
-                error_log("IIRUP Processing - Particular: '$particular', Asset ID: " . ($asset_id ?: 'none'));
-                
-                if ($asset_id) {
-                    // Add to main asset updates
-                    $asset_ids_to_update[] = $asset_id;
-                    error_log("Added to main asset updates: Asset ID $asset_id (Type: main asset)");
-                } else {
-                    error_log("No asset_id found for particular: '$particular'");
-                }
-            }
-        }
-        
-        error_log("IIRUP Processing Summary - Main assets to update: " . count($asset_ids_to_update));
-        
-        // Update asset items status to unserviceable
-        error_log("About to process asset items status updates. Main assets: " . count($asset_ids_to_update));
-        
-        // Process main asset updates only if there are main assets to update
-        if (!empty($asset_ids_to_update)) {
-            error_log("Processing main asset updates: " . count($asset_ids_to_update) . " assets");
-            $unique_asset_ids = array_unique($asset_ids_to_update);
-            
-            if (!empty($unique_asset_ids)) {
-                $ids_string = implode(',', array_map('intval', $unique_asset_ids));
-                
-                // First, check which assets exist and their current status
-                $check_sql = "SELECT id, property_no, status FROM asset_items WHERE id IN ($ids_string)";
-                $check_result = $conn->query($check_sql);
-                
-                $assets_to_update = [];
-                $already_disposed = [];
-                $already_unserviceable = [];
-                
-                while ($asset = $check_result->fetch_assoc()) {
-                    if ($asset['status'] === 'disposed') {
-                        $already_disposed[] = $asset['property_no'];
-                    } elseif ($asset['status'] === 'unserviceable') {
-                        $already_unserviceable[] = $asset['property_no'];
-                    } else {
-                        $assets_to_update[] = $asset['id'];
-                    }
-                }
-                
-                // Log asset status information
-                if (!empty($already_disposed)) {
-                    error_log("Assets already disposed, not updating: " . implode(', ', $already_disposed));
-                }
-                if (!empty($already_unserviceable)) {
-                    error_log("Assets already unserviceable: " . implode(', ', $already_unserviceable));
-                }
-                
-                // Update only main assets that can be changed to unserviceable
-                if (!empty($assets_to_update)) {
-                    error_log("Processing " . count($assets_to_update) . " main asset updates");
-                    $update_ids_string = implode(',', $assets_to_update);
-                    $update_sql = "UPDATE asset_items SET status = 'unserviceable', last_updated = NOW() 
-                                  WHERE id IN ($update_ids_string)";
-                    
-                    $update_result = $conn->query($update_sql);
-                    $updated_count = $conn->affected_rows;
-                    
-                    error_log("Updated $updated_count asset items to unserviceable. IDs: " . implode(', ', $assets_to_update));
-                    
-                    // Record history for each updated asset
-                    foreach ($assets_to_update as $asset_id) {
-                        $history_sql = "INSERT INTO asset_item_history (item_id, action, old_value, new_value, created_by, created_at, details) 
-                                      VALUES (?, 'status_change', 'serviceable', 'unserviceable', ?, NOW(), 'Status changed via IIRUP Form: $form_number')";
-                        $history_stmt = $conn->prepare($history_sql);
-                        $history_stmt->bind_param("ii", $asset_id, $_SESSION['user_id']);
-                        $history_stmt->execute();
-                        $history_stmt->close();
-                    }
-                }
             }
         }
         
         // Commit transaction
         $conn->commit();
         
-        // Log the action for audit trail
-        logSystemAction($_SESSION['user_id'], "Created IIRUP Form: $form_number", 'forms', "Form ID: $form_id, Items: $total_items");
+        // Log the action
+        logSystemAction($_SESSION['user_id'], 'Created IIRUP Form', 'forms', 'form_id: ' . $form_id . ', form_number: ' . $form_number);
         
-        $_SESSION['success'] = "IIRUP Form created successfully! Form Number: $form_number";
+        $_SESSION['success'] = "IIRUP Form '$form_number' has been created successfully!" . ($peripheral_updated ? " Peripheral status updated to unserviceable." : "");
         header('Location: iirup_form.php');
         exit();
         
@@ -335,85 +221,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Not a POST request
     header('Location: iirup_form.php');
     exit();
-}
-
-// Helper function to get asset ID by property number
-function getAssetIdByPropertyNo($property_no) {
-    global $conn;
-    $property_no = trim($property_no);
-    
-    if (empty($property_no)) {
-        return null;
-    }
-    
-    error_log("Looking up asset by property number: $property_no");
-    
-    $stmt = $conn->prepare("SELECT id FROM asset_items WHERE property_no = ? LIMIT 1");
-    $stmt->bind_param("s", $property_no);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    if ($row = $result->fetch_assoc()) {
-        error_log("Found asset ID: " . $row['id'] . " for property number: $property_no");
-        return (int)$row['id'];
-    }
-    
-    error_log("No asset found for property number: $property_no");
-    return null;
-}
-
-// Helper function to extract asset ID from description
-function extractAssetIdFromDescription($description) {
-    // Try to extract property number from description
-    if (preg_match('/Property\s*No\s*:\s*([A-Za-z0-9-]+)/i', $description, $matches)) {
-        $property_no = $matches[1];
-        error_log("Extracted property number: $property_no from: $description");
-        
-        // Look up the asset ID by property number
-        global $conn;
-        $stmt = $conn->prepare("SELECT id FROM asset_items WHERE property_no = ? LIMIT 1");
-        $stmt->bind_param("s", $property_no);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        if ($row = $result->fetch_assoc()) {
-            error_log("Found asset ID: " . $row['id'] . " for property number: $property_no");
-            return (int)$row['id'];
-        }
-    }
-    
-    // If description starts with property number pattern (like "PROP-001")
-    if (preg_match('/^([A-Za-z0-9-]+)/', $description, $matches)) {
-        $property_no = $matches[1];
-        error_log("Trying property number pattern: $property_no from: $description");
-        
-        // Look up the asset ID by property number
-        global $conn;
-        $stmt = $conn->prepare("SELECT id FROM asset_items WHERE property_no = ? LIMIT 1");
-        $stmt->bind_param("s", $property_no);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        if ($row = $result->fetch_assoc()) {
-            error_log("Found asset ID: " . $row['id'] . " for property number: $property_no");
-            return (int)$row['id'];
-        }
-    }
-    
-    // Fallback to ID if no property number found
-    if (preg_match('/ID:\s*(\d+)/i', $description, $matches)) {
-        $asset_id = (int)$matches[1];
-        error_log("Extracted asset ID: $asset_id from: $description");
-        return $asset_id;
-    }
-    
-    // If description starts with a number, assume it's ID
-    if (preg_match('/^(\d+)/', $description, $matches)) {
-        $asset_id = (int)$matches[1];
-        error_log("Extracted numeric ID: $asset_id from: $description");
-        return $asset_id;
-    }
-    
-    error_log("Could not extract asset ID from: $description");
-    return null;
 }
 
 $conn->close();

@@ -26,7 +26,8 @@ $auto_fill_data = [];
 $should_auto_fill = false;
 if (isset($_GET['auto_fill']) && $_GET['auto_fill'] === 'true') {
     $auto_fill_data = [
-        'asset_id' => $_GET['asset_id'] ?? '',
+        'id' => $_GET['id'] ?? '', // This could be asset_id or peripheral_id
+        'asset_id' => $_GET['asset_id'] ?? '', // Asset ID for reference
         'description' => $_GET['description'] ?? '',
         'property_no' => $_GET['property_no'] ?? '',
         'inventory_tag' => $_GET['inventory_tag'] ?? '',
@@ -39,7 +40,11 @@ if (isset($_GET['auto_fill']) && $_GET['auto_fill'] === 'true') {
         'category_code' => $_GET['category_code'] ?? '',
         'asset_description' => $_GET['asset_description'] ?? '',
         'unit' => $_GET['unit'] ?? '',
-        'component_type' => $_GET['component_type'] ?? 'main_asset' // Track which component is being added
+        'component_type' => $_GET['component_type'] ?? 'main_asset', // Track which component is being added
+        'peripheral_name' => $_GET['peripheral_name'] ?? '',
+        'peripheral_model' => $_GET['peripheral_model'] ?? '',
+        'peripheral_serial_number' => $_GET['peripheral_serial_number'] ?? '',
+        'peripheral_status' => $_GET['peripheral_status'] ?? ''
     ];
     
     // Check if we should auto-fill (not a refresh)
@@ -325,7 +330,7 @@ if ($result && $row = $result->fetch_assoc()) {
                 </div>
             </div>
             
-            <form id="iirupForm" method="POST" action="process_iirup.php">
+            <form id="iirupForm" method="POST" action="process_iirup_clean.php" onsubmit="return validateForm()">
                 <!-- IIRUP Form Header -->
                 <div style="text-align: center; margin-bottom: 20px;">
                     <?php 
@@ -426,6 +431,15 @@ if ($result && $row = $result->fetch_assoc()) {
                                             </tr>
                                         </tbody>
                                     </table>
+                                    
+                                    <!-- Hidden fields for peripheral data -->
+                                    <input type="hidden" id="id" name="id" value="<?php echo htmlspecialchars($auto_fill_data['id'] ?? ''); ?>">
+                                    <input type="hidden" id="asset_id" name="asset_id" value="<?php echo htmlspecialchars($auto_fill_data['asset_id'] ?? ''); ?>">
+                                    <input type="hidden" id="component_type" name="component_type" value="<?php echo htmlspecialchars($auto_fill_data['component_type'] ?? 'main_asset'); ?>">
+                                    <input type="hidden" id="peripheral_name" name="peripheral_name" value="<?php echo htmlspecialchars($auto_fill_data['peripheral_name'] ?? ''); ?>">
+                                    <input type="hidden" id="peripheral_model" name="peripheral_model" value="<?php echo htmlspecialchars($auto_fill_data['peripheral_model'] ?? ''); ?>">
+                                    <input type="hidden" id="peripheral_serial_number" name="peripheral_serial_number" value="<?php echo htmlspecialchars($auto_fill_data['peripheral_serial_number'] ?? ''); ?>">
+                                    <input type="hidden" id="peripheral_status" name="peripheral_status" value="<?php echo htmlspecialchars($auto_fill_data['peripheral_status'] ?? ''); ?>">
                                 </div>
                                 <button type="button" class="btn btn-sm btn-secondary" onclick="addIIRUPRow()">
                                     <i class="bi bi-plus-circle"></i> Add Row
