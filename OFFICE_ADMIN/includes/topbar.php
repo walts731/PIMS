@@ -131,12 +131,6 @@
                 <li><h6 class="dropdown-header">Account</h6></li>
                 <li><a class="dropdown-item" href="profile.php"><i class="bi bi-person"></i> My Profile</a></li>
                 <li><a class="dropdown-item" href="settings.php"><i class="bi bi-gear"></i> Settings</a></li>
-                <li><a class="dropdown-item" href="#" onclick="showSessionManagement()"><i class="bi bi-laptop"></i> Active Sessions</a></li>
-                
-                <li><h6 class="dropdown-header">Quick Actions</h6></li>
-                <li><a class="dropdown-item" href="#" onclick="toggleTheme()"><i class="bi bi-moon"></i> Toggle Theme</a></li>
-                <li><a class="dropdown-item" href="#" onclick="showKeyboardShortcuts()"><i class="bi bi-keyboard"></i> Keyboard Shortcuts</a></li>
-                <li><a class="dropdown-item" href="#" onclick="exportMyData()"><i class="bi bi-download"></i> Export My Data</a></li>
                 
                 <li><h6 class="dropdown-header">Support</h6></li>
                 <li><a class="dropdown-item" href="#" onclick="showHelp()"><i class="bi bi-question-circle"></i> Help Center</a></li>
@@ -226,44 +220,174 @@
 
 
 
+/* Enhanced Dropdown Menu Styles */
 .dropdown-menu {
-
     border: none;
-
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-
-    border-radius: var(--border-radius);
-
-    margin-top: 0.5rem;
-
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.78), 0 4px 10px rgba(0, 0, 0, 0.05);
+    border-radius: 12px;
+    margin-top: 0.75rem;
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.98);
+    border: 1px solid rgba(25, 27, 169, 0.08);
+    animation: dropdownFadeIn 0.2s ease-out;
+    overflow: hidden;
 }
 
-
+@keyframes dropdownFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
 
 .dropdown-item {
-
-    padding: 0.75rem 1rem;
-
-    transition: background-color 0.2s ease;
-
+    padding: 0.75rem 1.25rem;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 0;
+    position: relative;
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: #000000 !important;
+    display: flex;
+    align-items: center;
+    margin: 0.25rem 0.5rem;
+    border-radius: 8px;
 }
 
-
+.dropdown-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 3px;
+    background: var(--primary-gradient);
+    transform: scaleY(0);
+    transition: transform 0.2s ease;
+}
 
 .dropdown-item:hover {
-
-    background-color: #f8f9fa;
-
+    background: linear-gradient(135deg, rgba(25, 27, 169, 0.05) 0%, rgba(92, 194, 242, 0.05) 100%);
+    color: var(--primary-color);
+    transform: translateX(2px);
 }
 
+.dropdown-item:hover::before {
+    transform: scaleY(1);
+}
 
+.dropdown-item:active {
+    background: linear-gradient(135deg, rgba(25, 27, 169, 0.1) 0%, rgba(92, 194, 242, 0.1) 100%);
+    transform: translateX(1px);
+}
 
 .dropdown-item i {
+    width: 18px;
+    margin-right: 0.75rem;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+}
 
-    width: 16px;
+.dropdown-item:hover i {
+    transform: scale(1.1);
+}
 
-    margin-right: 0.5rem;
+.dropdown-header {
+    background: linear-gradient(135deg, rgba(25, 27, 169, 0.05) 0%, rgba(92, 194, 242, 0.05) 100%);
+    padding: 0.75rem 1.25rem;
+    font-weight: 700;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #1a202c;
+    border-bottom: 1px solid rgba(25, 27, 169, 0.12);
+    margin-bottom: 0.25rem;
+}
 
+.dropdown-divider {
+    margin: 0.5rem 0;
+    border-top: 1px solid rgba(25, 27, 169, 0.12);
+    background: none;
+}
+
+/* Enhanced User Profile Dropdown */
+.nav-link.dropdown-toggle {
+    padding: 0.5rem 1rem;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.nav-link.dropdown-toggle:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.nav-link.dropdown-toggle[aria-expanded="true"] {
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* User Avatar Enhancements */
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--primary-gradient);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2rem;
+    box-shadow: 0 2px 8px rgba(25, 27, 169, 0.3);
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.user-avatar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 50%);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.nav-link.dropdown-toggle:hover .user-avatar::after {
+    opacity: 1;
+}
+
+.user-info {
+    text-align: left;
+}
+
+.user-name {
+    font-weight: 600;
+    color: white;
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.user-role .badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.3rem 0.6rem;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 
@@ -1142,80 +1266,144 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <style>
-/* User Dropdown Styles */
-.user-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 1.2rem;
-}
-
-.user-info {
-    flex-direction: column;
-    align-items: flex-start;
-}
-
-.user-name {
-    font-weight: 600;
-    color: #333;
-    font-size: 0.9rem;
-}
-
-.user-role .badge {
-    font-size: 0.75rem;
-}
-
-/* Notification Dropdown Styles */
+/* Responsive adjustments */
 .notification-dropdown {
-    width: 350px;
-    max-height: 400px;
+    width: 380px;
+    max-height: 450px;
     border: none;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-    border-radius: var(--border-radius);
-    margin-top: 0.5rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.05);
+    border-radius: 12px;
+    margin-top: 0.75rem;
     overflow: hidden;
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.98);
+    border: 1px solid rgba(25, 27, 169, 0.08);
+    animation: dropdownFadeIn 0.2s ease-out;
 }
 
 .notification-item {
-    border-bottom: 1px solid #f8f9fa;
+    border-bottom: 1px solid rgba(25, 27, 169, 0.1);
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.notification-item:last-child {
+    border-bottom: none;
 }
 
 .notification-item.unread {
-    background-color: #e3f2fd;
-    border-left: 3px solid #5CC2F2;
+    background: linear-gradient(135deg, rgba(92, 194, 242, 0.08) 0%, rgba(25, 27, 169, 0.05) 100%);
+    border-left: 3px solid var(--secondary-color);
+}
+
+.notification-item.unread::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 6px;
+    background: var(--secondary-color);
+    border-radius: 50%;
+    box-shadow: 0 0 0 3px rgba(92, 194, 242, 0.2);
 }
 
 .notification-item .dropdown-item {
     white-space: normal;
-    padding: 0.75rem 1rem;
-    border-radius: 0;
+    padding: 1rem 1.25rem;
+    border-radius: 8px;
+    background: transparent;
+    color: #000000 !important;
+    transition: all 0.2s ease;
+    margin: 0.25rem 0.5rem;
 }
 
 .notification-item .dropdown-item:hover {
-    background-color: #f8f9fa;
+    background: linear-gradient(135deg, rgba(25, 27, 169, 0.03) 0%, rgba(92, 194, 242, 0.03) 100%);
+    color: var(--primary-color);
+    transform: none;
+}
+
+.notification-item .dropdown-item:hover::before {
+    display: none;
+}
+
+.notification-item .dropdown-item i {
+    color: var(--secondary-color);
+    font-size: 1.1rem;
+    margin-right: 0.75rem;
+    flex-shrink: 0;
 }
 
 .notification-loading {
-    padding: 1rem;
+    padding: 2rem;
     text-align: center;
+    background: linear-gradient(135deg, rgba(25, 27, 169, 0.02) 0%, rgba(92, 194, 242, 0.02) 100%);
 }
 
+.notification-loading .spinner-border {
+    width: 2rem;
+    height: 2rem;
+    border-width: 0.2em;
+    color: var(--primary-color);
+}
+
+/* Enhanced Notification Badge */
 .notification-badge {
-    font-size: 0.7rem;
-    padding: 0.25rem 0.5rem;
-    min-width: 18px;
-    height: 18px;
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    color: white;
     border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 0.7rem;
+    font-weight: 700;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid rgba(255, 255, 255, 0.9);
-    animation: pulse 2s infinite;
+    border: 2px solid rgba(255, 255, 255, 0.95);
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.4);
+    animation: pulse 2s infinite, badgeGlow 3s ease-in-out infinite alternate;
+}
+
+@keyframes badgeGlow {
+    from {
+        box-shadow: 0 2px 8px rgba(220, 53, 69, 0.4);
+    }
+    to {
+        box-shadow: 0 2px 12px rgba(220, 53, 69, 0.6);
+    }
+}
+
+/* Notification Button Enhancement */
+.topbar-notifications .btn {
+    position: relative;
+    padding: 0.5rem;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.2s ease;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.topbar-notifications .btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    color: white;
+}
+
+.topbar-notifications .btn i {
+    font-size: 1.1rem;
 }
 
 @keyframes pulse {
@@ -1225,9 +1413,90 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 
 /* Responsive adjustments */
+@media (max-width: 768px) {
+    .dropdown-menu {
+        margin-top: 0.5rem;
+        border-radius: 8px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    }
+    
+    .dropdown-item {
+        padding: 0.6rem 1rem;
+        font-size: 0.85rem;
+    }
+    
+    .notification-dropdown {
+        width: 320px;
+        max-height: 400px;
+    }
+    
+    .user-name {
+        font-size: 0.8rem;
+    }
+    
+    .user-avatar {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+    }
+    
+    .nav-link.dropdown-toggle {
+        padding: 0.4rem 0.8rem;
+    }
+}
+
 @media (max-width: 576px) {
     .notification-dropdown {
-        width: 300px;
+        width: 280px;
+        max-height: 350px;
+    }
+    
+    .dropdown-item {
+        padding: 0.5rem 0.8rem;
+    }
+    
+    .dropdown-header {
+        padding: 0.6rem 1rem;
+        font-size: 0.75rem;
+    }
+    
+    .notification-item .dropdown-item {
+        padding: 0.8rem 1rem;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .dropdown-menu {
+        background: rgba(30, 30, 40, 0.98);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .dropdown-item {
+        color: #e2e8f0;
+    }
+    
+    .dropdown-item:hover {
+        background: linear-gradient(135deg, rgba(25, 27, 169, 0.2) 0%, rgba(92, 194, 242, 0.2) 100%);
+        color: white;
+    }
+    
+    .dropdown-header {
+        background: linear-gradient(135deg, rgba(25, 27, 169, 0.1) 0%, rgba(92, 194, 242, 0.1) 100%);
+        color: var(--secondary-color);
+        border-bottom-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .dropdown-divider {
+        border-top-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .notification-item {
+        border-bottom-color: rgba(255, 255, 255, 0.05);
+    }
+    
+    .notification-item.unread {
+        background: linear-gradient(135deg, rgba(92, 194, 242, 0.15) 0%, rgba(25, 27, 169, 0.1) 100%);
     }
 }
 </style>
