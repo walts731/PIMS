@@ -112,8 +112,8 @@ try {
             
             if ($office_result->num_rows > 0) {
                 $office_data = $office_result->fetch_assoc();
-                $requester_info['office_name'] = $office_data['office_name'];
-                $requester_info['office_code'] = $office_data['office_code'];
+                $requester_info['office']['name'] = $office_data['office_name'];
+                $requester_info['office']['code'] = $office_data['office_code'];
             }
         }
     } catch (Exception $e) {
@@ -131,8 +131,8 @@ try {
             
             if ($office_result->num_rows > 0) {
                 $office_data = $office_result->fetch_assoc();
-                $approver_info['office_name'] = $office_data['office_name'];
-                $approver_info['office_code'] = $office_data['office_code'];
+                $approver_info['office']['name'] = $office_data['office_name'];
+                $approver_info['office']['code'] = $office_data['office_code'];
                 
                 // If this is OMM office, get all OMM users
                 if ($request_data['requested_to_office'] == 4) { // OMM office ID
@@ -266,15 +266,15 @@ try {
     }
     
     // Borrowed event (if borrowed)
-    if ($request_data['borrowed_at']) {
+    if ($request_data['status'] == 'borrowed') {
         $lifecycle_events[] = [
             'type' => 'borrowed',
             'title' => 'Asset Borrowed',
-            'description' => 'Asset was picked up by the borrower',
+            'description' => 'Asset was borrowed and is currently in use',
             'user' => $requester_info['name'],
             'user_email' => $requester_info['email'],
             'office' => $requester_info['office']['name'],
-            'timestamp' => $request_data['borrowed_at'],
+            'timestamp' => $request_data['updated_at'], // Use updated_at as fallback
             'status' => 'completed'
         ];
     }
@@ -387,8 +387,8 @@ function getLatestTimestamp($request_data) {
     if ($request_data['approved_at']) {
         $timestamps[] = $request_data['approved_at'];
     }
-    if ($request_data['borrowed_at']) {
-        $timestamps[] = $request_data['borrowed_at'];
+    if ($request_data['status'] == 'borrowed') {
+        $timestamps[] = $request_data['updated_at']; // Use updated_at as fallback for borrowed status
     }
     if ($request_data['denied_at']) {
         $timestamps[] = $request_data['denied_at'];
