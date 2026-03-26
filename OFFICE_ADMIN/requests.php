@@ -64,6 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' || $action === 'check_updates') {
             $purpose = $_POST['purpose'] ?? '';
             $start_date = $_POST['start_date'] ?? '';
             $end_date = $_POST['end_date'] ?? '';
+            $urgency_level = $_POST['urgency_level'] ?? 'normal';
             
             // Validation
             if (empty($asset_id) || empty($requested_to_office) || empty($quantity_requested) || empty($purpose) || empty($start_date) || empty($end_date)) {
@@ -146,10 +147,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' || $action === 'check_updates') {
                                     $request_id = time() + rand(1000, 9999); // Simple unique ID based on timestamp
 
                                     $insert_query = "INSERT INTO borrow_requests 
-                                                     (id, requested_by, requested_by_office, requested_to_office, asset_id, quantity_requested, purpose, start_date, end_date) 
-                                                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                                                     (id, requested_by, requested_by_office, requested_to_office, asset_id, quantity_requested, purpose, urgency_level, start_date, end_date) 
+                                                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                                     $stmt = $conn->prepare($insert_query);
-                                    $stmt->bind_param("iiisissss", $request_id, $_SESSION['user_id'], $office_id, $requested_to_office, $asset_id, $quantity_requested, $purpose, $start_date, $end_date);
+                                    $stmt->bind_param("iiisisssss", $request_id, $_SESSION['user_id'], $office_id, $requested_to_office, $asset_id, $quantity_requested, $purpose, $urgency_level, $start_date, $end_date);
                                     
                                     if ($stmt->execute()) {
                                         // Update asset status to pending_tag when request is created
@@ -968,6 +969,28 @@ if ($office_id && $conn) {
         .status-denied { background: #f8d7da; color: #721c24; }
         .status-cancelled { background: #e2e3e5; color: #495057; }
         
+        .urgency-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .urgency-normal {
+            background: rgba(108, 117, 125, 0.1);
+            color: #495057;
+        }
+        
+        .urgency-urgent {
+            background: rgba(255, 193, 7, 0.1);
+            color: #856404;
+        }
+        
+        .urgency-emergency {
+            background: rgba(220, 53, 69, 0.1);
+            color: #721c24;
+        }
+        
         .quick-action {
             width: 32px;
             height: 32px;
@@ -1390,6 +1413,7 @@ $page_title = 'Requests Management';
                                         <th>Requester/Office</th>
                                         <th>Asset</th>
                                         <th>Purpose</th>
+                                        <th>Urgency</th>
                                         <th>Duration</th>
                                         <th>Status</th>
                                         <th>Actions</th>
@@ -1455,6 +1479,25 @@ $page_title = 'Requests Management';
                                                 </div>
                                             </td>
                                             <td><?php echo htmlspecialchars($request['purpose']); ?></td>
+                                            <td>
+                                                <?php 
+                                                $urgency_class = 'urgency-normal';
+                                                $urgency_icon = 'bi-clock';
+                                                $urgency_text = ucfirst($request['urgency_level'] ?? 'normal');
+                                                
+                                                if ($request['urgency_level'] === 'urgent') {
+                                                    $urgency_class = 'urgency-urgent';
+                                                    $urgency_icon = 'bi-exclamation-triangle';
+                                                } elseif ($request['urgency_level'] === 'emergency') {
+                                                    $urgency_class = 'urgency-emergency';
+                                                    $urgency_icon = 'bi-exclamation-triangle-fill';
+                                                }
+                                                ?>
+                                                <span class="urgency-badge <?php echo $urgency_class; ?>">
+                                                    <i class="bi <?php echo $urgency_icon; ?>"></i>
+                                                    <?php echo $urgency_text; ?>
+                                                </span>
+                                            </td>
                                             <td>
                                                 <div class="small">
                                                     <div>From: <?php echo date('M j, Y', strtotime($request['start_date'])); ?></div>
