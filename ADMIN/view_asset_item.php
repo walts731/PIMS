@@ -1769,24 +1769,36 @@ $status_display = formatStatus($item['status']);
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="text-muted mb-3">Choose which component you want to add to the IIRUP form:</p>
+                    <p class="text-muted mb-3">Choose which component(s) you want to add to the IIRUP form:</p>
+                    
+                    <!-- Select All Checkbox -->
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="selectAllIirup" onchange="toggleAllIirupComponents()">
+                        <label class="form-check-label" for="selectAllIirup">
+                            <strong>Select All Components</strong>
+                        </label>
+                    </div>
                     
                     <div class="d-grid gap-2">
-                        <button type="button" class="btn btn-outline-primary btn-lg" onclick="addAssetToIirup()">
-                            <i class="bi bi-box-seam"></i>
-                            <div class="mt-2">
-                                <strong>Main Asset Item</strong>
-                                <div class="small text-muted"><?php echo htmlspecialchars($item['description']); ?></div>
+                        <div class="border rounded p-3">
+                            <div class="form-check">
+                                <input class="form-check-input iirup-component-checkbox" type="checkbox" id="mainAssetCheckbox" value="main_asset" onchange="updateIirupSelection()">
+                                <label class="form-check-label d-flex align-items-center" for="mainAssetCheckbox">
+                                    <i class="bi bi-box-seam me-2"></i>
+                                    <div>
+                                        <strong>Main Asset Item</strong>
+                                        <div class="small text-muted"><?php echo htmlspecialchars($item['description']); ?></div>
+                                    </div>
+                                </label>
                             </div>
-                        </button>
+                        </div>
                         
                         <!-- Dynamic Peripherals Display -->
                         <?php if (!empty($peripherals)): ?>
                             <?php foreach ($peripherals as $index => $peripheral): ?>
                                 <?php 
                                 $is_available = in_array($peripheral['status'], ['serviceable', null]) || $peripheral['status'] === '';
-                                $button_class = $is_available ? 'btn-outline-success' : 'btn-outline-secondary';
-                                $button_disabled = $is_available ? '' : 'disabled';
+                                $checkbox_disabled = $is_available ? '' : 'disabled';
                                 $status_text = $is_available ? 'Available for IIRUP' : 'Not available (' . ucfirst(str_replace('_', ' ', $peripheral['status'] ?: 'no_status')) . ')';
                                 $status_color = $is_available ? 'text-success' : 'text-warning';
                                 
@@ -1810,26 +1822,34 @@ $status_display = formatStatus($item['status']);
                                     $icon_class = 'bi-speaker';
                                 }
                                 ?>
-                                <button type="button" class="btn <?php echo $button_class; ?> btn-lg" 
-                                        onclick="addPeripheralToIirup(<?php echo $index; ?>)"
-                                        data-peripheral-id="<?php echo htmlspecialchars($peripheral['id']); ?>"
-                                        data-peripheral-name="<?php echo htmlspecialchars($peripheral['name']); ?>"
-                                        data-peripheral-model="<?php echo htmlspecialchars($peripheral['model'] ?? ''); ?>"
-                                        data-peripheral-serial="<?php echo htmlspecialchars($peripheral['serial_number'] ?? ''); ?>"
-                                        data-peripheral-status="<?php echo htmlspecialchars($peripheral['status']); ?>"
-                                        <?php echo $button_disabled; ?>>
-                                    <i class="bi <?php echo $icon_class; ?>"></i>
-                                    <div class="mt-2">
-                                        <strong><?php echo htmlspecialchars($peripheral['name']); ?></strong>
-                                        <?php if (!empty($peripheral['model'])): ?>
-                                            <div class="small text-muted"><?php echo htmlspecialchars($peripheral['model']); ?></div>
-                                        <?php endif; ?>
-                                        <?php if (!empty($peripheral['serial_number'])): ?>
-                                            <div class="small text-muted">S/N: <?php echo htmlspecialchars($peripheral['serial_number']); ?></div>
-                                        <?php endif; ?>
-                                        <div class="small <?php echo $status_color; ?>"><?php echo $status_text; ?></div>
+                                <div class="border rounded p-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input iirup-component-checkbox" 
+                                               type="checkbox" 
+                                               id="peripheral_<?php echo $index; ?>" 
+                                               value="peripheral_<?php echo $index; ?>"
+                                               data-peripheral-id="<?php echo htmlspecialchars($peripheral['id']); ?>"
+                                               data-peripheral-name="<?php echo htmlspecialchars($peripheral['name']); ?>"
+                                               data-peripheral-model="<?php echo htmlspecialchars($peripheral['model'] ?? ''); ?>"
+                                               data-peripheral-serial="<?php echo htmlspecialchars($peripheral['serial_number'] ?? ''); ?>"
+                                               data-peripheral-status="<?php echo htmlspecialchars($peripheral['status']); ?>"
+                                               onchange="updateIirupSelection()"
+                                               <?php echo $checkbox_disabled; ?>>
+                                        <label class="form-check-label d-flex align-items-center" for="peripheral_<?php echo $index; ?>">
+                                            <i class="bi <?php echo $icon_class; ?> me-2"></i>
+                                            <div>
+                                                <strong><?php echo htmlspecialchars($peripheral['name']); ?></strong>
+                                                <?php if (!empty($peripheral['model'])): ?>
+                                                    <div class="small text-muted"><?php echo htmlspecialchars($peripheral['model']); ?></div>
+                                                <?php endif; ?>
+                                                <?php if (!empty($peripheral['serial_number'])): ?>
+                                                    <div class="small text-muted">S/N: <?php echo htmlspecialchars($peripheral['serial_number']); ?></div>
+                                                <?php endif; ?>
+                                                <div class="small <?php echo $status_color; ?>"><?php echo $status_text; ?></div>
+                                            </div>
+                                        </label>
                                     </div>
-                                </button>
+                                </div>
                             <?php endforeach; ?>
                         <?php else: ?>
                             <div class="alert alert-info text-center">
@@ -1840,6 +1860,9 @@ $status_display = formatStatus($item['status']);
                     </div>
                 </div>
                 <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="addSelectedToIirup()" id="addSelectedIirupBtn" disabled>
+                        <i class="bi bi-plus-circle"></i> Add Selected to IIRUP
+                    </button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         <i class="bi bi-x-circle"></i> Cancel
                     </button>
@@ -2036,6 +2059,131 @@ $status_display = formatStatus($item['status']);
             params.append('auto_fill', 'true');
             
             // Open IIRUP form with component data
+            window.open('iirup_form.php?' + params.toString(), '_blank');
+        }
+        
+        // New functions for checkbox functionality
+        function toggleAllIirupComponents() {
+            const selectAllCheckbox = document.getElementById('selectAllIirup');
+            const componentCheckboxes = document.querySelectorAll('.iirup-component-checkbox');
+            
+            componentCheckboxes.forEach(checkbox => {
+                if (!checkbox.disabled) {
+                    checkbox.checked = selectAllCheckbox.checked;
+                }
+            });
+            
+            updateIirupSelection();
+        }
+        
+        function updateIirupSelection() {
+            const selectedCheckboxes = document.querySelectorAll('.iirup-component-checkbox:checked');
+            const addButton = document.getElementById('addSelectedIirupBtn');
+            
+            // Enable/disable the add button based on selection
+            addButton.disabled = selectedCheckboxes.length === 0;
+            
+            // Update button text to show count
+            if (selectedCheckboxes.length > 0) {
+                addButton.innerHTML = `<i class="bi bi-plus-circle"></i> Add Selected (${selectedCheckboxes.length}) to IIRUP`;
+            } else {
+                addButton.innerHTML = `<i class="bi bi-plus-circle"></i> Add Selected to IIRUP`;
+            }
+            
+            // Update select all checkbox state
+            const allCheckboxes = document.querySelectorAll('.iirup-component-checkbox:not([disabled])');
+            const selectAllCheckbox = document.getElementById('selectAllIirup');
+            selectAllCheckbox.checked = allCheckboxes.length > 0 && selectedCheckboxes.length === allCheckboxes.length;
+        }
+        
+        function addSelectedToIirup() {
+            const selectedCheckboxes = document.querySelectorAll('.iirup-component-checkbox:checked');
+            
+            if (selectedCheckboxes.length === 0) {
+                alert('Please select at least one component to add to IIRUP.');
+                return;
+            }
+            
+            // Close the modal
+            bootstrap.Modal.getInstance(document.getElementById('iirupComponentModal')).hide();
+            
+            if (selectedCheckboxes.length === 1) {
+                // If only one component selected, use existing single-component logic
+                const checkbox = selectedCheckboxes[0];
+                if (checkbox.value === 'main_asset') {
+                    addAssetToIirup();
+                } else {
+                    // Extract peripheral index from checkbox value (e.g., "peripheral_0")
+                    const peripheralIndex = parseInt(checkbox.value.split('_')[1]);
+                    addPeripheralToIirup(peripheralIndex);
+                }
+            } else {
+                // Multiple components selected - create batch data
+                const components = [];
+                
+                selectedCheckboxes.forEach(checkbox => {
+                    if (checkbox.value === 'main_asset') {
+                        components.push({
+                            id: <?php echo $item_id; ?>,
+                            description: '<?php echo addslashes($item['description']); ?>',
+                            property_no: '<?php echo addslashes($item['property_no'] ?? ''); ?>',
+                            inventory_tag: '<?php echo addslashes($item['inventory_tag'] ?? ''); ?>',
+                            acquisition_date: '<?php echo $item['acquisition_date']; ?>',
+                            value: '<?php echo $item['value']; ?>',
+                            unit_cost: '<?php echo $item['unit_cost']; ?>',
+                            office_name: '<?php echo addslashes($item['office_name'] ?? ''); ?>',
+                            employee_name: '<?php echo addslashes(trim(($item['firstname'] ?? '') . ' ' . ($item['lastname'] ?? ''))); ?>',
+                            category_name: '<?php echo addslashes($item['category_name'] ?? ''); ?>',
+                            category_code: '<?php echo addslashes($item['category_code'] ?? ''); ?>',
+                            asset_description: '<?php echo addslashes($item['asset_description']); ?>',
+                            unit: '<?php echo addslashes($item['unit']); ?>',
+                            component_type: 'main_asset'
+                        });
+                    } else {
+                        // Extract peripheral data from checkbox attributes
+                        const peripheralId = checkbox.getAttribute('data-peripheral-id');
+                        const peripheralName = checkbox.getAttribute('data-peripheral-name');
+                        const peripheralModel = checkbox.getAttribute('data-peripheral-model');
+                        const peripheralSerial = checkbox.getAttribute('data-peripheral-serial');
+                        const peripheralStatus = checkbox.getAttribute('data-peripheral-status');
+                        
+                        components.push({
+                            id: peripheralId,
+                            asset_id: <?php echo $item_id; ?>,
+                            description: peripheralName + (peripheralModel ? ' - ' + peripheralModel : ''),
+                            property_no: '<?php echo addslashes($item['property_no'] ?? ''); ?>',
+                            inventory_tag: '<?php echo addslashes($item['inventory_tag'] ?? ''); ?>',
+                            acquisition_date: '<?php echo $item['acquisition_date']; ?>',
+                            value: '<?php echo $item['value']; ?>',
+                            unit_cost: '<?php echo $item['unit_cost']; ?>',
+                            office_name: '<?php echo addslashes($item['office_name'] ?? ''); ?>',
+                            employee_name: '<?php echo addslashes(trim(($item['firstname'] ?? '') . ' ' . ($item['lastname'] ?? ''))); ?>',
+                            category_name: '<?php echo addslashes($item['category_name'] ?? ''); ?>',
+                            category_code: '<?php echo addslashes($item['category_code'] ?? ''); ?>',
+                            asset_description: peripheralName,
+                            unit: '<?php echo addslashes($item['unit']); ?>',
+                            component_type: 'peripheral',
+                            peripheral_name: peripheralName,
+                            peripheral_model: peripheralModel,
+                            peripheral_serial_number: peripheralSerial,
+                            peripheral_status: peripheralStatus
+                        });
+                    }
+                });
+                
+                // Open IIRUP form with multiple components
+                openIirupFormWithMultiple(components);
+            }
+        }
+        
+        function openIirupFormWithMultiple(components) {
+            // Create URL with multiple component data
+            const params = new URLSearchParams();
+            params.append('multiple_components', 'true');
+            params.append('components', JSON.stringify(components));
+            params.append('auto_fill', 'true');
+            
+            // Open IIRUP form with multiple component data
             window.open('iirup_form.php?' + params.toString(), '_blank');
         }
         

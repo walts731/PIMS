@@ -368,6 +368,13 @@ function addIIRUPRow() {
                 '<button type="button" class="btn btn-sm btn-danger" onclick="removeIIRUPRow(this)" title="Delete Row">' +
                     '<i class="bi bi-trash"></i>' +
                 '</button>' +
+                // Hidden fields for component data
+                '<input type="hidden" name="component_type[]" value="">' +
+                '<input type="hidden" name="peripheral_name[]" value="">' +
+                '<input type="hidden" name="peripheral_model[]" value="">' +
+                '<input type="hidden" name="peripheral_serial_number[]" value="">' +
+                '<input type="hidden" name="peripheral_status[]" value="">' +
+                '<input type="hidden" name="asset_id[]" value="">' +
             '</div>'
         ];
         

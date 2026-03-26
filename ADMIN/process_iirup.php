@@ -23,6 +23,14 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Debug: Log all POST data in detail
+    error_log("=== POST DATA ANALYSIS ===");
+    error_log("Full POST data: " . print_r($_POST, true));
+    error_log("Component type data: " . (isset($_POST['component_type']) ? print_r($_POST['component_type'], true) : 'NOT SET'));
+    error_log("Asset ID data: " . (isset($_POST['asset_id']) ? print_r($_POST['asset_id'], true) : 'NOT SET'));
+    error_log("GET data: " . print_r($_GET, true));
+    error_log("=== END POST DATA ANALYSIS ===");
+    
     try {
         // Start transaction
         $conn->begin_transaction();
@@ -105,67 +113,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $control_nos = $_POST['control_no'];
         $dates_received = $_POST['date_received'];
         
-        // Get peripheral data from hidden fields
-        $component_type = $_POST['component_type'] ?? 'main_asset';
-        $id = $_POST['id'] ?? ''; // This could be asset_id or peripheral_id
-        $asset_id = $_POST['asset_id'] ?? ''; // Asset ID for reference
-        $peripheral_name = $_POST['peripheral_name'] ?? '';
-        $peripheral_model = $_POST['peripheral_model'] ?? '';
-        $peripheral_serial_number = $_POST['peripheral_serial_number'] ?? '';
-        $peripheral_status = $_POST['peripheral_status'] ?? '';
-        
-        // Debug logging (minimal)
-        error_log("IIRUP Form Data - Component Type: $component_type, ID: $id, Asset ID: $asset_id, Peripheral Name: $peripheral_name");
-        
-        // If this is a peripheral, include peripheral processing logic
-        if ($component_type === 'peripheral') {
-            error_log("Processing peripheral status update");
-            
-            // Process peripheral status update
-            $peripheral_id = !empty($id) ? $id : $asset_id;
-            
-            if ($peripheral_id && is_numeric($peripheral_id)) {
-                // Check if peripheral exists
-                $check_sql = "SELECT id, status, name, model, serial_number FROM peripherals WHERE id = ?";
-                $stmt = $conn->prepare($check_sql);
-                $stmt->bind_param("i", $peripheral_id);
-                $stmt->execute();
-                $result = $stmt->get_result();
-                
-                if ($result && $result->num_rows > 0) {
-                    $peripheral_record = $result->fetch_assoc();
-                    $current_status = $peripheral_record['status'];
-                    
-                    error_log("Found peripheral: ID $peripheral_id, Name {$peripheral_record['name']}, Current Status: $current_status");
-                    
-                    // Update peripheral status to unserviceable
-                    $update_sql = "UPDATE peripherals SET status = 'unserviceable', updated_at = NOW(), updated_by = ? WHERE id = ?";
-                    $update_stmt = $conn->prepare($update_sql);
-                    $update_stmt->bind_param("ii", $_SESSION['user_id'], $peripheral_id);
-                    
-                    if ($update_stmt->execute()) {
-                        $affected_rows = $update_stmt->affected_rows;
-                        if ($affected_rows > 0) {
-                            error_log("✓ Peripheral status successfully updated to unserviceable for peripheral_id: $peripheral_id");
-                            logSystemAction($_SESSION['user_id'], "Updated peripheral status to unserviceable via IIRUP", 'peripherals', "Peripheral ID: $peripheral_id, Name: {$peripheral_record['name']}");
-                        } else {
-                            error_log("⚠ Peripheral status update: No rows affected (may already be unserviceable)");
-                        }
-                    } else {
-                        error_log("✗ Peripheral status update failed: " . $update_stmt->error);
-                    }
-                    
-                    $update_stmt->close();
-                } else {
-                    error_log("✗ No peripheral record found with ID: $peripheral_id");
-                }
-                
-                $stmt->close();
-            } else {
-                error_log("✗ Invalid peripheral ID: '$peripheral_id'");
-            }
-        }
-        
         // Insert items into iirup_items table
         $asset_ids_to_update = [];
         $component_updates = []; // Track component-specific updates
@@ -215,45 +162,136 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 $conn->query($item_sql);
                 
-                // Extract asset ID and component type from the data
+                // Extract asset ID from data
                 $asset_id = null;
-                $item_component_type = null;
                 $property_no = $property_nos[$index] ?? '';
                 
-                // Try to extract asset ID from property number or description
-                $property_no = $property_nos[$index] ?? '';
-                
-                // First try to find asset by property number from the dedicated field
-                if (!empty($property_no)) {
-                    $asset_id = getAssetIdByPropertyNo($property_no);
+                // Check if this item came from auto-fill with component_type parameter
+                $component_type_from_auto_fill = null;
+                if (isset($_POST['component_type']) && is_array($_POST['component_type'])) {
+                    $component_type_from_auto_fill = $_POST['component_type'][$index] ?? null;
+                    error_log("IIRUP DEBUG: Component type from auto-fill: " . ($component_type_from_auto_fill ?: 'none'));
                 }
                 
-                // If not found, try to extract from particulars description
-                if (!$asset_id && !empty($particular)) {
-                    $asset_id = extractAssetIdFromDescription($particular);
+                // Check if this is a peripheral from auto-fill
+                $is_peripheral = false;
+                $peripheral_id = null;
+                if ($component_type_from_auto_fill === 'peripheral') {
+                    $is_peripheral = true;
+                    error_log("IIRUP DEBUG: Detected peripheral from component_type parameter: '$particular'");
+                    
+                    // Check if asset_id parameter is actually a peripheral_id
+                    if (isset($_POST['asset_id']) && is_array($_POST['asset_id'])) {
+                        $peripheral_id = $_POST['asset_id'][$index] ?? null;
+                        error_log("IIRUP DEBUG: Found peripheral_id: $peripheral_id from POST data");
+                    }
+                    
+                    // Fallback: also check GET parameter if POST not available
+                    if (!$peripheral_id && isset($_GET['asset_id'])) {
+                        $peripheral_id = $_GET['asset_id'];
+                        error_log("IIRUP DEBUG: Using peripheral_id from GET: $peripheral_id");
+                    }
                 }
                 
-                // Debug logging
-                error_log("IIRUP Processing - Particular: '$particular', Asset ID: " . ($asset_id ?: 'none'));
-                
-                if ($asset_id) {
-                    // Add to main asset updates
-                    $asset_ids_to_update[] = $asset_id;
-                    error_log("Added to main asset updates: Asset ID $asset_id (Type: main asset)");
+                // For peripherals, use the peripheral_id directly
+                if ($is_peripheral && $peripheral_id) {
+                    // Update peripheral status directly using peripheral_id
+                    error_log("=== PERIPHERAL UPDATE PATH ===");
+                    error_log("Updating peripheral status for peripheral ID: $peripheral_id");
+                    error_log("Peripheral detected: YES, ID: $peripheral_id");
+                    
+                    // Verify peripheral exists before updating
+                    $check_sql = "SELECT id, status FROM peripherals WHERE id = $peripheral_id";
+                    $check_result = $conn->query($check_sql);
+                    
+                    if ($check_result && $check_result->num_rows > 0) {
+                        $peripheral_data = $check_result->fetch_assoc();
+                        
+                        if ($peripheral_data['status'] !== 'unserviceable') {
+                            $update_sql = "UPDATE peripherals SET status = 'unserviceable', updated_at = NOW() 
+                                         WHERE id = $peripheral_id";
+                            error_log("Executing peripheral update SQL: $update_sql");
+                            
+                            $result = $conn->query($update_sql);
+                            if ($result) {
+                                $affected_rows = $conn->affected_rows;
+                                error_log("Peripheral update executed. Affected rows: $affected_rows");
+                                if ($affected_rows > 0) {
+                                    error_log("✓ Successfully updated peripheral to unserviceable for peripheral ID $peripheral_id");
+                                    
+                                    // Log the peripheral update for audit trail
+                                    logSystemAction($_SESSION['user_id'], 'Updated peripheral status to unserviceable', 'peripherals', 
+                                                  'peripheral_id: ' . $peripheral_id . ', form_id: ' . $form_id . ', description: ' . $particular);
+                                } else {
+                                    error_log("⚠ Peripheral update: No rows affected (may already be unserviceable)");
+                                }
+                            } else {
+                                error_log("✗ Peripheral update failed: " . $conn->error);
+                            }
+                        } else {
+                            error_log("⚠ Peripheral $peripheral_id is already unserviceable");
+                        }
+                    } else {
+                        error_log("✗ Peripheral $peripheral_id not found in database");
+                    }
+                    error_log("=== END PERIPHERAL UPDATE PATH ===");
                 } else {
-                    error_log("No asset_id found for particular: '$particular'");
+                    // For main assets, try to find asset by property number from dedicated field
+                    if (!empty($property_no)) {
+                        $asset_id = getAssetIdByPropertyNo($property_no);
+                    }
+                    
+                    // If not found, try to extract from particulars description
+                    if (!$asset_id && !empty($particular)) {
+                        $asset_id = extractAssetIdFromDescription($particular);
+                    }
+                    
+                    // Also check if we have asset_id from the form data (for auto-filled items)
+                    if (!$asset_id && isset($_POST['asset_id']) && is_array($_POST['asset_id'])) {
+                        $form_asset_id = $_POST['asset_id'][$index] ?? null;
+                        if ($form_asset_id && is_numeric($form_asset_id)) {
+                            $asset_id = $form_asset_id;
+                            error_log("IIRUP DEBUG: Using asset_id from form data: $asset_id");
+                        }
+                    }
+                    
+                    // Debug logging
+                    error_log("IIRUP Processing - Particular: '$particular', Is Peripheral: " . ($is_peripheral ? 'yes' : 'no') . ", Asset ID: " . ($asset_id ?: 'none') . ", Property No: '$property_no'");
+                    
+                    if ($asset_id) {
+                        // Verify asset exists before adding to update list
+                        $check_sql = "SELECT id, status FROM asset_items WHERE id = $asset_id";
+                        $check_result = $conn->query($check_sql);
+                        
+                        if ($check_result && $check_result->num_rows > 0) {
+                            $asset_data = $check_result->fetch_assoc();
+                            
+                            // Only add to update list if not already unserviceable or disposed
+                            if ($asset_data['status'] !== 'unserviceable' && $asset_data['status'] !== 'disposed') {
+                                // This is a main asset, add to main asset updates
+                                $asset_ids_to_update[] = $asset_id;
+                                error_log("Added to main asset updates: Asset ID $asset_id (current status: {$asset_data['status']})");
+                            } else {
+                                error_log("Asset ID $asset_id already has status '{$asset_data['status']}', not updating");
+                            }
+                        } else {
+                            error_log("Asset ID $asset_id not found in database");
+                        }
+                    } else {
+                        error_log("No asset_id found for particular: '$particular' (property_no: '$property_no')");
+                    }
                 }
             }
         }
         
-        error_log("IIRUP Processing Summary - Main assets to update: " . count($asset_ids_to_update));
+        error_log("IIRUP Processing Summary - Main assets to update: " . count($asset_ids_to_update) . ", Component updates: " . count($component_updates));
         
         // Update asset items status to unserviceable
-        error_log("About to process asset items status updates. Main assets: " . count($asset_ids_to_update));
+        error_log("About to process status updates. Main assets: " . count($asset_ids_to_update) . ", Components: " . count($component_updates));
         
         // Process main asset updates only if there are main assets to update
         if (!empty($asset_ids_to_update)) {
-            error_log("Processing main asset updates: " . count($asset_ids_to_update) . " assets");
+            error_log("Processing main asset updates");
             $unique_asset_ids = array_unique($asset_ids_to_update);
             
             if (!empty($unique_asset_ids)) {
@@ -306,20 +344,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $history_stmt->execute();
                         $history_stmt->close();
                     }
+                    
+                    // Log the action for audit trail
+                    logSystemAction($_SESSION['user_id'], 'Updated asset status to unserviceable', 'assets', 
+                                  'asset_ids: ' . implode(',', $assets_to_update) . ', form_id: ' . $form_id);
+                } else {
+                    error_log("No main assets to update");
                 }
             }
+        } else {
+            error_log("No main assets to update - only components processed");
         }
         
         // Commit transaction
         $conn->commit();
         
-        // Log action for audit trail
-        logSystemAction($_SESSION['user_id'], "Created IIRUP Form: $form_number", 'forms', "Form ID: $form_id, Items: $total_items");
+        // Log the action
+        logSystemAction($_SESSION['user_id'], 'Created IIRUP Form', 'forms', 'form_id: ' . $form_id . ', form_number: ' . $form_number);
         
-        // Clear form data session storage to reset data restoration
-        unset($_SESSION['iirup_form_data']);
-        
-        $_SESSION['success'] = "IIRUP Form created successfully! Form Number: $form_number";
+        $_SESSION['success'] = "IIRUP Form '$form_number' has been created successfully!";
         header('Location: iirup_form.php');
         exit();
         
