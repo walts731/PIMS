@@ -62,14 +62,18 @@ function saveFormDataToSession() {
 function loadFormDataFromSession() {
     try {
         const storedData = sessionStorage.getItem(IIRUP_STORAGE_KEY);
+        console.log('Loading from session storage. Found data:', storedData ? 'Yes' : 'No');
+        
         if (!storedData) return false;
         
         const formData = JSON.parse(storedData);
+        console.log('Parsed form data:', formData);
         
         // Check if data is recent (within 24 hours)
         const storedTime = new Date(formData.timestamp);
         const now = new Date();
         const hoursDiff = (now - storedTime) / (1000 * 60 * 60);
+        console.log('Data age in hours:', hoursDiff);
         
         if (hoursDiff > 24) {
             console.log('Stored data is too old, clearing session storage');
@@ -145,8 +149,9 @@ function fillRowWithData(row, rowData) {
 // Clear session storage
 function clearIIRUPSessionData() {
     try {
+        console.log('Attempting to clear session storage for key:', IIRUP_STORAGE_KEY);
         sessionStorage.removeItem(IIRUP_STORAGE_KEY);
-        console.log('IIRUP session data cleared');
+        console.log('IIRUP session data cleared successfully');
     } catch (error) {
         console.error('Error clearing session data:', error);
     }
@@ -206,36 +211,57 @@ function showModal(title, message, type = 'info') {
 
 // Initialize Bootstrap modals when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize all modals
-    const modals = document.querySelectorAll('.modal');
-    modals.forEach(function(modal) {
-        new bootstrap.Modal(modal);
-    });
-    
-    // Initialize autocomplete functionality
-    initAutocomplete();
-    
-    // Load existing form data from session storage
-    const hasStoredData = loadFormDataFromSession();
-    
-    // Show notification if data was restored
-    if (hasStoredData) {
-        const restoreDiv = document.createElement('div');
-        restoreDiv.className = 'alert alert-info alert-dismissible fade show';
-        restoreDiv.innerHTML = `
-            <i class="bi bi-clock-history"></i> 
-            <strong>Previous data restored!</strong> Your previous IIRUP form data has been restored.
-            <br><small class="text-muted">
-                You can continue adding more assets or modify existing items.
-            </small>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
-        
-        const pageHeader = document.querySelector('.page-header');
-        if (pageHeader) {
-            pageHeader.parentNode.insertBefore(restoreDiv, pageHeader.nextSibling);
+    // Wait a bit longer to ensure all content is loaded
+    setTimeout(function() {
+        // Check if there's a success message indicating form was just saved
+        const successAlert = document.querySelector('.alert-success');
+        console.log('Success alert found:', successAlert);
+        if (successAlert) {
+            console.log('Success alert text:', successAlert.textContent);
+            console.log('Contains IIRUP Form:', successAlert.textContent.includes('IIRUP Form'));
+            console.log('Contains created successfully:', successAlert.textContent.includes('has been created successfully'));
         }
-    }
+        
+        if (successAlert && (successAlert.textContent.includes('IIRUP Form') && successAlert.textContent.includes('has been created successfully'))) {
+            // Clear session storage to reset data restoration after successful save
+            console.log('Clearing session storage after successful form submission');
+            clearIIRUPSessionData();
+            console.log('Session data cleared after successful form submission');
+        } else {
+            console.log('No success message detected, loading from session storage');
+        }
+        
+        // Initialize all modals
+        const modals = document.querySelectorAll('.modal');
+        modals.forEach(function(modal) {
+            new bootstrap.Modal(modal);
+        });
+        
+        // Initialize autocomplete functionality
+        initAutocomplete();
+        
+        // Load existing form data from session storage (only if no success message)
+        const hasStoredData = loadFormDataFromSession();
+        
+        // Show notification if data was restored
+        if (hasStoredData) {
+            const restoreDiv = document.createElement('div');
+            restoreDiv.className = 'alert alert-info alert-dismissible fade show';
+            restoreDiv.innerHTML = `
+                <i class="bi bi-clock-history"></i> 
+                <strong>Previous data restored!</strong> Your previous IIRUP form data has been restored.
+                <br><small class="text-muted">
+                    You can continue adding more assets or modify existing items.
+                </small>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            const pageHeader = document.querySelector('.page-header');
+            if (pageHeader) {
+                pageHeader.parentNode.insertBefore(restoreDiv, pageHeader.nextSibling);
+            }
+        }
+    }, 500); // 500ms delay to ensure DOM is fully loaded
     
     // Add auto-save functionality
     // Save data when form inputs change

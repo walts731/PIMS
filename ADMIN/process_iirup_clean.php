@@ -248,6 +248,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Log the action
         logSystemAction($_SESSION['user_id'], 'Created IIRUP Form', 'forms', 'form_id: ' . $form_id . ', form_number: ' . $form_number);
         
+        // Clear form data session storage to reset data restoration
+        unset($_SESSION['iirup_form_data']);
+        
         $_SESSION['success'] = "IIRUP Form '$form_number' has been created successfully!";
         header('Location: iirup_form.php');
         exit();
