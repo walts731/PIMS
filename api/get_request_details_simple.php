@@ -187,8 +187,8 @@ try {
     try {
         if ($request_data['asset_id']) {
             $asset_query = "SELECT ai.description, 
-                          COALESCE(ai.property_number, ai.property_no) as asset_code, 
-                          ai.serial_number, ai.model, ai.brand, 
+                          ai.property_no as asset_code, 
+                          ai.serial_number, ai.model, 
                           ai.status, ai.asset_category_id,
                           ac.category_name, ac.category_code,
                           ai.value as unit_value, 
@@ -212,7 +212,6 @@ try {
                 $asset_info['code'] = $asset_data['asset_code'];
                 $asset_info['serial_number'] = $asset_data['serial_number'] ?? '';
                 $asset_info['model'] = $asset_data['model'] ?? '';
-                $asset_info['brand'] = $asset_data['brand'] ?? '';
                 $asset_info['status'] = $asset_data['status'] ?? '';
                 $asset_info['unit_value'] = $asset_data['unit_value'] ?? '';
                 $asset_info['date_acquired'] = $asset_data['date_acquired'] ?? '';
