@@ -1159,7 +1159,7 @@ $status_display = formatStatus($item['status']);
                     <!-- Peripherals Section -->
                     <?php 
                     // Fetch peripherals for this asset
-                    $peripherals_sql = "SELECT p.name, p.model, p.serial_number, p.status, p.created_at 
+                    $peripherals_sql = "SELECT p.id, p.name, p.model, p.serial_number, p.status, p.created_at 
                                        FROM peripherals p 
                                        WHERE p.asset_item_id = ? 
                                        ORDER BY p.name, p.created_at";
@@ -1812,6 +1812,7 @@ $status_display = formatStatus($item['status']);
                                 ?>
                                 <button type="button" class="btn <?php echo $button_class; ?> btn-lg" 
                                         onclick="addPeripheralToIirup(<?php echo $index; ?>)"
+                                        data-peripheral-id="<?php echo htmlspecialchars($peripheral['id']); ?>"
                                         data-peripheral-name="<?php echo htmlspecialchars($peripheral['name']); ?>"
                                         data-peripheral-model="<?php echo htmlspecialchars($peripheral['model'] ?? ''); ?>"
                                         data-peripheral-serial="<?php echo htmlspecialchars($peripheral['serial_number'] ?? ''); ?>"
@@ -1955,6 +1956,7 @@ $status_display = formatStatus($item['status']);
         function addPeripheralToIirup(peripheralIndex) {
             // Get peripheral data from the button attributes
             const button = document.querySelector(`[onclick="addPeripheralToIirup(${peripheralIndex})"]`);
+            const peripheralId = button.getAttribute('data-peripheral-id');
             const peripheralName = button.getAttribute('data-peripheral-name');
             const peripheralModel = button.getAttribute('data-peripheral-model');
             const peripheralSerial = button.getAttribute('data-peripheral-serial');
@@ -1965,7 +1967,8 @@ $status_display = formatStatus($item['status']);
             
             // Prepare peripheral data for IIRUP form
             const peripheralData = {
-                id: <?php echo $item_id; ?>,
+                id: peripheralId, // Use peripheral ID instead of asset ID
+                asset_id: <?php echo $item_id; ?>, // Keep asset ID for reference
                 description: peripheralName + (peripheralModel ? ' - ' + peripheralModel : ''),
                 property_no: '<?php echo addslashes($item['property_no'] ?? ''); ?>',
                 inventory_tag: '<?php echo addslashes($item['inventory_tag'] ?? ''); ?>',
