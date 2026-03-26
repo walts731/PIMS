@@ -152,8 +152,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' || $action === 'check_updates') {
                                     $stmt->bind_param("iiisissss", $request_id, $_SESSION['user_id'], $office_id, $requested_to_office, $asset_id, $quantity_requested, $purpose, $start_date, $end_date);
                                     
                                     if ($stmt->execute()) {
-                                        // Update asset status to pending when request is created
-                                        $asset_update = "UPDATE asset_items SET status = 'pending' WHERE id = ?";
+                                        // Update asset status to pending_tag when request is created
+                                        $asset_update = "UPDATE asset_items SET status = 'pending_tag' WHERE id = ?";
                                         $stmt2 = $conn->prepare($asset_update);
                                         $stmt2->bind_param("i", $asset_id);
                                         $stmt2->execute();
@@ -187,8 +187,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' || $action === 'check_updates') {
             $stmt->bind_param("isi", $_SESSION['user_id'], $notes, $request_id);
             
             if ($stmt->execute()) {
-                // Update asset status to pending when request is approved (awaiting pickup)
-                $asset_update = "UPDATE asset_items SET status = 'pending' 
+                // Update asset status to pending_tag when request is approved (awaiting pickup)
+                $asset_update = "UPDATE asset_items SET status = 'pending_tag' 
                                 WHERE id = (SELECT asset_id FROM borrow_requests WHERE id = ?)";
                 $stmt2 = $conn->prepare($asset_update);
                 $stmt2->bind_param("i", $request_id);
@@ -226,8 +226,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' || $action === 'check_updates') {
                 $stmt->bind_param("iii", $_SESSION['user_id'], $request_id, $office_id);
                 
                 if ($stmt->execute() && $stmt->affected_rows > 0) {
-                    // Update asset status to pending when request is approved
-                    $asset_update = "UPDATE asset_items SET status = 'pending' 
+                    // Update asset status to pending_tag when request is approved
+                    $asset_update = "UPDATE asset_items SET status = 'pending_tag' 
                                     WHERE id = (SELECT asset_id FROM borrow_requests WHERE id = ?)";
                     $stmt2 = $conn->prepare($asset_update);
                     $stmt2->bind_param("i", $request_id);
@@ -579,8 +579,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' || $action === 'check_updates') {
             
         case 'return_asset':
             $request_id = $_POST['request_id'] ?? 0;
-            $condition = $_POST['return_condition'] ?? 'good';
+            $condition = $_POST['return_condition'] ?? 'undamaged';
             $notes = $_POST['return_notes'] ?? '';
+            $return_photo_path = '';
+            
+            // Handle photo upload
+            if (isset($_FILES['return_photo']) && $_FILES['return_photo']['error'] == 0) {
+                $photo = $_FILES['return_photo'];
+                $allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+                $max_size = 5 * 1024 * 1024; // 5MB
+                
+                if (in_array($photo['type'], $allowed_types) && $photo['size'] <= $max_size) {
+                    $upload_dir = '../uploads/return_photos/';
+                    if (!is_dir($upload_dir)) {
+                        mkdir($upload_dir, 0755, true);
+                    }
+                    
+                    $filename = 'return_' . $request_id . '_' . time() . '.' . pathinfo($photo['name'], PATHINFO_EXTENSION);
+                    $upload_path = $upload_dir . $filename;
+                    
+                    if (move_uploaded_file($photo['tmp_name'], $upload_path)) {
+                        $return_photo_path = $filename;
+                    }
+                }
+            }
             
             $update_query = "UPDATE borrow_requests SET 
                              status = 'returned', 
@@ -599,8 +621,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' || $action === 'check_updates') {
                 $stmt2->bind_param("i", $request_id);
                 $stmt2->execute();
                 
-                $_SESSION['success'] = "Asset returned successfully";
-                logSystemAction($_SESSION['user_id'], 'return', 'borrow_request', "Returned asset for request #$request_id");
+                $_SESSION['success'] = "Asset returned successfully" . ($return_photo_path ? " (photo uploaded)" : "");
+                logSystemAction($_SESSION['user_id'], 'return', 'borrow_request', "Returned asset for request #$request_id" . ($return_photo_path ? " with photo" : ""));
             } else {
                 $_SESSION['error'] = "Error returning asset";
             }
@@ -610,8 +632,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' || $action === 'check_updates') {
             $request_id = $_POST['request_id'] ?? 0;
             
             $update_query = "UPDATE borrow_requests SET 
-                             status = 'borrowed', 
-                             borrowed_at = NOW() 
+                             status = 'borrowed' 
                              WHERE id = ? AND status = 'approved'";
             $stmt = $conn->prepare($update_query);
             $stmt->bind_param("i", $request_id);
@@ -1565,23 +1586,31 @@ $page_title = 'Requests Management';
                     <h5 class="modal-title"><i class="bi bi-arrow-return-left"></i> Return Asset</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <form method="POST" action="">
+                <form method="POST" action="" enctype="multipart/form-data">
                     <input type="hidden" name="action" value="return_asset">
                     <input type="hidden" name="request_id" id="returnRequestId">
                     <div class="modal-body">
                         <div class="mb-3">
                             <label for="return_condition" class="form-label">Asset Condition</label>
                             <select class="form-control" id="return_condition" name="return_condition" required>
-                                <option value="excellent">Excellent - Like new</option>
-                                <option value="good" selected>Good - Minor wear</option>
-                                <option value="fair">Fair - Noticeable wear</option>
-                                <option value="poor">Poor - Significant damage</option>
+                                <option value="undamaged" selected>Undamaged - No issues</option>
+                                <option value="minor damage">Minor Damage - Small scratches/scuffs</option>
+                                <option value="significant damage">Significant Damage - Major issues</option>
                             </select>
                         </div>
                         <div class="mb-3">
                             <label for="return_notes" class="form-label">Return Notes (Optional)</label>
                             <textarea class="form-control" id="return_notes" name="return_notes" rows="3" 
                                     placeholder="Add any notes about the asset condition..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="return_photo" class="form-label">Asset Photo (Optional)</label>
+                            <div class="border rounded p-3 bg-light">
+                                <input type="file" class="form-control" id="return_photo" name="return_photo" 
+                                       accept="image/*" capture="environment">
+                                <small class="text-muted">Take a photo or upload an image of the returned asset condition</small>
+                                <div id="photo_preview" class="mt-2 text-center"></div>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -1919,8 +1948,39 @@ function denyRequest(requestId) {
 function returnAsset(requestId) {
     console.log('returnAsset called with requestId:', requestId);
     document.getElementById('returnRequestId').value = requestId;
+    
+    // Reset photo preview
+    document.getElementById('photo_preview').innerHTML = '';
+    document.getElementById('return_photo').value = '';
+    
     new bootstrap.Modal(document.getElementById('returnModal')).show();
 }
+
+// Photo preview functionality for return modal
+document.addEventListener('DOMContentLoaded', function() {
+    const returnPhotoInput = document.getElementById('return_photo');
+    const photoPreview = document.getElementById('photo_preview');
+    
+    if (returnPhotoInput && photoPreview) {
+        returnPhotoInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    photoPreview.innerHTML = `
+                        <img src="${e.target.result}" class="img-fluid rounded" style="max-height: 200px; object-fit: contain;" alt="Photo preview">
+                        <div class="mt-2">
+                            <small class="text-success"><i class="bi bi-check-circle"></i> Photo selected: ${file.name}</small>
+                        </div>
+                    `;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                photoPreview.innerHTML = '';
+            }
+        });
+    }
+});
 
 // ---------------------------------------------------------------------------
 // Quick-action helpers (create hidden form + submit)
