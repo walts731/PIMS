@@ -2340,6 +2340,15 @@ $status_display = formatStatus($item['status']);
             params.append('component_type', data.component_type || 'main_asset');
             params.append('auto_fill', 'true');
             
+            // Add peripheral-specific parameters if available
+            if (data.component_type === 'peripheral') {
+                params.append('peripheral_id', data.id);
+                params.append('peripheral_name', data.peripheral_name);
+                params.append('peripheral_model', data.peripheral_model);
+                params.append('peripheral_serial_number', data.peripheral_serial_number);
+                params.append('peripheral_status', data.peripheral_status);
+            }
+            
             // Open Red Tag form with component data
             window.open('create_redtag.php?' + params.toString(), '_blank');
         }

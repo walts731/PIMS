@@ -53,11 +53,12 @@ $component_type = isset($_GET['component_type']) ? htmlspecialchars($_GET['compo
 $component_description = isset($_GET['component_description']) ? htmlspecialchars($_GET['component_description']) : '';
 $component_value = isset($_GET['component_value']) ? floatval($_GET['component_value']) : 0;
 
-// Override main asset data with component data if component is specified
-if ($component_type !== 'main_asset' && !empty($component_description)) {
-    $description = $component_description;
-    $value = $component_value;
-}
+// Get peripheral-specific information if provided
+$peripheral_id = isset($_GET['peripheral_id']) ? intval($_GET['peripheral_id']) : null;
+$peripheral_name = isset($_GET['peripheral_name']) ? htmlspecialchars($_GET['peripheral_name']) : '';
+$peripheral_model = isset($_GET['peripheral_model']) ? htmlspecialchars($_GET['peripheral_model']) : '';
+$peripheral_serial = isset($_GET['peripheral_serial_number']) ? htmlspecialchars($_GET['peripheral_serial_number']) : '';
+$peripheral_status = isset($_GET['peripheral_status']) ? htmlspecialchars($_GET['peripheral_status']) : '';
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['generate_redtag'])) {
@@ -65,7 +66,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['generate_redtag'])) {
     $date_received = trim($_POST['date_received'] ?? date('Y-m-d'));
     $tagged_by = trim($_POST['tagged_by'] ?? '');
     $item_location = trim($_POST['item_location'] ?? '');
+    
+    // Use component_description from GET for component types, or from POST for main assets
     $item_description = trim($_POST['item_description'] ?? '');
+    
+    // For component types, if POST item_description is empty, use the component_description from GET
+    if ($component_type !== 'main_asset' && empty($item_description) && !empty($component_description)) {
+        $item_description = $component_description;
+    }
+    
     $removal_reason = trim($_POST['removal_reason'] ?? '');
     $action = trim($_POST['action'] ?? '');
     $other_action = trim($_POST['other_action'] ?? '');
@@ -93,36 +102,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['generate_redtag'])) {
         }
     }
     
-    // Create red_tags table if it doesn't exist
-    $create_table_sql = "CREATE TABLE IF NOT EXISTS `red_tags` (
-        `id` int(11) NOT NULL AUTO_INCREMENT,
-        `control_no` varchar(50) NOT NULL,
-        `red_tag_no` varchar(50) NOT NULL,
-        `date_received` date NOT NULL,
-        `tagged_by` varchar(100) NOT NULL,
-        `item_location` varchar(255) NOT NULL,
-        `item_description` text NOT NULL,
-        `removal_reason` text NOT NULL,
-        `action` varchar(50) NOT NULL,
-        `office_id` int(11) DEFAULT NULL,
-        `asset_item_id` int(11) DEFAULT NULL,
-        `disposal_reason` text DEFAULT NULL,
-        `disposal_date` date DEFAULT NULL,
-        `updated_by` int(11) DEFAULT NULL,
-        `created_by` int(11) NOT NULL,
-        `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
-        `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        PRIMARY KEY (`id`),
-        UNIQUE KEY `control_no` (`control_no`),
-        UNIQUE KEY `red_tag_no` (`red_tag_no`),
-        KEY `office_id` (`office_id`),
-        KEY `asset_item_id` (`asset_item_id`),
-        KEY `updated_by` (`updated_by`),
-        KEY `created_by` (`created_by`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
-    
-    $conn->query($create_table_sql);
-    
     try {
         // Start transaction
         $conn->begin_transaction();
@@ -141,27 +120,50 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['generate_redtag'])) {
         }
         
         // Debug logging
-        error_log("Red Tag Debug - Data: control_no=$control_no, red_tag_no=$red_tag_no, asset_item_id=$asset_item_id, office_id=$office_id");
+        error_log("Red Tag Debug - Data: control_no=$control_no, red_tag_no=$red_tag_no, asset_item_id=$asset_item_id, office_id=$office_id, peripheral_id=$peripheral_id, item_description=$item_description, disposal_reason=" . ($disposal_reason_null ?? 'NULL') . ", disposal_date=" . ($disposal_date_null ?? 'NULL'));
         
-        // Insert into red_tags table
-        $insert_sql = "INSERT INTO red_tags (control_no, red_tag_no, date_received, tagged_by, item_location, item_description, removal_reason, action, office_id, asset_item_id, created_by, component_type, component_description) 
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        $insert_stmt = $conn->prepare($insert_sql);
-        if (!$insert_stmt) {
-            throw new Exception("Prepare failed: " . $conn->error);
-        }
+        // Insert into red_tags table using traditional SQL
+        $created_at = date('Y-m-d H:i:s');
+        $updated_at = date('Y-m-d H:i:s');
         
-        $bind_result = $insert_stmt->bind_param("ssssssssiiiss", $control_no, $red_tag_no, $date_received, $tagged_by, $item_location, $item_description, $removal_reason, $action, $office_id, $asset_item_id, $_SESSION['user_id'], $component_type, $component_description);
-        if (!$bind_result) {
-            throw new Exception("Bind failed: " . $insert_stmt->error);
-        }
+        // Escape all values for security
+        $control_no_esc = $conn->real_escape_string($control_no);
+        $red_tag_no_esc = $conn->real_escape_string($red_tag_no);
+        $date_received_esc = $conn->real_escape_string($date_received);
+        $tagged_by_esc = $conn->real_escape_string($tagged_by);
+        $item_location_esc = $conn->real_escape_string($item_location);
+        $item_description_esc = $conn->real_escape_string($item_description);
+        $removal_reason_esc = $conn->real_escape_string($removal_reason);
+        $action_esc = $conn->real_escape_string($action);
+        $component_type_esc = $conn->real_escape_string($component_type);
+        $component_description_esc = $conn->real_escape_string($component_description);
         
-        $execute_result = $insert_stmt->execute();
+        $insert_sql = "INSERT INTO red_tags (control_no, red_tag_no, date_received, tagged_by, item_location, item_description, removal_reason, action, office_id, asset_item_id, created_by, component_type, component_description, peripheral_id, disposal_reason, disposal_date, created_at, updated_at, updated_by) VALUES (
+            '$control_no_esc', 
+            '$red_tag_no_esc', 
+            '$date_received_esc', 
+            '$tagged_by_esc', 
+            '$item_location_esc', 
+            '$item_description_esc', 
+            '$removal_reason_esc', 
+            '$action_esc', 
+            " . ($office_id ? $office_id : 'NULL') . ", 
+            " . ($asset_item_id ? $asset_item_id : 'NULL') . ", 
+            " . $_SESSION['user_id'] . ", 
+            '$component_type_esc', 
+            '$component_description_esc', 
+            " . ($peripheral_id ? $peripheral_id : 'NULL') . ", 
+            " . (!empty($removal_reason_esc) ? "'$removal_reason_esc'" : 'NULL') . ", 
+            NULL, 
+            '$created_at', 
+            '$updated_at', 
+            " . $_SESSION['user_id'] . "
+        )";
+        
+        $execute_result = $conn->query($insert_sql);
         if (!$execute_result) {
-            throw new Exception("Execute failed: " . $insert_stmt->error);
+            throw new Exception("Insert failed: " . $conn->error);
         }
-        
-        $insert_stmt->close();
         
         // Update status to 'red_tagged' if asset_item_id is provided
         if ($asset_item_id > 0) {
@@ -209,6 +211,39 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['generate_redtag'])) {
                 
                 // Log the component status change
                 logSystemAction($_SESSION['user_id'], 'component_status_updated', 'inventory', "UPS component for Asset ID {$asset_item_id} status changed from {$old_status} to red_tagged");
+                
+            } elseif ($component_type === 'peripheral') {
+                // Update peripheral status in peripherals table
+                $current_status_sql = "SELECT id, status FROM peripherals WHERE asset_item_id = ?";
+                $current_status_stmt = $conn->prepare($current_status_sql);
+                $current_status_stmt->bind_param("i", $asset_item_id);
+                $current_status_stmt->execute();
+                $current_status_result = $current_status_stmt->get_result();
+                $old_status = 'unknown';
+                $peripheral_id = null;
+                if ($current_status_row = $current_status_result->fetch_assoc()) {
+                    $old_status = $current_status_row['status'];
+                    $peripheral_id = $current_status_row['id'];
+                }
+                $current_status_stmt->close();
+                
+                $update_sql = "UPDATE peripherals SET status = 'red_tagged' WHERE asset_item_id = ?";
+                $update_stmt = $conn->prepare($update_sql);
+                $update_stmt->bind_param("i", $asset_item_id);
+                $update_stmt->execute();
+                $update_stmt->close();
+                
+                // Update red_tags table with peripheral_id
+                if ($peripheral_id) {
+                    $update_red_tag_sql = "UPDATE red_tags SET peripheral_id = ? WHERE id = ?";
+                    $update_red_tag_stmt = $conn->prepare($update_red_tag_sql);
+                    $update_red_tag_stmt->bind_param("ii", $peripheral_id, $red_tag_id);
+                    $update_red_tag_stmt->execute();
+                    $update_red_tag_stmt->close();
+                }
+                
+                // Log the component status change
+                logSystemAction($_SESSION['user_id'], 'component_status_updated', 'inventory', "Peripheral component for Asset ID {$asset_item_id} status changed from {$old_status} to red_tagged");
                 
             } else {
                 // Update main asset status (original logic)
@@ -276,11 +311,13 @@ $item_location = $item_location ?? $office_name;
 $item_description = $item_description ?? $description;
 $action = $action ?? ''; // Initialize action variable
 
-// Generate separate red tag number for header with fallback
-$red_tag_no = generateNextTag('red_tag_no');
+// Use existing red_tag_no if already generated, otherwise generate for display
 if (empty($red_tag_no)) {
-    // Fallback to manual generation if tag_formats not configured
-    $red_tag_no = 'RTN-' . date('Y') . '-' . str_pad(mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
+    $red_tag_no = generateNextTag('red_tag_no');
+    if (empty($red_tag_no)) {
+        // Fallback to manual generation if tag_formats not configured
+        $red_tag_no = 'RTN-' . date('Y') . '-' . str_pad(mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
+    }
 }
 ?>
 <!DOCTYPE html>

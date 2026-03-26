@@ -97,7 +97,28 @@ try {
             // Check if this is a component disposal
             if (isset($red_tag['component_type']) && $red_tag['component_type'] !== 'main_asset') {
                 // Update component status to disposed
-                if ($red_tag['component_type'] === 'monitor') {
+                if ($red_tag['component_type'] === 'peripheral') {
+                    // Update peripheral status in peripherals table using peripheral_id
+                    $update_component_sql = "UPDATE peripherals SET 
+                                           status = 'disposed',
+                                           updated_at = CURRENT_TIMESTAMP
+                                           WHERE id = ?";
+                    
+                    $stmt = $conn->prepare($update_component_sql);
+                    $stmt->bind_param("i", $red_tag['peripheral_id']);
+                    $stmt->execute();
+                    $stmt->close();
+                    
+                    // Log component disposal
+                    logSystemAction(
+                        $_SESSION['user_id'], 
+                        'dispose_component', 
+                        'red_tag', 
+                        "Disposed peripheral component ID {$red_tag['peripheral_id']} for asset ID {$red_tag['asset_item_id']} - {$red_tag['item_description']} (Reason: {$disposal_reason})"
+                    );
+                    
+                } elseif ($red_tag['component_type'] === 'monitor') {
+                    // Legacy support for monitor components
                     $update_component_sql = "UPDATE asset_desktop_computers SET 
                                            monitor_status = 'disposed',
                                            updated_at = CURRENT_TIMESTAMP
@@ -117,6 +138,7 @@ try {
                     );
                     
                 } elseif ($red_tag['component_type'] === 'ups') {
+                    // Legacy support for UPS components
                     $update_component_sql = "UPDATE asset_desktop_computers SET 
                                            ups_status = 'disposed',
                                            updated_at = CURRENT_TIMESTAMP
