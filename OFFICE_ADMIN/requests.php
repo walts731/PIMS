@@ -355,6 +355,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' || $action === 'check_updates') {
             // Set proper content type first to prevent HTML output
             header('Content-Type: application/json');
             
+            // Disable error display to prevent HTML from corrupting JSON
+            error_reporting(0);
+            ini_set('display_errors', 0);
+            
             $last_update = $_GET['last_update'] ?? '';
             $has_updates = false;
             $new_requests = [];
@@ -374,7 +378,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' || $action === 'check_updates') {
                     $current_query = "SELECT br.*, 'incoming' as request_type,
                                      u.first_name, u.last_name, u.email, 
                                      o.office_name as requester_office, ai.description as asset_description,
-                                     ai.property_no as asset_code, ac.category_name
+                                     ai.property_no as asset_code, ac.category_name,
+                                     NULL as admin_first_name, NULL as admin_last_name
                                      FROM borrow_requests br
                                      JOIN users u ON br.requested_by = u.id
                                      JOIN offices o ON br.requested_by_office = o.id
@@ -457,6 +462,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' || $action === 'check_updates') {
                 'stats' => $current_stats,
                 'timestamp' => date('Y-m-d H:i:s')
             ];
+            
+            // Clean buffer one more time to ensure clean JSON
+            if (ob_get_level()) {
+                ob_clean();
+            }
             
             echo json_encode($response);
             exit;
@@ -608,10 +618,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' || $action === 'check_updates') {
                              status = 'returned', 
                              returned_at = NOW(), 
                              return_condition = ?, 
-                             return_notes = ? 
+                             return_notes = ?,
+                             return_photo = ?
                              WHERE id = ? AND status IN ('approved', 'borrowed')";
             $stmt = $conn->prepare($update_query);
-            $stmt->bind_param("ssi", $condition, $notes, $request_id);
+            $stmt->bind_param("sssi", $condition, $notes, $return_photo_path, $request_id);
             
             if ($stmt->execute()) {
                 // Update asset status back to serviceable when returned
@@ -2080,24 +2091,39 @@ function createTestRequest() {
 // ---------------------------------------------------------------------------
 
 function viewDetails(requestId) {
-    console.log('viewDetails called with requestId:', requestId);
+    console.log('=== DEBUG: viewDetails called ===');
+    console.log('DEBUG: Request ID:', requestId);
+    
     fetch(`../api/get_request_details_simple.php?request_id=${requestId}`)
         .then(response => {
+            console.log('DEBUG: API response status:', response.status);
+            console.log('DEBUG: API response headers:', response.headers);
+            
             const contentType = response.headers.get('content-type');
+            console.log('DEBUG: Content type:', contentType);
+            
             if (!contentType || !contentType.includes('application/json')) {
                 return response.text().then(text => {
-                    console.error('Expected JSON but got:', text.substring(0, 200));
+                    console.error('DEBUG: Expected JSON but got:', text.substring(0, 500));
+                    console.error('DEBUG: Full response text:', text);
                     throw new Error('Server returned non-JSON response.');
                 });
             }
             return response.json();
         })
         .then(data => {
-            if (data.error) { alert('Error: ' + data.error); return; }
+            console.log('=== DEBUG: API Response Data ===');
+            console.log('DEBUG: Full response:', data);
+            console.log('DEBUG: Has asset data?', !!data.asset);
+            console.log('DEBUG: Asset data:', data.asset);
+            
             populateDetailsModal(data);
             new bootstrap.Modal(document.getElementById('detailsModal')).show();
         })
-        .catch(err => alert('Error loading request details: ' + err.message));
+        .catch(error => {
+            console.error('DEBUG: Error in viewDetails:', error);
+            alert('Error loading request details: ' + error.message);
+        });
 }
 
 // ---------------------------------------------------------------------------
@@ -2145,6 +2171,12 @@ function ucfirst(str) {
 }
 
 function populateDetailsModal(data) {
+    console.log('=== DEBUG: populateDetailsModal called ===');
+    console.log('DEBUG: Full data object:', data);
+    console.log('DEBUG: Asset data:', data.asset);
+    console.log('DEBUG: Asset exists?', !!data.asset);
+    console.log('DEBUG: Asset description:', data.asset?.description);
+    
     const modalBody = document.getElementById('detailsModalBody');
 
     let lifecycleHtml = '';
@@ -2201,6 +2233,7 @@ function populateDetailsModal(data) {
                         ${data.request.denial_reason   ? `<div class="row mb-2"><div class="col-sm-4"><strong>Denial Reason:</strong></div><div class="col-sm-8">${data.request.denial_reason}</div></div>` : ''}
                         ${data.request.return_condition? `<div class="row mb-2"><div class="col-sm-4"><strong>Return Condition:</strong></div><div class="col-sm-8">${data.request.return_condition}</div></div>` : ''}
                         ${data.request.return_notes    ? `<div class="row mb-2"><div class="col-sm-4"><strong>Return Notes:</strong></div><div class="col-sm-8">${data.request.return_notes}</div></div>` : ''}
+                        ${data.request.return_photo    ? `<div class="row mb-2"><div class="col-sm-4"><strong>Return Photo:</strong></div><div class="col-sm-8"><button type="button" class="btn btn-sm btn-outline-primary" onclick="viewReturnPhoto('${data.request.return_photo}')"><i class="bi bi-image"></i> View Photo</button></div></div>` : ''}
                     </div>
                 </div>
             </div>
@@ -2619,7 +2652,15 @@ function startRealTimeUpdates() {
 function checkForUpdates() {
     fetch('requests.php?action=check_updates&last_update=' + lastUpdateTime.toISOString(),
           { headers: {'X-Requested-With':'XMLHttpRequest'} })
-        .then(r => r.json())
+        .then(response => {
+            // Check if response is actually JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                console.error('Expected JSON response, got:', contentType);
+                throw new Error('Invalid response format');
+            }
+            return response.json();
+        })
         .then(data => {
             if (!data.has_updates) return;
             if (data.stats) updateStatsCards(data.stats);
@@ -2629,7 +2670,10 @@ function checkForUpdates() {
             }
             lastUpdateTime = new Date();
         })
-        .catch(err => console.error('Real-time update error:', err));
+        .catch(err => {
+            console.error('Real-time update error:', err);
+            // Don't show error to user to avoid spam, just log it
+        });
 }
 
 function updateStatsCards(stats) {
@@ -3075,6 +3119,60 @@ document.addEventListener('DOMContentLoaded', function () {
 // ---------------------------------------------------------------------------
 // Asset Image Viewer
 // ---------------------------------------------------------------------------
+
+function viewReturnPhoto(photoPath) {
+    try {
+        if (!photoPath) {
+            alert('No photo available');
+            return;
+        }
+        
+        // Create modal HTML for return photo
+        let modalHtml = `
+            <div class="modal fade" id="returnPhotoModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header bg-info text-white">
+                            <h5 class="modal-title"><i class="bi bi-image"></i> Return Asset Photo</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body text-center">
+                            <img src="../uploads/return_photos/${photoPath}" class="img-fluid rounded" style="max-height: 600px; object-fit: contain;" 
+                                 onerror="this.src='../img/no-image.png'; this.onerror=null;" 
+                                 alt="Return Asset Photo">
+                            <div class="mt-3">
+                                <small class="text-muted">Photo taken at asset return for documentation purposes</small>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            `;
+        
+        // Remove existing modal if present
+        const existingModal = document.getElementById('returnPhotoModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        
+        // Add modal to page and show it
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        const modal = new bootstrap.Modal(document.getElementById('returnPhotoModal'));
+        modal.show();
+        
+        // Clean up modal after it's hidden
+        document.getElementById('returnPhotoModal').addEventListener('hidden.bs.modal', function() {
+            this.remove();
+        });
+        
+    } catch (error) {
+        console.error('Error viewing return photo:', error);
+        alert('Error loading return photo. Please try again.');
+    }
+}
 
 function viewAssetImage(button) {
     try {
