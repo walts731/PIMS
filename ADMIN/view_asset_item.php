@@ -26,8 +26,7 @@ $item_sql = "SELECT ai.id, ai.asset_id, ai.property_no, ai.ics_par_no, ai.model,
                    o.office_name,
                    comp.processor, comp.ram_capacity, comp.storage_type, comp.storage_capacity, comp.model as computer_model,
                    comp.operating_system, comp.serial_number as computer_serial_number,
-                   desk.monitor_name, desk.monitor_model, desk.monitor_serial_number, desk.monitor_status,
-                   desk.ups_name, desk.ups_model, desk.ups_serial_number, desk.ups_status,
+                   p.name as peripheral_name, p.model as peripheral_model, p.serial_number as peripheral_serial_number, p.status as peripheral_status,
                    veh.brand as vehicle_brand, veh.model as vehicle_model, veh.plate_number, veh.color, veh.engine_number, veh.chassis_number, veh.year_manufactured,
                    furn.material, furn.dimensions as furniture_dimensions, furn.color as furniture_color, furn.manufacturer as furniture_manufacturer,
                    mach.machine_type, mach.manufacturer as machinery_manufacturer, mach.model_number, mach.capacity as machinery_capacity, mach.power_requirements, mach.serial_number as machinery_serial_number,
@@ -43,7 +42,7 @@ $item_sql = "SELECT ai.id, ai.asset_id, ai.property_no, ai.ics_par_no, ai.model,
             LEFT JOIN asset_sub_categories subcat ON ai.asset_subcategory_id = subcat.id
             LEFT JOIN offices o ON ai.office_id = o.id 
             LEFT JOIN asset_computers comp ON ai.id = comp.asset_item_id
-            LEFT JOIN asset_desktop_computers desk ON ai.id = desk.asset_item_id
+            LEFT JOIN peripherals p ON ai.id = p.asset_item_id
             LEFT JOIN asset_vehicles veh ON ai.id = veh.asset_item_id
             LEFT JOIN asset_furniture furn ON ai.id = furn.asset_item_id
             LEFT JOIN asset_machinery mach ON ai.id = mach.asset_item_id
@@ -1609,7 +1608,7 @@ $status_display = formatStatus($item['status']);
                             <a href="create_tag.php?id=<?php echo $item_id; ?>" class="btn btn-primary">
                                 <i class="bi bi-tag"></i> Create Tag
                             </a>
-                        <?php elseif ($item['status'] === 'serviceable'): ?>
+                        <?php elseif ($item['status'] === 'serviceable' || $item['peripheral_status'] === 'serviceable'): ?>
                             <!-- Show Transfer and IIRUP buttons for serviceable assets only -->
                             <button class="btn btn-outline-success" onclick="transferItem()">
                                 <i class="bi bi-arrow-left-right"></i> Transfer Item
@@ -1631,11 +1630,8 @@ $status_display = formatStatus($item['status']);
                             if ($item['status'] === 'unserviceable') {
                                 $unserviceable_components[] = 'main_asset';
                             }
-                            if ($item['monitor_status'] === 'unserviceable') {
-                                $unserviceable_components[] = 'monitor';
-                            }
-                            if ($item['ups_status'] === 'unserviceable') {
-                                $unserviceable_components[] = 'ups';
+                            if ($item['peripheral_status'] === 'unserviceable') {
+                                $unserviceable_components[] = 'peripheral';
                             }
                             
                             $show_redtag_modal = count($unserviceable_components) > 1;
@@ -1652,10 +1648,8 @@ $status_display = formatStatus($item['status']);
                             $component_type = !empty($unserviceable_components) ? $unserviceable_components[0] : 'main_asset';
                             $component_description = '';
                             
-                            if ($component_type === 'monitor' && !empty($item['monitor_name'])) {
-                                $component_description = 'Monitor - ' . $item['monitor_name'];
-                            } elseif ($component_type === 'ups' && !empty($item['ups_name'])) {
-                                $component_description = 'UPS - ' . $item['ups_name'];
+                            if ($component_type === 'peripheral' && !empty($item['peripheral_name'])) {
+                                $component_description = 'Peripheral - ' . $item['peripheral_name'];
                             } else {
                                 $component_description = $item['description'];
                             }
@@ -1780,14 +1774,21 @@ $status_display = formatStatus($item['status']);
                     </div>
                     
                     <div class="d-grid gap-2">
+                        <?php 
+                        $main_asset_available = $item['status'] === 'serviceable';
+                        $main_checkbox_disabled = $main_asset_available ? '' : 'disabled';
+                        $main_status_text = $main_asset_available ? 'Available for IIRUP' : 'Not available (' . ucfirst(str_replace('_', ' ', $item['status'])) . ')';
+                        $main_status_color = $main_asset_available ? 'text-success' : 'text-warning';
+                        ?>
                         <div class="border rounded p-3">
                             <div class="form-check">
-                                <input class="form-check-input iirup-component-checkbox" type="checkbox" id="mainAssetCheckbox" value="main_asset" onchange="updateIirupSelection()">
+                                <input class="form-check-input iirup-component-checkbox" type="checkbox" id="mainAssetCheckbox" value="main_asset" onchange="updateIirupSelection()" <?php echo $main_checkbox_disabled; ?>>
                                 <label class="form-check-label d-flex align-items-center" for="mainAssetCheckbox">
                                     <i class="bi bi-box-seam me-2"></i>
                                     <div>
                                         <strong>Main Asset Item</strong>
                                         <div class="small text-muted"><?php echo htmlspecialchars($item['description']); ?></div>
+                                        <div class="small <?php echo $main_status_color; ?>"><?php echo $main_status_text; ?></div>
                                     </div>
                                 </label>
                             </div>
@@ -1797,7 +1798,7 @@ $status_display = formatStatus($item['status']);
                         <?php if (!empty($peripherals)): ?>
                             <?php foreach ($peripherals as $index => $peripheral): ?>
                                 <?php 
-                                $is_available = in_array($peripheral['status'], ['serviceable', null]) || $peripheral['status'] === '';
+                                $is_available = $peripheral['status'] === 'serviceable';
                                 $checkbox_disabled = $is_available ? '' : 'disabled';
                                 $status_text = $is_available ? 'Available for IIRUP' : 'Not available (' . ucfirst(str_replace('_', ' ', $peripheral['status'] ?: 'no_status')) . ')';
                                 $status_color = $is_available ? 'text-success' : 'text-warning';
@@ -1857,6 +1858,26 @@ $status_display = formatStatus($item['status']);
                                 No peripherals available for this asset.
                             </div>
                         <?php endif; ?>
+                        
+                        <?php 
+                        // Check if any serviceable components are available
+                        $has_serviceable_components = $main_asset_available;
+                        if (!empty($peripherals)) {
+                            foreach ($peripherals as $peripheral) {
+                                if ($peripheral['status'] === 'serviceable') {
+                                    $has_serviceable_components = true;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        if (!$has_serviceable_components): ?>
+                            <div class="alert alert-warning text-center mt-3">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                <strong>No serviceable components available for IIRUP</strong><br>
+                                <small class="text-muted">Only serviceable items can be added to the IIRUP form.</small>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -1896,26 +1917,73 @@ $status_display = formatStatus($item['status']);
                         </button>
                         <?php endif; ?>
                         
-                        <?php if ($item['sub_category_name'] === 'Desktop Computers' && $has_monitor_details && $item['monitor_status'] === 'unserviceable'): ?>
-                        <button type="button" class="btn btn-outline-success btn-lg" onclick="addMonitorToRedtag()">
-                            <i class="bi bi-display"></i>
-                            <div class="mt-2">
-                                <strong>Monitor</strong>
-                                <div class="small text-muted"><?php echo htmlspecialchars($item['monitor_name'] ?: 'Monitor'); ?></div>
-                                <div class="small text-danger">Unserviceable</div>
-                            </div>
-                        </button>
+                        <!-- Dynamic Peripherals Display -->
+                        <?php if (!empty($peripherals)): ?>
+                            <?php foreach ($peripherals as $index => $peripheral): ?>
+                                <?php 
+                                $is_unserviceable = $peripheral['status'] === 'unserviceable';
+                                
+                                // Choose appropriate icon based on peripheral name
+                                $icon_class = 'bi-pc-display'; // default
+                                if (stripos($peripheral['name'], 'monitor') !== false) {
+                                    $icon_class = 'bi-display';
+                                } elseif (stripos($peripheral['name'], 'keyboard') !== false) {
+                                    $icon_class = 'bi-keyboard';
+                                } elseif (stripos($peripheral['name'], 'mouse') !== false) {
+                                    $icon_class = 'bi-mouse';
+                                } elseif (stripos($peripheral['name'], 'ups') !== false) {
+                                    $icon_class = 'bi-battery-charging';
+                                } elseif (stripos($peripheral['name'], 'printer') !== false) {
+                                    $icon_class = 'bi-printer';
+                                } elseif (stripos($peripheral['name'], 'scanner') !== false) {
+                                    $icon_class = 'bi-upc-scan';
+                                } elseif (stripos($peripheral['name'], 'camera') !== false) {
+                                    $icon_class = 'bi-camera';
+                                } elseif (stripos($peripheral['name'], 'speaker') !== false || stripos($peripheral['name'], 'audio') !== false) {
+                                    $icon_class = 'bi-speaker';
+                                }
+                                ?>
+                                <?php if ($is_unserviceable): ?>
+                                <button type="button" class="btn btn-outline-warning btn-lg" onclick="addPeripheralToRedtag(<?php echo $index; ?>)"
+                                        data-peripheral-id="<?php echo htmlspecialchars($peripheral['id']); ?>"
+                                        data-peripheral-name="<?php echo htmlspecialchars($peripheral['name']); ?>"
+                                        data-peripheral-model="<?php echo htmlspecialchars($peripheral['model'] ?? ''); ?>"
+                                        data-peripheral-serial="<?php echo htmlspecialchars($peripheral['serial_number'] ?? ''); ?>"
+                                        data-peripheral-status="<?php echo htmlspecialchars($peripheral['status']); ?>">
+                                    <i class="bi <?php echo $icon_class; ?>"></i>
+                                    <div class="mt-2">
+                                        <strong><?php echo htmlspecialchars($peripheral['name']); ?></strong>
+                                        <?php if (!empty($peripheral['model'])): ?>
+                                            <div class="small text-muted"><?php echo htmlspecialchars($peripheral['model']); ?></div>
+                                        <?php endif; ?>
+                                        <?php if (!empty($peripheral['serial_number'])): ?>
+                                            <div class="small text-muted">S/N: <?php echo htmlspecialchars($peripheral['serial_number']); ?></div>
+                                        <?php endif; ?>
+                                        <div class="small text-danger">Unserviceable</div>
+                                    </div>
+                                </button>
+                                <?php endif; ?>
+                            <?php endforeach; ?>
                         <?php endif; ?>
                         
-                        <?php if ($item['sub_category_name'] === 'Desktop Computers' && $has_ups_details && $item['ups_status'] === 'unserviceable'): ?>
-                        <button type="button" class="btn btn-outline-warning btn-lg" onclick="addUpsToRedtag()">
-                            <i class="bi bi-battery-charging"></i>
-                            <div class="mt-2">
-                                <strong>UPS</strong>
-                                <div class="small text-muted"><?php echo htmlspecialchars($item['ups_name'] ?: 'UPS'); ?></div>
-                                <div class="small text-danger">Unserviceable</div>
+                        <?php 
+                        // Check if any unserviceable components are available
+                        $has_unserviceable_components = ($item['status'] === 'unserviceable');
+                        if (!empty($peripherals)) {
+                            foreach ($peripherals as $peripheral) {
+                                if ($peripheral['status'] === 'unserviceable') {
+                                    $has_unserviceable_components = true;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        if (!$has_unserviceable_components): ?>
+                            <div class="alert alert-warning text-center">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                <strong>No unserviceable components available for Red Tag</strong><br>
+                                <small class="text-muted">Only unserviceable items can be red-tagged.</small>
                             </div>
-                        </button>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -2012,31 +2080,6 @@ $status_display = formatStatus($item['status']);
             };
             
             openIirupForm(peripheralData);
-        }
-        
-        function addUpsToIirup() {
-            // Close the modal
-            bootstrap.Modal.getInstance(document.getElementById('iirupComponentModal')).hide();
-            
-            // Prepare UPS data for IIRUP form
-            const upsData = {
-                id: <?php echo $item_id; ?>,
-                description: '<?php echo addslashes('UPS - ' . ($item['ups_name'] ?: $item['description'])); ?>',
-                property_no: '<?php echo addslashes($item['property_no'] ?? ''); ?>',
-                inventory_tag: '<?php echo addslashes($item['inventory_tag'] ?? ''); ?>',
-                acquisition_date: '<?php echo $item['acquisition_date']; ?>',
-                value: '<?php echo $item['ups_value'] ?? $item['value']; ?>',
-                unit_cost: '<?php echo $item['ups_unit_cost'] ?? $item['unit_cost']; ?>',
-                office_name: '<?php echo addslashes($item['office_name'] ?? ''); ?>',
-                employee_name: '<?php echo addslashes(trim(($item['firstname'] ?? '') . ' ' . ($item['lastname'] ?? ''))); ?>',
-                category_name: 'Computer Equipment',
-                category_code: '030',
-                asset_description: '<?php echo addslashes($item['ups_model'] ?: 'UPS'); ?>',
-                unit: 'SET',
-                component_type: 'ups'
-            };
-            
-            openIirupForm(upsData);
         }
         
         function openIirupForm(data) {
@@ -2242,52 +2285,41 @@ $status_display = formatStatus($item['status']);
             openRedtagForm(assetData);
         }
         
-        function addMonitorToRedtag() {
+        function addPeripheralToRedtag(peripheralIndex) {
+            // Get peripheral data from the button attributes
+            const button = document.querySelector(`[onclick="addPeripheralToRedtag(${peripheralIndex})"]`);
+            const peripheralId = button.getAttribute('data-peripheral-id');
+            const peripheralName = button.getAttribute('data-peripheral-name');
+            const peripheralModel = button.getAttribute('data-peripheral-model');
+            const peripheralSerial = button.getAttribute('data-peripheral-serial');
+            const peripheralStatus = button.getAttribute('data-peripheral-status');
+            
             // Close the modal
             bootstrap.Modal.getInstance(document.getElementById('redtagComponentModal')).hide();
             
-            // Prepare monitor data for Red Tag form
-            const monitorData = {
-                id: <?php echo $item_id; ?>,
-                description: '<?php echo addslashes('Monitor - ' . ($item['monitor_name'] ?: $item['description'])); ?>',
+            // Prepare peripheral data for Red Tag form
+            const peripheralData = {
+                id: peripheralId, // Use peripheral ID instead of asset ID
+                asset_id: <?php echo $item_id; ?>, // Keep asset ID for reference
+                description: peripheralName + (peripheralModel ? ' - ' + peripheralModel : ''),
                 property_no: '<?php echo addslashes($item['property_no'] ?? ''); ?>',
                 inventory_tag: '<?php echo addslashes($item['inventory_tag'] ?? ''); ?>',
                 acquisition_date: '<?php echo $item['acquisition_date']; ?>',
-                value: '<?php echo $item['monitor_value'] ?? $item['value']; ?>',
-                unit_cost: '<?php echo $item['monitor_unit_cost'] ?? $item['unit_cost']; ?>',
+                value: '<?php echo $item['value']; ?>',
+                unit_cost: '<?php echo $item['unit_cost']; ?>',
                 office_name: '<?php echo addslashes($item['office_name'] ?? ''); ?>',
-                category_name: 'Computer Equipment',
-                category_code: '030',
-                asset_description: '<?php echo addslashes($item['monitor_model'] ?: 'Monitor'); ?>',
-                unit: 'SET',
-                component_type: 'monitor'
+                category_name: '<?php echo addslashes($item['category_name'] ?? ''); ?>',
+                category_code: '<?php echo addslashes($item['category_code'] ?? ''); ?>',
+                asset_description: peripheralName,
+                unit: '<?php echo addslashes($item['unit']); ?>',
+                component_type: 'peripheral',
+                peripheral_name: peripheralName,
+                peripheral_model: peripheralModel,
+                peripheral_serial_number: peripheralSerial,
+                peripheral_status: peripheralStatus
             };
             
-            openRedtagForm(monitorData);
-        }
-        
-        function addUpsToRedtag() {
-            // Close the modal
-            bootstrap.Modal.getInstance(document.getElementById('redtagComponentModal')).hide();
-            
-            // Prepare UPS data for Red Tag form
-            const upsData = {
-                id: <?php echo $item_id; ?>,
-                description: '<?php echo addslashes('UPS - ' . ($item['ups_name'] ?: $item['description'])); ?>',
-                property_no: '<?php echo addslashes($item['property_no'] ?? ''); ?>',
-                inventory_tag: '<?php echo addslashes($item['inventory_tag'] ?? ''); ?>',
-                acquisition_date: '<?php echo $item['acquisition_date']; ?>',
-                value: '<?php echo $item['ups_value'] ?? $item['value']; ?>',
-                unit_cost: '<?php echo $item['ups_unit_cost'] ?? $item['unit_cost']; ?>',
-                office_name: '<?php echo addslashes($item['office_name'] ?? ''); ?>',
-                category_name: 'Computer Equipment',
-                category_code: '030',
-                asset_description: '<?php echo addslashes($item['ups_model'] ?: 'UPS'); ?>',
-                unit: 'SET',
-                component_type: 'ups'
-            };
-            
-            openRedtagForm(upsData);
+            openRedtagForm(peripheralData);
         }
         
         function openRedtagForm(data) {
