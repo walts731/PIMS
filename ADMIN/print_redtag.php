@@ -16,21 +16,21 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
     exit();
 }
 
-// Get control number from URL
-$control_no = trim($_GET['control_no'] ?? '');
+// Get red tag ID from URL
+$red_tag_id = trim($_GET['id'] ?? '');
 $error_message = '';
 $show_error = false;
 
-if (empty($control_no)) {
-    $error_message = 'Control number is required';
+if (empty($red_tag_id) || !is_numeric($red_tag_id)) {
+    $error_message = 'Red tag ID is required';
     $show_error = true;
 } else {
     // Get red tag data from database
     $red_tag = [];
     try {
-        $sql = "SELECT * FROM red_tags WHERE control_no = ? LIMIT 1";
+        $sql = "SELECT * FROM red_tags WHERE id = ? LIMIT 1";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("s", $control_no);
+        $stmt->bind_param("i", $red_tag_id);
         $stmt->execute();
         $result = $stmt->get_result();
         
@@ -158,7 +158,7 @@ if ($show_error) {
 }
 
 // Log the print action
-logSystemAction($_SESSION['user_id'], 'print', 'red_tag', "Printed red tag: {$control_no}");
+logSystemAction($_SESSION['user_id'], 'print', 'red_tag', "Printed red tag: {$red_tag['control_no']} (ID: {$red_tag_id})");
 ?>
 <!DOCTYPE html>
 <html lang="en">

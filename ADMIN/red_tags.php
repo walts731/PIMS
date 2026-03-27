@@ -343,7 +343,7 @@ try {
                                                 </a>
                                             <?php endif; ?>
                                             <?php if (strtolower($red_tag['action']) !== 'disposed'): ?>
-                                                <a href="print_redtag.php?control_no=<?php echo urlencode($red_tag['control_no']); ?>" class="btn btn-outline-danger btn-sm" title="Print Red Tag" target="_blank">
+                                                <a href="print_redtag.php?id=<?php echo urlencode($red_tag['id']); ?>" class="btn btn-outline-danger btn-sm" title="Print Red Tag" target="_blank">
                                                     <i class="bi bi-printer"></i>
                                                 </a>
                                             <?php endif; ?>

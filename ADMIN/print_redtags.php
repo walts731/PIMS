@@ -75,16 +75,72 @@ logSystemAction($_SESSION['user_id'], 'print', 'red_tags', "Printed multiple red
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Red Tags - Multiple</title>
+    <title>Red Tags Preview - Multiple</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
     <style>
         body {
             font-family: 'Times New Roman', serif;
             font-size: 12px;
             line-height: 1.4;
             color: #000;
-            background: white;
+            background: #f8f9fa;
             margin: 0;
-            padding: 0;
+            padding: 20px;
+        }
+        
+        .preview-header {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .preview-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #dc3545;
+            margin-bottom: 10px;
+        }
+        
+        .preview-info {
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        .preview-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+        
+        .zoom-controls {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            background: #f8f9fa;
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .zoom-controls .btn {
+            padding: 5px 10px;
+            font-size: 14px;
+        }
+        
+        .zoom-level {
+            font-size: 12px;
+            font-weight: 600;
+            color: #666;
+            min-width: 40px;
+            text-align: center;
         }
         
         .print-container {
@@ -98,10 +154,12 @@ logSystemAction($_SESSION['user_id'], 'print', 'red_tags', "Printed multiple red
             grid-template-rows: 1fr 1fr 1fr;
             gap: 12px;
             min-height: 100vh;
+            transform-origin: top center;
+            transition: transform 0.3s ease;
         }
         
         .tag-container {
-            width: 100%;
+            width: 4in;
             height: 3.2in;
             border: 2px solid #dc3545;
             padding: 10px;
@@ -109,6 +167,7 @@ logSystemAction($_SESSION['user_id'], 'print', 'red_tags', "Printed multiple red
             page-break-inside: avoid;
             display: flex;
             flex-direction: column;
+            margin: 0 auto;
         }
         
         .tag-header {
@@ -265,25 +324,100 @@ logSystemAction($_SESSION['user_id'], 'print', 'red_tags', "Printed multiple red
                 overflow: hidden;
             }
         }
+        
+        @media print {
+            body {
+                font-family: 'Times New Roman', serif;
+                font-size: 12px;
+                line-height: 1.4;
+                color: #000;
+                background: white;
+                margin: 0;
+                padding: 0;
+            }
+            
+            .preview-header {
+                display: none !important;
+            }
+            
+            .print-container {
+                padding: 8px;
+                margin: 0 auto;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                grid-template-rows: 1fr 1fr 1fr;
+                gap: 12px;
+                min-height: 100vh;
+                transform: none !important;
+                max-width: 8.5in;
+                width: 100%;
+            }
+            
+            .tag-container {
+                width: 4in;
+                height: 3.2in;
+                border: 2px solid #dc3545;
+                padding: 10px;
+                background: white;
+                page-break-inside: avoid;
+                display: flex;
+                flex-direction: column;
+                margin: 0 auto;
+            }
+            
+            @page {
+                size: Letter;
+                margin: 0.5in;
+            }
+            
+            html {
+                overflow: hidden;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="print-container">
+    <!-- Preview Header -->
+    <div class="preview-header">
+        <h1 class="preview-title">Red Tags Preview - Multiple</h1>
+        <div class="preview-info">
+            <strong>Total Tags:</strong> <?php echo count($red_tags); ?> | 
+            <strong>Control Numbers:</strong> <?php echo implode(', ', array_map(function($tag) { return htmlspecialchars($tag['control_no']); }, array_slice($red_tags, 0, 3))); ?><?php if (count($red_tags) > 3) echo '...'; ?>
+        </div>
+        <div class="preview-controls">
+            <button type="button" class="btn btn-primary" onclick="window.print()">
+                <i class="bi bi-printer"></i> Print All Red Tags
+            </button>
+            <div class="zoom-controls">
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="zoomOut()" title="Zoom Out">
+                    <i class="bi bi-zoom-out"></i>
+                </button>
+                <span class="zoom-level" id="zoomLevel">100%</span>
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="zoomIn()" title="Zoom In">
+                    <i class="bi bi-zoom-in"></i>
+                </button>
+            </div>
+            <button type="button" class="btn btn-outline-secondary" onclick="window.close()">
+                <i class="bi bi-x-circle"></i> Close Preview
+            </button>
+        </div>
+    </div>
+    
+    <div class="print-container" id="printContainer">
         <?php 
         // Group red tags into pages of 6
         $chunks = array_chunk($red_tags, 6);
         
         foreach ($chunks as $page_index => $page_tags): 
         ?>
-            <div class="tags-grid">
-                <?php 
-                // Fill remaining slots with empty tags to maintain grid
-                $page_tags_with_empty = array_pad($page_tags, 6, null);
-                
-                foreach ($page_tags_with_empty as $red_tag): 
-                    if ($red_tag):
-                ?>
-                    <div class="tag-container">
+            <?php 
+            // Fill remaining slots with empty tags to maintain grid
+            $page_tags_with_empty = array_pad($page_tags, 6, null);
+            
+            foreach ($page_tags_with_empty as $red_tag): 
+                if ($red_tag):
+            ?>
+                <div class="tag-container">
                         <div class="tag-main-header">
                             <div class="tag-logo">
                                 <?php 
@@ -380,17 +514,44 @@ logSystemAction($_SESSION['user_id'], 'print', 'red_tags', "Printed multiple red
                     </div>
                 <?php endif; ?>
                 <?php endforeach; ?>
-            </div>
         <?php endforeach; ?>
     </div>
     
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Auto-print when page loads
-        window.onload = function() {
-            setTimeout(function() {
-                window.print();
-            }, 500);
-        };
+        let currentZoom = 150;
+        
+        // Initialize zoom level display
+        document.addEventListener('DOMContentLoaded', function() {
+            updateZoom();
+        });
+        
+        function zoomIn() {
+            if (currentZoom < 150) {
+                currentZoom += 10;
+                updateZoom();
+            }
+        }
+        
+        function zoomOut() {
+            if (currentZoom > 50) {
+                currentZoom -= 10;
+                updateZoom();
+            }
+        }
+        
+        function updateZoom() {
+            const container = document.getElementById('printContainer');
+            container.style.transform = `scale(${currentZoom / 100})`;
+            document.getElementById('zoomLevel').textContent = currentZoom + '%';
+        }
+        
+        // Auto-print when page loads (optional - remove if you want manual print only)
+        // window.onload = function() {
+        //     setTimeout(function() {
+        //         window.print();
+        //     }, 500);
+        // };
         
         // Close window after printing
         window.onafterprint = function() {
