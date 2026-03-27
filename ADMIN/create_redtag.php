@@ -102,7 +102,47 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['generate_redtag'])) {
         $item_description = $component_description;
     }
     
-    // Note: Serial number is already included in the initial $item_description from display logic
+    // Check if serial number is already in the description to avoid duplication
+    if (!empty($serial_number) && strpos($item_description, '(S/N:') === false) {
+        if (!empty($item_description)) {
+            $item_description .= " (S/N: {$serial_number})";
+        } else {
+            $item_description = "S/N: {$serial_number}";
+        }
+    }
+    
+    // Handle image uploads
+    $uploaded_images = [];
+    if (isset($_FILES['redtag_images']) && $_FILES['redtag_images']['error'][0] !== UPLOAD_ERR_NO_FILE) {
+        $upload_dir = '../uploads/redtag_images/';
+        
+        // Create upload directory if it doesn't exist
+        if (!file_exists($upload_dir)) {
+            mkdir($upload_dir, 0755, true);
+        }
+        
+        foreach ($_FILES['redtag_images']['tmp_name'] as $key => $tmp_name) {
+            if ($_FILES['redtag_images']['error'][$key] === UPLOAD_ERR_OK) {
+                $file_name = $_FILES['redtag_images']['name'][$key];
+                $file_size = $_FILES['redtag_images']['size'][$key];
+                $file_tmp = $_FILES['redtag_images']['tmp_name'][$key];
+                $file_type = $_FILES['redtag_images']['type'][$key];
+                
+                // Generate unique filename
+                $file_extension = pathinfo($file_name, PATHINFO_EXTENSION);
+                $unique_filename = 'redtag_' . time() . '_' . $key . '.' . $file_extension;
+                $upload_path = $upload_dir . $unique_filename;
+                
+                // Validate file type (image only)
+                $allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+                if (in_array($file_type, $allowed_types) && $file_size <= 5242880) { // 5MB limit
+                    if (move_uploaded_file($file_tmp, $upload_path)) {
+                        $uploaded_images[] = 'uploads/redtag_images/' . $unique_filename;
+                    }
+                }
+            }
+        }
+    }
     
     $removal_reason = trim($_POST['removal_reason'] ?? '');
     $action = trim($_POST['action'] ?? '');
@@ -262,6 +302,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['generate_redtag'])) {
                 $update_stmt->execute();
                 $update_stmt->close();
                 
+                // Update asset_items with redtag images if main asset exists
+                if ($asset_item_id && !empty($uploaded_images)) {
+                    $images_json = json_encode($uploaded_images);
+                    $update_asset_sql = "UPDATE asset_items SET redtag_image = ? WHERE id = ?";
+                    $update_asset_stmt = $conn->prepare($update_asset_sql);
+                    $update_asset_stmt->bind_param("si", $images_json, $asset_item_id);
+                    $update_asset_stmt->execute();
+                    $update_asset_stmt->close();
+                }
+                
                 // Update red_tags table with peripheral_id
                 if ($peripheral_id) {
                     $update_red_tag_sql = "UPDATE red_tags SET peripheral_id = ? WHERE id = ?";
@@ -292,6 +342,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['generate_redtag'])) {
                 $update_stmt->bind_param("i", $asset_item_id);
                 $update_stmt->execute();
                 $update_stmt->close();
+                
+                // Update redtag images if uploaded
+                if (!empty($uploaded_images)) {
+                    $images_json = json_encode($uploaded_images);
+                    $update_images_sql = "UPDATE asset_items SET redtag_image = ? WHERE id = ?";
+                    $update_images_stmt = $conn->prepare($update_images_sql);
+                    $update_images_stmt->bind_param("si", $images_json, $asset_item_id);
+                    $update_images_stmt->execute();
+                    $update_images_stmt->close();
+                }
                 
                 // Record history for the asset status change
                 $history_sql = "INSERT INTO asset_item_history (item_id, action, old_value, new_value, created_by, created_at, details) 
@@ -673,7 +733,7 @@ if (empty($red_tag_no)) {
                 </div>
             </div>
                     
-                    <form method="POST" class="row g-3">
+                    <form method="POST" class="row g-3" enctype="multipart/form-data">
                         <div class="col-md-6">
                             <label class="form-label">Control No. <span class="text-muted">(Auto-generated)</span></label>
                             <input type="text" class="form-control" name="control_no" value="<?php echo $control_no; ?>" readonly>
@@ -713,6 +773,12 @@ if (empty($red_tag_no)) {
                         <div class="col-md-6" id="otherActionDiv" style="display: none;">
                             <label class="form-label">Specify Other Action <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" name="other_action" id="otherActionInput" placeholder="Enter specific action...">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Red Tag Images <span class="text-muted">(Optional - Upload multiple images)</span></label>
+                            <input type="file" class="form-control" name="redtag_images[]" id="redtagImages" multiple accept="image/*">
+                            <small class="text-muted">You can upload multiple image files (JPG, PNG, GIF, etc.)</small>
+                            <div id="imagePreview" class="mt-2"></div>
                         </div>
                         <div class="col-md-6 d-flex align-items-end" id="generateButtonDiv">
                             <button type="submit" name="generate_redtag" class="btn btn-danger btn-custom">
@@ -837,26 +903,45 @@ if (empty($red_tag_no)) {
             const actionSelect = document.getElementById('actionSelect');
             const otherActionDiv = document.getElementById('otherActionDiv');
             const otherActionInput = document.getElementById('otherActionInput');
-            const generateButtonDiv = document.getElementById('generateButtonDiv');
             
             function toggleOtherField() {
                 if (actionSelect.value === 'other') {
                     otherActionDiv.style.display = 'block';
                     otherActionInput.setAttribute('required', 'required');
-                    generateButtonDiv.className = 'col-12 d-flex align-items-end mt-3';
                 } else {
                     otherActionDiv.style.display = 'none';
                     otherActionInput.removeAttribute('required');
-                    otherActionInput.value = ''; // Clear the value when hidden
-                    generateButtonDiv.className = 'col-md-6 d-flex align-items-end';
                 }
             }
             
-            // Initial check
-            toggleOtherField();
-            
             // Handle change event
             actionSelect.addEventListener('change', toggleOtherField);
+            
+            // Handle image preview
+            const imageInput = document.getElementById('redtagImages');
+            const imagePreview = document.getElementById('imagePreview');
+            
+            imageInput.addEventListener('change', function(e) {
+                imagePreview.innerHTML = '';
+                const files = e.target.files;
+                
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            const preview = document.createElement('div');
+                            preview.className = 'col-md-3 mb-2';
+                            preview.innerHTML = `
+                                <img src="${e.target.result}" class="img-fluid rounded border" style="max-height: 100px; width: 100%; object-fit: cover;" alt="${file.name}">
+                                <small class="text-muted d-block text-center">${file.name}</small>
+                            `;
+                            imagePreview.appendChild(preview);
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                }
+            });
         });
     </script>
 </body>

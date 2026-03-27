@@ -19,7 +19,7 @@ if ($item_id === 0) {
 
 // Get asset item details with related information
 $item = null;
-$item_sql = "SELECT ai.id, ai.asset_id, ai.property_no, ai.ics_par_no, ai.model, ai.serial_number, ai.description, ai.status, ai.date_counted, ai.image, ai.qr_code, ai.created_at, ai.last_updated, ai.value, ai.acquisition_date, ai.end_user,
+$item_sql = "SELECT ai.id, ai.asset_id, ai.property_no, ai.ics_par_no, ai.model, ai.serial_number, ai.description, ai.status, ai.date_counted, ai.image, ai.qr_code, ai.redtag_image, ai.created_at, ai.last_updated, ai.value, ai.acquisition_date, ai.end_user,
                    a.description as asset_description, a.unit, a.quantity as asset_quantity, a.unit_cost,
                    ac.category_name, ac.category_code,
                    subcat.sub_category_name, subcat.sub_category_code,
@@ -77,6 +77,18 @@ if (!empty($item['image'])) {
     } elseif (!empty($item['image'])) {
         // Handle case where it's a single filename (not JSON)
         $asset_images = [$item['image']];
+    }
+}
+
+// Decode redtag images from JSON if available
+$redtag_images = [];
+if (!empty($item['redtag_image'])) {
+    $decoded_redtag_images = json_decode($item['redtag_image'], true);
+    if (is_array($decoded_redtag_images)) {
+        $redtag_images = $decoded_redtag_images;
+    } elseif (!empty($item['redtag_image'])) {
+        // Handle case where it's a single filename (not JSON)
+        $redtag_images = [$item['redtag_image']];
     }
 }
 
@@ -1509,31 +1521,59 @@ $status_display = formatStatus($item['status']);
                 <!-- Asset Images Carousel -->
                 <div class="detail-card text-center">
                     <h5 class="mb-3"><i class="bi bi-images"></i> Asset Images</h5>
-                    <?php if (!empty($asset_images)): ?>
+                    <?php 
+                    // Combine asset images and redtag images
+                    $all_images = [];
+                    $image_types = [];
+                    
+                    // Add asset images
+                    foreach ($asset_images as $image) {
+                        $all_images[] = $image;
+                        $image_types[] = 'asset';
+                    }
+                    
+                    // Add redtag images
+                    foreach ($redtag_images as $image) {
+                        $all_images[] = $image;
+                        $image_types[] = 'redtag';
+                    }
+                    
+                    if (!empty($all_images)): 
+                    ?>
                         <div id="assetImageCarousel" class="carousel slide asset-carousel mb-3" data-bs-ride="carousel">
-                            <?php if (count($asset_images) > 1): ?>
+                            <?php if (count($all_images) > 1): ?>
                                 <div class="carousel-indicators">
-                                    <?php foreach ($asset_images as $index => $image): ?>
+                                    <?php foreach ($all_images as $index => $image): ?>
                                         <button type="button" data-bs-target="#assetImageCarousel" data-bs-slide-to="<?php echo $index; ?>" class="<?php echo $index === 0 ? 'active' : ''; ?>" aria-current="<?php echo $index === 0 ? 'true' : 'false'; ?>" aria-label="Slide <?php echo $index + 1; ?>"></button>
                                     <?php endforeach; ?>
                                 </div>
                             <?php endif; ?>
                             
                             <div class="carousel-inner">
-                                <?php foreach ($asset_images as $index => $image): ?>
+                                <?php foreach ($all_images as $index => $image): ?>
                                     <div class="carousel-item <?php echo $index === 0 ? 'active' : ''; ?>">
-                                        <img src="../uploads/asset_images/<?php echo htmlspecialchars($image); ?>" 
+                                        <?php 
+                                        $image_path = $image_types[$index] === 'redtag' ? '../' . $image : '../uploads/asset_images/' . $image;
+                                        $image_alt = $image_types[$index] === 'redtag' ? 'Red Tag Image ' . ($index + 1) : 'Asset Image ' . ($index + 1);
+                                        ?>
+                                        <img src="<?php echo htmlspecialchars($image_path); ?>" 
                                              class="d-block w-100" 
-                                             alt="Asset Image <?php echo $index + 1; ?>"
+                                             alt="<?php echo $image_alt; ?>"
                                              onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgdmlld0JveD0iMCAwIDMwMCAzMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIiBmaWxsPSIjRjVGNUY1Ii8+CjxwYXRoIGQ9Ik0xMjUgMTIwSDE3NVYxNzVIMTI1VjEyMFoiIGZpbGw9IiNEMUQ1REIiLz4KPHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEwIDIwQzEwIDIyLjIwOTEgMTEuNzkwOSAyNCAxNCAyNEgyNkMyOC4yMDkxIDI0IDMwIDIyLjIwOTEgMzAgMjBWMzBIMTBWMjBaTTEwIDEwQzEwIDEyLjIwOTEgMTEuNzkwOSAxNCAxNCAxNEgyNkMyOC4yMDkxIDE0IDMwIDEyLjIwOTEgMzAgMTBWMTBIMTBaIiBmaWxsPSIjRDRERDREIi8+Cjwvc3ZnPgo8L3N2Zz4K';">
-                                        <?php if (count($asset_images) > 1): ?>
-                                            <div class="image-counter"><?php echo ($index + 1) . ' / ' . count($asset_images); ?></div>
+                                        <?php 
+                                        if ($image_types[$index] === 'redtag'): 
+                                            // Add red tag badge for redtag images
+                                            echo '<span class="position-absolute top-0 end-0 m-2"><span class="badge bg-danger">Red Tag</span></span>';
+                                        endif; 
+                                        ?>
+                                        <?php if (count($all_images) > 1): ?>
+                                            <div class="image-counter"><?php echo ($index + 1) . ' / ' . count($all_images); ?></div>
                                         <?php endif; ?>
                                     </div>
                                 <?php endforeach; ?>
                             </div>
                             
-                            <?php if (count($asset_images) > 1): ?>
+                            <?php if (count($all_images) > 1): ?>
                                 <button class="carousel-control-prev" type="button" data-bs-target="#assetImageCarousel" data-bs-slide="prev">
                                     <span class="carousel-control-prev-icon" aria-hidden="true"></span>
                                     <span class="visually-hidden">Previous</span>
@@ -1546,8 +1586,15 @@ $status_display = formatStatus($item['status']);
                         </div>
                         <div class="mt-2">
                             <small class="text-muted">
-                                <?php echo count($asset_images); ?> image(s) available
-                                <?php if (count($asset_images) > 1): ?>
+                                <?php 
+                                echo count($all_images) . ' image(s) total';
+                                if (!empty($asset_images) && !empty($redtag_images)) {
+                                    echo ' (' . count($asset_images) . ' asset image(s) + ' . count($redtag_images) . ' red tag image(s))';
+                                } elseif (!empty($redtag_images)) {
+                                    echo ' (red tag images only)';
+                                }
+                                ?>
+                                <?php if (count($all_images) > 1): ?>
                                     - Use arrows or dots to navigate
                                 <?php endif; ?>
                             </small>
@@ -1622,8 +1669,8 @@ $status_display = formatStatus($item['status']);
                                     onclick="setDisposalData(<?php echo $item_id; ?>, '<?php echo htmlspecialchars($item['description']); ?>', '<?php echo htmlspecialchars($item['property_no'] ?? ''); ?>')">
                                 <i class="bi bi-trash"></i> Dispose Asset
                             </button>
-                        <?php elseif ($item['status'] === 'unserviceable'): ?>
-                            <!-- Show Create Red Tag button for unserviceable assets -->
+                        <?php elseif ($item['status'] === 'unserviceable' || $item['peripheral_status'] === 'unserviceable'): ?>
+                            <!-- Show Create Red Tag button for unserviceable assets or peripherals -->
                             <?php 
                             // Check if multiple components are unserviceable
                             $unserviceable_components = [];
