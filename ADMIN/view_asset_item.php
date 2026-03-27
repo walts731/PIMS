@@ -2353,5 +2353,87 @@ $status_display = formatStatus($item['status']);
             window.open('create_redtag.php?' + params.toString(), '_blank');
         }
     </script>
+    
+    <!-- Scroll to Top Button -->
+    <button id="scrollToTopBtn" class="scroll-to-top" onclick="scrollToTop()" title="Scroll to top">
+        <i class="bi bi-arrow-up"></i>
+    </button>
+    
+    <style>
+    .scroll-to-top {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        cursor: pointer;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        box-shadow: 0 4px 12px rgba(30, 86, 160, 0.3);
+        transition: all 0.3s ease;
+        z-index: 1000;
+    }
+    
+    .scroll-to-top:hover {
+        background: var(--primary-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(30, 86, 160, 0.4);
+    }
+    
+    .scroll-to-top:active {
+        transform: translateY(0);
+    }
+    
+    @media (max-width: 768px) {
+        .scroll-to-top {
+            bottom: 20px;
+            right: 20px;
+            width: 45px;
+            height: 45px;
+            font-size: 18px;
+        }
+    }
+    </style>
+    
+    <script>
+    // Scroll to top functionality
+    const scrollToTopBtn = document.getElementById('scrollToTopBtn');
+    
+    // Show/hide button based on scroll position
+    window.addEventListener('scroll', function() {
+        const scrollHeight = document.documentElement.scrollHeight;
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const clientHeight = document.documentElement.clientHeight;
+        const scrolledToBottom = (scrollTop + clientHeight) >= (scrollHeight - 50); // 50px threshold from bottom
+        
+        if (scrolledToBottom) {
+            scrollToTopBtn.style.display = 'flex';
+        } else {
+            scrollToTopBtn.style.display = 'none';
+        }
+    });
+    
+    // Smooth scroll to top
+    function scrollToTop() {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    }
+    
+    // Keyboard shortcut (Alt + Up Arrow)
+    document.addEventListener('keydown', function(e) {
+        if (e.altKey && e.key === 'ArrowUp') {
+            e.preventDefault();
+            scrollToTop();
+        }
+    });
+    </script>
 </body>
 </html>

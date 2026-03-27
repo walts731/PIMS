@@ -26,19 +26,17 @@ $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 $office_filter = isset($_GET['office']) ? intval($_GET['office']) : '';
 $category_filter = isset($_GET['category']) ? intval($_GET['category']) : '';
 
-// Build query to include both main unserviceable assets and assets with unserviceable components
-$where_conditions = ["(ai.status = 'unserviceable' OR 
-                      (adc.monitor_status = 'unserviceable' OR adc.ups_status = 'unserviceable'))"];
+// Build query to include unserviceable assets
+$where_conditions = ["ai.status = 'unserviceable'"];
 $params = [];
 $types = '';
 
 if (!empty($search)) {
-    $where_conditions[] = "(ai.description LIKE ? OR ai.property_number LIKE ? OR ai.inventory_tag LIKE ?)";
+    $where_conditions[] = "(ai.description LIKE ? OR ai.inventory_tag LIKE ?)";
     $search_param = "%$search%";
     $params[] = $search_param;
     $params[] = $search_param;
-    $params[] = $search_param;
-    $types .= 'sss';
+    $types .= 'ss';
 }
 
 if (!empty($office_filter)) {
@@ -58,14 +56,11 @@ $where_clause = "WHERE " . implode(" AND ", $where_conditions);
 // Get unserviceable assets
 $unserviceable_assets = [];
 $sql = "SELECT ai.*, ac.category_name, 
-               ac.category_code, o.office_name, e.firstname, e.lastname, e.position,
-               adc.monitor_status, adc.ups_status, adc.monitor_name, adc.ups_name,
-               adc.monitor_value, adc.ups_value
+               ac.category_code, o.office_name, e.firstname, e.lastname, e.position
         FROM asset_items ai 
-        LEFT JOIN asset_categories ac ON ai.category_id = ac.id 
+        LEFT JOIN asset_categories ac ON ai.asset_category_id = ac.id 
         LEFT JOIN offices o ON ai.office_id = o.id 
         LEFT JOIN employees e ON ai.employee_id = e.id 
-        LEFT JOIN asset_desktop_computers adc ON ai.id = adc.asset_item_id
         $where_clause 
         ORDER BY ai.last_updated DESC";
 
@@ -119,85 +114,14 @@ if ($categories_result) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
     <link href="../assets/css/index.css" rel="stylesheet">
     <link href="../assets/css/theme-custom.css" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #F6F6F6 0%, #D6E4F0 100%);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-        
-        .page-header {
-            background: white;
-            border-radius: var(--border-radius-xl);
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow);
-            border-left: 4px solid #dc3545;
-        }
-        
-        .stats-card {
-            background: white;
-            border-radius: var(--border-radius-lg);
-            padding: 1.5rem;
-            box-shadow: var(--shadow);
-            transition: var(--transition);
-            border-left: 4px solid #dc3545;
-        }
-        
-        .stats-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
-        }
-        
-        .stats-number {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #dc3545;
-        }
-        
-        .table-container {
-            background: white;
-            border-radius: var(--border-radius-lg);
-            padding: 1.5rem;
-            box-shadow: var(--shadow);
-        }
-        
-        .status-badge {
-            padding: 0.25rem 0.75rem;
-            border-radius: var(--border-radius-xl);
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-        
-        .status-maintenance { background-color: #fff3cd; color: #856404; }
-        .status-disposed { background-color: #f8d7da; color: #721c24; }
-        
-        .btn-action {
-            padding: 0.25rem 0.5rem;
-            margin: 0 0.125rem;
-            border-radius: var(--border-radius);
-            font-size: 0.8rem;
-        }
-        
-        .search-section {
-            background: white;
-            border-radius: var(--border-radius-lg);
-            padding: 1.5rem;
-            box-shadow: var(--shadow);
-            margin-bottom: 2rem;
-        }
-        
-        @media print {
-            .no-print { display: none !important; }
-            .table-container { box-shadow: none; }
-        }
-    </style>
+    <link href="assets/css/admin-unified.css" rel="stylesheet">
 </head>
 <body>
     <?php
@@ -223,12 +147,39 @@ if ($categories_result) {
                 </div>
                 <div class="col-md-4 text-md-end">
                     <div class="no-print">
-                        <button class="btn btn-outline-danger btn-sm" onclick="exportToCSV()">
-                            <i class="bi bi-download"></i> Export
-                        </button>
-                        <button class="btn btn-outline-secondary btn-sm" onclick="window.print()">
-                            <i class="bi bi-printer"></i> Print
-                        </button>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-gear"></i> Actions
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <button type="button" class="dropdown-item" onclick="exportToCSV()">
+                                        <i class="bi bi-download"></i> Export to CSV
+                                    </button>
+                                </li>
+                                <li>
+                                    <button type="button" class="dropdown-item" onclick="window.print()">
+                                        <i class="bi bi-printer"></i> Print List
+                                    </button>
+                                </li>
+                                <li>
+                                    <a href="create_redtag.php" class="dropdown-item" target="_blank">
+                                        <i class="bi bi-tag"></i> Create Red Tag
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="assets.php" class="dropdown-item">
+                                        <i class="bi bi-box"></i> View All Assets
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <button type="button" class="dropdown-item" onclick="location.reload()">
+                                        <i class="bi bi-arrow-clockwise"></i> Refresh Page
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -282,43 +233,42 @@ if ($categories_result) {
 
         <!-- Search Section -->
         <div class="search-section no-print">
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label">Search Assets</label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="bi bi-search"></i></span>
-                        <input type="text" class="form-control" id="searchInput" name="search" placeholder="Search description, property number, or inventory tag..." value="<?php echo htmlspecialchars($search); ?>">
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Office</label>
-                    <select class="form-select" id="officeFilter" name="office">
-                        <option value="">All Offices</option>
-                        <?php foreach ($offices as $office): ?>
-                            <option value="<?php echo $office['id']; ?>" <?php echo $office_filter == $office['id'] ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($office['office_name']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Category</label>
-                    <select class="form-select" id="categoryFilter" name="category">
-                        <option value="">All Categories</option>
-                        <?php foreach ($categories as $category): ?>
-                            <option value="<?php echo $category['id']; ?>" <?php echo $category_filter == $category['id'] ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($category['category_name']); ?>
-                                <?php if (!empty($category['category_code'])): ?>
-                                    (<?php echo htmlspecialchars($category['category_code']); ?>)
-                                <?php endif; ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <a href="unserviceable_assets.php" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-clockwise"></i> Reset
-                    </a>
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <form method="GET" action="unserviceable_assets.php">
+                        <div class="row g-3">
+                            <div class="col-md-5">
+                                <label class="form-label fw-semibold">Office</label>
+                                <select class="form-select" id="officeFilter" name="office">
+                                    <option value="">All Offices</option>
+                                    <?php foreach ($offices as $office): ?>
+                                        <option value="<?php echo $office['id']; ?>" <?php echo $office_filter == $office['id'] ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($office['office_name']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label fw-semibold">Category</label>
+                                <select class="form-select" id="categoryFilter" name="category">
+                                    <option value="">All Categories</option>
+                                    <?php foreach ($categories as $category): ?>
+                                        <option value="<?php echo $category['id']; ?>" <?php echo $category_filter == $category['id'] ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($category['category_name']); ?>
+                                            <?php if (!empty($category['category_code'])): ?>
+                                                (<?php echo htmlspecialchars($category['category_code']); ?>)
+                                            <?php endif; ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end gap-2">
+                                <a href="unserviceable_assets.php" class="btn btn-outline-secondary">
+                                    <i class="bi bi-arrow-clockwise"></i> Reset
+                                </a>
+                            </div>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -326,7 +276,7 @@ if ($categories_result) {
         <!-- Assets Table -->
         <div class="table-container">
             <div class="table-responsive">
-                <table class="table table-hover">
+                <table class="table table-hover" id="unserviceableAssetsTable">
                     <thead class="table-light">
                         <tr>
                             <th>Description</th>
@@ -352,52 +302,25 @@ if ($categories_result) {
                                 <tr>
                                     <td>
                                         <strong><?php echo htmlspecialchars($asset['description']); ?></strong>
-                                        <?php 
-                                        // Show component details if components are unserviceable
-                                        if ($asset['monitor_status'] === 'unserviceable' && !empty($asset['monitor_name'])) {
-                                            echo '<br><small class="text-danger"><i class="bi bi-display"></i> Monitor: ' . htmlspecialchars($asset['monitor_name']) . '</small>';
-                                        }
-                                        if ($asset['ups_status'] === 'unserviceable' && !empty($asset['ups_name'])) {
-                                            echo '<br><small class="text-danger"><i class="bi bi-battery-charging"></i> UPS: ' . htmlspecialchars($asset['ups_name']) . '</small>';
-                                        }
-                                        ?>
-                                        <?php if (!empty($asset['property_number'])): ?>
-                                            <br><small class="text-muted">Property No: <?php echo htmlspecialchars($asset['property_number']); ?></small>
-                                        <?php endif; ?>
                                         <?php if (!empty($asset['inventory_tag'])): ?>
                                             <br><small class="text-muted">Tag: <?php echo htmlspecialchars($asset['inventory_tag']); ?></small>
                                         <?php endif; ?>
                                     </td>
                                     <td>
-                                        <?php echo htmlspecialchars($asset['category_name'] ?? 'N/A'); ?>
-                                        <?php if (!empty($asset['category_code'])): ?>
-                                            <br><small class="text-muted"><?php echo htmlspecialchars($asset['category_code']); ?></small>
-                                        <?php endif; ?>
+                                        <?php 
+                                        // Check if category exists, if not show a message
+                                        if (!empty($asset['category_name'])) {
+                                            echo htmlspecialchars($asset['category_name']);
+                                        } else {
+                                            echo '<span class="text-muted">No Category Assigned</span>';
+                                        }
+                                        ?>
                                     </td>
                                     <td>
                                         <?php
-                                        // Determine what is unserviceable
-                                        $unserviceable_items = [];
-                                        
+                                        // Show unserviceable status
                                         if ($asset['status'] === 'unserviceable') {
-                                            $unserviceable_items[] = 'Main Asset';
-                                        }
-                                        
-                                        if ($asset['monitor_status'] === 'unserviceable') {
-                                            $unserviceable_items[] = 'Monitor';
-                                        }
-                                        
-                                        if ($asset['ups_status'] === 'unserviceable') {
-                                            $unserviceable_items[] = 'UPS';
-                                        }
-                                        
-                                        if (!empty($unserviceable_items)) {
-                                            foreach ($unserviceable_items as $item) {
-                                                $badge_class = $item === 'Main Asset' ? 'status-unserviceable' : 'status-maintenance';
-                                                echo "<span class='status-badge $badge_class'>$item</span><br>";
-                                            }
-                                        } else {
-                                            echo "<span class='status-badge status-maintenance'>Unserviceable</span>";
+                                            echo '<span class="status-badge status-unserviceable">Unserviceable</span>';
                                         }
                                         ?>
                                     </td>
@@ -406,9 +329,6 @@ if ($categories_result) {
                                     <td>
                                         <?php if (!empty($asset['firstname'])): ?>
                                             <?php echo htmlspecialchars($asset['firstname'] . ' ' . $asset['lastname']); ?>
-                                            <?php if (!empty($asset['position'])): ?>
-                                                <br><small class="text-muted"><?php echo htmlspecialchars($asset['position']); ?></small>
-                                            <?php endif; ?>
                                         <?php elseif (!empty($asset['end_user'])): ?>
                                             <?php echo htmlspecialchars($asset['end_user']); ?>
                                         <?php else: ?>
@@ -421,34 +341,7 @@ if ($categories_result) {
                                             <a href="view_asset_item.php?id=<?php echo $asset['id']; ?>" class="btn btn-outline-primary btn-action" title="View Details">
                                                 <i class="bi bi-eye"></i>
                                             </a>
-                                            <a href="create_redtag.php?asset_id=<?php echo $asset['id']; ?>&description=<?php echo urlencode($asset['description']); ?>&property_no=<?php echo urlencode($asset['property_number'] ?? ''); ?>&inventory_tag=<?php echo urlencode($asset['inventory_tag'] ?? ''); ?>&acquisition_date=<?php echo $asset['acquisition_date']; ?>&value=<?php echo $asset['value']; ?>&office_name=<?php echo urlencode($asset['office_name'] ?? ''); ?>&component_type=<?php 
-                                                // Determine component type for red tag
-                                                if ($asset['monitor_status'] === 'unserviceable') {
-                                                    echo 'monitor';
-                                                } elseif ($asset['ups_status'] === 'unserviceable') {
-                                                    echo 'ups';
-                                                } else {
-                                                    echo 'main_asset';
-                                                }
-                                            ?>&component_description=<?php 
-                                                // Get component-specific description
-                                                if ($asset['monitor_status'] === 'unserviceable' && !empty($asset['monitor_name'])) {
-                                                    echo urlencode('Monitor - ' . $asset['monitor_name']);
-                                                } elseif ($asset['ups_status'] === 'unserviceable' && !empty($asset['ups_name'])) {
-                                                    echo urlencode('UPS - ' . $asset['ups_name']);
-                                                } else {
-                                                    echo urlencode($asset['description']);
-                                                }
-                                            ?>&component_value=<?php 
-                                                // Get component-specific value if available
-                                                if ($asset['monitor_status'] === 'unserviceable') {
-                                                    echo $asset['monitor_value'] ?: $asset['value'];
-                                                } elseif ($asset['ups_status'] === 'unserviceable') {
-                                                    echo $asset['ups_value'] ?: $asset['value'];
-                                                } else {
-                                                    echo $asset['value'];
-                                                }
-                                            ?>" class="btn btn-outline-danger btn-action" title="Create Red Tag">
+                                            <a href="create_redtag.php?asset_id=<?php echo $asset['id']; ?>&description=<?php echo urlencode($asset['description']); ?>&inventory_tag=<?php echo urlencode($asset['inventory_tag'] ?? ''); ?>&acquisition_date=<?php echo $asset['acquisition_date']; ?>&value=<?php echo $asset['value']; ?>&office_name=<?php echo urlencode($asset['office_name'] ?? ''); ?>&component_type=main_asset&component_description=<?php echo urlencode($asset['description']); ?>&component_value=<?php echo $asset['value']; ?>" class="btn btn-outline-danger btn-action" title="Create Red Tag">
                                                 <i class="bi bi-exclamation-triangle"></i>
                                             </a>
                                         </div>
@@ -591,6 +484,98 @@ if ($categories_result) {
                 });
             }
         }
+        
+        // Auto-search functionality - ensure variables are only declared once
+        if (typeof window.autoSearchInitialized === 'undefined') {
+            window.autoSearchInitialized = true;
+            const officeFilterElement = document.getElementById('officeFilter');
+            const categoryFilterElement = document.getElementById('categoryFilter');
+            
+            function performAutoSearch() {
+                const officeValue = officeFilterElement.value;
+                const categoryValue = categoryFilterElement.value;
+                
+                // Build URL with current filter values
+                const params = new URLSearchParams();
+                if (officeValue) params.append('office', officeValue);
+                if (categoryValue) params.append('category', categoryValue);
+                
+                // Redirect to updated URL
+                const newUrl = 'unserviceable_assets.php' + (params.toString() ? '?' + params.toString() : '');
+                window.location.href = newUrl;
+            }
+            
+            // Add event listeners for filters
+            if (officeFilterElement) {
+                officeFilterElement.addEventListener('change', performAutoSearch);
+            }
+            
+            if (categoryFilterElement) {
+                categoryFilterElement.addEventListener('change', performAutoSearch);
+            }
+        }
+        
+        // Initialize DataTables
+        $(document).ready(function() {
+            // Only initialize DataTables if there are assets to display
+            var tableRows = $('#unserviceableAssetsTable tbody tr').length;
+            var hasData = tableRows > 1 || (tableRows === 1 && !$('#unserviceableAssetsTable tbody tr td[colspan]').length);
+            
+            if (hasData) {
+                $('#unserviceableAssetsTable').DataTable({
+                    responsive: true,
+                    pageLength: 25,
+                    lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                    order: [[6, 'desc']], // Sort by Last Updated column by default
+                    language: {
+                        search: "Search assets:",
+                        lengthMenu: "Show _MENU_ assets per page",
+                        info: "Showing _START_ to _END_ of _TOTAL_ unserviceable assets",
+                        infoEmpty: "No unserviceable assets found",
+                        infoFiltered: "(filtered from _MAX_ total assets)",
+                        zeroRecords: "No unserviceable assets found",
+                        emptyTable: "No unserviceable assets found",
+                        paginate: {
+                            first: "First",
+                            last: "Last",
+                            next: "Next",
+                            previous: "Previous"
+                        }
+                    },
+                    columnDefs: [
+                        { 
+                            targets: [7], // Actions column
+                            orderable: false,
+                            searchable: false
+                        },
+                        {
+                            targets: [2], // Status column
+                            orderable: true,
+                            searchable: true
+                        }
+                    ],
+                    dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
+                         '<"row"<"col-sm-12"tr>>' +
+                         '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+                    initComplete: function() {
+                        // Apply custom styling to DataTables elements
+                        $('.dataTables_wrapper').addClass('mt-3');
+                        $('.dataTables_filter input').addClass('form-control form-control-sm');
+                        $('.dataTables_length select').addClass('form-select form-select-sm');
+                    }
+                });
+            }
+        });
     </script>
+    
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+    
+    <?php require_once 'includes/logout-modal.php'; ?>
+    <?php require_once 'includes/change-password-modal.php'; ?>
+    <?php require_once 'includes/sidebar-scripts.php'; ?>
 </body>
 </html>
