@@ -2035,9 +2035,9 @@ body {
 }
 
 .status-disposed { 
-    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); 
+    background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%); 
     color: white; 
-    border: 1px solid #dc3545;
+    border: 1px solid #6c757d;
 }
 
 .status-borrowed { 

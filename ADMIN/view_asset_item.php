@@ -139,7 +139,7 @@ function getActionColor($action) {
         'Assigned' => '#17a2b8',          // Cyan
         'Transferred' => '#6f42c1',        // Purple
         'Maintenance' => '#007bff',       // Blue
-        'Disposed' => '#dc3545',           // Red
+        'Disposed' => '#6c757d',           // Gray
         'Inspected' => '#20c997',          // Teal
         'Repaired' => '#007bff',           // Blue
         'Calibrated' => '#6f42c1',        // Purple
@@ -688,8 +688,8 @@ $status_display = formatStatus($item['status']);
     .timeline-dot.action-transferred .timeline-dot-inner { background: #6f42c1; }
     .timeline-dot.action-maintenance { border-color: #007bff; }
     .timeline-dot.action-maintenance .timeline-dot-inner { background: #007bff; }
-    .timeline-dot.action-disposed { border-color: #dc3545; }
-    .timeline-dot.action-disposed .timeline-dot-inner { background: #dc3545; }
+    .timeline-dot.action-disposed { border-color: #6c757d; }
+    .timeline-dot.action-disposed .timeline-dot-inner { background: #6c757d; }
     .timeline-dot.action-inspected { border-color: #20c997; }
     .timeline-dot.action-inspected .timeline-dot-inner { background: #20c997; }
     .timeline-dot.action-repaired { border-color: #007bff; }
@@ -713,7 +713,7 @@ $status_display = formatStatus($item['status']);
     .timeline-dot.action-assigned ~ .timeline-content { border-left-color: #17a2b8; }
     .timeline-dot.action-transferred ~ .timeline-content { border-left-color: #6f42c1; }
     .timeline-dot.action-maintenance ~ .timeline-content { border-left-color: #007bff; }
-    .timeline-dot.action-disposed ~ .timeline-content { border-left-color: #dc3545; }
+    .timeline-dot.action-disposed ~ .timeline-content { border-left-color: #6c757d; }
     .timeline-dot.action-inspected ~ .timeline-content { border-left-color: #20c997; }
     .timeline-dot.action-repaired ~ .timeline-content { border-left-color: #007bff; }
     .timeline-dot.action-calibrated ~ .timeline-content { border-left-color: #6f42c1; }
