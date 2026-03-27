@@ -1,4 +1,5 @@
 <?php
+ob_start();
 session_start();
 require_once '../config.php';
 require_once '../includes/system_functions.php';
@@ -19,7 +20,8 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
     exit();
 }
 
-logSystemAction($_SESSION['user_id'], 'Accessed Create Red Tag page', 'inventory', 'create_redtag.php');
+// Log red tag creation page access
+logSystemAction($_SESSION['user_id'], 'access', 'create_redtag', 'Admin accessed create red tag page');
 
 // Get system settings for logo
 $system_settings = [];
@@ -63,7 +65,15 @@ $peripheral_status = isset($_GET['peripheral_status']) ? htmlspecialchars($_GET[
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['generate_redtag'])) {
     $control_no = trim($_POST['control_no'] ?? '');
-    $date_received = trim($_POST['date_received'] ?? date('Y-m-d'));
+    $date_received = trim($_POST['date_received'] ?? date('m/d/Y'));
+    
+    // Convert date from mm/dd/yyyy to yyyy-mm-dd for database
+    if (!empty($date_received) && preg_match('/^(0[1-9]|1[0-2])\/(0[1-9]|[12][0-9]|3[01])\/\d{4}$/', $date_received)) {
+        $date_parts = explode('/', $date_received);
+        $date_received_db = $date_parts[2] . '-' . $date_parts[0] . '-' . $date_parts[1];
+    } else {
+        $date_received_db = date('Y-m-d');
+    }
     $tagged_by = trim($_POST['tagged_by'] ?? '');
     $item_location = trim($_POST['item_location'] ?? '');
     
@@ -129,7 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['generate_redtag'])) {
         // Escape all values for security
         $control_no_esc = $conn->real_escape_string($control_no);
         $red_tag_no_esc = $conn->real_escape_string($red_tag_no);
-        $date_received_esc = $conn->real_escape_string($date_received);
+        $date_received_esc = $conn->real_escape_string($date_received_db);
         $tagged_by_esc = $conn->real_escape_string($tagged_by);
         $item_location_esc = $conn->real_escape_string($item_location);
         $item_description_esc = $conn->real_escape_string($item_description);
@@ -299,21 +309,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['generate_redtag'])) {
     }
 }
 
-// Generate control number using tag_formats system with fallback
-$control_no = $control_no ?? generateNextTag('red_tag_control');
+// Generate control number using tag_formats system with fallback (without incrementing)
+$control_no = $control_no ?? getNextTagPreview('red_tag_control');
 if (empty($control_no)) {
     // Fallback to manual generation if tag_formats not configured
     $control_no = 'RT-' . date('Y') . '-' . str_pad(mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
 }
 $tagged_by = $tagged_by ?? ($_SESSION['firstname'] ?? '') . ' ' . ($_SESSION['lastname'] ?? '');
-$date_received = $date_received ?? date('Y-m-d');
+$date_received = $date_received ?? date('m/d/Y');
 $item_location = $item_location ?? $office_name;
 $item_description = $item_description ?? $description;
 $action = $action ?? ''; // Initialize action variable
 
-// Use existing red_tag_no if already generated, otherwise generate for display
+// Use existing red_tag_no if already generated, otherwise generate for display (without incrementing)
 if (empty($red_tag_no)) {
-    $red_tag_no = generateNextTag('red_tag_no');
+    $red_tag_no = getNextTagPreview('red_tag_no');
     if (empty($red_tag_no)) {
         // Fallback to manual generation if tag_formats not configured
         $red_tag_no = 'RTN-' . date('Y') . '-' . str_pad(mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
@@ -335,30 +345,8 @@ if (empty($red_tag_no)) {
     <!-- Custom CSS -->
     <link href="../assets/css/index.css" rel="stylesheet">
     <link href="../assets/css/theme-custom.css" rel="stylesheet">
+    <link href="assets/css/admin-unified.css" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #F6F6F6 0%, #D6E4F0 100%);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-        
-        .page-header {
-            background: white;
-            border-radius: var(--border-radius-xl);
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow);
-            border-left: 4px solid #dc3545;
-        }
-        
-        .form-container {
-            background: white;
-            border-radius: var(--border-radius-lg);
-            padding: 1.5rem;
-            box-shadow: var(--shadow);
-            margin-bottom: 2rem;
-        }
         
         .red-tag-container {
             background: white;
@@ -578,85 +566,112 @@ if (empty($red_tag_no)) {
     </style>
 </head>
 <body>
-    <?php include 'includes/sidebar.php'; ?>
-    <?php include 'includes/topbar.php'; ?>
-
-    <div class="main-wrapper">
-        <?php include 'includes/sidebar-toggle.php'; ?>
-        
-        <div class="main-content">
-            <div class="container-fluid">
-                <!-- Page Header -->
-                <div class="page-header no-print">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h1 class="h3 mb-2">Create Red Tag</h1>
-                            <p class="text-muted mb-0">Generate 5S Red Tag for unserviceable items</p>
+    <?php
+    // Set page title for topbar
+    $page_title = 'Create Red Tag';
+    ?>
+    <!-- Main Content Wrapper -->
+    <div class="main-wrapper" id="mainWrapper">
+        <?php require_once 'includes/sidebar-toggle.php'; ?>
+        <?php require_once 'includes/sidebar.php'; ?>
+        <?php require_once 'includes/topbar.php'; ?>
+    
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="mb-2">
+                        <i class="bi bi-tag-fill text-danger"></i> Create Red Tag
+                    </h1>
+                    <p class="text-muted mb-0">Generate 5S Red Tag for unserviceable items</p>
+                    <?php if (isset($_SESSION['success'])): ?>
+                        <div class="alert alert-success alert-dismissible fade show mt-2" role="alert">
+                            <i class="bi bi-check-circle-fill"></i> <?php echo $_SESSION['success']; unset($_SESSION['success']); ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
-                        <div class="d-flex gap-2">
-                            <a href="print_redtag.php?control_no=<?php echo urlencode($control_no); ?>" class="btn btn-primary btn-custom" target="_blank">
-                                <i class="bi bi-printer"></i> Print Red Tag
-                            </a>
-                            <a href="unserviceable_assets.php" class="btn btn-outline-secondary btn-custom">
-                                <i class="bi bi-arrow-left"></i> Back to Assets
-                            </a>
+                    <?php endif; ?>
+                    <?php if (isset($_SESSION['error'])): ?>
+                        <div class="alert alert-danger alert-dismissible fade show mt-2" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill"></i> <?php echo $_SESSION['error']; unset($_SESSION['error']); ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
+                    <?php endif; ?>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-gear"></i> Actions
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a href="print_redtag.php?control_no=<?php echo urlencode($control_no); ?>" class="dropdown-item" target="_blank">
+                                    <i class="bi bi-printer"></i> Print Red Tag
+                                </a>
+                            </li>
+                            <li>
+                                <a href="unserviceable_assets.php" class="dropdown-item">
+                                    <i class="bi bi-arrow-left"></i> Back to Assets
+                                </a>
+                            </li>
+                            <li>
+                                <a href="red_tags.php" class="dropdown-item">
+                                    <i class="bi bi-list"></i> View All Red Tags
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a href="#" onclick="window.location.reload()" class="dropdown-item">
+                                    <i class="bi bi-arrow-clockwise"></i> Refresh Page
+                                </a>
+                            </li>
+                        </ul>
                     </div>
                 </div>
+            </div>
+        </div>
 
-                <?php if (isset($_SESSION['success'])): ?>
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        <i class="bi bi-check-circle-fill"></i> <?php echo $_SESSION['success']; unset($_SESSION['success']); ?>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                <?php endif; ?>
-
-                <?php if (isset($_SESSION['error'])): ?>
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <i class="bi bi-exclamation-triangle-fill"></i> <?php echo $_SESSION['error']; unset($_SESSION['error']); ?>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                <?php endif; ?>
-
-                <!-- Input Form Section -->
-                <div class="form-container no-print">
-                    <div class="d-flex align-items-center mb-4">
-                        <div class="flex-grow-1">
-                            <h5 class="mb-1">Red Tag Information</h5>
-                            <p class="text-muted mb-0">Fill in the details to generate a red tag</p>
-                        </div>
-                        <div class="ms-3">
-                            <span class="badge bg-danger">RT-<?php echo date('Y'); ?></span>
-                        </div>
-                    </div>
+        <!-- Input Form Section -->
+        <div class="table-container mb-4">
+            <div class="d-flex align-items-center mb-4">
+                <div class="flex-grow-1">
+                    <h5 class="mb-1"><i class="bi bi-tag"></i> Red Tag Information</h5>
+                    <p class="text-muted mb-0">Fill in the details to generate a red tag</p>
+                </div>
+                <div class="ms-3">
+                    <span class="badge bg-danger"><?php echo $red_tag_no; ?></span>
+                </div>
+            </div>
                     
                     <form method="POST" class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label">Control No.</label>
+                            <label class="form-label">Control No. <span class="text-muted">(Auto-generated)</span></label>
                             <input type="text" class="form-control" name="control_no" value="<?php echo $control_no; ?>" readonly>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Date Received</label>
-                            <input type="date" class="form-control" name="date_received" value="<?php echo $date_received; ?>" required>
+                            <label class="form-label">Date Received <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="date_received" value="<?php echo $date_received; ?>" placeholder="mm/dd/yyyy" pattern="(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01])/\d{4}" title="Please enter date in mm/dd/yyyy format" required>
+                            <small class="text-muted">Format: mm/dd/yyyy</small>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Tagged by</label>
+                            <label class="form-label">Tagged by <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" name="tagged_by" value="<?php echo $tagged_by; ?>" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Item Location</label>
+                            <label class="form-label">Item Location <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" name="item_location" value="<?php echo $item_location; ?>" required>
                         </div>
                         <div class="col-12">
-                            <label class="form-label">Item Description</label>
+                            <label class="form-label">Item Description <span class="text-danger">*</span></label>
                             <textarea class="form-control" name="item_description" rows="2" required><?php echo $item_description; ?></textarea>
                         </div>
                         <div class="col-12">
-                            <label class="form-label">Reason for Removal</label>
+                            <label class="form-label">Reason for Removal <span class="text-danger">*</span></label>
                             <textarea class="form-control" name="removal_reason" rows="3" placeholder="Specify reason for removal..." required></textarea>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Action</label>
+                            <label class="form-label">Action <span class="text-danger">*</span></label>
                             <select class="form-select" name="action" id="actionSelect" required>
                                 <option value="">Select Action</option>
                                 <option value="repair">Repair</option>
@@ -667,7 +682,7 @@ if (empty($red_tag_no)) {
                             </select>
                         </div>
                         <div class="col-md-6" id="otherActionDiv" style="display: none;">
-                            <label class="form-label">Specify Other Action</label>
+                            <label class="form-label">Specify Other Action <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" name="other_action" id="otherActionInput" placeholder="Enter specific action...">
                         </div>
                         <div class="col-md-6 d-flex align-items-end" id="generateButtonDiv">
@@ -678,12 +693,12 @@ if (empty($red_tag_no)) {
                     </form>
                 </div>
 
-                <!-- Red Tag Preview -->
-                <div class="red-tag-container">
-                    <div class="text-center mb-3 no-print">
-                        <h6 class="text-muted">Red Tag Preview</h6>
-                        <small class="text-muted">This is how your red tag will appear when printed</small>
-                    </div>
+        <!-- Red Tag Preview -->
+        <div class="table-container">
+            <div class="text-center mb-3">
+                <h6 class="text-muted">Red Tag Preview</h6>
+                <small class="text-muted">This is how your red tag will appear when printed</small>
+            </div>
                     
                     <div class="red-tag">
                         <div class="red-tag-main-header">
@@ -779,29 +794,31 @@ if (empty($red_tag_no)) {
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
     </div>
-
-    <?php include 'includes/logout-modal.php'; ?>
-    <?php include 'includes/change-password-modal.php'; ?>
+    </div> <!-- Close main wrapper -->
     
-    <?php include 'includes/sidebar-scripts.php'; ?>
+    <?php require_once 'includes/logout-modal.php'; ?>
+    <?php require_once 'includes/change-password-modal.php'; ?>
+    <?php require_once 'includes/sidebar-scripts.php'; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Handle "Other" action field visibility
+        // Handle "Other" action field visibility and requirement
         document.addEventListener('DOMContentLoaded', function() {
             const actionSelect = document.getElementById('actionSelect');
             const otherActionDiv = document.getElementById('otherActionDiv');
+            const otherActionInput = document.getElementById('otherActionInput');
             const generateButtonDiv = document.getElementById('generateButtonDiv');
             
             function toggleOtherField() {
                 if (actionSelect.value === 'other') {
                     otherActionDiv.style.display = 'block';
+                    otherActionInput.setAttribute('required', 'required');
                     generateButtonDiv.className = 'col-12 d-flex align-items-end mt-3';
                 } else {
                     otherActionDiv.style.display = 'none';
+                    otherActionInput.removeAttribute('required');
+                    otherActionInput.value = ''; // Clear the value when hidden
                     generateButtonDiv.className = 'col-md-6 d-flex align-items-end';
                 }
             }

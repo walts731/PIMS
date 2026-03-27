@@ -18,32 +18,142 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
 
 // Get control number from URL
 $control_no = trim($_GET['control_no'] ?? '');
+$error_message = '';
+$show_error = false;
+
 if (empty($control_no)) {
-    echo 'Control number is required';
-    exit();
-}
-
-// Get red tag data from database
-$red_tag = [];
-try {
-    $sql = "SELECT * FROM red_tags WHERE control_no = ? LIMIT 1";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("s", $control_no);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    if ($result && $row = $result->fetch_assoc()) {
-        $red_tag = $row;
+    $error_message = 'Control number is required';
+    $show_error = true;
+} else {
+    // Get red tag data from database
+    $red_tag = [];
+    try {
+        $sql = "SELECT * FROM red_tags WHERE control_no = ? LIMIT 1";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("s", $control_no);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result && $row = $result->fetch_assoc()) {
+            $red_tag = $row;
+        }
+        $stmt->close();
+    } catch (Exception $e) {
+        error_log("Error fetching red tag: " . $e->getMessage());
+        $error_message = 'Error fetching red tag data';
+        $show_error = true;
     }
-    $stmt->close();
-} catch (Exception $e) {
-    error_log("Error fetching red tag: " . $e->getMessage());
-    echo 'Red tag not found';
-    exit();
+
+    if (empty($red_tag) && !$show_error) {
+        $error_message = 'Red tag not found';
+        $show_error = true;
+    }
 }
 
-if (empty($red_tag)) {
-    echo 'Red tag not found';
+// If there's an error, show error page with modal
+if ($show_error) {
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error - Red Tag Not Found</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #F6F6F6 0%, #D6E4F0 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .error-container {
+            text-align: center;
+            max-width: 500px;
+            padding: 2rem;
+        }
+        
+        .error-icon {
+            font-size: 4rem;
+            color: #dc3545;
+            margin-bottom: 1rem;
+        }
+        
+        .error-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 1rem;
+        }
+        
+        .error-message {
+            color: #666;
+            margin-bottom: 2rem;
+        }
+        
+        .control-no-display {
+            background: #f8f9fa;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-family: monospace;
+            font-weight: 600;
+            color: #dc3545;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-icon">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+        </div>
+        <h1 class="error-title">Red Tag Not Found</h1>
+        <p class="error-message">
+            <?php echo htmlspecialchars($error_message); ?>
+            <?php if (!empty($control_no)): ?>
+                <div class="control-no-display">
+                    Control No: <?php echo htmlspecialchars($control_no); ?>
+                </div>
+            <?php endif; ?>
+        </p>
+        <div class="d-flex gap-2 justify-content-center">
+            <button type="button" class="btn btn-primary" onclick="window.close()">
+                <i class="bi bi-x-circle"></i> Close Window
+            </button>
+            <button type="button" class="btn btn-outline-secondary" onclick="history.back()">
+                <i class="bi bi-arrow-left"></i> Go Back
+            </button>
+            <a href="create_redtag.php" class="btn btn-outline-info">
+                <i class="bi bi-plus-circle"></i> Create New Red Tag
+            </a>
+        </div>
+    </div>
+
+    <!-- Auto-close modal after delay -->
+    <script>
+        // Show modal and auto-close after 5 seconds
+        setTimeout(function() {
+            if (confirm('Red tag not found. This window will close automatically.\n\nClick OK to close now or Cancel to stay on this page.')) {
+                window.close();
+            }
+        }, 3000);
+        
+        // Close window if user clicks outside
+        window.addEventListener('blur', function() {
+            setTimeout(function() {
+                window.close();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
+<?php
     exit();
 }
 
