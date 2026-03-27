@@ -22,40 +22,18 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
 // Log red tags page access
 logSystemAction($_SESSION['user_id'], 'access', 'red_tags', 'Admin accessed red tags page');
 
-// Handle search and filter
-$search = trim($_GET['search'] ?? '');
+// Handle filter
 $office_filter = intval($_GET['office'] ?? 0);
-$date_from = $_GET['date_from'] ?? '';
-$date_to = $_GET['date_to'] ?? '';
 
-// Build WHERE clause
+// Build WHERE clause for office filter only
 $where_conditions = [];
 $params = [];
 $types = '';
-
-if (!empty($search)) {
-    $where_conditions[] = "(rt.control_no LIKE ? OR rt.red_tag_no LIKE ? OR rt.item_description LIKE ? OR rt.tagged_by LIKE ? OR rt.item_location LIKE ?)";
-    $search_param = "%$search%";
-    $params = array_merge($params, [$search_param, $search_param, $search_param, $search_param, $search_param]);
-    $types .= 'sssss';
-}
 
 if ($office_filter > 0) {
     $where_conditions[] = "rt.office_id = ?";
     $params[] = $office_filter;
     $types .= 'i';
-}
-
-if (!empty($date_from)) {
-    $where_conditions[] = "rt.date_received >= ?";
-    $params[] = $date_from;
-    $types .= 's';
-}
-
-if (!empty($date_to)) {
-    $where_conditions[] = "rt.date_received <= ?";
-    $params[] = $date_to;
-    $types .= 's';
 }
 
 $where_clause = !empty($where_conditions) ? 'WHERE ' . implode(' AND ', $where_conditions) : '';
@@ -115,20 +93,26 @@ if ($table_exists) {
 error_log("Red Tags table exists: " . ($table_exists ? 'Yes' : 'No'));
 error_log("Red Tags table has data: " . $data_count . " rows");
 
-// Get red tags
+// Get red tags with office information
 $red_tags = [];
 try {
-    // Simple query with component information
+    // Query with office information and component information
     $sql = "SELECT rt.*, 
+                   o.office_name,
                    adc.monitor_status, adc.ups_status, adc.monitor_name, adc.ups_name
             FROM red_tags rt 
+            LEFT JOIN offices o ON rt.office_id = o.id
             LEFT JOIN asset_desktop_computers adc ON rt.asset_item_id = adc.asset_item_id
+            $where_clause
             ORDER BY rt.created_at DESC";
     
     // Debug: Log the SQL query
     error_log("Red Tags SQL: " . $sql);
     
     $stmt = $conn->prepare($sql);
+    if (!empty($params)) {
+        $stmt->bind_param($types, ...$params);
+    }
     $stmt->execute();
     $result = $stmt->get_result();
     
@@ -192,6 +176,7 @@ try {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="assets/css/admin-unified.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
 </head>
 <body>
     <?php $page_title = 'Red Tags'; ?>
@@ -261,68 +246,8 @@ try {
             </div>
         </div>
         
-        <div class="row g-3 mb-4">
-            <div class="col-6 col-md-3">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo number_format($stats['total_red_tags'] ?? 0); ?></div>
-                    <div class="stats-label"><i class="bi bi-tag"></i> Total Red Tags</div>
-                </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo number_format($stats['offices_with_tags'] ?? 0); ?></div>
-                    <div class="stats-label"><i class="bi bi-building"></i> Offices with Tags</div>
-                </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo count($red_tags); ?></div>
-                    <div class="stats-label"><i class="bi bi-list-check"></i> Current Results</div>
-                </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo date('M Y'); ?></div>
-                    <div class="stats-label"><i class="bi bi-calendar"></i> Current Period</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="section-card mb-4">
-            <div class="section-title">
-                <i class="bi bi-funnel"></i> Search & Filters
-            </div>
-            <form id="filterForm" class="row g-3">
-                <div class="col-md-4">
-                    <div class="search-box">
-                        <i class="bi bi-search"></i>
-                        <input type="text" name="search" id="searchInput" class="form-control" placeholder="Search red tags..." value="<?php echo htmlspecialchars($search); ?>">
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <select name="office" id="officeFilter" class="form-select">
-                        <option value="">All Offices</option>
-                        <?php foreach ($offices as $office): ?>
-                            <option value="<?php echo $office['id']; ?>" <?php echo $office_filter == $office['id'] ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($office['office_name']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <input type="date" name="date_from" id="dateFromFilter" class="form-control" value="<?php echo htmlspecialchars($date_from); ?>" placeholder="From Date">
-                </div>
-                <div class="col-md-2">
-                    <input type="date" name="date_to" id="dateToFilter" class="form-control" value="<?php echo htmlspecialchars($date_to); ?>" placeholder="To Date">
-                </div>
-                <div class="col-md-2">
-                    <button type="button" class="btn btn-outline-secondary w-100" onclick="clearFilters()">
-                        <i class="bi bi-x-circle"></i> Clear Filters
-                    </button>
-                </div>
-            </form>
-        </div>
-
+        
+        
         <div class="section-card mb-4">
             <div class="section-title">
                 <i class="bi bi-tag"></i> Red Tags Management
@@ -339,19 +264,18 @@ try {
                 </div>
             <?php else: ?>
                 <div class="table-responsive">
-                    <table class="table table-hover">
+                    <table class="table table-hover" id="redTagsTable">
                         <thead>
                             <tr>
                                 <th width="40" class="no-print">
                                     <input type="checkbox" id="selectAll" onchange="toggleAllCheckboxes()">
                                 </th>
                                 <th>Control No</th>
-                                <th>Red Tag No</th>
                                 <th>Date Received</th>
                                 <th>Item Description</th>
-                                <th>Location</th>
                                 <th>Action</th>
-                                <th>Tagged By</th>
+                                <th>Office</th>
+                                <th style="display: none;">Office ID</th>
                                 <th class="no-print">Actions</th>
                             </tr>
                         </thead>
@@ -362,7 +286,6 @@ try {
                                         <input type="checkbox" name="selected_tags[]" value="<?php echo $red_tag['id']; ?>" class="tag-checkbox">
                                     </td>
                                     <td><strong><?php echo htmlspecialchars($red_tag['control_no']); ?></strong></td>
-                                    <td><?php echo htmlspecialchars($red_tag['red_tag_no']); ?></td>
                                     <td><?php echo date('M d, Y', strtotime($red_tag['date_received'])); ?></td>
                                     <td>
                                         <?php 
@@ -378,9 +301,9 @@ try {
                                         echo htmlspecialchars(substr($description, 0, 50));
                                         if (strlen($description) > 50): ?>...<?php endif; ?>
                                     </td>
-                                    <td><?php echo htmlspecialchars($red_tag['item_location']); ?></td>
                                     <td><?php echo htmlspecialchars($red_tag['action']); ?></td>
-                                    <td><?php echo htmlspecialchars($red_tag['tagged_by']); ?></td>
+                                    <td><?php echo !empty($red_tag['office_name']) ? htmlspecialchars($red_tag['office_name']) : 'Not Assigned'; ?></td>
+                                    <td style="display: none;"><?php echo $red_tag['office_id']; ?></td>
                                     <td class="no-print">
                                         <div class="btn-group" role="group">
                                             <?php if (!empty($red_tag['asset_item_id'])): ?>
@@ -392,9 +315,9 @@ try {
                                                 <i class="bi bi-printer"></i>
                                             </a>
                                             <?php if (strtolower($red_tag['action']) === 'disposal' || strtolower($red_tag['action']) === 'dispose'): ?>
-                                                <button type="button" class="btn btn-warning btn-sm" title="Dispose Item" data-bs-toggle="modal" data-bs-target="#disposeModal" 
+                                                <button type="button" class="btn btn-outline-warning btn-sm" title="Dispose Item" data-bs-toggle="modal" data-bs-target="#disposeModal" 
                                                         onclick="setDisposalData(<?php echo $red_tag['id']; ?>, '<?php echo htmlspecialchars($red_tag['control_no']); ?>', '<?php echo htmlspecialchars($red_tag['item_description']); ?>')">
-                                                    <i class="bi bi-trash"></i> Dispose
+                                                    <i class="bi bi-trash"></i>
                                                 </button>
                                             <?php endif; ?>
                                         </div>
@@ -470,102 +393,99 @@ try {
     <?php require_once 'includes/sidebar-scripts.php'; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
     <script>
-        // Auto-filter functionality using vanilla JavaScript
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM loaded and ready');
-            
-            // Office filter change
-            const officeFilter = document.getElementById('officeFilter');
-            if (officeFilter) {
-                officeFilter.addEventListener('change', function() {
-                    console.log('Office filter changed to:', this.value);
-                    updateFilters();
-                });
-            }
-            
-            // Date from filter change
-            const dateFromFilter = document.getElementById('dateFromFilter');
-            if (dateFromFilter) {
-                dateFromFilter.addEventListener('change', function() {
-                    console.log('Date from filter changed to:', this.value);
-                    updateFilters();
-                });
-            }
-            
-            // Date to filter change
-            const dateToFilter = document.getElementById('dateToFilter');
-            if (dateToFilter) {
-                dateToFilter.addEventListener('change', function() {
-                    console.log('Date to filter changed to:', this.value);
-                    updateFilters();
-                });
-            }
-            
-            // Search input with debouncing
-            const searchInput = document.getElementById('searchInput');
-            if (searchInput) {
-                let searchTimeout;
-                searchInput.addEventListener('input', function() {
-                    console.log('Search input changed to:', this.value);
-                    clearTimeout(searchTimeout);
-                    searchTimeout = setTimeout(function() {
-                        console.log('Executing search for:', searchInput.value.trim());
-                        updateFilters();
-                    }, 500); // Wait 500ms after user stops typing
-                });
-            }
-            
-            // Function to update filters
-            function updateFilters() {
-                const searchValue = searchInput ? searchInput.value.trim() : '';
-                const officeValue = officeFilter ? officeFilter.value : '';
-                const dateFromValue = dateFromFilter ? dateFromFilter.value : '';
-                const dateToValue = dateToFilter ? dateToFilter.value : '';
-                
-                // Build URL with parameters
-                let url = 'red_tags.php';
-                const params = [];
-                
-                if (searchValue) params.push('search=' + encodeURIComponent(searchValue));
-                if (officeValue) params.push('office=' + encodeURIComponent(officeValue));
-                if (dateFromValue) params.push('date_from=' + encodeURIComponent(dateFromValue));
-                if (dateToValue) params.push('date_to=' + encodeURIComponent(dateToValue));
-                
-                if (params.length > 0) {
-                    url += '?' + params.join('&');
+        $(document).ready(function() {
+            // Initialize DataTable
+            var table = $('#redTagsTable').DataTable({
+                responsive: true,
+                pageLength: 25,
+                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                order: [[1, 'desc']], // Sort by Control No descending by default
+                columnDefs: [
+                    { 
+                        targets: 0, // Checkbox column
+                        orderable: false,
+                        searchable: false,
+                        className: 'no-print'
+                    },
+                    { 
+                        targets: 6, // Hidden Office ID column
+                        visible: false,
+                        searchable: true
+                    },
+                    { 
+                        targets: -1, // Actions column
+                        orderable: false,
+                        searchable: false,
+                        className: 'no-print'
+                    }
+                ],
+                dom: '<"row"<"col-md-3"l><"col-md-3 office-filter-container"><"col-md-6"f>><"row"<"col-12"rt>><"row"<"col-md-6"i><"col-md-6"p>>',
+                language: {
+                    search: "Search red tags:",
+                    lengthMenu: "Show _MENU_ entries",
+                    info: "Showing _START_ to _END_ of _TOTAL_ red tags",
+                    paginate: {
+                        first: "First",
+                        last: "Last",
+                        next: "Next",
+                        previous: "Previous"
+                    }
                 }
-                
-                console.log('Redirecting to:', url);
-                window.location.href = url;
-            }
+            });
             
-            // Clear filters function
-            window.clearFilters = function() {
-                console.log('Clearing filters');
-                window.location.href = 'red_tags.php';
-            };
+            // Add office filter to DataTables
+            $('.office-filter-container').html(`
+                <select id="officeFilter" class="form-select form-select-sm">
+                    <option value="">All Offices</option>
+                    <?php foreach ($offices as $office): ?>
+                        <option value="<?php echo $office['id']; ?>" <?php echo $office_filter == $office['id'] ? 'selected' : ''; ?>>
+                            <?php echo htmlspecialchars($office['office_name']); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            `);
+            
+            // Office filter functionality
+            $('#officeFilter').on('change', function() {
+                var officeId = $(this).val();
+                table.column(6).search(officeId).draw(); // Search in the hidden Office ID column (index 6)
+            });
+            
+            // Apply initial filter if set
+            <?php if ($office_filter > 0): ?>
+                table.column(6).search('<?php echo $office_filter; ?>').draw();
+            <?php endif; ?>
             
             // Toggle all checkboxes
             window.toggleAllCheckboxes = function() {
-                const selectAll = document.getElementById('selectAll');
-                const checkboxes = document.querySelectorAll('.tag-checkbox');
-                checkboxes.forEach(checkbox => {
+                var selectAll = document.getElementById('selectAll');
+                var checkboxes = document.querySelectorAll('.tag-checkbox');
+                checkboxes.forEach(function(checkbox) {
                     checkbox.checked = selectAll.checked;
                 });
             };
             
-            // Print selected tags - open in new tab
+            // Print selected tags
             window.printSelectedTags = function() {
-                const checkboxes = document.querySelectorAll('.tag-checkbox:checked');
+                var checkboxes = document.querySelectorAll('.tag-checkbox:checked');
                 if (checkboxes.length === 0) {
-                    alert('Please select at least one red tag to print.');
+                    var modal = new bootstrap.Modal(document.getElementById('noSelectionModal'));
+                    modal.show();
                     return;
                 }
 
-                const tagIds = Array.from(checkboxes).map(cb => cb.value).join(',');
+                var tagIds = Array.from(checkboxes).map(function(cb) { return cb.value; }).join(',');
                 console.log('Printing selected tags:', tagIds);
                 window.open('print_redtags.php?ids=' + tagIds, '_blank');
+            };
+            
+            // Clear filters function
+            window.clearFilters = function() {
+                window.location.href = window.location.pathname;
             };
             
             // Set disposal data in modal
@@ -581,8 +501,8 @@ try {
             
             // Confirm disposal and submit form
             window.confirmDisposal = function() {
-                const reason = document.getElementById('disposalReason').value.trim();
-                const date = document.getElementById('disposalDate').value;
+                var reason = document.getElementById('disposalReason').value.trim();
+                var date = document.getElementById('disposalDate').value;
                 
                 if (!reason) {
                     alert('Please enter a disposal reason.');
@@ -599,5 +519,30 @@ try {
             };
         });
     </script>
+    
+    <!-- No Selection Modal -->
+    <div class="modal fade" id="noSelectionModal" tabindex="-1" aria-labelledby="noSelectionModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="noSelectionModalLabel">
+                        <i class="bi bi-exclamation-triangle text-warning"></i> No Selection
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0">
+                        <i class="bi bi-info-circle text-info"></i>
+                        Please select at least one red tag to print.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                        <i class="bi bi-check-circle"></i> OK
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

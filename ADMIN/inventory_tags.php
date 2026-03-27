@@ -22,11 +22,9 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
 // Log inventory tags page access
 logSystemAction($_SESSION['user_id'], 'access', 'inventory_tags', 'Admin accessed inventory tags page');
 
-// Handle search and filter
-$search = trim($_GET['search'] ?? '');
+// Handle filter
 $office_filter = intval($_GET['office'] ?? 0);
 $category_filter = intval($_GET['category'] ?? 0);
-$status_filter = $_GET['status'] ?? '';
 
 // Build WHERE clause
 $where_conditions = [];
@@ -38,13 +36,6 @@ $where_conditions[] = "ai.status = 'serviceable'";
 
 // Only show items that have property numbers (required for inventory tags)
 $where_conditions[] = "ai.property_no IS NOT NULL AND ai.property_no != ''";
-
-if (!empty($search)) {
-    $where_conditions[] = "(ai.inventory_tag LIKE ? OR ai.property_no LIKE ? OR a.description LIKE ? OR e.lastname LIKE ? OR e.firstname LIKE ?)";
-    $search_param = "%$search%";
-    $params = array_merge($params, [$search_param, $search_param, $search_param, $search_param, $search_param]);
-    $types .= 'sssss';
-}
 
 if ($office_filter > 0) {
     $where_conditions[] = "ai.office_id = ?";
@@ -58,12 +49,6 @@ if ($category_filter > 0) {
     $types .= 'i';
 }
 
-if (!empty($status_filter)) {
-    $where_conditions[] = "ai.status = ?";
-    $params[] = $status_filter;
-    $types .= 's';
-}
-
 $where_clause = 'WHERE ' . implode(' AND ', $where_conditions);
 
 // Get inventory tags
@@ -71,8 +56,8 @@ $tags = [];
 try {
     $sql = "SELECT ai.id, ai.inventory_tag, ai.property_no, ai.model, ai.serial_number, ai.description, ai.status, ai.date_counted, ai.image, ai.qr_code,
                    a.description as asset_description, a.unit_cost,
-                   ac.category_name, ac.category_code,
-                   o.office_name,
+                   ac.category_name, ac.category_code, ac.id as category_id,
+                   o.office_name, o.id as office_id,
                    e.employee_no, e.firstname, e.lastname,
                    ai.created_at
             FROM asset_items ai 
@@ -145,6 +130,7 @@ try {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="assets/css/admin-unified.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
 </head>
 <body>
     <?php $page_title = 'Inventory Tags'; ?>
@@ -164,10 +150,7 @@ try {
                 </div>
                 <div class="col-md-4 text-md-end">
                     <div class="d-flex gap-2 justify-content-md-end">
-                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="printAllTags()">
-                            <i class="bi bi-printer"></i> Print All
-                        </button>
-                        <button type="button" class="btn btn-success btn-sm" onclick="printSelectedTags()">
+                        <button type="button" class="btn btn-primary btn-sm" onclick="printSelectedTags()">
                             <i class="bi bi-check2"></i> Print Selected
                         </button>
                     </div>
@@ -176,40 +159,7 @@ try {
         </div>
         
         
-        <div class="section-card mb-4">
-            <div class="section-title">
-                <i class="bi bi-funnel"></i> Search & Filters
-            </div>
-            <form id="filterForm" class="row g-3">
-                <div class="col-md-4">
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="bi bi-search"></i></span>
-                        <input type="text" name="search" id="searchInput" class="form-control" placeholder="Search by tag, property no, description, or employee..." value="<?php echo htmlspecialchars($search); ?>">
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <select name="office" id="officeFilter" class="form-select">
-                        <option value="">All Offices</option>
-                        <?php foreach ($offices as $office): ?>
-                            <option value="<?php echo $office['id']; ?>" <?php echo $office_filter == $office['id'] ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($office['office_name']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <select name="category" id="categoryFilter" class="form-select">
-                        <option value="">All Categories</option>
-                        <?php foreach ($categories as $category): ?>
-                            <option value="<?php echo $category['id']; ?>" <?php echo $category_filter == $category['id'] ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($category['category_code'] . ' - ' . $category['category_name']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                            </form>
-        </div>
-
+        
         <div class="section-card mb-4">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <div class="section-title mb-0">
@@ -227,7 +177,7 @@ try {
             <?php if (!empty($tags)): ?>
                 <form id="tagsForm">
                     <div class="table-responsive">
-                        <table class="table table-hover">
+                        <table class="table table-hover" id="inventoryTagsTable">
                             <thead>
                                 <tr>
                                     <th width="40">
@@ -237,6 +187,8 @@ try {
                                     <th>Description</th>
                                     <th>Category</th>
                                     <th>Office</th>
+                                    <th style="display: none;">Office ID</th>
+                                    <th style="display: none;">Category ID</th>
                                     <th>Person Accountable</th>
                                     <th>Status</th>
                                     <th width="80" class="no-print">Actions</th>
@@ -258,6 +210,8 @@ try {
                                             </span>
                                         </td>
                                         <td><?php echo htmlspecialchars($tag['office_name'] ?? 'N/A'); ?></td>
+                                        <td style="display: none;"><?php echo $tag['office_id'] ?? ''; ?></td>
+                                        <td style="display: none;"><?php echo $tag['category_id'] ?? ''; ?></td>
                                         <td>
                                             <?php if ($tag['firstname'] && $tag['lastname']): ?>
                                                 <?php echo htmlspecialchars($tag['firstname'] . ' ' . $tag['lastname']); ?>
@@ -305,13 +259,13 @@ try {
                     <i class="bi bi-tags"></i>
                     <h5>No Inventory Tags Found</h5>
                     <p class="text-muted">
-                        <?php if (!empty($search) || $office_filter > 0 || $category_filter > 0 || !empty($status_filter)): ?>
-                            No serviceable assets with property numbers match your search criteria. Try adjusting your filters.
+                        <?php if ($office_filter > 0 || $category_filter > 0): ?>
+                            No serviceable assets with property numbers match your filter criteria. Try adjusting your filters.
                         <?php else: ?>
                             No serviceable assets with property numbers found. Assets need property numbers to generate inventory tags.
                         <?php endif; ?>
                     </p>
-                    <?php if (!empty($search) || $office_filter > 0 || $category_filter > 0 || !empty($status_filter)): ?>
+                    <?php if ($office_filter > 0 || $category_filter > 0): ?>
                         <a href="inventory_tags.php" class="btn btn-outline-primary">
                             <i class="bi bi-arrow-clockwise"></i>
                             Clear Filters
@@ -364,8 +318,115 @@ try {
     <?php require_once 'includes/change-password-modal.php'; ?>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
     <?php require_once 'includes/sidebar-scripts.php'; ?>
     <script>
+        $(document).ready(function() {
+            // Initialize DataTable
+            var table = $('#inventoryTagsTable').DataTable({
+                responsive: true,
+                pageLength: 25,
+                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                order: [[1, 'asc']], // Sort by Property No ascending by default
+                columnDefs: [
+                    { 
+                        targets: 0, // Checkbox column
+                        orderable: false,
+                        searchable: false,
+                        className: 'no-print'
+                    },
+                    { 
+                        targets: 5, // Hidden Office ID column
+                        visible: false,
+                        searchable: true
+                    },
+                    { 
+                        targets: 6, // Hidden Category ID column
+                        visible: false,
+                        searchable: true
+                    },
+                    { 
+                        targets: -1, // Actions column
+                        orderable: false,
+                        searchable: false,
+                        className: 'no-print'
+                    }
+                ],
+                dom: '<"row"<"col-md-3"l><"col-md-3 office-filter-container"><"col-md-3 category-filter-container"><"col-md-3"f>><"row"<"col-12"rt>><"row"<"col-md-6"i><"col-md-6"p>>',
+                language: {
+                    search: "Search inventory tags:",
+                    lengthMenu: "Show _MENU_ entries",
+                    info: "Showing _START_ to _END_ of _TOTAL_ inventory tags",
+                    paginate: {
+                        first: "First",
+                        last: "Last",
+                        next: "Next",
+                        previous: "Previous"
+                    }
+                }
+            });
+            
+            // Add office filter to DataTables
+            $('.office-filter-container').html(`
+                <select id="officeFilter" class="form-select form-select-sm">
+                    <option value="">All Offices</option>
+                    <?php foreach ($offices as $office): ?>
+                        <option value="<?php echo $office['id']; ?>" <?php echo $office_filter == $office['id'] ? 'selected' : ''; ?>>
+                            <?php echo htmlspecialchars($office['office_name']); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            `);
+            
+            // Add category filter to DataTables
+            $('.category-filter-container').html(`
+                <select id="categoryFilter" class="form-select form-select-sm">
+                    <option value="">All Categories</option>
+                    <?php foreach ($categories as $category): ?>
+                        <option value="<?php echo $category['id']; ?>" <?php echo $category_filter == $category['id'] ? 'selected' : ''; ?>>
+                            <?php echo htmlspecialchars($category['category_code'] . ' - ' . $category['category_name']); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            `);
+            
+            // Add office and category filters to DataTables search
+            $('#officeFilter, #categoryFilter').on('change', function() {
+                var officeId = $('#officeFilter').val();
+                var categoryId = $('#categoryFilter').val();
+                
+                // Clear all filters first
+                table.column(5).search('').draw(); // Office ID column
+                table.column(6).search('').draw(); // Category ID column
+                
+                // Apply office filter
+                if (officeId) {
+                    table.column(5).search(officeId).draw();
+                }
+                
+                // Apply category filter
+                if (categoryId) {
+                    table.column(6).search(categoryId).draw();
+                }
+                
+                // If both filters are cleared, redraw table
+                if (!officeId && !categoryId) {
+                    table.draw();
+                }
+            });
+            
+            // Apply initial filters if set
+            <?php if ($office_filter > 0): ?>
+                table.column(5).search('<?php echo $office_filter; ?>').draw();
+            <?php endif; ?>
+            
+            <?php if ($category_filter > 0): ?>
+                table.column(6).search('<?php echo $category_filter; ?>').draw();
+            <?php endif; ?>
+        });
+
         // Toggle all checkboxes
         function toggleAllCheckboxes() {
             const selectAll = document.getElementById('selectAll');
@@ -421,58 +482,6 @@ try {
             console.log('Printing selected tags:', tagIds);
             window.open('print_inventory_tags.php?ids=' + tagIds, '_blank');
         }
-
-        // Print all tags - open in new tab (working version)
-        function printAllTags() {
-            <?php if (!empty($tags)): ?>
-                const allTagIds = [<?php echo implode(',', array_column($tags, 'id')); ?>];
-                console.log('Printing all tags:', allTagIds.join(','));
-                window.open('print_inventory_tags.php?ids=' + allTagIds.join(','), '_blank');
-            <?php else: ?>
-                alert('No tags available to print.');
-            <?php endif; ?>
-        }
-
-        // Automatic filtering
-        document.addEventListener('DOMContentLoaded', function() {
-            const searchInput = document.getElementById('searchInput');
-            const officeFilter = document.getElementById('officeFilter');
-            const categoryFilter = document.getElementById('categoryFilter');
-            const filterForm = document.getElementById('filterForm');
-
-            // Function to submit form with current filter values
-            function applyFilters() {
-                const formData = new FormData(filterForm);
-                const params = new URLSearchParams();
-                
-                // Add all form parameters to URL
-                for (let [key, value] of formData.entries()) {
-                    if (value) {
-                        params.append(key, value);
-                    }
-                }
-                
-                // Redirect to current page with filter parameters
-                window.location.href = 'inventory_tags.php?' + params.toString();
-            }
-
-            // Add event listeners for automatic filtering
-            if (searchInput) {
-                let searchTimeout;
-                searchInput.addEventListener('input', function() {
-                    clearTimeout(searchTimeout);
-                    searchTimeout = setTimeout(applyFilters, 500); // Wait 500ms after typing stops
-                });
-            }
-
-            if (officeFilter) {
-                officeFilter.addEventListener('change', applyFilters);
-            }
-
-            if (categoryFilter) {
-                categoryFilter.addEventListener('change', applyFilters);
-            }
-        });
     </script>
     </div>
 </body>
