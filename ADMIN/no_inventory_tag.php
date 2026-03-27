@@ -186,42 +186,6 @@ try {
             </div>
         </div>
         
-        <!-- Statistics Section -->
-        <div class="section-card mb-4">
-            <div class="section-title">
-                <i class="bi bi-speedometer2"></i> Overview & Filters
-            </div>
-            
-            <div class="row g-3 mb-4">
-                <div class="col-6 col-md-3">
-                    <div class="stats-card">
-                        <div class="stats-number"><?php echo $stats['total_untagged'] ?? 0; ?></div>
-                        <div class="stats-label"><i class="bi bi-exclamation-triangle-fill text-warning"></i> Untagged Assets</div>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="stats-card">
-                        <div class="stats-number">₱<?php echo number_format($stats['total_value'] ?? 0, 2); ?></div>
-                        <div class="stats-label"><i class="bi bi-cash-stack text-success"></i> Total Value</div>
-                    </div>
-                </div>
-                <div class="col-12 col-md-6">
-                    <div class="d-flex align-items-end h-100">
-                        <div class="w-100">
-                            <label for="officeFilter" class="form-label fw-bold">Filter by Office:</label>
-                            <select id="officeFilter" class="form-select">
-                                <option value="">All Offices</option>
-                                <?php foreach ($offices as $office): ?>
-                                    <option value="<?php echo $office['id']; ?>" <?php echo ($office_filter == $office['id']) ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($office['office_name']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
         <div class="alert alert-warning" role="alert">
             <i class="bi bi-exclamation-triangle-fill"></i>
             <strong>Attention:</strong> The following assets may require inventory tagging for proper tracking and management.
@@ -240,6 +204,7 @@ try {
                         <th>Status</th>
                         <th>Value</th>
                         <th>Office</th>
+                        <th style="display: none;">Office ID</th>
                         <th>Last Updated</th>
                         <th>Actions</th>
                     </tr>
@@ -285,6 +250,7 @@ try {
                                 </td>
                                 <td data-order="<?php echo $item['value']; ?>"><?php echo number_format($item['value'], 2); ?></td>
                                 <td><?php echo htmlspecialchars($item['office_name'] ?? 'N/A'); ?></td>
+                                <td style="display: none;"><?php echo $item['office_id']; ?></td>
                                 <td data-order="<?php echo strtotime($item['last_updated'] ?? 'now'); ?>"><small><?php echo date('M j, Y', strtotime($item['last_updated'] ?? 'now')); ?></small></td>
                                 <td>
                                     <a href="create_tag.php?id=<?php echo $item['id']; ?>" class="btn btn-outline-warning btn-action" title="Create Tag">
@@ -340,46 +306,31 @@ try {
                     },
                     emptyTable: "No asset items requiring inventory tags found."
                 },
-                dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' + // Only length menu and search
-                     '<"row"<"col-sm-12"tr>>' +
-                     '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+                dom: '<"row"<"col-md-3"l><"col-md-3 office-filter-container"><"col-md-6"f>><"row"<"col-12"rt>><"row"<"col-md-6"i><"col-md-6"p>>',
                 initComplete: function() {
-                    // Apply initial filters from URL parameters
+                    // Apply initial search from URL parameters
                     var initialSearch = '<?php echo htmlspecialchars($search_filter); ?>';
                     if (initialSearch !== '') {
                         table.search(initialSearch).draw();
                     }
                     
-                    var initialOffice = '<?php echo $office_filter; ?>';
-                    if (initialOffice !== '0') {
-                        $('#officeFilter').val(initialOffice);
-                        applyFilters();
-                    }
+                    // Add office filter to DataTables
+                    $('.office-filter-container').html(`
+                        <select id="officeFilter" class="form-select form-select-sm">
+                            <option value="">All Offices</option>
+                            <?php foreach ($offices as $office): ?>
+                                <option value="<?php echo $office['id']; ?>"><?php echo htmlspecialchars($office['office_name']); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    `);
                     
-                    // Update stats on table events
-                    table.on('draw', updateStats);
-                    table.on('search', updateStats);
-                    updateStats();
+                    // Office filter functionality
+                    $('#officeFilter').on('change', function() {
+                        var officeValue = $(this).val();
+                        table.column(4).search(officeValue).draw(); // Search in the hidden Office ID column (index 4)
+                    });
                 }
             });
-            
-            // External filter event handlers
-            $('#officeFilter').on('change', applyFilters);
-            
-            // Apply filters function
-            function applyFilters() {
-                var officeValue = $('#officeFilter').val();
-                
-                // Reset all column searches first
-                table.columns().search('');
-                
-                // Apply office filter (column 3)
-                if (officeValue !== '') {
-                    table.column(3).search(officeValue);
-                }
-                
-                table.draw();
-            }
         });
     </script>
 </body>

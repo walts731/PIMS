@@ -297,49 +297,10 @@ try {
                 </div>
             </div>
         </div>
-        <div class="section-card mb-4">
-            <div class="section-title">
-                <i class="bi bi-funnel"></i> Search & Filters
-            </div>
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <div class="search-box">
-                        <i class="bi bi-search"></i>
-                        <input type="text" id="searchInput" class="form-control" placeholder="Search disposed items...">
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="office-filter-wrapper">
-                        <label for="officeFilter" class="form-label me-2">Office:</label>
-                        <select id="officeFilter" class="form-select" style="width: auto;">
-                            <option value="">All Offices</option>
-                            <?php 
-                            // Get unique offices from disposed items for JavaScript
-                            $offices = [];
-                            foreach ($disposed_items as $item) {
-                                if (!empty($item['office_name']) && !in_array($item['office_name'], $offices)) {
-                                    $offices[] = $item['office_name'];
-                                }
-                            }
-                            sort($offices);
-                            foreach ($offices as $office): ?>
-                                <option value="<?php echo htmlspecialchars($office); ?>"><?php echo htmlspecialchars($office); ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                </div>
-            </div>
+        <div class="alert alert-warning" role="alert">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <strong>Attention:</strong> The following items have been disposed and are no longer active in the inventory system.
         </div>
-
-        <div class="section-card mb-4">
-            <div class="section-title">
-                <i class="bi bi-trash3"></i> Disposed Items Management
-            </div>
-            
-            <div class="alert alert-warning" role="alert">
-                <i class="bi bi-exclamation-triangle-fill"></i>
-                <strong>Attention:</strong> The following items have been disposed and are no longer active in the inventory system.
-            </div>
             <?php if (empty($disposed_items)): ?>
                 <div class="empty-state">
                     <i class="bi bi-trash3"></i>
@@ -347,8 +308,12 @@ try {
                     <p class="text-muted">No items have been disposed yet.</p>
                 </div>
             <?php else: ?>
-                <div class="table-responsive">
-                    <table class="table table-hover" id="disposedItemsTable">
+                <div class="section-card mb-4">
+                    <div class="section-title">
+                        <i class="bi bi-trash3"></i> Disposed Items Management
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="disposedItemsTable">
                         <thead>
                             <tr>
                                 <th>Control No.</th>
@@ -357,7 +322,7 @@ try {
                                 <th>Value</th>
                                 <th>Office</th>
                                 <th>Disposal Date</th>
-                                <th>Disposal Reason</th>
+                              
                                 <th>Disposed By</th>
                                 <th class="no-print">Actions</th>
                             </tr>
@@ -368,14 +333,11 @@ try {
                                     <td>
                                         <strong><?php echo htmlspecialchars($item['control_no']); ?></strong>
                                         <br>
-                                        <small class="text-muted"><?php echo htmlspecialchars($item['red_tag_no']); ?></small>
+                                       
                                     </td>
                                     <td>
                                         <?php echo htmlspecialchars($item['item_description']); ?>
-                                        <?php if (!empty($item['category_name'])): ?>
-                                            <br>
-                                            <small class="text-muted"><?php echo htmlspecialchars($item['category_name']); ?></small>
-                                        <?php endif; ?>
+                                        
                                     </td>
                                     <td><?php echo htmlspecialchars($item['property_no'] ?? 'N/A'); ?></td>
                                     <td>₱<?php echo number_format($item['value'] ?? 0, 2); ?></td>
@@ -390,14 +352,7 @@ try {
                                         }
                                         ?>
                                     </td>
-                                    <td>
-                                        <?php 
-                                        $disposal_reason = $item['disposal_reason'] ?? $item['asset_disposal_reason'] ?? 'N/A';
-                                        ?>
-                                        <div class="disposal-reason" title="<?php echo htmlspecialchars($disposal_reason); ?>">
-                                            <?php echo htmlspecialchars($disposal_reason); ?>
-                                        </div>
-                                    </td>
+                                   
                                     <td><?php echo htmlspecialchars($item['disposed_by_name'] ?? 'N/A'); ?></td>
                                     <td class="no-print">
                                         <div class="btn-group" role="group">
@@ -416,6 +371,7 @@ try {
                             <?php endforeach; ?>
                         </tbody>
                     </table>
+                    </div>
                 </div>
             <?php endif; ?>
         </div>
@@ -438,14 +394,13 @@ try {
         // Initialize DataTable
         $(document).ready(function() {
             var table = $('#disposedItemsTable').DataTable({
-                dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6 text-end"p>>' + // Length and Pagination
-                     '<"row"<"col-sm-12"tr>>' + // Table
-                     '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>', // Info and Pagination
+                dom: '<"row"<"col-md-3"l><"col-md-3 office-filter-container"><"col-md-6"f>><"row"<"col-12"rt>><"row"<"col-md-6"i><"col-md-6"p>>',
                 pageLength: 25,
                 responsive: true,
                 order: [[5, 'desc']], // Sort by disposal date by default
-                searching: false, // Disable built-in search
+                searching: true, // Enable built-in search
                 language: {
+                    search: "Search disposed items:",
                     lengthMenu: "Show _MENU_ entries",
                     info: "Showing _START_ to _END_ of _TOTAL_ disposed items",
                     paginate: {
@@ -458,18 +413,33 @@ try {
                 columnDefs: [
                     { targets: -1, orderable: false }, // Disable sorting on Actions column
                     { targets: 'no-print', searchable: false } // Hide actions column from search
-                ]
-            });
-            
-            // Custom search functionality
-            $('#searchInput').on('keyup', function() {
-                table.search($(this).val()).draw();
-            });
-            
-            // Office filter functionality
-            $('#officeFilter').on('change', function() {
-                var office = $(this).val();
-                table.column(4).search(office).draw(); // Office column is index 4 (0-based)
+                ],
+                initComplete: function() {
+                    // Add office filter to DataTables
+                    $('.office-filter-container').html(`
+                        <select id="officeFilter" class="form-select form-select-sm">
+                            <option value="">All Offices</option>
+                            <?php 
+                            // Get unique offices from disposed items for JavaScript
+                            $offices = [];
+                            foreach ($disposed_items as $item) {
+                                if (!empty($item['office_name']) && !in_array($item['office_name'], $offices)) {
+                                    $offices[] = $item['office_name'];
+                                }
+                            }
+                            sort($offices);
+                            foreach ($offices as $office): ?>
+                                <option value="<?php echo htmlspecialchars($office); ?>"><?php echo htmlspecialchars($office); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    `);
+                    
+                    // Office filter functionality
+                    $('#officeFilter').on('change', function() {
+                        var office = $(this).val();
+                        table.column(4).search(office).draw(); // Office column is index 4 (0-based)
+                    });
+                }
             });
         });
         
