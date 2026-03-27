@@ -165,16 +165,72 @@ logSystemAction($_SESSION['user_id'], 'print', 'red_tag', "Printed red tag: {$co
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Red Tag - <?php echo htmlspecialchars($red_tag['control_no']); ?></title>
+    <title>Red Tag Preview - <?php echo htmlspecialchars($red_tag['control_no']); ?></title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
     <style>
         body {
             font-family: 'Times New Roman', serif;
             font-size: 12px;
             line-height: 1.4;
             color: #000;
-            background: white;
+            background: #f8f9fa;
             margin: 0;
-            padding: 0;
+            padding: 20px;
+        }
+        
+        .preview-header {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .preview-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #dc3545;
+            margin-bottom: 10px;
+        }
+        
+        .preview-info {
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        .preview-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+        
+        .zoom-controls {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            background: #f8f9fa;
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .zoom-controls .btn {
+            padding: 5px 10px;
+            font-size: 14px;
+        }
+        
+        .zoom-level {
+            font-size: 12px;
+            font-weight: 600;
+            color: #666;
+            min-width: 40px;
+            text-align: center;
         }
         
         .print-container {
@@ -194,6 +250,7 @@ logSystemAction($_SESSION['user_id'], 'print', 'red_tag', "Printed red tag: {$co
             page-break-inside: avoid;
             display: flex;
             flex-direction: column;
+            margin: 0 auto;
         }
         
         .tag-header {
@@ -340,12 +397,22 @@ logSystemAction($_SESSION['user_id'], 'print', 'red_tag', "Printed red tag: {$co
         
         @media print {
             body {
+                font-family: 'Times New Roman', serif;
+                font-size: 12px;
+                line-height: 1.4;
+                color: #000;
+                background: white;
                 margin: 0;
                 padding: 0;
             }
             
+            .preview-header {
+                display: none !important;
+            }
+            
             .print-container {
                 padding: 0;
+                margin: 0 auto;
             }
             
             @page {
@@ -360,6 +427,37 @@ logSystemAction($_SESSION['user_id'], 'print', 'red_tag', "Printed red tag: {$co
     </style>
 </head>
 <body>
+    <!-- Preview Header -->
+    <div class="preview-header">
+        <h1 class="preview-title">Red Tag Preview</h1>
+        <div class="preview-info">
+            <strong>Control No:</strong> <?php echo htmlspecialchars($red_tag['control_no']); ?> | 
+            <strong>Red Tag No:</strong> <?php echo htmlspecialchars($red_tag['red_tag_no']); ?> | 
+            <strong>Date:</strong> <?php echo date('F j, Y', strtotime($red_tag['date_received'])); ?>
+        </div>
+        <div class="preview-controls">
+            <button type="button" class="btn btn-primary" onclick="window.print()">
+                <i class="bi bi-printer"></i> Print Red Tag
+            </button>
+            <div class="zoom-controls">
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="zoomOut()" title="Zoom Out">
+                    <i class="bi bi-zoom-out"></i>
+                </button>
+                <span class="zoom-level" id="zoomLevel">100%</span>
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="zoomIn()" title="Zoom In">
+                    <i class="bi bi-zoom-in"></i>
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="resetZoom()" title="Reset Zoom">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                </button>
+            </div>
+            <button type="button" class="btn btn-outline-secondary" onclick="window.close()">
+                <i class="bi bi-x-circle"></i> Close Window
+            </button>
+        </div>
+    </div>
+    
+    <!-- Red Tag Preview -->
     <div class="print-container">
         <div class="tag-container">
             <div class="tag-main-header">
@@ -452,17 +550,78 @@ logSystemAction($_SESSION['user_id'], 'print', 'red_tag', "Printed red tag: {$co
     </div>
     
     <script>
-        // Auto-print when page loads
-        window.onload = function() {
-            setTimeout(function() {
-                window.print();
-            }, 500);
+        // Zoom functionality
+        let currentZoom = 100;
+        const zoomStep = 10;
+        const minZoom = 50;
+        const maxZoom = 200;
+        
+        function updateZoom() {
+            const printContainer = document.querySelector('.print-container');
+            const zoomLevelElement = document.getElementById('zoomLevel');
+            
+            printContainer.style.transform = `scale(${currentZoom / 100})`;
+            printContainer.style.transformOrigin = 'center top';
+            zoomLevelElement.textContent = currentZoom + '%';
+            
+            // Adjust container height to accommodate zoom
+            if (currentZoom > 100) {
+                printContainer.style.marginBottom = (currentZoom - 100) + 'px';
+            } else {
+                printContainer.style.marginBottom = '0';
+            }
+        }
+        
+        function zoomIn() {
+            if (currentZoom < maxZoom) {
+                currentZoom += zoomStep;
+                updateZoom();
+            }
+        }
+        
+        function zoomOut() {
+            if (currentZoom > minZoom) {
+                currentZoom -= zoomStep;
+                updateZoom();
+            }
+        }
+        
+        function resetZoom() {
+            currentZoom = 100;
+            updateZoom();
+        }
+        
+        // Manual print function
+        function printRedTag() {
+            window.print();
+        }
+        
+        // Optional: Close window after printing (user can choose)
+        window.onafterprint = function() {
+            // Uncomment the next line if you want to auto-close after printing
+            // window.close();
         };
         
-        // Close window after printing
-        window.onafterprint = function() {
-            window.close();
-        };
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case '+':
+                    case '=':
+                        e.preventDefault();
+                        zoomIn();
+                        break;
+                    case '-':
+                        e.preventDefault();
+                        zoomOut();
+                        break;
+                    case '0':
+                        e.preventDefault();
+                        resetZoom();
+                        break;
+                }
+            }
+        });
     </script>
 </body>
 </html>
