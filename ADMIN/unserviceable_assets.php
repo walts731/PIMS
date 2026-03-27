@@ -158,14 +158,9 @@ if ($categories_result) {
                                     </button>
                                 </li>
                                 <li>
-                                    <button type="button" class="dropdown-item" onclick="window.print()">
+                                    <button type="button" class="dropdown-item" onclick="openPrintPreview()">
                                         <i class="bi bi-printer"></i> Print List
                                     </button>
-                                </li>
-                                <li>
-                                    <a href="create_redtag.php" class="dropdown-item" target="_blank">
-                                        <i class="bi bi-tag"></i> Create Red Tag
-                                    </a>
                                 </li>
                                 <li>
                                     <a href="assets.php" class="dropdown-item">
@@ -482,6 +477,31 @@ if ($categories_result) {
                     console.error('Error:', error);
                     alert('An error occurred while updating the asset status.');
                 });
+            }
+        }
+        
+        // Print preview functionality
+        function openPrintPreview() {
+            // Get current filter values
+            const officeValue = document.getElementById('officeFilter')?.value || '';
+            const categoryValue = document.getElementById('categoryFilter')?.value || '';
+            
+            // Build URL for print preview
+            const params = new URLSearchParams();
+            if (officeValue) params.append('office', officeValue);
+            if (categoryValue) params.append('category', categoryValue);
+            params.append('print_preview', 'true');
+            
+            const printUrl = 'unserviceable_assets_print.php?' + params.toString();
+            
+            // Open print preview in new window
+            const printWindow = window.open(printUrl, 'printPreview', 'width=800,height=600,scrollbars=yes,resizable=yes');
+            
+            if (printWindow) {
+                printWindow.focus();
+            } else {
+                // Fallback if popup is blocked
+                window.location.href = printUrl;
             }
         }
         
