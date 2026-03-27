@@ -55,8 +55,8 @@ $where_clause = "WHERE " . implode(" AND ", $where_conditions);
 
 // Get unserviceable assets
 $unserviceable_assets = [];
-$sql = "SELECT ai.*, ac.category_name, 
-               ac.category_code, o.office_name, e.firstname, e.lastname, e.position
+$sql = "SELECT ai.*, ac.category_name, ac.id as category_id,
+               ac.category_code, o.office_name, o.id as office_id, e.firstname, e.lastname, e.position
         FROM asset_items ai 
         LEFT JOIN asset_categories ac ON ai.asset_category_id = ac.id 
         LEFT JOIN offices o ON ai.office_id = o.id 
@@ -226,48 +226,7 @@ if ($categories_result) {
            
         </div>
 
-        <!-- Search Section -->
-        <div class="search-section no-print">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <form method="GET" action="unserviceable_assets.php">
-                        <div class="row g-3">
-                            <div class="col-md-5">
-                                <label class="form-label fw-semibold">Office</label>
-                                <select class="form-select" id="officeFilter" name="office">
-                                    <option value="">All Offices</option>
-                                    <?php foreach ($offices as $office): ?>
-                                        <option value="<?php echo $office['id']; ?>" <?php echo $office_filter == $office['id'] ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($office['office_name']); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            <div class="col-md-5">
-                                <label class="form-label fw-semibold">Category</label>
-                                <select class="form-select" id="categoryFilter" name="category">
-                                    <option value="">All Categories</option>
-                                    <?php foreach ($categories as $category): ?>
-                                        <option value="<?php echo $category['id']; ?>" <?php echo $category_filter == $category['id'] ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($category['category_name']); ?>
-                                            <?php if (!empty($category['category_code'])): ?>
-                                                (<?php echo htmlspecialchars($category['category_code']); ?>)
-                                            <?php endif; ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            <div class="col-md-2 d-flex align-items-end gap-2">
-                                <a href="unserviceable_assets.php" class="btn btn-outline-secondary">
-                                    <i class="bi bi-arrow-clockwise"></i> Reset
-                                </a>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-
+        
         <!-- Assets Table -->
         <div class="table-container">
             <div class="table-responsive">
@@ -276,9 +235,11 @@ if ($categories_result) {
                         <tr>
                             <th>Description</th>
                             <th>Category</th>
+                            <th style="display: none;">Category ID</th>
                             <th>Status</th>
                             <th>Value</th>
                             <th>Office</th>
+                            <th style="display: none;">Office ID</th>
                             <th>Assigned To</th>
                             <th>Last Updated</th>
                             <th class="no-print">Actions</th>
@@ -287,7 +248,7 @@ if ($categories_result) {
                     <tbody>
                         <?php if (empty($unserviceable_assets)): ?>
                             <tr>
-                                <td colspan="8" class="text-center text-muted py-4">
+                                <td colspan="10" class="text-center text-muted py-4">
                                     <i class="bi bi-inbox" style="font-size: 2rem;"></i>
                                     <p class="mb-0 mt-2">No unserviceable assets found</p>
                                 </td>
@@ -311,6 +272,7 @@ if ($categories_result) {
                                         }
                                         ?>
                                     </td>
+                                    <td style="display: none;"><?php echo $asset['category_id'] ?? ''; ?></td>
                                     <td>
                                         <?php
                                         // Show unserviceable status
@@ -321,6 +283,7 @@ if ($categories_result) {
                                     </td>
                                     <td class="text-value">₱<?php echo number_format($asset['value'], 2); ?></td>
                                     <td><?php echo htmlspecialchars($asset['office_name'] ?? 'N/A'); ?></td>
+                                    <td style="display: none;"><?php echo $asset['office_id'] ?? ''; ?></td>
                                     <td>
                                         <?php if (!empty($asset['firstname'])): ?>
                                             <?php echo htmlspecialchars($asset['firstname'] . ' ' . $asset['lastname']); ?>
@@ -359,79 +322,6 @@ if ($categories_result) {
     <script src="https://code.jquery.com/jquery-3.6.1.min.js"></script>
     
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Office filter
-            $('#officeFilter').on('change', function() {
-                const officeValue = this.value;
-                const currentUrl = new URL(window.location);
-                if (officeValue) {
-                    currentUrl.searchParams.set('office', officeValue);
-                } else {
-                    currentUrl.searchParams.delete('office');
-                }
-                // Preserve search parameter if exists
-                const searchValue = currentUrl.searchParams.get('search');
-                if (!searchValue) {
-                    currentUrl.searchParams.delete('search');
-                }
-                // Preserve category parameter if exists
-                const categoryValue = currentUrl.searchParams.get('category');
-                if (!categoryValue) {
-                    currentUrl.searchParams.delete('category');
-                }
-                window.location.href = currentUrl.toString();
-            });
-            
-            // Category filter
-            $('#categoryFilter').on('change', function() {
-                const categoryValue = this.value;
-                const currentUrl = new URL(window.location);
-                if (categoryValue) {
-                    currentUrl.searchParams.set('category', categoryValue);
-                } else {
-                    currentUrl.searchParams.delete('category');
-                }
-                // Preserve search parameter if exists
-                const searchValue = currentUrl.searchParams.get('search');
-                if (!searchValue) {
-                    currentUrl.searchParams.delete('search');
-                }
-                // Preserve office parameter if exists
-                const officeValue = currentUrl.searchParams.get('office');
-                if (!officeValue) {
-                    currentUrl.searchParams.delete('office');
-                }
-                window.location.href = currentUrl.toString();
-            });
-            
-            // Search functionality with debounce
-            let searchTimeout;
-            $('#searchInput').on('input', function() {
-                clearTimeout(searchTimeout);
-                const searchValue = this.value.trim();
-                
-                searchTimeout = setTimeout(() => {
-                    const currentUrl = new URL(window.location);
-                    if (searchValue) {
-                        currentUrl.searchParams.set('search', searchValue);
-                    } else {
-                        currentUrl.searchParams.delete('search');
-                    }
-                    // Preserve office parameter if exists
-                    const officeValue = currentUrl.searchParams.get('office');
-                    if (!officeValue) {
-                        currentUrl.searchParams.delete('office');
-                    }
-                    // Preserve category parameter if exists
-                    const categoryValue = currentUrl.searchParams.get('category');
-                    if (!categoryValue) {
-                        currentUrl.searchParams.delete('category');
-                    }
-                    window.location.href = currentUrl.toString();
-                }, 500); // Wait 500ms after user stops typing
-            });
-        });
-        
         function exportToCSV() {
             let csv = 'Description,Category,Status,Value,Office,Assigned To,Last Updated\n';
             
@@ -505,36 +395,6 @@ if ($categories_result) {
             }
         }
         
-        // Auto-search functionality - ensure variables are only declared once
-        if (typeof window.autoSearchInitialized === 'undefined') {
-            window.autoSearchInitialized = true;
-            const officeFilterElement = document.getElementById('officeFilter');
-            const categoryFilterElement = document.getElementById('categoryFilter');
-            
-            function performAutoSearch() {
-                const officeValue = officeFilterElement.value;
-                const categoryValue = categoryFilterElement.value;
-                
-                // Build URL with current filter values
-                const params = new URLSearchParams();
-                if (officeValue) params.append('office', officeValue);
-                if (categoryValue) params.append('category', categoryValue);
-                
-                // Redirect to updated URL
-                const newUrl = 'unserviceable_assets.php' + (params.toString() ? '?' + params.toString() : '');
-                window.location.href = newUrl;
-            }
-            
-            // Add event listeners for filters
-            if (officeFilterElement) {
-                officeFilterElement.addEventListener('change', performAutoSearch);
-            }
-            
-            if (categoryFilterElement) {
-                categoryFilterElement.addEventListener('change', performAutoSearch);
-            }
-        }
-        
         // Initialize DataTables
         $(document).ready(function() {
             // Only initialize DataTables if there are assets to display
@@ -542,7 +402,7 @@ if ($categories_result) {
             var hasData = tableRows > 1 || (tableRows === 1 && !$('#unserviceableAssetsTable tbody tr td[colspan]').length);
             
             if (hasData) {
-                $('#unserviceableAssetsTable').DataTable({
+                var table = $('#unserviceableAssetsTable').DataTable({
                     responsive: true,
                     pageLength: 25,
                     lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
@@ -564,24 +424,95 @@ if ($categories_result) {
                     },
                     columnDefs: [
                         { 
-                            targets: [7], // Actions column
+                            targets: [9], // Actions column
                             orderable: false,
                             searchable: false
                         },
                         {
-                            targets: [2], // Status column
+                            targets: [2], // Hidden Category ID column
+                            visible: false,
+                            searchable: true
+                        },
+                        {
+                            targets: [6], // Hidden Office ID column
+                            visible: false,
+                            searchable: true
+                        },
+                        {
+                            targets: [3], // Status column
                             orderable: true,
                             searchable: true
                         }
                     ],
-                    dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
-                         '<"row"<"col-sm-12"tr>>' +
-                         '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+                    dom: '<"row"<"col-md-3"l><"col-md-3 office-filter-container"><"col-md-3 category-filter-container"><"col-md-3"f>>' +
+                         '<"row"<"col-12"tr>>' +
+                         '<"row"<"col-md-6"i><"col-md-6"p>>',
                     initComplete: function() {
                         // Apply custom styling to DataTables elements
                         $('.dataTables_wrapper').addClass('mt-3');
                         $('.dataTables_filter input').addClass('form-control form-control-sm');
                         $('.dataTables_length select').addClass('form-select form-select-sm');
+                        
+                        // Add office filter to DataTables
+                        $('.office-filter-container').html(`
+                            <select id="officeFilter" class="form-select form-select-sm">
+                                <option value="">All Offices</option>
+                                <?php foreach ($offices as $office): ?>
+                                    <option value="<?php echo $office['id']; ?>" <?php echo $office_filter == $office['id'] ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($office['office_name']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        `);
+                        
+                        // Add category filter to DataTables
+                        $('.category-filter-container').html(`
+                            <select id="categoryFilter" class="form-select form-select-sm">
+                                <option value="">All Categories</option>
+                                <?php foreach ($categories as $category): ?>
+                                    <option value="<?php echo $category['id']; ?>" <?php echo $category_filter == $category['id'] ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($category['category_name']); ?>
+                                        <?php if (!empty($category['category_code'])): ?>
+                                            (<?php echo htmlspecialchars($category['category_code']); ?>)
+                                        <?php endif; ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        `);
+                        
+                        // Office and category filter functionality
+                        $('#officeFilter, #categoryFilter').on('change', function() {
+                            var officeId = $('#officeFilter').val();
+                            var categoryId = $('#categoryFilter').val();
+                            
+                            // Clear all filters first
+                            table.column(6).search('').draw(); // Office ID column
+                            table.column(2).search('').draw(); // Category ID column
+                            
+                            // Apply office filter
+                            if (officeId) {
+                                table.column(6).search(officeId).draw();
+                            }
+                            
+                            // Apply category filter
+                            if (categoryId) {
+                                table.column(2).search(categoryId).draw();
+                            }
+                            
+                            // If both filters are cleared, redraw table
+                            if (!officeId && !categoryId) {
+                                table.draw();
+                            }
+                        });
+                        
+                        // Apply initial filters if set
+                        <?php if ($office_filter > 0): ?>
+                            table.column(6).search('<?php echo $office_filter; ?>').draw();
+                        <?php endif; ?>
+                        
+                        <?php if ($category_filter > 0): ?>
+                            table.column(2).search('<?php echo $category_filter; ?>').draw();
+                        <?php endif; ?>
                     }
                 });
             }

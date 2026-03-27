@@ -632,12 +632,46 @@ try {
                     <?php endif; ?>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAssetModal">
-                        <i class="bi bi-plus-circle"></i> Add Asset
-                    </button>
-                    <button class="btn btn-outline-success btn-sm ms-2" onclick="exportAssets()">
-                        <i class="bi bi-download"></i> Export
-                    </button>
+                    <div class="no-print">
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-gear"></i> Actions
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#addAssetModal">
+                                        <i class="bi bi-plus-circle"></i> Add Asset
+                                    </button>
+                                </li>
+                                <li>
+                                    <button type="button" class="dropdown-item" onclick="exportAssets()">
+                                        <i class="bi bi-download"></i> Export Assets
+                                    </button>
+                                </li>
+                                <li>
+                                    <a href="inventory_tags.php" class="dropdown-item">
+                                        <i class="bi bi-qr-code"></i> Inventory Tags
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="unserviceable_assets.php" class="dropdown-item">
+                                        <i class="bi bi-x-circle"></i> Unserviceable Assets
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="no_inventory_tag.php" class="dropdown-item">
+                                        <i class="bi bi-tag"></i> No Inventory Tag
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <button type="button" class="dropdown-item" onclick="location.reload()">
+                                        <i class="bi bi-arrow-clockwise"></i> Refresh Page
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

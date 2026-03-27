@@ -301,7 +301,38 @@ try {
                                         echo htmlspecialchars(substr($description, 0, 50));
                                         if (strlen($description) > 50): ?>...<?php endif; ?>
                                     </td>
-                                    <td><?php echo htmlspecialchars($red_tag['action']); ?></td>
+                                    <td>
+                                        <?php
+                                        $action = strtolower($red_tag['action']);
+                                        $badge_class = '';
+                                        switch ($action) {
+                                            case 'disposal':
+                                            case 'dispose':
+                                                $badge_class = 'bg-danger';
+                                                break;
+                                            case 'disposed':
+                                                $badge_class = 'bg-dark';
+                                                break;
+                                            case 'repair':
+                                                $badge_class = 'bg-warning';
+                                                break;
+                                            case 'recondition':
+                                                $badge_class = 'bg-info';
+                                                break;
+                                            case 'transfer':
+                                                $badge_class = 'bg-primary';
+                                                break;
+                                            case 'replacement':
+                                                $badge_class = 'bg-secondary';
+                                                break;
+                                            default:
+                                                $badge_class = 'bg-secondary';
+                                        }
+                                        ?>
+                                        <span class="badge <?php echo $badge_class; ?>">
+                                            <?php echo htmlspecialchars(ucfirst($red_tag['action'])); ?>
+                                        </span>
+                                    </td>
                                     <td><?php echo !empty($red_tag['office_name']) ? htmlspecialchars($red_tag['office_name']) : 'Not Assigned'; ?></td>
                                     <td style="display: none;"><?php echo $red_tag['office_id']; ?></td>
                                     <td class="no-print">
@@ -311,9 +342,11 @@ try {
                                                     <i class="bi bi-eye"></i>
                                                 </a>
                                             <?php endif; ?>
-                                            <a href="print_redtag.php?control_no=<?php echo urlencode($red_tag['control_no']); ?>" class="btn btn-outline-danger btn-sm" title="Print Red Tag" target="_blank">
-                                                <i class="bi bi-printer"></i>
-                                            </a>
+                                            <?php if (strtolower($red_tag['action']) !== 'disposed'): ?>
+                                                <a href="print_redtag.php?control_no=<?php echo urlencode($red_tag['control_no']); ?>" class="btn btn-outline-danger btn-sm" title="Print Red Tag" target="_blank">
+                                                    <i class="bi bi-printer"></i>
+                                                </a>
+                                            <?php endif; ?>
                                             <?php if (strtolower($red_tag['action']) === 'disposal' || strtolower($red_tag['action']) === 'dispose'): ?>
                                                 <button type="button" class="btn btn-outline-warning btn-sm" title="Dispose Item" data-bs-toggle="modal" data-bs-target="#disposeModal" 
                                                         onclick="setDisposalData(<?php echo $red_tag['id']; ?>, '<?php echo htmlspecialchars($red_tag['control_no']); ?>', '<?php echo htmlspecialchars($red_tag['item_description']); ?>')">

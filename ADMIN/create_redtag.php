@@ -62,6 +62,23 @@ $peripheral_model = isset($_GET['peripheral_model']) ? htmlspecialchars($_GET['p
 $peripheral_serial = isset($_GET['peripheral_serial_number']) ? htmlspecialchars($_GET['peripheral_serial_number']) : '';
 $peripheral_status = isset($_GET['peripheral_status']) ? htmlspecialchars($_GET['peripheral_status']) : '';
 
+// Get asset item details including serial number if asset_id is provided
+$serial_number = '';
+if ($asset_item_id > 0) {
+    try {
+        $stmt = $conn->prepare("SELECT serial_number FROM asset_items WHERE id = ?");
+        $stmt->bind_param("i", $asset_item_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($row = $result->fetch_assoc()) {
+            $serial_number = $row['serial_number'] ?? '';
+        }
+        $stmt->close();
+    } catch (Exception $e) {
+        error_log("Error fetching asset item details: " . $e->getMessage());
+    }
+}
+
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['generate_redtag'])) {
     $control_no = trim($_POST['control_no'] ?? '');
@@ -84,6 +101,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['generate_redtag'])) {
     if ($component_type !== 'main_asset' && empty($item_description) && !empty($component_description)) {
         $item_description = $component_description;
     }
+    
+    // Note: Serial number is already included in the initial $item_description from display logic
     
     $removal_reason = trim($_POST['removal_reason'] ?? '');
     $action = trim($_POST['action'] ?? '');
@@ -318,7 +337,17 @@ if (empty($control_no)) {
 $tagged_by = $tagged_by ?? ($_SESSION['firstname'] ?? '') . ' ' . ($_SESSION['lastname'] ?? '');
 $date_received = $date_received ?? date('m/d/Y');
 $item_location = $item_location ?? $office_name;
+
+// Build item description with serial number
 $item_description = $item_description ?? $description;
+if (!empty($serial_number)) {
+    if (!empty($item_description)) {
+        $item_description .= " (S/N: {$serial_number})";
+    } else {
+        $item_description = "S/N: {$serial_number}";
+    }
+}
+
 $action = $action ?? ''; // Initialize action variable
 
 // Use existing red_tag_no if already generated, otherwise generate for display (without incrementing)
