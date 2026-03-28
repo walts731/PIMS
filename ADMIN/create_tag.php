@@ -414,7 +414,7 @@ require_once 'includes/subcategory_fields.php';
                         <table class="table table-sm table-bordered" id="peripheralsTable">
                             <thead class="table-light">
                                 <tr>
-                                    <th style="width: 25%;">Name *</th>
+                                    <th style="width: 25%;">Name</th>
                                     <th style="width: 20%;">Model</th>
                                     <th style="width: 20%;">Serial Number</th>
                                     <th style="width: 20%;">Status</th>
@@ -424,7 +424,7 @@ require_once 'includes/subcategory_fields.php';
                             <tbody>
                                 <tr>
                                     <td>
-                                        <input type="text" class="form-control form-control-sm" name="peripheral_name[]" placeholder="e.g., Monitor, Keyboard" required>
+                                        <input type="text" class="form-control form-control-sm" name="peripheral_name[]" placeholder="e.g., Monitor, Keyboard">
                                     </td>
                                     <td>
                                         <input type="text" class="form-control form-control-sm" name="peripheral_model[]" placeholder="Model number">
@@ -454,7 +454,7 @@ require_once 'includes/subcategory_fields.php';
                     <small class="text-muted">
                         <i class="bi bi-info-circle"></i> 
                         Add peripherals attached to this asset (monitors, keyboards, mice, etc.). 
-                        At least one peripheral name is required if you add peripherals.
+                        Peripherals are optional - only fill out if applicable.
                     </small>
                 </div>
                 
@@ -1293,7 +1293,7 @@ require_once 'includes/subcategory_fields.php';
             const newRow = document.createElement('tr');
             newRow.innerHTML = `
                 <td>
-                    <input type="text" class="form-control form-control-sm" name="peripheral_name[]" placeholder="e.g., Monitor, Keyboard" required>
+                    <input type="text" class="form-control form-control-sm" name="peripheral_name[]" placeholder="e.g., Monitor, Keyboard">
                 </td>
                 <td>
                     <input type="text" class="form-control form-control-sm" name="peripheral_model[]" placeholder="Model number">
@@ -1369,7 +1369,6 @@ require_once 'includes/subcategory_fields.php';
             
             // Check if any peripheral has been filled out
             let hasAnyPeripheralData = false;
-            let validPeripherals = true;
             
             for (let i = 0; i < peripheralNames.length; i++) {
                 const name = peripheralNames[i].value.trim();
@@ -1382,20 +1381,16 @@ require_once 'includes/subcategory_fields.php';
                     // If name is empty but other fields are filled, it's invalid
                     if (!name) {
                         peripheralNames[i].style.borderColor = '#dc3545';
-                        validPeripherals = false;
+                        e.preventDefault();
+                        alert('Please fill in peripheral name for all entries that have other fields filled out.');
+                        return false;
                     } else {
                         peripheralNames[i].style.borderColor = '';
                     }
                 }
             }
             
-            if (!validPeripherals) {
-                e.preventDefault();
-                alert('Please fill in the peripheral name for all entries that have other fields filled out.');
-                return false;
-            }
-            
-            // If no peripherals are added, that's fine (peripherals are optional)
+            // Peripherals are optional, so no validation needed if no data is entered
             return true;
         });
     </script>

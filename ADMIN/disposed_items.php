@@ -306,10 +306,7 @@ try {
                 </div>
             </div>
         </div>
-        <div class="alert alert-warning" role="alert">
-            <i class="bi bi-exclamation-triangle-fill"></i>
-            <strong>Attention:</strong> The following items have been disposed and are no longer active in the inventory system.
-        </div>
+        
             <?php if (empty($disposed_items)): ?>
                 <div class="empty-state">
                     <i class="bi bi-trash3"></i>
@@ -325,7 +322,6 @@ try {
                         <table class="table table-hover" id="disposedItemsTable">
                         <thead>
                             <tr>
-                                <th>Control No.</th>
                                 <th>Item Description</th>
                                 <th>Property No.</th>
                                 <th>Value</th>
@@ -339,11 +335,6 @@ try {
                         <tbody>
                             <?php foreach ($disposed_items as $item): ?>
                                 <tr>
-                                    <td>
-                                        <strong><?php echo htmlspecialchars($item['control_no']); ?></strong>
-                                        <br>
-                                       
-                                    </td>
                                     <td>
                                         <?php echo htmlspecialchars($item['item_description']); ?>
                                         

@@ -119,6 +119,22 @@ while ($history_row = $history_result->fetch_assoc()) {
 }
 $history_stmt->close();
 
+// Add disposal information to history if the item is disposed
+if ($item['status'] === 'disposed' && !empty($item['disposal_date'])) {
+    $disposal_history = [
+        'id' => 'disposal_' . $item_id,
+        'item_id' => $item_id,
+        'action' => 'Disposed',
+        'details' => !empty($item['disposal_reason']) ? $item['disposal_reason'] : 'Item was disposed',
+        'user_id' => null,
+        'user_name' => 'System',
+        'created_at' => $item['disposal_date'] . ' 12:00:00' // Add time component
+    ];
+    
+    // Add disposal history to the beginning of the array
+    array_unshift($item_history, $disposal_history);
+}
+
 // Helper functions for timeline
 function getActionIcon($action) {
     $icons = [
@@ -621,293 +637,208 @@ $status_display = formatStatus($item['status']);
     <link href="../assets/css/theme-custom.css" rel="stylesheet">
     <link href="assets/css/admin-unified.css" rel="stylesheet">
     
-    <!-- Timeline CSS -->
+    <!-- Activity Feed CSS -->
     <style>
-    .timeline {
-        position: relative;
-        padding: 20px 0;
-        margin: 0 auto;
-        max-width: 100%;
+    .activity-feed {
+        max-height: 600px;
+        overflow-y: auto;
+        padding: 10px 0;
     }
     
-    .timeline::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 50%;
-        height: 100%;
-        width: 3px;
-        background: linear-gradient(180deg, var(--primary-color) 0%, var(--primary-hover) 100%);
-        transform: translateX(-50%);
-        border-radius: 3px;
-    }
-    
-    .timeline-item {
-        position: relative;
-        margin-bottom: 30px;
-        width: 100%;
-    }
-    
-    .timeline-left {
-        padding-right: calc(50% + 40px);
-        text-align: right;
-    }
-    
-    .timeline-right {
-        padding-left: calc(50% + 40px);
-        text-align: left;
-    }
-    
-    .timeline-dot {
-        position: absolute;
-        top: 10px;
-        left: 50%;
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        background: white;
-        border: 3px solid var(--primary-color);
-        transform: translateX(-50%);
-        transition: all 0.3s ease;
-        z-index: 1;
-    }
-    
-    .timeline-dot:hover {
-        transform: translateX(-50%) scale(1.2);
-        box-shadow: 0 0 0 6px rgba(var(--primary-rgb), 0.2);
-    }
-    
-    .timeline-dot-inner {
-        width: 100%;
-        height: 100%;
-        background: var(--primary-color);
-        border-radius: 50%;
-        animation: pulse 2s infinite;
-    }
-    
-    /* Action-specific colors */
-    .timeline-dot.action-created { border-color: #28a745; }
-    .timeline-dot.action-created .timeline-dot-inner { background: #28a745; }
-    .timeline-dot.action-updated { border-color: #007bff; }
-    .timeline-dot.action-updated .timeline-dot-inner { background: #007bff; }
-    .timeline-dot.action-deleted { border-color: #dc3545; }
-    .timeline-dot.action-deleted .timeline-dot-inner { background: #dc3545; }
-    .timeline-dot.action-status-changed { border-color: #dc3545; }
-    .timeline-dot.action-status-changed .timeline-dot-inner { background: #dc3545; }
-    .timeline-dot.action-assigned { border-color: #17a2b8; }
-    .timeline-dot.action-assigned .timeline-dot-inner { background: #17a2b8; }
-    .timeline-dot.action-transferred { border-color: #6f42c1; }
-    .timeline-dot.action-transferred .timeline-dot-inner { background: #6f42c1; }
-    .timeline-dot.action-maintenance { border-color: #007bff; }
-    .timeline-dot.action-maintenance .timeline-dot-inner { background: #007bff; }
-    .timeline-dot.action-disposed { border-color: #6c757d; }
-    .timeline-dot.action-disposed .timeline-dot-inner { background: #6c757d; }
-    .timeline-dot.action-inspected { border-color: #20c997; }
-    .timeline-dot.action-inspected .timeline-dot-inner { background: #20c997; }
-    .timeline-dot.action-repaired { border-color: #007bff; }
-    .timeline-dot.action-repaired .timeline-dot-inner { background: #007bff; }
-    .timeline-dot.action-calibrated { border-color: #6f42c1; }
-    .timeline-dot.action-calibrated .timeline-dot-inner { background: #6f42c1; }
-    .timeline-dot.action-cleaned { border-color: #28a745; }
-    .timeline-dot.action-cleaned .timeline-dot-inner { background: #28a745; }
-    .timeline-dot.action-tested { border-color: #20c997; }
-    .timeline-dot.action-tested .timeline-dot-inner { background: #20c997; }
-    .timeline-dot.action-approved { border-color: #28a745; }
-    .timeline-dot.action-approved .timeline-dot-inner { background: #28a745; }
-    .timeline-dot.action-rejected { border-color: #dc3545; }
-    .timeline-dot.action-rejected .timeline-dot-inner { background: #dc3545; }
-    
-    /* Action-specific content border colors */
-    .timeline-dot.action-created ~ .timeline-content { border-left-color: #28a745; }
-    .timeline-dot.action-updated ~ .timeline-content { border-left-color: #007bff; }
-    .timeline-dot.action-deleted ~ .timeline-content { border-left-color: #dc3545; }
-    .timeline-dot.action-status-changed ~ .timeline-content { border-left-color: #dc3545; }
-    .timeline-dot.action-assigned ~ .timeline-content { border-left-color: #17a2b8; }
-    .timeline-dot.action-transferred ~ .timeline-content { border-left-color: #6f42c1; }
-    .timeline-dot.action-maintenance ~ .timeline-content { border-left-color: #007bff; }
-    .timeline-dot.action-disposed ~ .timeline-content { border-left-color: #6c757d; }
-    .timeline-dot.action-inspected ~ .timeline-content { border-left-color: #20c997; }
-    .timeline-dot.action-repaired ~ .timeline-content { border-left-color: #007bff; }
-    .timeline-dot.action-calibrated ~ .timeline-content { border-left-color: #6f42c1; }
-    .timeline-dot.action-cleaned ~ .timeline-content { border-left-color: #28a745; }
-    .timeline-dot.action-tested ~ .timeline-content { border-left-color: #20c997; }
-    .timeline-dot.action-approved ~ .timeline-content { border-left-color: #28a745; }
-    .timeline-dot.action-rejected ~ .timeline-content { border-left-color: #dc3545; }
-    
-    @keyframes pulse {
-        0% { transform: scale(1); opacity: 1; }
-        50% { transform: scale(1.1); opacity: 0.8; }
-        100% { transform: scale(1); opacity: 1; }
-    }
-    
-    .timeline-content {
-        background: white;
-        border-radius: var(--border-radius-lg);
-        padding: 20px;
-        box-shadow: var(--shadow);
-        border-left: 4px solid var(--primary-color);
-        position: relative;
-        transition: all 0.3s ease;
-    }
-    
-    .timeline-content:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-lg);
-        border-left-color: var(--primary-hover);
-    }
-    
-    .timeline-left .timeline-content::after {
-        content: '';
-        position: absolute;
-        top: 15px;
-        right: -10px;
-        width: 0;
-        height: 0;
-        border-left: 10px solid white;
-        border-top: 10px solid transparent;
-        border-bottom: 10px solid transparent;
-    }
-    
-    .timeline-right .timeline-content::after {
-        content: '';
-        position: absolute;
-        top: 15px;
-        left: -10px;
-        width: 0;
-        height: 0;
-        border-right: 10px solid white;
-        border-top: 10px solid transparent;
-        border-bottom: 10px solid transparent;
-    }
-    
-    .timeline-header {
+    .activity-item {
         display: flex;
-        justify-content: space-between;
         align-items: flex-start;
-        margin-bottom: 10px;
-        gap: 15px;
+        margin-bottom: 20px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 12px;
+        border-left: 4px solid var(--primary-color);
+        transition: all 0.3s ease;
     }
     
-    .timeline-left .timeline-header {
-        flex-direction: row-reverse;
+    .activity-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        background: white;
     }
     
-    .timeline-action {
-        font-weight: 600;
-        color: var(--primary-color);
-        font-size: 0.95rem;
+    .activity-icon {
+        flex-shrink: 0;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: white;
         display: flex;
         align-items: center;
-        gap: 8px;
+        justify-content: center;
+        margin-right: 15px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        font-size: 18px;
     }
     
-    .timeline-action i {
-        font-size: 1.1rem;
+    .activity-content {
+        flex: 1;
+        min-width: 0;
     }
     
-    .timeline-date {
+    .activity-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .activity-action {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    
+    .action-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        color: white;
         font-size: 0.85rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .activity-time {
+        font-size: 0.8rem;
         color: #6c757d;
         display: flex;
         align-items: center;
-        gap: 5px;
+        gap: 4px;
         white-space: nowrap;
     }
     
-    .timeline-details {
+    .activity-time i {
+        font-size: 0.75rem;
+    }
+    
+    .activity-details {
         color: #495057;
         font-size: 0.9rem;
         line-height: 1.5;
-        margin: 10px 0;
-        padding: 10px;
+        margin-bottom: 8px;
+        padding: 8px 12px;
         background: rgba(var(--primary-rgb), 0.05);
-        border-radius: var(--border-radius);
-        border-left: 3px solid rgba(var(--primary-rgb), 0.2);
+        border-radius: 8px;
+        border-left: 3px solid var(--primary-color);
     }
     
-    .timeline-user {
+    .activity-user {
         font-size: 0.8rem;
         color: #6c757d;
         display: flex;
         align-items: center;
         gap: 5px;
-        margin-top: 8px;
         font-style: italic;
+    }
+    
+    .activity-user i {
+        font-size: 0.9rem;
+    }
+    
+    /* Scrollbar styling */
+    .activity-feed::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .activity-feed::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 3px;
+    }
+    
+    .activity-feed::-webkit-scrollbar-thumb {
+        background: var(--primary-color);
+        border-radius: 3px;
+    }
+    
+    .activity-feed::-webkit-scrollbar-thumb:hover {
+        background: var(--primary-hover);
     }
     
     /* Responsive Design */
     @media (max-width: 768px) {
-        .timeline::before {
-            left: 30px;
+        .activity-item {
+            padding: 12px;
+            margin-bottom: 15px;
         }
         
-        .timeline-item {
-            padding-left: 60px !important;
-            padding-right: 20px !important;
-            text-align: left !important;
+        .activity-icon {
+            width: 35px;
+            height: 35px;
+            font-size: 16px;
+            margin-right: 12px;
         }
         
-        .timeline-dot {
-            left: 30px;
+        .activity-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
         }
         
-        .timeline-content::after {
-            left: -10px !important;
-            border-right: 10px solid white !important;
-            border-left: none !important;
-        }
-        
-        .timeline-header {
-            flex-direction: column !important;
-            align-items: flex-start !important;
-            gap: 8px !important;
-        }
-        
-        .timeline-action {
-            font-size: 0.9rem;
-        }
-        
-        .timeline-date {
+        .action-badge {
             font-size: 0.8rem;
+            padding: 3px 10px;
+        }
+        
+        .activity-time {
+            font-size: 0.75rem;
+        }
+        
+        .activity-details {
+            font-size: 0.85rem;
+            padding: 6px 10px;
         }
     }
     
     @media (max-width: 576px) {
-        .timeline-content {
-            padding: 15px;
+        .activity-item {
+            padding: 10px;
         }
         
-        .timeline-action {
-            font-size: 0.85rem;
+        .activity-icon {
+            width: 30px;
+            height: 30px;
+            font-size: 14px;
+            margin-right: 10px;
         }
         
-        .timeline-details {
-            font-size: 0.85rem;
-            padding: 8px;
-        }
-        
-        .timeline-user {
+        .action-badge {
             font-size: 0.75rem;
+            padding: 2px 8px;
+        }
+        
+        .activity-details {
+            font-size: 0.8rem;
+            padding: 5px 8px;
         }
     }
     
-    /* Animation for timeline items */
-    .timeline-item {
+    /* Activity feed animations */
+    .activity-item:nth-child(1) { animation-delay: 0.1s; }
+    .activity-item:nth-child(2) { animation-delay: 0.2s; }
+    .activity-item:nth-child(3) { animation-delay: 0.3s; }
+    .activity-item:nth-child(4) { animation-delay: 0.4s; }
+    .activity-item:nth-child(5) { animation-delay: 0.5s; }
+    .activity-item:nth-child(6) { animation-delay: 0.6s; }
+    .activity-item:nth-child(7) { animation-delay: 0.7s; }
+    .activity-item:nth-child(8) { animation-delay: 0.8s; }
+    .activity-item:nth-child(9) { animation-delay: 0.9s; }
+    .activity-item:nth-child(10) { animation-delay: 1.0s; }
+    
+    .activity-item {
         opacity: 0;
         transform: translateY(20px);
-        animation: fadeInUp 0.5s ease forwards;
+        animation: fadeInUp 0.6s ease forwards;
     }
-    
-    .timeline-item:nth-child(1) { animation-delay: 0.1s; }
-    .timeline-item:nth-child(2) { animation-delay: 0.2s; }
-    .timeline-item:nth-child(3) { animation-delay: 0.3s; }
-    .timeline-item:nth-child(4) { animation-delay: 0.4s; }
-    .timeline-item:nth-child(5) { animation-delay: 0.5s; }
-    .timeline-item:nth-child(6) { animation-delay: 0.6s; }
-    .timeline-item:nth-child(7) { animation-delay: 0.7s; }
-    .timeline-item:nth-child(8) { animation-delay: 0.8s; }
-    .timeline-item:nth-child(9) { animation-delay: 0.9s; }
-    .timeline-item:nth-child(10) { animation-delay: 1.0s; }
     
     @keyframes fadeInUp {
         to {
@@ -1475,35 +1406,36 @@ $status_display = formatStatus($item['status']);
                     <?php endif; ?>
                 </div>
                 
-                <!-- History Timeline -->
+                <!-- Activity Feed -->
                 <?php if (!empty($item_history)): ?>
                 <div class="detail-card">
-                    <h5 class="mb-4"><i class="bi bi-clock-history"></i> Item History Timeline</h5>
+                    <h5 class="mb-4"><i class="bi bi-activity"></i> Activity Feed</h5>
                     
-                    <div class="timeline">
-                        <?php foreach ($item_history as $index => $history): ?>
-                            <div class="timeline-item <?php echo $index % 2 === 0 ? 'timeline-left' : 'timeline-right'; ?>">
-                                <div class="timeline-dot action-<?php echo strtolower(str_replace(' ', '-', $history['action'])); ?>">
-                                    <div class="timeline-dot-inner"></div>
+                    <div class="activity-feed">
+                        <?php foreach ($item_history as $history): ?>
+                            <div class="activity-item">
+                                <div class="activity-icon">
+                                    <i class="bi bi-<?php echo getActionIcon($history['action']); ?>" style="color: <?php echo getActionColor($history['action']); ?>;"></i>
                                 </div>
-                                <div class="timeline-content">
-                                    <div class="timeline-header">
-                                        <div class="timeline-action" style="color: <?php echo getActionColor($history['action']); ?>;">
-                                            <i class="bi bi-<?php echo getActionIcon($history['action']); ?>"></i>
-                                            <?php echo htmlspecialchars($history['action']); ?>
-                                        </div>
-                                        <div class="timeline-date">
-                                            <i class="bi bi-clock"></i>
-                                            <?php echo formatTimelineDate($history['created_at']); ?>
+                                <div class="activity-content">
+                                    <div class="activity-header">
+                                        <div class="activity-action">
+                                            <span class="action-badge" style="background-color: <?php echo getActionColor($history['action']); ?>;">
+                                                <?php echo htmlspecialchars($history['action']); ?>
+                                            </span>
+                                            <span class="activity-time">
+                                                <i class="bi bi-clock"></i>
+                                                <?php echo formatTimelineDate($history['created_at']); ?>
+                                            </span>
                                         </div>
                                     </div>
                                     <?php if ($history['details']): ?>
-                                        <div class="timeline-details">
+                                        <div class="activity-details">
                                             <?php echo htmlspecialchars($history['details']); ?>
                                         </div>
                                     <?php endif; ?>
                                     <?php if (!empty($history['user_name'] ?? null)): ?>
-                                        <div class="timeline-user">
+                                        <div class="activity-user">
                                             <i class="bi bi-person-circle"></i>
                                             <?php echo htmlspecialchars($history['user_name']); ?>
                                         </div>
