@@ -103,142 +103,233 @@ try {
     <!-- Custom CSS -->
     <link href="../assets/css/index.css" rel="stylesheet">
     <link href="../assets/css/theme-custom.css" rel="stylesheet">
+    <link href="assets/css/admin-unified.css" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, var(--light-color) 0%, var(--light-accent) 100%);
-            min-height: 100vh;
-            overflow-x: hidden;
+        /* Search Results Specific Styles */
+        .search-results-container {
+            padding: 20px 0;
         }
         
-        .page-header {
-            background: white;
-            border-radius: var(--border-radius-xl);
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow);
-            border-left: 4px solid var(--primary-color);
-        }
-        
-        .results-card {
+        .search-summary {
             background: white;
             border-radius: var(--border-radius-lg);
-            padding: 1.5rem;
-            box-shadow: var(--shadow);
-            margin-bottom: 2rem;
-            transition: var(--transition);
-        }
-        
-        .results-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
-        }
-        
-        .search-result-item {
-            padding: 1rem;
-            border-radius: var(--border-radius);
-            margin-bottom: 0.75rem;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow-sm);
             border-left: 4px solid var(--primary-color);
-            background: rgba(var(--primary-rgb), 0.05);
-            transition: var(--transition);
-            cursor: pointer;
         }
         
-        .search-result-item:hover {
-            background: rgba(var(--primary-rgb), 0.1);
-            transform: translateX(3px);
+        .search-query-highlight {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            color: #856404;
         }
         
-        .result-type-badge {
-            font-size: 0.75rem;
-            padding: 0.25rem 0.75rem;
-            border-radius: var(--border-radius-xl);
+        .results-section {
+            background: white;
+            border-radius: var(--border-radius-lg);
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s ease;
+        }
+        
+        .results-section:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+        
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--primary-color);
+        }
+        
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .result-count {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
             font-weight: 600;
         }
         
-        .asset-badge {
+        .search-item {
+            padding: 20px;
+            border-radius: var(--border-radius);
+            margin-bottom: 15px;
+            border-left: 4px solid var(--primary-color);
+            background: rgba(var(--primary-rgb), 0.05);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .search-item:hover {
+            background: rgba(var(--primary-rgb), 0.1);
+            transform: translateX(5px);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .search-item-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .type-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .badge-asset {
             background: var(--primary-gradient);
             color: white;
         }
         
-        .employee-badge {
+        .badge-employee {
             background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
             color: white;
         }
         
-        .status-badge {
-            font-size: 0.7rem;
-            padding: 0.2rem 0.6rem;
-            border-radius: var(--border-radius);
-            font-weight: 500;
+        .item-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--dark-color);
+            margin: 0;
         }
         
-        .status-available {
-            background: #d4edda;
-            color: #155724;
+        .item-details {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 10px;
         }
         
-        .status-in_use {
-            background: #cce5ff;
-            color: #004085;
-        }
-        
-        .status-maintenance {
-            background: #fff3cd;
-            color: #856404;
-        }
-        
-        .status-disposed {
-            background: #f8d7da;
-            color: #721c24;
-        }
-        
-        .employment-permanent {
-            background: #d4edda;
-            color: #155724;
-        }
-        
-        .employment-contractual {
-            background: #cce5ff;
-            color: #004085;
-        }
-        
-        .employment-job_order {
-            background: #fff3cd;
-            color: #856404;
-        }
-        
-        .employment-resigned {
-            background: #f8d7da;
-            color: #721c24;
-        }
-        
-        .employment-retired {
-            background: #e2e3e5;
-            color: #383d41;
-        }
-        
-        .clearance-cleared {
-            background: #d4edda;
-            color: #155724;
-        }
-        
-        .clearance-uncleared {
-            background: #f8d7da;
-            color: #721c24;
-        }
-        
-        .no-results {
-            text-align: center;
-            padding: 3rem;
+        .detail-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.9rem;
             color: #6c757d;
         }
         
-        .highlight {
-            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
-            padding: 0.1rem 0.3rem;
-            border-radius: 3px;
+        .detail-item i {
+            font-size: 0.85rem;
+            color: var(--primary-color);
+        }
+        
+        .status-badges {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: flex-end;
+        }
+        
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
             font-weight: 500;
+            text-transform: capitalize;
+        }
+        
+        /* Status Colors */
+        .status-serviceable { background: #d4edda; color: #155724; }
+        .status-in_use { background: #cce5ff; color: #004085; }
+        .status-maintenance { background: #fff3cd; color: #856404; }
+        .status-disposed { background: #f8d7da; color: #721c24; }
+        .status-unserviceable { background: #f8d7da; color: #721c24; }
+        .status-no_tag { background: #e2e3e5; color: #383d41; }
+        .status-red_tagged { background: #dc3545; color: white; }
+        .status-borrowed { background: #17a2b8; color: white; }
+        
+        /* Employment Status Colors */
+        .employment-permanent { background: #d4edda; color: #155724; }
+        .employment-contractual { background: #cce5ff; color: #004085; }
+        .employment-job_order { background: #fff3cd; color: #856404; }
+        .employment-resigned { background: #f8d7da; color: #721c24; }
+        .employment-retired { background: #e2e3e5; color: #383d41; }
+        
+        /* Clearance Status Colors */
+        .clearance-cleared { background: #d4edda; color: #155724; }
+        .clearance-uncleared { background: #f8d7da; color: #721c24; }
+        
+        .no-results-container {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6c757d;
+        }
+        
+        .no-results-icon {
+            font-size: 4rem;
+            color: #dee2e6;
+            margin-bottom: 20px;
+        }
+        
+        .no-results-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .no-results-text {
+            font-size: 1rem;
+            margin-bottom: 20px;
+        }
+        
+        .search-tips {
+            background: rgba(var(--primary-rgb), 0.05);
+            padding: 15px;
+            border-radius: var(--border-radius);
+            border-left: 3px solid var(--primary-color);
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .search-item {
+                padding: 15px;
+            }
+            
+            .search-item-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            
+            .item-details {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .status-badges {
+                align-items: flex-start;
+                margin-top: 10px;
+            }
+            
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
         }
     </style>
 </head>
@@ -263,7 +354,7 @@ try {
                         <i class="bi bi-search"></i> Search Results
                     </h1>
                     <p class="text-muted mb-0">
-                        Search query: <span class="highlight"><?php echo htmlspecialchars($query); ?></span>
+                        Search query: <span class="search-query-highlight"><?php echo htmlspecialchars($query); ?></span>
                     </p>
                 </div>
                 <div class="col-md-4 text-md-end">
@@ -274,115 +365,150 @@ try {
             </div>
         </div>
         
-        <!-- Asset Items Results -->
-        <?php if (!empty($asset_results)): ?>
-            <div class="results-card">
-                <h5 class="mb-3">
-                    <i class="bi bi-box"></i> Asset Items
-                    <span class="badge bg-primary ms-2"><?php echo count($asset_results); ?></span>
-                </h5>
-                
-                <?php foreach ($asset_results as $asset): ?>
-                    <div class="search-result-item" onclick="window.location.href='view_asset_item.php?id=<?php echo $asset['id']; ?>'">
-                        <div class="row align-items-center">
-                            <div class="col-md-8">
-                                <div class="d-flex align-items-center mb-2">
-                                    <span class="result-type-badge asset-badge me-2">Asset</span>
-                                    <strong><?php echo htmlspecialchars($asset['description']); ?></strong>
-                                </div>
-                                <div class="text-muted small">
-                                    <?php if (!empty($asset['property_no'])): ?>
-                                        <i class="bi bi-tag"></i> <?php echo htmlspecialchars($asset['property_no']); ?>
-                                    <?php endif; ?>
-                                    <?php if (!empty($asset['inventory_tag'])): ?>
-                                        <span class="ms-3"><i class="bi bi-upc-scan"></i> <?php echo htmlspecialchars($asset['inventory_tag']); ?></span>
-                                    <?php endif; ?>
-                                    <?php if (!empty($asset['asset_description'])): ?>
-                                        <span class="ms-3"><i class="bi bi-archive"></i> <?php echo htmlspecialchars($asset['asset_description']); ?></span>
-                                    <?php endif; ?>
-                                </div>
+        <div class="search-results-container">
+            <!-- Asset Items Results -->
+            <?php if (!empty($asset_results)): ?>
+                <div class="results-section">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <i class="bi bi-box"></i>
+                            Asset Items
+                        </div>
+                        <div class="result-count">
+                            <?php echo count($asset_results); ?> results
+                        </div>
+                    </div>
+                    
+                    <?php foreach ($asset_results as $asset): ?>
+                        <div class="search-item" onclick="window.location.href='view_asset_item.php?id=<?php echo $asset['id']; ?>'">
+                            <div class="search-item-header">
+                                <span class="type-badge badge-asset">Asset</span>
+                                <div class="item-title"><?php echo htmlspecialchars($asset['description']); ?></div>
                             </div>
-                            <div class="col-md-4 text-end">
-                                <span class="status-badge status-<?php echo $asset['status']; ?>">
-                                    <?php echo ucfirst(str_replace('_', ' ', $asset['status'])); ?>
-                                </span>
-                                <?php if (!empty($asset['office_name'])): ?>
-                                    <div class="small text-muted mt-1">
-                                        <i class="bi bi-building"></i> <?php echo htmlspecialchars($asset['office_name']); ?>
+                            
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <div class="item-details">
+                                        <?php if (!empty($asset['property_no'])): ?>
+                                            <div class="detail-item">
+                                                <i class="bi bi-tag"></i>
+                                                <span><?php echo htmlspecialchars($asset['property_no']); ?></span>
+                                            </div>
+                                        <?php endif; ?>
+                                        <?php if (!empty($asset['inventory_tag'])): ?>
+                                            <div class="detail-item">
+                                                <i class="bi bi-upc-scan"></i>
+                                                <span><?php echo htmlspecialchars($asset['inventory_tag']); ?></span>
+                                            </div>
+                                        <?php endif; ?>
+                                        <?php if (!empty($asset['asset_description'])): ?>
+                                            <div class="detail-item">
+                                                <i class="bi bi-archive"></i>
+                                                <span><?php echo htmlspecialchars($asset['asset_description']); ?></span>
+                                            </div>
+                                        <?php endif; ?>
+                                        <?php if (!empty($asset['office_name'])): ?>
+                                            <div class="detail-item">
+                                                <i class="bi bi-building"></i>
+                                                <span><?php echo htmlspecialchars($asset['office_name']); ?></span>
+                                            </div>
+                                        <?php endif; ?>
                                     </div>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
-        
-        <!-- Employee Results -->
-        <?php if (!empty($employee_results)): ?>
-            <div class="results-card">
-                <h5 class="mb-3">
-                    <i class="bi bi-people"></i> Employees
-                    <span class="badge bg-success ms-2"><?php echo count($employee_results); ?></span>
-                </h5>
-                
-                <?php foreach ($employee_results as $employee): ?>
-                    <div class="search-result-item" onclick="window.location.href='view_employee.php?id=<?php echo $employee['id']; ?>'">
-                        <div class="row align-items-center">
-                            <div class="col-md-8">
-                                <div class="d-flex align-items-center mb-2">
-                                    <span class="result-type-badge employee-badge me-2">Employee</span>
-                                    <strong><?php echo htmlspecialchars($employee['firstname'] . ' ' . $employee['lastname']); ?></strong>
                                 </div>
-                                <div class="text-muted small">
-                                    <i class="bi bi-card-text"></i> <?php echo htmlspecialchars($employee['employee_no']); ?>
-                                    <?php if (!empty($employee['position'])): ?>
-                                        <span class="ms-3"><i class="bi bi-briefcase"></i> <?php echo htmlspecialchars($employee['position']); ?></span>
-                                    <?php endif; ?>
-                                    <?php if (!empty($employee['employment_status'])): ?>
-                                        <span class="ms-3"><i class="bi bi-person-badge"></i> <?php echo htmlspecialchars($employee['employment_status']); ?></span>
-                                    <?php endif; ?>
-                                    <?php if (!empty($employee['office_name'])): ?>
-                                        <span class="ms-3"><i class="bi bi-geo-alt"></i> <?php echo htmlspecialchars($employee['office_name']); ?></span>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <div class="mb-1">
-                                    <span class="status-badge employment-<?php echo $employee['employment_status']; ?>">
-                                        <?php echo ucfirst(str_replace('_', ' ', $employee['employment_status'])); ?>
-                                    </span>
-                                </div>
-                                <div>
-                                    <span class="status-badge clearance-<?php echo $employee['clearance_status']; ?>">
-                                        <?php echo ucfirst($employee['clearance_status']); ?>
-                                    </span>
+                                <div class="col-md-4">
+                                    <div class="status-badges">
+                                        <div class="status-badge status-<?php echo $asset['status']; ?>">
+                                            <?php echo ucfirst(str_replace('_', ' ', $asset['status'])); ?>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+            
+            <!-- Employee Results -->
+            <?php if (!empty($employee_results)): ?>
+                <div class="results-section">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <i class="bi bi-people"></i>
+                            Employees
+                        </div>
+                        <div class="result-count">
+                            <?php echo count($employee_results); ?> results
+                        </div>
                     </div>
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
-        
-        <!-- No Results -->
-        <?php if (empty($asset_results) && empty($employee_results)): ?>
-            <div class="results-card">
-                <div class="no-results">
-                    <i class="bi bi-search fs-1 text-muted"></i>
-                    <h4 class="mt-3">No results found</h4>
-                    <p class="text-muted">
-                        No asset items or employees found matching "<strong><?php echo htmlspecialchars($query); ?></strong>"
-                    </p>
-                    <div class="mt-3">
-                        <small class="text-muted">
-                            Try searching with different keywords or check the spelling
-                        </small>
+                    
+                    <?php foreach ($employee_results as $employee): ?>
+                        <div class="search-item" onclick="window.location.href='view_employee.php?id=<?php echo $employee['id']; ?>'">
+                            <div class="search-item-header">
+                                <span class="type-badge badge-employee">Employee</span>
+                                <div class="item-title"><?php echo htmlspecialchars($employee['firstname'] . ' ' . $employee['lastname']); ?></div>
+                            </div>
+                            
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <div class="item-details">
+                                        <div class="detail-item">
+                                            <i class="bi bi-card-text"></i>
+                                            <span><?php echo htmlspecialchars($employee['employee_no']); ?></span>
+                                        </div>
+                                        <?php if (!empty($employee['position'])): ?>
+                                            <div class="detail-item">
+                                                <i class="bi bi-briefcase"></i>
+                                                <span><?php echo htmlspecialchars($employee['position']); ?></span>
+                                            </div>
+                                        <?php endif; ?>
+                                        <?php if (!empty($employee['office_name'])): ?>
+                                            <div class="detail-item">
+                                                <i class="bi bi-geo-alt"></i>
+                                                <span><?php echo htmlspecialchars($employee['office_name']); ?></span>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="status-badges">
+                                        <div class="status-badge employment-<?php echo $employee['employment_status']; ?>">
+                                            <?php echo ucfirst(str_replace('_', ' ', $employee['employment_status'])); ?>
+                                        </div>
+                                        <div class="status-badge clearance-<?php echo $employee['clearance_status']; ?>">
+                                            <?php echo ucfirst($employee['clearance_status']); ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+            
+            <!-- No Results -->
+            <?php if (empty($asset_results) && empty($employee_results)): ?>
+                <div class="results-section">
+                    <div class="no-results-container">
+                        <div class="no-results-icon">
+                            <i class="bi bi-search"></i>
+                        </div>
+                        <div class="no-results-title">No results found</div>
+                        <div class="no-results-text">
+                            No asset items or employees found matching "<strong><?php echo htmlspecialchars($query); ?></strong>"
+                        </div>
+                        <div class="search-tips">
+                            <h6><i class="bi bi-lightbulb"></i> Search Tips:</h6>
+                            <ul class="text-start small mb-0">
+                                <li>Try searching with different keywords</li>
+                                <li>Check the spelling of your search terms</li>
+                                <li>Use partial words (e.g., "comp" for "computer")</li>
+                                <li>Search by property numbers, employee IDs, or names</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
-            </div>
-        <?php endif; ?>
-        
+            <?php endif; ?>
+        </div>
     </div>
     </div> <!-- Close main wrapper -->
     

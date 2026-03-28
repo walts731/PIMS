@@ -244,7 +244,29 @@ try {
     $_SESSION['error'] = "Error disposing item: " . $e->getMessage();
 }
 
-// Redirect back to appropriate page
-header('Location: ' . $redirect_page);
+// Check if this is an AJAX request
+if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+    // Return JSON response for AJAX requests
+    header('Content-Type: application/json');
+    
+    if (isset($_SESSION['error'])) {
+        echo json_encode([
+            'success' => false,
+            'message' => $_SESSION['error']
+        ]);
+        unset($_SESSION['error']);
+    } else {
+        echo json_encode([
+            'success' => true,
+            'message' => $_SESSION['success'] ?? 'Disposal completed successfully',
+            'redirect' => $redirect_page
+        ]);
+        unset($_SESSION['success']);
+    }
+} else {
+    // Redirect back to appropriate page for regular form submissions
+    header('Location: ' . $redirect_page);
+}
+
 exit();
 ?>

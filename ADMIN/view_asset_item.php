@@ -135,6 +135,61 @@ if ($item['status'] === 'disposed' && !empty($item['disposal_date'])) {
     array_unshift($item_history, $disposal_history);
 }
 
+// Add peripheral information to history
+$peripheral_history_sql = "SELECT p.id, p.name, p.model, p.serial_number, p.status, p.created_at, p.updated_at,
+                                 p.asset_item_id, 'Peripheral Added' as action,
+                                 CONCAT('Added peripheral: ', p.name, IF(p.model != '', CONCAT(' (', p.model, ')'), ''), 
+                                        IF(p.serial_number != '', CONCAT(' - S/N: ', p.serial_number), '')) as details
+                          FROM peripherals p 
+                          WHERE p.asset_item_id = ? 
+                          ORDER BY p.created_at DESC, p.updated_at DESC
+                          LIMIT 5";
+$peripheral_history_stmt = $conn->prepare($peripheral_history_sql);
+$peripheral_history_stmt->bind_param("i", $item_id);
+$peripheral_history_stmt->execute();
+$peripheral_history_result = $peripheral_history_stmt->get_result();
+
+while ($peripheral_row = $peripheral_history_result->fetch_assoc()) {
+    // Add creation entry
+    $peripheral_create_history = [
+        'id' => 'peripheral_create_' . $peripheral_row['id'],
+        'item_id' => $item_id,
+        'action' => 'Peripheral Added',
+        'details' => $peripheral_row['details'],
+        'user_id' => null,
+        'user_name' => 'System',
+        'created_at' => $peripheral_row['created_at']
+    ];
+    
+    // Add to history array
+    $item_history[] = $peripheral_create_history;
+    
+    // Add update entry if different from creation
+    if ($peripheral_row['updated_at'] && $peripheral_row['updated_at'] !== $peripheral_row['created_at']) {
+        $peripheral_update_history = [
+            'id' => 'peripheral_update_' . $peripheral_row['id'],
+            'item_id' => $item_id,
+            'action' => 'Peripheral Updated',
+            'details' => 'Updated peripheral: ' . $peripheral_row['name'] . 
+                              ' - Status: ' . ucfirst(str_replace('_', ' ', $peripheral_row['status'])),
+            'user_id' => null,
+            'user_name' => 'System',
+            'created_at' => $peripheral_row['updated_at']
+        ];
+        
+        $item_history[] = $peripheral_update_history;
+    }
+}
+$peripheral_history_stmt->close();
+
+// Sort all history by created_at date
+usort($item_history, function($a, $b) {
+    return strtotime($b['created_at']) - strtotime($a['created_at']);
+});
+
+// Limit to 10 most recent entries
+$item_history = array_slice($item_history, 0, 10);
+
 // Helper functions for timeline
 function getActionIcon($action) {
     $icons = [
@@ -152,7 +207,9 @@ function getActionIcon($action) {
         'Cleaned' => 'brush-fill',
         'Tested' => 'check-circle-fill',
         'Approved' => 'check-square-fill',
-        'Rejected' => 'x-square-fill'
+        'Rejected' => 'x-square-fill',
+        'Peripheral Added' => 'pc-display',
+        'Peripheral Updated' => 'pencil-square'
     ];
     
     return $icons[$action] ?? 'circle-fill';
@@ -174,7 +231,9 @@ function getActionColor($action) {
         'Cleaned' => '#28a745',           // Green
         'Tested' => '#20c997',            // Teal
         'Approved' => '#28a745',          // Green
-        'Rejected' => '#dc3545'           // Red
+        'Rejected' => '#dc3545',           // Red
+        'Peripheral Added' => '#fd7e14',   // Orange
+        'Peripheral Updated' => '#6f42c1'  // Purple
     ];
     
     return $colors[$action] ?? '#6c757d';        // Gray default
@@ -2235,9 +2294,111 @@ $status_display = formatStatus($item['status']);
                 return;
             }
             
-            // Submit the form
-            document.getElementById('disposeForm').submit();
+            // Show loading state
+            const confirmBtn = document.querySelector('[onclick="confirmDisposal()"]');
+            const originalText = confirmBtn.innerHTML;
+            confirmBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Processing...';
+            confirmBtn.disabled = true;
+            
+            // Submit the form using AJAX to capture the response
+            const formData = new FormData(document.getElementById('disposeForm'));
+            
+            fetch('process_disposal.php', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Add activity feed entry
+                    addActivityFeedEntry('Disposed', reason, '<?php echo $_SESSION['firstname'] . ' ' . $_SESSION['lastname']; ?>', date + ' 12:00:00');
+                    
+                    // Show success message
+                    alert('Asset has been successfully disposed.');
+                    
+                    // Close modal
+                    bootstrap.Modal.getInstance(document.getElementById('disposeModal')).hide();
+                    
+                    // Redirect or reload page
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    throw new Error(data.message || 'Disposal failed');
+                }
+            })
+            .catch(error => {
+                console.error('Disposal error:', error);
+                alert('Error disposing asset: ' + error.message);
+                
+                // Reset button state
+                confirmBtn.innerHTML = originalText;
+                confirmBtn.disabled = false;
+            });
         };
+        
+        // Function to add activity feed entry dynamically
+        function addActivityFeedEntry(action, details, userName, createdAt) {
+            const activityFeed = document.querySelector('.activity-feed');
+            if (!activityFeed) return;
+            
+            // Create new activity item
+            const activityItem = document.createElement('div');
+            activityItem.className = 'activity-item';
+            activityItem.style.opacity = '0';
+            activityItem.style.transform = 'translateY(20px)';
+            
+            // Get action icon and color
+            const actionIcon = getActionIcon(action);
+            const actionColor = getActionColor(action);
+            
+            activityItem.innerHTML = `
+                <div class="activity-icon">
+                    <i class="bi bi-${actionIcon}" style="color: ${actionColor};"></i>
+                </div>
+                <div class="activity-content">
+                    <div class="activity-header">
+                        <div class="activity-action">
+                            <span class="action-badge" style="background-color: ${actionColor};">
+                                ${action}
+                            </span>
+                            <span class="activity-time">
+                                <i class="bi bi-clock"></i>
+                                Just now
+                            </span>
+                        </div>
+                    </div>
+                    <div class="activity-details">
+                        ${details}
+                    </div>
+                    <div class="activity-user">
+                        <i class="bi bi-person-circle"></i>
+                        ${userName}
+                    </div>
+                </div>
+            `;
+            
+            // Add to the beginning of the feed
+            activityFeed.insertBefore(activityItem, activityFeed.firstChild);
+            
+            // Animate in
+            setTimeout(() => {
+                activityItem.style.transition = 'all 0.6s ease';
+                activityItem.style.opacity = '1';
+                activityItem.style.transform = 'translateY(0)';
+            }, 100);
+            
+            // Update relative time after a delay
+            setTimeout(() => {
+                const timeElement = activityItem.querySelector('.activity-time');
+                if (timeElement) {
+                    timeElement.innerHTML = `<i class="bi bi-clock"></i> ${formatTimelineDate(createdAt)}`;
+                }
+            }, 2000);
+        }
         
         // Red Tag component selection functions
         function addAssetToRedtag() {
