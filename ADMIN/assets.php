@@ -676,91 +676,8 @@ try {
             </div>
         </div>
         
-        <!-- Statistics Cards -->
-        <div class="row mb-4">
-            <div class="col-lg-2 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $stats['total_quantity'] ?? 0; ?></div>
-                    <div class="stats-label"><i class="bi bi-box-fill text-primary"></i> Total Assets</div>
-                </div>
-            </div>
-            <div class="col-lg-2 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $stats['serviceable_count'] ?? 0; ?></div>
-                    <div class="stats-label"><i class="bi bi-check-circle-fill text-success"></i> Serviceable</div>
-                </div>
-            </div>
-            <div class="col-lg-2 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $stats['unserviceable_count'] ?? 0; ?></div>
-                    <div class="stats-label"><i class="bi bi-x-circle-fill text-danger"></i> Unserviceable</div>
-                </div>
-            </div>
-            <div class="col-lg-2 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $stats['no_tag_count'] ?? 0; ?></div>
-                    <div class="stats-label"><i class="bi bi-tag-fill text-secondary"></i> No Tag Assets</div>
-                </div>
-            </div>
-            <div class="col-lg-2 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $stats['red_tagged_count'] ?? 0; ?></div>
-                    <div class="stats-label"><i class="bi bi-exclamation-triangle-fill text-danger"></i> Red-Tagged</div>
-                </div>
-            </div>
-            <div class="col-lg-2 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $stats['maintenance_count'] ?? 0; ?></div>
-                    <div class="stats-label"><i class="bi bi-tools text-warning"></i> Maintenance</div>
-                </div>
-            </div>
-        </div>
-        
         <!-- Assets Table -->
         <div class="table-container">
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <h5 class="mb-0"><i class="bi bi-list-ul"></i> Assets List</h5>
-                </div>
-                <div class="col-md-6">
-                    <div class="row g-2">
-                        <div class="col-md-3">
-                            <select class="form-select form-select-sm" id="categoryFilter">
-                                <option value="">All Categories</option>
-                                <?php foreach ($categories as $category): ?>
-                                    <option value="<?php echo $category['id']; ?>" <?php echo $category_filter == $category['id'] ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($category['category_code'] . ' - ' . $category['category_name']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <select class="form-select form-select-sm" id="subcategoryFilter" <?php echo $category_filter == 0 ? 'disabled' : ''; ?>>
-                                <option value="">All Subcategories</option>
-                                <?php foreach ($subcategories as $subcategory): ?>
-                                    <option value="<?php echo $subcategory['id']; ?>" <?php echo $subcategory_filter == $subcategory['id'] ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($subcategory['sub_category_code'] . ' - ' . $subcategory['sub_category_name']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <select class="form-select form-select-sm" id="officeFilter">
-                                <option value="">All Offices</option>
-                                <?php foreach ($offices as $office): ?>
-                                    <option value="<?php echo $office['id']; ?>" <?php echo $office_filter == $office['id'] ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($office['office_name']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <!-- Search removed - using DataTables built-in search -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
             <div class="table-responsive">
                 <table class="table table-hover" id="assetsTable">
                     <thead>
@@ -771,22 +688,30 @@ try {
                             <th>Quantity</th>
                             <th>Office</th>
                             <th>Actions</th>
+                            <!-- Hidden columns for filtering -->
+                            <th style="display:none;">Category ID</th>
+                            <th style="display:none;">Subcategory ID</th>
+                            <th style="display:none;">Office ID</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if (!empty($assets)): ?>
                             <?php foreach ($assets as $asset): ?>
                                 <tr>
-                                    <td><?php echo htmlspecialchars($asset['category_name'] ?? 'N/A'); ?></td>
-                                    <td><?php echo htmlspecialchars($asset['sub_category_name'] ?? 'No subcategory'); ?></td>
+                                    <td data-category-id="<?php echo $asset['asset_categories_id']; ?>"><?php echo htmlspecialchars($asset['category_name'] ?? 'N/A'); ?></td>
+                                    <td data-subcategory-id="<?php echo $asset['asset_subcategory_id']; ?>"><?php echo htmlspecialchars($asset['sub_category_name'] ?? 'No subcategory'); ?></td>
                                     <td><?php echo htmlspecialchars($asset['description']); ?></td>
                                     <td><?php echo $asset['quantity']; ?></td>
-                                    <td><?php echo htmlspecialchars($asset['office_name'] ?? 'N/A'); ?></td>
+                                    <td data-office-id="<?php echo $asset['office_id']; ?>"><?php echo htmlspecialchars($asset['office_name'] ?? 'N/A'); ?></td>
                                     <td>
                                         <a href="asset_items.php?asset_id=<?php echo $asset['id']; ?>" class="btn btn-sm btn-outline-info">
                                             <i class="bi bi-eye"></i> View Items
                                         </a>
                                     </td>
+                                    <!-- Hidden cells for filtering -->
+                                    <td style="display:none;"><?php echo $asset['asset_categories_id']; ?></td>
+                                    <td style="display:none;"><?php echo $asset['asset_subcategory_id']; ?></td>
+                                    <td style="display:none;"><?php echo $asset['office_id']; ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php else: ?>
@@ -1286,33 +1211,12 @@ try {
                         order: [[4, 'desc']], // Sort by Created date column (index 4) by default
                         columnDefs: [
                             {
-                                targets: 0, // Category column
-                                orderable: true,
-                                render: function(data, type, row) {
-                                    if (type === 'display') {
-                                        return data;
-                                    }
-                                    return data.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
-                                }
-                            },
-                            {
-                                targets: 4, // Created date column
-                                orderable: true,
-                                render: function(data, type, row) {
-                                    if (type === 'sort' || type === 'type') {
-                                        // Convert date string to timestamp for sorting
-                                        return new Date(data).getTime();
-                                    }
-                                    return data;
-                                }
-                            },
-                            {
                                 targets: -1, // Actions column (last column)
                                 orderable: false,
                                 searchable: false
                             }
                         ],
-                        dom: '<"row"<"col-md-6"l><"col-md-6 text-end"f>>rtip',
+                        dom: '<"row"<"col-md-3"l><"col-md-2 category-filter-container"><"col-md-2 subcategory-filter-container"><"col-md-2 office-filter-container"><"col-md-3"f>>rtip',
                         language: {
                             search: "Search assets:",
                             lengthMenu: "Show _MENU_ assets per page",
@@ -1328,6 +1232,43 @@ try {
                         },
                         initComplete: function(settings, json) {
                             console.log('DataTables initialized successfully');
+                            
+                            // Add category filter to DataTables
+                            $('.category-filter-container').html(`
+                                <select id="categoryFilter" class="form-select form-select-sm">
+                                    <option value="">All Categories</option>
+                                    <?php foreach ($categories as $category): ?>
+                                        <option value="<?php echo $category['id']; ?>" <?php echo $category_filter == $category['id'] ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($category['category_code'] . ' - ' . $category['category_name']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            `);
+                            
+                            // Add subcategory filter to DataTables
+                            $('.subcategory-filter-container').html(`
+                                <select id="subcategoryFilter" class="form-select form-select-sm" <?php echo $category_filter == 0 ? 'disabled' : ''; ?>>
+                                    <option value="">All Subcategories</option>
+                                    <?php foreach ($subcategories as $subcategory): ?>
+                                        <option value="<?php echo $subcategory['id']; ?>" <?php echo $subcategory_filter == $subcategory['id'] ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($subcategory['subcategory_code'] . ' - ' . $subcategory['sub_category_name']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            `);
+                            
+                            // Add office filter to DataTables
+                            $('.office-filter-container').html(`
+                                <select id="officeFilter" class="form-select form-select-sm">
+                                    <option value="">All Offices</option>
+                                    <?php foreach ($offices as $office): ?>
+                                        <option value="<?php echo $office['id']; ?>" <?php echo $office_filter == $office['id'] ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($office['office_name']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            `);
+                            
                             // Initialize subcategory filter state after DataTables is ready
                             initializeSubcategoryFilter();
                         }
@@ -1376,7 +1317,7 @@ try {
                         data: { category_id: categoryValue },
                         dataType: 'json',
                         success: function(response) {
-                            if (response.success) {
+                            if (response.success && Array.isArray(response.subcategories)) {
                                 // Get current selected subcategory value
                                 const currentSubcategory = subcategorySelect.val();
                                 
@@ -1395,9 +1336,14 @@ try {
                                 });
                                 
                                 console.log('Initialized subcategories:', response.subcategories);
+                                
+                                // If no subcategories, show a message
+                                if (response.subcategories.length === 0) {
+                                    console.log('No active subcategories found for this category');
+                                }
                             } else {
-                                console.error('Error loading subcategories:', response.error);
-                                subcategorySelect.empty().append('<option value="">Error: ' + response.error + '</option>');
+                                console.error('Invalid response format:', response);
+                                subcategorySelect.empty().append('<option value="">No subcategories available</option>');
                             }
                         },
                         error: function(xhr, status, error) {
@@ -1450,7 +1396,7 @@ try {
                         success: function(response) {
                             console.log('AJAX response received:', response);
                             
-                            if (response.success) {
+                            if (response.success && Array.isArray(response.subcategories)) {
                                 // Clear current options
                                 subcategorySelect.empty().append('<option value="">All Subcategories</option>');
                                 
@@ -1465,9 +1411,14 @@ try {
                                 });
                                 
                                 console.log('Loaded subcategories:', response.subcategories);
+                                
+                                // If no subcategories, show a message
+                                if (response.subcategories.length === 0) {
+                                    console.log('No active subcategories found for this category');
+                                }
                             } else {
-                                console.error('Error loading subcategories:', response.error);
-                                subcategorySelect.empty().append('<option value="">Error: ' + response.error + '</option>');
+                                console.error('Invalid response format:', response);
+                                subcategorySelect.empty().append('<option value="">No subcategories available</option>');
                             }
                         },
                         error: function(xhr, status, error) {
@@ -1529,34 +1480,28 @@ try {
                     office: officeValue
                 });
                 
-                // Build filter conditions for DataTables
-                let searchTerms = [];
-                
-                if (categoryValue) {
-                    // Filter by category - this will be handled by server-side reload
-                    // For now, we'll reload the page to maintain consistency with existing logic
-                    const currentUrl = new URL(window.location);
-                    currentUrl.searchParams.set('category', categoryValue);
+                if (assetsTable) {
+                    // Filter using hidden columns
+                    if (categoryValue) {
+                        assetsTable.column(6).search(categoryValue);
+                    } else {
+                        assetsTable.column(6).search('');
+                    }
+                    
                     if (subcategoryValue) {
-                        currentUrl.searchParams.set('subcategory', subcategoryValue);
+                        assetsTable.column(7).search(subcategoryValue);
                     } else {
-                        currentUrl.searchParams.delete('subcategory');
+                        assetsTable.column(7).search('');
                     }
+                    
                     if (officeValue) {
-                        currentUrl.searchParams.set('office', officeValue);
+                        assetsTable.column(8).search(officeValue);
                     } else {
-                        currentUrl.searchParams.delete('office');
+                        assetsTable.column(8).search('');
                     }
-                    currentUrl.searchParams.delete('page'); // Reset pagination
-                    window.location.href = currentUrl.toString();
-                } else {
-                    // No category filter - clear all filters and reload
-                    const currentUrl = new URL(window.location);
-                    currentUrl.searchParams.delete('category');
-                    currentUrl.searchParams.delete('subcategory');
-                    currentUrl.searchParams.delete('office');
-                    currentUrl.searchParams.delete('page');
-                    window.location.href = currentUrl.toString();
+                    
+                    // Redraw the table with applied filters
+                    assetsTable.draw();
                 }
             }
             

@@ -1,9 +1,9 @@
 <?php
-// Enable error reporting for debugging
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+// Disable error reporting for API responses
+error_reporting(0);
+ini_set('display_errors', 0);
 
-require_once '../config.php';
+require_once '../../config.php';
 
 header('Content-Type: application/json');
 
