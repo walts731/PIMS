@@ -455,12 +455,29 @@ $showing_to = min($page * $per_page, $total_records);
                     <?php endif; ?>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <button class="btn btn-primary" onclick="addEmployee()">
-                        <i class="bi bi-plus-circle"></i> Add Employee
-                    </button>
-                    <button class="btn btn-success btn-sm ms-2" onclick="exportEmployees()">
-                        <i class="bi bi-download"></i> Export
-                    </button>
+                    <div class="dropdown">
+                        <button class="btn btn-primary dropdown-toggle" type="button" id="actionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-gear"></i> Actions
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionsDropdown">
+                            <li>
+                                <button class="dropdown-item" onclick="addEmployee()">
+                                    <i class="bi bi-plus-circle"></i> Add Employee
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item" onclick="exportEmployees()">
+                                    <i class="bi bi-download"></i> Export
+                                </button>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <button class="dropdown-item" onclick="location.reload()">
+                                    <i class="bi bi-arrow-clockwise"></i> Refresh Page
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>

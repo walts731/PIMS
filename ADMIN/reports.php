@@ -365,12 +365,29 @@ function formatStatus($status) {
                     <p class="text-muted mb-0">Generate comprehensive reports for assets and employees</p>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <button class="btn btn-export me-2" onclick="exportReport()">
-                        <i class="bi bi-download"></i> Export
-                    </button>
-                    <button class="btn btn-report" onclick="printReport()">
-                        <i class="bi bi-printer"></i> Print
-                    </button>
+                    <div class="dropdown">
+                        <button class="btn btn-primary dropdown-toggle" type="button" id="actionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-gear"></i> Actions
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionsDropdown">
+                            <li>
+                                <button class="dropdown-item" onclick="exportReport()">
+                                    <i class="bi bi-download"></i> Export
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item" onclick="printReport()">
+                                    <i class="bi bi-printer"></i> Print
+                                </button>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <button class="dropdown-item" onclick="location.reload()">
+                                    <i class="bi bi-arrow-clockwise"></i> Refresh Page
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>

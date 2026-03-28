@@ -147,19 +147,33 @@ if ($conn && !$conn->connect_error) {
                     <p class="text-muted mb-0">View all asset items with Property Acknowledgment Receipt (PAR) references</p>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <div class="btn-group" role="group">
-                        <button type="button" class="btn btn-info" onclick="showSummary()" data-bs-toggle="tooltip" title="View Summary">
-                            <i class="bi bi-list-ul"></i>
-                            <span class="d-none d-md-inline ms-1">Summary</span>
+                    <div class="dropdown">
+                        <button class="btn btn-primary dropdown-toggle" type="button" id="actionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-gear"></i> Actions
                         </button>
-                        <button type="button" class="btn btn-success" onclick="exportToCSV()" data-bs-toggle="tooltip" title="Export to CSV">
-                            <i class="bi bi-download"></i>
-                            <span class="d-none d-md-inline ms-1">CSV</span>
-                        </button>
-                        <button type="button" class="btn btn-danger" onclick="exportToPDF()" data-bs-toggle="tooltip" title="Export to PDF">
-                            <i class="bi bi-file-pdf"></i>
-                            <span class="d-none d-md-inline ms-1">PDF</span>
-                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionsDropdown">
+                            <li>
+                                <button class="dropdown-item" onclick="showSummary()" data-bs-toggle="tooltip" title="View Summary">
+                                    <i class="bi bi-list-ul"></i> Summary
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item" onclick="exportToCSV()" data-bs-toggle="tooltip" title="Export to CSV">
+                                    <i class="bi bi-download"></i> Export CSV
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item" onclick="exportToPDF()" data-bs-toggle="tooltip" title="Export to PDF">
+                                    <i class="bi bi-file-pdf"></i> Export PDF
+                                </button>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <button class="dropdown-item" onclick="location.reload()">
+                                    <i class="bi bi-arrow-clockwise"></i> Refresh Page
+                                </button>
+                            </li>
+                        </ul>
                     </div>
                 </div>
             </div>

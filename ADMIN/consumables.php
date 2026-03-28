@@ -609,33 +609,38 @@ try {
                     <?php endif; ?>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <div class="btn-group" role="group">
-                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addConsumableModal">
-                            <i class="bi bi-plus-circle"></i> Add Consumable
+                    <div class="dropdown">
+                        <button class="btn btn-primary dropdown-toggle" type="button" id="actionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-gear"></i> Actions
                         </button>
-                        <div class="btn-group" role="group">
-                            <button type="button" class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-gear"></i> Actions
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li>
-                                    <a class="dropdown-item" href="lend_consumables.php">
-                                        <i class="bi bi-arrow-left-right"></i> Borrowing
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="release_history.php">
-                                        <i class="bi bi-clock-history"></i> History
-                                    </a>
-                                </li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    <a class="dropdown-item" href="#" onclick="exportConsumables()">
-                                        <i class="bi bi-download"></i> Export Consumables
-                                    </a>
-                                </li>
-                            </ul>
-                        </div>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionsDropdown">
+                            <li>
+                                <button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#addConsumableModal">
+                                    <i class="bi bi-plus-circle"></i> Add Consumable
+                                </button>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="lend_consumables.php">
+                                    <i class="bi bi-arrow-left-right"></i> Borrowing
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="release_history.php">
+                                    <i class="bi bi-clock-history"></i> History
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <button class="dropdown-item" onclick="exportConsumables()">
+                                    <i class="bi bi-download"></i> Export Consumables
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item" onclick="location.reload()">
+                                    <i class="bi bi-arrow-clockwise"></i> Refresh Page
+                                </button>
+                            </li>
+                        </ul>
                     </div>
                 </div>
             </div>

@@ -164,11 +164,11 @@ try {
                     <?php endif; ?>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <div class="btn-group" role="group">
-                        <button type="button" class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                    <div class="dropdown">
+                        <button class="btn btn-primary dropdown-toggle" type="button" id="actionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-gear"></i> Actions
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end">
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionsDropdown">
                             <li>
                                 <a href="create_tag.php" class="dropdown-item">
                                     <i class="bi bi-tag"></i> Create Tag
@@ -184,11 +184,6 @@ try {
                     </div>
                 </div>
             </div>
-        </div>
-        
-        <div class="alert alert-warning" role="alert">
-            <i class="bi bi-exclamation-triangle-fill"></i>
-            <strong>Attention:</strong> The following assets may require inventory tagging for proper tracking and management.
         </div>
         
         <!-- Data Table Card -->

@@ -211,36 +211,34 @@ try {
                         <?php unset($_SESSION['error']); ?>
                     <?php endif; ?>
                 </div>
-                <div class="col-md-4 text-md-end">
-                    <div class="no-print">
-                        <div class="btn-group" role="group">
-                            <button type="button" class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-gear"></i> Actions
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li>
-                                    <button type="button" class="dropdown-item" onclick="printSelectedTags()">
-                                        <i class="bi bi-printer"></i> Print Selected
-                                    </button>
-                                </li>
-                                <li>
-                                    <a href="unserviceable_assets.php" class="dropdown-item">
-                                        <i class="bi bi-x-circle"></i> Unserviceable Assets
-                                    </a>
-                                </li>
-                                <li>
-                                    <a href="assets.php" class="dropdown-item">
-                                        <i class="bi bi-box"></i> View All Assets
-                                    </a>
-                                </li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    <button type="button" class="dropdown-item" onclick="location.reload()">
-                                        <i class="bi bi-arrow-clockwise"></i> Refresh Page
-                                    </button>
-                                </li>
-                            </ul>
-                        </div>
+                <div class="col-md-4 text-end">
+                    <div class="dropdown">
+                        <button class="btn btn-primary dropdown-toggle" type="button" id="actionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-gear"></i> Actions
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionsDropdown">
+                            <li>
+                                <button type="button" class="dropdown-item" onclick="printSelectedTags()">
+                                    <i class="bi bi-printer"></i> Print Selected
+                                </button>
+                            </li>
+                            <li>
+                                <a href="unserviceable_assets.php" class="dropdown-item">
+                                    <i class="bi bi-x-circle"></i> Unserviceable Assets
+                                </a>
+                            </li>
+                            <li>
+                                <a href="assets.php" class="dropdown-item">
+                                    <i class="bi bi-box"></i> View All Assets
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <button type="button" class="dropdown-item" onclick="location.reload()">
+                                    <i class="bi bi-arrow-clockwise"></i> Refresh Page
+                                </button>
+                            </li>
+                        </ul>
                     </div>
                 </div>
             </div>

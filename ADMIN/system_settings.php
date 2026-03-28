@@ -341,12 +341,29 @@ logSystemAction($_SESSION['user_id'], 'access', 'system_settings', 'Accessed sys
                         <p class="text-muted mb-0">Configure system parameters and preferences</p>
                     </div>
                     <div class="col-md-4 text-md-end">
-                        <button class="btn btn-outline-primary btn-sm" onclick="autoSaveDraft()">
-                            <i class="bi bi-cloud-upload"></i> Auto-Save
-                        </button>
-                        <button class="btn btn-outline-success btn-sm ms-2" onclick="exportSettings()">
-                            <i class="bi bi-download"></i> Export
-                        </button>
+                        <div class="dropdown">
+                            <button class="btn btn-primary dropdown-toggle" type="button" id="actionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-gear"></i> Actions
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionsDropdown">
+                                <li>
+                                    <button class="dropdown-item" onclick="autoSaveDraft()">
+                                        <i class="bi bi-cloud-upload"></i> Auto-Save
+                                    </button>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item" onclick="exportSettings()">
+                                        <i class="bi bi-download"></i> Export
+                                    </button>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <button class="dropdown-item" onclick="location.reload()">
+                                        <i class="bi bi-arrow-clockwise"></i> Refresh Page
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>

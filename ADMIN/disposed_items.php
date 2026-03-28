@@ -233,14 +233,23 @@ try {
                         <?php unset($_SESSION['error']); ?>
                     <?php endif; ?>
                 </div>
-                <div class="col-md-4 text-md-end">
-                    <div class="d-flex gap-2 justify-content-md-end">
-                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="exportDisposedItems()">
-                            <i class="bi bi-download"></i> Export
+                <div class="col-md-4 text-end">
+                    <div class="dropdown">
+                        <button class="btn btn-primary dropdown-toggle" type="button" id="actionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-gear"></i> Actions
                         </button>
-                        <button type="button" class="btn btn-success btn-sm" onclick="printDisposedItems()">
-                            <i class="bi bi-printer"></i> Print
-                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionsDropdown">
+                            <li>
+                                <button class="dropdown-item" onclick="exportDisposedItems()">
+                                    <i class="bi bi-download"></i> Export
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item" onclick="window.print()">
+                                    <i class="bi bi-printer"></i> Print Report
+                                </button>
+                            </li>
+                        </ul>
                     </div>
                 </div>
             </div>

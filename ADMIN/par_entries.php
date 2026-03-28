@@ -82,22 +82,28 @@ if ($result && $row = $result->fetch_assoc()) {
                     <p class="text-muted mb-0">View and manage Property Acknowledgment Receipt entries</p>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <div class="d-flex gap-2 justify-content-md-end flex-column">
-                        <div class="search-box">
-                            <i class="bi bi-search"></i>
-                            <input type="text" id="searchInput" class="form-control" placeholder="Search PAR forms..." onkeypress="handleSearchKeyPress(event)" oninput="toggleClearButton()">
-                            <button type="button" id="clearSearchBtn" onclick="clearSearch()" style="display: none;" title="Clear search">
-                                <i class="bi bi-x-lg"></i>
-                            </button>
-                        </div>
-                        <div class="d-flex gap-2">
-                            <a href="par_form.php" class="btn btn-primary btn-sm">
-                                <i class="bi bi-plus-circle"></i> New PAR
-                            </a>
-                            <button class="btn btn-success btn-sm" onclick="exportPARData()">
-                                <i class="bi bi-download"></i> Export
-                            </button>
-                        </div>
+                    <div class="dropdown">
+                        <button class="btn btn-primary dropdown-toggle" type="button" id="actionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-gear"></i> Actions
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionsDropdown">
+                            <li>
+                                <a href="par_form.php" class="dropdown-item">
+                                    <i class="bi bi-plus-circle"></i> New PAR
+                                </a>
+                            </li>
+                            <li>
+                                <button class="dropdown-item" onclick="exportPARData()">
+                                    <i class="bi bi-download"></i> Export
+                                </button>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <button class="dropdown-item" onclick="location.reload()">
+                                    <i class="bi bi-arrow-clockwise"></i> Refresh Page
+                                </button>
+                            </li>
+                        </ul>
                     </div>
                 </div>
             </div>

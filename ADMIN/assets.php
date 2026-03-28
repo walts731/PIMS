@@ -633,11 +633,11 @@ try {
                 </div>
                 <div class="col-md-4 text-md-end">
                     <div class="no-print">
-                        <div class="btn-group" role="group">
-                            <button type="button" class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                        <div class="dropdown">
+                            <button class="btn btn-primary dropdown-toggle" type="button" id="actionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="bi bi-gear"></i> Actions
                             </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionsDropdown">
                                 <li>
                                     <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#addAssetModal">
                                         <i class="bi bi-plus-circle"></i> Add Asset

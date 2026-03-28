@@ -199,12 +199,29 @@ while ($row = $loc_result->fetch_assoc()) {
                     <?php endif; ?>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addInfrastructureModal">
-                        <i class="bi bi-plus-circle"></i> Add Infrastructure
-                    </button>
-                    <button class="btn btn-success btn-sm ms-2" onclick="exportInfrastructure()">
-                        <i class="bi bi-download"></i> Export
-                    </button>
+                    <div class="dropdown">
+                        <button class="btn btn-primary dropdown-toggle" type="button" id="actionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-gear"></i> Actions
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionsDropdown">
+                            <li>
+                                <button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#addInfrastructureModal">
+                                    <i class="bi bi-plus-circle"></i> Add Infrastructure
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item" onclick="exportInfrastructure()">
+                                    <i class="bi bi-download"></i> Export
+                                </button>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <button class="dropdown-item" onclick="location.reload()">
+                                    <i class="bi bi-arrow-clockwise"></i> Refresh Page
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
