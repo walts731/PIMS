@@ -205,13 +205,41 @@ try {
     
     <style>
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Arial', sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            margin: 0;
+            padding: 20px;
+            color: #000;
+        }
+        
+        .print-header {
+            text-align: left;
+            margin-bottom: 30px;
+            padding: 20px;
+        }
+        
+        .print-header img {
+            max-width: 200px;
+            object-fit: contain;
+            float: left;
+            margin-right: 20px;
+        }
+        
+        .print-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .print-subtitle {
             font-size: 14px;
             color: #666;
             margin-bottom: 20px;
         }
         
-        .print-header {
+        .gov-header {
             text-align: center;
             margin-bottom: 20px;
             padding: 15px;
@@ -255,23 +283,36 @@ try {
             margin-bottom: 20px;
         }
         
-        .report-table th {
-            background: #f0f0f0 !important;
-            color: #000 !important;
-            border: 1px solid #000;
-            font-weight: 600;
-            padding: 8px;
-            text-align: left;
-        }
-        
+        .report-table th,
         .report-table td {
             border: 1px solid #000;
             padding: 8px;
+            text-align: left;
             vertical-align: top;
         }
         
-        .stats-box {
+        .report-table th {
+            background: #f0f0f0;
+            font-weight: bold;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+        
+        .report-table td {
+            font-size: 11px;
+        }
+        
+        .text-center {
+            text-align: center;
+        }
+        
+        .text-right {
+            text-align: right;
+        }
+        
+        .summary-stats {
             display: flex;
+            flex-wrap: wrap;
             gap: 20px;
             margin-bottom: 30px;
         }
@@ -333,7 +374,7 @@ try {
                 if (!empty($system_settings['system_logo'])) {
                     echo '<img src="../' . htmlspecialchars($system_settings['system_logo']) . '" alt="' . htmlspecialchars($system_settings['system_name']) . '" style="max-width: 250px; max-height: 100px;">';
                 } else {
-                    echo '<img src="../img/trans_logo.png" alt="' . htmlspecialchars($system_settings['system_name']) . '" style="max-width: 250px; max-height: 100px;">';
+                    echo '<img src="../img/system_logo.png" alt="' . htmlspecialchars($system_settings['system_name']) . '" style="max-width: 250px; max-height: 100px;">';
                 }
                 ?>
             </div>
@@ -382,7 +423,7 @@ try {
     <?php endif; ?>
     
     <!-- Statistics -->
-    <div class="stats-box">
+    <div class="summary-stats">
         <div class="stat-box">
             <div class="stat-number"><?php echo number_format($total_count); ?></div>
             <div class="stat-label">Total Disposed Items</div>
@@ -402,7 +443,7 @@ try {
                 <th>Item Description</th>
                 <th>Category</th>
                 <th>Property No.</th>
-                <th>Value</th>
+                <th class="text-right">Value</th>
                 <th>Office</th>
                 <th>Disposal Date</th>
                 <th>Disposal Reason</th>
@@ -412,7 +453,7 @@ try {
         <tbody>
             <?php if (empty($disposed_items)): ?>
                 <tr>
-                    <td colspan="11" style="text-align: center; font-style: italic;">No disposed items found matching the criteria.</td>
+                    <td colspan="10" class="text-center">No disposed items found matching the criteria</td>
                 </tr>
             <?php else: ?>
                 <?php foreach ($disposed_items as $item): ?>
@@ -427,7 +468,7 @@ try {
                         </td>
                         <td><?php echo htmlspecialchars($item['category_name'] ?? 'N/A'); ?></td>
                         <td><?php echo htmlspecialchars($item['property_no'] ?? 'N/A'); ?></td>
-                        <td>₱<?php echo number_format($item['value'] ?? 0, 2); ?></td>
+                        <td class="text-right">₱<?php echo number_format($item['value'] ?? 0, 2); ?></td>
                         <td><?php echo htmlspecialchars($item['office_name'] ?? 'N/A'); ?></td>
                         <td>
                             <?php 
@@ -450,6 +491,21 @@ try {
                 <?php endforeach; ?>
             <?php endif; ?>
         </tbody>
+        
+        <?php if (!empty($disposed_items)): ?>
+            <tfoot>
+                <tr>
+                    <th colspan="5" class="text-right">Total:</th>
+                    <th class="text-right"><?php echo $total_count; ?></th>
+                    <th colspan="4"></th>
+                </tr>
+                <tr>
+                    <th colspan="5" class="text-right">Total Value:</th>
+                    <th class="text-right">₱<?php echo number_format($total_value, 2); ?></th>
+                    <th colspan="4"></th>
+                </tr>
+            </tfoot>
+        <?php endif; ?>
     </table>
     
     <script>
