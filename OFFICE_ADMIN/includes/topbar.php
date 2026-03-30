@@ -707,6 +707,50 @@
     opacity: 0.5;
 }
 
+.search-result-group {
+    border-bottom: 1px solid rgba(25, 27, 169, 0.1);
+}
+
+.search-result-group:last-child {
+    border-bottom: none;
+}
+
+.search-result-group-header {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: linear-gradient(135deg, rgba(25, 27, 169, 0.05) 0%, rgba(92, 194, 242, 0.05) 100%);
+    font-weight: 600;
+    color: var(--primary-color);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.search-result-group-header i {
+    margin-right: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.search-result-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+}
+
+.search-destination {
+    font-size: 0.7rem;
+    color: #6c757d;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.search-destination i {
+    font-size: 0.6rem;
+}
+
 
 
 /* Responsive adjustments */
@@ -772,22 +816,29 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Search input event listeners
-    globalSearchInput.addEventListener('input', handleSearchInput);
+    globalSearchInput.addEventListener('input', handleGlobalSearchInput);
     globalSearchInput.addEventListener('focus', function() {
         if (this.value.trim().length >= 2) {
             showSearchResults();
         }
     });
     
+    // Prevent search on initial page load if input is empty
+    globalSearchInput.addEventListener('focus', function(e) {
+        if (this.value.trim().length < 2) {
+            hideSearchResults();
+        }
+    });
+    
     globalSearchInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             e.preventDefault();
-            performSearch();
+            performGlobalSearch();
         }
     });
     
     // Search button click
-    searchButton.addEventListener('click', performSearch);
+    searchButton.addEventListener('click', performGlobalSearch);
     
     // Clear search button
     clearSearchBtn.addEventListener('click', clearSearch);
@@ -815,10 +866,11 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-function handleSearchInput() {
+function handleGlobalSearchInput() {
     clearTimeout(searchTimeout);
     const query = this.value.trim();
     
+    // Don't search for empty queries or single characters
     if (query.length < 2) {
         hideSearchResults();
         return;
@@ -826,13 +878,14 @@ function handleSearchInput() {
     
     // Debounce search
     searchTimeout = setTimeout(() => {
-        performSearch();
+        performGlobalSearch();
     }, 300);
 }
 
-function performSearch() {
+function performGlobalSearch() {
     const query = globalSearchInput.value.trim();
     
+    // Additional validation to prevent empty searches
     if (query.length < 2) {
         hideSearchResults();
         return;
@@ -842,7 +895,7 @@ function performSearch() {
     showSearchLoading();
     
     // Make API call
-    fetch(`api/search_minimal.php?q=${encodeURIComponent(query)}&limit=8`, {
+    fetch(`api/search_fixed.php?q=${encodeURIComponent(query)}&limit=8`, {
         credentials: 'include',
         timeout: 5000
     })
@@ -858,8 +911,6 @@ function performSearch() {
             displaySearchResults(data.results, query);
         } else {
             showSearchError(data.message || 'Search failed');
-            // Also log debug info for troubleshooting
-            console.error('Search debug info:', data.debug);
         }
     })
     .catch(error => {
@@ -896,49 +947,86 @@ function showSearchError(message) {
 }
 
 function displaySearchResults(results, query) {
-    if (results.length === 0) {
-        searchResultsBody.innerHTML = `
-            <div class="search-no-results">
-                <i class="bi bi-search"></i>
-                <div>No results found for "${query}"</div>
-                <div class="small">Try searching with different keywords</div>
-            </div>
-        `;
+    if (!results || results.length === 0) {
+        showSearchError('No results found');
         return;
     }
     
     let html = '';
+    
+    // Group results by type
+    const groupedResults = {};
     results.forEach(result => {
-        const iconClass = getResultIconClass(result.type);
-        const badgeClass = result.badge_class || 'bg-secondary';
+        if (!groupedResults[result.type]) {
+            groupedResults[result.type] = [];
+        }
+        groupedResults[result.type].push(result);
+    });
+    
+    // Display each group
+    Object.keys(groupedResults).forEach(type => {
+        const typeResults = groupedResults[type];
+        const typeLabel = getTypeLabel(type);
+        const typeIcon = getTypeIcon(type);
         
         html += `
-            <a href="${result.url}" class="search-result-item" onclick="handleSearchResultClick(event, '${result.url}')">
-                <div class="search-result-icon ${result.type}">
-                    <i class="bi ${iconClass}"></i>
+            <div class="search-result-group">
+                <div class="search-result-group-header">
+                    <i class="${typeIcon}"></i>
+                    ${typeLabel}
+                    <span class="badge bg-secondary ms-auto">${typeResults.length}</span>
                 </div>
-                <div class="search-result-content">
-                    <div class="search-result-title">${highlightSearchTerm(result.title, query)}</div>
-                    <div class="search-result-subtitle">${highlightSearchTerm(result.subtitle || '', query)}</div>
-                </div>
-                <span class="badge ${badgeClass} search-result-badge">${result.badge}</span>
-            </a>
         `;
+        
+        typeResults.forEach(result => {
+            const highlightedTitle = highlightMatch(result.title, query);
+            const highlightedSubtitle = highlightMatch(result.subtitle, query);
+            const destinationInfo = result.destination ? `<span class="search-destination"><i class="bi bi-box-arrow-up-right"></i> ${result.destination}</span>` : '';
+            
+            html += `
+                <a href="${result.url}" class="search-result-item" data-type="${result.type}">
+                    <div class="search-result-icon ${result.badge_class}">
+                        <i class="${getTypeIcon(result.type)}"></i>
+                    </div>
+                    <div class="search-result-content">
+                        <div class="search-result-title">${highlightedTitle}</div>
+                        <div class="search-result-subtitle">${highlightedSubtitle}</div>
+                        <div class="search-result-meta">
+                            <span class="badge ${result.badge_class}">${result.badge}</span>
+                            ${destinationInfo}
+                        </div>
+                    </div>
+                </a>
+            `;
+        });
+        
+        html += '</div>';
     });
     
     searchResultsBody.innerHTML = html;
 }
 
-function getResultIconClass(type) {
+function getTypeLabel(type) {
+    switch (type) {
+        case 'asset': return 'Assets';
+        case 'request': return 'Requests';
+        case 'user': return 'Users';
+        case 'consumable': return 'Consumables';
+        default: return 'Results';
+    }
+}
+
+function getTypeIcon(type) {
     switch (type) {
         case 'asset': return 'bi-laptop';
         case 'request': return 'bi-arrow-left-right';
         case 'user': return 'bi-person';
+        case 'consumable': return 'bi-box';
         default: return 'bi-file-text';
     }
 }
 
-function highlightSearchTerm(text, term) {
+function highlightMatch(text, term) {
     if (!text || !term) return text;
     
     const regex = new RegExp(`(${escapeRegExp(term)})`, 'gi');

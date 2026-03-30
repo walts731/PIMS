@@ -3,6 +3,7 @@ session_start();
 require_once '../config.php';
 require_once '../includes/system_functions.php';
 require_once '../includes/logger.php';
+require_once 'includes/lgu_compliance_functions.php';
 
 // Check session timeout
 checkSessionTimeout();
@@ -22,10 +23,12 @@ if ($_SESSION['role'] !== 'office_admin') {
 // Set page title for topbar
 $page_title = 'Office Reports';
 
-// Get office ID from session
+// Initialize LGU Compliance
 $office_id = $_SESSION['office_id'] ?? null;
+$user_id = $_SESSION['user_id'] ?? null;
+$lgu_compliance = new LGUCompliance($office_id, $user_id);
 
-// Initialize report data
+// Initialize report data with LGU compliance features
 $report_data = [
     'request_stats' => [
         'total_requests' => 0,
@@ -51,7 +54,12 @@ $report_data = [
     'recent_activities' => [],
     'monthly_data' => [],
     'top_consumables' => [],
-    'request_trends' => []
+    'request_trends' => [],
+    'data_integrity_issues' => [],
+    'document_references' => [],
+    'signatories' => [],
+    'fiscal_year' => [],
+    'report_history' => []
 ];
 
 if ($office_id && $conn) {
@@ -216,6 +224,34 @@ if ($office_id && $conn) {
         while ($row = $result->fetch_assoc()) {
             $report_data['request_trends'][] = $row;
         }
+        
+        // ===== LGU COMPLIANCE FEATURES =====
+        
+        // Load data integrity issues
+        $report_data['data_integrity_issues'] = $lgu_compliance->checkDataIntegrity();
+        
+        // Load document references
+        $report_data['document_references'] = $lgu_compliance->getDocumentReferences();
+        
+        // Load authorized signatories
+        $signatories_data = $lgu_compliance->getSignatories();
+        $report_data['signatories'] = [];
+        foreach ($signatories_data as $signatory) {
+            $report_data['signatories'][$signatory['signatory_type']] = $signatory;
+        }
+        
+        // Load fiscal year dates
+        $report_data['fiscal_year'] = $lgu_compliance->getFiscalYearDates();
+        
+        // Load report history
+        $report_data['report_history'] = $lgu_compliance->getReportHistory();
+        
+        // Log report access for audit trail
+        $report_id = $lgu_compliance->generateReportId('dashboard');
+        $lgu_compliance->logReportActivity($report_id, 'dashboard', 'viewed', [
+            'date_from' => date('Y-m-01'),
+            'date_to' => date('Y-m-d')
+        ]);
         
     } catch (Exception $e) {
         error_log("Error generating office reports: " . $e->getMessage());
@@ -421,12 +457,28 @@ $report_data['asset_stats']['total_asset_value'] = number_format($report_data['a
                     <p class="text-muted mb-0">Comprehensive analytics and insights for your office</p>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <button class="btn export-btn text-white" onclick="exportReport()">
-                        <i class="bi bi-download"></i> Export Report
-                    </button>
-                    <button class="btn btn-outline-primary btn-sm ms-2" onclick="refreshData()">
-                        <i class="bi bi-arrow-clockwise"></i> Refresh
-                    </button>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-outline-primary btn-sm" onclick="refreshData()">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                        </button>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn export-btn text-white dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="bi bi-download"></i> Export
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" onclick="exportLGUReport('inventory')">Inventory Report</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="exportLGUReport('asset')">Asset Report</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="exportLGUReport('consumable')">Consumable Report</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="exportLGUReport('borrow_request')">Borrow Request Report</a></li>
+                            </ul>
+                        </div>
+                        <button class="btn btn-outline-success btn-sm" onclick="showDocumentModal()">
+                            <i class="bi bi-file-earmark-plus"></i> Add Reference
+                        </button>
+                        <button class="btn btn-outline-info btn-sm" onclick="showScheduleModal()">
+                            <i class="bi bi-calendar-plus"></i> Schedule
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -561,6 +613,72 @@ $report_data['asset_stats']['total_asset_value'] = number_format($report_data['a
                     <h6 class="mb-3"><i class="bi bi-calendar-week"></i> 7-Day Request Activity</h6>
                     <div class="chart-container">
                         <canvas id="weeklyTrendsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- LGU Compliance Section -->
+        <div class="row mb-4">
+            <!-- Data Integrity Alerts -->
+            <div class="col-lg-6">
+                <div class="chart-card">
+                    <h6 class="mb-3"><i class="bi bi-shield-exclamation"></i> Data Integrity Alerts</h6>
+                    <div style="max-height: 300px; overflow-y: auto;">
+                        <?php if (!empty($report_data['data_integrity_issues'])): ?>
+                            <?php foreach ($report_data['data_integrity_issues'] as $issue): ?>
+                                <div class="alert alert-<?php echo $issue['severity'] === 'critical' ? 'danger' : ($issue['severity'] === 'high' ? 'warning' : 'info'); ?> alert-sm mb-2">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <strong><?php echo htmlspecialchars($issue['description']); ?></strong>
+                                            <div class="small">
+                                                <?php echo htmlspecialchars($issue['issue_type']); ?> - 
+                                                Expected: <?php echo htmlspecialchars($issue['expected']); ?>, 
+                                                Actual: <?php echo htmlspecialchars($issue['actual']); ?>
+                                            </div>
+                                        </div>
+                                        <span class="badge bg-<?php echo $issue['severity'] === 'critical' ? 'danger' : ($issue['severity'] === 'high' ? 'warning' : 'info'); ?>">
+                                            <?php echo ucfirst($issue['severity']); ?>
+                                        </span>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="text-center text-muted py-3">
+                                <i class="bi bi-check-circle" style="font-size: 2rem; color: #28a745;"></i>
+                                <div class="mt-2">No data integrity issues detected</div>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Document References -->
+            <div class="col-lg-6">
+                <div class="chart-card">
+                    <h6 class="mb-3"><i class="bi bi-file-earmark-text"></i> Recent Document References</h6>
+                    <div style="max-height: 300px; overflow-y: auto;">
+                        <?php if (!empty($report_data['document_references'])): ?>
+                            <?php foreach (array_slice($report_data['document_references'], 0, 5) as $doc): ?>
+                                <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
+                                    <div>
+                                        <strong><?php echo htmlspecialchars($doc['document_type']); ?> #<?php echo htmlspecialchars($doc['document_number']); ?></strong>
+                                        <div class="small text-muted">
+                                            <?php echo date('M d, Y', strtotime($doc['document_date'])); ?>
+                                            <?php if ($doc['reference_amount']): ?>
+                                                - ₱<?php echo number_format($doc['reference_amount'], 2); ?>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                    <span class="badge bg-primary"><?php echo htmlspecialchars($doc['document_type']); ?></span>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="text-center text-muted py-3">
+                                <i class="bi bi-file-earmark" style="font-size: 2rem;"></i>
+                                <div class="mt-2">No document references found</div>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -1035,6 +1153,217 @@ $report_data['asset_stats']['total_asset_value'] = number_format($report_data['a
             url.searchParams.set('date_from', dateFrom);
             url.searchParams.set('date_to', dateTo);
             window.location.href = url.toString();
+        }
+        
+        // LGU Compliance Functions
+        function exportLGUReport(reportType) {
+            const dateFrom = document.getElementById('dateFrom').value;
+            const dateTo = document.getElementById('dateTo').value;
+            
+            const url = `api/lgu_compliance_reports.php?action=export_lgu_report&report_type=${reportType}&date_from=${dateFrom}&date_to=${dateTo}`;
+            window.open(url, '_blank');
+        }
+        
+        function showDocumentModal() {
+            // Create and show document reference modal
+            const modalHtml = `
+                <div class="modal fade" id="documentModal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Add Document Reference</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="documentForm">
+                                    <div class="mb-3">
+                                        <label class="form-label">Document Type</label>
+                                        <select class="form-select" name="document_type" required>
+                                            <option value="">Select Type</option>
+                                            <option value="RIS">Requisition and Issue Slip (RIS)</option>
+                                            <option value="PO">Purchase Order (PO)</option>
+                                            <option value="PAR">Property Acknowledgment Receipt (PAR)</option>
+                                            <option value="ICS">Inventory Custody Slip (ICS)</option>
+                                            <option value="JEV">Journal Entry Voucher (JEV)</option>
+                                            <option value="DV">Disbursement Voucher (DV)</option>
+                                            <option value="OR">Official Receipt (OR)</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Document Number</label>
+                                        <input type="text" class="form-control" name="document_number" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Document Date</label>
+                                        <input type="date" class="form-control" name="document_date" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Reference Amount (Optional)</label>
+                                        <input type="number" class="form-control" name="reference_amount" step="0.01">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Supplier Name (Optional)</label>
+                                        <input type="text" class="form-control" name="supplier_name">
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-primary" onclick="saveDocumentReference()">Save</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            
+            // Remove existing modal if any
+            const existingModal = document.getElementById('documentModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // Add modal to body and show
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            const modal = new bootstrap.Modal(document.getElementById('documentModal'));
+            modal.show();
+        }
+        
+        function saveDocumentReference() {
+            const form = document.getElementById('documentForm');
+            const formData = new FormData(form);
+            
+            fetch('api/lgu_compliance_reports.php?action=add_document_reference', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Document reference added successfully', 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('documentModal')).hide();
+                    refreshData();
+                } else {
+                    showNotification(data.message || 'Error adding document reference', 'error');
+                }
+            })
+            .catch(error => {
+                showNotification('Error: ' + error.message, 'error');
+            });
+        }
+        
+        function showScheduleModal() {
+            // Create and show schedule modal
+            const modalHtml = `
+                <div class="modal fade" id="scheduleModal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Schedule Report</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="scheduleForm">
+                                    <div class="mb-3">
+                                        <label class="form-label">Schedule Name</label>
+                                        <input type="text" class="form-control" name="schedule_name" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Report Type</label>
+                                        <select class="form-select" name="report_type" required>
+                                            <option value="">Select Type</option>
+                                            <option value="inventory">Inventory Report</option>
+                                            <option value="asset">Asset Report</option>
+                                            <option value="consumable">Consumable Report</option>
+                                            <option value="borrow_request">Borrow Request Report</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Frequency</label>
+                                        <select class="form-select" name="frequency" required onchange="updateScheduleOptions()">
+                                            <option value="">Select Frequency</option>
+                                            <option value="daily">Daily</option>
+                                            <option value="weekly">Weekly</option>
+                                            <option value="monthly">Monthly</option>
+                                            <option value="quarterly">Quarterly</option>
+                                            <option value="annually">Annually</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3" id="scheduleDayContainer" style="display: none;">
+                                        <label class="form-label">Schedule Day</label>
+                                        <select class="form-select" name="schedule_day">
+                                            <option value="1">1st</option>
+                                            <option value="15">15th</option>
+                                            <option value="30">30th</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Schedule Time</label>
+                                        <input type="time" class="form-control" name="schedule_time" value="08:00" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Recipients (Email addresses, comma-separated)</label>
+                                        <textarea class="form-control" name="recipients" rows="3" placeholder="email1@example.com, email2@example.com"></textarea>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-primary" onclick="saveSchedule()">Save Schedule</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            
+            // Remove existing modal if any
+            const existingModal = document.getElementById('scheduleModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // Add modal to body and show
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            const modal = new bootstrap.Modal(document.getElementById('scheduleModal'));
+            modal.show();
+        }
+        
+        function updateScheduleOptions() {
+            const frequency = document.querySelector('select[name="frequency"]').value;
+            const dayContainer = document.getElementById('scheduleDayContainer');
+            
+            if (frequency === 'monthly' || frequency === 'quarterly' || frequency === 'annually') {
+                dayContainer.style.display = 'block';
+            } else {
+                dayContainer.style.display = 'none';
+            }
+        }
+        
+        function saveSchedule() {
+            const form = document.getElementById('scheduleForm');
+            const formData = new FormData(form);
+            
+            // Handle recipients array
+            const recipientsText = formData.get('recipients');
+            const recipients = recipientsText ? recipientsText.split(',').map(r => r.trim()) : [];
+            formData.delete('recipients');
+            recipients.forEach(recipient => {
+                formData.append('recipients[]', recipient);
+            });
+            
+            fetch('api/lgu_compliance_reports.php?action=schedule_report', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Report scheduled successfully', 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('scheduleModal')).hide();
+                } else {
+                    showNotification(data.message || 'Error scheduling report', 'error');
+                }
+            })
+            .catch(error => {
+                showNotification('Error: ' + error.message, 'error');
+            });
         }
     </script>
 
