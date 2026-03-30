@@ -318,6 +318,107 @@ if ($result && $row = $result->fetch_assoc()) {
             font-weight: bold;
             letter-spacing: 1px;
         }
+        
+        .quantity-field {
+            width: 80px;
+            min-width: 80px;
+        }
+        
+        .useful-life-field {
+            width: 120px;
+            min-width: 120px;
+        }
+        
+        .description-field {
+            width: 200px;
+            min-width: 200px;
+        }
+        
+        .item-no-field {
+            width: 180px;
+            min-width: 180px;
+        }
+        
+        .cost-field {
+            width: 100px;
+            min-width: 100px;
+        }
+        
+        .table td {
+            padding: 0.5rem;
+        }
+        
+        .table td .form-control,
+        .table td .form-select {
+            width: 100%;
+            margin: 0;
+            border-radius: 0;
+            border: 1px solid #dee2e6;
+        }
+        
+        .table td .form-control:focus,
+        .table td .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: none;
+            z-index: 1;
+            position: relative;
+        }
+        
+        .quantity-field {
+            width: 120px;
+            min-width: 120px;
+            max-width: 120px;
+        }
+        
+        .unit-field {
+            width: 120px;
+            min-width: 120px;
+            max-width: 120px;
+        }
+        
+        .cost-field {
+            width: 120px;
+            min-width: 120px;
+            max-width: 120px;
+        }
+        
+        .description-field {
+            width: 100%;
+            min-width: auto;
+        }
+        
+        .item-no-field {
+            width: 100%;
+            min-width: auto;
+        }
+        
+        .useful-life-field {
+            width: 120px;
+            min-width: 120px;
+            max-width: 120px;
+        }
+        
+        .property-number-field {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        
+        .property-number-field .form-control {
+            padding-right: 80px;
+            border-radius: var(--border-radius);
+        }
+        
+        .property-number-field .btn {
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            border-radius: var(--border-radius-sm);
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            z-index: 10;
+        }
     </style>
 </head>
 <body>
@@ -440,7 +541,7 @@ if ($result && $row = $result->fetch_assoc()) {
                                                 <th colspan="2">Amount</th>
                                                 <th>Description</th>
                                                 <th>Item No.</th>
-                                                <th>Estimated Useful Life</th>
+                                                <th>Useful Life</th>
                                                 <th>Action</th>
                                             </tr>
                                             <tr>
@@ -456,28 +557,27 @@ if ($result && $row = $result->fetch_assoc()) {
                                         </thead>
                                         <tbody>
                                             <tr>
-                                                <td><input type="number" class="form-control form-control-sm" name="quantity[]" required onchange="calculateTotal(this)"></td>
+                                                <td><input type="number" class="form-control form-control-sm quantity-field" name="quantity[]" required onchange="calculateTotal(this)"></td>
                                                 <td>
-                                                    <select class="form-select form-select-sm" name="unit[]" required>
+                                                    <select class="form-select form-select-sm unit-field" name="unit[]" required>
                                                         <option value="">Select Unit</option>
                                                         <?php foreach ($units as $unit): ?>
                                                             <option value="<?php echo htmlspecialchars($unit['unit_code']); ?>" data-unit-name="<?php echo htmlspecialchars($unit['unit_name']); ?>" data-singular="<?php echo htmlspecialchars(getSingularForm($unit['unit_name'])); ?>"><?php echo htmlspecialchars($unit['unit_name']); ?></option>
                                                         <?php endforeach; ?>
                                                     </select>
                                                 </td>
-                                                <td><input type="number" step="0.01" class="form-control form-control-sm" name="unit_cost[]" required onchange="calculateTotal(this)" max="50000" min="0.01"></td>
-                                                <td><input type="number" step="0.01" class="form-control form-control-sm" name="total_cost[]" readonly></td>
-                                                <td><input type="text" class="form-control form-control-sm" name="description[]" required></td>
+                                                <td><input type="number" step="0.01" class="form-control form-control-sm cost-field" name="unit_cost[]" required onchange="calculateTotal(this)" max="50000" min="0.01"></td>
+                                                <td><input type="number" step="0.01" class="form-control form-control-sm cost-field" name="total_cost[]" readonly></td>
+                                                <td><input type="text" class="form-control form-control-sm description-field" name="description[]" required></td>
                                                 <td>
                                                 <div class="property-number-field">
-                                                    <input type="text" class="form-control form-control-sm" name="item_no[]" value="" readonly placeholder="Click 'Generate' to create property number">
+                                                    <input type="text" class="form-control form-control-sm item-no-field" name="item_no[]" value="" readonly placeholder="Click 'Generate' to create property number">
                                                     <button type="button" class="btn btn-sm btn-outline-primary" onclick="showPropertyNumberGenerator(this)" title="Generate Property Number">
                                                         <i class="bi bi-gear"></i> Generate
                                                     </button>
                                                 </div>
-                                                <small class="text-muted">Format: YEAR-FORM-CATEGORY-SUBCATEGORY+SERIES-OFFICE</small>
                                             </td>
-                                                <td><input type="text" class="form-control form-control-sm" name="useful_life[]" required></td>
+                                                <td><input type="text" class="form-control form-control-sm useful-life-field" name="useful_life[]" required></td>
                                                 <td><button type="button" class="btn btn-sm btn-danger" onclick="removeICSRow(this)"><i class="bi bi-trash"></i></button></td>
                                             </tr>
                                         </tbody>
@@ -852,17 +952,16 @@ if ($result && $row = $result->fetch_assoc()) {
             const nextItemNumber = table.rows.length;
             
             const cells = [
-                '<input type="number" class="form-control form-control-sm" name="quantity[]" required onchange="calculateTotal(this)">',
-                '<select class="form-select form-select-sm" name="unit[]" required>' + unitOptions + '</select>',
-                '<input type="number" step="0.01" class="form-control form-control-sm" name="unit_cost[]" required onchange="calculateTotal(this)" max="50000" min="0.01">',
-                '<input type="number" step="0.01" class="form-control form-control-sm" name="total_cost[]" readonly>',
-                '<input type="text" class="form-control form-control-sm" name="description[]" required>',
+                '<input type="number" class="form-control form-control-sm quantity-field" name="quantity[]" required onchange="calculateTotal(this)">',
+                '<select class="form-select form-select-sm unit-field" name="unit[]" required>' + unitOptions + '</select>',
+                '<input type="number" step="0.01" class="form-control form-control-sm cost-field" name="unit_cost[]" required onchange="calculateTotal(this)" max="50000" min="0.01">',
+                '<input type="number" step="0.01" class="form-control form-control-sm cost-field" name="total_cost[]" readonly>',
+                '<input type="text" class="form-control form-control-sm description-field" name="description[]" required>',
                 '<div class="property-number-field">' +
-                '<input type="text" class="form-control form-control-sm" name="item_no[]" value="" readonly placeholder="Click Generate to create">' +
+                '<input type="text" class="form-control form-control-sm item-no-field" name="item_no[]" value="" readonly placeholder="Click Generate to create">' +
                 '<button type="button" class="btn btn-sm btn-outline-primary" onclick="showPropertyNumberGenerator(this)" title="Generate Property Number"><i class="bi bi-gear"></i> Generate</button>' +
-                '</div>' +
-                '<small class="text-muted">Format: YEAR-FORM-FUND-CATEGORY-SUBCATEGORY+SERIES-OFFICE</small>',
-                '<input type="text" class="form-control form-control-sm" name="useful_life[]" required>',
+                '</div>',
+                '<input type="text" class="form-control form-control-sm useful-life-field" name="useful_life[]" required>',
                 '<button type="button" class="btn btn-sm btn-danger" onclick="removeICSRow(this)"><i class="bi bi-trash"></i></button>'
             ];
             
