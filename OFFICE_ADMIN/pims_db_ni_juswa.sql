@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 30, 2026 at 05:25 AM
+-- Generation Time: Mar 30, 2026 at 10:26 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -906,6 +906,50 @@ INSERT INTO `consume_history` (`id`, `consumable_id`, `consumable_description`, 
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `data_integrity_checks`
+--
+
+CREATE TABLE `data_integrity_checks` (
+  `id` int(11) NOT NULL,
+  `check_type` enum('quantity_mismatch','value_discrepancy','duplicate_reference','missing_document','status_inconsistency') NOT NULL,
+  `table_name` varchar(50) NOT NULL,
+  `record_id` int(11) NOT NULL,
+  `field_name` varchar(50) DEFAULT NULL,
+  `expected_value` varchar(255) DEFAULT NULL,
+  `actual_value` varchar(255) DEFAULT NULL,
+  `discrepancy_amount` decimal(15,2) DEFAULT NULL,
+  `severity` enum('low','medium','high','critical') NOT NULL DEFAULT 'medium',
+  `status` enum('open','investigating','resolved','false_positive') NOT NULL DEFAULT 'open',
+  `office_id` int(11) NOT NULL,
+  `detected_by` int(11) DEFAULT NULL,
+  `detected_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `resolved_by` int(11) DEFAULT NULL,
+  `resolved_at` datetime DEFAULT NULL,
+  `resolution_notes` text DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Data integrity and discrepancy tracking';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `document_references`
+--
+
+CREATE TABLE `document_references` (
+  `id` int(11) NOT NULL,
+  `document_type` enum('RIS','PO','PAR','ICS','JEV','DV','OR') NOT NULL,
+  `document_number` varchar(50) NOT NULL,
+  `document_date` date NOT NULL,
+  `reference_amount` decimal(15,2) DEFAULT NULL,
+  `supplier_name` varchar(255) DEFAULT NULL,
+  `office_id` int(11) NOT NULL,
+  `created_by` int(11) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Document reference numbers for LGU compliance';
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `employees`
 --
 
@@ -953,6 +997,39 @@ CREATE TABLE `failed_login_attempts` (
   `attempt_time` timestamp NOT NULL DEFAULT current_timestamp(),
   `is_blocked` tinyint(1) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `fiscal_year_settings`
+--
+
+CREATE TABLE `fiscal_year_settings` (
+  `id` int(11) NOT NULL,
+  `office_id` int(11) NOT NULL,
+  `fiscal_year` int(4) NOT NULL,
+  `start_date` date NOT NULL,
+  `end_date` date NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_by` int(11) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Fiscal year configuration per office';
+
+--
+-- Dumping data for table `fiscal_year_settings`
+--
+
+INSERT INTO `fiscal_year_settings` (`id`, `office_id`, `fiscal_year`, `start_date`, `end_date`, `is_active`, `created_by`, `created_at`, `updated_at`) VALUES
+(1, 1, 2026, '2026-01-01', '2026-12-31', 1, 1, '2026-03-30 07:29:43', '2026-03-30 07:29:43'),
+(2, 2, 2026, '2026-01-01', '2026-12-31', 1, 1, '2026-03-30 07:29:43', '2026-03-30 07:29:43'),
+(3, 3, 2026, '2026-01-01', '2026-12-31', 1, 1, '2026-03-30 07:29:43', '2026-03-30 07:29:43'),
+(4, 4, 2026, '2026-01-01', '2026-12-31', 1, 1, '2026-03-30 07:29:43', '2026-03-30 07:29:43'),
+(5, 5, 2026, '2026-01-01', '2026-12-31', 1, 1, '2026-03-30 07:29:43', '2026-03-30 07:29:43'),
+(6, 6, 2026, '2026-01-01', '2026-12-31', 1, 1, '2026-03-30 07:29:43', '2026-03-30 07:29:43'),
+(7, 11, 2026, '2026-01-01', '2026-12-31', 1, 1, '2026-03-30 07:29:43', '2026-03-30 07:29:43'),
+(8, 12, 2026, '2026-01-01', '2026-12-31', 1, 1, '2026-03-30 07:29:43', '2026-03-30 07:29:43'),
+(9, 13, 2026, '2026-01-01', '2026-12-31', 1, 1, '2026-03-30 07:29:43', '2026-03-30 07:29:43');
 
 -- --------------------------------------------------------
 
@@ -1922,6 +1999,110 @@ CREATE TABLE `red_tags` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `report_audit_trail`
+--
+
+CREATE TABLE `report_audit_trail` (
+  `id` int(11) NOT NULL,
+  `report_id` varchar(50) NOT NULL,
+  `report_type` enum('inventory','asset','consumable','borrow_request','monthly','quarterly','annual') NOT NULL,
+  `action` enum('generated','viewed','exported','printed','approved','modified','deleted') NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `office_id` int(11) NOT NULL,
+  `action_date` timestamp NOT NULL DEFAULT current_timestamp(),
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` text DEFAULT NULL,
+  `parameters` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`parameters`)),
+  `file_path` varchar(255) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Audit trail for all report activities';
+
+--
+-- Dumping data for table `report_audit_trail`
+--
+
+INSERT INTO `report_audit_trail` (`id`, `report_id`, `report_type`, `action`, `user_id`, `office_id`, `action_date`, `ip_address`, `user_agent`, `parameters`, `file_path`) VALUES
+(1, 'INV_005_0017_20260330101502', 'inventory', 'exported', 17, 5, '2026-03-30 08:15:02', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '{\"date_from\":\"2026-03-01\",\"date_to\":\"2026-03-30\",\"file_path\":\"..\\/uploads\\/reports\\/LGU_inventory_Report_2026-03-30_10-15-02.html\"}', '../uploads/reports/LGU_inventory_Report_2026-03-30_10-15-02.html'),
+(2, 'INV_005_0017_20260330101736', 'inventory', 'exported', 17, 5, '2026-03-30 08:17:36', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '{\"date_from\":\"2026-03-01\",\"date_to\":\"2026-03-30\",\"file_path\":\"..\\/uploads\\/reports\\/LGU_inventory_Report_2026-03-30_10-17-36.html\"}', '../uploads/reports/LGU_inventory_Report_2026-03-30_10-17-36.html');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `report_generation_history`
+--
+
+CREATE TABLE `report_generation_history` (
+  `id` int(11) NOT NULL,
+  `report_id` varchar(50) NOT NULL,
+  `report_type` enum('inventory','asset','consumable','borrow_request','monthly','quarterly','annual') NOT NULL,
+  `generation_method` enum('manual','scheduled','api') NOT NULL,
+  `office_id` int(11) NOT NULL,
+  `generated_by` int(11) NOT NULL,
+  `file_path` varchar(255) DEFAULT NULL,
+  `file_size` bigint(20) DEFAULT NULL,
+  `record_count` int(11) DEFAULT NULL,
+  `parameters` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`parameters`)),
+  `generation_time` decimal(10,3) DEFAULT NULL,
+  `status` enum('generating','completed','failed','cancelled') NOT NULL DEFAULT 'generating',
+  `error_message` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `completed_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='History of all report generation attempts';
+
+--
+-- Dumping data for table `report_generation_history`
+--
+
+INSERT INTO `report_generation_history` (`id`, `report_id`, `report_type`, `generation_method`, `office_id`, `generated_by`, `file_path`, `file_size`, `record_count`, `parameters`, `generation_time`, `status`, `error_message`, `created_at`, `completed_at`) VALUES
+(1, 'INV_005_0017_20260330101502', 'inventory', 'manual', 5, 17, '../uploads/reports/LGU_inventory_Report_2026-03-30_10-15-02.html', 5013, NULL, '0', 0.008, 'completed', NULL, '2026-03-30 08:15:02', '2026-03-30 16:15:02'),
+(2, 'INV_005_0017_20260330101736', 'inventory', 'manual', 5, 17, '../uploads/reports/LGU_inventory_Report_2026-03-30_10-17-36.html', 5024, NULL, '0', 0.005, 'completed', NULL, '2026-03-30 08:17:36', '2026-03-30 16:17:36');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `report_schedules`
+--
+
+CREATE TABLE `report_schedules` (
+  `id` int(11) NOT NULL,
+  `schedule_name` varchar(255) NOT NULL,
+  `report_type` enum('inventory','asset','consumable','borrow_request','monthly','quarterly','annual') NOT NULL,
+  `frequency` enum('daily','weekly','monthly','quarterly','annually') NOT NULL,
+  `schedule_day` int(11) DEFAULT NULL,
+  `schedule_time` time NOT NULL DEFAULT '08:00:00',
+  `recipients` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`recipients`)),
+  `office_id` int(11) NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `last_run` datetime DEFAULT NULL,
+  `next_run` datetime DEFAULT NULL,
+  `created_by` int(11) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Scheduled report generation';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `report_templates`
+--
+
+CREATE TABLE `report_templates` (
+  `id` int(11) NOT NULL,
+  `template_name` varchar(255) NOT NULL,
+  `report_type` enum('inventory','asset','consumable','borrow_request','monthly','quarterly','annual') NOT NULL,
+  `template_content` longtext NOT NULL,
+  `header_content` text DEFAULT NULL,
+  `footer_content` text DEFAULT NULL,
+  `office_id` int(11) DEFAULT NULL,
+  `is_default` tinyint(1) NOT NULL DEFAULT 0,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_by` int(11) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Custom report templates for LGU compliance';
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `ris_forms`
 --
 
@@ -2467,7 +2648,11 @@ INSERT INTO `security_logs` (`id`, `event_type`, `description`, `severity`, `use
 (229, 'session_timeout', 'Session timeout for user: OM admin (OM@pims.com)', 'medium', 18, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 06:21:16'),
 (230, 'session_timeout', 'Session timeout for user: OM admin (OM@pims.com)', 'medium', 18, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 06:58:09'),
 (231, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 07:30:29'),
-(232, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 03:05:04');
+(232, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 03:05:04'),
+(233, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 03:36:28'),
+(234, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 04:51:18'),
+(235, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 05:40:41'),
+(236, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 07:15:31');
 
 -- --------------------------------------------------------
 
@@ -2487,6 +2672,26 @@ CREATE TABLE `security_metrics` (
   `audit_score` int(11) DEFAULT 0,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `signatory_authorities`
+--
+
+CREATE TABLE `signatory_authorities` (
+  `id` int(11) NOT NULL,
+  `office_id` int(11) NOT NULL,
+  `signatory_type` enum('prepared','noted','approved','certified') NOT NULL,
+  `employee_id` int(11) NOT NULL,
+  `designation` varchar(255) NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `effective_date` date NOT NULL,
+  `expiry_date` date DEFAULT NULL,
+  `created_by` int(11) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Authorized signatories for LGU documents';
 
 -- --------------------------------------------------------
 
@@ -12364,7 +12569,43 @@ INSERT INTO `system_logs` (`id`, `user_id`, `action`, `module`, `description`, `
 (10729, 17, 'session_timeout', 'authentication', 'Session expired for user: Joshua Escaño (joshuamarifrancis@gmail.com) after 2371 seconds', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 03:05:04'),
 (10730, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 03:05:18'),
 (10731, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 03:05:18'),
-(10732, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 03:06:52');
+(10732, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 03:06:52'),
+(10733, 17, 'session_timeout', 'authentication', 'Session expired for user: Joshua Escaño (joshuamarifrancis@gmail.com) after 1870 seconds', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 03:36:28'),
+(10734, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 03:36:39'),
+(10735, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 03:36:39'),
+(10736, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 03:36:47'),
+(10737, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 03:43:18'),
+(10738, 17, 'session_timeout', 'authentication', 'Session expired for user: Joshua Escaño (joshuamarifrancis@gmail.com) after 4479 seconds', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 04:51:18'),
+(10739, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 04:51:28'),
+(10740, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 04:51:28'),
+(10741, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 04:53:08'),
+(10742, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 05:04:49'),
+(10743, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 05:09:59'),
+(10744, 17, 'logout', 'authentication', 'User logged out: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 05:10:11'),
+(10745, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 05:10:22'),
+(10746, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 05:10:22'),
+(10747, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 05:21:21'),
+(10748, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 05:21:32'),
+(10749, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 05:25:02'),
+(10750, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 05:27:02'),
+(10751, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 05:27:12'),
+(10752, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 05:37:54'),
+(10753, 17, 'session_timeout', 'authentication', 'Session expired for user: Joshua Escaño (joshuamarifrancis@gmail.com) after 1819 seconds', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 05:40:41'),
+(10754, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 05:40:59'),
+(10755, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 05:40:59'),
+(10756, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 06:16:34'),
+(10757, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 06:16:34'),
+(10758, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 06:19:57'),
+(10759, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 06:19:57'),
+(10760, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 06:37:26'),
+(10761, 17, 'session_timeout', 'authentication', 'Session expired for user: Joshua Escaño (joshuamarifrancis@gmail.com) after 3334 seconds', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 07:15:31'),
+(10762, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 07:15:42'),
+(10763, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 07:15:43'),
+(10764, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 07:16:00'),
+(10765, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 07:18:48'),
+(10766, 17, 'logout', 'authentication', 'User logged out: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 07:18:55'),
+(10767, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 08:07:26'),
+(10768, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 08:07:26');
 
 -- --------------------------------------------------------
 
@@ -12734,7 +12975,8 @@ ALTER TABLE `asset_furniture`
 -- Indexes for table `asset_items`
 --
 ALTER TABLE `asset_items`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_asset_items_office_status` (`office_id`,`status`);
 
 --
 -- Indexes for table `asset_item_history`
@@ -12800,7 +13042,8 @@ ALTER TABLE `borrow_form_submissions`
 -- Indexes for table `borrow_requests`
 --
 ALTER TABLE `borrow_requests`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_borrow_requests_office_date` (`requested_by_office`,`created_at`);
 
 --
 -- Indexes for table `branches`
@@ -12813,7 +13056,8 @@ ALTER TABLE `branches`
 -- Indexes for table `consumables`
 --
 ALTER TABLE `consumables`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_consumables_office_reorder` (`office_id`,`reorder_level`);
 
 --
 -- Indexes for table `consumable_add_history`
@@ -12848,6 +13092,25 @@ ALTER TABLE `consume_history`
   ADD KEY `idx_user_date` (`user_id`,`consumed_at`);
 
 --
+-- Indexes for table `data_integrity_checks`
+--
+ALTER TABLE `data_integrity_checks`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_office_status` (`office_id`,`status`),
+  ADD KEY `idx_severity` (`severity`),
+  ADD KEY `idx_table_record` (`table_name`,`record_id`);
+
+--
+-- Indexes for table `document_references`
+--
+ALTER TABLE `document_references`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_document` (`document_type`,`document_number`),
+  ADD KEY `idx_office_document` (`office_id`,`document_type`),
+  ADD KEY `idx_document_date` (`document_date`),
+  ADD KEY `idx_document_refs_office_type` (`office_id`,`document_type`);
+
+--
 -- Indexes for table `employees`
 --
 ALTER TABLE `employees`
@@ -12858,6 +13121,14 @@ ALTER TABLE `employees`
 --
 ALTER TABLE `failed_login_attempts`
   ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `fiscal_year_settings`
+--
+ALTER TABLE `fiscal_year_settings`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_office_fiscal` (`office_id`,`fiscal_year`),
+  ADD KEY `idx_fiscal_dates` (`start_date`,`end_date`);
 
 --
 -- Indexes for table `forms`
@@ -13042,6 +13313,40 @@ ALTER TABLE `red_tags`
   ADD KEY `idx_peripheral_id` (`peripheral_id`);
 
 --
+-- Indexes for table `report_audit_trail`
+--
+ALTER TABLE `report_audit_trail`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_report_id` (`report_id`),
+  ADD KEY `idx_user_action` (`user_id`,`action`),
+  ADD KEY `idx_office_date` (`office_id`,`action_date`);
+
+--
+-- Indexes for table `report_generation_history`
+--
+ALTER TABLE `report_generation_history`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_report_id` (`report_id`),
+  ADD KEY `idx_office_date` (`office_id`,`created_at`),
+  ADD KEY `idx_status` (`status`);
+
+--
+-- Indexes for table `report_schedules`
+--
+ALTER TABLE `report_schedules`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_office_active` (`office_id`,`is_active`),
+  ADD KEY `idx_next_run` (`next_run`);
+
+--
+-- Indexes for table `report_templates`
+--
+ALTER TABLE `report_templates`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_office_type` (`office_id`,`report_type`),
+  ADD KEY `idx_default_active` (`is_default`,`is_active`);
+
+--
 -- Indexes for table `ris_forms`
 --
 ALTER TABLE `ris_forms`
@@ -13088,6 +13393,15 @@ ALTER TABLE `security_logs`
 --
 ALTER TABLE `security_metrics`
   ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `signatory_authorities`
+--
+ALTER TABLE `signatory_authorities`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_office_type` (`office_id`,`signatory_type`),
+  ADD KEY `idx_employee_id` (`employee_id`),
+  ADD KEY `idx_effective_dates` (`effective_date`,`expiry_date`);
 
 --
 -- Indexes for table `software`
@@ -13286,6 +13600,18 @@ ALTER TABLE `consume_history`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
+-- AUTO_INCREMENT for table `data_integrity_checks`
+--
+ALTER TABLE `data_integrity_checks`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `document_references`
+--
+ALTER TABLE `document_references`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `employees`
 --
 ALTER TABLE `employees`
@@ -13296,6 +13622,12 @@ ALTER TABLE `employees`
 --
 ALTER TABLE `failed_login_attempts`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `fiscal_year_settings`
+--
+ALTER TABLE `fiscal_year_settings`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT for table `forms`
@@ -13472,6 +13804,30 @@ ALTER TABLE `red_tags`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `report_audit_trail`
+--
+ALTER TABLE `report_audit_trail`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `report_generation_history`
+--
+ALTER TABLE `report_generation_history`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `report_schedules`
+--
+ALTER TABLE `report_schedules`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `report_templates`
+--
+ALTER TABLE `report_templates`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `ris_forms`
 --
 ALTER TABLE `ris_forms`
@@ -13511,12 +13867,18 @@ ALTER TABLE `security_audit_logs`
 -- AUTO_INCREMENT for table `security_logs`
 --
 ALTER TABLE `security_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=233;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=237;
 
 --
 -- AUTO_INCREMENT for table `security_metrics`
 --
 ALTER TABLE `security_metrics`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `signatory_authorities`
+--
+ALTER TABLE `signatory_authorities`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
@@ -13529,7 +13891,7 @@ ALTER TABLE `software`
 -- AUTO_INCREMENT for table `system_logs`
 --
 ALTER TABLE `system_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10733;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10769;
 
 --
 -- AUTO_INCREMENT for table `system_settings`

@@ -466,10 +466,15 @@ $report_data['asset_stats']['total_asset_value'] = number_format($report_data['a
                                 <i class="bi bi-download"></i> Export
                             </button>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="#" onclick="exportLGUReport('inventory')">Inventory Report</a></li>
-                                <li><a class="dropdown-item" href="#" onclick="exportLGUReport('asset')">Asset Report</a></li>
-                                <li><a class="dropdown-item" href="#" onclick="exportLGUReport('consumable')">Consumable Report</a></li>
-                                <li><a class="dropdown-item" href="#" onclick="exportLGUReport('borrow_request')">Borrow Request Report</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="exportLGUReport('inventory')">Inventory Report (LGU)</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="exportLGUReport('asset')">Asset Report (LGU)</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="exportLGUReport('consumable')">Consumable Report (LGU)</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="exportLGUReport('borrow_request')">Borrow Request Report (LGU)</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="#" onclick="exportAdminStyleReport('inventory')">Inventory Report (Admin Style)</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="exportAdminStyleReport('asset')">Asset Report (Admin Style)</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="exportAdminStyleReport('consumable')">Consumable Report (Admin Style)</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="exportAdminStyleReport('borrow_request')">Borrow Request Report (Admin Style)</a></li>
                             </ul>
                         </div>
                         <button class="btn btn-outline-success btn-sm" onclick="showDocumentModal()">
@@ -1161,6 +1166,14 @@ $report_data['asset_stats']['total_asset_value'] = number_format($report_data['a
             const dateTo = document.getElementById('dateTo').value;
             
             const url = `api/lgu_compliance_reports.php?action=export_lgu_report&report_type=${reportType}&date_from=${dateFrom}&date_to=${dateTo}`;
+            window.open(url, '_blank');
+        }
+        
+        function exportAdminStyleReport(reportType) {
+            const dateFrom = document.getElementById('dateFrom').value;
+            const dateTo = document.getElementById('dateTo').value;
+            
+            const url = `api/lgu_admin_style_reports.php?action=export_admin_style_report&report_type=${reportType}&date_from=${dateFrom}&date_to=${dateTo}`;
             window.open(url, '_blank');
         }
         
