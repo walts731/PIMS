@@ -505,7 +505,7 @@ require_once 'includes/subcategory_fields.php';
                             ?>
                             
                             <input type="file" class="form-control" id="asset_images" name="asset_images[]" accept="image/*" multiple>
-                            <small class="form-text text-muted">Upload additional images of the asset (JPG, PNG, GIF - Max 5MB each, Max 5 files)</small>
+                            <small class="form-text text-muted">Upload additional images of the asset (JPG, PNG, GIF, WebP, AVIF - Max 5MB each, Max 5 files)</small>
                             <div id="imagePreview" class="mt-2"></div>
                             
                             <!-- Hidden field to store existing images for JavaScript -->
@@ -565,11 +565,13 @@ require_once 'includes/subcategory_fields.php';
             // Example: 2026-04-05-030-00203-06 where 00203 is subcategory code
             let subcategoryCode = '';
             
-            // Try to match the full format: YEAR-MONTH-05-category_code-SUBCATEGORY_CODE-series
-            const fullFormatMatch = propertyNumber.match(/^(\d{4})-(\d{2})-05-(\d+)-(\d+)-(\d+)$/);
+            // Try to match full format: YEAR-MONTH-05-category_code-SUBCATEGORY_CODE-series
+            // Example: 2026-04-05-030-0701-01 where 07 is subcategory code (SMART TV)
+            const fullFormatMatch = propertyNumber.match(/^(\d{4})-(\d{2})-05-(\d+)-(\d{2})(\d{2})-(\d+)$/);
             if (fullFormatMatch) {
-                subcategoryCode = fullFormatMatch[4]; // Take the full SUBCATEGORY_CODE (00203)
-                console.log('Full format detected, subcategory code:', subcategoryCode);
+                const fullSubcategoryCode = fullFormatMatch[4] + fullFormatMatch[5]; // Combine: 07 + 01 = 0701
+                subcategoryCode = fullFormatMatch[4]; // Take first 2 digits as actual subcategory code (07)
+                console.log('Full format detected, full subcategory code:', fullSubcategoryCode, 'actual subcategory code:', subcategoryCode);
                 
                 // Try to find exact match first, then try 2-digit extraction
                 findAndSelectSubcategoryByCode(subcategoryCode);

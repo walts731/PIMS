@@ -597,6 +597,7 @@ if ($result && $row = $result->fetch_assoc()) {
                                 ?>
                             </select>
                         </div>
+                        
                     </div>
                     
                     <div class="row mt-3">
@@ -1262,6 +1263,38 @@ if ($result && $row = $result->fetch_assoc()) {
             }
             
             if (currentPropertyField && propertyNumbers.length > 0) {
+                // Get selected category and subcategory values
+                const categorySelect = document.getElementById('categorySelect');
+                const subcategorySelect = document.getElementById('subcategorySelect');
+                const selectedCategoryCode = categorySelect.value;
+                const selectedSubcategoryCode = subcategorySelect.value;
+                
+                // Add hidden fields to store category and subcategory codes
+                const row = currentPropertyField.closest('tr');
+                
+                // Remove existing hidden fields if any
+                const existingCatField = row.querySelector('input[name="category_code[]"]');
+                const existingSubcatField = row.querySelector('input[name="subcategory_code[]"]');
+                if (existingCatField) existingCatField.remove();
+                if (existingSubcatField) existingSubcatField.remove();
+                
+                // Add hidden fields for category and subcategory codes
+                if (selectedCategoryCode) {
+                    const catHiddenField = document.createElement('input');
+                    catHiddenField.type = 'hidden';
+                    catHiddenField.name = 'category_code[]';
+                    catHiddenField.value = selectedCategoryCode;
+                    row.appendChild(catHiddenField);
+                }
+                
+                if (selectedSubcategoryCode) {
+                    const subcatHiddenField = document.createElement('input');
+                    subcatHiddenField.type = 'hidden';
+                    subcatHiddenField.name = 'subcategory_code[]';
+                    subcatHiddenField.value = selectedSubcategoryCode;
+                    row.appendChild(subcatHiddenField);
+                }
+                
                 if (propertyNumbers.length === 1) {
                     // Single property number - keep as input
                     currentPropertyField.value = propertyNumbers[0];
