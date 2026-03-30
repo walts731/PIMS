@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 26, 2026 at 07:22 AM
+-- Generation Time: Mar 30, 2026 at 03:56 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -277,6 +277,7 @@ CREATE TABLE `asset_items` (
   `inventory_tag` varchar(100) DEFAULT NULL,
   `date_counted` date DEFAULT NULL,
   `image` varchar(255) DEFAULT NULL,
+  `redtag_image` varchar(255) DEFAULT NULL,
   `qr_code` varchar(255) DEFAULT NULL,
   `status` enum('available','in_use','maintenance','disposed','unserviceable','no_tag','serviceable','pending_tag','red_tagged') NOT NULL DEFAULT 'no_tag',
   `disposal_reason` text DEFAULT NULL,
@@ -293,16 +294,16 @@ CREATE TABLE `asset_items` (
 -- Dumping data for table `asset_items`
 --
 
-INSERT INTO `asset_items` (`id`, `asset_id`, `asset_subcategory_id`, `asset_category_id`, `employee_id`, `end_user`, `category_id`, `ics_id`, `par_id`, `description`, `model`, `serial_number`, `unit`, `property_no`, `ics_par_no`, `inventory_tag`, `date_counted`, `image`, `qr_code`, `status`, `disposal_reason`, `disposal_date`, `value`, `acquisition_date`, `office_id`, `office_name`, `created_at`, `last_updated`) VALUES
-(1, 1, 3, NULL, 6, 'Elton John Moises', 2, NULL, NULL, 'ASUS Vivobook 16', NULL, NULL, NULL, '2026-04-05-030-0101-01', NULL, NULL, '2026-03-23', '[\"asset_1_0_1774270603.jpg\"]', 'qr_asset_1_1774270605.png', 'pending_tag', NULL, NULL, 42995.00, '2026-02-15', 4, 'OMM', '2026-03-23 12:42:03', '2026-03-26 05:49:39'),
-(2, 2, NULL, NULL, 1, 'Roberto Cruz', 2, NULL, NULL, 'HP Laptop 15s', NULL, NULL, NULL, '2026-04-05-030-0102-02', NULL, NULL, '2026-03-24', '[\"asset_2_0_1774320286.jpg\"]', 'qr_asset_2_1774320288.png', 'serviceable', NULL, NULL, 31200.00, '2026-03-01', 5, 'OVM', '2026-03-23 13:05:52', '2026-03-26 03:36:20'),
-(3, 3, NULL, NULL, 7, 'John Legend', 2, NULL, NULL, 'Lenovo ThinkPad E14', NULL, NULL, NULL, '2026-07-05-030-0103-03', NULL, NULL, '2026-03-24', '[\"asset_3_0_1774336559.jpg\"]', 'qr_asset_3_1774336564.png', 'serviceable', NULL, NULL, 54500.00, '2026-01-20', 12, 'OSB', '2026-03-24 03:34:58', '2026-03-24 07:16:04'),
-(4, 3, NULL, NULL, 7, 'Joshua Escano', 2, NULL, NULL, 'Lenovo ThinkPad E14', NULL, NULL, NULL, '2026-07-05-030-0101-03', NULL, NULL, '2026-03-24', '[\"asset_4_0_1774335556.jpg\"]', 'qr_asset_4_1774335559.png', 'serviceable', NULL, NULL, 54500.00, '2026-01-20', 12, 'OSB', '2026-03-24 03:38:56', '2026-03-24 06:59:19'),
-(5, 4, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Epson EcoTank L3250', NULL, NULL, NULL, '2026-04-05-030-0101-01', NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 10750.00, '2026-03-10', 4, NULL, '2026-03-24 07:37:18', '2026-03-24 07:37:18'),
-(6, 4, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Epson EcoTank L3250', NULL, NULL, NULL, '2026-04-05-030-0102-01', NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 10750.00, '2026-03-10', 4, NULL, '2026-03-24 07:37:18', '2026-03-24 07:37:18'),
-(7, 4, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Epson EcoTank L3250', NULL, NULL, NULL, '2026-04-05-030-0103-01', NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 10750.00, '2026-03-10', 4, NULL, '2026-03-24 07:37:18', '2026-03-24 07:37:18'),
-(8, 5, NULL, NULL, 6, 'Jake Paul', 2, NULL, NULL, 'Samsung 55\\\" UHD TV', 'BU8000', '0AS13CHX400501L', NULL, '2026-04-05-030-0701-01', NULL, NULL, '2026-03-24', '[\"asset_8_0_1774338708.jpg\"]', 'qr_asset_8_1774338710.png', 'maintenance', NULL, NULL, 28500.00, '2026-02-16', 4, 'OMM', '2026-03-24 07:44:35', '2026-03-25 01:31:52'),
-(9, 5, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Samsung 55\\\" UHD TV', NULL, NULL, NULL, '2026-04-05-030-0702-01', NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 28500.00, '2026-02-16', 4, NULL, '2026-03-24 07:44:35', '2026-03-24 07:44:35');
+INSERT INTO `asset_items` (`id`, `asset_id`, `asset_subcategory_id`, `asset_category_id`, `employee_id`, `end_user`, `category_id`, `ics_id`, `par_id`, `description`, `model`, `serial_number`, `unit`, `property_no`, `ics_par_no`, `inventory_tag`, `date_counted`, `image`, `redtag_image`, `qr_code`, `status`, `disposal_reason`, `disposal_date`, `value`, `acquisition_date`, `office_id`, `office_name`, `created_at`, `last_updated`) VALUES
+(1, 1, 3, NULL, 6, 'Elton John Moises', 2, NULL, NULL, 'ASUS Vivobook 16', NULL, NULL, NULL, '2026-04-05-030-0101-01', NULL, NULL, '2026-03-23', '[\"asset_1_0_1774270603.jpg\"]', NULL, 'qr_asset_1_1774270605.png', 'pending_tag', NULL, NULL, 42995.00, '2026-02-15', 4, 'OMM', '2026-03-23 12:42:03', '2026-03-26 05:49:39'),
+(2, 2, NULL, NULL, 1, 'Roberto Cruz', 2, NULL, NULL, 'HP Laptop 15s', NULL, NULL, NULL, '2026-04-05-030-0102-02', NULL, NULL, '2026-03-24', '[\"asset_2_0_1774320286.jpg\"]', NULL, 'qr_asset_2_1774320288.png', 'serviceable', NULL, NULL, 31200.00, '2026-03-01', 5, 'OVM', '2026-03-23 13:05:52', '2026-03-26 03:36:20'),
+(3, 3, NULL, NULL, 7, 'John Legend', 2, NULL, NULL, 'Lenovo ThinkPad E14', NULL, NULL, NULL, '2026-07-05-030-0103-03', NULL, NULL, '2026-03-24', '[\"asset_3_0_1774336559.jpg\"]', NULL, 'qr_asset_3_1774336564.png', 'serviceable', NULL, NULL, 54500.00, '2026-01-20', 12, 'OSB', '2026-03-24 03:34:58', '2026-03-24 07:16:04'),
+(4, 3, NULL, NULL, 7, 'Joshua Escano', 2, NULL, NULL, 'Lenovo ThinkPad E14', NULL, NULL, NULL, '2026-07-05-030-0101-03', NULL, NULL, '2026-03-24', '[\"asset_4_0_1774335556.jpg\"]', NULL, 'qr_asset_4_1774335559.png', 'serviceable', NULL, NULL, 54500.00, '2026-01-20', 12, 'OSB', '2026-03-24 03:38:56', '2026-03-24 06:59:19'),
+(5, 4, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Epson EcoTank L3250', NULL, NULL, NULL, '2026-04-05-030-0101-01', NULL, NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 10750.00, '2026-03-10', 4, NULL, '2026-03-24 07:37:18', '2026-03-24 07:37:18'),
+(6, 4, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Epson EcoTank L3250', NULL, NULL, NULL, '2026-04-05-030-0102-01', NULL, NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 10750.00, '2026-03-10', 4, NULL, '2026-03-24 07:37:18', '2026-03-24 07:37:18'),
+(7, 4, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Epson EcoTank L3250', NULL, NULL, NULL, '2026-04-05-030-0103-01', NULL, NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 10750.00, '2026-03-10', 4, NULL, '2026-03-24 07:37:18', '2026-03-24 07:37:18'),
+(8, 5, NULL, NULL, 6, 'Jake Paul', 2, NULL, NULL, 'Samsung 55\\\" UHD TV', 'BU8000', '0AS13CHX400501L', NULL, '2026-04-05-030-0701-01', NULL, NULL, '2026-03-24', '[\"asset_8_0_1774338708.jpg\"]', NULL, 'qr_asset_8_1774338710.png', 'maintenance', NULL, NULL, 28500.00, '2026-02-16', 4, 'OMM', '2026-03-24 07:44:35', '2026-03-25 01:31:52'),
+(9, 5, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Samsung 55\\\" UHD TV', NULL, NULL, NULL, '2026-04-05-030-0702-01', NULL, NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 28500.00, '2026-02-16', 4, NULL, '2026-03-24 07:44:35', '2026-03-24 07:44:35');
 
 --
 -- Triggers `asset_items`
@@ -1610,7 +1611,8 @@ CREATE TABLE `notifications` (
 
 INSERT INTO `notifications` (`id`, `user_id`, `title`, `message`, `type`, `priority`, `related_id`, `related_type`, `is_read`, `created_at`, `read_at`) VALUES
 (1, 17, 'Consumable Used', '1 units of \'A4 Paper\' consumed. Remaining stock: 12', 'info', 'low', 4, 'consumable', 1, '2026-03-25 06:01:42', '2026-03-25 07:37:46'),
-(2, 17, 'Consumable Used', '1 units of \'A4 Paper\' consumed. Remaining stock: 11', 'info', 'low', 4, 'consumable', 1, '2026-03-25 06:09:25', '2026-03-25 07:37:41');
+(2, 17, 'Consumable Used', '1 units of \'A4 Paper\' consumed. Remaining stock: 11', 'info', 'low', 4, 'consumable', 1, '2026-03-25 06:09:25', '2026-03-25 07:37:41'),
+(16, 18, 'New Borrow Request', 'Borrow request received from OVM for \'ASUS Vivobook 16\'', 'info', 'medium', 1774512150, 'borrow_request', 1, '2026-03-26 06:30:06', '2026-03-26 06:35:49');
 
 -- --------------------------------------------------------
 
@@ -1906,13 +1908,14 @@ CREATE TABLE `red_tags` (
   `action` varchar(50) NOT NULL,
   `office_id` int(11) DEFAULT NULL,
   `asset_item_id` int(11) DEFAULT NULL,
+  `peripheral_id` int(11) DEFAULT NULL,
   `created_by` int(11) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `disposal_reason` text DEFAULT NULL,
   `disposal_date` date DEFAULT NULL,
   `updated_by` int(11) DEFAULT NULL,
-  `component_type` enum('main_asset','monitor','ups') DEFAULT 'main_asset',
+  `component_type` enum('main_asset','monitor','ups','peripheral') DEFAULT 'main_asset',
   `component_description` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -2461,7 +2464,9 @@ INSERT INTO `security_logs` (`id`, `event_type`, `description`, `severity`, `use
 (226, 'session_timeout', 'Session timeout for user: OM admin (OM@pims.com)', 'medium', 18, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 02:51:15'),
 (227, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 04:05:58'),
 (228, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 05:50:39'),
-(229, 'session_timeout', 'Session timeout for user: OM admin (OM@pims.com)', 'medium', 18, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 06:21:16');
+(229, 'session_timeout', 'Session timeout for user: OM admin (OM@pims.com)', 'medium', 18, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 06:21:16'),
+(230, 'session_timeout', 'Session timeout for user: OM admin (OM@pims.com)', 'medium', 18, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 06:58:09'),
+(231, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 07:30:29');
 
 -- --------------------------------------------------------
 
@@ -12340,7 +12345,19 @@ INSERT INTO `system_logs` (`id`, `user_id`, `action`, `module`, `description`, `
 (10712, 18, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 05:51:03'),
 (10713, 18, 'session_timeout', 'authentication', 'Session expired for user: OM admin (OM@pims.com) after 1813 seconds', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 06:21:16'),
 (10714, 18, 'login_success', 'authentication', 'User logged in: OM admin (OM@pims.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 06:22:17'),
-(10715, 18, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 06:22:17');
+(10715, 18, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 06:22:17'),
+(10716, 18, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 06:35:47'),
+(10717, 18, 'session_timeout', 'authentication', 'Session expired for user: OM admin (OM@pims.com) after 2152 seconds', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 06:58:09'),
+(10718, 17, 'login_failed', 'authentication', 'Invalid password for user: Joshua Escaño (joshuamarifrancis@gmail.com)', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 06:58:26'),
+(10719, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 06:58:37'),
+(10720, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 06:58:37'),
+(10721, 17, 'session_timeout', 'authentication', 'Session expired for user: Joshua Escaño (joshuamarifrancis@gmail.com) after 1912 seconds', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 07:30:29'),
+(10722, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 07:30:40'),
+(10723, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', '2026-03-26 07:30:40'),
+(10724, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 01:53:47'),
+(10725, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 01:53:47');
+INSERT INTO `system_logs` (`id`, `user_id`, `action`, `module`, `description`, `ip_address`, `user_agent`, `timestamp`) VALUES
+(10726, 17, 'access', 'inventory_reports', 'Office admin accessed inventory reports', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 01:54:00');
 
 -- --------------------------------------------------------
 
@@ -13014,7 +13031,8 @@ ALTER TABLE `permissions`
 -- Indexes for table `red_tags`
 --
 ALTER TABLE `red_tags`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_peripheral_id` (`peripheral_id`);
 
 --
 -- Indexes for table `ris_forms`
@@ -13378,7 +13396,7 @@ ALTER TABLE `login_logs`
 -- AUTO_INCREMENT for table `notifications`
 --
 ALTER TABLE `notifications`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT for table `notification_settings`
@@ -13486,7 +13504,7 @@ ALTER TABLE `security_audit_logs`
 -- AUTO_INCREMENT for table `security_logs`
 --
 ALTER TABLE `security_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=230;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=232;
 
 --
 -- AUTO_INCREMENT for table `security_metrics`
@@ -13504,7 +13522,7 @@ ALTER TABLE `software`
 -- AUTO_INCREMENT for table `system_logs`
 --
 ALTER TABLE `system_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10716;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10727;
 
 --
 -- AUTO_INCREMENT for table `system_settings`
