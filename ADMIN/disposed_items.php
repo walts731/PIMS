@@ -289,7 +289,7 @@ try {
             </div>
             <div class="col-6 col-md-3">
                 <div class="stats-card">
-                    <div class="stats-number">₱<?php echo number_format($stats['total_value'], 2); ?></div>
+                    <div class="stats-number"><?php echo number_format($stats['total_value'], 2); ?></div>
                     <div class="stats-label"><i class="bi bi-currency-dollar"></i> Total Value</div>
                 </div>
             </div>
@@ -324,7 +324,6 @@ try {
                             <tr>
                                 <th>Item Description</th>
                                 <th>Property No.</th>
-                                <th>Value</th>
                                 <th>Office</th>
                                 <th>Disposal Date</th>
                               
@@ -340,7 +339,6 @@ try {
                                         
                                     </td>
                                     <td><?php echo htmlspecialchars($item['property_no'] ?? 'N/A'); ?></td>
-                                    <td>₱<?php echo number_format($item['value'] ?? 0, 2); ?></td>
                                     <td><?php echo htmlspecialchars($item['office_name'] ?? 'N/A'); ?></td>
                                     <td>
                                         <?php 
@@ -469,7 +467,7 @@ try {
                     // Office filter functionality
                     $('#officeFilter').on('change', function() {
                         var office = $(this).val();
-                        table.column(3).search(office).draw(); // Office column is index 3 (0-based): Item Description(0), Property No.(1), Value(2), Office(3), Disposal Date(4), Disposed By(5), Actions(6)
+                        table.column(2).search(office).draw(); // Office column is index 2 (0-based): Item Description(0), Property No.(1), Office(2), Disposal Date(3), Disposed By(4), Actions(5)
                     });
                 }
             });
