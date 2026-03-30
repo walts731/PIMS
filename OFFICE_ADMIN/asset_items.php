@@ -331,6 +331,8 @@ $page_title = 'Asset Items - ' . htmlspecialchars($asset['description']);
                                 <th>Status</th>
                                 <th>Acquisition Date</th>
                                 <th>Last Updated</th>
+                                <th>Image</th>
+                                <th style="display:none;">End User</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -370,6 +372,21 @@ $page_title = 'Asset Items - ' . htmlspecialchars($asset['description']);
                                     </td>
                                     <td><?php echo date('M j, Y', strtotime($item['acquisition_date'])); ?></td>
                                     <td><?php echo date('M j, Y', strtotime($item['last_updated'])); ?></td>
+                                    <td>
+                                        <?php
+                                        $image_data = json_decode($item['image'], true);
+                                        if (!empty($image_data) && is_array($image_data) && !empty($image_data[0])) {
+                                            $first_image = $image_data[0];
+                                            $end_user = !empty($item['end_user']) ? htmlspecialchars($item['end_user']) : 'Not Assigned';
+                                            echo '<button class="btn btn-primary btn-sm btn-action" onclick="showAssetImage(\'' . htmlspecialchars($first_image) . '\', \'' . htmlspecialchars($item['description']) . '\', \'' . $end_user . '\')" title="View Image">
+                                                <i class="bi bi-image"></i>
+                                            </button>';
+                                        } else {
+                                            echo '<span class="text-muted">No Image</span>';
+                                        }
+                                        ?>
+                                    </td>
+                                    <td style="display:none;"><?php echo !empty($item['end_user']) ? htmlspecialchars($item['end_user']) : 'Not Assigned'; ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
@@ -385,6 +402,29 @@ $page_title = 'Asset Items - ' . htmlspecialchars($asset['description']);
         
     </div>
     </div> <!-- Close main wrapper -->
+    
+    <!-- Image Modal -->
+    <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="imageModalLabel">Asset Image</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <div id="imageContainer">
+                        <!-- Image will be loaded here -->
+                    </div>
+                    <div id="imageInfo" class="mt-3">
+                        <!-- End user info will be displayed here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
     
     <?php require_once 'includes/logout-modal.php'; ?>
     <?php require_once 'includes/change-password-modal.php'; ?>
@@ -455,6 +495,16 @@ $page_title = 'Asset Items - ' . htmlspecialchars($asset['description']);
                             }
                             return data;
                         }
+                    },
+                    {
+                        targets: 5, // Image column
+                        orderable: false,
+                        searchable: false
+                    },
+                    {
+                        targets: 6, // End User column (hidden)
+                        visible: false,
+                        searchable: false
                     }
                 ],
                 dom: '<"row"<"col-md-6"l><"col-md-6 text-end"f>>rtip',
@@ -488,7 +538,7 @@ $page_title = 'Asset Items - ' . htmlspecialchars($asset['description']);
         function exportAssetItems() {
             // Use DataTables export functionality
             const data = assetItemsTable.data().toArray();
-            let csv = 'Property No,Description,Status,Acquisition Date,Last Updated\n';
+            let csv = 'Property No,Description,Status,Acquisition Date,Last Updated,End User\n';
             
             data.forEach(row => {
                 const rowData = [
@@ -496,7 +546,8 @@ $page_title = 'Asset Items - ' . htmlspecialchars($asset['description']);
                     row[1], // Description
                     row[2].replace(/<[^>]*>/g, '').trim(), // Status
                     row[3], // Acquisition Date
-                    row[4]  // Last Updated
+                    row[4], // Last Updated
+                    row[6] // End User (hidden column)
                 ];
                 csv += rowData.map(cell => `"${cell.trim()}"`).join(',') + '\n';
             });
@@ -508,6 +559,48 @@ $page_title = 'Asset Items - ' . htmlspecialchars($asset['description']);
             a.download = `asset_items_export_${new Date().toISOString().split('T')[0]}.csv`;
             a.click();
             window.URL.revokeObjectURL(url);
+        }
+        
+        // Function to show asset image in modal
+        function showAssetImage(imageName, assetDescription, endUser) {
+            const imagePath = `../uploads/asset_images/${imageName}`;
+            const modal = new bootstrap.Modal(document.getElementById('imageModal'));
+            const imageContainer = document.getElementById('imageContainer');
+            const imageInfo = document.getElementById('imageInfo');
+            const modalLabel = document.getElementById('imageModalLabel');
+            
+            // Set modal title
+            modalLabel.textContent = `Asset Image - ${assetDescription}`;
+            
+            // Create image element
+            const img = document.createElement('img');
+            img.src = imagePath;
+            img.className = 'img-fluid rounded';
+            img.style.maxHeight = '500px';
+            img.alt = `Image of ${assetDescription}`;
+            
+            // Add error handling
+            img.onerror = function() {
+                imageContainer.innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Image not found</strong><br>
+                        The image file could not be loaded. The file may have been moved or deleted.
+                    </div>
+                `;
+                imageInfo.innerHTML = `<p class="text-muted"><strong>End User:</strong> ${endUser}</p>`;
+            };
+            
+            img.onload = function() {
+                imageInfo.innerHTML = `<p class="text-muted"><strong>End User:</strong> ${endUser}</p>`;
+            };
+            
+            // Clear and set image container
+            imageContainer.innerHTML = '';
+            imageContainer.appendChild(img);
+            
+            // Show modal
+            modal.show();
         }
     </script>
     
