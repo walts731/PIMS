@@ -48,14 +48,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $office_location = $_POST['office_location'] ?? '';
         $received_by = $_POST['received_by'];
         $received_by_position = $_POST['received_by_position'] ?? '';
-        $received_by_date = $_POST['received_by_date'] ?? null;
+        $received_by_date = !empty($_POST['received_by_date']) ? $_POST['received_by_date'] : null;
         $issued_by = $_POST['issued_by'];
         $issued_by_position = $_POST['issued_by_position'] ?? '';
-        $issued_by_date = $_POST['issued_by_date'] ?? null;
+        $issued_by_date = !empty($_POST['issued_by_date']) ? $_POST['issued_by_date'] : null;
         $quantities = $_POST['quantity'] ?? [];
         $units = $_POST['unit'] ?? [];
         $descriptions = $_POST['description'] ?? [];
         $property_numbers = $_POST['property_number'] ?? [];
+        $category_codes = $_POST['category_code'] ?? [];
+        $subcategory_codes = $_POST['subcategory_code'] ?? [];
         $dates_acquired = $_POST['date_acquired'] ?? [];
         $amounts = $_POST['amount'] ?? [];
         $asset_ids = []; // Track created asset IDs for notifications
@@ -138,9 +140,83 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
                 
+                // Parse property numbers - handle both single and multiple property numbers
+                $individual_property_numbers = [];
+                if (!empty($property_number)) {
+                    // Check if it's a textarea with multiple property numbers (newline-separated)
+                    if (strpos($property_number, "\n") !== false) {
+                        $individual_property_numbers = array_filter(array_map('trim', explode("\n", $property_number)));
+                    } else {
+                        // Single property number - we'll need to generate sequential numbers for each item
+                        $base_property_number = $property_number;
+                    }
+                }
+                
+                // Get category and subcategory IDs from hidden fields (from property number generator)
+                $category_id = null;
+                $subcategory_id = null;
+                
+                // Use the category and subcategory codes from the hidden fields (if available)
+                $category_code = $category_codes[$i] ?? null;
+                $subcategory_code = $subcategory_codes[$i] ?? null;
+                
+                // Look up category ID
+                if (!empty($category_code)) {
+                    $category_stmt = $conn->prepare("SELECT id FROM asset_categories WHERE category_code = ?");
+                    $category_stmt->bind_param("s", $category_code);
+                    $category_stmt->execute();
+                    $category_result = $category_stmt->get_result();
+                    if ($category_result && $category_result->num_rows > 0) {
+                        $category_id = $category_result->fetch_assoc()['id'];
+                    }
+                    $category_stmt->close();
+                }
+                
+                // Look up subcategory ID
+                if (!empty($subcategory_code)) {
+                    $subcategory_stmt = $conn->prepare("SELECT id FROM asset_sub_categories WHERE sub_category_code = ?");
+                    $subcategory_stmt->bind_param("s", $subcategory_code);
+                    $subcategory_stmt->execute();
+                    $subcategory_result = $subcategory_stmt->get_result();
+                    if ($subcategory_result && $subcategory_result->num_rows > 0) {
+                        $subcategory_id = $subcategory_result->fetch_assoc()['id'];
+                    }
+                    $subcategory_stmt->close();
+                }
+                
+                // Fallback: Parse from property number if hidden fields are not available
+                if (is_null($category_id) && is_null($subcategory_id) && !empty($property_number)) {
+                    // Use the first property number to parse category and subcategory
+                    $first_property_number = !empty($individual_property_numbers) ? $individual_property_numbers[0] : $base_property_number;
+                    $parsed_data = parsePropertyNumber($first_property_number);
+                    
+                    // Look up category and subcategory IDs from parsed data
+                    if (!empty($parsed_data['category_code'])) {
+                        $category_stmt = $conn->prepare("SELECT id FROM asset_categories WHERE category_code = ?");
+                        $category_stmt->bind_param("s", $parsed_data['category_code']);
+                        $category_stmt->execute();
+                        $category_result = $category_stmt->get_result();
+                        if ($category_result && $category_result->num_rows > 0) {
+                            $category_id = $category_result->fetch_assoc()['id'];
+                        }
+                        $category_stmt->close();
+                    }
+                    
+                    if (!empty($parsed_data['subcategory_code'])) {
+                        $subcategory_stmt = $conn->prepare("SELECT id FROM asset_sub_categories WHERE sub_category_code = ?");
+                        $subcategory_stmt->bind_param("s", $parsed_data['subcategory_code']);
+                        $subcategory_stmt->execute();
+                        $subcategory_result = $subcategory_stmt->get_result();
+                        if ($subcategory_result && $subcategory_result->num_rows > 0) {
+                            $subcategory_id = $subcategory_result->fetch_assoc()['id'];
+                        }
+                        $subcategory_stmt->close();
+                    }
+                }
+                
                 // Also insert as asset and asset item first to get asset_id
-                $asset_stmt = $conn->prepare("INSERT INTO assets (description, unit, quantity, unit_cost, office_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NOW(), NOW())");
-                $asset_stmt->bind_param("ssidi", $descriptions[$i], $units[$i], $quantity, $unit_cost, $office_id);
+                $asset_stmt = $conn->prepare("INSERT INTO assets (description, unit, quantity, unit_cost, office_id, asset_categories_id, asset_subcategory_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())");
+                $asset_stmt->bind_param("ssidiii", $descriptions[$i], $units[$i], $quantity, $unit_cost, $office_id, $category_id, $subcategory_id);
                 
                 if (!$asset_stmt->execute()) {
                     throw new Exception('Failed to save asset: ' . $asset_stmt->error);
@@ -180,8 +256,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // Use the exact total amount for each individual item (not divided)
                     $value_sql = !empty($amount) ? $amount : 'NULL';
                     
-                    $sql = "INSERT INTO asset_items (asset_id, par_id, description, unit, status, value, acquisition_date, office_id, created_at, last_updated) 
-                           VALUES ($asset_id, $par_form_id, '$description', '$unit', '$status', $value_sql, $acquisition_date_sql, $office_id, NOW(), NOW())";
+                    $sql = "INSERT INTO asset_items (asset_id, par_id, description, unit, status, value, acquisition_date, office_id, ics_par_no, created_at, last_updated) 
+                           VALUES ($asset_id, $par_form_id, '$description', '$unit', '$status', $value_sql, $acquisition_date_sql, $office_id, '$par_no', NOW(), NOW())";
                     
                     if (!$conn->query($sql)) {
                         throw new Exception('Failed to save asset item ' . $item_num . ': ' . $conn->error);
