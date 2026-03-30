@@ -271,6 +271,33 @@ if ($result && $row = $result->fetch_assoc()) {
             box-shadow: var(--shadow-lg);
         }
         
+        .quantity-field {
+            width: 80px;
+            min-width: 80px;
+        }
+        
+        .date-field {
+            width: 120px;
+            min-width: 120px;
+        }
+        
+        .property-number-field .input-group {
+            display: flex;
+            align-items: stretch;
+        }
+        
+        .property-number-field .input-group .form-control {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+        
+        .property-number-field .input-group .btn {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+            margin-left: -1px;
+            z-index: 1;
+        }
+        
         .table-responsive {
             border-radius: var(--border-radius);
             overflow: hidden;
@@ -476,27 +503,29 @@ if ($result && $row = $result->fetch_assoc()) {
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td><input type="number" class="form-control form-control-sm" name="quantity[]" required onchange="calculateAmount(this)"></td>
+                                            <td><input type="number" class="form-control form-control-sm quantity-field" name="quantity[]" required onchange="calculateAmount(this)"></td>
                                             <td>
-                                                <select class="form-select form-select-sm" name="unit[]" required>
+                                                <div class="input-group"><select class="form-select form-select-sm" name="unit[]" required>
                                                     <option value="">Select Unit</option>
                                                     <?php foreach ($units as $unit): ?>
                                                         <option value="<?php echo htmlspecialchars($unit['unit_code']); ?>" data-unit-name="<?php echo htmlspecialchars($unit['unit_name']); ?>" data-singular="<?php echo htmlspecialchars(getSingularForm($unit['unit_name'])); ?>"><?php echo htmlspecialchars($unit['unit_name']); ?></option>
                                                     <?php endforeach; ?>
-                                                </select>
+                                                </select></div>
                                             </td>
-                                            <td><input type="text" class="form-control form-control-sm" name="description[]" required></td>
+                                            <td><div class="input-group"><input type="text" class="form-control form-control-sm" name="description[]" required></div></td>
                                             <td>
                                                 <div class="property-number-field">
-                                                    <input type="text" class="form-control form-control-sm" name="property_number[]" id="initialPropertyNumber" value="" readonly placeholder="Click 'Generate' to create property number">
-                                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="showPropertyNumberGenerator(this)" title="Generate Property Number">
-                                                        <i class="bi bi-gear"></i> Generate
-                                                    </button>
+                                                    <div class="input-group">
+                                                        <input type="text" class="form-control form-control-sm" name="property_number[]" id="initialPropertyNumber" value="" readonly placeholder="Click 'Generate' to create property number">
+                                                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="showPropertyNumberGenerator(this)" title="Generate Property Number">
+                                                            <i class="bi bi-gear"></i>
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                                <small class="text-muted">Format: YEAR-FORM-CATEGORY-SUBCATEGORY+SERIES-OFFICE</small>
+                                                
                                             </td>
-                                            <td><input type="date" class="form-control form-control-sm" name="date_acquired[]"></td>
-                                            <td><input type="number" step="0.01" class="form-control form-control-sm" name="amount[]" required onchange="updateGrandTotal()"></td>
+                                            <td><div class="input-group"><input type="date" class="form-control form-control-sm date-field" name="date_acquired[]" title="Select date from calendar"></div></td>
+                                            <td><div class="input-group"><input type="number" step="0.01" class="form-control form-control-sm" name="amount[]" required onchange="updateGrandTotal()"></div></td>
                                             <td><button type="button" class="btn btn-sm btn-danger" onclick="removeRow(this)"><i class="bi bi-trash"></i></button></td>
                                         </tr>
                                     </tbody>
@@ -733,16 +762,14 @@ if ($result && $row = $result->fetch_assoc()) {
             const autoPropertyNumber = ''; // Empty for manual input
             
             const cells = [
-                '<input type="number" class="form-control form-control-sm" name="quantity[]" required onchange="calculateAmount(this)">',
-                '<select class="form-select form-select-sm" name="unit[]" required>' + unitOptions + '</select>',
-                '<input type="text" class="form-control form-control-sm" name="description[]" required>',
+                '<input type="number" class="form-control form-control-sm quantity-field" name="quantity[]" required onchange="calculateAmount(this)">',
+                '<div class="input-group"><select class="form-select form-select-sm" name="unit[]" required>' + unitOptions + '</select></div>',
+                '<div class="input-group"><input type="text" class="form-control form-control-sm" name="description[]" required></div>',
                 '<div class="property-number-field">' +
-                '<input type="text" class="form-control form-control-sm" name="property_number[]" value="" readonly placeholder="Click Generate to create">' +
-                '<button type="button" class="btn btn-sm btn-outline-primary" onclick="showPropertyNumberGenerator(this)" title="Generate Property Number"><i class="bi bi-gear"></i> Generate</button>' +
-                '</div>' +
-                '<small class="text-muted">Format: YEAR-FORM-CATEGORY-SUBCATEGORY+SERIES-OFFICE</small>',
-                '<input type="date" class="form-control form-control-sm" name="date_acquired[]">',
-                '<input type="number" step="0.01" class="form-control form-control-sm" name="amount[]" required onchange="updateGrandTotal()">',
+                '<div class="input-group"><input type="text" class="form-control form-control-sm" name="property_number[]" value="" readonly placeholder="Click Generate to create">' +
+                '<button type="button" class="btn btn-sm btn-outline-primary" onclick="showPropertyNumberGenerator(this)" title="Generate Property Number"><i class="bi bi-gear"></i> </button></div></div>',
+                '<div class="input-group"><input type="date" class="form-control form-control-sm date-field" name="date_acquired[]" title="Select date from calendar"></div>',
+                '<div class="input-group"><input type="number" step="0.01" class="form-control form-control-sm" name="amount[]" required onchange="updateGrandTotal()"></div>',
                 '<button type="button" class="btn btn-sm btn-danger" onclick="removeRow(this)"><i class="bi bi-trash"></i></button>'
             ];
             
@@ -857,6 +884,61 @@ if ($result && $row = $result->fetch_assoc()) {
             }
         }
         
+        // Function to validate amount is above 50,000
+        function validateAmount(input) {
+            const value = parseFloat(input.value);
+            if (!isNaN(value) && value <= 50000) {
+                // Show warning notification
+                showAmountNotification(input, 'Amount must be above ₱50,000. Current amount: ₱' + value.toFixed(2));
+                
+                // Highlight the field
+                input.style.borderColor = '#dc3545';
+                input.style.backgroundColor = '#f8d7da';
+            } else {
+                // Clear any previous warnings
+                hideAmountNotification(input);
+                
+                // Reset field styling
+                input.style.borderColor = '';
+                input.style.backgroundColor = '';
+            }
+        }
+        
+        // Function to show amount validation notification
+        function showAmountNotification(input, message) {
+            // Remove any existing notification for this input
+            hideAmountNotification(input);
+            
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = 'alert alert-warning alert-dismissible fade show amount-validation-alert';
+            notification.style.cssText = 'margin-top: 5px; padding: 10px; font-size: 0.875rem;';
+            notification.innerHTML = `
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <strong>Amount Validation:</strong> ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            `;
+            
+            // Insert notification after the input's parent cell
+            const parentCell = input.closest('td');
+            if (parentCell) {
+                parentCell.appendChild(notification);
+            }
+        }
+        
+        // Function to hide amount validation notification
+        function hideAmountNotification(input) {
+            const parentCell = input.closest('td');
+            if (parentCell) {
+                const existingAlert = parentCell.querySelector('.amount-validation-alert');
+                if (existingAlert) {
+                    existingAlert.remove();
+                }
+            }
+        }
+        
         // Function to update all unit displays in the table
         function updateAllUnitDisplays() {
             const table = document.getElementById('itemsTable');
@@ -873,6 +955,10 @@ if ($result && $row = $result->fetch_assoc()) {
             initializeForm();
             addAmountListeners();
             updateGrandTotal(); // Initialize grand total
+            
+            // Initialize global series counter from the database
+            const initialSeries = parseInt('<?php echo $next_series; ?>') || 1;
+            globalSeriesCounter = initialSeries;
         });
         
         function removeRow(button) {
@@ -1035,6 +1121,7 @@ if ($result && $row = $result->fetch_assoc()) {
                 // Format on change
                 input.addEventListener('change', function() {
                     formatAmount(this);
+                    validateAmount(this);
                     updateGrandTotal();
                 });
                 
@@ -1143,6 +1230,7 @@ if ($result && $row = $result->fetch_assoc()) {
         
         // Property Number Generator Functions
         let currentPropertyField = null;
+        let globalSeriesCounter = 1; // Global counter for all property numbers generated
         
         function showPropertyNumberGenerator(button) {
             currentPropertyField = button.closest('td').querySelector('input[name="property_number[]"], textarea[name="property_number[]"]');
@@ -1211,7 +1299,8 @@ if ($result && $row = $result->fetch_assoc()) {
         }
         
         function generatePropertyNumberPreview() {
-            const year = new Date().getFullYear();
+            const currentDate = new Date();
+            const year = currentDate.getFullYear();
             const formType = document.getElementById('formType').value || '07';
             const category = document.getElementById('categorySelect').value || '030';
             const subcategory = document.getElementById('subcategorySelect').value || '01';
@@ -1228,14 +1317,14 @@ if ($result && $row = $result->fetch_assoc()) {
             // Get quantity from global variable
             const quantity = window.currentQuantity || 1;
             
-            // Generate multiple property numbers using the PAR series as base
+            // Generate multiple property numbers using the format: YEAR-FORM-CATEGORY-SUBCATEGORY+SERIES-OFFICE
             const propertyNumbers = [];
             for (let i = 0; i < quantity; i++) {
-                // Use the PAR series number (2 digits) and combine with subcategory (no dash)
-                const currentSeriesNumber = parseInt(baseSeries) + i;
+                // Use the global series counter for proper incrementing across all rows
+                const currentSeriesNumber = globalSeriesCounter + i;
                 const currentSeries = String(currentSeriesNumber).padStart(2, '0');
                 
-                // Combine subcategory and series without dash
+                // Combine subcategory and series without dash (e.g., 01 + 01 = 0101, 01 + 02 = 0102)
                 const subcategorySeries = subcategory + currentSeries;
                 
                 const propertyNumber = `${year}-${formType}-${category}-${subcategorySeries}-${office}`;
@@ -1324,10 +1413,13 @@ if ($result && $row = $result->fetch_assoc()) {
                     if (!propertyNumberContainer.nextElementSibling || !propertyNumberContainer.nextElementSibling.classList.contains('text-muted')) {
                         const formatText = document.createElement('small');
                         formatText.className = 'text-muted d-block mt-1';
-                        formatText.textContent = 'Format: YEAR-FORM-FUND-CATEGORY-SUBCATEGORY+SERIES-OFFICE';
+                        formatText.textContent = '';
                         propertyNumberContainer.parentNode.insertBefore(formatText, propertyNumberContainer.nextSibling);
                     }
                 }
+                
+                // Increment the global series counter by the quantity of property numbers generated
+                globalSeriesCounter += propertyNumbers.length;
                 
                 // Close modal
                 const modal = bootstrap.Modal.getInstance(document.getElementById('propertyNumberGeneratorModal'));
