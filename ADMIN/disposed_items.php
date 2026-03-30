@@ -245,7 +245,7 @@ try {
                                 </button>
                             </li>
                             <li>
-                                <button class="dropdown-item" onclick="window.print()">
+                                <button class="dropdown-item" onclick="printDisposedItems()">
                                     <i class="bi bi-printer"></i> Print Report
                                 </button>
                             </li>
@@ -381,6 +381,38 @@ try {
     <?php require_once 'includes/logout-modal.php'; ?>
     <?php require_once 'includes/change-password-modal.php'; ?>
     
+    <!-- Print Preview Modal -->
+    <div class="modal fade" id="printPreviewModal" tabindex="-1" aria-labelledby="printPreviewModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="printPreviewModalLabel">
+                        <i class="bi bi-printer"></i> Disposed Items Print Preview
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="printPreviewContent">
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-3">Loading print preview...</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Close
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="printFromPreview()">
+                        <i class="bi bi-printer"></i> Print
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <!-- Bootstrap JS -->
@@ -497,7 +529,7 @@ try {
         function printDisposedItems() {
             // Get current filters
             var officeFilter = $('#officeFilter').val();
-            var searchValue = $('#searchInput').val();
+            var searchValue = $('#disposedItemsTable_filter input[type="search"]').val();
             
             // Build URL with filters
             var url = 'print_disposed.php';
@@ -515,12 +547,84 @@ try {
                 url += '?' + params.join('&');
             }
             
+            // Show preview modal
+            showPrintPreview(url);
+        }
+        
+        // Show print preview in modal
+        function showPrintPreview(url) {
+            $('#printPreviewModal').modal('show');
+            
+            // Load the print preview content
+            $('#printPreviewContent').load(url + ' .print-header, .filters-info, .summary-stats, .report-table', function(response, status, xhr) {
+                if (status === "error") {
+                    $('#printPreviewContent').html(`
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            Error loading print preview: ${xhr.status} ${xhr.statusText}
+                        </div>
+                    `);
+                } else {
+                    // Apply print-specific styles to the preview
+                    $('#printPreviewContent').addClass('print-preview-container');
+                }
+            });
+        }
+        
+        // Print from preview
+        function printFromPreview() {
+            // Create a new window with the print URL
+            var officeFilter = $('#officeFilter').val();
+            var searchValue = $('#disposedItemsTable_filter input[type="search"]').val();
+            
+            var url = 'print_disposed.php';
+            var params = [];
+            
+            if (officeFilter) {
+                params.push('office=' + encodeURIComponent(officeFilter));
+            }
+            
+            if (searchValue) {
+                params.push('search=' + encodeURIComponent(searchValue));
+            }
+            
+            if (params.length > 0) {
+                url += '?' + params.join('&');
+            }
+            
             // Open print window
-            window.open(url, '_blank');
+            var printWindow = window.open(url, '_blank', 'width=1000,height=800');
+            if (!printWindow) {
+                alert('Please allow popups for this site to print reports.');
+            }
+            
+            // Close modal after opening print window
+            $('#printPreviewModal').modal('hide');
         }
     </script>
     
     <style>
+        .print-preview-container {
+            max-height: 600px;
+            overflow: auto;
+            border: 1px solid #ddd;
+            padding: 15px;
+            background: white;
+        }
+        
+        .print-preview-container .print-header {
+            margin-bottom: 20px;
+        }
+        
+        .print-preview-container .report-table {
+            font-size: 11px;
+            margin-bottom: 0;
+        }
+        
+        .print-preview-container .summary-stats {
+            margin-bottom: 20px;
+        }
+        
         @media print {
             body {
                 background: white;
