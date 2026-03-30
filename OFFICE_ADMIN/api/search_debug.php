@@ -84,6 +84,16 @@ try {
     
     $debug['office_id_column_exists'] = $office_id_column_exists;
     
+    // Test consumables search
+    $consumable_office_id_exists = false;
+    $consumable_column_check_sql = "SHOW COLUMNS FROM consumables LIKE 'office_id'";
+    $consumable_column_result = $conn->query($consumable_column_check_sql);
+    if ($consumable_column_result && $consumable_column_result->num_rows > 0) {
+        $consumable_office_id_exists = true;
+    }
+    
+    $debug['consumable_office_id_exists'] = $consumable_office_id_exists;
+    
     if ($office_id_column_exists) {
         // Search with office_id filter
         $sql = "SELECT 
@@ -148,6 +158,7 @@ try {
             $row['subtitle'] = $row['model'] ? $row['model'] : $row['property_no'];
             $row['badge'] = ucfirst($row['status']);
             $row['badge_class'] = getAssetStatusBadgeClass($row['status']);
+            $row['destination'] = 'Assets Page';
             $results[] = $row;
         }
         $stmt->close();
