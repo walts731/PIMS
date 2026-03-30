@@ -469,7 +469,7 @@ try {
                     // Office filter functionality
                     $('#officeFilter').on('change', function() {
                         var office = $(this).val();
-                        table.column(4).search(office).draw(); // Office column is index 4 (0-based)
+                        table.column(3).search(office).draw(); // Office column is index 3 (0-based): Item Description(0), Property No.(1), Value(2), Office(3), Disposal Date(4), Disposed By(5), Actions(6)
                     });
                 }
             });
