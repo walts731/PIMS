@@ -21,15 +21,17 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
 
 logSystemAction($_SESSION['user_id'], 'Accessed PAR Entries', 'forms', 'par_entries.php');
 
-// Get all PAR forms with items
+// Get all PAR forms with items and office names
 $par_forms = [];
 $result = $conn->query("
     SELECT 
         f.*,
         SUM(i.quantity) as item_count,
-        SUM(i.quantity * i.amount) as total_value
+        SUM(i.quantity * i.amount) as total_value,
+        o.office_name
     FROM par_forms f 
     LEFT JOIN par_items i ON f.id = i.form_id 
+    LEFT JOIN offices o ON f.office_location COLLATE utf8mb4_unicode_ci = o.office_code COLLATE utf8mb4_unicode_ci
     GROUP BY f.id 
     ORDER BY f.created_at DESC
 ");
@@ -64,6 +66,9 @@ if ($result && $row = $result->fetch_assoc()) {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="assets/css/admin-unified.css" rel="stylesheet">
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css">
 </head>
 <body>
     <?php $page_title = 'PAR Entries'; ?>
@@ -109,43 +114,6 @@ if ($result && $row = $result->fetch_assoc()) {
             </div>
         </div>
         
-        <div class="row g-3 mb-4">
-            <div class="col-6 col-md-3">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo count($par_forms); ?></div>
-                    <div class="stats-label"><i class="bi bi-file-earmark-text"></i> Total PAR Forms</div>
-                </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="stats-card">
-                    <div class="stats-number">
-                        <?php 
-                        $total_items = array_sum(array_column($par_forms, 'item_count'));
-                        echo $total_items; 
-                        ?>
-                    </div>
-                    <div class="stats-label"><i class="bi bi-list-check"></i> Total Items</div>
-                </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="stats-card">
-                    <div class="stats-number">
-                        ₱<?php 
-                        $total_value = array_sum(array_column($par_forms, 'total_value'));
-                        echo number_format($total_value, 2); 
-                        ?>
-                    </div>
-                    <div class="stats-label"><i class="bi bi-currency-dollar"></i> Total Value</div>
-                </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo date('M Y'); ?></div>
-                    <div class="stats-label"><i class="bi bi-calendar"></i> Current Period</div>
-                </div>
-            </div>
-        </div>
-
         <div class="section-card mb-4">
             <div class="section-title">
                 <i class="bi bi-file-earmark-text"></i> PAR Forms Management
@@ -161,68 +129,49 @@ if ($result && $row = $result->fetch_assoc()) {
                     </a>
                 </div>
             <?php else: ?>
-                <div class="row">
-                    <?php foreach ($par_forms as $par): ?>
-                        <div class="col-12">
-                            <div class="par-card">
-                                <div class="row align-items-start">
-                                    <div class="col-md-8">
-                                        <div class="d-flex justify-content-between align-items-start mb-3">
-                                            <div>
-                                                <div class="par-number">
-                                                    <i class="bi bi-file-earmark-text"></i> <?php echo htmlspecialchars($par['par_no']); ?>
-                                                </div>
-                                                <h5 class="mb-2"><?php echo htmlspecialchars($par['entity_name']); ?></h5>
-                                                <p class="text-muted mb-2">
-                                                    <i class="bi bi-cash-stack"></i> Fund Cluster: <?php echo htmlspecialchars($par['fund_cluster']); ?>
-                                                </p>
-                                                <?php if (!empty($par['office_location'])): ?>
-                                                    <p class="text-muted mb-2">
-                                                        <i class="bi bi-geo-alt"></i> Office: <?php echo htmlspecialchars($par['office_location']); ?>
-                                                    </p>
-                                                <?php endif; ?>
-                                            </div>
+                <!-- PAR Forms Table -->
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped" id="parTable">
+                        <thead class="table-primary">
+                            <tr>
+                                <th>PAR Number</th>
+                                <th>Received By</th>
+                                <th>Issued By</th>
+                                <th>Date Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($par_forms as $par): ?>
+                                <tr>
+                                    <td>
+                                        <div class="par-number">
+                                            <i class="bi bi-file-earmark-text"></i> <?php echo htmlspecialchars($par['par_no']); ?>
                                         </div>
-                                        
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <small class="text-muted">Received By:</small>
-                                                <p class="mb-1"><?php echo htmlspecialchars($par['received_by_name']); ?></p>
-                                                <p class="mb-1 text-muted"><?php echo htmlspecialchars($par['received_by_position']); ?></p>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <small class="text-muted">Issued By:</small>
-                                                <p class="mb-1"><?php echo htmlspecialchars($par['issued_by_name']); ?></p>
-                                                <p class="mb-1 text-muted"><?php echo htmlspecialchars($par['issued_by_position']); ?></p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="col-md-4 text-end">
-                                        <div class="mb-3">
-                                            <div class="text-muted small">Items Count</div>
-                                            <div class="h4"><?php echo $par['item_count']; ?></div>
-                                        </div>
-                                        <div class="mb-3">
-                                            <div class="text-muted small">Total Value</div>
-                                            <div class="h4">₱<?php echo number_format($par['total_value'], 2); ?></div>
-                                        </div>
-                                        <div class="text-muted small mb-3">
-                                            <i class="bi bi-calendar"></i> <?php echo date('M d, Y', strtotime($par['created_at'])); ?>
-                                        </div>
-                                        <div class="no-print">
-                                            <button class="btn btn-sm btn-outline-primary btn-action me-2" onclick="viewPAR(<?php echo $par['id']; ?>)">
-                                                <i class="bi bi-eye"></i> View
+                                    </td>
+                                    <td>
+                                        <strong><?php echo htmlspecialchars($par['received_by_name']); ?></strong>
+                                    </td>
+                                    <td>
+                                        <strong><?php echo htmlspecialchars($par['issued_by_name']); ?></strong>
+                                    </td>
+                                    <td data-order="<?php echo strtotime($par['created_at']); ?>">
+                                        <i class="bi bi-calendar"></i> <?php echo date('M d, Y', strtotime($par['created_at'])); ?>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <button class="btn btn-sm btn-outline-primary" onclick="viewPAR(<?php echo $par['id']; ?>)" title="View">
+                                                <i class="bi bi-eye"></i>
                                             </button>
-                                            <button class="btn btn-sm btn-outline-info btn-action" onclick="printPAR(<?php echo $par['id']; ?>)">
-                                                <i class="bi bi-printer"></i> Print
+                                            <button class="btn btn-sm btn-outline-info" onclick="printPAR(<?php echo $par['id']; ?>)" title="Print">
+                                                <i class="bi bi-printer"></i>
                                             </button>
                                         </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
                 </div>
             <?php endif; ?>
         </div>
@@ -234,7 +183,46 @@ if ($result && $row = $result->fetch_assoc()) {
     <?php include 'includes/sidebar-scripts.php'; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- DataTables JS -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.bootstrap5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
     <script>
+        // Initialize DataTables when document is ready
+        $(document).ready(function() {
+            $('#parTable').DataTable({
+                responsive: true,
+                pageLength: 25,
+                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                order: [[3, 'desc']], // Sort by Date Created descending by default
+                language: {
+                    search: "Search:",
+                    lengthMenu: "Show _MENU_ entries",
+                    info: "Showing _START_ to _END_ of _TOTAL_ entries",
+                    paginate: {
+                        first: "First",
+                        last: "Last",
+                        next: "Next",
+                        previous: "Previous"
+                    }
+                },
+                columnDefs: [
+                    {
+                        targets: 4, // Actions column
+                        orderable: false,
+                        searchable: false
+                    }
+                ]
+            });
+        });
+        
         function viewPAR(id) {
             window.open('par_view.php?id=' + id, '_blank');
         }
@@ -242,161 +230,6 @@ if ($result && $row = $result->fetch_assoc()) {
         function printPAR(id) {
             window.open('print_par.php?id=' + id, '_blank');
         }
-        
-        function searchPARForms() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
-            const parCards = document.querySelectorAll('.par-card');
-            let visibleCount = 0;
-            
-            parCards.forEach(card => {
-                // Get specific fields for more targeted search
-                const parNumberElement = card.querySelector('.par-number');
-                const parNumber = parNumberElement ? parNumberElement.textContent.toLowerCase() : '';
-                const entityName = card.querySelector('h5')?.textContent.toLowerCase() || '';
-                
-                // More specific selectors for fund cluster
-                const fundClusterElement = card.querySelector('.bi-cash-stack')?.parentElement;
-                const fundCluster = fundClusterElement ? fundClusterElement.textContent.toLowerCase() : '';
-                
-                // More specific selectors for received by and issued by
-                const receivedByNameElement = card.querySelector('.col-md-6:nth-child(1) p:nth-child(2)');
-                const receivedByName = receivedByNameElement ? receivedByNameElement.textContent.toLowerCase() : '';
-                
-                const issuedByNameElement = card.querySelector('.col-md-6:nth-child(2) p:nth-child(2)');
-                const issuedByName = issuedByNameElement ? issuedByNameElement.textContent.toLowerCase() : '';
-                
-                // Office location (optional)
-                const officeElement = card.querySelector('.bi-geo-alt')?.parentElement;
-                const office = officeElement ? officeElement.textContent.toLowerCase() : '';
-                
-                // Date element
-                const dateElement = card.querySelector('.bi-calendar')?.parentElement;
-                const date = dateElement ? dateElement.textContent.toLowerCase() : '';
-                
-                // Prioritize PAR number matching - exact match gets highest priority
-                let matches = false;
-                
-                if (searchTerm === '') {
-                    matches = true;
-                } else if (parNumber.includes(searchTerm)) {
-                    // PAR number match - prioritize this
-                    matches = true;
-                    // Highlight the PAR number if it's a close match
-                    if (searchTerm.length >= 3) {
-                        parNumberElement.style.backgroundColor = '#fff3cd';
-                        parNumberElement.style.borderRadius = '4px';
-                        parNumberElement.style.padding = '2px 6px';
-                    }
-                } else {
-                    // Check other fields
-                    const otherFields = [
-                        entityName,
-                        fundCluster,
-                        receivedByName,
-                        issuedByName,
-                        office,
-                        date
-                    ];
-                    
-                    matches = otherFields.some(field => field.includes(searchTerm));
-                }
-                
-                // Show/hide card based on search
-                if (matches) {
-                    card.style.display = 'block';
-                    visibleCount++;
-                } else {
-                    card.style.display = 'none';
-                    // Reset highlight
-                    const parNumberElement = card.querySelector('.par-number');
-                    if (parNumberElement) {
-                        parNumberElement.style.backgroundColor = '';
-                        parNumberElement.style.borderRadius = '';
-                        parNumberElement.style.padding = '';
-                    }
-                }
-            });
-            
-            // Show/hide "no results" message
-            showNoResultsMessage(visibleCount === 0 && searchTerm !== '');
-        }
-        
-        function toggleClearButton() {
-            const searchInput = document.getElementById('searchInput');
-            const clearBtn = document.getElementById('clearSearchBtn');
-            
-            // Show clear button if there's text, hide if empty
-            if (searchInput.value.trim()) {
-                clearBtn.style.display = 'block';
-            } else {
-                clearBtn.style.display = 'none';
-                // Trigger search to show all results when cleared
-                searchPARForms();
-            }
-        }
-        
-        function handleSearchKeyPress(event) {
-            // Trigger search when Enter key is pressed
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                searchPARForms();
-            }
-        }
-        
-        function showNoResultsMessage(show) {
-            // Remove existing no results message if present
-            const existingMessage = document.getElementById('noResultsMessage');
-            if (existingMessage) {
-                existingMessage.remove();
-            }
-            
-            if (show) {
-                const noResultsHtml = `
-                    <div id="noResultsMessage" class="col-12">
-                        <div class="text-center py-5">
-                            <i class="bi bi-search display-1 text-muted"></i>
-                            <h4 class="mt-3 text-muted">No Results Found</h4>
-                            <p class="text-muted">Try searching by PAR number, entity name, or other details.</p>
-                            <button class="btn btn-outline-secondary" onclick="clearSearch()">
-                                <i class="bi bi-x-circle"></i> Clear Search
-                            </button>
-                        </div>
-                    </div>
-                `;
-                
-                // Insert after the statistics row
-                const statsRow = document.querySelector('.row.mb-4');
-                if (statsRow) {
-                    statsRow.insertAdjacentHTML('afterend', noResultsHtml);
-                }
-            }
-        }
-        
-        function clearSearch() {
-            const searchInput = document.getElementById('searchInput');
-            const clearBtn = document.getElementById('clearSearchBtn');
-            
-            searchInput.value = '';
-            clearBtn.style.display = 'none';
-            
-            // Remove all highlights
-            const parNumbers = document.querySelectorAll('.par-number');
-            parNumbers.forEach(element => {
-                element.style.backgroundColor = '';
-                element.style.borderRadius = '';
-                element.style.padding = '';
-            });
-            
-            searchPARForms();
-        }
-        
-        // Add search on input change
-        document.addEventListener('DOMContentLoaded', function() {
-            const searchInput = document.getElementById('searchInput');
-            if (searchInput) {
-                searchInput.addEventListener('input', searchPARForms);
-            }
-        });
         
         function exportPARData() {
             // Create export modal

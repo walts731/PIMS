@@ -401,7 +401,7 @@ if ($result && $row = $result->fetch_assoc()) {
                     <p class="text-muted mb-0">Manage Property Acknowledgment Receipt forms</p>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <button class="btn btn-outline-secondary btn-sm" onclick="viewPAREntries()">
+                    <button class="btn btn-primary btn-sm" onclick="viewPAREntries()">
                         <i class="bi bi-list"></i> View Entries
                     </button>
                 </div>
