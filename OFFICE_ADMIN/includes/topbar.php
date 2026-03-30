@@ -26,17 +26,49 @@
 
         <!-- Search -->
 
-        <div class="topbar-search">
+        <div class="topbar-search" id="topbarSearch">
 
             <div class="input-group">
 
-                <input type="text" class="form-control" placeholder="Search...">
+                <input type="text" class="form-control" id="globalSearchInput" placeholder="Search assets, requests, users..." autocomplete="off">
 
-                <button class="btn btn-outline-secondary" type="button">
+                <button class="btn btn-outline-secondary" type="button" id="searchButton">
 
                     <i class="bi bi-search"></i>
 
                 </button>
+
+            </div>
+
+            <!-- Search Results Dropdown -->
+
+            <div class="search-results-dropdown" id="searchResultsDropdown" style="display: none;">
+
+                <div class="search-results-header">
+
+                    <span class="search-results-title">Search Results</span>
+
+                    <button class="btn btn-sm btn-outline-secondary" id="clearSearchBtn">
+
+                        <i class="bi bi-x"></i>
+
+                    </button>
+
+                </div>
+
+                <div class="search-results-body" id="searchResultsBody">
+
+                    <div class="search-loading">
+
+                        <div class="spinner-border spinner-border-sm text-primary" role="status">
+
+                            <span class="visually-hidden">Searching...</span>
+
+                        </div>
+
+                    </div>
+
+                </div>
 
             </div>
 
@@ -462,6 +494,10 @@
 
 /* Search Styles */
 
+.topbar-search {
+    position: relative;
+}
+
 .topbar-search .form-control {
 
     background: rgba(255, 255, 255, 0.1);
@@ -524,6 +560,153 @@
 
 }
 
+/* Search Results Dropdown */
+
+.search-results-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(25, 27, 169, 0.08);
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.05);
+    margin-top: 0.5rem;
+    z-index: 1000;
+    animation: searchDropdownFadeIn 0.2s ease-out;
+    max-height: 400px;
+    overflow: hidden;
+}
+
+@keyframes searchDropdownFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.search-results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(25, 27, 169, 0.1);
+    background: linear-gradient(135deg, rgba(25, 27, 169, 0.05) 0%, rgba(92, 194, 242, 0.05) 100%);
+}
+
+.search-results-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #1a202c;
+}
+
+.search-results-body {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.search-loading {
+    padding: 2rem;
+    text-align: center;
+}
+
+.search-result-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(25, 27, 169, 0.05);
+    transition: all 0.2s ease;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+}
+
+.search-result-item:hover {
+    background: linear-gradient(135deg, rgba(25, 27, 169, 0.05) 0%, rgba(92, 194, 242, 0.05) 100%);
+    transform: translateX(2px);
+}
+
+.search-result-item:last-child {
+    border-bottom: none;
+}
+
+.search-result-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0.75rem;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.search-result-icon.asset {
+    background: rgba(13, 110, 253, 0.1);
+    color: #0d6efd;
+}
+
+.search-result-icon.request {
+    background: rgba(25, 135, 84, 0.1);
+    color: #198754;
+}
+
+.search-result-icon.user {
+    background: rgba(255, 193, 7, 0.1);
+    color: #ffc107;
+}
+
+.search-result-content {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.search-result-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #1a202c;
+    margin-bottom: 0.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.search-result-subtitle {
+    font-size: 0.8rem;
+    color: #6c757d;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.search-result-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-left: 0.5rem;
+}
+
+.search-no-results {
+    padding: 2rem;
+    text-align: center;
+    color: #6c757d;
+}
+
+.search-no-results i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.5;
+}
+
 
 
 /* Responsive adjustments */
@@ -567,7 +750,220 @@
 
 
 <script>
-// Notification System
+// Global Search System
+let searchTimeout;
+let searchResultsDropdown;
+let searchResultsBody;
+let globalSearchInput;
+let searchButton;
+let clearSearchBtn;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize search elements
+    searchResultsDropdown = document.getElementById('searchResultsDropdown');
+    searchResultsBody = document.getElementById('searchResultsBody');
+    globalSearchInput = document.getElementById('globalSearchInput');
+    searchButton = document.getElementById('searchButton');
+    clearSearchBtn = document.getElementById('clearSearchBtn');
+    
+    if (!globalSearchInput || !searchResultsDropdown) {
+        console.error('Search elements not found');
+        return;
+    }
+    
+    // Search input event listeners
+    globalSearchInput.addEventListener('input', handleSearchInput);
+    globalSearchInput.addEventListener('focus', function() {
+        if (this.value.trim().length >= 2) {
+            showSearchResults();
+        }
+    });
+    
+    globalSearchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            performSearch();
+        }
+    });
+    
+    // Search button click
+    searchButton.addEventListener('click', performSearch);
+    
+    // Clear search button
+    clearSearchBtn.addEventListener('click', clearSearch);
+    
+    // Close search when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#topbarSearch')) {
+            hideSearchResults();
+        }
+    });
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl+K to focus search
+        if (e.ctrlKey && e.key === 'k') {
+            e.preventDefault();
+            globalSearchInput.focus();
+        }
+        
+        // Escape to close search results
+        if (e.key === 'Escape') {
+            hideSearchResults();
+            globalSearchInput.blur();
+        }
+    });
+});
+
+function handleSearchInput() {
+    clearTimeout(searchTimeout);
+    const query = this.value.trim();
+    
+    if (query.length < 2) {
+        hideSearchResults();
+        return;
+    }
+    
+    // Debounce search
+    searchTimeout = setTimeout(() => {
+        performSearch();
+    }, 300);
+}
+
+function performSearch() {
+    const query = globalSearchInput.value.trim();
+    
+    if (query.length < 2) {
+        hideSearchResults();
+        return;
+    }
+    
+    showSearchResults();
+    showSearchLoading();
+    
+    // Make API call
+    fetch(`api/search_minimal.php?q=${encodeURIComponent(query)}&limit=8`, {
+        credentials: 'include',
+        timeout: 5000
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Search request failed');
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Search response:', data); // Debug log
+        if (data.success) {
+            displaySearchResults(data.results, query);
+        } else {
+            showSearchError(data.message || 'Search failed');
+            // Also log debug info for troubleshooting
+            console.error('Search debug info:', data.debug);
+        }
+    })
+    .catch(error => {
+        console.error('Search error:', error);
+        showSearchError('Search temporarily unavailable');
+    });
+}
+
+function showSearchResults() {
+    searchResultsDropdown.style.display = 'block';
+}
+
+function hideSearchResults() {
+    searchResultsDropdown.style.display = 'none';
+}
+
+function showSearchLoading() {
+    searchResultsBody.innerHTML = `
+        <div class="search-loading">
+            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                <span class="visually-hidden">Searching...</span>
+            </div>
+        </div>
+    `;
+}
+
+function showSearchError(message) {
+    searchResultsBody.innerHTML = `
+        <div class="search-no-results">
+            <i class="bi bi-exclamation-triangle"></i>
+            <div>${message}</div>
+        </div>
+    `;
+}
+
+function displaySearchResults(results, query) {
+    if (results.length === 0) {
+        searchResultsBody.innerHTML = `
+            <div class="search-no-results">
+                <i class="bi bi-search"></i>
+                <div>No results found for "${query}"</div>
+                <div class="small">Try searching with different keywords</div>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    results.forEach(result => {
+        const iconClass = getResultIconClass(result.type);
+        const badgeClass = result.badge_class || 'bg-secondary';
+        
+        html += `
+            <a href="${result.url}" class="search-result-item" onclick="handleSearchResultClick(event, '${result.url}')">
+                <div class="search-result-icon ${result.type}">
+                    <i class="bi ${iconClass}"></i>
+                </div>
+                <div class="search-result-content">
+                    <div class="search-result-title">${highlightSearchTerm(result.title, query)}</div>
+                    <div class="search-result-subtitle">${highlightSearchTerm(result.subtitle || '', query)}</div>
+                </div>
+                <span class="badge ${badgeClass} search-result-badge">${result.badge}</span>
+            </a>
+        `;
+    });
+    
+    searchResultsBody.innerHTML = html;
+}
+
+function getResultIconClass(type) {
+    switch (type) {
+        case 'asset': return 'bi-laptop';
+        case 'request': return 'bi-arrow-left-right';
+        case 'user': return 'bi-person';
+        default: return 'bi-file-text';
+    }
+}
+
+function highlightSearchTerm(text, term) {
+    if (!text || !term) return text;
+    
+    const regex = new RegExp(`(${escapeRegExp(term)})`, 'gi');
+    return text.replace(regex, '<strong>$1</strong>');
+}
+
+function escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function handleSearchResultClick(event, url) {
+    // Allow normal navigation for most cases
+    if (!event.ctrlKey && !event.metaKey) {
+        hideSearchResults();
+        globalSearchInput.value = '';
+    }
+}
+
+function clearSearch() {
+    globalSearchInput.value = '';
+    hideSearchResults();
+    globalSearchInput.focus();
+}
+
+// Notification System (existing code)
 let notificationDropdown;
 let notificationList;
 let notificationBadge;
@@ -1413,6 +1809,7 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 
 /* Responsive adjustments */
+
 @media (max-width: 768px) {
     .dropdown-menu {
         margin-top: 0.5rem;
@@ -1424,42 +1821,77 @@ document.addEventListener('DOMContentLoaded', function() {
         padding: 0.6rem 1rem;
         font-size: 0.85rem;
     }
-    
+
     .notification-dropdown {
         width: 320px;
         max-height: 400px;
     }
     
+    .topbar-search .form-control {
+        width: 150px;
+    }
+
+    .topbar-search .form-control:focus {
+        width: 180px;
+    }
+    
+    .search-results-dropdown {
+        left: -50px;
+        right: -50px;
+        width: auto;
+        max-width: calc(100vw - 100px);
+    }
+
     .user-name {
         font-size: 0.8rem;
     }
-    
+
     .user-avatar {
-        width: 36px;
-        height: 36px;
-        font-size: 1rem;
-    }
-    
-    .nav-link.dropdown-toggle {
-        padding: 0.4rem 0.8rem;
+        font-size: 1.2rem;
     }
 }
 
 @media (max-width: 576px) {
-    .notification-dropdown {
-        width: 280px;
-        max-height: 350px;
+    .search-results-dropdown {
+        left: -20px;
+        right: -20px;
+        width: auto;
+        max-width: calc(100vw - 40px);
     }
     
+    .search-result-item {
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .search-result-icon {
+        width: 35px;
+        height: 35px;
+        font-size: 1rem;
+        margin-right: 0.5rem;
+    }
+    
+    .search-result-title {
+        font-size: 0.85rem;
+    }
+    
+    .search-result-subtitle {
+        font-size: 0.75rem;
+    }
+    
+    .search-result-badge {
+        font-size: 0.65rem;
+        padding: 0.2rem 0.4rem;
+    }
+
     .dropdown-item {
         padding: 0.5rem 0.8rem;
     }
-    
+
     .dropdown-header {
         padding: 0.6rem 1rem;
         font-size: 0.75rem;
     }
-    
+
     .notification-item .dropdown-item {
         padding: 0.8rem 1rem;
     }
