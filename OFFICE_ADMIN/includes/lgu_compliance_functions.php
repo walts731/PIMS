@@ -1,5 +1,5 @@
 <?php
-require_once '../config.php';
+require_once 'C:\xampp\htdocs\PIMS\config.php';
 
 /**
  * LGU Compliance Functions
@@ -286,11 +286,12 @@ class LGUCompliance {
     public function logReportGeneration($report_id, $report_type, $generation_method, $parameters = null) {
         $query = "INSERT INTO report_generation_history 
                   (report_id, report_type, generation_method, office_id, generated_by, parameters, status)
-                  VALUES (?, ?, ?, ?, ?, ?, 'generating')";
+                  VALUES (?, ?, ?, ?, ?, ?, ?)";
         
         $stmt = $this->conn->prepare($query);
         $params_json = $parameters ? json_encode($parameters) : null;
-        $stmt->bind_param("sssiiis", $report_id, $report_type, $generation_method, $this->office_id, $this->user_id, $params_json);
+        $status = 'generating';
+        $stmt->bind_param("sssiiis", $report_id, $report_type, $generation_method, $this->office_id, $this->user_id, $params_json, $status);
         
         return $stmt->execute();
     }
