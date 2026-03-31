@@ -1,9 +1,9 @@
 <!-- Navigation -->
 <nav class="navbar navbar-expand-lg navbar-dark" id="mainNavbar">
     <div class="container-fluid">
-        <a class="navbar-brand" href="dashboard.php">
-            <i class="bi bi-speedometer2"></i>
-            <?php echo ucfirst($page_title ?? 'Dashboard'); ?>
+        <a class="navbar-brand d-flex align-items-center" href="dashboard.php">
+            <img src="<?php echo $logo_path; ?>" alt="<?php echo $system_name; ?> Logo" class="img-fluid me-2" style="max-height: 35px; border-radius: 6px;">
+            <span class="fw-bold"><?php echo $system_name; ?></span>
         </a>
         
         <div class="navbar-nav ms-auto">

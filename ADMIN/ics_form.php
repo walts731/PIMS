@@ -557,18 +557,18 @@ if ($result && $row = $result->fetch_assoc()) {
                                         </thead>
                                         <tbody>
                                             <tr>
-                                                <td><input type="number" class="form-control form-control-sm quantity-field" name="quantity[]" required onchange="calculateTotal(this)"></td>
+                                                <td><input type="number" class="form-control form-control-sm quantity-field" name="quantity[]" onchange="calculateTotal(this)"></td>
                                                 <td>
-                                                    <select class="form-select form-select-sm unit-field" name="unit[]" required>
+                                                    <select class="form-select form-select-sm unit-field" name="unit[]">
                                                         <option value="">Select Unit</option>
                                                         <?php foreach ($units as $unit): ?>
                                                             <option value="<?php echo htmlspecialchars($unit['unit_code']); ?>" data-unit-name="<?php echo htmlspecialchars($unit['unit_name']); ?>" data-singular="<?php echo htmlspecialchars(getSingularForm($unit['unit_name'])); ?>"><?php echo htmlspecialchars($unit['unit_name']); ?></option>
                                                         <?php endforeach; ?>
                                                     </select>
                                                 </td>
-                                                <td><input type="number" step="0.01" class="form-control form-control-sm cost-field" name="unit_cost[]" required onchange="calculateTotal(this)" max="50000" min="0.01"></td>
+                                                <td><input type="number" step="0.01" class="form-control form-control-sm cost-field" name="unit_cost[]" onchange="calculateTotal(this)" max="50000" min="0.01"></td>
                                                 <td><input type="number" step="0.01" class="form-control form-control-sm cost-field" name="total_cost[]" readonly></td>
-                                                <td><input type="text" class="form-control form-control-sm description-field" name="description[]" required></td>
+                                                <td><input type="text" class="form-control form-control-sm description-field" name="description[]"></td>
                                                 <td>
                                                 <div class="property-number-field">
                                                     <input type="text" class="form-control form-control-sm item-no-field" name="item_no[]" value="" readonly placeholder="Click 'Generate' to create property number">
@@ -577,7 +577,7 @@ if ($result && $row = $result->fetch_assoc()) {
                                                     </button>
                                                 </div>
                                             </td>
-                                                <td><input type="text" class="form-control form-control-sm useful-life-field" name="useful_life[]" required></td>
+                                                <td><input type="text" class="form-control form-control-sm useful-life-field" name="useful_life[]"></td>
                                                 <td><button type="button" class="btn btn-sm btn-danger" onclick="removeICSRow(this)"><i class="bi bi-trash"></i></button></td>
                                             </tr>
                                         </tbody>
@@ -600,17 +600,17 @@ if ($result && $row = $result->fetch_assoc()) {
                             <div class="row mb-3">
                                 <div class="col-md-6">
                                     <label class="form-label"><strong>Received from:</strong></label>
-                                    <input type="text" class="form-control" name="received_from" required value="<?php echo htmlspecialchars($latest_signature['received_from'] ?? ''); ?>">
+                                    <input type="text" class="form-control" name="received_from" value="<?php echo htmlspecialchars($latest_signature['received_from'] ?? ''); ?>">
                                     <label class="form-label"><strong>Position/Office:</strong></label>
-                                    <input type="text" class="form-control" name="received_from_position" required value="<?php echo htmlspecialchars($latest_signature['received_from_position'] ?? ''); ?>">
+                                    <input type="text" class="form-control" name="received_from_position" value="<?php echo htmlspecialchars($latest_signature['received_from_position'] ?? ''); ?>">
                                     <label class="form-label"><strong>Date:</strong></label>
                                     <input type="date" class="form-control" name="received_from_date">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label"><strong>Received by:</strong></label>
-                                    <input type="text" class="form-control" name="received_by" required value="<?php echo htmlspecialchars($latest_signature['received_by'] ?? ''); ?>">
+                                    <input type="text" class="form-control" name="received_by" value="<?php echo htmlspecialchars($latest_signature['received_by'] ?? ''); ?>">
                                     <label class="form-label"><strong>Position/Office:</strong></label>
-                                    <input type="text" class="form-control" name="received_by_position" required value="<?php echo htmlspecialchars($latest_signature['received_by_position'] ?? ''); ?>">
+                                    <input type="text" class="form-control" name="received_by_position" value="<?php echo htmlspecialchars($latest_signature['received_by_position'] ?? ''); ?>">
                                     <label class="form-label"><strong>Date:</strong></label>
                                     <input type="date" class="form-control" name="received_by_date">
                                 </div>
@@ -738,7 +738,7 @@ if ($result && $row = $result->fetch_assoc()) {
     <script>
         // Property Number Generator Functions
         let currentPropertyField = null;
-        let lastUsedSeries = 1; // Track the last used series number globally
+        let globalSeriesCounter = 1; // Global counter for all property numbers generated
         
         function showPropertyNumberGenerator(button) {
             currentPropertyField = button.closest('td').querySelector('input[name="item_no[]"], textarea[name="item_no[]"]');
@@ -748,14 +748,27 @@ if ($result && $row = $result->fetch_assoc()) {
             const modal = new bootstrap.Modal(document.getElementById('propertyNumberGeneratorModal'));
             modal.show();
             
+            // Store quantity in a global variable instead of modal dataset
+            window.currentQuantity = quantity;
+            
+            // Update quantity display
+            const quantityText = document.getElementById('quantityText');
+            if (quantity === 1) {
+                quantityText.textContent = 'Generating 1 property number';
+            } else {
+                quantityText.textContent = `Generating ${quantity} property numbers`;
+            }
+            
             // Clear previous values (except series)
             clearGeneratorForm();
             
             // Get next available series number dynamically
             getNextSeriesNumber();
             
-            // Auto-generate initial preview
-            setTimeout(() => generatePropertyNumberPreview(), 100);
+            // Auto-generate preview immediately without waiting
+            setTimeout(() => {
+                generatePropertyNumberPreview();
+            }, 50); // Reduced timeout for immediate generation
         }
         
         function getNextSeriesNumber() {
@@ -796,10 +809,32 @@ if ($result && $row = $result->fetch_assoc()) {
             const series = document.getElementById('seriesInput').value || '<?php echo $next_series; ?>';
             const office = document.getElementById('officeSelect').value || '01';
             
-            // Build property number: YEAR-FORM-CATEGORY-SUBCATEGORY+SERIES-OFFICE
-            const propertyNumber = `${year}-${formType}-${category}-${subcategory}${series}-${office}`;
+            // Get quantity from global variable
+            const quantity = window.currentQuantity || 1;
             
-            document.getElementById('propertyNumberPreview').textContent = propertyNumber;
+            // Generate multiple property numbers using format: YEAR-FORM-CATEGORY-SUBCATEGORY+SERIES-OFFICE
+            const propertyNumbers = [];
+            for (let i = 0; i < quantity; i++) {
+                // Use global series counter for proper incrementing across all rows
+                const currentSeriesNumber = globalSeriesCounter + i;
+                const currentSeries = String(currentSeriesNumber).padStart(2, '0');
+                
+                // Combine subcategory and series without dash (e.g., 01 + 01 = 0101, 01 + 02 = 0102)
+                const subcategorySeries = subcategory + currentSeries;
+                
+                const propertyNumber = `${year}-${formType}-${category}-${subcategorySeries}-${office}`;
+                propertyNumbers.push(propertyNumber);
+            }
+            
+            // Display in preview
+            const previewElement = document.getElementById('propertyNumberPreview');
+            if (quantity === 1) {
+                previewElement.textContent = propertyNumbers[0];
+            } else {
+                previewElement.innerHTML = propertyNumbers.join('<br>');
+                previewElement.style.fontSize = '14px';
+                previewElement.style.lineHeight = '1.4';
+            }
         }
         
         function applyPropertyNumber() {
@@ -812,15 +847,42 @@ if ($result && $row = $result->fetch_assoc()) {
             }
             
             if (currentPropertyField && propertyNumbers.length > 0) {
+                // Get selected category and subcategory values
+                const categorySelect = document.getElementById('categorySelect');
+                const subcategorySelect = document.getElementById('subcategorySelect');
+                const selectedCategoryCode = categorySelect.value;
+                const selectedSubcategoryCode = subcategorySelect.value;
+                
+                // Add hidden fields to store category and subcategory codes
+                const row = currentPropertyField.closest('tr');
+                
+                // Remove existing hidden fields if any
+                const existingCatField = row.querySelector('input[name="category_code[]"]');
+                const existingSubcatField = row.querySelector('input[name="subcategory_code[]"]');
+                if (existingCatField) existingCatField.remove();
+                if (existingSubcatField) existingSubcatField.remove();
+                
+                // Add hidden fields for category and subcategory codes
+                if (selectedCategoryCode) {
+                    const catHiddenField = document.createElement('input');
+                    catHiddenField.type = 'hidden';
+                    catHiddenField.name = 'category_code[]';
+                    catHiddenField.value = selectedCategoryCode;
+                    row.appendChild(catHiddenField);
+                }
+                
+                if (selectedSubcategoryCode) {
+                    const subcatHiddenField = document.createElement('input');
+                    subcatHiddenField.type = 'hidden';
+                    subcatHiddenField.name = 'subcategory_code[]';
+                    subcatHiddenField.value = selectedSubcategoryCode;
+                    row.appendChild(subcatHiddenField);
+                }
+                
                 if (propertyNumbers.length === 1) {
                     // Single property number - keep as input
                     currentPropertyField.value = propertyNumbers[0];
                     currentPropertyField.style.height = 'auto';
-                    
-                    // Update lastUsedSeries
-                    const propNumParts = propertyNumbers[0].split('-');
-                    const seriesPart = propNumParts[4]; // Get the series part (0101, 0102, etc.)
-                    lastUsedSeries = parseInt(seriesPart) + 1;
                 } else {
                     // Multiple property numbers - create a textarea for multi-line display
                     const textarea = document.createElement('textarea');
@@ -832,29 +894,33 @@ if ($result && $row = $result->fetch_assoc()) {
                     textarea.style.resize = 'vertical';
                     textarea.readOnly = true;
                     
-                    // Replace the input with textarea
+                    // Replace input with textarea
                     const propertyNumberContainer = currentPropertyField.closest('.property-number-field');
                     const inputContainer = propertyNumberContainer.querySelector('input[name="item_no[]"], textarea[name="item_no[]"]');
                     inputContainer.parentNode.replaceChild(textarea, inputContainer);
                     
-                    // Add the generate button and format text if not present
+                    // Add generate button and format text if not present
                     if (!propertyNumberContainer.querySelector('button')) {
                         propertyNumberContainer.innerHTML += 
                             '<button type="button" class="btn btn-sm btn-outline-primary" onclick="showPropertyNumberGenerator(this)" title="Generate Property Number"><i class="bi bi-gear"></i> Generate</button>';
                     }
                     
+                    // Add format text if not present
                     if (!propertyNumberContainer.nextElementSibling || !propertyNumberContainer.nextElementSibling.classList.contains('text-muted')) {
                         const formatText = document.createElement('small');
                         formatText.className = 'text-muted d-block mt-1';
                         formatText.textContent = 'Format: YEAR-FORM-FUND-CATEGORY-SUBCATEGORY+SERIES-OFFICE';
                         propertyNumberContainer.parentNode.insertBefore(formatText, propertyNumberContainer.nextSibling);
                     }
-                    
-                    // Update lastUsedSeries to the next number after the last one
-                    const lastPropNumParts = propertyNumbers[propertyNumbers.length - 1].split('-');
-                    const lastSeriesPart = lastPropNumParts[4]; // Get the series part (0101, 0102, etc.)
-                    lastUsedSeries = parseInt(lastSeriesPart) + 1;
                 }
+                
+                // Update lastUsedSeries to the highest number used
+                const lastPropNumParts = propertyNumbers[propertyNumbers.length - 1].split('-');
+                const lastSeriesPart = lastPropNumParts[4]; // Get the series part (e.g., 0101, 0102, etc.)
+                lastUsedSeries = parseInt(lastSeriesPart) + 1;
+                
+                // Increment the global series counter by the quantity of property numbers generated
+                globalSeriesCounter += propertyNumbers.length;
                 
                 // Close modal
                 const modal = bootstrap.Modal.getInstance(document.getElementById('propertyNumberGeneratorModal'));
@@ -952,16 +1018,16 @@ if ($result && $row = $result->fetch_assoc()) {
             const nextItemNumber = table.rows.length;
             
             const cells = [
-                '<input type="number" class="form-control form-control-sm quantity-field" name="quantity[]" required onchange="calculateTotal(this)">',
-                '<select class="form-select form-select-sm unit-field" name="unit[]" required>' + unitOptions + '</select>',
-                '<input type="number" step="0.01" class="form-control form-control-sm cost-field" name="unit_cost[]" required onchange="calculateTotal(this)" max="50000" min="0.01">',
+                '<input type="number" class="form-control form-control-sm quantity-field" name="quantity[]" onchange="calculateTotal(this)">',
+                '<select class="form-select form-select-sm unit-field" name="unit[]">' + unitOptions + '</select>',
+                '<input type="number" step="0.01" class="form-control form-control-sm cost-field" name="unit_cost[]" onchange="calculateTotal(this)" max="50000" min="0.01">',
                 '<input type="number" step="0.01" class="form-control form-control-sm cost-field" name="total_cost[]" readonly>',
-                '<input type="text" class="form-control form-control-sm description-field" name="description[]" required>',
+                '<input type="text" class="form-control form-control-sm description-field" name="description[]">',
                 '<div class="property-number-field">' +
                 '<input type="text" class="form-control form-control-sm item-no-field" name="item_no[]" value="" readonly placeholder="Click Generate to create">' +
                 '<button type="button" class="btn btn-sm btn-outline-primary" onclick="showPropertyNumberGenerator(this)" title="Generate Property Number"><i class="bi bi-gear"></i> Generate</button>' +
                 '</div>',
-                '<input type="text" class="form-control form-control-sm useful-life-field" name="useful_life[]" required>',
+                '<input type="text" class="form-control form-control-sm useful-life-field" name="useful_life[]">',
                 '<button type="button" class="btn btn-sm btn-danger" onclick="removeICSRow(this)"><i class="bi bi-trash"></i></button>'
             ];
             
