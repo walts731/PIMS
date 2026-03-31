@@ -597,6 +597,14 @@ try {
                         <div class="alert alert-<?php echo $message_type; ?> mt-2" role="alert">
                             <i class="bi bi-<?php echo $message_type == 'success' ? 'check-circle' : 'exclamation-triangle'; ?>"></i>
                             <?php echo htmlspecialchars($message); ?>
+                            <?php if (isset($_SESSION['import_errors'])): ?>
+                                <ul class="mb-0 mt-1 small">
+                                    <?php foreach ($_SESSION['import_errors'] as $error): ?>
+                                        <li><?php echo htmlspecialchars($error); ?></li>
+                                    <?php endforeach; ?>
+                                    <?php unset($_SESSION['import_errors']); ?>
+                                </ul>
+                            <?php endif; ?>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -609,6 +617,11 @@ try {
                             <li>
                                 <button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#addConsumableModal">
                                     <i class="bi bi-plus-circle"></i> Add Consumable
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#importConsumablesModal">
+                                    <i class="bi bi-upload"></i> Import Consumables
                                 </button>
                             </li>
                             <li>
@@ -722,6 +735,33 @@ try {
     
     <?php require_once 'includes/logout-modal.php'; ?>
     <?php require_once 'includes/change-password-modal.php'; ?>
+    
+    <!-- Import Consumables Modal -->
+    <div class="modal fade" id="importConsumablesModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-upload"></i> Import Consumables</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="import_consumables.php" method="POST" enctype="multipart/form-data">
+                    <div class="modal-body">
+                        <div class="alert alert-info small">
+                            <i class="bi bi-info-circle"></i> CSV file should have headers like: <strong>Description, Quantity, Units, Unit Cost, Reorder Level, Office</strong>.
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Choose CSV File</label>
+                            <input type="file" class="form-control" name="import_file" accept=".csv" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Import</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
     
     <!-- Add Consumable Modal -->
     <div class="modal fade" id="addConsumableModal" tabindex="-1">
