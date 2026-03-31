@@ -28,7 +28,7 @@ if (empty($par_id)) {
 
 // Get PAR form details
 $par_form = null;
-$stmt = $conn->prepare("SELECT * FROM par_forms WHERE id = ?");
+$stmt = $conn->prepare("SELECT p.*, o.office_name FROM par_forms p LEFT JOIN offices o ON p.office_location = o.id WHERE p.id = ?");
 $stmt->bind_param("i", $par_id);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -81,197 +81,146 @@ logSystemAction($_SESSION['user_id'], 'Printed PAR Form', 'forms', "PAR ID: $par
         }
         
         body {
-            font-family: 'Times New Roman', serif;
-            font-size: 12px;
-            line-height: 1.4;
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            line-height: 1.2;
             color: #000;
             background: white;
         }
         
         .print-container {
             width: 100%;
-            max-width: 8.27in;
-            margin: 0 auto;
-            padding: 20px;
+            padding: 0;
             position: relative;
-            min-height: 100vh;
         }
         
         .header-section {
             text-align: center;
-            margin-bottom: 30px;
-        }
-        
-        .form-title {
-            font-size: 16px;
-            font-weight: bold;
             margin-bottom: 20px;
         }
         
+        .form-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            text-decoration: underline;
+        }
+        
         .entity-section {
-            margin-bottom: 25px;
+            width: 100%;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #000;
+            padding-bottom: 10px;
         }
         
         .entity-row {
             display: flex;
-            margin-bottom: 8px;
-            align-items: center;
-            flex-wrap: wrap;
+            margin-bottom: 5px;
+            align-items: flex-end;
         }
         
         .entity-label {
-            width: 140px;
+            width: 100px;
             font-weight: bold;
-            font-size: 12px;
+            font-size: 11px;
         }
         
         .entity-value {
             flex: 1;
             border-bottom: 1px solid #000;
-            min-height: 20px;
-            font-size: 12px;
-            padding: 2px 5px;
-            min-width: 150px;
-            max-width: 200px;
+            min-height: 18px;
+            font-size: 11px;
+            padding: 0 5px;
         }
         
-        .entity-row .entity-label:nth-child(3),
-        .entity-row .entity-value:nth-child(4) {
+        .par-no-section {
+            width: 250px;
             margin-left: 20px;
+            display: flex;
+            align-items: flex-end;
         }
         
         .items-table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 0;
+            border: 2px solid #000;
         }
         
         .items-table th,
         .items-table td {
             border: 1px solid #000;
-            padding: 15px 6px;
+            padding: 4px 6px;
             text-align: center;
-            vertical-align: middle;
-            font-size: 11px;
+            vertical-align: top;
         }
         
         .items-table th {
-            background: #f0f0f0;
             font-weight: bold;
+            text-transform: uppercase;
             font-size: 10px;
+            background: #fff;
         }
         
-        .items-table .text-left {
-            text-align: left;
-        }
+        .items-table .text-left { text-align: left; }
+        .items-table .text-right { text-align: right; }
         
-        .items-table .quantity-col {
-            width: 8%;
-        }
-        
-        .items-table .unit-col {
-            width: 8%;
-        }
-        
-        .items-table .description-col {
-            width: 35%;
-        }
-        
-        .items-table .property-number-col {
-            width: 15%;
-        }
-        
-        .items-table .date-col {
-            width: 15%;
-        }
-        
-        .items-table .amount-col {
-            width: 21%;
-        }
+        .quantity-col { width: 70px; }
+        .unit-col { width: 60px; }
+        .property-number-col { width: 120px; }
+        .date-col { width: 100px; }
+        .amount-col { width: 110px; }
         
         .total-row td {
             font-weight: bold;
-            background: #f0f0f0;
-        }
-        
-        .total-row .total-label {
             text-align: right;
             padding-right: 10px;
         }
         
-        .nothing-follows {
+        .footer-section {
+            margin-top: 30px;
+            border: 1px solid #000;
+        }
+        
+        .footer-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .footer-table td {
+            border: 1px solid #000;
+            padding: 10px;
+            width: 50%;
+            vertical-align: top;
+        }
+        
+        .label-row {
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+        
+        .name-line {
             text-align: center;
-            font-style: italic;
-            margin-bottom: 30px;
-        }
-        
-        .signatures-section {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            right: 20px;
-            margin-top: 0;
-        }
-        
-        .signature-row {
-            display: flex;
-            margin-bottom: 30px;
-        }
-        
-        .signature-column {
-            flex: 1;
-            padding: 0 20px;
-        }
-        
-        .signature-column:first-child {
-            border-right: 1px solid #ccc;
-        }
-        
-        .signature-label {
             font-weight: bold;
-            margin-bottom: 5px;
-            font-size: 12px;
-        }
-        
-        .signature-name {
-            font-weight: bold;
-            margin-bottom: 3px;
-            font-size: 12px;
+            text-transform: uppercase;
             border-bottom: 1px solid #000;
-            min-height: 20px;
-            padding: 2px 5px;
-            display: block;
+            margin-bottom: 2px;
+            font-size: 11px;
         }
         
-        .signature-position {
-            font-style: italic;
+        .sub-label {
+            text-align: center;
+            font-size: 10px;
             margin-bottom: 15px;
-            font-size: 11px;
-            border-bottom: 1px solid #000;
-            min-height: 20px;
-            padding: 2px 5px;
-            display: block;
         }
         
-        .signature-line {
-            border-bottom: 1px solid #000;
-            min-height: 40px;
-            margin-bottom: 5px;
+        .signature-group {
+            margin-top: 20px;
         }
         
-        .signature-position-line {
-            border-bottom: 1px solid #000;
-            min-height: 20px;
-            margin-bottom: 5px;
-        }
-        
-        .date-line {
-            font-size: 11px;
-            text-align: left;
-            border-bottom: 1px solid #000;
-            min-height: 20px;
-            padding: 2px 5px;
-            display: block;
+        @media print {
+            body { margin: 0; }
+            .print-container { padding: 0.25in !important; }
         }
         
         @media print {
@@ -313,8 +262,8 @@ logSystemAction($_SESSION['user_id'], 'Printed PAR Form', 'forms', "PAR ID: $par
                 echo '</div>';
             }
             ?>
-            <div class="form-title"><?php echo htmlspecialchars($par_form['office_location']); ?></div>
-            <div style="text-align: center; font-size: 12px; color: #666; margin-top: 5px;">Office/Location</div>
+            <div class="form-title"><?php echo htmlspecialchars($par_form['office_name'] ?? $par_form['office_location']); ?></div>
+            <div style="text-align: center; font-size: 10px; color: #666; margin-top: 5px;">Office/Location</div>
         </div>
         
         <!-- Entity Information -->
@@ -322,12 +271,14 @@ logSystemAction($_SESSION['user_id'], 'Printed PAR Form', 'forms', "PAR ID: $par
             <div class="entity-row">
                 <div class="entity-label">Entity Name:</div>
                 <div class="entity-value"><?php echo htmlspecialchars($par_form['entity_name']); ?></div>
-                <div class="entity-label">PAR No:</div>
-                <div class="entity-value"><?php echo htmlspecialchars($par_form['par_no']); ?></div>
             </div>
             <div class="entity-row">
                 <div class="entity-label">Fund Cluster:</div>
                 <div class="entity-value"><?php echo htmlspecialchars($par_form['fund_cluster']); ?></div>
+                <div class="par-no-section">
+                    <div class="entity-label" style="width: 60px;">PAR No:</div>
+                    <div class="entity-value" style="font-weight: bold;"><?php echo htmlspecialchars($par_form['par_no']); ?></div>
+                </div>
             </div>
         </div>
         
@@ -338,7 +289,7 @@ logSystemAction($_SESSION['user_id'], 'Printed PAR Form', 'forms', "PAR ID: $par
                     <th class="quantity-col">Quantity</th>
                     <th class="unit-col">Unit</th>
                     <th class="description-col text-left">Description</th>
-                    <th class="property-number-col">Property Number</th>
+                    <th class="property-number-col">Property No.</th>
                     <th class="date-col">Date Acquired</th>
                     <th class="amount-col">Amount</th>
                 </tr>
@@ -346,68 +297,122 @@ logSystemAction($_SESSION['user_id'], 'Printed PAR Form', 'forms', "PAR ID: $par
             <tbody>
                 <?php foreach ($par_items as $item): ?>
                     <tr>
-                        <td><?php echo number_format($item['quantity'], 2); ?></td>
+                        <td><?php echo number_format($item['quantity'], 0); ?></td>
                         <td><?php echo htmlspecialchars($item['unit']); ?></td>
                         <td class="text-left"><?php echo htmlspecialchars($item['description']); ?></td>
                         <td><?php echo htmlspecialchars($item['property_number'] ?? ''); ?></td>
                         <td><?php echo $item['date_acquired'] ? date('M d, Y', strtotime($item['date_acquired'])) : ''; ?></td>
-                        <td><?php echo number_format($item['amount'], 2); ?></td>
+                        <td class="text-right"><?php echo number_format($item['amount'], 2); ?></td>
                     </tr>
                 <?php endforeach; ?>
+                <?php 
+                // Add empty rows to maintain form height
+                $total_items = count($par_items);
+                if ($total_items < 15) {
+                    for ($i = 0; $i < (15 - $total_items); $i++) {
+                        if ($i === 0) {
+                            echo '<tr><td colspan="6" style="height: 20px; font-style: italic; border-bottom: none;">*** Nothing follows ***</td></tr>';
+                        } else {
+                            echo '<tr><td colspan="6" style="height: 20px; border-top: none; border-bottom: none;">&nbsp;</td></tr>';
+                        }
+                    }
+                }
+                ?>
             </tbody>
             <tfoot>
                 <tr class="total-row">
-                    <td colspan="5" class="total-label">Total:</td>
-                    <td><?php echo number_format(array_sum(array_column($par_items, 'amount')), 2); ?></td>
+                    <td colspan="5">TOTAL:</td>
+                    <td class="text-right"><?php echo number_format(array_sum(array_column($par_items, 'amount')), 2); ?></td>
                 </tr>
             </tfoot>
         </table>
         
-        <div class="nothing-follows">Nothing follows</div>
-        
-        <!-- Signatures Section -->
-        <div class="signatures-section">
-            <div class="signature-row">
-                <div class="signature-column">
-                    <div class="signature-label">Received by:</div>
-                    <div class="signature-name"><?php echo htmlspecialchars($par_form['received_by_name']); ?></div>
-                    <div class="signature-position"><?php echo htmlspecialchars($par_form['received_by_position']); ?></div>
-                    <div class="date-line">
-                        <?php if (!empty($par_form['received_by_date']) && $par_form['received_by_date'] !== '0000-00-00'): ?>
-                            Date: <?php echo date('F d, Y', strtotime($par_form['received_by_date'])); ?>
-                        <?php else: ?>
-                            Date: 
-                        <?php endif; ?>
-                    </div>
-                </div>
-                <div class="signature-column">
-                    <div class="signature-label">Issued by:</div>
-                    <div class="signature-name"><?php echo htmlspecialchars($par_form['issued_by_name']); ?></div>
-                    <div class="signature-position"><?php echo htmlspecialchars($par_form['issued_by_position']); ?></div>
-                    <div class="date-line">
-                        <?php if (!empty($par_form['issued_by_date']) && $par_form['issued_by_date'] !== '0000-00-00'): ?>
-                            Date: <?php echo date('F d, Y', strtotime($par_form['issued_by_date'])); ?>
-                        <?php else: ?>
-                            Date:
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </div>
+        <!-- Footer / Signatures Section -->
+        <div class="footer-section">
+            <table class="footer-table">
+                <tr>
+                    <td>
+                        <div class="label-row">Received by:</div>
+                        <div class="signature-group">
+                            <div class="name-line"><?php echo htmlspecialchars($par_form['received_by_name']); ?></div>
+                            <div class="sub-label">Signature Over Printed Name</div>
+                            <div class="name-line" style="font-weight: normal; text-transform: none;"><?php echo htmlspecialchars($par_form['received_by_position']); ?></div>
+                            <div class="sub-label">Position / Office</div>
+                            <div class="name-line" style="font-weight: normal; margin-top: 10px;"><?php echo (!empty($par_form['received_by_date']) && $par_form['received_by_date'] !== '0000-00-00') ? date('F d, Y', strtotime($par_form['received_by_date'])) : ''; ?></div>
+                            <div class="sub-label">Date</div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="label-row">Issued by:</div>
+                        <div class="signature-group">
+                            <div class="name-line"><?php echo htmlspecialchars($par_form['issued_by_name']); ?></div>
+                            <div class="sub-label">Signature Over Printed Name</div>
+                            <div class="name-line" style="font-weight: normal; text-transform: none;"><?php echo htmlspecialchars($par_form['issued_by_position']); ?></div>
+                            <div class="sub-label">Position / Office</div>
+                            <div class="name-line" style="font-weight: normal; margin-top: 10px;"><?php echo (!empty($par_form['issued_by_date']) && $par_form['issued_by_date'] !== '0000-00-00') ? date('F d, Y', strtotime($par_form['issued_by_date'])) : ''; ?></div>
+                            <div class="sub-label">Date</div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
         </div>
     </div>
     
-    <script>
-        // Auto-print when page loads
-        window.onload = function() {
-            setTimeout(function() {
-                window.print();
-            }, 500);
-        };
-        
-        // Close window after printing
-        window.onafterprint = function() {
-            window.close();
-        };
-    </script>
+    <div class="preview-toolbar no-print">
+        <div class="d-flex justify-content-between align-items-center bg-dark text-white p-2">
+            <div>
+                <i class="bi bi-eye me-2"></i> Print Preview - PAR
+            </div>
+            <div>
+                <button class="btn btn-primary btn-sm me-2" onclick="window.print()">
+                    <i class="bi bi-printer"></i> Print Form
+                </button>
+                <button class="btn btn-outline-light btn-sm" onclick="window.close()">
+                    <i class="bi bi-x-lg"></i> Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        @media screen {
+            body {
+                background: #525659;
+                padding: 40px 0;
+            }
+            .print-container {
+                background: white;
+                box-shadow: 0 0 20px rgba(0,0,0,0.5);
+                margin: 0 auto;
+                padding: 0.5in;
+                width: 8.5in;
+                min-height: 11in;
+            }
+            .preview-toolbar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                z-index: 1000;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            }
+        }
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; padding: 0; }
+            .print-container { 
+                box-shadow: none; 
+                margin: 0; 
+                padding: 0; 
+                width: 100%;
+            }
+            @page { margin: 0.5in; }
+        }
+    </style>
+    
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <!-- Bootstrap CSS for Toolbar -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </body>
 </html>

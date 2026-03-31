@@ -28,7 +28,7 @@ if (empty($par_id)) {
 
 // Get PAR form details
 $par_form = null;
-$stmt = $conn->prepare("SELECT * FROM par_forms WHERE id = ?");
+$stmt = $conn->prepare("SELECT p.*, o.office_name FROM par_forms p LEFT JOIN offices o ON p.office_location = o.id WHERE p.id = ?");
 $stmt->bind_param("i", $par_id);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -83,9 +83,7 @@ if ($result && $row = $result->fetch_assoc()) {
             font-family: 'Inter', sans-serif;
             background: linear-gradient(135deg, var(--light-color) 0%, var(--light-accent) 100%);
             min-height: 100vh;
-            overflow-x: hidden;
         }
-        
         .page-header {
             background: white;
             border-radius: var(--border-radius-xl);
@@ -94,186 +92,260 @@ if ($result && $row = $result->fetch_assoc()) {
             box-shadow: var(--shadow);
             border-left: 4px solid var(--primary-color);
         }
-        
-        .form-card {
+        .excel-card {
             background: white;
-            border-radius: var(--border-radius-lg);
-            padding: 2rem;
-            box-shadow: var(--shadow);
-            margin-bottom: 2rem;
-        }
-        
-        .par-number {
-            background: var(--primary-gradient);
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: var(--border-radius);
-            font-weight: 600;
-            display: inline-block;
-            margin-bottom: 1rem;
-        }
-        
-        .table-responsive {
-            border-radius: var(--border-radius);
+            border: 2px solid #333;
+            padding: 0;
+            margin: 0 auto;
+            max-width: 950px;
+            box-shadow: var(--shadow-lg);
+            border-radius: 4px;
             overflow: hidden;
         }
-        
-        .table-bordered {
-            border: 1px solid #dee2e6;
+        .excel-header {
+            padding: 30px;
+            border-bottom: 1px solid #333;
+            text-align: center;
+            background: #fff;
+        }
+        .excel-header h4 {
+            color: #1a1a1a;
+            letter-spacing: 1px;
+        }
+        .excel-grid-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .excel-grid-table th, .excel-grid-table td {
+            border: 1px solid #333;
+            padding: 12px 15px;
+            font-size: 13px;
+        }
+        .excel-grid-table th {
+            background: #f8f9fa;
+            font-weight: 700;
+            text-transform: uppercase;
+            text-align: center;
+            color: #333;
+        }
+        .info-row {
+            display: flex;
+            border-bottom: 1px solid #333;
+            background: #fff;
+        }
+        .info-cell {
+            flex: 1;
+            padding: 15px 20px;
+            border-right: 1px solid #333;
+        }
+        .info-cell:last-child {
+            border-right: none;
+        }
+        .info-label {
+            font-weight: 800;
+            font-size: 10px;
+            text-transform: uppercase;
+            color: var(--secondary-color);
+            margin-bottom: 5px;
+            letter-spacing: 0.5px;
+        }
+        .info-value {
+            font-weight: 600;
+            font-size: 15px;
+            color: #1a1a1a;
+        }
+        .signature-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+        }
+        .signature-table td {
+            border: 1px solid #333;
+            padding: 25px;
+            width: 50%;
+            vertical-align: top;
+        }
+        .sig-label {
+            font-weight: 700;
+            margin-bottom: 40px;
+            font-size: 14px;
+            color: #333;
+        }
+        .sig-name {
+            text-align: center;
+            font-weight: 800;
+            text-transform: uppercase;
+            border-bottom: 2px solid #333;
+            margin-bottom: 3px;
+            font-size: 14px;
+            padding-bottom: 2px;
+        }
+        .sig-sub {
+            text-align: center;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--secondary-color);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
-        .signature-section {
-            border-top: 2px solid #dee2e6;
-            padding-top: 2rem;
-            margin-top: 2rem;
+        .main-content {
+            padding: 2rem;
+            animation: fadeIn 0.5s ease-in-out;
         }
         
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         @media print {
             .no-print { display: none !important; }
-            .form-card { box-shadow: none; }
-            .page-header { display: none !important; }
+            .excel-card { box-shadow: none; border: 2px solid #000; margin: 0; max-width: 100%; }
+            body { background: white; }
+            .main-content { padding: 0; }
         }
     </style>
 </head>
 <body>
-    <?php
-    // Set page title for topbar
-    $page_title = 'PAR View - ' . htmlspecialchars($par_form['par_no']);
-    ?>
-    <!-- Main Content Wrapper -->
+    <?php $page_title = 'Property Acknowledgment Receipt View'; ?>
     <div class="main-wrapper" id="mainWrapper">
-        <?php require_once 'includes/sidebar-toggle.php'; ?>
-        <?php require_once 'includes/sidebar.php'; ?>
-        <?php require_once 'includes/topbar.php'; ?>
+        <?php include 'includes/sidebar-toggle.php'; ?>
+        <?php include 'includes/sidebar.php'; ?>
+        <?php include 'includes/topbar.php'; ?>
     
-    <!-- Main Content -->
     <div class="main-content">
-        <!-- Page Header -->
         <div class="page-header no-print">
             <div class="row align-items-center">
-                <div class="col-md-8">
-                    <h1 class="mb-2">
-                        <i class="bi bi-file-earmark-text"></i> PAR View
-                    </h1>
-                    <p class="text-muted mb-0">View Property Acknowledgment Receipt details</p>
+                <div class="col-md-7">
+                    <h1 class="mb-1"><i class="bi bi-file-earmark-medical-fill me-2 text-primary"></i>PAR View</h1>
+                    <p class="text-muted mb-0">Detailed Property Acknowledgment Receipt record</p>
                 </div>
-                <div class="col-md-4 text-md-end no-print">
-                    <a href="par_entries.php" class="btn btn-outline-secondary btn-sm me-2">
-                        <i class="bi bi-arrow-left"></i> Back to Entries
-                    </a>
-                    <button class="btn btn-outline-info btn-sm me-2" onclick="window.open('print_par.php?id=<?php echo $par_id; ?>', '_blank')">
-                        <i class="bi bi-printer"></i> Print
-                    </button>
-                    <a href="par_form.php" class="btn btn-primary btn-sm">
-                        <i class="bi bi-plus-circle"></i> New PAR
-                    </a>
+                <div class="col-md-5 text-md-end">
+                    <div class="dropdown d-inline-block shadow-sm">
+                        <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-gear-fill me-1"></i> Form Actions
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                            <li>
+                                <a class="dropdown-item py-2" href="print_par.php?id=<?php echo $par_id; ?>" target="_blank">
+                                    <i class="bi bi-printer-fill me-2 text-primary"></i> Print PAR Form
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item py-2" href="par_form.php">
+                                    <i class="bi bi-plus-circle-fill me-2 text-success"></i> Create New PAR
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- PAR Form -->
-        <div class="form-card">
-            <!-- Form Header -->
-            <div style="text-align: center; margin-bottom: 20px;">
-                <?php 
-                if (!empty($header_image)) {
-                    echo '<div style="margin-bottom: 10px;">';
-                    echo '<img src="../uploads/forms/' . htmlspecialchars($header_image) . '" alt="Header Image" style="width: 100%; max-height: 120px; object-fit: contain;">';
-                    echo '</div>';
-                }
-                ?>
-                <div style="text-align: center;">
-                    <p style="margin: 0; font-size: 14px; color: #666;">Office/Location</p>
-                    <p style="margin: 0; font-size: 16px; font-weight: bold;"><?php echo htmlspecialchars($par_form['office_location']); ?></p>
+        <div class="excel-card">
+            <div class="excel-header">
+                <?php if ($header_image): ?>
+                    <img src="../uploads/forms/<?php echo htmlspecialchars($header_image); ?>" style="max-height: 80px;" class="mb-3">
+                <?php endif; ?>
+                <h4 class="fw-bold mb-1">PROPERTY ACKNOWLEDGMENT RECEIPT</h4>
+                <div class="text-uppercase" style="letter-spacing: 1px; font-size: 13px;">
+                    <?php echo htmlspecialchars($par_form['office_name'] ?: $par_form['office_location']); ?>
                 </div>
             </div>
-            
-            <!-- Entity Information -->
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <label class="form-label"><strong>Entity Name:</strong></label>
-                    <p class="form-control-plaintext"><?php echo htmlspecialchars($par_form['entity_name']); ?></p>
-                    <label class="form-label"><strong>Fund Cluster:</strong></label>
-                    <p class="form-control-plaintext"><?php echo htmlspecialchars($par_form['fund_cluster']); ?></p>
+
+            <div class="info-row">
+                <div class="info-cell">
+                    <div class="info-label">Entity Name</div>
+                    <div class="info-value"><?php echo htmlspecialchars($par_form['entity_name']); ?></div>
                 </div>
-                <div class="col-md-6">
-                    <label class="form-label"><strong>PAR Number:</strong></label>
-                    <p class="form-control-plaintext"><?php echo htmlspecialchars($par_form['par_no']); ?></p>
+                <div class="info-cell" style="max-width: 250px;">
+                    <div class="info-label">PAR Number</div>
+                    <div class="info-value text-primary"><?php echo htmlspecialchars($par_form['par_no']); ?></div>
                 </div>
             </div>
-            
-            <!-- Items Table -->
-            <div class="mb-4">
-                <h5 class="mb-3"><strong>Items:</strong></h5>
-                <div class="table-responsive">
-                    <table class="table table-bordered">
-                        <thead class="table-light">
+            <div class="info-row">
+                <div class="info-cell">
+                    <div class="info-label">Fund Cluster</div>
+                    <div class="info-value"><?php echo htmlspecialchars($par_form['fund_cluster']); ?></div>
+                </div>
+            </div>
+
+            <table class="excel-grid-table">
+                <thead>
+                    <tr>
+                        <th width="100">Quantity</th>
+                        <th width="100">Unit</th>
+                        <th>Description</th>
+                        <th width="150">Property No.</th>
+                        <th width="120">Date Acquired</th>
+                        <th width="120">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($par_items as $item): ?>
+                        <tr>
+                            <td class="text-center"><?php echo number_format($item['quantity'], 0); ?></td>
+                            <td class="text-center"><?php echo htmlspecialchars($item['unit']); ?></td>
+                            <td><?php echo htmlspecialchars($item['description']); ?></td>
+                            <td class="text-center"><?php echo htmlspecialchars($item['property_number']); ?></td>
+                            <td class="text-center"><?php echo $item['date_acquired'] ? date('M d, Y', strtotime($item['date_acquired'])) : '-'; ?></td>
+                            <td class="text-end">₱<?php echo number_format($item['amount'], 2); ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    <?php if (count($par_items) < 5): ?>
+                        <?php for($i=0; $i<(5-count($par_items)); $i++): ?>
                             <tr>
-                                <th>Quantity</th>
-                                <th>Unit</th>
-                                <th>Description</th>
-                                <th>Property Number</th>
-                                <th>Date Acquired</th>
-                                <th>Amount</th>
+                                <td colspan="6" style="height: 35px; background: #fff;">
+                                    <?php if($i === 0) echo '<div class="text-center text-muted fst-italic">*** Nothing follows ***</div>'; ?>
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($par_items as $item): ?>
-                                <tr>
-                                    <td><?php echo number_format($item['quantity'], 2); ?></td>
-                                    <td><?php echo htmlspecialchars($item['unit']); ?></td>
-                                    <td><?php echo htmlspecialchars($item['description']); ?></td>
-                                    <td><?php echo htmlspecialchars($item['property_number'] ?? ''); ?></td>
-                                    <td><?php echo $item['date_acquired'] ? date('M d, Y', strtotime($item['date_acquired'])) : ''; ?></td>
-                                    <td>₱<?php echo number_format($item['amount'], 2); ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                        <tfoot>
-                            <tr class="table-light">
-                                <th colspan="5" class="text-end">Total:</th>
-                                <th>₱<?php echo number_format(array_sum(array_column($par_items, 'amount')), 2); ?></th>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
-                <div class="text-center mt-3">
-                    <p class="text-muted fst-italic">Nothing follows</p>
-                </div>
-            </div>
-            
-            <!-- Signature Section -->
-            <div class="signature-section">
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6><strong>Received By:</strong></h6>
-                        <p><?php echo htmlspecialchars($par_form['received_by_name']); ?></p>
-                        <p class="text-muted"><?php echo htmlspecialchars($par_form['received_by_position']); ?></p>
-                        <?php if (!empty($par_form['received_by_date']) && $par_form['received_by_date'] !== '0000-00-00'): ?>
-                            <p class="text-muted">Date: <?php echo date('F d, Y', strtotime($par_form['received_by_date'])); ?></p>
-                        <?php else: ?>
-                            <p class="text-muted">Date: ______________</p>
-                        <?php endif; ?>
-                    </div>
-                    <div class="col-md-6">
-                        <h6><strong>Issued By:</strong></h6>
-                        <p><?php echo htmlspecialchars($par_form['issued_by_name']); ?></p>
-                        <p class="text-muted"><?php echo htmlspecialchars($par_form['issued_by_position']); ?></p>
-                        <?php if (!empty($par_form['issued_by_date']) && $par_form['issued_by_date'] !== '0000-00-00'): ?>
-                            <p class="text-muted">Date: <?php echo date('F d, Y', strtotime($par_form['issued_by_date'])); ?></p>
-                        <?php else: ?>
-                            <p class="text-muted">Date: ______________</p>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </div>
+                        <?php endfor; ?>
+                    <?php endif; ?>
+                </tbody>
+                <tfoot>
+                    <tr class="fw-bold">
+                        <td colspan="5" class="text-end py-3">TOTAL AMOUNT</td>
+                        <td class="text-end px-3">₱<?php echo number_format(array_sum(array_column($par_items, 'amount')), 2); ?></td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <table class="signature-table">
+                <tr>
+                    <td>
+                        <div class="sig-label">Received by:</div>
+                        <div class="mt-4">
+                            <div class="sig-name"><?php echo htmlspecialchars($par_form['received_by_name']); ?></div>
+                            <div class="sig-sub">Signature Over Printed Name</div>
+                            <div class="sig-name mt-3" style="font-weight: 500; text-transform: none;"><?php echo htmlspecialchars($par_form['received_by_position']); ?></div>
+                            <div class="sig-sub">Position / Office</div>
+                            <div class="sig-name mt-3" style="font-weight: 500; font-size: 13px;">
+                                <?php echo ($par_form['received_by_date'] && $par_form['received_by_date'] != '0000-00-00') ? date('F d, Y', strtotime($par_form['received_by_date'])) : '&nbsp;'; ?>
+                            </div>
+                            <div class="sig-sub">Date</div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="sig-label">Issued by:</div>
+                        <div class="mt-4">
+                            <div class="sig-name"><?php echo htmlspecialchars($par_form['issued_by_name']); ?></div>
+                            <div class="sig-sub">Signature Over Printed Name</div>
+                            <div class="sig-name mt-3" style="font-weight: 500; text-transform: none;"><?php echo htmlspecialchars($par_form['issued_by_position']); ?></div>
+                            <div class="sig-sub">Position / Office</div>
+                            <div class="sig-name mt-3" style="font-weight: 500; font-size: 13px;">
+                                <?php echo ($par_form['issued_by_date'] && $par_form['issued_by_date'] != '0000-00-00') ? date('F d, Y', strtotime($par_form['issued_by_date'])) : '&nbsp;'; ?>
+                            </div>
+                            <div class="sig-sub">Date</div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
         </div>
     </div>
 
-    <?php include 'includes/logout-modal.php'; ?>
-    <?php include 'includes/change-password-modal.php'; ?>
     <?php include 'includes/sidebar-scripts.php'; ?>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
