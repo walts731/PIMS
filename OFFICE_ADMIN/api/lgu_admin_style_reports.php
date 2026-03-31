@@ -1061,19 +1061,17 @@ function generateAdminStyleSignatorySection($signatories) {
                 <div class="certification-item">
                     <label>Prepared by:</label>
                     <div class="certification-input-wrapper">
-                        <input type="text" class="certification-input" value="' . htmlspecialchars($signatories['prepared']['full_name'] ?? '') . '" placeholder="Enter name">
+                        <input type="text" class="certification-input certification-name" value="' . htmlspecialchars($signatories['prepared']['full_name'] ?? '') . '" placeholder="Enter name">
                         <div class="signature-line"></div>
-                        <input type="text" class="certification-input" value="' . htmlspecialchars($signatories['prepared']['designation'] ?? '') . '" placeholder="Enter designation">
+                        <input type="text" class="certification-input certification-designation" value="' . htmlspecialchars($signatories['prepared']['designation'] ?? '') . '" placeholder="Enter designation">
                     </div>
                 </div>
-            </div>
-            <div class="certification-row">
                 <div class="certification-item">
                     <label>Noted by:</label>
                     <div class="certification-input-wrapper">
-                        <input type="text" class="certification-input" value="' . htmlspecialchars($signatories['noted']['full_name'] ?? '') . '" placeholder="Enter name">
+                        <input type="text" class="certification-input certification-name" value="' . htmlspecialchars($signatories['noted']['full_name'] ?? '') . '" placeholder="Enter name">
                         <div class="signature-line"></div>
-                        <input type="text" class="certification-input" value="' . htmlspecialchars($signatories['noted']['designation'] ?? '') . '" placeholder="Enter designation">
+                        <input type="text" class="certification-input certification-designation" value="' . htmlspecialchars($signatories['noted']['designation'] ?? '') . '" placeholder="Enter designation">
                     </div>
                 </div>
             </div>
@@ -1081,19 +1079,17 @@ function generateAdminStyleSignatorySection($signatories) {
                 <div class="certification-item">
                     <label>Approved by:</label>
                     <div class="certification-input-wrapper">
-                        <input type="text" class="certification-input" value="' . htmlspecialchars($signatories['approved']['full_name'] ?? '') . '" placeholder="Enter name">
+                        <input type="text" class="certification-input certification-name" value="' . htmlspecialchars($signatories['approved']['full_name'] ?? '') . '" placeholder="Enter name">
                         <div class="signature-line"></div>
-                        <input type="text" class="certification-input" value="' . htmlspecialchars($signatories['approved']['designation'] ?? '') . '" placeholder="Enter designation">
+                        <input type="text" class="certification-input certification-designation" value="' . htmlspecialchars($signatories['approved']['designation'] ?? '') . '" placeholder="Enter designation">
                     </div>
                 </div>
-            </div>
-            <div class="certification-row">
                 <div class="certification-item">
                     <label>Certified by:</label>
                     <div class="certification-input-wrapper">
-                        <input type="text" class="certification-input" value="' . htmlspecialchars($signatories['certified']['full_name'] ?? '') . '" placeholder="Enter name">
+                        <input type="text" class="certification-input certification-name" value="' . htmlspecialchars($signatories['certified']['full_name'] ?? '') . '" placeholder="Enter name">
                         <div class="signature-line"></div>
-                        <input type="text" class="certification-input" value="' . htmlspecialchars($signatories['certified']['designation'] ?? '') . '" placeholder="Enter designation">
+                        <input type="text" class="certification-input certification-designation" value="' . htmlspecialchars($signatories['certified']['designation'] ?? '') . '" placeholder="Enter designation">
                     </div>
                 </div>
             </div>
@@ -1127,27 +1123,35 @@ function generateAdminStyleSignatorySection($signatories) {
         .certification-input-wrapper {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 2px;
         }
-        
-        .certification-input {
-            border: none;
-            border-bottom: 1px solid #ccc;
-            background: transparent;
-            padding: 5px 0;
-            font-size: 11px;
-            width: 100%;
-            outline: none;
-        }
-        
-        .certification-input:focus {
-            border-bottom-color: #007bff;
-        }
-        
+
         .signature-line {
             height: 1px;
             background: #333;
-            margin: 8px 0;
+            margin: 4px 0;
+        }
+
+        .certification-input {
+            border: none;
+            background: transparent;
+            padding: 2px 0;
+            font-size: 11px;
+            width: 100%;
+            outline: none;
+            text-align: center;
+        }
+
+        .certification-name {
+            font-weight: bold;
+        }
+
+        .certification-designation {
+            font-weight: normal;
+        }
+
+        .certification-input:focus {
+            background: #f0f8ff;
         }
         
         p.status-badge {
@@ -1563,18 +1567,55 @@ function generateAdminStyleSignatorySection($signatories) {
                 font-size: 11px !important;
             }
             
+            .certification-section {
+                margin: 15px 0 !important;
+            }
+
+            .certification-row {
+                display: grid !important;
+                grid-template-columns: 1fr 1fr !important;
+                gap: 40px !important;
+                margin-bottom: 25px !important;
+            }
+
+            .certification-input-wrapper {
+                display: flex;
+                flex-direction: column;
+                gap: 2px !important;
+            }
+
+            .signature-line {
+                display: block !important;
+                height: 1px !important;
+                background: #333 !important;
+                margin: 6px 0 !important;
+                width: 100% !important;
+            }
+
             .certification-input {
-                border-bottom: 1px solid #333;
-                background: transparent;
+                border: none !important;
+                background: transparent !important;
+                font-size: 10px !important;
+                text-align: center !important;
+                padding: 1px 0 !important;
+            }
+
+            .certification-name {
+                font-weight: bold !important;
                 font-size: 10px !important;
             }
-            
+
+            .certification-designation {
+                font-weight: normal !important;
+                font-size: 9px !important;
+            }
+
             .certification-row.empty-content {
                 display: none !important;
             }
-            
+
             .certification-row.has-content {
-                display: flex !important;
+                display: grid !important;
             }
             
             .print-actions {

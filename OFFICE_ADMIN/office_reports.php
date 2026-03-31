@@ -404,6 +404,76 @@ $report_data['asset_stats']['total_asset_value'] = number_format($report_data['a
             box-shadow: 0 10px 25px rgba(25, 27, 169, 0.3);
         }
         
+        /* Enhanced Dropdown Menu Styling */
+        .dropdown-menu {
+            border: none;
+            border-radius: var(--border-radius-lg);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            background: white;
+            padding: 8px;
+            min-width: 280px;
+            animation: fadeInUp 0.3s ease-out;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .dropdown-item {
+            padding: 12px 16px;
+            margin: 2px 0;
+            border-radius: var(--border-radius);
+            color: #495057;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .dropdown-item:hover {
+            background: linear-gradient(135deg, #f8f9ff 0%, #e8f0ff 100%);
+            color: var(--primary-color);
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(25, 27, 169, 0.1);
+        }
+        
+        .dropdown-item:before {
+            content: "📄";
+            font-size: 16px;
+            opacity: 0.7;
+        }
+        
+        .dropdown-item:active {
+            background: linear-gradient(135deg, #e8f0ff 0%, #d0e0ff 100%);
+            transform: scale(0.98);
+        }
+        
+        /* Dropdown toggle improvements */
+        .dropdown-toggle {
+            position: relative;
+            padding-right: 30px !important;
+        }
+        
+        .dropdown-toggle:after {
+            border-top: 3px solid;
+            border-right: 3px solid transparent;
+            border-left: 3px solid transparent;
+            margin-left: 8px;
+            transition: transform 0.3s ease;
+        }
+        
+        .show .dropdown-toggle:after {
+            transform: rotate(180deg);
+        }
+        
         .filter-section {
             background: white;
             border-radius: var(--border-radius-lg);
@@ -466,20 +536,10 @@ $report_data['asset_stats']['total_asset_value'] = number_format($report_data['a
                                 <i class="bi bi-download"></i> Export
                             </button>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="#" onclick="exportLGUReport('inventory')">Inventory Report (LGU)</a></li>
-                                <li><a class="dropdown-item" href="#" onclick="exportLGUReport('asset')">Asset Report (LGU)</a></li>
-                                <li><a class="dropdown-item" href="#" onclick="exportLGUReport('consumable')">Consumable Report (LGU)</a></li>
-                                <li><a class="dropdown-item" href="#" onclick="exportLGUReport('borrow_request')">Borrow Request Report (LGU)</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="#" onclick="previewAdminStyleReport('inventory')">Preview: Inventory Report (Admin Style)</a></li>
-                                <li><a class="dropdown-item" href="#" onclick="previewAdminStyleReport('asset')">Preview: Asset Report (Admin Style)</a></li>
-                                <li><a class="dropdown-item" href="#" onclick="previewAdminStyleReport('consumable')">Preview: Consumable Report (Admin Style)</a></li>
-                                <li><a class="dropdown-item" href="#" onclick="previewAdminStyleReport('borrow_request')">Preview: Borrow Request Report (Admin Style)</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="#" onclick="exportAdminStyleReport('inventory')">Export: Inventory Report (Admin Style)</a></li>
-                                <li><a class="dropdown-item" href="#" onclick="exportAdminStyleReport('asset')">Export: Asset Report (Admin Style)</a></li>
-                                <li><a class="dropdown-item" href="#" onclick="exportAdminStyleReport('consumable')">Export: Consumable Report (Admin Style)</a></li>
-                                <li><a class="dropdown-item" href="#" onclick="exportAdminStyleReport('borrow_request')">Export: Borrow Request Report (Admin Style)</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="previewAdminStyleReport('inventory')">Inventory Report</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="previewAdminStyleReport('asset')">Asset Report</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="previewAdminStyleReport('consumable')">Consumable Report</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="previewAdminStyleReport('borrow_request')">Borrow Request Report</a></li>
                             </ul>
                         </div>
                         <button class="btn btn-outline-success btn-sm" onclick="showDocumentModal()">
