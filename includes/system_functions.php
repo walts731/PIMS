@@ -259,21 +259,21 @@ function checkSessionTimeout() {
     $session_timeout_minutes = getSystemSetting('session_timeout', 30);
     $session_timeout = $session_timeout_minutes * 60; // Convert minutes to seconds
     
-    // Check if user is logged in and login_time is set
-    if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true && isset($_SESSION['login_time'])) {
-        $login_time = $_SESSION['login_time'];
+    // Check if user is logged in
+    if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
+        $last_activity = $_SESSION['last_activity'] ?? $_SESSION['login_time'] ?? time();
         $current_time = time();
-        $elapsed_time = $current_time - $login_time;
+        $elapsed_time = $current_time - $last_activity;
         
-        // Check if session has expired
+        // Check if session has expired due to inactivity
         if ($elapsed_time > $session_timeout) {
             // Log session timeout
             $user_id = $_SESSION['user_id'] ?? null;
             $user_name = ($_SESSION['first_name'] ?? '') . ' ' . ($_SESSION['last_name'] ?? '');
             $user_email = $_SESSION['email'] ?? '';
             
-            logSystemAction($user_id, 'session_timeout', 'authentication', "Session expired for user: {$user_name} ({$user_email}) after {$elapsed_time} seconds");
-            logSecurityEvent('session_timeout', "Session timeout for user: {$user_name} ({$user_email})", 'medium', $user_id);
+            logSystemAction($user_id, 'session_timeout', 'authentication', "Session idle timeout for user: {$user_name} ({$user_email}) after {$elapsed_time} seconds of inactivity");
+            logSecurityEvent('session_timeout', "Session idle timeout for user: {$user_name} ({$user_email})", 'medium', $user_id);
             
             // Destroy session
             session_destroy();
@@ -283,7 +283,7 @@ function checkSessionTimeout() {
             exit();
         }
         
-        // Update last activity time (optional - for future idle timeout feature)
+        // Update last activity time
         $_SESSION['last_activity'] = $current_time;
     }
 }
