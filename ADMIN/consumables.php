@@ -444,7 +444,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['action']) && $_GET['acti
 // Handle filter parameters
 $office_filter = isset($_GET['office']) ? intval($_GET['office']) : 3; // Default to Supply Office (ID = 3)
 $for_office_filter = isset($_GET['for_office']) ? intval($_GET['for_office']) : 0;
-$search_filter = isset($_GET['search']) ? trim($_GET['search']) : '';
 
 // Get consumables with office information
 $consumables = [];
@@ -470,14 +469,7 @@ try {
         $types .= 'i';
     }
     
-    if (!empty($search_filter)) {
-        $sql .= " AND (c.description LIKE ? OR o.office_name LIKE ? OR fo.office_name LIKE ?)";
-        $search_term = '%' . $search_filter . '%';
-        $params[] = $search_term;
-        $params[] = $search_term;
-        $params[] = $search_term;
-        $types .= 'sss';
-    }
+
     
     $sql .= " ORDER BY c.created_at DESC";
     
@@ -646,66 +638,11 @@ try {
             </div>
         </div>
         
-        <!-- Statistics Cards -->
-        <div class="row mb-4">
-            <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $stats['total_quantity'] ?? 0; ?></div>
-                    <div class="stats-label"><i class="bi bi-box-seam"></i> Total Consumables</div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $stats['total_consumables'] ?? 0; ?></div>
-                    <div class="stats-label"><i class="bi bi-tags"></i> Consumable Types</div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo number_format($stats['total_value'] ?? 0, 2); ?></div>
-                    <div class="stats-label"><i class="bi bi-currency-peso"></i> Total Value</div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $stats['low_stock_count'] ?? 0; ?></div>
-                    <div class="stats-label"><i class="bi bi-exclamation-triangle"></i> Low Stock Items</div>
-                </div>
-            </div>
-        </div>
-        
         <!-- Consumables Table -->
         <div class="table-container">
             <div class="row mb-3 align-items-center">
-                <div class="col-md-2">
+                <div class="col-12">
                     <h5 class="mb-0"><i class="bi bi-list-ul"></i> Consumables List</h5>
-                </div>
-                <div class="col-md-10">
-                    <div class="row g-2">
-                        <div class="col-md-3">
-                            <select class="form-select form-select-sm" id="officeFilter">
-                                <option value="">All Offices</option>
-                                <?php foreach ($offices as $office): ?>
-                                    <option value="<?php echo $office['id']; ?>" <?php echo $office_filter == $office['id'] ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($office['office_name']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <select class="form-select form-select-sm" id="forOfficeFilter">
-                                <option value="">All For Offices</option>
-                                <?php foreach ($offices as $office): ?>
-                                    <option value="<?php echo $office['id']; ?>" <?php echo $for_office_filter == $office['id'] ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($office['office_name']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Search consumables..." value="<?php echo htmlspecialchars($search_filter); ?>">
-                        </div>
-                    </div>
                 </div>
             </div>
             
@@ -1178,82 +1115,92 @@ try {
         let consumablesTable;
         
         document.addEventListener('DOMContentLoaded', function() {
-            // Since we're using backend filtering and pagination, 
-            // we don't need to initialize DataTables
-            // The table will be rendered by PHP with proper filtering
-            consumablesTable = null;
+            // Check if table has data rows before initializing DataTables to avoid column count errors
+            const tableBody = $('#consumablesTable tbody');
+            const hasData = tableBody.find('tr').length > 0 && !tableBody.find('td[colspan]').length;
             
-            // Preserve other URL parameters function
-            function preserveOtherParams(currentUrl) {
-                // Preserve search parameter
-                const searchValue = currentUrl.searchParams.get('search');
-                if (!searchValue) {
-                    currentUrl.searchParams.delete('search');
-                }
-                
-                // Preserve office parameter
-                const officeValue = currentUrl.searchParams.get('office');
-                if (!officeValue) {
-                    currentUrl.searchParams.delete('office');
-                }
-                
-                // Preserve for_office parameter
-                const forOfficeValue = currentUrl.searchParams.get('for_office');
-                if (!forOfficeValue) {
-                    currentUrl.searchParams.delete('for_office');
-                }
-            }
+            console.log('Consumables table has data:', hasData);
             
-            // Office filter
-            $('#officeFilter').on('change', function() {
-                const officeValue = this.value;
-                
-                // Update statistics immediately without page reload
-                updateStatistics(officeValue);
-                
-                const currentUrl = new URL(window.location);
-                if (officeValue) {
-                    currentUrl.searchParams.set('office', officeValue);
-                } else {
-                    currentUrl.searchParams.delete('office');
-                }
-                // Preserve other parameters
-                preserveOtherParams(currentUrl);
-                window.location.href = currentUrl.toString();
-            });
-            
-            // For Office filter
-            $('#forOfficeFilter').on('change', function() {
-                const forOfficeValue = this.value;
-                const currentUrl = new URL(window.location);
-                if (forOfficeValue) {
-                    currentUrl.searchParams.set('for_office', forOfficeValue);
-                } else {
-                    currentUrl.searchParams.delete('for_office');
-                }
-                // Preserve other parameters
-                preserveOtherParams(currentUrl);
-                window.location.href = currentUrl.toString();
-            });
-            
-            // Search functionality with debounce
-            let searchTimeout;
-            $('#searchInput').on('input', function() {
-                clearTimeout(searchTimeout);
-                const searchValue = this.value.trim();
-                
-                searchTimeout = setTimeout(() => {
-                    const currentUrl = new URL(window.location);
-                    if (searchValue) {
-                        currentUrl.searchParams.set('search', searchValue);
-                    } else {
-                        currentUrl.searchParams.delete('search');
+            if (hasData) {
+                // Initialize DataTable
+                consumablesTable = $('#consumablesTable').DataTable({
+                    "pageLength": 25,
+                    "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                    "ordering": true,
+                    "info": true,
+                    "responsive": true,
+                    "dom": "<'row mb-3 align-items-center'<'col-sm-12 col-md-3'l><'col-sm-12 col-md-3 office-filter-box'><'col-sm-12 col-md-3 for-office-filter-box'><'col-sm-12 col-md-3 text-end'f>>" +
+                           "<'row'<'col-sm-12'tr>>" +
+                           "<'row mt-3'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+                    "columnDefs": [
+                        { "targets": 7, "orderable": false, "searchable": false } // Actions column
+                    ],
+                    "language": {
+                        "search": "Search:",
+                        "lengthMenu": "_MENU_",
+                        "info": "Showing _START_ to _END_ of _TOTAL_ entries",
+                        "paginate": {
+                            "first": "First",
+                            "last": "Last",
+                            "next": "Next",
+                            "previous": "Previous"
+                        },
+                        "emptyTable": "No consumables available",
+                        "zeroRecords": "No matching consumables found"
+                    },
+                    "initComplete": function() {
+                        // Inject Office Filter
+                        $('.office-filter-box').html(`
+                            <select class="form-select form-select-sm" id="officeFilter">
+                                <option value="">All Offices</option>
+                                <?php foreach ($offices as $office): ?>
+                                    <option value="<?php echo $office['id']; ?>" <?php echo $office_filter == $office['id'] ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($office['office_name']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        `);
+                        
+                        // Inject For Office Filter
+                        $('.for-office-filter-box').html(`
+                            <select class="form-select form-select-sm" id="forOfficeFilter">
+                                <option value="">All For Offices</option>
+                                <?php foreach ($offices as $office): ?>
+                                    <option value="<?php echo $office['id']; ?>" <?php echo $for_office_filter == $office['id'] ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($office['office_name']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        `);
+                        
+                        // Bind events for the newly injected filters
+                        $('#officeFilter').on('change', function() {
+                            const officeValue = this.value;
+                            const currentUrl = new URL(window.location);
+                            if (officeValue) {
+                                currentUrl.searchParams.set('office', officeValue);
+                            } else {
+                                currentUrl.searchParams.delete('office');
+                            }
+                            window.location.href = currentUrl.toString();
+                        });
+                        
+                        $('#forOfficeFilter').on('change', function() {
+                            const forOfficeValue = this.value;
+                            const currentUrl = new URL(window.location);
+                            if (forOfficeValue) {
+                                currentUrl.searchParams.set('for_office', forOfficeValue);
+                            } else {
+                                currentUrl.searchParams.delete('for_office');
+                            }
+                            window.location.href = currentUrl.toString();
+                        });
                     }
-                    // Preserve other parameters
-                    preserveOtherParams(currentUrl);
-                    window.location.href = currentUrl.toString();
-                }, 500); // Wait 500ms after user stops typing
-            });
+                });
+            } else {
+                console.log('No data found - DataTables not initialized to prevent warnings');
+                $('#consumablesTable').addClass('table-striped');
+            }
         });
         
         // Export consumables function
