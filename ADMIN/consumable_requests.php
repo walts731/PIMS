@@ -20,59 +20,18 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
 }
 
 logSystemAction($_SESSION['user_id'], 'Accessed Consumable Requests', 'consumables', 'consumable_requests.php');
-
-// Get RIS forms that are categorized for consumables or just all entries as a starting point
-$ris_forms = [];
-$result = $conn->query("
-    SELECT 
-        f.*,
-        COUNT(i.id) as item_count,
-        SUM(i.total_amount) as total_value
-    FROM ris_forms f 
-    LEFT JOIN ris_items i ON f.id = i.ris_form_id 
-    GROUP BY f.id 
-    ORDER BY f.created_at DESC
-");
-
-if ($result) {
-    while ($row = $result->fetch_assoc()) {
-        $ris_forms[] = $row;
-    }
-}
-
-// Get Segregated items by Office
-$office_summaries = [];
-$result = $conn->query("
-    SELECT 
-        f.office,
-        i.description,
-        SUM(i.quantity) as total_quantity,
-        i.unit
-    FROM ris_forms f
-    JOIN ris_items i ON f.id = i.ris_form_id
-    GROUP BY f.office, i.description, i.unit
-    ORDER BY f.office ASC, total_quantity DESC
-");
-
-if ($result) {
-    while ($row = $result->fetch_assoc()) {
-        $office_summaries[$row['office']][] = $row;
-    }
-}
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Consumable Requests - PIMS</title>
+    <title>Office Supplies Consolidator - PIMS</title>
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
-    <!-- DataTables CSS -->
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
@@ -84,22 +43,19 @@ if ($result) {
     <link href="assets/css/admin-unified.css" rel="stylesheet">
     
     <style>
-        .request-card {
-            background: white;
-            border-radius: var(--border-radius-lg);
-            padding: 1.5rem;
-            box-shadow: var(--shadow);
-            transition: var(--transition);
-            border-left: 4px solid var(--primary-color);
-        }
-        .request-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
-        }
+        .x-small { font-size: 0.75rem; }
+        .cursor-pointer { cursor: pointer; }
+        .border-dashed { border-style: dashed !important; }
+        .mapping-select { border-radius: 8px; }
+        .list-group-item { transition: all 0.2s ease; border-bottom: 1px solid #f0f0f0 !important; }
+        .list-group-item:hover { background-color: #f8f9fa; }
+        .rounded-4 { border-radius: 1rem !important; }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
-    <?php $page_title = 'Consumable Requests'; ?>
+    <?php $page_title = 'Office Supplies Consolidator'; ?>
     <div class="main-wrapper" id="mainWrapper">
         <?php require_once 'includes/sidebar-toggle.php'; ?>
         <?php require_once 'includes/sidebar.php'; ?>
@@ -108,23 +64,16 @@ if ($result) {
     <div class="main-content">
         <div class="page-header">
             <div class="row align-items-center">
-                <div class="col-md-8">
+                <div class="col-8">
                     <h1 class="mb-2">
-                        <i class="bi bi-file-earmark-plus"></i> Consumable Requests
+                        <i class="bi bi-file-earmark-excel"></i> Office Supplies Consolidator
                     </h1>
-                    <p class="text-muted mb-0">View and manage requisition and issue slips specifically for consumables</p>
+                    <p class="text-muted mb-0">Consolidate master supply lists into separate, office-specific Excel files</p>
                 </div>
-                <div class="col-md-4 text-md-end">
-                    <div class="dropdown">
-                        <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-gear"></i> Actions
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a href="ris_form.php" class="dropdown-item"><i class="bi bi-plus-circle"></i> New Request</a></li>
-                            <li><button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#importSuppliesModal"><i class="bi bi-file-earmark-excel"></i> Consolidate & Download Supplies</button></li>
-                            <li><button class="dropdown-item" onclick="location.reload()"><i class="bi bi-arrow-clockwise"></i> Refresh</button></li>
-                        </ul>
-                    </div>
+                <div class="col-4 text-end">
+                    <button class="btn btn-outline-secondary" onclick="location.reload()">
+                        <i class="bi bi-arrow-clockwise"></i> Reset Tool
+                    </button>
                 </div>
             </div>
         </div>
@@ -136,208 +85,93 @@ if ($result) {
             </div>
         <?php endif; ?>
 
-        <?php if (isset($_SESSION['error_message'])): ?>
-            <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-4" role="alert">
-                <i class="bi bi-exclamation-triangle-fill me-2"></i> <?php echo $_SESSION['error_message']; unset($_SESSION['error_message']); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        <?php endif; ?>
+        <div class="row g-4">
+            <!-- Consolidator Tool Column -->
+            <div class="col-lg-7">
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-body p-4">
+                        <form id="excelImportForm">
+                            <!-- Step 1: File Selection -->
+                            <div id="importStep1">
+                                <div class="alert alert-info border-0 shadow-sm mb-4">
+                                    <h6 class="alert-heading fw-bold small"><i class="bi bi-info-circle"></i> How it works</h6>
+                                    <p class="mb-0 x-small" style="font-size: 0.85rem;">Upload your master list. Match the description/unit columns, then select which office columns to process. The system will generate separate Excel files for each office.</p>
+                                </div>
+                                
+                                <div class="mb-3 text-center py-5 border-2 border-dashed rounded-4 bg-light cursor-pointer" onclick="document.getElementById('excelFile').click()">
+                                    <i class="bi bi-cloud-arrow-up display-5 text-primary mb-3 d-inline-block"></i>
+                                    <h5 class="fw-bold">Select Master Excel File</h5>
+                                    <p class="text-muted small">Drag and drop or click to browse</p>
+                                    <input type="file" id="excelFile" class="form-control d-none" accept=".xlsx, .xls" required>
+                                </div>
+                            </div>
 
-        <!-- Tab Navigation & Filters -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <ul class="nav nav-pills" id="requestTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="entries-tab" data-bs-toggle="pill" data-bs-target="#entries" type="button" role="tab">
-                        <i class="bi bi-list-ul"></i> RIS Entries
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="segregation-tab" data-bs-toggle="pill" data-bs-target="#segregation" type="button" role="tab">
-                        <i class="bi bi-building"></i> Segregation by Office
-                    </button>
-                </li>
-            </ul>
-            
-            <div class="d-flex gap-2">
-                <select class="form-select form-select-sm shadow-sm border-0" id="sourceFilter" style="width: auto;">
-                    <option value="">All Sources</option>
-                    <option value="Excel Import">Excel Imports</option>
-                    <option value="Manual Entry">Manual Entries</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="tab-content" id="requestTabsContent">
-            <!-- RIS Entries Tab -->
-            <div class="tab-pane fade show active" id="entries" role="tabpanel">
-                <div class="table-container">
-                    <div class="table-responsive">
-                        <table class="table table-hover" id="requestsTable">
-                            <thead>
-                                <tr>
-                                    <th>RIS No.</th>
-                                    <th>Date</th>
-                                    <th>Office</th>
-                                    <th>Division</th>
-                                    <th>Requested By</th>
-                                    <th>Items</th>
-                                    <th>Source</th>
-                                    <th>Total Value</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($ris_forms as $ris): ?>
-                                    <tr>
-                                        <td class="fw-bold fs-6 text-primary"><?php echo htmlspecialchars($ris['ris_no']); ?></td>
-                                        <td><?php echo date('M d, Y', strtotime($ris['created_at'])); ?></td>
-                                        <td><?php echo htmlspecialchars($ris['office']); ?></td>
-                                        <td><?php echo htmlspecialchars($ris['division']); ?></td>
-                                        <td>
-                                            <div class="fw-medium"><?php echo htmlspecialchars($ris['requested_by']); ?></div>
-                                            <small class="text-muted"><?php echo htmlspecialchars($ris['requested_by_position']); ?></small>
-                                        </td>
-                                        <td><span class="badge bg-secondary"><?php echo $ris['item_count']; ?> items</span></td>
-                                        <td>
-                                            <?php if (strpos($ris['purpose'], 'Office Supplies 2026') !== false): ?>
-                                                <span class="badge bg-info text-dark"><i class="bi bi-file-earmark-excel"></i> Excel Import</span>
-                                            <?php else: ?>
-                                                <span class="badge bg-light text-dark">Manual Entry</span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td class="fw-bold">₱<?php echo number_format($ris['total_value'] ?: 0, 2); ?></td>
-                                        <td>
-                                            <div class="btn-group">
-                                                <button class="btn btn-sm btn-outline-primary" onclick="viewRIS(<?php echo $ris['id']; ?>)" title="View Detailed RIS">
-                                                    <i class="bi bi-eye"></i>
-                                                </button>
-                                                <button class="btn btn-sm btn-outline-info" onclick="printRIS(<?php echo $ris['id']; ?>)" title="Print RIS Form">
-                                                    <i class="bi bi-printer"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Segregation by Office Tab -->
-            <div class="tab-pane fade" id="segregation" role="tabpanel">
-                <div class="row g-4">
-                    <?php if (empty($office_summaries)): ?>
-                        <div class="col-12 text-center py-5">
-                            <i class="bi bi-inbox fs-1 text-muted"></i>
-                            <p class="mt-2">No items found for office segregation.</p>
-                        </div>
-                    <?php else: ?>
-                        <?php foreach ($office_summaries as $office_name => $items): ?>
-                            <div class="col-md-6 col-xl-4">
-                                <div class="request-card h-100">
-                                    <div class="d-flex justify-content-between align-items-center mb-3">
-                                        <h5 class="mb-0 text-primary fw-bold">
-                                            <i class="bi bi-building"></i> <?php echo htmlspecialchars($office_name); ?>
-                                        </h5>
-                                        <span class="badge bg-primary rounded-pill"><?php echo count($items); ?> Unique Items</span>
-                                    </div>
+                            <!-- Step 2: Mapping -->
+                            <div id="importStep2" style="display: none;">
+                                <div class="mb-4">
+                                    <h6 class="fw-bold mb-3 d-flex align-items-center">
+                                        <span class="badge bg-primary rounded-circle me-2">1</span> Map Item Columns
+                                    </h6>
                                     <div class="table-responsive">
-                                        <table class="table table-sm table-borderless mb-0">
-                                            <thead class="text-muted small border-bottom">
-                                                <tr>
-                                                    <th>Item Description</th>
-                                                    <th class="text-end">Total Count</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <?php foreach ($items as $item): ?>
-                                                    <tr>
-                                                        <td><?php echo htmlspecialchars($item['description']); ?></td>
-                                                        <td class="text-end fw-bold">
-                                                            <?php echo $item['total_quantity']; ?> 
-                                                            <small class="text-muted fw-normal"><?php echo htmlspecialchars($item['unit']); ?></small>
-                                                        </td>
-                                                    </tr>
-                                                <?php endforeach; ?>
+                                        <table class="table table-sm align-middle border-0 mb-0">
+                                            <tbody id="mappingList">
+                                                <!-- Dynamic mapping rows -->
                                             </tbody>
                                         </table>
                                     </div>
                                 </div>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </div>
-            </div>
-        </div>
-    </div>
+                                
+                                <div class="mb-4">
+                                    <h6 class="fw-bold mb-2 d-flex align-items-center">
+                                        <span class="badge bg-primary rounded-circle me-2">2</span> Select Office Columns
+                                    </h6>
+                                    <p class="x-small text-muted mb-3">Checked columns will be treated as separate office exports.</p>
+                                    <div id="officeColumnCheckboxes" class="row g-2 p-2 border rounded-3 bg-light overflow-auto" style="max-height: 300px;">
+                                        <!-- Dynamic checkboxes -->
+                                    </div>
+                                </div>
 
-    <!-- Import Office Supplies Modal -->
-    <div class="modal fade" id="importSuppliesModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header border-0 pb-0">
-                    <h5 class="modal-title fw-bold"><i class="bi bi-file-earmark-excel text-success"></i> Office Supplies Consolidator</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form id="excelImportForm">
-                    <div class="modal-body p-4">
-                        <!-- Step 1: File Select -->
-                        <div id="importStep1">
-                            <div class="alert alert-info border-0 shadow-sm mb-4">
-                                <h6 class="alert-heading fw-bold"><i class="bi bi-info-circle"></i> Offline Consolidation</h6>
-                                <p class="small mb-0">Upload your Office Supplies list. The system will group items by office and generate a <strong>New Segregated Excel File</strong>. <br><span class="text-danger fw-bold">No data is saved to the database.</span></p>
-                            </div>
-                            
-                            <div class="mb-3 text-center py-4 border-2 border-dashed rounded-3 bg-light">
-                                <i class="bi bi-cloud-arrow-up display-5 text-primary mb-2 d-inline-block"></i>
-                                <h6 class="fw-bold">Drag and drop file here</h6>
-                                <p class="text-muted small">or click to browse from folder</p>
-                                <input type="file" id="excelFile" class="form-control d-none" accept=".xlsx, .xls" required>
-                                <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="document.getElementById('excelFile').click()">
-                                    Select Excel File
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Step 2: Mapping -->
-                        <div id="importStep2" style="display: none;">
-                            <h6 class="fw-bold mb-3"><i class="bi bi-diagram-3"></i> Map Core Columns</h6>
-                            <p class="small text-muted mb-3">Please match the item description and unit columns from your Excel file.</p>
-                            
-                            <div class="table-responsive mb-3">
-                                <table class="table table-sm align-middle border-top-0 mb-0">
-                                    <tbody id="mappingList">
-                                        <!-- Dynamic mapping rows -->
-                                    </tbody>
-                                </table>
-                            </div>
-                            
-                            <div>
-                                <h6 class="fw-bold mb-2"><i class="bi bi-building"></i> Select Office Columns</h6>
-                                <p class="small text-muted mb-2">Check the columns that represent departments/offices. The numbers inside these columns will be treated as the requested quantities.</p>
-                                <div id="officeColumnCheckboxes" class="row g-2 max-height-200 overflow-auto p-2 border rounded bg-light" style="max-height: 200px; overflow-y: auto;">
-                                    <!-- Dynamic checkboxes -->
+                                <div class="d-flex justify-content-between">
+                                    <button type="button" class="btn btn-light" onclick="location.reload()">Back</button>
+                                    <button type="submit" id="submitImport" class="btn btn-success px-5 rounded-pill shadow-sm">
+                                        <i class="bi bi-lightning-fill"></i> Consolidate & Download All
+                                    </button>
                                 </div>
                             </div>
-                        </div>
 
-                        <input type="hidden" name="excel_json" id="excelJson">
-                        <input type="hidden" name="mapping_conf" id="mappingConf">
+                            <input type="hidden" name="excel_json" id="excelJson">
+                            <input type="hidden" name="mapping_conf" id="mappingConf">
+                        </form>
                     </div>
-                    <div class="modal-footer border-0 p-4 pt-0">
-                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" id="nextStep" class="btn btn-primary px-4 d-none">
-                            Next: Map Columns <i class="bi bi-arrow-right"></i>
-                        </button>
-                        <button type="submit" id="submitImport" class="btn btn-success px-4 d-none">
-                            <i class="bi bi-file-earmark-arrow-down"></i> Segregate & Download
-                        </button>
+                </div>
+            </div>
+
+            <!-- Results Column -->
+            <div class="col-lg-5">
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-header bg-white border-0 py-3 px-4">
+                        <h5 class="mb-0 fw-bold">Consolidated Results</h5>
                     </div>
-                </form>
+                    <div class="card-body p-4 pt-0">
+                        <div id="emptyResults" class="text-center py-5">
+                            <i class="bi bi-file-earmark-spreadsheet fs-1 text-muted opacity-25"></i>
+                            <p class="mt-3 text-muted">No files generated yet.<br>Upload a file to start consolidation.</p>
+                        </div>
+                        
+                        <div id="downloadList" class="list-group list-group-flush" style="display: none;">
+                            <!-- Dynamically populated downloads -->
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
+
+        <!-- Float Next Button -->
+        <div id="floatingAction" class="position-fixed bottom-0 end-0 p-4" style="z-index: 1050; display: none;">
+            <button type="button" id="nextStep" class="btn btn-primary btn-lg rounded-pill shadow-lg px-4">
+                Continue to Mapping <i class="bi bi-arrow-right"></i>
+            </button>
+        </div>
     </div>
 
     <?php include 'includes/logout-modal.php'; ?>
@@ -346,33 +180,12 @@ if ($result) {
 
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
     
     <script>
+        // Global storage for re-downloads
+        window.generatedFiles = {};
+
         $(document).ready(function() {
-            var table = $('#requestsTable').DataTable({
-                "pageLength": 25,
-                "ordering": true,
-                "order": [[1, "desc"]], // Default order by date
-                "info": true,
-                "responsive": true,
-                "dom": "<'row mb-3 align-items-center'<'col-sm-12 col-md-4'l><'col-sm-12 col-md-8 text-end'f>>" +
-                       "<'row'<'col-sm-12'tr>>" +
-                       "<'row mt-3'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
-                "language": {
-                    "search": "Filter requests:",
-                    "lengthMenu": "_MENU_",
-                    "emptyTable": "No consumable requests available"
-                }
-            });
-
-            // Source Filter Logic
-            $('#sourceFilter').on('change', function() {
-                table.column(6).search(this.value).draw();
-            });
-
-            // Excel Import Logic (Smart Mapping)
             let rawExcelData = null;
             let excelHeaders = [];
 
@@ -380,7 +193,9 @@ if ($result) {
                 const file = e.target.files[0];
                 if (!file) return;
 
-                $('#nextStep').removeClass('d-none').prop('disabled', true).html('Reading File...');
+                const dropZone = $(this).closest('.cursor-pointer');
+                const originalContent = dropZone.html();
+                dropZone.html('<div class="py-3"><div class="spinner-border text-primary mb-3"></div><h5 class="fw-bold">Analyzing Workbook...</h5></div>');
 
                 const reader = new FileReader();
                 reader.onload = function(e) {
@@ -388,15 +203,24 @@ if ($result) {
                     const workbook = XLSX.read(data, {type: 'array'});
                     const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                     
-                    // Treat Row 3 as the header (0-based index 2)
-                    rawExcelData = XLSX.utils.sheet_to_json(firstSheet, { range: 2 });
+                    // Progressive header detection: try range 2 (Row 3) then range 0 (Row 1)
+                    let dataRange = 2;
+                    let trialData = XLSX.utils.sheet_to_json(firstSheet, { range: dataRange });
+                    
+                    if (trialData.length === 0 || Object.keys(trialData[0]).length < 2) {
+                        dataRange = 0;
+                        trialData = XLSX.utils.sheet_to_json(firstSheet, { range: dataRange });
+                    }
+                    
+                    rawExcelData = trialData;
                     
                     if (rawExcelData.length > 0) {
                         excelHeaders = Object.keys(rawExcelData[0]);
-                        $('#nextStep').prop('disabled', false).html('Next: Map Columns <i class="bi bi-arrow-right"></i>');
+                        $('#floatingAction').fadeIn();
+                        dropZone.html('<i class="bi bi-check-circle-fill display-5 text-success mb-3 d-inline-block"></i><h5 class="fw-bold">File Identified</h5><p class="text-muted small">' + file.name + ' (' + rawExcelData.length + ' rows found)</p>');
                     } else {
-                        alert('Excel file seems empty starting from Row 3.');
-                        $('#nextStep').addClass('d-none');
+                        alert('Could not find data in the first sheet. Please ensure your Excel file contains a table starting in Row 1 or Row 3.');
+                        location.reload();
                     }
                 };
                 reader.readAsArrayBuffer(file);
@@ -405,19 +229,17 @@ if ($result) {
             $('#nextStep').on('click', function() {
                 $('#importStep1').fadeOut(200, function() {
                     $('#importStep2').fadeIn(200);
-                    $('#nextStep').addClass('d-none');
-                    $('#submitImport').removeClass('d-none');
+                    $('#floatingAction').hide();
                     
                     const systemFields = [
-                        { name: 'description', label: 'Item Description', required: true, keywords: ['desc', 'item', 'particulars', 'article'] },
-                        { name: 'unit', label: 'Unit of Measure', required: false, keywords: ['unit', 'measure', 'uom'] }
+                        { name: 'description', label: 'Item Description', required: true, keywords: ['desc', 'item', 'particulars', 'article', 'description', 'stock'] },
+                        { name: 'unit', label: 'Unit of Measure', required: false, keywords: ['unit', 'measure', 'uom', 'basis', 'measurement'] }
                     ];
 
                     let html = '';
                     systemFields.forEach(field => {
                         let options = excelHeaders.map(h => {
-                            // Smart auto-select logic
-                            const isMatch = field.keywords.some(k => h.toLowerCase().includes(k.toLowerCase()));
+                            const isMatch = field.keywords.some(k => h.toLowerCase().trim() === k.toLowerCase() || h.toLowerCase().includes(k.toLowerCase()));
                             return `<option value="${h}" ${isMatch ? 'selected' : ''}>${h}</option>`;
                         }).join('');
 
@@ -440,19 +262,29 @@ if ($result) {
 
                     let officeHtml = '';
                     excelHeaders.forEach(h => {
-                        const hLower = h.toLowerCase();
-                        const isCore = systemFields.some(f => f.keywords.some(k => hLower.includes(k.toLowerCase())));
-                        const isIgnored = hLower.includes('cost') || hLower.includes('total') || hLower.includes('price') || hLower.includes('__empty');
+                        const hLower = h.toLowerCase().trim();
+                        // Is this column one of the core fields?
+                        const isCore = systemFields.some(f => f.keywords.some(k => hLower === k.toLowerCase() || hLower.includes(k.toLowerCase())));
+                        // Should we ignore this by default?
+                        const isIgnored = hLower.includes('cost') || hLower.includes('total') || hLower.includes('price') || hLower.includes('__empty') || hLower.includes('avg') || hLower.includes('value');
+                        
                         if (!isCore) {
-                            let isChecked = !isIgnored ? 'checked' : '';
+                            // Data analysis for indicator only
+                            let hasData = rawExcelData.some(row => {
+                                const val = row[h];
+                                return val !== undefined && val !== null && !isNaN(parseFloat(val)) && parseFloat(val) > 0;
+                            });
+
+                            const isSecondary = h.startsWith('__EMPTY');
+                            let isChecked = !isIgnored && hLower !== 'id' && hLower !== 'no.' && !isSecondary;
                             const safeH = String(h).replace(/"/g, '&quot;');
-                            const displayH = h.startsWith('__EMPTY') ? '(Blank Column)' : safeH;
+                            const displayH = isSecondary ? '(Secondary Column)' : safeH;
                             officeHtml += `
-                                <div class="col-md-4 col-6 mb-2">
+                                <div class="col-md-6 mb-2">
                                     <div class="form-check text-truncate" title="${safeH}">
                                         <input class="form-check-input office-checkbox" type="checkbox" value="${safeH}" id="chk_${safeH}" ${isChecked}>
                                         <label class="form-check-label small" for="chk_${safeH}">
-                                            ${displayH}
+                                            ${displayH} ${hasData ? '<i class="bi bi-check-all text-success" title="Contains quantities"></i>' : ''}
                                         </label>
                                     </div>
                                 </div>
@@ -466,7 +298,6 @@ if ($result) {
             $('#excelImportForm').on('submit', function(e) {
                 e.preventDefault();
                 
-                // Collect mapping
                 const mapping = {};
                 let missingRequired = false;
                 $('.mapping-select').each(function() {
@@ -481,39 +312,31 @@ if ($result) {
                     return;
                 }
 
-                // Get selected office columns
                 const officeColumns = [];
                 $('.office-checkbox:checked').each(function() {
                     officeColumns.push($(this).val());
                 });
 
                 if (officeColumns.length === 0) {
-                    alert('Please select at least one Office column to import quantities from.');
+                    alert('Please select at least one Office column.');
                     return;
                 }
 
-                // SEGREGATION LOGIC (Multiple Files per Office)
-                const officeData = {}; // Object to hold arrays of items per office
+                $('#submitImport').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Consolidating...');
 
+                const officeData = {};
                 rawExcelData.forEach(row => {
                     const desc = row[mapping.description] ? String(row[mapping.description]).trim() : '';
                     const unit = mapping.unit && row[mapping.unit] ? String(row[mapping.unit]).trim() : '';
-
                     if (!desc) return;
 
-                    // For this item, check every selected office column
                     officeColumns.forEach(officeCol => {
                         const cellValue = row[officeCol];
                         const qty = cellValue !== undefined && cellValue !== null && !isNaN(parseFloat(cellValue)) ? parseFloat(cellValue) : 0;
-                        
                         if (qty > 0) {
                             const office = String(officeCol).trim();
+                            if (!officeData[office]) officeData[office] = [];
                             
-                            if (!officeData[office]) {
-                                officeData[office] = [];
-                            }
-                            
-                            // Normalization function (simplified for JS)
                             const normUnit = (u) => {
                                 let val = String(u || 'pcs').trim().toLowerCase();
                                 const rules = { 'pcs': 'pc', 'pieces': 'pc', 'piece': 'pc', 'boxes': 'box', 'packs': 'pack' };
@@ -523,7 +346,6 @@ if ($result) {
                             const normalizedUnit = normUnit(unit);
                             const normalizedDesc = desc.toLowerCase();
 
-                            // Check if item already exists for this office using case-insensitive find
                             const existingItem = officeData[office].find(item => 
                                 item['Item Description'].toLowerCase() === normalizedDesc && 
                                 normUnit(item['Unit']) === normalizedUnit
@@ -543,51 +365,182 @@ if ($result) {
                 });
 
                 const officesToExport = Object.keys(officeData);
-                
                 if (officesToExport.length === 0) {
-                    alert('No quantities > 0 found in the selected office columns.');
+                    alert('No quantities found.');
+                    $('#submitImport').prop('disabled', false).html('<i class="bi bi-lightning-fill"></i> Consolidate & Download All');
                     return;
                 }
 
-                $('#submitImport').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Generating Files...');
+                // Clear and Show Results
+                $('#emptyResults').hide();
+                $('#downloadList').show().empty();
+                generatedFiles = {};
 
-                // Generate & Download Multiple Excels (with a small delay to avoid browser blocking)
                 let delay = 0;
                 officesToExport.forEach((officeName, index) => {
                     setTimeout(() => {
                         const ws = XLSX.utils.json_to_sheet(officeData[officeName]);
                         const wb = XLSX.utils.book_new();
                         XLSX.utils.book_append_sheet(wb, ws, "Supplies");
-                        
-                        // Styling (Auto-size columns roughly)
                         ws['!cols'] = [{ wch: 50 }, { wch: 15 }, { wch: 15 }];
 
-                        // Clean office name for filename
                         const safeOfficeName = officeName.replace(/[^a-zA-Z0-9_-]/g, '_');
-                        XLSX.writeFile(wb, `${safeOfficeName}_Office_Supplies.xlsx`);
+                        const fileName = `${safeOfficeName}_Office_Supplies.xlsx`;
+                        
+                        // Add to list
+                        const listItem = $(`
+                            <div class="list-group-item border-0 px-0 py-3 d-flex justify-content-between align-items-center animate-fade-in">
+                                <div>
+                                    <i class="bi bi-file-excel text-success me-2 fs-5"></i>
+                                    <span class="fw-bold text-dark">${officeName}</span>
+                                    <div class="text-muted x-small">${officeData[officeName].length} unique items consolidated</div>
+                                </div>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-outline-primary border-0 rounded-circle" onclick="window.viewOfficeData('${officeName.replace(/'/g, "\\'")}')" title="View Items">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-info border-0 rounded-circle" onclick="window.generateRIS('${officeName.replace(/'/g, "\\'")}')" title="Create RIS Form">
+                                        <i class="bi bi-file-earmark-check"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-success border-0 rounded-circle" onclick="window.downloadFile('${officeName.replace(/'/g, "\\'")}')" title="Download Excel List">
+                                        <i class="bi bi-download"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `);
+                        $('#downloadList').append(listItem);
+                        window.generatedFiles[officeName] = { data: officeData[officeName], name: fileName };
 
-                        // On the last file download, reset UI and alert
                         if (index === officesToExport.length - 1) {
-                            setTimeout(() => {
-                                $('#importSuppliesModal').modal('hide');
-                                alert(`Success! Generated and downloaded separate Excel files for ${officesToExport.length} offices.`);
-                                $('#submitImport').prop('disabled', false).html('<i class="bi bi-file-earmark-arrow-down"></i> Segregate & Download');
-                            }, 500);
+                            $('#submitImport').prop('disabled', false).html('<i class="bi bi-lightning-fill"></i> Consolidate & Download All');
                         }
                     }, delay);
-                    
-                    delay += 500; // 500ms delay between generating files to prevent browser blocking
+                    delay += 300;
                 });
             });
         });
 
-        function viewRIS(id) {
-            window.open('ris_view.php?id=' + id, '_blank');
-        }
-        
-        function printRIS(id) {
-            window.open('print_ris.php?id=' + id, '_blank');
-        }
+        // Global functions for interactive results
+        window.viewOfficeData = function(officeName) {
+            const file = window.generatedFiles[officeName];
+            if (!file) return;
+
+            $('#previewOfficeName').text(officeName);
+            let html = '';
+            file.data.forEach(item => {
+                html += `
+                    <tr>
+                        <td>${item['Item Description']}</td>
+                        <td>${item['Unit']}</td>
+                        <td class="text-end fw-bold">${item['Quantity']}</td>
+                    </tr>
+                `;
+            });
+            $('#previewTableBody').html(html);
+            const modal = new bootstrap.Modal(document.getElementById('viewOfficeModal'));
+            modal.show();
+        };
+
+        window.generateRIS = async function(officeName) {
+            const fileData = window.generatedFiles[officeName];
+            if (!fileData) return;
+
+            try {
+                // 1. Fetch the template
+                const response = await fetch('../ris.xlsx');
+                if (!response.ok) throw new Error('Template ris.xlsx not found at root.');
+                const arrayBuffer = await response.arrayBuffer();
+                
+                // 2. Read Workbook
+                const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+
+                // 3. Populate Header Info (Common RIS locations)
+                // We'll use a conservative approach: Office at C6, Date at G6, RIS No at G5
+                XLSX.utils.sheet_add_aoa(worksheet, [[officeName]], { origin: "C6" }); 
+                XLSX.utils.sheet_add_aoa(worksheet, [[new Date().toLocaleDateString()]], { origin: "G6" });
+                XLSX.utils.sheet_add_aoa(worksheet, [["RIS-" + Date.now().toString().slice(-6)]], { origin: "G5" });
+
+                // 4. Clear Signature Fields (Make them empty for manual signing)
+                // Assumed locations for signatures based on common RIS layouts (Rows 40-50)
+                const emptySignatures = [
+                    ["", "", "", ""], // Names row
+                    ["", "", "", ""], // Positions row
+                    ["", "", "", ""]  // Date row
+                ];
+                // Clearing common areas for: Requested By, Approved By, Issued By, Received By
+                XLSX.utils.sheet_add_aoa(worksheet, emptySignatures, { origin: "A48" }); 
+                XLSX.utils.sheet_add_aoa(worksheet, emptySignatures, { origin: "C48" });
+                XLSX.utils.sheet_add_aoa(worksheet, emptySignatures, { origin: "E48" });
+                XLSX.utils.sheet_add_aoa(worksheet, emptySignatures, { origin: "G48" });
+
+                // 5. Fill Items Table
+                // Assuming items start at Row 11 (Index 10)
+                const itemsAOA = fileData.data.map((item, idx) => [
+                    idx + 1,        // Stock No
+                    item['Unit'],   // Unit
+                    item['Item Description'], // Description
+                    item['Quantity'], // Quantity
+                    0,              // Price (Default)
+                    0               // Total (Default)
+                ]);
+
+                XLSX.utils.sheet_add_aoa(worksheet, itemsAOA, { origin: "A11" });
+
+                // 6. Download
+                const safeOffice = officeName.replace(/[^a-zA-Z0-9]/g, '_');
+                XLSX.writeFile(workbook, `RIS_${safeOffice}_Supplies.xlsx`);
+                
+            } catch (error) {
+                console.error(error);
+                alert('Error generating RIS: ' + error.message + '\nEnsure ris.xlsx is available in the root directory.');
+            }
+        };
+
+        window.downloadFile = function(officeName) {
+            const file = window.generatedFiles[officeName];
+            if (file) {
+                const ws = XLSX.utils.json_to_sheet(file.data);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Supplies");
+                ws['!cols'] = [{ wch: 50 }, { wch: 15 }, { wch: 15 }];
+                XLSX.writeFile(wb, file.name);
+            }
+        };
     </script>
+
+    <!-- View Items Modal -->
+    <div class="modal fade" id="viewOfficeModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content rounded-4 border-0 shadow-lg">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold text-primary">
+                        <i class="bi bi-building"></i> <span id="previewOfficeName"></span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light small">
+                                <tr>
+                                    <th>Item Description</th>
+                                    <th>Unit</th>
+                                    <th class="text-end">Quantity</th>
+                                </tr>
+                            </thead>
+                            <tbody id="previewTableBody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light rounded-pill" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
