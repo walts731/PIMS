@@ -738,7 +738,7 @@ if ($result && $row = $result->fetch_assoc()) {
     <script>
         // Property Number Generator Functions
         let currentPropertyField = null;
-        let lastUsedSeries = 1; // Track the last used series number globally
+        let globalSeriesCounter = 1; // Global counter for all property numbers generated
         
         function showPropertyNumberGenerator(button) {
             currentPropertyField = button.closest('td').querySelector('input[name="item_no[]"], textarea[name="item_no[]"]');
@@ -748,14 +748,27 @@ if ($result && $row = $result->fetch_assoc()) {
             const modal = new bootstrap.Modal(document.getElementById('propertyNumberGeneratorModal'));
             modal.show();
             
+            // Store quantity in a global variable instead of modal dataset
+            window.currentQuantity = quantity;
+            
+            // Update quantity display
+            const quantityText = document.getElementById('quantityText');
+            if (quantity === 1) {
+                quantityText.textContent = 'Generating 1 property number';
+            } else {
+                quantityText.textContent = `Generating ${quantity} property numbers`;
+            }
+            
             // Clear previous values (except series)
             clearGeneratorForm();
             
             // Get next available series number dynamically
             getNextSeriesNumber();
             
-            // Auto-generate initial preview
-            setTimeout(() => generatePropertyNumberPreview(), 100);
+            // Auto-generate preview immediately without waiting
+            setTimeout(() => {
+                generatePropertyNumberPreview();
+            }, 50); // Reduced timeout for immediate generation
         }
         
         function getNextSeriesNumber() {
@@ -796,10 +809,32 @@ if ($result && $row = $result->fetch_assoc()) {
             const series = document.getElementById('seriesInput').value || '<?php echo $next_series; ?>';
             const office = document.getElementById('officeSelect').value || '01';
             
-            // Build property number: YEAR-FORM-CATEGORY-SUBCATEGORY+SERIES-OFFICE
-            const propertyNumber = `${year}-${formType}-${category}-${subcategory}${series}-${office}`;
+            // Get quantity from global variable
+            const quantity = window.currentQuantity || 1;
             
-            document.getElementById('propertyNumberPreview').textContent = propertyNumber;
+            // Generate multiple property numbers using format: YEAR-FORM-CATEGORY-SUBCATEGORY+SERIES-OFFICE
+            const propertyNumbers = [];
+            for (let i = 0; i < quantity; i++) {
+                // Use global series counter for proper incrementing across all rows
+                const currentSeriesNumber = globalSeriesCounter + i;
+                const currentSeries = String(currentSeriesNumber).padStart(2, '0');
+                
+                // Combine subcategory and series without dash (e.g., 01 + 01 = 0101, 01 + 02 = 0102)
+                const subcategorySeries = subcategory + currentSeries;
+                
+                const propertyNumber = `${year}-${formType}-${category}-${subcategorySeries}-${office}`;
+                propertyNumbers.push(propertyNumber);
+            }
+            
+            // Display in preview
+            const previewElement = document.getElementById('propertyNumberPreview');
+            if (quantity === 1) {
+                previewElement.textContent = propertyNumbers[0];
+            } else {
+                previewElement.innerHTML = propertyNumbers.join('<br>');
+                previewElement.style.fontSize = '14px';
+                previewElement.style.lineHeight = '1.4';
+            }
         }
         
         function applyPropertyNumber() {
@@ -812,15 +847,42 @@ if ($result && $row = $result->fetch_assoc()) {
             }
             
             if (currentPropertyField && propertyNumbers.length > 0) {
+                // Get selected category and subcategory values
+                const categorySelect = document.getElementById('categorySelect');
+                const subcategorySelect = document.getElementById('subcategorySelect');
+                const selectedCategoryCode = categorySelect.value;
+                const selectedSubcategoryCode = subcategorySelect.value;
+                
+                // Add hidden fields to store category and subcategory codes
+                const row = currentPropertyField.closest('tr');
+                
+                // Remove existing hidden fields if any
+                const existingCatField = row.querySelector('input[name="category_code[]"]');
+                const existingSubcatField = row.querySelector('input[name="subcategory_code[]"]');
+                if (existingCatField) existingCatField.remove();
+                if (existingSubcatField) existingSubcatField.remove();
+                
+                // Add hidden fields for category and subcategory codes
+                if (selectedCategoryCode) {
+                    const catHiddenField = document.createElement('input');
+                    catHiddenField.type = 'hidden';
+                    catHiddenField.name = 'category_code[]';
+                    catHiddenField.value = selectedCategoryCode;
+                    row.appendChild(catHiddenField);
+                }
+                
+                if (selectedSubcategoryCode) {
+                    const subcatHiddenField = document.createElement('input');
+                    subcatHiddenField.type = 'hidden';
+                    subcatHiddenField.name = 'subcategory_code[]';
+                    subcatHiddenField.value = selectedSubcategoryCode;
+                    row.appendChild(subcatHiddenField);
+                }
+                
                 if (propertyNumbers.length === 1) {
                     // Single property number - keep as input
                     currentPropertyField.value = propertyNumbers[0];
                     currentPropertyField.style.height = 'auto';
-                    
-                    // Update lastUsedSeries
-                    const propNumParts = propertyNumbers[0].split('-');
-                    const seriesPart = propNumParts[4]; // Get the series part (0101, 0102, etc.)
-                    lastUsedSeries = parseInt(seriesPart) + 1;
                 } else {
                     // Multiple property numbers - create a textarea for multi-line display
                     const textarea = document.createElement('textarea');
@@ -832,29 +894,33 @@ if ($result && $row = $result->fetch_assoc()) {
                     textarea.style.resize = 'vertical';
                     textarea.readOnly = true;
                     
-                    // Replace the input with textarea
+                    // Replace input with textarea
                     const propertyNumberContainer = currentPropertyField.closest('.property-number-field');
                     const inputContainer = propertyNumberContainer.querySelector('input[name="item_no[]"], textarea[name="item_no[]"]');
                     inputContainer.parentNode.replaceChild(textarea, inputContainer);
                     
-                    // Add the generate button and format text if not present
+                    // Add generate button and format text if not present
                     if (!propertyNumberContainer.querySelector('button')) {
                         propertyNumberContainer.innerHTML += 
                             '<button type="button" class="btn btn-sm btn-outline-primary" onclick="showPropertyNumberGenerator(this)" title="Generate Property Number"><i class="bi bi-gear"></i> Generate</button>';
                     }
                     
+                    // Add format text if not present
                     if (!propertyNumberContainer.nextElementSibling || !propertyNumberContainer.nextElementSibling.classList.contains('text-muted')) {
                         const formatText = document.createElement('small');
                         formatText.className = 'text-muted d-block mt-1';
                         formatText.textContent = 'Format: YEAR-FORM-FUND-CATEGORY-SUBCATEGORY+SERIES-OFFICE';
                         propertyNumberContainer.parentNode.insertBefore(formatText, propertyNumberContainer.nextSibling);
                     }
-                    
-                    // Update lastUsedSeries to the next number after the last one
-                    const lastPropNumParts = propertyNumbers[propertyNumbers.length - 1].split('-');
-                    const lastSeriesPart = lastPropNumParts[4]; // Get the series part (0101, 0102, etc.)
-                    lastUsedSeries = parseInt(lastSeriesPart) + 1;
                 }
+                
+                // Update lastUsedSeries to the highest number used
+                const lastPropNumParts = propertyNumbers[propertyNumbers.length - 1].split('-');
+                const lastSeriesPart = lastPropNumParts[4]; // Get the series part (e.g., 0101, 0102, etc.)
+                lastUsedSeries = parseInt(lastSeriesPart) + 1;
+                
+                // Increment the global series counter by the quantity of property numbers generated
+                globalSeriesCounter += propertyNumbers.length;
                 
                 // Close modal
                 const modal = bootstrap.Modal.getInstance(document.getElementById('propertyNumberGeneratorModal'));

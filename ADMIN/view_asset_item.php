@@ -2043,8 +2043,8 @@ $status_display = formatStatus($item['status']);
             // Redirect to ITR form with asset item details for auto-filling
             const assetId = <?php echo $item['asset_id']; ?>;
             const itemId = <?php echo $item['id']; ?>;
-            const description = '<?php echo addslashes($item['description']); ?>';
-            const propertyNo = '<?php echo addslashes($item['property_no'] ?? ''); ?>';
+            const description = <?php echo json_encode($item['description']); ?>;
+            const propertyNo = <?php echo json_encode($item['property_no'] ?? ''); ?>;
             const value = <?php echo $item['value']; ?>;
             const unitCost = <?php echo $item['unit_cost']; ?>;
             
@@ -2065,18 +2065,18 @@ $status_display = formatStatus($item['status']);
             // Prepare main asset data for IIRUP form
             const assetData = {
                 id: <?php echo $item_id; ?>,
-                description: '<?php echo addslashes($item['description']); ?>',
-                property_no: '<?php echo addslashes($item['property_no'] ?? ''); ?>',
-                inventory_tag: '<?php echo addslashes($item['inventory_tag'] ?? ''); ?>',
+                description: <?php echo json_encode($item['description']); ?>,
+                property_no: <?php echo json_encode($item['property_no'] ?? ''); ?>,
+                inventory_tag: <?php echo json_encode($item['inventory_tag'] ?? ''); ?>,
                 acquisition_date: '<?php echo $item['acquisition_date']; ?>',
                 value: '<?php echo $item['value']; ?>',
                 unit_cost: '<?php echo $item['unit_cost']; ?>',
-                office_name: '<?php echo addslashes($item['office_name'] ?? ''); ?>',
-                employee_name: '<?php echo addslashes(trim(($item['firstname'] ?? '') . ' ' . ($item['lastname'] ?? ''))); ?>',
-                category_name: '<?php echo addslashes($item['category_name'] ?? ''); ?>',
-                category_code: '<?php echo addslashes($item['category_code'] ?? ''); ?>',
-                asset_description: '<?php echo addslashes($item['asset_description']); ?>',
-                unit: '<?php echo addslashes($item['unit']); ?>'
+                office_name: <?php echo json_encode($item['office_name'] ?? ''); ?>,
+                employee_name: <?php echo json_encode(trim(($item['firstname'] ?? '') . ' ' . ($item['lastname'] ?? ''))); ?>,
+                category_name: <?php echo json_encode($item['category_name'] ?? ''); ?>,
+                category_code: <?php echo json_encode($item['category_code'] ?? ''); ?>,
+                asset_description: <?php echo json_encode($item['asset_description']); ?>,
+                unit: <?php echo json_encode($item['unit']); ?>
             };
             
             openIirupForm(assetData);
@@ -2099,17 +2099,17 @@ $status_display = formatStatus($item['status']);
                 id: peripheralId, // Use peripheral ID instead of asset ID
                 asset_id: <?php echo $item_id; ?>, // Keep asset ID for reference
                 description: peripheralName + (peripheralModel ? ' - ' + peripheralModel : ''),
-                property_no: '<?php echo addslashes($item['property_no'] ?? ''); ?>',
-                inventory_tag: '<?php echo addslashes($item['inventory_tag'] ?? ''); ?>',
+                property_no: <?php echo json_encode($item['property_no'] ?? ''); ?>,
+                inventory_tag: <?php echo json_encode($item['inventory_tag'] ?? ''); ?>,
                 acquisition_date: '<?php echo $item['acquisition_date']; ?>',
                 value: '<?php echo $item['value']; ?>',
                 unit_cost: '<?php echo $item['unit_cost']; ?>',
-                office_name: '<?php echo addslashes($item['office_name'] ?? ''); ?>',
-                employee_name: '<?php echo addslashes(trim(($item['firstname'] ?? '') . ' ' . ($item['lastname'] ?? ''))); ?>',
-                category_name: '<?php echo addslashes($item['category_name'] ?? ''); ?>',
-                category_code: '<?php echo addslashes($item['category_code'] ?? ''); ?>',
+                office_name: <?php echo json_encode($item['office_name'] ?? ''); ?>,
+                employee_name: <?php echo json_encode(trim(($item['firstname'] ?? '') . ' ' . ($item['lastname'] ?? ''))); ?>,
+                category_name: <?php echo json_encode($item['category_name'] ?? ''); ?>,
+                category_code: <?php echo json_encode($item['category_code'] ?? ''); ?>,
                 asset_description: peripheralName,
-                unit: '<?php echo addslashes($item['unit']); ?>',
+                unit: <?php echo json_encode($item['unit']); ?>,
                 component_type: 'peripheral',
                 peripheral_name: peripheralName,
                 peripheral_model: peripheralModel,
@@ -2206,18 +2206,18 @@ $status_display = formatStatus($item['status']);
                     if (checkbox.value === 'main_asset') {
                         components.push({
                             id: <?php echo $item_id; ?>,
-                            description: '<?php echo addslashes($item['description']); ?>',
-                            property_no: '<?php echo addslashes($item['property_no'] ?? ''); ?>',
-                            inventory_tag: '<?php echo addslashes($item['inventory_tag'] ?? ''); ?>',
+                            description: <?php echo json_encode($item['description']); ?>,
+                            property_no: <?php echo json_encode($item['property_no'] ?? ''); ?>,
+                            inventory_tag: <?php echo json_encode($item['inventory_tag'] ?? ''); ?>,
                             acquisition_date: '<?php echo $item['acquisition_date']; ?>',
                             value: '<?php echo $item['value']; ?>',
                             unit_cost: '<?php echo $item['unit_cost']; ?>',
-                            office_name: '<?php echo addslashes($item['office_name'] ?? ''); ?>',
-                            employee_name: '<?php echo addslashes(trim(($item['firstname'] ?? '') . ' ' . ($item['lastname'] ?? ''))); ?>',
-                            category_name: '<?php echo addslashes($item['category_name'] ?? ''); ?>',
-                            category_code: '<?php echo addslashes($item['category_code'] ?? ''); ?>',
-                            asset_description: '<?php echo addslashes($item['asset_description']); ?>',
-                            unit: '<?php echo addslashes($item['unit']); ?>',
+                            office_name: <?php echo json_encode($item['office_name'] ?? ''); ?>,
+                            employee_name: <?php echo json_encode(trim(($item['firstname'] ?? '') . ' ' . ($item['lastname'] ?? ''))); ?>,
+                            category_name: <?php echo json_encode($item['category_name'] ?? ''); ?>,
+                            category_code: <?php echo json_encode($item['category_code'] ?? ''); ?>,
+                            asset_description: <?php echo json_encode($item['asset_description']); ?>,
+                            unit: <?php echo json_encode($item['unit']); ?>,
                             component_type: 'main_asset'
                         });
                     } else {
@@ -2232,17 +2232,17 @@ $status_display = formatStatus($item['status']);
                             id: peripheralId,
                             asset_id: <?php echo $item_id; ?>,
                             description: peripheralName + (peripheralModel ? ' - ' + peripheralModel : ''),
-                            property_no: '<?php echo addslashes($item['property_no'] ?? ''); ?>',
-                            inventory_tag: '<?php echo addslashes($item['inventory_tag'] ?? ''); ?>',
+                            property_no: <?php echo json_encode($item['property_no'] ?? ''); ?>,
+                            inventory_tag: <?php echo json_encode($item['inventory_tag'] ?? ''); ?>,
                             acquisition_date: '<?php echo $item['acquisition_date']; ?>',
                             value: '<?php echo $item['value']; ?>',
                             unit_cost: '<?php echo $item['unit_cost']; ?>',
-                            office_name: '<?php echo addslashes($item['office_name'] ?? ''); ?>',
-                            employee_name: '<?php echo addslashes(trim(($item['firstname'] ?? '') . ' ' . ($item['lastname'] ?? ''))); ?>',
-                            category_name: '<?php echo addslashes($item['category_name'] ?? ''); ?>',
-                            category_code: '<?php echo addslashes($item['category_code'] ?? ''); ?>',
+                            office_name: <?php echo json_encode($item['office_name'] ?? ''); ?>,
+                            employee_name: <?php echo json_encode(trim(($item['firstname'] ?? '') . ' ' . ($item['lastname'] ?? ''))); ?>,
+                            category_name: <?php echo json_encode($item['category_name'] ?? ''); ?>,
+                            category_code: <?php echo json_encode($item['category_code'] ?? ''); ?>,
                             asset_description: peripheralName,
-                            unit: '<?php echo addslashes($item['unit']); ?>',
+                            unit: <?php echo json_encode($item['unit']); ?>,
                             component_type: 'peripheral',
                             peripheral_name: peripheralName,
                             peripheral_model: peripheralModel,
@@ -2314,7 +2314,7 @@ $status_display = formatStatus($item['status']);
             .then(data => {
                 if (data.success) {
                     // Add activity feed entry
-                    addActivityFeedEntry('Disposed', reason, '<?php echo $_SESSION['firstname'] . ' ' . $_SESSION['lastname']; ?>', date + ' 12:00:00');
+                    addActivityFeedEntry('Disposed', reason, <?php echo json_encode(trim(($_SESSION['firstname'] ?? '') . ' ' . ($_SESSION['lastname'] ?? ''))); ?>, date + ' 12:00:00');
                     
                     // Show success message
                     alert('Asset has been successfully disposed.');
@@ -2408,17 +2408,17 @@ $status_display = formatStatus($item['status']);
             // Prepare main asset data for Red Tag form
             const assetData = {
                 id: <?php echo $item_id; ?>,
-                description: '<?php echo addslashes($item['description']); ?>',
-                property_no: '<?php echo addslashes($item['property_no'] ?? ''); ?>',
-                inventory_tag: '<?php echo addslashes($item['inventory_tag'] ?? ''); ?>',
+                description: <?php echo json_encode($item['description']); ?>,
+                property_no: <?php echo json_encode($item['property_no'] ?? ''); ?>,
+                inventory_tag: <?php echo json_encode($item['inventory_tag'] ?? ''); ?>,
                 acquisition_date: '<?php echo $item['acquisition_date']; ?>',
                 value: '<?php echo $item['value']; ?>',
                 unit_cost: '<?php echo $item['unit_cost']; ?>',
-                office_name: '<?php echo addslashes($item['office_name'] ?? ''); ?>',
-                category_name: '<?php echo addslashes($item['category_name'] ?? ''); ?>',
-                category_code: '<?php echo addslashes($item['category_code'] ?? ''); ?>',
-                asset_description: '<?php echo addslashes($item['asset_description']); ?>',
-                unit: '<?php echo addslashes($item['unit']); ?>',
+                office_name: <?php echo json_encode($item['office_name'] ?? ''); ?>,
+                category_name: <?php echo json_encode($item['category_name'] ?? ''); ?>,
+                category_code: <?php echo json_encode($item['category_code'] ?? ''); ?>,
+                asset_description: <?php echo json_encode($item['asset_description']); ?>,
+                unit: <?php echo json_encode($item['unit']); ?>,
                 component_type: 'main_asset'
             };
             
@@ -2442,16 +2442,16 @@ $status_display = formatStatus($item['status']);
                 id: peripheralId, // Use peripheral ID instead of asset ID
                 asset_id: <?php echo $item_id; ?>, // Keep asset ID for reference
                 description: peripheralName + (peripheralModel ? ' - ' + peripheralModel : ''),
-                property_no: '<?php echo addslashes($item['property_no'] ?? ''); ?>',
-                inventory_tag: '<?php echo addslashes($item['inventory_tag'] ?? ''); ?>',
+                property_no: <?php echo json_encode($item['property_no'] ?? ''); ?>,
+                inventory_tag: <?php echo json_encode($item['inventory_tag'] ?? ''); ?>,
                 acquisition_date: '<?php echo $item['acquisition_date']; ?>',
                 value: '<?php echo $item['value']; ?>',
                 unit_cost: '<?php echo $item['unit_cost']; ?>',
-                office_name: '<?php echo addslashes($item['office_name'] ?? ''); ?>',
-                category_name: '<?php echo addslashes($item['category_name'] ?? ''); ?>',
-                category_code: '<?php echo addslashes($item['category_code'] ?? ''); ?>',
+                office_name: <?php echo json_encode($item['office_name'] ?? ''); ?>,
+                category_name: <?php echo json_encode($item['category_name'] ?? ''); ?>,
+                category_code: <?php echo json_encode($item['category_code'] ?? ''); ?>,
                 asset_description: peripheralName,
-                unit: '<?php echo addslashes($item['unit']); ?>',
+                unit: <?php echo json_encode($item['unit']); ?>,
                 component_type: 'peripheral',
                 peripheral_name: peripheralName,
                 peripheral_model: peripheralModel,
