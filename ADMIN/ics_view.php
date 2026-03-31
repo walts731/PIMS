@@ -158,15 +158,29 @@ if ($result && $row = $result->fetch_assoc()) {
                     <p class="text-muted mb-0">View Inventory Custodian Slip details</p>
                 </div>
                 <div class="col-md-4 text-md-end no-print">
-                    <a href="ics_entries.php" class="btn btn-outline-secondary btn-sm me-2">
-                        <i class="bi bi-arrow-left"></i> Back to Entries
-                    </a>
-                    <button class="btn btn-outline-info btn-sm me-2" onclick="window.open('print_ics.php?id=<?php echo $ics_id; ?>', '_blank')">
-                        <i class="bi bi-printer"></i> Print
-                    </button>
-                    <a href="ics_form.php" class="btn btn-primary btn-sm">
-                        <i class="bi bi-plus-circle"></i> New ICS
-                    </a>
+                    <div class="dropdown">
+                        <button class="btn btn-primary dropdown-toggle" type="button" id="actionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-gear"></i> Actions
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="actionsDropdown">
+                            <li>
+                                <button class="dropdown-item" onclick="window.open('print_ics.php?id=<?php echo $ics_id; ?>', '_blank')">
+                                    <i class="bi bi-file-earmark-pdf me-2"></i> Official Printout
+                                </button>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="ics_entries.php">
+                                    <i class="bi bi-list me-2"></i> View All Entries
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="ics_form.php">
+                                    <i class="bi bi-plus-circle me-2"></i> New ICS Slip
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
@@ -174,98 +188,122 @@ if ($result && $row = $result->fetch_assoc()) {
         <!-- ICS Form -->
         <div class="form-card">
             <!-- Form Header -->
-            <div style="text-align: center; margin-bottom: 20px;">
+            <div class="text-center mb-4">
                 <?php 
                 if (!empty($header_image)) {
-                    echo '<div style="margin-bottom: 10px;">';
-                    echo '<img src="../uploads/forms/' . htmlspecialchars($header_image) . '" alt="Header Image" style="width: 100%; max-height: 120px; object-fit: contain;">';
+                    echo '<div class="mb-3">';
+                    echo '<img src="../uploads/forms/' . htmlspecialchars($header_image) . '" alt="Header Image" class="img-fluid" style="max-height: 120px; object-fit: contain;">';
                     echo '</div>';
                 }
                 ?>
-                <div style="text-align: center;">
-                    <p style="margin: 0; font-size: 16px; font-weight: bold;">INVENTORY CUSTODIAN SLIP</p>
+                <h4 class="fw-bold text-uppercase">Inventory Custodian Slip</h4>
+            </div>
+            
+            <!-- Entity Information Layout -->
+            <div class="row mb-4 border-bottom pb-3">
+                <div class="col-md-7 border-end">
+                    <div class="row mb-2">
+                        <div class="col-4 fw-bold">Entity Name:</div>
+                        <div class="col-8 border-bottom text-primary fw-semibold"><?php echo htmlspecialchars($ics_form['entity_name']); ?></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4 fw-bold">Fund Cluster:</div>
+                        <div class="col-8 border-bottom"><?php echo htmlspecialchars($ics_form['fund_cluster']); ?></div>
+                    </div>
+                </div>
+                <div class="col-md-5 ps-md-4">
+                    <div class="row">
+                        <div class="col-5 fw-bold text-nowrap">ICS Number:</div>
+                        <div class="col-7 border-bottom text-danger fw-bold"><?php echo htmlspecialchars($ics_form['ics_no']); ?></div>
+                    </div>
                 </div>
             </div>
             
-            <!-- Entity Information -->
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <label class="form-label"><strong>Entity Name:</strong></label>
-                    <p class="form-control-plaintext"><?php echo htmlspecialchars($ics_form['entity_name']); ?></p>
-                    <label class="form-label"><strong>Fund Cluster:</strong></label>
-                    <p class="form-control-plaintext"><?php echo htmlspecialchars($ics_form['fund_cluster']); ?></p>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label"><strong>ICS Number:</strong></label>
-                    <p class="form-control-plaintext"><?php echo htmlspecialchars($ics_form['ics_no']); ?></p>
-                </div>
-            </div>
-            
-            <!-- Items Table -->
-            <div class="mb-4">
-                <h5 class="mb-3"><strong>Items:</strong></h5>
+            <!-- Items Table - Following Excel Order -->
+            <div class="mb-5">
                 <div class="table-responsive">
-                    <table class="table table-bordered">
-                        <thead class="table-light">
+                    <table class="table table-bordered align-middle">
+                        <thead class="table-light text-center small fw-bold">
                             <tr>
-                                <th>Item No.</th>
-                                <th>Description</th>
-                                <th>Quantity</th>
-                                <th>Unit</th>
-                                <th>Unit Cost</th>
-                                <th>Total Cost</th>
-                                <th>Useful Life</th>
+                                <th rowspan="2" style="width: 80px;">Quantity</th>
+                                <th rowspan="2" style="width: 80px;">Unit</th>
+                                <th colspan="2">Amount</th>
+                                <th rowspan="2">Description</th>
+                                <th rowspan="2" style="width: 120px;">Inventory<br>Item No.</th>
+                                <th rowspan="2" style="width: 120px;">Estimated<br>Useful Life</th>
+                            </tr>
+                            <tr>
+                                <th style="width: 120px;">Unit Cost</th>
+                                <th style="width: 120px;">Total Cost</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody class="text-center">
                             <?php foreach ($ics_items as $item): ?>
                                 <tr>
-                                    <td><?php echo htmlspecialchars($item['item_no']); ?></td>
-                                    <td><?php echo htmlspecialchars($item['description']); ?></td>
-                                    <td><?php echo number_format($item['quantity'], 2); ?></td>
+                                    <td><?php echo number_format($item['quantity'], 0); ?></td>
                                     <td><?php echo htmlspecialchars($item['unit']); ?></td>
                                     <td>₱<?php echo number_format($item['unit_cost'], 2); ?></td>
-                                    <td>₱<?php echo number_format($item['total_cost'], 2); ?></td>
+                                    <td class="fw-bold">₱<?php echo number_format($item['total_cost'], 2); ?></td>
+                                    <td class="text-start"><?php echo htmlspecialchars($item['description']); ?></td>
+                                    <td><small class="text-muted fw-mono"><?php echo htmlspecialchars($item['item_no']); ?></small></td>
                                     <td><?php echo htmlspecialchars($item['useful_life']); ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
-                        <tfoot>
-                            <tr class="table-light">
-                                <th colspan="5" class="text-end">Total:</th>
-                                <th>₱<?php echo number_format(array_sum(array_column($ics_items, 'total_cost')), 2); ?></th>
-                                <th></th>
+                        <tfoot class="table-light fw-bold">
+                            <tr>
+                                <td colspan="3" class="text-end">Total Amount:</td>
+                                <td class="text-center text-primary">₱<?php echo number_format(array_sum(array_column($ics_items, 'total_cost')), 2); ?></td>
+                                <td colspan="3"></td>
                             </tr>
                         </tfoot>
                     </table>
                 </div>
-                <div class="text-center mt-3">
-                    <p class="text-muted fst-italic">Nothing follows</p>
+                <div class="text-center mt-2">
+                    <p class="text-muted small fst-italic">*** Nothing follows ***</p>
                 </div>
             </div>
             
-            <!-- Signature Section -->
-            <div class="signature-section">
-                <div class="row">
+            <!-- Signature Section - Excel Grid Style -->
+            <div class="signature-section pt-4">
+                <div class="row g-4">
                     <div class="col-md-6">
-                        <h6><strong>Received From:</strong></h6>
-                        <p><?php echo htmlspecialchars($ics_form['received_from']); ?></p>
-                        <p class="text-muted"><?php echo htmlspecialchars($ics_form['received_from_position']); ?></p>
-                        <?php if (!empty($ics_form['received_from_date']) && $ics_form['received_from_date'] !== '0000-00-00'): ?>
-                            <p class="text-muted">Date: <?php echo date('F d, Y', strtotime($ics_form['received_from_date'])); ?></p>
-                        <?php else: ?>
-                            <p class="text-muted">Date: ______________</p>
-                        <?php endif; ?>
+                        <div class="p-3 border rounded shadow-sm bg-light h-100">
+                            <h6 class="fw-bold border-bottom pb-2 mb-3">Received from:</h6>
+                            <div class="text-center py-2 border-bottom fw-bold text-uppercase">
+                                <?php echo htmlspecialchars($ics_form['received_from']); ?>
+                            </div>
+                            <div class="text-center small text-muted mb-3">Signature over Printed Name</div>
+                            
+                            <div class="text-center py-1 border-bottom fst-italic">
+                                <?php echo htmlspecialchars($ics_form['received_from_position']); ?>
+                            </div>
+                            <div class="text-center small text-muted mb-3">Position / Office</div>
+
+                            <div class="text-center py-1 border-bottom">
+                                <?php echo (!empty($ics_form['received_from_date']) && $ics_form['received_from_date'] !== '0000-00-00') ? date('F d, Y', strtotime($ics_form['received_from_date'])) : '&nbsp;'; ?>
+                            </div>
+                            <div class="text-center small text-muted">Date</div>
+                        </div>
                     </div>
                     <div class="col-md-6">
-                        <h6><strong>Received By:</strong></h6>
-                        <p><?php echo htmlspecialchars($ics_form['received_by']); ?></p>
-                        <p class="text-muted"><?php echo htmlspecialchars($ics_form['received_by_position']); ?></p>
-                        <?php if (!empty($ics_form['received_by_date']) && $ics_form['received_by_date'] !== '0000-00-00'): ?>
-                            <p class="text-muted">Date: <?php echo date('F d, Y', strtotime($ics_form['received_by_date'])); ?></p>
-                        <?php else: ?>
-                            <p class="text-muted">Date: ______________</p>
-                        <?php endif; ?>
+                        <div class="p-3 border rounded shadow-sm bg-light h-100">
+                            <h6 class="fw-bold border-bottom pb-2 mb-3">Received by:</h6>
+                            <div class="text-center py-2 border-bottom fw-bold text-uppercase">
+                                <?php echo htmlspecialchars($ics_form['received_by']); ?>
+                            </div>
+                            <div class="text-center small text-muted mb-3">Signature over Printed Name</div>
+                            
+                            <div class="text-center py-1 border-bottom fst-italic">
+                                <?php echo htmlspecialchars($ics_form['received_by_position']); ?>
+                            </div>
+                            <div class="text-center small text-muted mb-3">Position / Office</div>
+
+                            <div class="text-center py-1 border-bottom">
+                                <?php echo (!empty($ics_form['received_by_date']) && $ics_form['received_by_date'] !== '0000-00-00') ? date('F d, Y', strtotime($ics_form['received_by_date'])) : '&nbsp;'; ?>
+                            </div>
+                            <div class="text-center small text-muted">Date</div>
+                        </div>
                     </div>
                 </div>
             </div>

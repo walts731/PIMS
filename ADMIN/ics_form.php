@@ -449,7 +449,7 @@ if ($result && $row = $result->fetch_assoc()) {
                     <p class="text-muted mb-0">Manage Inventory Custodian Slip forms</p>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <a href="ics_entries.php" class="btn btn-outline-secondary btn-sm">
+                    <a href="ics_entries.php" class="btn btn-primary btn-sm">
                         <i class="bi bi-list"></i> View Entries
                     </a>
                 </div>
@@ -478,9 +478,7 @@ if ($result && $row = $result->fetch_assoc()) {
                     <i class="bi bi-pencil-square"></i> ICS Form
                 </h5>
                 <div class="no-print">
-                    <button class="btn btn-sm btn-outline-secondary" onclick="resetICSForm()">
-                        <i class="bi bi-arrow-clockwise"></i> Reset
-                    </button>
+                    <!-- Action buttons moved to dropdown -->
                 </div>
             </div>
             
@@ -623,6 +621,36 @@ if ($result && $row = $result->fetch_assoc()) {
                             </button>
                         </div>
                     </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Threshold Warning Modal -->
+    <div class="modal fade" id="thresholdModal" tabindex="-1" aria-labelledby="thresholdModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-warning text-dark border-0">
+                    <h5 class="modal-title fw-bold" id="thresholdModalLabel">
+                        <i class="bi bi-exclamation-triangle-fill"></i> Price Threshold Alert
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center p-4">
+                    <div class="mb-3 text-warning" style="font-size: 3rem;">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                    <h5 class="fw-bold mb-3">Unit Cost Limits</h5>
+                    <p class="text-muted mb-0">
+                        ICS is only used for items with a unit cost <strong>below ₱50,000</strong>.
+                    </p>
+                    <p class="text-danger fw-semibold mt-2">
+                        Items costing ₱50,000 and above must be processed via Property Acknowledgment Receipt (PAR).
+                    </p>
+                </div>
+                <div class="modal-footer border-0 justify-content-center">
+                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">I Understand</button>
+                    <a href="par_form.php" class="btn btn-primary px-4">Go to PAR Form</a>
                 </div>
             </div>
         </div>
@@ -1171,11 +1199,14 @@ if ($result && $row = $result->fetch_assoc()) {
             }
             
             // Validate unit cost should be less than ₱50,000
-            if (parseFloat(unitCost) > 50000) {
-                showToast('Unit cost must be less than ₱50,000. Please enter a valid amount.', 'danger');
+            if (parseFloat(unitCost) >= 50000) {
+                const modal = new bootstrap.Modal(document.getElementById('thresholdModal'));
+                modal.show();
+                
                 row.querySelector('input[name="unit_cost[]"]').value = '';
                 row.querySelector('input[name="total_cost[]"]').value = '';
                 row.querySelector('input[name="unit_cost[]"]').focus();
+                updateGrandTotal();
                 return;
             }
             

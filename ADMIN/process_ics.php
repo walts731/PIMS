@@ -104,7 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $total_cost = floatval($total_costs[$i]);
                 $useful_life = intval($useful_lives[$i]);
                 
-                $item_stmt->bind_param("iisiddssi", $ics_form_id, $ics_form_id, $items[$i], $quantity, $units[$i], $unit_cost, $total_cost, $descriptions[$i], $useful_life);
+                $item_stmt->bind_param("iisdsddsi", $ics_form_id, $ics_form_id, $items[$i], $quantity, $units[$i], $unit_cost, $total_cost, $descriptions[$i], $useful_life);
                 
                 if (!$item_stmt->execute()) {
                     throw new Exception('Failed to save ICS item: ' . $item_stmt->error);

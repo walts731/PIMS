@@ -64,6 +64,8 @@ if ($result && $row = $result->fetch_assoc()) {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="assets/css/admin-unified.css" rel="stylesheet">
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
 </head>
 <body>
     <?php $page_title = 'ICS Entries'; ?>
@@ -82,69 +84,14 @@ if ($result && $row = $result->fetch_assoc()) {
                     <p class="text-muted mb-0">View and manage Inventory Custodian Slip entries</p>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <div class="dropdown">
-                        <button class="btn btn-primary dropdown-toggle" type="button" id="actionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-gear"></i> Actions
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionsDropdown">
-                            <li>
-                                <a href="ics_form.php" class="dropdown-item">
-                                    <i class="bi bi-plus-circle"></i> New ICS
-                                </a>
-                            </li>
-                            <li>
-                                <button class="dropdown-item" onclick="exportICSData()">
-                                    <i class="bi bi-download"></i> Export
-                                </button>
-                            </li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li>
-                                <button class="dropdown-item" onclick="location.reload()">
-                                    <i class="bi bi-arrow-clockwise"></i> Refresh Page
-                                </button>
-                            </li>
-                        </ul>
-                    </div>
+                    <a href="ics_form.php" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> New ICS
+                    </a>
                 </div>
             </div>
         </div>
         
-        <div class="row g-3 mb-4">
-            <div class="col-6 col-md-3">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo count($ics_forms); ?></div>
-                    <div class="stats-label"><i class="bi bi-file-earmark-text"></i> Total ICS Forms</div>
-                </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="stats-card">
-                    <div class="stats-number">
-                        <?php 
-                        $total_items = array_sum(array_column($ics_forms, 'item_count'));
-                        echo $total_items; 
-                        ?>
-                    </div>
-                    <div class="stats-label"><i class="bi bi-list-check"></i> Total Items</div>
-                </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="stats-card">
-                    <div class="stats-number">
-                        ₱<?php 
-                        $total_value = array_sum(array_column($ics_forms, 'total_value'));
-                        echo number_format($total_value, 2); 
-                        ?>
-                    </div>
-                    <div class="stats-label"><i class="bi bi-currency-dollar"></i> Total Value</div>
-                </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo date('M Y'); ?></div>
-                    <div class="stats-label"><i class="bi bi-calendar"></i> Current Period</div>
-                </div>
-            </div>
-        </div>
+        <!-- Stats-card section removed as requested -->
 
         <div class="section-card mb-4">
             <div class="section-title">
@@ -161,63 +108,51 @@ if ($result && $row = $result->fetch_assoc()) {
                     </a>
                 </div>
             <?php else: ?>
-                <div class="row">
-                    <?php foreach ($ics_forms as $ics): ?>
-                        <div class="col-12">
-                            <div class="ics-card">
-                                <div class="row align-items-start">
-                                    <div class="col-md-8">
-                                        <div class="d-flex justify-content-between align-items-start mb-3">
-                                            <div>
-                                                <div class="ics-number">
-                                                    <i class="bi bi-file-earmark-text"></i> <?php echo htmlspecialchars($ics['ics_no']); ?>
-                                                </div>
-                                                <h5 class="mb-2"><?php echo htmlspecialchars($ics['entity_name']); ?></h5>
-                                                <p class="text-muted mb-2">
-                                                    <i class="bi bi-cash-stack"></i> Fund Cluster: <?php echo htmlspecialchars($ics['fund_cluster']); ?>
-                                                </p>
-                                            </div>
+                <!-- ICS Forms Table -->
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped" id="icsTable">
+                        <thead class="table-primary">
+                            <tr>
+                                <th>ICS Number</th>
+                                <th>Received By</th>
+                                <th>Received From</th>
+                                <th>Date Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($ics_forms as $ics): ?>
+                                <tr>
+                                    <td>
+                                        <div class="ics-number">
+                                            <i class="bi bi-file-earmark-text"></i> <?php echo htmlspecialchars($ics['ics_no']); ?>
                                         </div>
-                                        
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <small class="text-muted">Received From:</small>
-                                                <p class="mb-1"><?php echo htmlspecialchars($ics['received_from']); ?></p>
-                                                <p class="mb-1 text-muted"><?php echo htmlspecialchars($ics['received_from_position']); ?></p>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <small class="text-muted">Received By:</small>
-                                                <p class="mb-1"><?php echo htmlspecialchars($ics['received_by']); ?></p>
-                                                <p class="mb-1 text-muted"><?php echo htmlspecialchars($ics['received_by_position']); ?></p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="col-md-4 text-end">
-                                        <div class="mb-3">
-                                            <div class="text-muted small">Items Count</div>
-                                            <div class="h4"><?php echo $ics['item_count']; ?></div>
-                                        </div>
-                                        <div class="mb-3">
-                                            <div class="text-muted small">Total Value</div>
-                                            <div class="h4">₱<?php echo number_format($ics['total_value'], 2); ?></div>
-                                        </div>
-                                        <div class="text-muted small mb-3">
-                                            <i class="bi bi-calendar"></i> <?php echo date('M d, Y', strtotime($ics['created_at'])); ?>
-                                        </div>
-                                        <div class="no-print">
-                                            <button class="btn btn-sm btn-outline-primary btn-action me-2" onclick="viewICS(<?php echo $ics['id']; ?>)">
-                                                <i class="bi bi-eye"></i> View
+                                    </td>
+                                    <td>
+                                        <strong><?php echo htmlspecialchars($ics['received_by']); ?></strong>
+                                        <div><small class="text-muted"><?php echo htmlspecialchars($ics['received_by_position']); ?></small></div>
+                                    </td>
+                                    <td>
+                                        <strong><?php echo htmlspecialchars($ics['received_from']); ?></strong>
+                                        <div><small class="text-muted"><?php echo htmlspecialchars($ics['received_from_position']); ?></small></div>
+                                    </td>
+                                    <td data-order="<?php echo strtotime($ics['created_at']); ?>">
+                                        <i class="bi bi-calendar"></i> <?php echo date('M d, Y', strtotime($ics['created_at'])); ?>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <button class="btn btn-sm btn-outline-primary" onclick="viewICS(<?php echo $ics['id']; ?>)" title="View">
+                                                <i class="bi bi-eye"></i>
                                             </button>
-                                            <button class="btn btn-sm btn-outline-info btn-action" onclick="printICS(<?php echo $ics['id']; ?>)">
-                                                <i class="bi bi-printer"></i> Print
+                                            <button class="btn btn-sm btn-outline-info" onclick="printICS(<?php echo $ics['id']; ?>)" title="Print">
+                                                <i class="bi bi-printer"></i>
                                             </button>
                                         </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
                 </div>
             <?php endif; ?>
         </div>
@@ -229,7 +164,40 @@ if ($result && $row = $result->fetch_assoc()) {
     <?php include 'includes/sidebar-scripts.php'; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- DataTables JS -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    
     <script>
+        // Initialize DataTables when document is ready
+        $(document).ready(function() {
+            $('#icsTable').DataTable({
+                responsive: true,
+                pageLength: 25,
+                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                order: [[4, 'desc']], // Sort by Date Created descending by default
+                language: {
+                    search: "Search:",
+                    lengthMenu: "Show _MENU_ entries",
+                    info: "Showing _START_ to _END_ of _TOTAL_ entries",
+                    paginate: {
+                        first: "First",
+                        last: "Last",
+                        next: "Next",
+                        previous: "Previous"
+                    }
+                },
+                columnDefs: [
+                    {
+                        targets: 4, // Actions column
+                        orderable: false,
+                        searchable: false
+                    }
+                ]
+            });
+        });
+
         function viewICS(id) {
             window.open('ics_view.php?id=' + id, '_blank');
         }
@@ -237,39 +205,6 @@ if ($result && $row = $result->fetch_assoc()) {
         function printICS(id) {
             window.open('print_ics.php?id=' + id, '_blank');
         }
-        
-        function searchICSForms() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const icsCards = document.querySelectorAll('.ics-card');
-            
-            icsCards.forEach(card => {
-                const text = card.textContent.toLowerCase();
-                const icsNumber = card.querySelector('.ics-number')?.textContent.toLowerCase() || '';
-                const entityName = card.querySelector('h5')?.textContent.toLowerCase() || '';
-                const fundCluster = card.querySelector('.text-muted')?.textContent.toLowerCase() || '';
-                
-                // Check if search term matches any field
-                const matches = text.includes(searchTerm) || 
-                               icsNumber.includes(searchTerm) || 
-                               entityName.includes(searchTerm) || 
-                               fundCluster.includes(searchTerm);
-                
-                // Show/hide card based on search
-                if (matches || searchTerm === '') {
-                    card.style.display = 'block';
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-        }
-        
-        // Add search on input change
-        document.addEventListener('DOMContentLoaded', function() {
-            const searchInput = document.getElementById('searchInput');
-            if (searchInput) {
-                searchInput.addEventListener('input', searchICSForms);
-            }
-        });
         
         function exportICSData() {
             // Create export modal
