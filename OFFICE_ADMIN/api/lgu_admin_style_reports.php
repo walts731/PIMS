@@ -1011,13 +1011,13 @@ function generateBorrowRequestReportContent($date_from, $date_to) {
             <tbody>';
     
     $query = "SELECT br.id, ai.description as asset_description, 
-                     CONCAT(req.firstname, ' ', req.lastname) as requested_by_name,
+                     CONCAT(req.first_name, ' ', req.last_name) as requested_by_name,
                      br.purpose, br.created_at, br.status, br.approved_at,
-                     CONCAT(app.firstname, ' ', app.lastname) as approved_by_name
+                     CONCAT(app.first_name, ' ', app.last_name) as approved_by_name
               FROM borrow_requests br
               LEFT JOIN asset_items ai ON br.asset_id = ai.id
-              LEFT JOIN employees req ON br.requested_by = req.id
-              LEFT JOIN employees app ON br.approved_by = app.id
+              LEFT JOIN users req ON br.requested_by = req.id
+              LEFT JOIN users app ON br.approved_by = app.id
               WHERE (br.requested_to_office = ? OR br.requested_by_office = ?)
               AND br.created_at BETWEEN ? AND ?
               ORDER BY br.created_at DESC";
