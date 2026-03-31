@@ -432,10 +432,33 @@ try {
                 </ul>
             </div>
         </div>
-        <a href="consumables.php" class="sidebar-nav-item <?php echo $current_page == 'consumables.php' ? 'active' : ''; ?>">
-            <i class="bi bi-archive"></i>
-            Consumables
-        </a>
+        <div class="sidebar-dropdown">
+            <button class="sidebar-dropdown-toggle <?php echo (in_array($current_page, ['consumables.php', 'consumable_requests.php'])) ? 'active' : ''; ?>" 
+                    type="button" data-bs-toggle="collapse" data-bs-target="#consumablesDropdown" 
+                    aria-expanded="<?php echo (in_array($current_page, ['consumables.php', 'consumable_requests.php'])) ? 'true' : 'false'; ?>">
+                <div>
+                    <i class="bi bi-archive"></i>
+                    Consumables
+                </div>
+                <i class="bi bi-chevron-down"></i>
+            </button>
+            <div class="collapse <?php echo (in_array($current_page, ['consumables.php', 'consumable_requests.php'])) ? 'show' : ''; ?>" id="consumablesDropdown">
+                <ul class="sidebar-dropdown-menu">
+                    <li>
+                        <a href="consumables.php" class="sidebar-dropdown-item <?php echo $current_page == 'consumables.php' ? 'active' : ''; ?>">
+                            <i class="bi bi-box-seam"></i>
+                            Consumable 
+                        </a>
+                    </li>
+                    <li>
+                        <a href="consumable_requests.php" class="sidebar-dropdown-item <?php echo $current_page == 'consumable_requests.php' ? 'active' : ''; ?>">
+                            <i class="bi bi-file-earmark-plus"></i>
+                            Consumable Requests
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
         <a href="employees.php" class="sidebar-nav-item <?php echo $current_page == 'employees.php' ? 'active' : ''; ?>">
             <i class="bi bi-people"></i>
             Employees
