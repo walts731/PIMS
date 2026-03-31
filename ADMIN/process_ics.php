@@ -27,11 +27,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $ics_no = $_POST['ics_no'];
         $received_from = $_POST['received_from'] ?? '';
         $received_from_position = $_POST['received_from_position'] ?? '';
-        $received_from_date = $_POST['received_from_date'] ?? null;
+        $received_from_date = !empty($_POST['received_from_date']) ? $_POST['received_from_date'] : null;
         $received_by = $_POST['received_by'] ?? '';
         $received_by_position = $_POST['received_by_position'] ?? '';
-        $received_by_date = $_POST['received_by_date'] ?? null;
+        $received_by_date = !empty($_POST['received_by_date']) ? $_POST['received_by_date'] : null;
         $items = $_POST['item_no'] ?? [];
+        $property_numbers = $_POST['item_no'] ?? [];
+        $category_codes = $_POST['category_code'] ?? [];
+        $subcategory_codes = $_POST['subcategory_code'] ?? [];
         $quantities = $_POST['quantity'] ?? [];
         $units = $_POST['unit'] ?? [];
         $unit_costs = $_POST['unit_cost'] ?? [];
@@ -40,10 +43,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $useful_lives = $_POST['useful_life'] ?? [];
         $asset_ids = []; // Track created asset IDs for notifications
         
-        // Validate required fields
-        if (empty($entity_name) || empty($fund_cluster)) {
-            throw new Exception('All required fields must be filled');
-        }
+        // Validate required fields (Removed)
+        // if (empty($entity_name) || empty($fund_cluster)) {
+        //     throw new Exception('All required fields must be filled');
+        // }
         
         // Auto-generate ICS number to prevent duplicates
         $generated_ics_no = generateNextTag('ics_no');
@@ -92,7 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->close();
         
         // Insert ICS items
-        $item_stmt = $conn->prepare("INSERT INTO ics_items (form_id, item_no, quantity, unit, unit_cost, total_cost, description, useful_life) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        $item_stmt = $conn->prepare("INSERT INTO ics_items (form_id, ics_id, item_no, quantity, unit, unit_cost, total_cost, description, useful_life) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
         
         for ($i = 0; $i < count($items); $i++) {
             if (!empty($items[$i]) && !empty($descriptions[$i])) {
@@ -101,28 +104,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $total_cost = floatval($total_costs[$i]);
                 $useful_life = intval($useful_lives[$i]);
                 
-                $item_stmt->bind_param("isiddssi", $ics_form_id, $items[$i], $quantity, $units[$i], $unit_cost, $total_cost, $descriptions[$i], $useful_life);
+                $item_stmt->bind_param("iisiddssi", $ics_form_id, $ics_form_id, $items[$i], $quantity, $units[$i], $unit_cost, $total_cost, $descriptions[$i], $useful_life);
                 
                 if (!$item_stmt->execute()) {
                     throw new Exception('Failed to save ICS item: ' . $item_stmt->error);
                 }
-                
-                // Also insert as asset and asset item
-                $asset_stmt = $conn->prepare("INSERT INTO assets (description, unit, quantity, unit_cost, office_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NOW(), NOW())");
-                $asset_stmt->bind_param("ssidi", $descriptions[$i], $units[$i], $quantity, $unit_cost, $office_id);
-                
-                if (!$asset_stmt->execute()) {
-                    throw new Exception('Failed to save asset: ' . $asset_stmt->error);
-                }
-                
-                $asset_id = $asset_stmt->insert_id;
-                $asset_stmt->close();
-                
-                // Track asset ID for notifications
-                $asset_ids[] = $asset_id;
-                
-                // Insert multiple asset items based on quantity
-                $asset_item_stmt = $conn->prepare("INSERT INTO asset_items (asset_id, ics_id, description, unit, status, value, acquisition_date, office_id, created_at, last_updated) VALUES (?, ?, ?, ?, 'no_tag', ?, CURDATE(), ?, NOW(), NOW())");
                 
                 // Parse property numbers - handle both single and multiple property numbers
                 $individual_property_numbers = [];
@@ -136,7 +122,87 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $base_property_number = $items[$i];
                     }
                 }
+
+                // Get category and subcategory IDs from hidden fields
+                $category_id = null;
+                $subcategory_id = null;
                 
+                $category_code = $category_codes[$i] ?? null;
+                $subcategory_code = $subcategory_codes[$i] ?? null;
+                
+                // Look up category ID
+                if (!empty($category_code)) {
+                    $category_stmt = $conn->prepare("SELECT id FROM asset_categories WHERE category_code = ?");
+                    if ($category_stmt) {
+                        $category_stmt->bind_param("s", $category_code);
+                        $category_stmt->execute();
+                        $category_result = $category_stmt->get_result();
+                        if ($category_result && $category_result->num_rows > 0) $category_id = $category_result->fetch_assoc()['id'];
+                        $category_stmt->close();
+                    }
+                }
+                
+                // Look up subcategory ID
+                if (!empty($subcategory_code)) {
+                    $subcategory_stmt = $conn->prepare("SELECT id FROM asset_sub_categories WHERE sub_category_code = ?");
+                    if ($subcategory_stmt) {
+                        $subcategory_stmt->bind_param("s", $subcategory_code);
+                        $subcategory_stmt->execute();
+                        $subcategory_result = $subcategory_stmt->get_result();
+                        if ($subcategory_result && $subcategory_result->num_rows > 0) $subcategory_id = $subcategory_result->fetch_assoc()['id'];
+                        $subcategory_stmt->close();
+                    }
+                }
+
+                // Fallback: Parse property numbers to extract category IDs
+                $prop_for_cat = !empty($individual_property_numbers) ? $individual_property_numbers[0] : $base_property_number;
+                
+                if (is_null($category_id) && is_null($subcategory_id) && !empty($prop_for_cat)) {
+                    $parts = explode('-', $prop_for_cat);
+                    if (count($parts) >= 4) {
+                        $cat_code = $parts[2];
+                        $subcat_code = strlen($parts[3]) >= 4 ? substr($parts[3], 0, 2) : null;
+
+                        // Fetch category ID
+                        $stmt_c = $conn->prepare("SELECT id FROM asset_categories WHERE category_code = ? LIMIT 1");
+                        if ($stmt_c) {
+                            $stmt_c->bind_param('s', $cat_code);
+                            $stmt_c->execute();
+                            $res_c = $stmt_c->get_result();
+                            if ($row_c = $res_c->fetch_assoc()) $category_id = $row_c['id'];
+                            $stmt_c->close();
+                        }
+
+                        // Fetch subcategory ID
+                        if ($subcat_code && $category_id) {
+                            $stmt_s = $conn->prepare("SELECT id FROM asset_sub_categories WHERE sub_category_code = ? AND asset_categories_id = ? LIMIT 1");
+                            if ($stmt_s) {
+                                $stmt_s->bind_param('si', $subcat_code, $category_id);
+                                $stmt_s->execute();
+                                $res_s = $stmt_s->get_result();
+                                if ($row_s = $res_s->fetch_assoc()) $subcategory_id = $row_s['id'];
+                                $stmt_s->close();
+                            }
+                        }
+                    }
+                }
+
+                // Also insert as asset and asset item
+                $asset_stmt = $conn->prepare("INSERT INTO assets (asset_categories_id, asset_subcategory_id, description, unit, quantity, unit_cost, office_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())");
+                $asset_stmt->bind_param("iissidi", $category_id, $subcategory_id, $descriptions[$i], $units[$i], $quantity, $unit_cost, $office_id);
+                
+                if (!$asset_stmt->execute()) {
+                    throw new Exception('Failed to save asset: ' . $asset_stmt->error);
+                }
+                
+                $asset_id = $asset_stmt->insert_id;
+                $asset_stmt->close();
+                
+                // Track asset ID for notifications
+                $asset_ids[] = $asset_id;
+                
+                // Insert multiple asset items based on quantity
+                $asset_item_stmt = $conn->prepare("INSERT INTO asset_items (asset_id, ics_id, description, unit, status, value, acquisition_date, office_id, created_at, last_updated) VALUES (?, ?, ?, ?, 'no_tag', ?, CURDATE(), ?, NOW(), NOW())");
                 // Create individual asset items for each quantity
                 for ($item_num = 1; $item_num <= $quantity; $item_num++) {
                     // Debug: Log the values being inserted
@@ -180,11 +246,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         }
                     }
                     
-                    // Update the asset item with property number if assigned
-                    if (!empty($item_property_number)) {
-                        $update_stmt = $conn->prepare("UPDATE asset_items SET property_no = ? WHERE id = ?");
+                    // Update the asset item with property number, category, and subcategory
+                    if (!empty($item_property_number) || !is_null($category_id) || !is_null($subcategory_id)) {
+                        // Use category_id as fallbacks if parsing misses
+                        $parsed_category_id = $category_id;
+                        $parsed_subcategory_id = $subcategory_id;
+                        
+                        // Just use the ones we already extracted for the asset table! We don't need to re-parse.
+                        
+                        $update_stmt = $conn->prepare("UPDATE asset_items SET property_no = ?, category_id = ?, asset_subcategory_id = ? WHERE id = ?");
                         if ($update_stmt) {
-                            $update_stmt->bind_param("si", $item_property_number, $asset_item_id);
+                            $update_stmt->bind_param("siii", $item_property_number, $parsed_category_id, $parsed_subcategory_id, $asset_item_id);
                             $update_stmt->execute();
                             $update_stmt->close();
                         }

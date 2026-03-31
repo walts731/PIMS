@@ -557,18 +557,18 @@ if ($result && $row = $result->fetch_assoc()) {
                                         </thead>
                                         <tbody>
                                             <tr>
-                                                <td><input type="number" class="form-control form-control-sm quantity-field" name="quantity[]" required onchange="calculateTotal(this)"></td>
+                                                <td><input type="number" class="form-control form-control-sm quantity-field" name="quantity[]" onchange="calculateTotal(this)"></td>
                                                 <td>
-                                                    <select class="form-select form-select-sm unit-field" name="unit[]" required>
+                                                    <select class="form-select form-select-sm unit-field" name="unit[]">
                                                         <option value="">Select Unit</option>
                                                         <?php foreach ($units as $unit): ?>
                                                             <option value="<?php echo htmlspecialchars($unit['unit_code']); ?>" data-unit-name="<?php echo htmlspecialchars($unit['unit_name']); ?>" data-singular="<?php echo htmlspecialchars(getSingularForm($unit['unit_name'])); ?>"><?php echo htmlspecialchars($unit['unit_name']); ?></option>
                                                         <?php endforeach; ?>
                                                     </select>
                                                 </td>
-                                                <td><input type="number" step="0.01" class="form-control form-control-sm cost-field" name="unit_cost[]" required onchange="calculateTotal(this)" max="50000" min="0.01"></td>
+                                                <td><input type="number" step="0.01" class="form-control form-control-sm cost-field" name="unit_cost[]" onchange="calculateTotal(this)" max="50000" min="0.01"></td>
                                                 <td><input type="number" step="0.01" class="form-control form-control-sm cost-field" name="total_cost[]" readonly></td>
-                                                <td><input type="text" class="form-control form-control-sm description-field" name="description[]" required></td>
+                                                <td><input type="text" class="form-control form-control-sm description-field" name="description[]"></td>
                                                 <td>
                                                 <div class="property-number-field">
                                                     <input type="text" class="form-control form-control-sm item-no-field" name="item_no[]" value="" readonly placeholder="Click 'Generate' to create property number">
@@ -577,7 +577,7 @@ if ($result && $row = $result->fetch_assoc()) {
                                                     </button>
                                                 </div>
                                             </td>
-                                                <td><input type="text" class="form-control form-control-sm useful-life-field" name="useful_life[]" required></td>
+                                                <td><input type="text" class="form-control form-control-sm useful-life-field" name="useful_life[]"></td>
                                                 <td><button type="button" class="btn btn-sm btn-danger" onclick="removeICSRow(this)"><i class="bi bi-trash"></i></button></td>
                                             </tr>
                                         </tbody>
@@ -600,17 +600,17 @@ if ($result && $row = $result->fetch_assoc()) {
                             <div class="row mb-3">
                                 <div class="col-md-6">
                                     <label class="form-label"><strong>Received from:</strong></label>
-                                    <input type="text" class="form-control" name="received_from" required value="<?php echo htmlspecialchars($latest_signature['received_from'] ?? ''); ?>">
+                                    <input type="text" class="form-control" name="received_from" value="<?php echo htmlspecialchars($latest_signature['received_from'] ?? ''); ?>">
                                     <label class="form-label"><strong>Position/Office:</strong></label>
-                                    <input type="text" class="form-control" name="received_from_position" required value="<?php echo htmlspecialchars($latest_signature['received_from_position'] ?? ''); ?>">
+                                    <input type="text" class="form-control" name="received_from_position" value="<?php echo htmlspecialchars($latest_signature['received_from_position'] ?? ''); ?>">
                                     <label class="form-label"><strong>Date:</strong></label>
                                     <input type="date" class="form-control" name="received_from_date">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label"><strong>Received by:</strong></label>
-                                    <input type="text" class="form-control" name="received_by" required value="<?php echo htmlspecialchars($latest_signature['received_by'] ?? ''); ?>">
+                                    <input type="text" class="form-control" name="received_by" value="<?php echo htmlspecialchars($latest_signature['received_by'] ?? ''); ?>">
                                     <label class="form-label"><strong>Position/Office:</strong></label>
-                                    <input type="text" class="form-control" name="received_by_position" required value="<?php echo htmlspecialchars($latest_signature['received_by_position'] ?? ''); ?>">
+                                    <input type="text" class="form-control" name="received_by_position" value="<?php echo htmlspecialchars($latest_signature['received_by_position'] ?? ''); ?>">
                                     <label class="form-label"><strong>Date:</strong></label>
                                     <input type="date" class="form-control" name="received_by_date">
                                 </div>
@@ -1018,16 +1018,16 @@ if ($result && $row = $result->fetch_assoc()) {
             const nextItemNumber = table.rows.length;
             
             const cells = [
-                '<input type="number" class="form-control form-control-sm quantity-field" name="quantity[]" required onchange="calculateTotal(this)">',
-                '<select class="form-select form-select-sm unit-field" name="unit[]" required>' + unitOptions + '</select>',
-                '<input type="number" step="0.01" class="form-control form-control-sm cost-field" name="unit_cost[]" required onchange="calculateTotal(this)" max="50000" min="0.01">',
+                '<input type="number" class="form-control form-control-sm quantity-field" name="quantity[]" onchange="calculateTotal(this)">',
+                '<select class="form-select form-select-sm unit-field" name="unit[]">' + unitOptions + '</select>',
+                '<input type="number" step="0.01" class="form-control form-control-sm cost-field" name="unit_cost[]" onchange="calculateTotal(this)" max="50000" min="0.01">',
                 '<input type="number" step="0.01" class="form-control form-control-sm cost-field" name="total_cost[]" readonly>',
-                '<input type="text" class="form-control form-control-sm description-field" name="description[]" required>',
+                '<input type="text" class="form-control form-control-sm description-field" name="description[]">',
                 '<div class="property-number-field">' +
                 '<input type="text" class="form-control form-control-sm item-no-field" name="item_no[]" value="" readonly placeholder="Click Generate to create">' +
                 '<button type="button" class="btn btn-sm btn-outline-primary" onclick="showPropertyNumberGenerator(this)" title="Generate Property Number"><i class="bi bi-gear"></i> Generate</button>' +
                 '</div>',
-                '<input type="text" class="form-control form-control-sm useful-life-field" name="useful_life[]" required>',
+                '<input type="text" class="form-control form-control-sm useful-life-field" name="useful_life[]">',
                 '<button type="button" class="btn btn-sm btn-danger" onclick="removeICSRow(this)"><i class="bi bi-trash"></i></button>'
             ];
             
