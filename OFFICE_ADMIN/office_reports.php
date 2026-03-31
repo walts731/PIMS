@@ -471,10 +471,15 @@ $report_data['asset_stats']['total_asset_value'] = number_format($report_data['a
                                 <li><a class="dropdown-item" href="#" onclick="exportLGUReport('consumable')">Consumable Report (LGU)</a></li>
                                 <li><a class="dropdown-item" href="#" onclick="exportLGUReport('borrow_request')">Borrow Request Report (LGU)</a></li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="#" onclick="exportAdminStyleReport('inventory')">Inventory Report (Admin Style)</a></li>
-                                <li><a class="dropdown-item" href="#" onclick="exportAdminStyleReport('asset')">Asset Report (Admin Style)</a></li>
-                                <li><a class="dropdown-item" href="#" onclick="exportAdminStyleReport('consumable')">Consumable Report (Admin Style)</a></li>
-                                <li><a class="dropdown-item" href="#" onclick="exportAdminStyleReport('borrow_request')">Borrow Request Report (Admin Style)</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="previewAdminStyleReport('inventory')">Preview: Inventory Report (Admin Style)</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="previewAdminStyleReport('asset')">Preview: Asset Report (Admin Style)</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="previewAdminStyleReport('consumable')">Preview: Consumable Report (Admin Style)</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="previewAdminStyleReport('borrow_request')">Preview: Borrow Request Report (Admin Style)</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="#" onclick="exportAdminStyleReport('inventory')">Export: Inventory Report (Admin Style)</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="exportAdminStyleReport('asset')">Export: Asset Report (Admin Style)</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="exportAdminStyleReport('consumable')">Export: Consumable Report (Admin Style)</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="exportAdminStyleReport('borrow_request')">Export: Borrow Request Report (Admin Style)</a></li>
                             </ul>
                         </div>
                         <button class="btn btn-outline-success btn-sm" onclick="showDocumentModal()">
@@ -1175,6 +1180,16 @@ $report_data['asset_stats']['total_asset_value'] = number_format($report_data['a
             
             const url = `api/lgu_admin_style_reports.php?action=export_admin_style_report&report_type=${reportType}&date_from=${dateFrom}&date_to=${dateTo}`;
             window.open(url, '_blank');
+        }
+        
+        function previewAdminStyleReport(reportType) {
+            const dateFrom = document.getElementById('dateFrom').value;
+            const dateTo = document.getElementById('dateTo').value;
+            
+            // Pass session ID to maintain session in popup
+            const sessionId = '<?php echo session_id(); ?>';
+            const url = `api/lgu_admin_style_reports.php?action=preview_admin_style_report&report_type=${reportType}&date_from=${dateFrom}&date_to=${dateTo}&PHPSESSID=${sessionId}`;
+            window.open(url, '_blank', 'width=1000,height=800,scrollbars=yes,resizable=yes');
         }
         
         function showDocumentModal() {

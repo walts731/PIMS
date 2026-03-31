@@ -1,24 +1,48 @@
 <?php
+
+// Handle session ID from URL for popup windows (before session_start)
+if (isset($_GET['PHPSESSID'])) {
+    session_id($_GET['PHPSESSID']);
+}
+
 session_start();
-require_once '../config.php';
-require_once '../includes/system_functions.php';
-require_once '../includes/logger.php';
+
+// Set timezone to Philippine Standard Time
+date_default_timezone_set('Asia/Manila');
+
+require_once 'C:\xampp\htdocs\PIMS\config.php';
+require_once 'C:\xampp\htdocs\PIMS\includes\system_functions.php';
+require_once 'C:\xampp\htdocs\PIMS\includes\logger.php';
 require_once '../includes/lgu_compliance_functions.php';
 
 // Check session timeout
 checkSessionTimeout();
 
+// Debug: Log session state
+error_log("Preview API Session Debug: " . json_encode([
+    'session_id' => session_id(),
+    'logged_in' => $_SESSION['logged_in'] ?? 'not_set',
+    'role' => $_SESSION['role'] ?? 'not_set',
+    'office_id' => $_SESSION['office_id'] ?? 'not_set',
+    'user_id' => $_SESSION['user_id'] ?? 'not_set',
+    'firstname' => $_SESSION['firstname'] ?? 'not_set',
+    'lastname' => $_SESSION['lastname'] ?? 'not_set',
+    'first_name' => $_SESSION['first_name'] ?? 'not_set',
+    'last_name' => $_SESSION['last_name'] ?? 'not_set',
+    'all_session_keys' => array_keys($_SESSION)
+]));
+
 // Check if user is logged in
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
+    echo json_encode(['success' => false, 'message' => 'Unauthorized access - Session not logged in']);
     exit();
 }
 
 // Check if user has correct role
 if ($_SESSION['role'] !== 'office_admin') {
     header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'message' => 'Access denied']);
+    echo json_encode(['success' => false, 'message' => 'Access denied - Invalid role: ' . ($_SESSION['role'] ?? 'not_set')]);
     exit();
 }
 
@@ -26,6 +50,50 @@ if ($_SESSION['role'] !== 'office_admin') {
 $office_id = $_SESSION['office_id'] ?? null;
 $user_id = $_SESSION['user_id'] ?? null;
 $lgu_compliance = new LGUCompliance($office_id, $user_id);
+
+// Get user details for display
+$user_firstname = $_SESSION['firstname'] ?? $_SESSION['first_name'] ?? null;
+$user_lastname = $_SESSION['lastname'] ?? $_SESSION['last_name'] ?? null;
+
+// If firstname/lastname not in session, fetch from database
+if (!$user_firstname || !$user_lastname) {
+    try {
+        // Try users table first (with underscore field names)
+        $user_query = "SELECT first_name, last_name FROM users WHERE id = ?";
+        $stmt = $conn->prepare($user_query);
+        $stmt->bind_param("i", $user_id);
+        $stmt->execute();
+        $user_result = $stmt->get_result()->fetch_assoc();
+        if ($user_result) {
+            $user_firstname = $user_result['first_name'];
+            $user_lastname = $user_result['last_name'];
+            // Store in session for future use
+            $_SESSION['firstname'] = $user_firstname;
+            $_SESSION['lastname'] = $user_lastname;
+            $_SESSION['first_name'] = $user_firstname;
+            $_SESSION['last_name'] = $user_lastname;
+        } else {
+            // Try employees table as fallback
+            $emp_query = "SELECT firstname, lastname FROM employees WHERE id = ?";
+            $stmt = $conn->prepare($emp_query);
+            $stmt->bind_param("i", $user_id);
+            $stmt->execute();
+            $emp_result = $stmt->get_result()->fetch_assoc();
+            if ($emp_result) {
+                $user_firstname = $emp_result['firstname'];
+                $user_lastname = $emp_result['lastname'];
+                // Store in session for future use
+                $_SESSION['firstname'] = $user_firstname;
+                $_SESSION['lastname'] = $user_lastname;
+                $_SESSION['first_name'] = $user_firstname;
+                $_SESSION['last_name'] = $user_lastname;
+            }
+        }
+        $stmt->close();
+    } catch (Exception $e) {
+        error_log("Error fetching user details: " . $e->getMessage());
+    }
+}
 
 // Get request parameters
 $action = $_GET['action'] ?? '';
@@ -35,7 +103,11 @@ $date_to = $_GET['date_to'] ?? date('Y-m-d');
 
 switch ($action) {
     case 'export_admin_style_report':
-        exportAdminStyleReport($lgu_compliance, $report_type, $date_from, $date_to);
+        exportAdminStyleReport($lgu_compliance, $report_type, $date_from, $date_to, $user_firstname, $user_lastname);
+        break;
+        
+    case 'preview_admin_style_report':
+        previewAdminStyleReport($lgu_compliance, $report_type, $date_from, $date_to, $user_firstname, $user_lastname);
         break;
         
     default:
@@ -45,22 +117,26 @@ switch ($action) {
 }
 
 /**
- * Export Admin-Style Report with LGU Compliance
+ * Preview Admin-Style Report with LGU Compliance
  */
-function exportAdminStyleReport($lgu_compliance, $report_type, $date_from, $date_to) {
+function previewAdminStyleReport($lgu_compliance, $report_type, $date_from, $date_to, $user_firstname, $user_lastname) {
     global $conn;
     
     try {
-        // Generate report ID
-        $report_id = $lgu_compliance->generateReportId($report_type);
-        
-        // Log report generation start
-        $lgu_compliance->logReportGeneration($report_id, $report_type, 'manual', [
-            'date_from' => $date_from,
-            'date_to' => $date_to
-        ]);
-        
-        $start_time = microtime(true);
+        // Get system settings for logo
+        $system_settings = [];
+        try {
+            $stmt = $conn->prepare("SELECT setting_name, setting_value FROM system_settings");
+            $stmt->execute();
+            $result = $stmt->get_result();
+            while ($row = $result->fetch_assoc()) {
+                $system_settings[$row['setting_name']] = $row['setting_value'];
+            }
+            $stmt->close();
+        } catch (Exception $e) {
+            $system_settings['system_logo'] = '';
+            $system_settings['system_name'] = 'PIMS';
+        }
         
         // Get office information
         $office_query = "SELECT office_name FROM offices WHERE id = ?";
@@ -86,8 +162,78 @@ function exportAdminStyleReport($lgu_compliance, $report_type, $date_from, $date
         // Get data integrity issues
         $integrity_issues = $lgu_compliance->checkDataIntegrity();
         
+        // Generate report content
+        $report_content = generateAdminStyleReportContent($report_type, $date_from, $date_to, $office_name, $fiscal_year, $signatories, $document_refs, $integrity_issues, $system_settings, $user_firstname, $user_lastname);
+        
+        // Return HTML content for preview
+        header('Content-Type: text/html; charset=UTF-8');
+        echo $report_content;
+        
+    } catch (Exception $e) {
+        error_log("Error previewing admin-style report: " . $e->getMessage());
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'message' => 'Error generating preview: ' . $e->getMessage()]);
+    }
+}
+
+/**
+ * Export Admin-Style Report with LGU Compliance
+ */
+function exportAdminStyleReport($lgu_compliance, $report_type, $date_from, $date_to, $user_firstname, $user_lastname) {
+    global $conn;
+    
+    try {
+        // Generate report ID
+        $report_id = $lgu_compliance->generateReportId($report_type);
+        
+        // Log report generation start
+        $lgu_compliance->logReportGeneration($report_id, $report_type, 'manual', [
+            'date_from' => $date_from,
+            'date_to' => $date_to
+        ]);
+        
+        $start_time = microtime(true);
+        
+        // Get system settings for logo
+        $system_settings = [];
+        try {
+            $stmt = $conn->prepare("SELECT setting_name, setting_value FROM system_settings");
+            $stmt->execute();
+            $result = $stmt->get_result();
+            while ($row = $result->fetch_assoc()) {
+                $system_settings[$row['setting_name']] = $row['setting_value'];
+            }
+            $stmt->close();
+        } catch (Exception $e) {
+            // Fallback to default if database fails
+            $system_settings['system_logo'] = '';
+            $system_settings['system_name'] = 'PIMS';
+        }
+        $office_query = "SELECT office_name FROM offices WHERE id = ?";
+        $stmt = $conn->prepare($office_query);
+        $stmt->bind_param("i", $_SESSION['office_id']);
+        $stmt->execute();
+        $office_result = $stmt->get_result()->fetch_assoc();
+        $office_name = $office_result['office_name'] ?? 'Unknown Office';
+        
+        // Get fiscal year dates
+        $fiscal_year = $lgu_compliance->getFiscalYearDates();
+        
+        // Get signatories
+        $signatories_data = $lgu_compliance->getSignatories();
+        $signatories = [];
+        foreach ($signatories_data as $signatory) {
+            $signatories[$signatory['signatory_type']] = $signatory;
+        }
+        
+        // Get document references
+        $document_refs = $lgu_compliance->getDocumentReferences();
+        
+        // Get data integrity issues
+        $integrity_issues = $lgu_compliance->checkDataIntegrity();
+        
         // Generate report content based on type
-        $report_content = generateAdminStyleReportContent($report_type, $date_from, $date_to, $office_name, $fiscal_year, $signatories, $document_refs, $integrity_issues);
+        $report_content = generateAdminStyleReportContent($report_type, $date_from, $date_to, $office_name, $fiscal_year, $signatories, $document_refs, $integrity_issues, $system_settings, $user_firstname, $user_lastname);
         
         $generation_time = microtime(true) - $start_time;
         
@@ -145,7 +291,7 @@ function exportAdminStyleReport($lgu_compliance, $report_type, $date_from, $date
 /**
  * Generate Admin-Style Report Content
  */
-function generateAdminStyleReportContent($report_type, $date_from, $date_to, $office_name, $fiscal_year, $signatories, $document_refs, $integrity_issues) {
+function generateAdminStyleReportContent($report_type, $date_from, $date_to, $office_name, $fiscal_year, $signatories, $document_refs, $integrity_issues, $system_settings, $user_firstname, $user_lastname) {
     global $conn, $_SESSION;
     
     $report_id = 'ADM_' . strtoupper(substr($report_type, 0, 3)) . '_' . date('YmdHis') . '_' . str_pad($_SESSION['office_id'], 3, '0', STR_PAD_LEFT) . '_' . str_pad($_SESSION['user_id'], 4, '0', STR_PAD_LEFT);
@@ -364,15 +510,16 @@ function generateAdminStyleReportContent($report_type, $date_from, $date_to, $of
 </head>
 <body>
     <div class="print-header">
-        <div style="display: flex; align-items: flex-start; gap: 20px;">
+        <!-- Top section with all elements -->
+        <div style="display: flex; align-items: flex-start; gap: 20px; margin-bottom: 20px;">
             <!-- Logo on the left -->
             <div style="flex-shrink: 0;">
-                <img src="../../img/system_logo.png" alt="PIMS" style="max-width: 250px; max-height: 100px;">
+                <img src="' . (!empty($system_settings['system_logo']) ? '../../' . htmlspecialchars($system_settings['system_logo']) : '../../img/system_logo.png') . '" alt="' . htmlspecialchars($system_settings['system_name']) . '" style="max-width: 250px; max-height: 100px;">
             </div>
             
-            <!-- Government header on the right -->
-            <div style="flex: 1;">
-                <div class="gov-header" style="text-align: center; padding: 0; background: none;">
+            <!-- Government header centered in the middle -->
+            <div style="flex: 1; text-align: center;">
+                <div class="gov-header" style="padding: 0; background: none;">
                     <div class="gov-title">Republic of the Philippines</div>
                     <div class="municipality">' . htmlspecialchars($office_name) . '</div>
                     <div class="province">Province of Albay</div>
@@ -381,6 +528,14 @@ function generateAdminStyleReportContent($report_type, $date_from, $date_to, $of
                     <div class="print-subtitle">Report Period: ' . date('F j, Y', strtotime($date_from)) . ' - ' . date('F j, Y', strtotime($date_to)) . '</div>
                     <div class="print-subtitle">Fiscal Year: ' . date('Y', strtotime($fiscal_year['start_date'])) . ' (' . date('F j, Y', strtotime($fiscal_year['start_date'])) . ' - ' . date('F j, Y', strtotime($fiscal_year['end_date'])) . ')</div>
                     <div class="print-subtitle">Report ID: ' . $report_id . '</div>
+                </div>
+            </div>
+            
+            <!-- Additional info on the right -->
+            <div style="flex-shrink: 0;">
+                <div style="text-align: right; font-size: 12px; color: #666;">
+                    <div>System: ' . htmlspecialchars($system_settings['system_name'] ?? 'PIMS') . '</div>
+                    <div>Generated by: ' . htmlspecialchars($user_firstname ?? 'Unknown') . ' ' . htmlspecialchars($user_lastname ?? 'User') . '</div>
                 </div>
             </div>
         </div>
@@ -462,7 +617,7 @@ function generateAdminStyleReportContent($report_type, $date_from, $date_to, $of
     $html .= '
     <div class="footer">
         <p>Property Inventory Management System (PIMS) - ' . ucfirst($report_type) . ' Report</p>
-        <p>This report was generated on ' . date('F j, Y g:i A') . ' by ' . ($_SESSION['firstname'] ?? 'Unknown') . ' ' . ($_SESSION['lastname'] ?? 'User') . '</p>
+        <p>This report was generated on ' . date('F j, Y g:i A') . ' by ' . htmlspecialchars($user_firstname ?? 'Unknown') . ' ' . htmlspecialchars($user_lastname ?? 'User') . '</p>
         <p>Report ID: ' . $report_id . ' | Office: ' . htmlspecialchars($office_name) . '</p>
     </div>
 

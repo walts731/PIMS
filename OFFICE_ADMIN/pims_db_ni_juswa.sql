@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 30, 2026 at 10:26 AM
+-- Generation Time: Mar 31, 2026 at 03:34 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -2022,7 +2022,10 @@ CREATE TABLE `report_audit_trail` (
 
 INSERT INTO `report_audit_trail` (`id`, `report_id`, `report_type`, `action`, `user_id`, `office_id`, `action_date`, `ip_address`, `user_agent`, `parameters`, `file_path`) VALUES
 (1, 'INV_005_0017_20260330101502', 'inventory', 'exported', 17, 5, '2026-03-30 08:15:02', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '{\"date_from\":\"2026-03-01\",\"date_to\":\"2026-03-30\",\"file_path\":\"..\\/uploads\\/reports\\/LGU_inventory_Report_2026-03-30_10-15-02.html\"}', '../uploads/reports/LGU_inventory_Report_2026-03-30_10-15-02.html'),
-(2, 'INV_005_0017_20260330101736', 'inventory', 'exported', 17, 5, '2026-03-30 08:17:36', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '{\"date_from\":\"2026-03-01\",\"date_to\":\"2026-03-30\",\"file_path\":\"..\\/uploads\\/reports\\/LGU_inventory_Report_2026-03-30_10-17-36.html\"}', '../uploads/reports/LGU_inventory_Report_2026-03-30_10-17-36.html');
+(2, 'INV_005_0017_20260330101736', 'inventory', 'exported', 17, 5, '2026-03-30 08:17:36', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '{\"date_from\":\"2026-03-01\",\"date_to\":\"2026-03-30\",\"file_path\":\"..\\/uploads\\/reports\\/LGU_inventory_Report_2026-03-30_10-17-36.html\"}', '../uploads/reports/LGU_inventory_Report_2026-03-30_10-17-36.html'),
+(3, 'INV_005_0017_20260331023643', 'inventory', 'exported', 17, 5, '2026-03-31 00:36:43', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '{\"date_from\":\"2026-03-01\",\"date_to\":\"2026-03-31\",\"file_path\":\"..\\/uploads\\/reports\\/LGU_inventory_Report_2026-03-31_02-36-43.html\"}', '../uploads/reports/LGU_inventory_Report_2026-03-31_02-36-43.html'),
+(4, 'INV_005_0017_20260331025006', 'inventory', 'exported', 17, 5, '2026-03-31 00:50:06', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '{\"date_from\":\"2026-03-01\",\"date_to\":\"2026-03-31\",\"file_path\":\"..\\/uploads\\/reports\\/LGU_inventory_Report_2026-03-31_02-50-06.html\"}', '../uploads/reports/LGU_inventory_Report_2026-03-31_02-50-06.html'),
+(5, 'INV_005_0017_20260331030135', 'inventory', 'exported', 17, 5, '2026-03-31 01:01:36', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '{\"date_from\":\"2026-03-01\",\"date_to\":\"2026-03-31\",\"file_path\":\"..\\/uploads\\/reports\\/LGU_inventory_Report_2026-03-31_03-01-36.html\"}', '../uploads/reports/LGU_inventory_Report_2026-03-31_03-01-36.html');
 
 -- --------------------------------------------------------
 
@@ -2054,7 +2057,10 @@ CREATE TABLE `report_generation_history` (
 
 INSERT INTO `report_generation_history` (`id`, `report_id`, `report_type`, `generation_method`, `office_id`, `generated_by`, `file_path`, `file_size`, `record_count`, `parameters`, `generation_time`, `status`, `error_message`, `created_at`, `completed_at`) VALUES
 (1, 'INV_005_0017_20260330101502', 'inventory', 'manual', 5, 17, '../uploads/reports/LGU_inventory_Report_2026-03-30_10-15-02.html', 5013, NULL, '0', 0.008, 'completed', NULL, '2026-03-30 08:15:02', '2026-03-30 16:15:02'),
-(2, 'INV_005_0017_20260330101736', 'inventory', 'manual', 5, 17, '../uploads/reports/LGU_inventory_Report_2026-03-30_10-17-36.html', 5024, NULL, '0', 0.005, 'completed', NULL, '2026-03-30 08:17:36', '2026-03-30 16:17:36');
+(2, 'INV_005_0017_20260330101736', 'inventory', 'manual', 5, 17, '../uploads/reports/LGU_inventory_Report_2026-03-30_10-17-36.html', 5024, NULL, '0', 0.005, 'completed', NULL, '2026-03-30 08:17:36', '2026-03-30 16:17:36'),
+(3, 'INV_005_0017_20260331023643', 'inventory', 'manual', 5, 17, '../uploads/reports/LGU_inventory_Report_2026-03-31_02-36-43.html', 5024, NULL, '0', 0.007, 'completed', NULL, '2026-03-31 00:36:43', '2026-03-31 08:36:43'),
+(4, 'INV_005_0017_20260331025006', 'inventory', 'manual', 5, 17, '../uploads/reports/LGU_inventory_Report_2026-03-31_02-50-06.html', 5024, NULL, '0', 0.005, 'completed', NULL, '2026-03-31 00:50:06', '2026-03-31 08:50:06'),
+(5, 'INV_005_0017_20260331030135', 'inventory', 'manual', 5, 17, '../uploads/reports/LGU_inventory_Report_2026-03-31_03-01-36.html', 5024, NULL, '0', 0.006, 'completed', NULL, '2026-03-31 01:01:35', '2026-03-31 09:01:36');
 
 -- --------------------------------------------------------
 
@@ -2652,7 +2658,8 @@ INSERT INTO `security_logs` (`id`, `event_type`, `description`, `severity`, `use
 (233, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 03:36:28'),
 (234, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 04:51:18'),
 (235, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 05:40:41'),
-(236, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 07:15:31');
+(236, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 07:15:31'),
+(237, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 01:12:21');
 
 -- --------------------------------------------------------
 
@@ -12605,7 +12612,15 @@ INSERT INTO `system_logs` (`id`, `user_id`, `action`, `module`, `description`, `
 (10765, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 07:18:48'),
 (10766, 17, 'logout', 'authentication', 'User logged out: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 07:18:55'),
 (10767, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 08:07:26'),
-(10768, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 08:07:26');
+(10768, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 08:07:26'),
+(10769, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 00:35:50'),
+(10770, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 00:35:50'),
+(10771, 17, 'session_timeout', 'authentication', 'Session expired for user: Joshua Escaño (joshuamarifrancis@gmail.com) after 2191 seconds', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 01:12:21'),
+(10772, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 01:18:19'),
+(10773, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 01:18:19'),
+(10774, 17, 'logout', 'authentication', 'User logged out: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 01:29:58'),
+(10775, 18, 'login_success', 'authentication', 'User logged in: OM admin (OM@pims.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 01:30:05'),
+(10776, 18, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 01:30:05');
 
 -- --------------------------------------------------------
 
@@ -13627,7 +13642,7 @@ ALTER TABLE `failed_login_attempts`
 -- AUTO_INCREMENT for table `fiscal_year_settings`
 --
 ALTER TABLE `fiscal_year_settings`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `forms`
@@ -13807,13 +13822,13 @@ ALTER TABLE `red_tags`
 -- AUTO_INCREMENT for table `report_audit_trail`
 --
 ALTER TABLE `report_audit_trail`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `report_generation_history`
 --
 ALTER TABLE `report_generation_history`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `report_schedules`
@@ -13867,7 +13882,7 @@ ALTER TABLE `security_audit_logs`
 -- AUTO_INCREMENT for table `security_logs`
 --
 ALTER TABLE `security_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=237;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=238;
 
 --
 -- AUTO_INCREMENT for table `security_metrics`
@@ -13891,7 +13906,7 @@ ALTER TABLE `software`
 -- AUTO_INCREMENT for table `system_logs`
 --
 ALTER TABLE `system_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10769;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10777;
 
 --
 -- AUTO_INCREMENT for table `system_settings`

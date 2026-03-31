@@ -1,8 +1,12 @@
 <?php
 session_start();
-require_once '../../config.php';
-require_once '../../includes/system_functions.php';
-require_once '../../includes/logger.php';
+
+// Set timezone to Philippine Standard Time
+date_default_timezone_set('Asia/Manila');
+
+require_once 'C:\xampp\htdocs\PIMS\config.php';
+require_once 'C:\xampp\htdocs\PIMS\includes\system_functions.php';
+require_once 'C:\xampp\htdocs\PIMS\includes\logger.php';
 require_once '../includes/lgu_compliance_functions.php';
 
 // Check session timeout
