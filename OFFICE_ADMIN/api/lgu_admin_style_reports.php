@@ -311,11 +311,15 @@ function generateAdminStyleReportContent($report_type, $date_from, $date_to, $of
             margin: 0;
             padding: 20px;
             color: #000;
+            width: 100%;
+            min-height: 100vh;
+            transform: rotate(0deg);
+            transform-origin: top left;
         }
         
         .print-header {
             text-align: left;
-            margin-bottom: 30px;
+            margin-bottom: 15px;
             padding: 20px;
         }
         
@@ -328,80 +332,78 @@ function generateAdminStyleReportContent($report_type, $date_from, $date_to, $of
         
         .gov-header {
             text-align: center;
-            margin-bottom: 20px;
             padding: 15px;
-            background: #f8f9fa;
-        }
-        
-        .gov-title {
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 10px;
-            color: #333;
-            line-height: 1.2;
-        }
-        
-        .municipality {
-            font-size: 16px;
-            font-weight: bold;
             margin-bottom: 5px;
-            color: #000;
-        }
-        
-        .province {
-            font-size: 16px;
-            font-weight: bold;
-            margin-bottom: 20px;
-            color: #000;
-        }
-        
-        .print-title {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 10px;
-            color: #333;
-            line-height: 1.2;
-        }
-        
-        .print-subtitle {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 20px;
         }
         
         .section {
-            margin-bottom: 25px;
+            margin-bottom: 20px;
         }
         
         .section-title {
             font-size: 16px;
             font-weight: bold;
-            color: #333;
-            border-bottom: 1px solid #ccc;
+            margin-bottom: 10px;
+            color: #0c5460;
+            border-bottom: 2px solid #0c5460;
             padding-bottom: 5px;
-            margin-bottom: 15px;
         }
         
-        .info-grid {
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 11px;
+        }
+        
+        .data-table th,
+        .data-table td {
+            border: 1px solid #ddd;
+            padding: 6px;
+            text-align: left;
+            vertical-align: top;
+        }
+        
+        .data-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        
+        .data-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        .summary-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 15px;
             margin-bottom: 20px;
         }
         
-        .info-item {
-            margin-bottom: 8px;
+        .summary-item {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
         }
         
-        .info-label {
+        .summary-label {
             font-weight: bold;
-            color: #555;
-            display: inline-block;
-            width: 140px;
+            color: #0c5460;
         }
         
-        .info-value {
-            color: #000;
+        .summary-value {
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .alert {
+            padding: 8px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border-left: 4px solid;
+            font-size: 11px;
         }
         
         .status-badge {
@@ -442,68 +444,33 @@ function generateAdminStyleReportContent($report_type, $date_from, $date_to, $of
             font-weight: bold;
             color: #333;
         }
-        
-        .table tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        
-        .alert {
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 4px;
-            border-left: 4px solid;
-        }
-        
-        .alert-danger {
-            background: #f8d7da;
-            border-color: #f5c6cb;
-            color: #721c24;
-        }
-        
-        .alert-warning {
-            background: #fff3cd;
-            border-color: #ffeaa7;
-            color: #856404;
-        }
-        
-        .alert-info {
-            background: #d1ecf1;
-            border-color: #bee5eb;
-            color: #0c5460;
-        }
-        
-        .footer {
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid #ccc;
-            text-align: center;
-            font-size: 10px;
-            color: #666;
-        }
-        
-        .no-data {
-            color: #999;
-            font-style: italic;
-        }
-        
-        @media print {
             body {
+                font-family: \'Arial\', sans-serif;
+                font-size: 12px;
+                line-height: 1.4;
                 margin: 0;
-                padding: 0;
-                font-size: 10px;
+                padding: 20px;
+                color: #000;
             }
             
             .print-header {
-                padding: 10px;
+                text-align: left;
+                margin-bottom: 30px;
+                padding: 20px;
             }
             
-            @page {
-                size: A4;
-                margin: 0.5in;
+            .print-header img {
+                max-width: 200px;
+                object-fit: contain;
+                float: left;
+                margin-right: 20px;
             }
             
-            html {
-                overflow: hidden;
+            .gov-header {
+                text-align: center;
+                margin-bottom: 20px;
+                padding: 15px;
+                margin-bottom: 20px;
             }
         }
     </style>
@@ -520,9 +487,9 @@ function generateAdminStyleReportContent($report_type, $date_from, $date_to, $of
             <!-- Government header centered in the middle -->
             <div style="flex: 1; text-align: center;">
                 <div class="gov-header" style="padding: 0; background: none;">
-                    <div class="gov-title">Republic of the Philippines</div>
+                    <div class="gov-title"><h1>Republic of the Philippines</h1></div>
                     <div class="municipality">' . htmlspecialchars($office_name) . '</div>
-                    <div class="province">Province of Albay</div>
+                    <div class="province">Province of Sorsogon</div>
                     <div class="print-title">' . ucfirst($report_type) . ' Report</div>
                     <div class="print-subtitle">Generated on ' . date('F j, Y g:i A') . '</div>
                     <div class="print-subtitle">Report Period: ' . date('F j, Y', strtotime($date_from)) . ' - ' . date('F j, Y', strtotime($date_to)) . '</div>
@@ -608,6 +575,13 @@ function generateAdminStyleReportContent($report_type, $date_from, $date_to, $of
         case 'borrow_request':
             $html .= generateBorrowRequestReportContent($date_from, $date_to);
             break;
+        case 'asset_consumable':
+            // Combined report with assets and consumables on same level
+            $html .= generateAssetConsumableReportContent($date_from, $date_to);
+            break;
+        default:
+            $html .= '<p>Report type not supported.</p>';
+            break;
     }
 
     // Add signatory section
@@ -621,17 +595,78 @@ function generateAdminStyleReportContent($report_type, $date_from, $date_to, $of
         <p>Report ID: ' . $report_id . ' | Office: ' . htmlspecialchars($office_name) . '</p>
     </div>
 
+    <div class="print-actions" style="text-align: center; margin: 20px 0; display: block;">
+        <button onclick="printReport()" style="background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 14px; margin: 0 10px;">
+            🖨 Print Report
+        </button>
+        <button onclick="window.close()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 14px; margin: 0 10px;">
+            ❌ Close Preview
+        </button>
+    </div>
+
     <script>
-        // Auto-print when page loads
+        // Remove auto-print for preview mode
+        // User can print manually after filling certification
+        
+        // Function to check if certification inputs have values
+        function checkCertificationInputs() {
+            const inputs = document.querySelectorAll(\'.certification-input\');
+            const rows = document.querySelectorAll(\'.certification-row\');
+            
+            // Debug: Log counts
+            console.log(\'Found inputs:\', inputs.length);
+            console.log(\'Found rows:\', rows.length);
+            
+            // Check each row - if ANY input in the row is filled, show the row
+            rows.forEach((row, rowIndex) => {
+                const rowInputs = row.querySelectorAll(\'.certification-input\');
+                let hasContent = false;
+                
+                // Check if any input in this row has content
+                rowInputs.forEach(input => {
+                    if (input.value.trim() !== \'\') {
+                        hasContent = true;
+                    }
+                });
+                
+                if (hasContent) {
+                    row.classList.add(\'has-content\');
+                    row.classList.remove(\'empty-content\');
+                } else {
+                    row.classList.add(\'empty-content\');
+                    row.classList.remove(\'has-content\');
+                }
+            });
+        }
+        
+        // Check inputs on page load
         window.onload = function() {
             setTimeout(function() {
-                window.print();
-            }, 500);
+                checkCertificationInputs();
+                alert("Please fill in the certification details and click the Print Report button when ready.");
+            }, 1000);
         };
         
-        // Close window after printing
+        // Check inputs on input change
+        document.addEventListener(\'input\', function(e) {
+            if (e.target.classList.contains(\'certification-input\')) {
+                checkCertificationInputs();
+            }
+        });
+        
+        // Print function
+        function printReport() {
+            checkCertificationInputs(); // Ensure latest state before printing
+            window.print();
+        }
+        
+        // Close window after printing (if user uses browser print)
         window.onafterprint = function() {
-            window.close();
+            setTimeout(function() {
+                if (confirm(\'Report printed successfully. Close this window?\')) {
+                    window.close();
+                }
+            }, 500);
         };
     </script>
 </body>
@@ -648,10 +683,6 @@ function generateInventoryReportContent($date_from, $date_to) {
     
     $office_id = $_SESSION['office_id'];
     
-    $html = '
-    <div class="section">
-        <div class="section-title">Inventory Summary</div>';
-    
     // Asset inventory
     $asset_query = "SELECT 
         COUNT(*) as total_assets,
@@ -666,38 +697,6 @@ function generateInventoryReportContent($date_from, $date_to) {
     $stmt->execute();
     $asset_data = $stmt->get_result()->fetch_assoc();
     
-    $html .= '
-        <div class="info-grid">
-            <div>
-                <div class="info-item">
-                    <span class="info-label">Total Assets:</span>
-                    <span class="info-value">' . $asset_data['total_assets'] . '</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Functional Assets:</span>
-                    <span class="info-value">' . $asset_data['functional_assets'] . '</span>
-                </div>
-            </div>
-            <div>
-                <div class="info-item">
-                    <span class="info-label">Non-Functional Assets:</span>
-                    <span class="info-value">' . $asset_data['non_functional_assets'] . '</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Untagged Assets:</span>
-                    <span class="info-value">' . $asset_data['untagged_assets'] . '</span>
-                </div>
-            </div>
-        </div>
-        <div class="info-grid">
-            <div>
-                <div class="info-item">
-                    <span class="info-label">Total Asset Value:</span>
-                    <span class="info-value text-value">₱' . number_format($asset_data['total_asset_value'], 2) . '</span>
-                </div>
-            </div>
-        </div>';
-    
     // Consumable inventory
     $consumable_query = "SELECT 
         COUNT(*) as total_consumables,
@@ -711,27 +710,70 @@ function generateInventoryReportContent($date_from, $date_to) {
     $stmt->execute();
     $consumable_data = $stmt->get_result()->fetch_assoc();
     
-    $html .= '
-        <h4 style="margin-top: 30px; margin-bottom: 15px;">Consumables</h4>
-        <div class="info-grid">
-            <div>
-                <div class="info-item">
-                    <span class="info-label">Total Consumable Types:</span>
-                    <span class="info-value">' . $consumable_data['total_consumables'] . '</span>
+    $html = '
+    <div class="section">
+        <div class="section-title">Inventory Summary</div>
+        
+        <div class="inventory-grid">
+            <!-- Assets Section -->
+            <div class="inventory-group">
+                <h4 class="group-title">Assets</h4>
+                <div class="info-grid">
+                    <div>
+                        <div class="info-item">
+                            <span class="info-label">Total Assets:</span>
+                            <span class="info-value">' . $asset_data['total_assets'] . '</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Functional Assets:</span>
+                            <span class="info-value">' . $asset_data['functional_assets'] . '</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="info-item">
+                            <span class="info-label">Non-Functional Assets:</span>
+                            <span class="info-value">' . $asset_data['non_functional_assets'] . '</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Untagged Assets:</span>
+                            <span class="info-value">' . $asset_data['untagged_assets'] . '</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="info-item">
-                    <span class="info-label">Total Quantity:</span>
-                    <span class="info-value">' . $consumable_data['total_quantity'] . '</span>
+                <div class="info-grid">
+                    <div>
+                        <div class="info-item">
+                            <span class="info-label">Total Asset Value:</span>
+                            <span class="info-value text-value">₱' . number_format($asset_data['total_asset_value'], 2) . '</span>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div>
-                <div class="info-item">
-                    <span class="info-label">Low Stock Items:</span>
-                    <span class="info-value">' . $consumable_data['low_stock_items'] . '</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Total Value:</span>
-                    <span class="info-value text-value">₱' . number_format($consumable_data['total_value'], 2) . '</span>
+            
+            <!-- Consumables Section -->
+            <div class="inventory-group">
+                <h4 class="group-title">Consumables</h4>
+                <div class="info-grid">
+                    <div>
+                        <div class="info-item">
+                            <span class="info-label">Total Consumable Types:</span>
+                            <span class="info-value">' . $consumable_data['total_consumables'] . '</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Total Quantity:</span>
+                            <span class="info-value">' . $consumable_data['total_quantity'] . '</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="info-item">
+                            <span class="info-label">Low Stock Items:</span>
+                            <span class="info-value">' . $consumable_data['low_stock_items'] . '</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Total Value:</span>
+                            <span class="info-value text-value">₱' . number_format($consumable_data['total_value'], 2) . '</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -863,6 +905,86 @@ function generateConsumableReportContent($date_from, $date_to) {
 }
 
 /**
+ * Generate Combined Asset-Consumable Report Content (Admin Style)
+ */
+function generateAssetConsumableReportContent($date_from, $date_to) {
+    global $conn, $_SESSION;
+    
+    $office_id = $_SESSION['office_id'];
+    
+    $html = '
+    <div class="combined-report">
+        <div class="report-row">
+            <div class="report-section">
+                <div class="section-title">Asset Summary</div>';
+    
+    // Asset data
+    $asset_query = "SELECT 
+        COUNT(*) as total_assets,
+        SUM(CASE WHEN status IN ('serviceable', 'available', 'in_use') THEN 1 ELSE 0 END) as functional_assets,
+        COALESCE(SUM(value), 0) as total_asset_value
+        FROM asset_items WHERE office_id = ?";
+    
+    $stmt = $conn->prepare($asset_query);
+    $stmt->bind_param("i", $office_id);
+    $stmt->execute();
+    $asset_data = $stmt->get_result()->fetch_assoc();
+    
+    $html .= '
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <div class="summary-label">Total Assets:</div>
+                        <div class="summary-value">' . $asset_data['total_assets'] . '</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-label">Functional:</div>
+                        <div class="summary-value">' . $asset_data['functional_assets'] . '</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-label">Total Value:</div>
+                        <div class="summary-value">₱' . number_format($asset_data['total_asset_value'], 2) . '</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="report-section">
+                <div class="section-title">Consumable Summary</div>';
+    
+    // Consumable data
+    $consumable_query = "SELECT 
+        COUNT(*) as total_consumables,
+        SUM(quantity) as total_quantity,
+        SUM(CASE WHEN quantity <= reorder_level THEN 1 ELSE 0 END) as low_stock
+        FROM consumables WHERE office_id = ?";
+    
+    $stmt = $conn->prepare($consumable_query);
+    $stmt->bind_param("i", $office_id);
+    $stmt->execute();
+    $consumable_data = $stmt->get_result()->fetch_assoc();
+    
+    $html .= '
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <div class="summary-label">Total Items:</div>
+                        <div class="summary-value">' . $consumable_data['total_consumables'] . '</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-label">Total Quantity:</div>
+                        <div class="summary-value">' . $consumable_data['total_quantity'] . '</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-label">Low Stock:</div>
+                        <div class="summary-value">' . $consumable_data['low_stock'] . '</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>';
+    
+    return $html;
+}
+
+/**
  * Generate Borrow Request Report Content (Admin Style)
  */
 function generateBorrowRequestReportContent($date_from, $date_to) {
@@ -934,51 +1056,579 @@ function generateAdminStyleSignatorySection($signatories) {
     $html = '
     <div class="section">
         <div class="section-title">Certification</div>
-        <div class="info-grid">
-            <div>
-                <div class="info-item">
-                    <span class="info-label">Prepared by:</span>
-                    <span class="info-value">' . htmlspecialchars($signatories['prepared']['full_name'] ?? '_____________________') . '</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Designation:</span>
-                    <span class="info-value">' . htmlspecialchars($signatories['prepared']['designation'] ?? '_____________________') . '</span>
-                </div>
-            </div>
-            <div>
-                <div class="info-item">
-                    <span class="info-label">Noted by:</span>
-                    <span class="info-value">' . htmlspecialchars($signatories['noted']['full_name'] ?? '_____________________') . '</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Designation:</span>
-                    <span class="info-value">' . htmlspecialchars($signatories['noted']['designation'] ?? '_____________________') . '</span>
+        <div class="certification-section">
+            <div class="certification-row">
+                <div class="certification-item">
+                    <label>Prepared by:</label>
+                    <div class="certification-input-wrapper">
+                        <input type="text" class="certification-input" value="' . htmlspecialchars($signatories['prepared']['full_name'] ?? '') . '" placeholder="Enter name">
+                        <div class="signature-line"></div>
+                        <input type="text" class="certification-input" value="' . htmlspecialchars($signatories['prepared']['designation'] ?? '') . '" placeholder="Enter designation">
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="info-grid" style="margin-top: 30px;">
-            <div>
-                <div class="info-item">
-                    <span class="info-label">Approved by:</span>
-                    <span class="info-value">' . htmlspecialchars($signatories['approved']['full_name'] ?? '_____________________') . '</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Designation:</span>
-                    <span class="info-value">' . htmlspecialchars($signatories['approved']['designation'] ?? '_____________________') . '</span>
+            <div class="certification-row">
+                <div class="certification-item">
+                    <label>Noted by:</label>
+                    <div class="certification-input-wrapper">
+                        <input type="text" class="certification-input" value="' . htmlspecialchars($signatories['noted']['full_name'] ?? '') . '" placeholder="Enter name">
+                        <div class="signature-line"></div>
+                        <input type="text" class="certification-input" value="' . htmlspecialchars($signatories['noted']['designation'] ?? '') . '" placeholder="Enter designation">
+                    </div>
                 </div>
             </div>
-            <div>
-                <div class="info-item">
-                    <span class="info-label">Certified by:</span>
-                    <span class="info-value">' . htmlspecialchars($signatories['certified']['full_name'] ?? '_____________________') . '</span>
+            <div class="certification-row">
+                <div class="certification-item">
+                    <label>Approved by:</label>
+                    <div class="certification-input-wrapper">
+                        <input type="text" class="certification-input" value="' . htmlspecialchars($signatories['approved']['full_name'] ?? '') . '" placeholder="Enter name">
+                        <div class="signature-line"></div>
+                        <input type="text" class="certification-input" value="' . htmlspecialchars($signatories['approved']['designation'] ?? '') . '" placeholder="Enter designation">
+                    </div>
                 </div>
-                <div class="info-item">
-                    <span class="info-label">Designation:</span>
-                    <span class="info-value">' . htmlspecialchars($signatories['certified']['designation'] ?? '_____________________') . '</span>
+            </div>
+            <div class="certification-row">
+                <div class="certification-item">
+                    <label>Certified by:</label>
+                    <div class="certification-input-wrapper">
+                        <input type="text" class="certification-input" value="' . htmlspecialchars($signatories['certified']['full_name'] ?? '') . '" placeholder="Enter name">
+                        <div class="signature-line"></div>
+                        <input type="text" class="certification-input" value="' . htmlspecialchars($signatories['certified']['designation'] ?? '') . '" placeholder="Enter designation">
+                    </div>
                 </div>
             </div>
         </div>
     </div>';
+    
+    // Add CSS for certification section
+    $html .= '
+    <style>
+        .certification-section {
+            margin: 20px 0;
+        }
+        
+        .certification-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .certification-item {
+            flex: 1;
+        }
+        
+        .certification-item label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #0c5460;
+        }
+        
+        .certification-input-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .certification-input {
+            border: none;
+            border-bottom: 1px solid #ccc;
+            background: transparent;
+            padding: 5px 0;
+            font-size: 11px;
+            width: 100%;
+            outline: none;
+        }
+        
+        .certification-input:focus {
+            border-bottom-color: #007bff;
+        }
+        
+        .signature-line {
+            height: 1px;
+            background: #333;
+            margin: 8px 0;
+        }
+        
+        p.status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .combined-report {
+            margin-bottom: 20px;
+        }
+        
+        .report-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .report-section {
+            flex: 1;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .report-section .section-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #0c5460;
+            border-bottom: 1px solid #0c5460;
+            padding-bottom: 5px;
+        }
+        
+        .report-section .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+        
+        .report-section .summary-item {
+            background: white;
+            padding: 8px;
+            border-radius: 3px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .report-section .summary-label {
+            font-size: 11px;
+            font-weight: bold;
+            color: #0c5460;
+        }
+        
+        .report-section .summary-value {
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        /* Inventory Grid Layout */
+        .inventory-grid {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 20px;
+        }
+        
+        .inventory-group {
+            flex: 1;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #dee2e6;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .group-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #0c5460;
+            margin: 0 0 15px 0;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #0c5460;
+            text-align: center;
+        }
+        
+        .inventory-group .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+        
+        .inventory-group .info-item {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #e9ecef;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        
+        .inventory-group .info-label {
+            font-size: 11px;
+            font-weight: bold;
+            color: #0c5460;
+            display: block;
+            margin-bottom: 3px;
+        }
+        
+        .inventory-group .info-value {
+            font-size: 13px;
+            font-weight: bold;
+            color: #000;
+        }
+        
+        .inventory-group .info-value.text-value {
+            color: #28a745;
+            font-size: 14px;
+        }
+        
+        /* Preview mode - match print layout exactly */
+        @media screen {
+            body {
+                font-family: Arial, sans-serif;
+                font-size: 12px;
+                line-height: 1.4;
+                margin: 0.25in 0.5in 0.25in 0.5in;
+                padding: 0;
+                color: #000;
+                background: white;
+                width: calc(14in - 1in);
+                min-height: calc(8.5in - 0.5in);
+            }
+            
+            .print-header {
+                margin-bottom: 20px;
+                padding: 0;
+            }
+            
+            .section {
+                margin-bottom: 20px;
+                page-break-inside: avoid;
+            }
+            
+            .section-title {
+                font-size: 16px;
+                font-weight: bold;
+                margin-bottom: 10px;
+                color: #0c5460;
+                border-bottom: 2px solid #0c5460;
+                padding-bottom: 5px;
+            }
+            
+            .data-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 20px;
+                font-size: 11px;
+            }
+            
+            .data-table th,
+            .data-table td {
+                border: 1px solid #ddd;
+                padding: 6px;
+                text-align: left;
+                vertical-align: top;
+            }
+            
+            .data-table th {
+                background-color: #f2f2f2;
+                font-weight: bold;
+                white-space: nowrap;
+            }
+            
+            .data-table tr:nth-child(even) {
+                background-color: #f9f9f9;
+            }
+            
+            .summary-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 15px;
+                margin-bottom: 20px;
+            }
+            
+            .summary-item {
+                background: #f8f9fa;
+                padding: 10px;
+                border-radius: 5px;
+                border: 1px solid #dee2e6;
+            }
+            
+            .summary-label {
+                font-weight: bold;
+                color: #0c5460;
+            }
+            
+            .summary-value {
+                font-size: 14px;
+                font-weight: bold;
+            }
+            
+            .alert {
+                padding: 8px;
+                margin: 10px 0;
+                border-radius: 4px;
+                border-left: 4px solid;
+                font-size: 11px;
+            }
+            
+            .status-badge {
+                display: inline-block;
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-size: 11px;
+                font-weight: bold;
+                text-transform: uppercase;
+            }
+            
+            .combined-report {
+                margin-bottom: 20px;
+            }
+            
+            .report-row {
+                display: flex;
+                gap: 20px;
+                margin-bottom: 20px;
+            }
+            
+            .report-section {
+                flex: 1;
+                background: #f8f9fa;
+                padding: 15px;
+                border-radius: 5px;
+                border: 1px solid #dee2e6;
+            }
+            
+            .report-section .section-title {
+                font-size: 14px;
+                font-weight: bold;
+                margin-bottom: 10px;
+                color: #0c5460;
+                border-bottom: 1px solid #0c5460;
+                padding-bottom: 5px;
+            }
+            
+            .report-section .summary-grid {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .report-section .summary-item {
+                background: white;
+                padding: 8px;
+                border-radius: 3px;
+                border: 1px solid #e9ecef;
+            }
+            
+            .report-section .summary-label {
+                font-size: 11px;
+                font-weight: bold;
+                color: #0c5460;
+            }
+            
+            .report-section .summary-value {
+                font-size: 12px;
+                font-weight: bold;
+            }
+            
+            .footer {
+                margin-top: 20px;
+                padding-top: 15px;
+                border-top: 1px solid #ccc;
+                text-align: center;
+                font-size: 11px;
+            }
+        }
+        
+        @media print {
+            body {
+                font-family: Arial, sans-serif;
+                font-size: 10px;
+                line-height: 1.2;
+                margin: 0.15in 0.4in 0.15in 0.4in;
+                padding: 0;
+                color: #000;
+                background: white;
+                width: calc(14in - 0.8in);
+                min-height: calc(8.5in - 0.3in);
+            }
+            
+            .print-header {
+                margin-bottom: 10px !important;
+            }
+            
+            .gov-header {
+                margin-bottom: 0px !important;
+                padding: 10px !important;
+                font-size: 11px !important;
+            }
+            
+            .gov-title h1 {
+                font-size: 14px !important;
+                margin: 0 !important;
+            }
+            
+            .municipality, .province {
+                font-size: 10px !important;
+            }
+            
+            .print-title, .print-subtitle {
+                font-size: 9px !important;
+            }
+            
+            .section {
+                margin-bottom: 12px !important;
+            }
+            
+            .section-title {
+                font-size: 12px !important;
+                font-weight: bold;
+                margin-bottom: 6px !important;
+                color: #0c5460;
+                border-bottom: 1px solid #0c5460;
+                padding-bottom: 3px !important;
+            }
+            
+            .data-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 12px !important;
+                font-size: 9px !important;
+            }
+            
+            .data-table th,
+            .data-table td {
+                border: 1px solid #ddd;
+                padding: 4px !important;
+                text-align: left;
+                vertical-align: top;
+            }
+            
+            .data-table th {
+                background-color: #f2f2f2;
+                font-weight: bold;
+                white-space: nowrap;
+                font-size: 9px !important;
+            }
+            
+            .summary-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                gap: 10px !important;
+                margin-bottom: 12px !important;
+            }
+            
+            .summary-item {
+                background: #f8f9fa;
+                padding: 6px !important;
+                border-radius: 3px;
+                border: 1px solid #dee2e6;
+            }
+            
+            .summary-label {
+                font-weight: bold;
+                color: #0c5460;
+                font-size: 9px !important;
+            }
+            
+            .summary-value {
+                font-size: 10px !important;
+                font-weight: bold;
+            }
+            
+            .inventory-grid {
+                gap: 20px !important;
+                margin-bottom: 12px !important;
+            }
+            
+            .inventory-group {
+                padding: 12px !important;
+            }
+            
+            .group-title {
+                font-size: 12px !important;
+                margin: 0 0 10px 0 !important;
+                padding-bottom: 5px !important;
+                border-bottom: 1px solid #0c5460;
+            }
+            
+            .inventory-group .info-grid {
+                gap: 8px !important;
+                margin-bottom: 10px !important;
+            }
+            
+            .inventory-group .info-item {
+                padding: 6px !important;
+            }
+            
+            .inventory-group .info-label {
+                font-size: 9px !important;
+                margin-bottom: 2px !important;
+            }
+            
+            .inventory-group .info-value {
+                font-size: 10px !important;
+            }
+            
+            .inventory-group .info-value.text-value {
+                font-size: 11px !important;
+            }
+            
+            .certification-input {
+                border-bottom: 1px solid #333;
+                background: transparent;
+                font-size: 10px !important;
+            }
+            
+            .certification-row.empty-content {
+                display: none !important;
+            }
+            
+            .certification-row.has-content {
+                display: flex !important;
+            }
+            
+            .print-actions {
+                display: none !important;
+            }
+            
+            .footer {
+                text-align: center !important;
+                margin-top: 15px !important;
+                padding-top: 10px !important;
+                border-top: 1px solid #ccc;
+                font-size: 9px !important;
+            }
+            
+            @page {
+                size: legal landscape;
+                margin: 0.15in 0.4in 0.15in 0.4in;
+            }
+            
+            html {
+                overflow: hidden;
+            }
+            
+            .combined-report {
+                page-break-inside: avoid;
+                margin-bottom: 15px;
+            }
+            
+            .report-row {
+                gap: 15px;
+                margin-bottom: 15px;
+            }
+            
+            .report-section {
+                padding: 10px;
+            }
+            
+            .report-section .section-title {
+                font-size: 12px;
+            }
+            
+            .report-section .summary-item {
+                padding: 6px;
+            }
+            
+            .report-section .summary-label {
+                font-size: 10px;
+            }
+            
+            .report-section .summary-value {
+                font-size: 11px;
+            }
+        }
+    </style>';
     
     return $html;
 }
