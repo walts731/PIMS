@@ -368,18 +368,61 @@ logSystemAction($_SESSION['user_id'], 'Printed ICS Form', 'forms', "ICS ID: $ics
         </div>
     </div>
     
-    <script>
-        // Auto-print when page loads
-        window.onload = function() {
-            setTimeout(function() {
-                window.print();
-            }, 500);
-        };
-        
-        // Close window after printing
-        window.onafterprint = function() {
-            window.close();
-        };
-    </script>
+    <div class="preview-toolbar no-print">
+        <div class="d-flex justify-content-between align-items-center bg-dark text-white p-2">
+            <div>
+                <i class="bi bi-eye me-2"></i> Print Preview - ICS
+            </div>
+            <div>
+                <button class="btn btn-primary btn-sm me-2" onclick="window.print()">
+                    <i class="bi bi-printer"></i> Print Form
+                </button>
+                <button class="btn btn-outline-light btn-sm" onclick="window.close()">
+                    <i class="bi bi-x-lg"></i> Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        @media screen {
+            body {
+                background: #525659;
+                padding: 40px 0;
+            }
+            .print-container {
+                background: white;
+                box-shadow: 0 0 20px rgba(0,0,0,0.5);
+                margin: 0 auto;
+                padding: 0.5in;
+                width: 8.5in;
+                min-height: 11in;
+            }
+            .preview-toolbar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                z-index: 1000;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            }
+        }
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; padding: 0; }
+            .print-container { 
+                box-shadow: none; 
+                margin: 0; 
+                padding: 0; 
+                width: 100%;
+            }
+            @page { margin: 0.5in; }
+        }
+    </style>
+    
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <!-- Bootstrap CSS for Toolbar -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </body>
 </html>
