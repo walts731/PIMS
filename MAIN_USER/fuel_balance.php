@@ -36,26 +36,51 @@ try {
         $error = 'No fuel tables found. Please contact administrator to set up fuel management tables.';
     } else {
         // Get filter parameters - expanded default date range
+$period_filter = isset($_GET['period']) ? trim((string)$_GET['period']) : 'month';
+
+// Calculate date range based on period filter
+switch ($period_filter) {
+    case 'today':
+        $date_from = date('Y-m-d');
+        $date_to = date('Y-m-d');
+        break;
+    case 'week':
+        $date_from = date('Y-m-d', strtotime('-7 days'));
+        $date_to = date('Y-m-d');
+        break;
+    case 'month':
+        $date_from = date('Y-m-d', strtotime('-30 days'));
+        $date_to = date('Y-m-d');
+        break;
+    case 'year':
+        $date_from = date('Y-01-01');
+        $date_to = date('Y-m-d');
+        break;
+    default:
         $date_from = isset($_GET['date_from']) ? trim((string)$_GET['date_from']) : date('Y-m-01', strtotime('-3 months'));
         $date_to = isset($_GET['date_to']) ? trim((string)$_GET['date_to']) : date('Y-m-d');
-        $office_filter = isset($_GET['office']) ? (int)$_GET['office'] : 0;
+        break;
+}
+
+$office_filter = isset($_GET['office']) ? (int)$_GET['office'] : 0;
         
         // Get fuel IN records
         if (in_array('fuel_in', $existing_tables)) {
             // Use correct column names for fuel_in table
             $fuel_in_sql = "SELECT 
-                              id,
-                              date_time as fuel_date,
-                              quantity as fuel_quantity,
-                              fuel_type,
-                              supplier_name as vehicle_name,
+                              fi.id,
+                              DATE(fi.date_time) as fuel_date,
+                              fi.quantity as fuel_quantity,
+                              ft.name as fuel_type,
+                              fi.supplier_name as vehicle_name,
                               '' as plate_number,
                               0 as odometer_reading,
-                              remarks as purpose,
-                              created_at,
-                              created_by
-                           FROM fuel_in 
-                           WHERE DATE(date_time) BETWEEN ? AND ?";
+                              fi.remarks as purpose,
+                              fi.created_at,
+                              fi.created_by
+                           FROM fuel_in fi
+                           LEFT JOIN fuel_types ft ON fi.fuel_type = ft.id
+                           WHERE DATE(fi.date_time) BETWEEN ? AND ?";
             
             $params = [$date_from, $date_to];
             $types = "ss";
@@ -66,7 +91,7 @@ try {
                 $types .= "i";
             }
             
-            $fuel_in_sql .= " ORDER BY date_time DESC";
+            $fuel_in_sql .= " ORDER BY fi.date_time DESC";
             
             $fuel_in_stmt = $conn->prepare($fuel_in_sql);
             if ($fuel_in_stmt) {
@@ -80,25 +105,26 @@ try {
             }
         }
         
-        // Get fuel OUT records - use exact same logic as fuel_out.php
-        if (in_array('fuel_transactions', $existing_tables)) {
-            // Use same query as fuel_out.php - gets from fuel_transactions table
+        // Get fuel OUT records - use fuel_out table
+        if (in_array('fuel_out', $existing_tables)) {
+            // Use fuel_out table with proper field mappings
             $fuel_out_sql = "SELECT 
-                                 ft.id,
-                                 DATE(ft.transaction_date) as fuel_date,
-                                 ft.quantity as fuel_quantity,
-                                 ft.fuel_type,
-                                 ft.vehicle_equipment as vehicle_name,
-                                 '' as plate_number,
-                                 ft.odometer_reading,
-                                 ft.purpose,
-                                 ft.created_at,
-                                 ft.user_id as created_by
-                              FROM fuel_transactions ft 
-                              WHERE ft.transaction_type = 'OUT'";
+                                 fo.id,
+                                 fo.fo_date as fuel_date,
+                                 fo.fo_liters as fuel_quantity,
+                                 ft.name as fuel_type,
+                                 fo.fo_request as vehicle_name,
+                                 fo.fo_plate_no as plate_number,
+                                 0 as odometer_reading,
+                                 fo.fo_request as purpose,
+                                 fo.created_at,
+                                 fo.created_by
+                              FROM fuel_out fo
+                              LEFT JOIN fuel_types ft ON fo.fo_fuel_type = ft.id
+                              WHERE 1=1";
             
             // Add date filter
-            $fuel_out_sql .= " AND DATE(ft.transaction_date) BETWEEN ? AND ?";
+            $fuel_out_sql .= " AND fo.fo_date BETWEEN ? AND ?";
             
             $params = [$date_from, $date_to];
             $types = "ss";
@@ -109,7 +135,7 @@ try {
                 $types .= "i";
             }
             
-            $fuel_out_sql .= " ORDER BY ft.created_at DESC";
+            $fuel_out_sql .= " ORDER BY fo.created_at DESC";
             
             $fuel_out_stmt = $conn->prepare($fuel_out_sql);
             if ($fuel_out_stmt) {
@@ -132,6 +158,32 @@ try {
         $total_fuel_in = array_sum(array_column($fuel_in_records, 'fuel_quantity'));
         $total_fuel_out = array_sum(array_column($fuel_out_records, 'fuel_quantity'));
         $net_balance = $total_fuel_in - $total_fuel_out;
+        
+        // Calculate balance by fuel type
+        $balance_by_type = [];
+        
+        // Group fuel IN by type
+        foreach ($fuel_in_records as $record) {
+            $fuel_type = $record['fuel_type'] ?? 'Unknown';
+            if (!isset($balance_by_type[$fuel_type])) {
+                $balance_by_type[$fuel_type] = ['in' => 0, 'out' => 0, 'net' => 0];
+            }
+            $balance_by_type[$fuel_type]['in'] += $record['fuel_quantity'];
+        }
+        
+        // Group fuel OUT by type
+        foreach ($fuel_out_records as $record) {
+            $fuel_type = $record['fuel_type'] ?? 'Unknown';
+            if (!isset($balance_by_type[$fuel_type])) {
+                $balance_by_type[$fuel_type] = ['in' => 0, 'out' => 0, 'net' => 0];
+            }
+            $balance_by_type[$fuel_type]['out'] += $record['fuel_quantity'];
+        }
+        
+        // Calculate net balance for each type
+        foreach ($balance_by_type as $fuel_type => $data) {
+            $balance_by_type[$fuel_type]['net'] = $data['in'] - $data['out'];
+        }
 ?>
 
 <!DOCTYPE html>
@@ -331,6 +383,68 @@ try {
             </div>
         <?php endif; ?>
 
+        <!-- Filter Section -->
+        <div class="filter-section mb-4">
+            <div class="row align-items-end">
+                <div class="col-md-12">
+                    <form method="GET" class="d-flex flex-wrap gap-2 align-items-end">
+                        <div>
+                            <label class="form-label fw-semibold">
+                                <i class="bi bi-calendar-range me-1"></i>Time Period
+                            </label>
+                            <div class="btn-group" role="group">
+                                <a href="?period=today" class="btn btn-<?php echo $period_filter === 'today' ? 'info' : 'outline-info'; ?>">
+                                    <i class="bi bi-calendar-day me-1"></i>Today
+                                </a>
+                                <a href="?period=week" class="btn btn-<?php echo $period_filter === 'week' ? 'info' : 'outline-info'; ?>">
+                                    <i class="bi bi-calendar-week me-1"></i>Week
+                                </a>
+                                <a href="?period=month" class="btn btn-<?php echo $period_filter === 'month' ? 'info' : 'outline-info'; ?>">
+                                    <i class="bi bi-calendar-month me-1"></i>Month
+                                </a>
+                                <a href="?period=year" class="btn btn-<?php echo $period_filter === 'year' ? 'info' : 'outline-info'; ?>">
+                                    <i class="bi bi-calendar-year me-1"></i>Year
+                                </a>
+                            </div>
+                        </div>
+                        <div class="ms-auto">
+                            <label class="form-label fw-semibold">
+                                <i class="bi bi-calendar-range me-1"></i>Custom Date Range
+                            </label>
+                            <div class="d-flex gap-2">
+                                <input type="date" class="form-control" id="date_from" name="date_from" 
+                                       value="<?php echo htmlspecialchars($date_from); ?>">
+                                <input type="date" class="form-control" id="date_to" name="date_to" 
+                                       value="<?php echo htmlspecialchars($date_to); ?>">
+                                <button type="submit" class="btn btn-gradient">
+                                    <i class="bi bi-funnel me-1"></i>
+                                    Apply
+                                </button>
+                                <a href="fuel_balance.php?period=month" class="btn btn-outline-secondary">
+                                    <i class="bi bi-x-circle me-1"></i>
+                                    Reset
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-12">
+                    <div class="text-muted">
+                        <small>
+                            <i class="bi bi-info-circle me-1"></i>
+                            Showing data from <strong><?php echo date('M d, Y', strtotime($date_from)); ?></strong> 
+                            to <strong><?php echo date('M d, Y', strtotime($date_to)); ?></strong>
+                            <?php if ($period_filter !== 'custom' && isset($_GET['period'])): ?>
+                                <span class="badge bg-info ms-2"><?php echo ucfirst($period_filter); ?></span>
+                            <?php endif; ?>
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         
         <!-- Balance Summary Cards with Enhanced Real Data Display -->
         <div class="row mb-4">
@@ -407,6 +521,54 @@ try {
                                 Efficiency: <?php echo $total_fuel_in > 0 ? number_format(($total_fuel_out / $total_fuel_in) * 100, 1) : 0; ?>%
                             </small>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Balance by Fuel Type -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="stats-card">
+                    <h5 class="mb-3">
+                        <i class="bi bi-pie-chart text-primary me-2"></i>
+                        Balance by Fuel Type
+                    </h5>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Fuel Type</th>
+                                    <th class="text-end">Fuel IN</th>
+                                    <th class="text-end">Fuel OUT</th>
+                                    <th class="text-end">Net Balance</th>
+                                    <th class="text-end">Efficiency</th>
+                                    <th class="text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($balance_by_type as $fuel_type => $data): ?>
+                                    <tr>
+                                        <td><strong><?php echo htmlspecialchars($fuel_type); ?></strong></td>
+                                        <td class="text-success text-end"><?php echo number_format($data['in'], 2); ?> L</td>
+                                        <td class="text-danger text-end"><?php echo number_format($data['out'], 2); ?> L</td>
+                                        <td class="text-<?php echo $data['net'] >= 0 ? 'success' : 'danger'; ?> text-end">
+                                            <strong><?php echo number_format($data['net'], 2); ?> L</strong>
+                                        </td>
+                                        <td class="text-end"><?php echo $data['in'] > 0 ? number_format(($data['out'] / $data['in']) * 100, 1) : 0; ?>%</td>
+                                        <td class="text-center">
+                                            <?php if ($data['net'] > 0): ?>
+                                                <span class="badge bg-success">Surplus</span>
+                                            <?php elseif ($data['net'] < 0): ?>
+                                                <span class="badge bg-danger">Deficit</span>
+                                            <?php else: ?>
+                                                <span class="badge bg-info">Balanced</span>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>

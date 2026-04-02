@@ -30,34 +30,36 @@ if (!$conn || $conn->connect_error) {
     $stats['error'] = 'Database connection failed: ' . ($conn->connect_error ?? 'Unknown error');
 } else {
     try {
-        // Check if fuel_transactions table exists
-        $fuel_table_check = $conn->query("SHOW TABLES LIKE 'fuel_transactions'");
-        if ($fuel_table_check && $fuel_table_check->num_rows > 0) {
+        // Check if fuel tables exist
+        $fuel_in_check = $conn->query("SHOW TABLES LIKE 'fuel_in'");
+        $fuel_out_check = $conn->query("SHOW TABLES LIKE 'fuel_out'");
+        
+        if ($fuel_in_check && $fuel_in_check->num_rows > 0) {
             // Get fuel IN transactions for last 30 days
             $fuel_in_query = "SELECT COUNT(*) as count, SUM(quantity) as total_quantity 
-                             FROM fuel_transactions 
-                             WHERE transaction_type = 'IN' 
-                             AND DATE(transaction_date) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
+                             FROM fuel_in 
+                             WHERE DATE(date_time) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
             $fuel_in_result = $conn->query($fuel_in_query);
             if ($fuel_in_result && $row = $fuel_in_result->fetch_assoc()) {
                 $fuel_in_last_30 = $row['count'] ?? 0;
                 $fuel_in_quantity = $row['total_quantity'] ?? 0;
             }
-            
+        }
+        
+        if ($fuel_out_check && $fuel_out_check->num_rows > 0) {
             // Get fuel OUT transactions for last 30 days
-            $fuel_out_query = "SELECT COUNT(*) as count, SUM(quantity) as total_quantity 
-                              FROM fuel_transactions 
-                              WHERE transaction_type = 'OUT' 
-                              AND DATE(transaction_date) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
+            $fuel_out_query = "SELECT COUNT(*) as count, SUM(fo_liters) as total_quantity 
+                              FROM fuel_out 
+                              WHERE DATE(fo_date) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
             $fuel_out_result = $conn->query($fuel_out_query);
             if ($fuel_out_result && $row = $fuel_out_result->fetch_assoc()) {
                 $fuel_out_last_30 = $row['count'] ?? 0;
                 $fuel_out_quantity = $row['total_quantity'] ?? 0;
             }
-            
-            $fuel_transactions_last_30 = $fuel_in_last_30 + $fuel_out_last_30;
-            $fuel_net_balance = $fuel_in_quantity - $fuel_out_quantity;
         }
+        
+        $fuel_transactions_last_30 = $fuel_in_last_30 + $fuel_out_last_30;
+        $fuel_net_balance = ($fuel_in_quantity ?? 0) - ($fuel_out_quantity ?? 0);
         
         $check_item_status = $conn->query("SHOW COLUMNS FROM asset_items LIKE 'status'");
         $item_has_status = $check_item_status && $check_item_status->num_rows > 0;
