@@ -569,7 +569,7 @@ if ($result && $row = $result->fetch_assoc()) {
                                                 <td><input type="text" class="form-control form-control-sm description-field" name="description[]"></td>
                                                 <td>
                                                 <div class="property-number-field">
-                                                    <input type="text" class="form-control form-control-sm item-no-field" name="item_no[]" value="" readonly placeholder="Click 'Generate' to create property number">
+                                                    <input type="text" class="form-control form-control-sm item-no-field" name="item_no[]" value="" readonly placeholder="Click 'Generate' to create">
                                                     <button type="button" class="btn btn-sm btn-outline-primary" onclick="showPropertyNumberGenerator(this)" title="Generate Property Number">
                                                         <i class="bi bi-gear"></i> Generate
                                                     </button>
