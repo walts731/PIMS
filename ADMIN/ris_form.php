@@ -187,6 +187,8 @@ if ($result && $row = $result->fetch_assoc()) {
     <!-- Custom CSS -->
     <link href="../assets/css/index.css" rel="stylesheet">
     <link href="../assets/css/theme-custom.css" rel="stylesheet">
+    <!-- Excel Parsing Library -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <link href="assets/css/admin-unified.css" rel="stylesheet">
     <style>
         body {
@@ -310,8 +312,12 @@ if ($result && $row = $result->fetch_assoc()) {
                 <h5 class="mb-0">
                     <i class="bi bi-pencil-square"></i> RIS Form
                 </h5>
-                <div class="no-print">
-                    <button class="btn btn-sm btn-outline-secondary" onclick="resetRISForm()">
+                <div class="no-print d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-success" onclick="document.getElementById('importExcelItem').click()">
+                        <i class="bi bi-file-earmark-excel"></i> Import Office Supplies
+                    </button>
+                    <input type="file" id="importExcelItem" class="d-none" accept=".xlsx, .xls" onchange="handleExcelImport(this)">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="resetRISForm()">
                         <i class="bi bi-arrow-clockwise"></i> Reset
                     </button>
                 </div>
@@ -756,6 +762,145 @@ if ($result && $row = $result->fetch_assoc()) {
             }
         }
         
+        // Handle Excel Import for Consolidated Office Supplies
+        async function handleExcelImport(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                    if (jsonData.length === 0) {
+                        alert('The selected Excel file is empty or invalid.');
+                        return;
+                    }
+
+                    // Attempt to auto-select the office based on filename (e.g., OMM_Office_Supplies.xlsx)
+                    const fileName = file.name;
+                    const officePart = fileName.split('_')[0];
+                    if (officePart) {
+                        const officeSelect = document.querySelector('select[name="office"]');
+                        if (officeSelect) {
+                            for (let i = 0; i < officeSelect.options.length; i++) {
+                                const opt = officeSelect.options[i];
+                                if (opt.value.toLowerCase().includes(officePart.toLowerCase()) || 
+                                    officePart.toLowerCase().includes(opt.value.toLowerCase())) {
+                                    officeSelect.selectedIndex = i;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    // Clear existing rows (if more than one row or if the first row is not empty)
+                    const table = document.getElementById('risItemsTable').getElementsByTagName('tbody')[0];
+                    const firstRow = table.rows[0];
+                    const firstDesc = firstRow.querySelector('input[name="description[]"]').value.trim();
+                    
+                    if (firstDesc !== '') {
+                        if (confirm('Replace current items with Excel data?')) {
+                            while (table.rows.length > 0) table.deleteRow(0);
+                        } else {
+                            input.value = '';
+                            return;
+                        }
+                    } else {
+                        // Just clear the first empty row to start fresh
+                        table.deleteRow(0);
+                    }
+
+                    // Map Excel columns to RIS fields
+                    // Consolidated Excel format from consumable_requests.php:
+                    // 'Item Description', 'Unit', 'Quantity'
+                    
+                    // Step 1: Collect/Find all unique units in the Excel file to pre-populate missing ones
+                    let unitOptions = `<?php 
+                        $options = '<option value="">Select Unit</option>';
+                        foreach ($units as $unit) {
+                            $singular = getSingularForm($unit['unit_name']);
+                            $options .= '<option value="' . htmlspecialchars($unit['unit_code']) . '" data-unit-name="' . htmlspecialchars($unit['unit_name']) . '" data-singular="' . htmlspecialchars($singular) . '">' . htmlspecialchars($unit['unit_name']) . '</option>';
+                        }
+                        echo $options;
+                    ?>`;
+
+                    // Check which units from Excel are missing in the current list
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = `<select>${unitOptions}</select>`;
+                    const existingSelect = tempDiv.firstChild;
+                    const existingUnits = Array.from(existingSelect.options).map(o => o.value.toLowerCase());
+                    const existingTexts = Array.from(existingSelect.options).map(o => o.text.toLowerCase());
+                    
+                    jsonData.forEach(row => {
+                        const u = row['Unit'] || row['unit'];
+                        if (u) {
+                            const uTrim = String(u).trim();
+                            const uLower = uTrim.toLowerCase();
+                            if (!existingUnits.includes(uLower) && !existingTexts.includes(uLower)) {
+                                unitOptions += `<option value="${uTrim}">${uTrim}</option>`;
+                                existingUnits.push(uLower); // Prevent duplicate adds
+                            }
+                        }
+                    });
+
+                    jsonData.forEach((row, index) => {
+                        const desc = row['Item Description'] || row['Description'] || '';
+                        const unit = row['Unit'] || '';
+                        const qty = row['Quantity'] || 0;
+
+                        if (!desc && !qty) return;
+
+                        // Add new row logic
+                        const newRow = table.insertRow();
+                        
+                        newRow.innerHTML = `
+                            <td><input type="text" class="form-control form-control-sm" name="stock_no[]" value="${table.rows.length}" readonly></td>
+                            <td>
+                                <select class="form-control form-control-sm" name="unit[]" required onchange="updateUnitDisplayForRow(this.closest('tr'))">
+                                    ${unitOptions}
+                                </select>
+                            </td>
+                            <td><input type="text" class="form-control form-control-sm" name="description[]" value="${desc.replace(/"/g, '&quot;')}" required></td>
+                            <td><input type="number" class="form-control form-control-sm" name="quantity[]" value="${qty}" required onchange="calculateTotal(this)"></td>
+                            <td><input type="number" class="form-control form-control-sm" name="price[]" step="0.01" onchange="calculateTotal(this)"></td>
+                            <td><input type="number" class="form-control form-control-sm" name="total_amount[]" readonly step="0.01" value="0.00"></td>
+                            <td><button type="button" class="btn btn-sm btn-danger" onclick="removeRISRow(this)"><i class="bi bi-trash"></i></button></td>
+                        `;
+
+                        // Match Unit
+                        if (unit) {
+                            const unitSelect = newRow.querySelector('select[name="unit[]"]');
+                            const normUnit = unit.toLowerCase().trim();
+                            for (let i = 0; i < unitSelect.options.length; i++) {
+                                const opt = unitSelect.options[i];
+                                if (opt.value.toLowerCase() === normUnit || opt.text.toLowerCase() === normUnit) {
+                                    unitSelect.selectedIndex = i;
+                                    break;
+                                }
+                            }
+                        }
+
+                        // Trigger unit display update
+                        updateUnitDisplayForRow(newRow);
+                    });
+
+                    updateGrandTotal();
+                    alert('Successfully imported ' + jsonData.length + ' items.');
+
+                } catch (err) {
+                    console.error(err);
+                    alert('Error parsing Excel file: ' + err.message);
+                }
+                input.value = ''; // Reset input
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
         // Handle form submission
         document.getElementById('risForm').addEventListener('submit', function(e) {
             // Client-side validation before submission
