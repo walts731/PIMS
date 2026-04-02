@@ -623,6 +623,14 @@ foreach ($balance_by_type as $fuel_type => $data) {
                             </a>
                         </div>
                     </div>
+                    <div class="row mt-2">
+                        <div class="col-md-3 mb-2">
+                            <a href="office_fuel_out_analysis.php" class="btn btn-warning w-100">
+                                <i class="bi bi-building me-2"></i>
+                                Office Fuel Out Analysis
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
