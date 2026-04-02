@@ -44,7 +44,7 @@ if (!$conn || $conn->connect_error) {
             
             // Exact status match - prioritize this
             $stmt = $conn->prepare("
-                SELECT ai.id, ai.description, ai.property_no, ai.property_number, ai.status, ai.value,
+                SELECT ai.id, ai.description, ai.property_no, ai.status, ai.value,
                        a.description as asset_description,
                        o.office_name
                 FROM asset_items ai
@@ -73,7 +73,7 @@ if (!$conn || $conn->connect_error) {
                 
                 $placeholders = str_repeat('?,', count($office_ids) - 1) . '?';
                 $stmt = $conn->prepare("
-                    SELECT ai.id, ai.description, ai.property_no, ai.property_number, ai.status, ai.value,
+                    SELECT ai.id, ai.description, ai.property_no, ai.status, ai.value,
                            a.description as asset_description,
                            o.office_name
                     FROM asset_items ai
@@ -88,7 +88,7 @@ if (!$conn || $conn->connect_error) {
                 $office_stmt->close();
                 // Simple search - only show items containing the search term
                 $stmt = $conn->prepare("
-                    SELECT ai.id, ai.description, ai.property_no, ai.property_number, ai.status, ai.value,
+                    SELECT ai.id, ai.description, ai.property_no, ai.status, ai.value,
                            a.description as asset_description,
                            o.office_name
                     FROM asset_items ai
@@ -98,7 +98,6 @@ if (!$conn || $conn->connect_error) {
                         ai.description LIKE ? OR
                         a.description LIKE ? OR
                         ai.property_no LIKE ? OR
-                        ai.property_number LIKE ? OR
                         ai.status LIKE ? OR
                         o.office_name LIKE ?
                     )
@@ -111,11 +110,10 @@ if (!$conn || $conn->connect_error) {
                     LIMIT 20
                 ");
                 $searchQuery = "%{$query}%";
-                $stmt->bind_param('sssssss',
+                $stmt->bind_param('ssssss',
                     $searchQuery, // WHERE ai.description LIKE
                     $searchQuery, // WHERE a.description LIKE
                     $searchQuery, // WHERE ai.property_no LIKE
-                    $searchQuery, // WHERE ai.property_number LIKE
                     $searchQuery, // WHERE ai.status LIKE
                     $searchQuery, // WHERE o.office_name LIKE
                     $query // ORDER BY CASE ai.description LIKE (exact)
@@ -202,7 +200,7 @@ if (count($results) === 1) {
                             <tbody>
                                 <?php foreach ($results as $row): ?>
                                     <tr>
-                                        <td><?php echo htmlspecialchars(($row['property_no'] ?? '') !== '' ? (string)$row['property_no'] : (($row['property_number'] ?? '') !== '' ? (string)$row['property_number'] : 'N/A')); ?></td>
+                                        <td><?php echo htmlspecialchars($row['property_no'] ?? 'N/A'); ?></td>
                                         <td>
                                             <div class="fw-semibold"><?php echo htmlspecialchars($row['description'] ?? ''); ?></div>
                                             <div class="text-muted small"><?php echo htmlspecialchars($row['asset_description'] ?? ''); ?></div>

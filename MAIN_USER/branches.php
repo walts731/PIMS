@@ -447,19 +447,6 @@ if ($office_filter > 0 && !empty($office_name)) {
                                     <i class="bi bi-arrow-left"></i> Back to Offices
                                 </a>
                             <?php endif; ?>
-                            <a class="btn btn-outline-primary btn-sm" href="branches.php">
-                                <i class="bi bi-arrow-clockwise"></i> Refresh
-                            </a>
-                            <div class="d-inline-block" style="min-width: 200px;">
-                                <select class="form-select form-select-sm" id="branchFilter">
-                                    <option value="0" <?php echo $branch_filter === 0 ? 'selected' : ''; ?>>All Branches</option>
-                                    <?php foreach ($branches as $branch): ?>
-                                        <option value="<?php echo (int)$branch['id']; ?>" <?php echo $branch_filter === (int)$branch['id'] ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($branch['branch_name']); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
                             <div class="d-inline-block" style="min-width: 180px;">
                                 <select class="form-select form-select-sm" id="statusFilter">
                                     <option value="" <?php echo $status_filter === '' ? 'selected' : ''; ?>>All Statuses</option>

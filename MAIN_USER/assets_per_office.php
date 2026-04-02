@@ -272,19 +272,9 @@ if (!$conn || $conn->connect_error) {
                     </div>
                     <div class="col-md-4 text-md-end">
                         <div class="d-flex align-items-center justify-content-md-end gap-2 flex-wrap">
-                            <a class="btn btn-outline-primary btn-sm" href="assets_per_office.php">
-                                <i class="bi bi-arrow-clockwise"></i> Refresh
+                            <a class="btn btn-outline-secondary btn-sm" href="offices.php">
+                                <i class="bi bi-arrow-left"></i> Back
                             </a>
-                            <div class="d-inline-block" style="min-width: 200px;">
-                                <select class="form-select form-select-sm" id="officeFilter">
-                                    <option value="0" <?php echo $office_filter === 0 ? 'selected' : ''; ?>>All Offices</option>
-                                    <?php foreach ($offices as $office): ?>
-                                        <option value="<?php echo (int)$office['id']; ?>" <?php echo $office_filter === (int)$office['id'] ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($office['office_name']); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
                             <div class="d-inline-block" style="min-width: 180px;">
                                 <select class="form-select form-select-sm" id="statusFilter">
                                     <option value="" <?php echo $status_filter === '' ? 'selected' : ''; ?>>All Statuses</option>
@@ -343,7 +333,6 @@ if (!$conn || $conn->connect_error) {
                                     <i class="bi bi-box-seam"></i> Office Consumable
                                 </a>
                             <?php endif; ?>
-                            <a href="assets_per_office.php" class="btn btn-sm btn-outline-secondary">Clear Filters</a>
                         </div>
                     </div>
                 </div>
@@ -486,20 +475,11 @@ if (!$conn || $conn->connect_error) {
     <?php require_once 'includes/sidebar-scripts.php'; ?>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const officeFilter = document.getElementById('officeFilter');
             const statusFilter = document.getElementById('statusFilter');
             const categoryFilter = document.getElementById('categoryFilter');
 
             function applyFilters() {
                 const currentUrl = new URL(window.location.href);
-
-                // Apply office filter
-                const officeValue = parseInt(officeFilter.value || '0', 10);
-                if (officeValue > 0) {
-                    currentUrl.searchParams.set('office_id', String(officeValue));
-                } else {
-                    currentUrl.searchParams.delete('office_id');
-                }
 
                 // Apply status filter
                 const statusValue = statusFilter.value || '';
@@ -521,9 +501,6 @@ if (!$conn || $conn->connect_error) {
             }
 
             // Add event listeners
-            if (officeFilter) {
-                officeFilter.addEventListener('change', applyFilters);
-            }
             if (statusFilter) {
                 statusFilter.addEventListener('change', applyFilters);
             }
@@ -556,5 +533,5 @@ if (!$conn || $conn->connect_error) {
                 });
             });
 
-                    });
+        });
     </script>

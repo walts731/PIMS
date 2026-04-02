@@ -427,29 +427,24 @@ foreach ($balance_by_type as $fuel_type => $data) {
                             <label class="form-label fw-semibold">
                                 <i class="bi bi-building me-1"></i>Office
                             </label>
-                            <select class="form-select" id="office" name="office">
-                                <option value="0" <?php echo $office_filter === 0 ? 'selected' : ''; ?>>All Offices</option>
-                                <?php foreach ($offices as $office): ?>
-                                    <option value="<?php echo (int)$office['id']; ?>" <?php echo $office_filter === (int)$office['id'] ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($office['office_name']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
+                            <div class="form-control">
+                                All Office
+                            </div>
                         </div>
                         <div class="ms-auto">
-                            <label class="form-label fw-semibold">
+                            <label class="form-label fw-semibold small">
                                 <i class="bi bi-calendar-range me-1"></i>Custom Date Range
                             </label>
-                            <div class="d-flex gap-2">
-                                <input type="date" class="form-control" id="date_from" name="date_from" 
+                            <div class="d-flex gap-1">
+                                <input type="date" class="form-control form-control-sm" id="date_from" name="date_from" 
                                        value="<?php echo htmlspecialchars($date_from); ?>">
-                                <input type="date" class="form-control" id="date_to" name="date_to" 
+                                <input type="date" class="form-control form-control-sm" id="date_to" name="date_to" 
                                        value="<?php echo htmlspecialchars($date_to); ?>">
-                                <button type="submit" class="btn btn-gradient">
+                                <button type="submit" class="btn btn-gradient btn-sm">
                                     <i class="bi bi-funnel me-1"></i>
                                     Apply
                                 </button>
-                                <a href="fuel_management.php?period=month" class="btn btn-outline-secondary">
+                                <a href="fuel_management.php?period=month" class="btn btn-outline-secondary btn-sm">
                                     <i class="bi bi-x-circle me-1"></i>
                                     Reset
                                 </a>
