@@ -65,13 +65,7 @@
                 <span class="menu-text">Office Reports</span>
             </a>
         </li>
-        <li class="menu-item">
-            <a href="inventory_reports.php" class="menu-link">
-                <i class="bi bi-clipboard-data"></i>
-                <span class="menu-text">Inventory Reports</span>
-            </a>
-        </li>
-        
+                
         <li class="menu-header">Account</li>
         <li class="menu-item">
             <a href="profile.php" class="menu-link">
