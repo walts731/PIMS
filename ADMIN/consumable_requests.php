@@ -293,13 +293,13 @@ logSystemAction($_SESSION['user_id'], 'Accessed Consumable Requests', 'consumabl
                             });
 
                             const isSecondary = h.startsWith('__EMPTY');
-                            let isChecked = !isIgnored && hLower !== 'id' && hLower !== 'no.' && !isSecondary;
+                            let isChecked = (!isIgnored || hasData) && !isSecondary;
                             const safeH = String(h).replace(/"/g, '&quot;');
                             const displayH = isSecondary ? '(Secondary Column)' : safeH;
                             officeHtml += `
                                 <div class="col-md-6 mb-2">
                                     <div class="form-check text-truncate" title="${safeH}">
-                                        <input class="form-check-input office-checkbox" type="checkbox" value="${safeH}" id="chk_${safeH}" ${isChecked}>
+                                        <input class="form-check-input office-checkbox" type="checkbox" value="${safeH}" id="chk_${safeH}" ${isChecked ? 'checked' : ''}>
                                         <label class="form-check-label small" for="chk_${safeH}">
                                             ${displayH} ${hasData ? '<i class="bi bi-check-all text-success" title="Contains quantities"></i>' : ''}
                                         </label>
