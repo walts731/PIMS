@@ -194,8 +194,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $requesting_office_query->close();
                 
                 // Check if consumable already exists (to avoid duplicates)
-                $check_consumable = $conn->prepare("SELECT id FROM consumables WHERE description = ? AND office_id = ? LIMIT 1");
-                $check_consumable->bind_param("si", $descriptions[$i], $supply_office_id);
+                $check_consumable = $conn->prepare("SELECT id FROM consumables WHERE description = ? AND office_id = ? AND for_office_id = ? LIMIT 1");
+                $check_consumable->bind_param("sii", $descriptions[$i], $supply_office_id, $requesting_office_id);
                 $check_consumable->execute();
                 $check_result = $check_consumable->get_result();
                 
@@ -222,8 +222,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $row = $check_result->fetch_assoc();
                     $target_consumable_id = $row['id'];
                     // Update existing consumable quantity and units
-                    $update_consumable = $conn->prepare("UPDATE consumables SET quantity = quantity + ?, units = ?, unit_cost = ?, updated_at = NOW(), for_office_id = ? WHERE description = ? AND office_id = ?");
-                    $update_consumable->bind_param("dsdisi", $quantity, $current_unit, $price, $requesting_office_id, $descriptions[$i], $supply_office_id);
+                    $update_consumable = $conn->prepare("UPDATE consumables SET quantity = quantity + ?, units = ?, unit_cost = ?, updated_at = NOW() WHERE description = ? AND office_id = ? AND for_office_id = ?");
+                    $update_consumable->bind_param("dsdsii", $quantity, $current_unit, $price, $descriptions[$i], $supply_office_id, $requesting_office_id);
                     $update_consumable->execute();
                     $update_consumable->close();
                 }
