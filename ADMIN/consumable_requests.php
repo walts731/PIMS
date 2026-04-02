@@ -203,16 +203,31 @@ logSystemAction($_SESSION['user_id'], 'Accessed Consumable Requests', 'consumabl
                     const workbook = XLSX.read(data, {type: 'array'});
                     const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                     
-                    // Progressive header detection: try range 2 (Row 3) then range 0 (Row 1)
-                    let dataRange = 2;
-                    let trialData = XLSX.utils.sheet_to_json(firstSheet, { range: dataRange });
-                    
-                    if (trialData.length === 0 || Object.keys(trialData[0]).length < 2) {
-                        dataRange = 0;
-                        trialData = XLSX.utils.sheet_to_json(firstSheet, { range: dataRange });
+                    // Smarter Header Detection: try rows 0-5 and pick the one with most keyword matches
+                    const itemKeywords = ['desc', 'item', 'particulars', 'article', 'description', 'stock', 'unit'];
+                    let bestRange = 0;
+                    let maxMatches = -1;
+                    let bestData = null;
+
+                    for (let r = 0; r <= 5; r++) {
+                        try {
+                            let testData = XLSX.utils.sheet_to_json(firstSheet, { range: r, defval: null });
+                            if (testData.length > 0) {
+                                let headers = Object.keys(testData[0]);
+                                let matches = headers.filter(h => 
+                                    itemKeywords.some(k => String(h).toLowerCase().includes(k))
+                                ).length;
+                                
+                                if (matches > maxMatches) {
+                                    maxMatches = matches;
+                                    bestRange = r;
+                                    bestData = testData;
+                                }
+                            }
+                        } catch(err) { continue; }
                     }
-                    
-                    rawExcelData = trialData;
+
+                    rawExcelData = bestData || [];
                     
                     if (rawExcelData.length > 0) {
                         excelHeaders = Object.keys(rawExcelData[0]);
@@ -262,11 +277,13 @@ logSystemAction($_SESSION['user_id'], 'Accessed Consumable Requests', 'consumabl
 
                     let officeHtml = '';
                     excelHeaders.forEach(h => {
-                        const hLower = h.toLowerCase().trim();
+                        const hLower = String(h).toLowerCase().trim();
                         // Is this column one of the core fields?
                         const isCore = systemFields.some(f => f.keywords.some(k => hLower === k.toLowerCase() || hLower.includes(k.toLowerCase())));
-                        // Should we ignore this by default?
-                        const isIgnored = hLower.includes('cost') || hLower.includes('total') || hLower.includes('price') || hLower.includes('__empty') || hLower.includes('avg') || hLower.includes('value');
+                        
+                        // Refined Ignore logic: ignore only if it's EXACTLY a common non-office keyword
+                        const blackList = ['total', 'cost', 'price', 'id', 'no.', 'avg', 'value', 'grand total', 'remarks', 'amount', 'balance', 'stock'];
+                        const isIgnored = blackList.includes(hLower);
                         
                         if (!isCore) {
                             // Data analysis for indicator only
@@ -399,9 +416,7 @@ logSystemAction($_SESSION['user_id'], 'Accessed Consumable Requests', 'consumabl
                                     <button class="btn btn-sm btn-outline-primary border-0 rounded-circle" onclick="window.viewOfficeData('${officeName.replace(/'/g, "\\'")}')" title="View Items">
                                         <i class="bi bi-eye"></i>
                                     </button>
-                                    <button class="btn btn-sm btn-outline-info border-0 rounded-circle" onclick="window.generateRIS('${officeName.replace(/'/g, "\\'")}')" title="Create RIS Form">
-                                        <i class="bi bi-file-earmark-check"></i>
-                                    </button>
+
                                     <button class="btn btn-sm btn-outline-success border-0 rounded-circle" onclick="window.downloadFile('${officeName.replace(/'/g, "\\'")}')" title="Download Excel List">
                                         <i class="bi bi-download"></i>
                                     </button>
@@ -441,62 +456,7 @@ logSystemAction($_SESSION['user_id'], 'Accessed Consumable Requests', 'consumabl
             modal.show();
         };
 
-        window.generateRIS = async function(officeName) {
-            const fileData = window.generatedFiles[officeName];
-            if (!fileData) return;
 
-            try {
-                // 1. Fetch the template
-                const response = await fetch('../ris.xlsx');
-                if (!response.ok) throw new Error('Template ris.xlsx not found at root.');
-                const arrayBuffer = await response.arrayBuffer();
-                
-                // 2. Read Workbook
-                const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-                const firstSheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheetName];
-
-                // 3. Populate Header Info (Common RIS locations)
-                // We'll use a conservative approach: Office at C6, Date at G6, RIS No at G5
-                XLSX.utils.sheet_add_aoa(worksheet, [[officeName]], { origin: "C6" }); 
-                XLSX.utils.sheet_add_aoa(worksheet, [[new Date().toLocaleDateString()]], { origin: "G6" });
-                XLSX.utils.sheet_add_aoa(worksheet, [["RIS-" + Date.now().toString().slice(-6)]], { origin: "G5" });
-
-                // 4. Clear Signature Fields (Make them empty for manual signing)
-                // Assumed locations for signatures based on common RIS layouts (Rows 40-50)
-                const emptySignatures = [
-                    ["", "", "", ""], // Names row
-                    ["", "", "", ""], // Positions row
-                    ["", "", "", ""]  // Date row
-                ];
-                // Clearing common areas for: Requested By, Approved By, Issued By, Received By
-                XLSX.utils.sheet_add_aoa(worksheet, emptySignatures, { origin: "A48" }); 
-                XLSX.utils.sheet_add_aoa(worksheet, emptySignatures, { origin: "C48" });
-                XLSX.utils.sheet_add_aoa(worksheet, emptySignatures, { origin: "E48" });
-                XLSX.utils.sheet_add_aoa(worksheet, emptySignatures, { origin: "G48" });
-
-                // 5. Fill Items Table
-                // Assuming items start at Row 11 (Index 10)
-                const itemsAOA = fileData.data.map((item, idx) => [
-                    idx + 1,        // Stock No
-                    item['Unit'],   // Unit
-                    item['Item Description'], // Description
-                    item['Quantity'], // Quantity
-                    0,              // Price (Default)
-                    0               // Total (Default)
-                ]);
-
-                XLSX.utils.sheet_add_aoa(worksheet, itemsAOA, { origin: "A11" });
-
-                // 6. Download
-                const safeOffice = officeName.replace(/[^a-zA-Z0-9]/g, '_');
-                XLSX.writeFile(workbook, `RIS_${safeOffice}_Supplies.xlsx`);
-                
-            } catch (error) {
-                console.error(error);
-                alert('Error generating RIS: ' + error.message + '\nEnsure ris.xlsx is available in the root directory.');
-            }
-        };
 
         window.downloadFile = function(officeName) {
             const file = window.generatedFiles[officeName];
