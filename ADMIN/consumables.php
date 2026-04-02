@@ -625,6 +625,11 @@ try {
                                 </button>
                             </li>
                             <li>
+                                <a class="dropdown-item" href="bulk_release_form.php">
+                                    <i class="bi bi-box-seam"></i> Bulk Release
+                                </a>
+                            </li>
+                            <li>
                                 <a class="dropdown-item" href="lend_consumables.php">
                                     <i class="bi bi-arrow-left-right"></i> Borrowing
                                 </a>
