@@ -472,7 +472,7 @@ if ($result && $row = $result->fetch_assoc()) {
                             <!-- Purpose -->
                             <div class="mb-3">
                                 <label class="form-label"><strong>Purpose:</strong></label>
-                                <textarea class="form-control" name="purpose" rows="3" required></textarea>
+                                <textarea class="form-control" name="purpose" rows="3"></textarea>
                             </div>
                             
                             <!-- Signature Section -->
@@ -486,11 +486,11 @@ if ($result && $row = $result->fetch_assoc()) {
                                         </div>
                                         <div class="mb-2">
                                             <small class="text-muted">PRINTED NAME:</small>
-                                            <input type="text" class="form-control form-control-sm" name="requested_by" value="<?php echo htmlspecialchars($latest_signature['requested_by'] ?? ''); ?>" required>
+                                            <input type="text" class="form-control form-control-sm" name="requested_by" value="<?php echo htmlspecialchars($latest_signature['requested_by'] ?? ''); ?>">
                                         </div>
                                         <div class="mb-2">
                                             <small class="text-muted">DESIGNATION:</small>
-                                            <input type="text" class="form-control form-control-sm" name="requested_by_position" value="<?php echo htmlspecialchars($latest_signature['requested_by_position'] ?? ''); ?>" required>
+                                            <input type="text" class="form-control form-control-sm" name="requested_by_position" value="<?php echo htmlspecialchars($latest_signature['requested_by_position'] ?? ''); ?>">
                                         </div>
                                         <div>
                                             <small class="text-muted">DATE:</small>
@@ -507,11 +507,11 @@ if ($result && $row = $result->fetch_assoc()) {
                                         </div>
                                         <div class="mb-2">
                                             <small class="text-muted">PRINTED NAME:</small>
-                                            <input type="text" class="form-control form-control-sm" name="approved_by" value="<?php echo htmlspecialchars($latest_signature['approved_by'] ?? ''); ?>" required>
+                                            <input type="text" class="form-control form-control-sm" name="approved_by" value="<?php echo htmlspecialchars($latest_signature['approved_by'] ?? ''); ?>">
                                         </div>
                                         <div class="mb-2">
                                             <small class="text-muted">DESIGNATION:</small>
-                                            <input type="text" class="form-control form-control-sm" name="approved_by_position" value="<?php echo htmlspecialchars($latest_signature['approved_by_position'] ?? ''); ?>" required>
+                                            <input type="text" class="form-control form-control-sm" name="approved_by_position" value="<?php echo htmlspecialchars($latest_signature['approved_by_position'] ?? ''); ?>">
                                         </div>
                                         <div>
                                             <small class="text-muted">DATE:</small>
@@ -528,11 +528,11 @@ if ($result && $row = $result->fetch_assoc()) {
                                         </div>
                                         <div class="mb-2">
                                             <small class="text-muted">PRINTED NAME:</small>
-                                            <input type="text" class="form-control form-control-sm" name="issued_by" value="<?php echo htmlspecialchars($latest_signature['issued_by'] ?? ''); ?>" required>
+                                            <input type="text" class="form-control form-control-sm" name="issued_by" value="<?php echo htmlspecialchars($latest_signature['issued_by'] ?? ''); ?>">
                                         </div>
                                         <div class="mb-2">
                                             <small class="text-muted">DESIGNATION:</small>
-                                            <input type="text" class="form-control form-control-sm" name="issued_by_position" value="<?php echo htmlspecialchars($latest_signature['issued_by_position'] ?? ''); ?>" required>
+                                            <input type="text" class="form-control form-control-sm" name="issued_by_position" value="<?php echo htmlspecialchars($latest_signature['issued_by_position'] ?? ''); ?>">
                                         </div>
                                         <div>
                                             <small class="text-muted">DATE:</small>
@@ -549,11 +549,11 @@ if ($result && $row = $result->fetch_assoc()) {
                                         </div>
                                         <div class="mb-2">
                                             <small class="text-muted">PRINTED NAME:</small>
-                                            <input type="text" class="form-control form-control-sm" name="received_by" value="<?php echo htmlspecialchars($latest_signature['received_by'] ?? ''); ?>" required>
+                                            <input type="text" class="form-control form-control-sm" name="received_by" value="<?php echo htmlspecialchars($latest_signature['received_by'] ?? ''); ?>">
                                         </div>
                                         <div class="mb-2">
                                             <small class="text-muted">DESIGNATION:</small>
-                                            <input type="text" class="form-control form-control-sm" name="received_by_position" value="<?php echo htmlspecialchars($latest_signature['received_by_position'] ?? ''); ?>" required>
+                                            <input type="text" class="form-control form-control-sm" name="received_by_position" value="<?php echo htmlspecialchars($latest_signature['received_by_position'] ?? ''); ?>">
                                         </div>
                                         <div>
                                             <small class="text-muted">DATE:</small>
@@ -928,17 +928,7 @@ if ($result && $row = $result->fetch_assoc()) {
             
             // Check essential fields
             const missingFields = [];
-            if (!risNo) missingFields.push('RIS No');
             if (!office) missingFields.push('Office');
-            if (!purpose) missingFields.push('Purpose');
-            if (!requestedBy) missingFields.push('Requested By Name');
-            if (!requestedByPosition) missingFields.push('Requested By Position');
-            if (!approvedBy) missingFields.push('Approved By Name');
-            if (!approvedByPosition) missingFields.push('Approved By Position');
-            if (!issuedBy) missingFields.push('Issued By Name');
-            if (!issuedByPosition) missingFields.push('Issued By Position');
-            if (!receivedBy) missingFields.push('Received By Name');
-            if (!receivedByPosition) missingFields.push('Received By Position');
             
             if (missingFields.length > 0) {
                 e.preventDefault();

@@ -52,13 +52,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $prices = $_POST['price'] ?? [];
         $total_amounts = $_POST['total_amount'] ?? [];
         
-        // Validate required fields - only validate essential fields
-        if (empty($ris_no) || empty($office) || empty($purpose) || 
-            empty($requested_by) || empty($requested_by_position) ||
-            empty($approved_by) || empty($approved_by_position) ||
-            empty($issued_by) || empty($issued_by_position) ||
-            empty($received_by) || empty($received_by_position)) {
-            throw new Exception('All required signature fields must be filled');
+        // Validate required fields - only validate office (if needed)
+        if (empty($office)) {
+            throw new Exception('Office is required');
         }
         
         // Validate items data
@@ -113,31 +109,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $conn->begin_transaction();
         
         // Insert RIS form using traditional SQL
-        $ris_no_escaped = $conn->real_escape_string($ris_no);
-        $sai_no_escaped = $conn->real_escape_string($sai_no);
-        $code_escaped = $conn->real_escape_string($code);
+        $ris_no_escaped = !empty($ris_no) ? "'".$conn->real_escape_string($ris_no)."'" : 'NULL';
+        $sai_no_escaped = !empty($sai_no) ? "'".$conn->real_escape_string($sai_no)."'" : 'NULL';
+        $code_escaped = !empty($code) ? "'".$conn->real_escape_string($code)."'" : 'NULL';
         $division_escaped = $conn->real_escape_string($division);
         $office_escaped = $conn->real_escape_string($office);
         $responsibility_center_escaped = $conn->real_escape_string($responsibility_center);
-        $date_escaped = $conn->real_escape_string($date);
-        $date_2_escaped = $conn->real_escape_string($date_2);
+        $date_escaped = !empty($date) ? "'".$conn->real_escape_string($date)."'" : 'NULL';
+        $date_2_escaped = !empty($date_2) ? "'".$conn->real_escape_string($date_2)."'" : 'NULL';
         $purpose_escaped = $conn->real_escape_string($purpose);
         $requested_by_escaped = $conn->real_escape_string($requested_by);
         $requested_by_position_escaped = $conn->real_escape_string($requested_by_position);
-        $requested_date_escaped = $requested_date ? "'".$conn->real_escape_string($requested_date)."'" : 'NULL';
+        $requested_date_escaped = !empty($requested_date) ? "'".$conn->real_escape_string($requested_date)."'" : 'NULL';
         $approved_by_escaped = $conn->real_escape_string($approved_by);
         $approved_by_position_escaped = $conn->real_escape_string($approved_by_position);
-        $approved_date_escaped = $approved_date ? "'".$conn->real_escape_string($approved_date)."'" : 'NULL';
+        $approved_date_escaped = !empty($approved_date) ? "'".$conn->real_escape_string($approved_date)."'" : 'NULL';
         $issued_by_escaped = $conn->real_escape_string($issued_by);
         $issued_by_position_escaped = $conn->real_escape_string($issued_by_position);
-        $issued_date_escaped = $issued_date ? "'".$conn->real_escape_string($issued_date)."'" : 'NULL';
+        $issued_date_escaped = !empty($issued_date) ? "'".$conn->real_escape_string($issued_date)."'" : 'NULL';
         $received_by_escaped = $conn->real_escape_string($received_by);
         $received_by_position_escaped = $conn->real_escape_string($received_by_position);
-        $received_date_escaped = $received_date ? "'".$conn->real_escape_string($received_date)."'" : 'NULL';
+        $received_date_escaped = !empty($received_date) ? "'".$conn->real_escape_string($received_date)."'" : 'NULL';
         $created_by_escaped = intval($_SESSION['user_id']);
         
         $sql = "INSERT INTO ris_forms (ris_no, sai_no, code, division, office, responsibility_center, date, date_2, purpose, requested_by, requested_by_position, requested_date, approved_by, approved_by_position, approved_date, issued_by, issued_by_position, issued_date, received_by, received_by_position, received_date, created_by) 
-                VALUES ('$ris_no_escaped', '$sai_no_escaped', '$code_escaped', '$division_escaped', '$office_escaped', '$responsibility_center_escaped', '$date_escaped', '$date_2_escaped', '$purpose_escaped', '$requested_by_escaped', '$requested_by_position_escaped', '$requested_date_escaped', '$approved_by_escaped', '$approved_by_position_escaped', '$approved_date_escaped', '$issued_by_escaped', '$issued_by_position_escaped', '$issued_date_escaped', '$received_by_escaped', '$received_by_position_escaped', '$received_date_escaped', $created_by_escaped)";
+                VALUES ($ris_no_escaped, $sai_no_escaped, $code_escaped, '$division_escaped', '$office_escaped', '$responsibility_center_escaped', $date_escaped, $date_2_escaped, '$purpose_escaped', '$requested_by_escaped', '$requested_by_position_escaped', $requested_date_escaped, '$approved_by_escaped', '$approved_by_position_escaped', $approved_date_escaped, '$issued_by_escaped', '$issued_by_position_escaped', $issued_date_escaped, '$received_by_escaped', '$received_by_position_escaped', $received_date_escaped, $created_by_escaped)";
         
         error_log("RIS SQL: " . $sql);
         
@@ -158,7 +154,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $item_stmt = $conn->prepare("INSERT INTO ris_items (ris_form_id, stock_no, unit, description, quantity, price, total_amount) VALUES (?, ?, ?, ?, ?, ?, ?)");
         
         // Prepare statement for consumables
-        $consumable_stmt = $conn->prepare("INSERT INTO consumables (description, quantity, unit_cost, office_id, for_office_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NOW(), NOW())");
+        $consumable_stmt = $conn->prepare("INSERT INTO consumables (description, quantity, units, unit_cost, office_id, for_office_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())");
+        
+        // Prepare statement for consumable history
+        $history_stmt = $conn->prepare("INSERT INTO consumable_add_history (consumable_id, description, supplier, quantity_added, units, unit_cost, total_value, office_id, to_office_id, added_by, add_date, source, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)");
         
         $total_form_amount = 0;
         for ($i = 0; $i < count($stock_numbers); $i++) {
@@ -167,11 +166,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $quantity = floatval($quantities[$i]);
                 $price = floatval($prices[$i]);
                 $total_amount = floatval($total_amounts[$i]);
+                $current_unit = $units[$i] ?? '';
                 
                 $total_form_amount += $total_amount;
                 
                 // Insert RIS item
-                $item_stmt->bind_param("iissddd", $ris_form_id, $stock_no, $units[$i], $descriptions[$i], $quantity, $price, $total_amount);
+                $item_stmt->bind_param("iissddd", $ris_form_id, $stock_no, $current_unit, $descriptions[$i], $quantity, $price, $total_amount);
                 
                 if (!$item_stmt->execute()) {
                     throw new Exception('Failed to save RIS item: ' . $item_stmt->error);
@@ -199,9 +199,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $check_consumable->execute();
                 $check_result = $check_consumable->get_result();
                 
+                $target_consumable_id = 0;
+                
                 if ($check_result->num_rows == 0) {
                     // Insert new consumable if it doesn't exist
-                    $consumable_stmt->bind_param("sdiii", $descriptions[$i], $quantity, $price, $supply_office_id, $requesting_office_id);
+                    $consumable_stmt->bind_param("sdsdii", $descriptions[$i], $quantity, $current_unit, $price, $supply_office_id, $requesting_office_id);
                     
                     if (!$consumable_stmt->execute()) {
                         throw new Exception('Failed to save consumable: ' . $consumable_stmt->error);
@@ -214,21 +216,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if ($new_consumable_id <= 0) {
                         throw new Exception('Failed to get consumable insert ID');
                     }
-                    
+                    $target_consumable_id = $new_consumable_id;
                     // No need to update for_office_id since it's already included in the INSERT
                 } else {
-                    // Update existing consumable quantity
-                    $update_consumable = $conn->prepare("UPDATE consumables SET quantity = quantity + ?, unit_cost = ?, updated_at = NOW(), for_office_id = ? WHERE description = ? AND office_id = ?");
-                    $update_consumable->bind_param("disiii", $quantity, $price, $requesting_office_id, $descriptions[$i], $supply_office_id);
+                    $row = $check_result->fetch_assoc();
+                    $target_consumable_id = $row['id'];
+                    // Update existing consumable quantity and units
+                    $update_consumable = $conn->prepare("UPDATE consumables SET quantity = quantity + ?, units = ?, unit_cost = ?, updated_at = NOW(), for_office_id = ? WHERE description = ? AND office_id = ?");
+                    $update_consumable->bind_param("dsdisi", $quantity, $current_unit, $price, $requesting_office_id, $descriptions[$i], $supply_office_id);
                     $update_consumable->execute();
                     $update_consumable->close();
                 }
+                
+                // Track consumable history
+                $supplier_none = 'N/A';
+                $added_by_user = intval($_SESSION['user_id']);
+                $source_val = 'ris_form';
+                $history_notes = "Added via RIS form #" . ($ris_no ?: 'Unknown');
+                $qty_int = intval($quantity);
+                
+                $history_stmt->bind_param("issisddiiiss", 
+                    $target_consumable_id, $descriptions[$i], $supplier_none, $qty_int, $current_unit, 
+                    $price, $total_amount, $supply_office_id, $requesting_office_id, $added_by_user, $source_val, $history_notes);
+                $history_stmt->execute();
                 
                 $check_consumable->close();
             }
         }
         $item_stmt->close();
         $consumable_stmt->close();
+        $history_stmt->close();
         
         // Update total amount in the form
         $update_stmt = $conn->prepare("UPDATE ris_forms SET total_amount = ? WHERE id = ?");
