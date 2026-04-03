@@ -251,107 +251,133 @@ if ($fuel_in_result) {
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Fuel IN - PIMS</title>
-
-    
-
-    <!-- Bootstrap CSS -->
-
+    <title>Fuel IN Records - Main User | PIMS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <!-- Bootstrap Icons -->
-
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-
-    
-
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="../assets/css/index.css" rel="stylesheet">
+    <link href="../assets/css/theme-custom.css" rel="stylesheet">
+    <link href="../ADMIN/dashboard.css" rel="stylesheet">
     <style>
-        body {
-            background: #f8f9fa;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 20px;
+    .section-card {
+        border-radius: 20px;
+        border: none;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+        overflow: hidden;
+        margin-bottom: 2rem;
+        animation: slideDown 0.8s ease-out;
+    }
+    
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .fuel-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+        animation: bounceIn 0.8s ease-out 0.5s both;
+    }
+    
+    @keyframes bounceIn {
+        0% {
+            opacity: 0;
+            transform: scale(0.3);
+        }
+        50% {
+            opacity: 1;
+            transform: scale(1.05);
+        }
+        70% {
+            transform: scale(0.9);
+        }
+        100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+    
+    .table-responsive {
+        border-radius: 20px;
+        overflow: hidden;
+    }
+    
+    /* Mobile UI Fixes */
+    @media (max-width: 992px) {
+        .dashboard-header .row {
+            flex-direction: column;
+            gap: 1rem;
         }
         
-        .table-container {
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            padding: 20px;
-            margin-bottom: 20px;
+        .dashboard-header .col-md-4 {
+            text-align: left !important;
         }
         
-        .stats-card {
-            background: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
+        .dashboard-header h1 {
+            font-size: 1.75rem;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .dashboard-header h1 {
+            font-size: 1.5rem;
         }
         
-        .filter-section {
-            background: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
+        .dashboard-header p {
+            font-size: 0.9rem;
         }
         
-        .header-section {
-            background: #28a745;
-            color: white;
-            padding: 20px;
-            border-radius: 8px 8px 0 0;
-            margin-bottom: 20px;
+        .dashboard-header .d-flex {
+            flex-direction: column;
+            align-items: stretch !important;
+            gap: 0.5rem;
         }
+        
+        .dashboard-header .d-inline-block {
+            width: 100% !important;
+        }
+    }
     </style>
 
 
 </head>
 
 <body>
+    <?php $page_title = 'Fuel IN Records'; ?>
+    <div class="main-wrapper" id="mainWrapper">
+        <?php require_once 'includes/sidebar-toggle.php'; ?>
+        <?php require_once 'includes/sidebar.php'; ?>
+        <?php require_once 'includes/topbar.php'; ?>
 
-    <?php include 'includes/topbar.php'; ?>
-
-    
-
-    <div class="main-container">
-
-        <!-- Header Section -->
-
-        <div class="header-section">
-
-            <div class="row align-items-center">
-
-                <div class="col-md-8">
-
-                    <h1 class="mb-0">
-
-                        <i class="bi bi-arrow-down-circle me-3"></i>
-
-                        Fuel IN Records
-
-                    </h1>
-
-                    <p class="mb-0 opacity-75">Detailed view of all fuel IN transactions</p>
-
+        <div class="main-content">
+            <div class="dashboard-header">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h1 class="mb-1" style="font-weight: 700; color: #191BA9;">
+                            <i class="bi bi-arrow-down-circle me-2"></i>Fuel IN Records
+                        </h1>
+                        <p class="text-muted mb-0">Detailed view of all fuel IN transactions</p>
+                    </div>
+                    <div class="col-md-4 text-md-end">
+                        <a href="fuel_management.php" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>
+                            Back to Dashboard
+                        </a>
+                    </div>
                 </div>
-
-                <div class="col-md-4 text-end">
-
-                    <a href="fuel_management.php" class="btn btn-light btn-lg">
-
-                        <i class="bi bi-arrow-left me-2"></i>
-
-                        Back to Dashboard
-
-                    </a>
-
-                </div>
-
             </div>
-
-        </div>
 
 
 
@@ -366,258 +392,58 @@ if ($fuel_in_result) {
 
 
             <!-- Statistics Summary -->
-
-            <div class="row mb-4">
-
-                <div class="col-md-12">
-
-                    <div class="stats-card h-100">
-
-                        <div class="d-flex align-items-center">
-
-                            <div class="fuel-icon fuel-in-icon me-3" style="background: linear-gradient(135deg, #28a745, #20c997);">
-
-                                <i class="bi bi-arrow-down-circle text-white"></i>
-
-                            </div>
-
-                            <div>
-
-                                <h6 class="text-muted mb-2">Total Fuel IN</h6>
-
-                                <h3 class="mb-0 text-success">
-
-                                    <?php echo number_format($total_fuel_in_all, 2); ?>
-
-                                    <small>Liters</small>
-
-                                </h3>
-
-                                <small class="text-muted">All Time Total</small>
-
-                            </div>
-
-                        </div>
-
+            <div class="section-card">
+                <div class="d-flex align-items-center">
+                    <div class="fuel-icon fuel-in-icon me-3" style="background: linear-gradient(135deg, #191BA9, #0d6efd);">
+                        <i class="bi bi-arrow-down-circle text-white"></i>
                     </div>
-
+                    <div>
+                        <h6 class="text-muted mb-2">Total Fuel IN</h6>
+                        <h3 class="mb-0 text-success">
+                            <?php echo number_format($total_fuel_in_all, 2); ?>
+                            <small>Liters</small>
+                        </h3>
+                    </div>
                 </div>
-
             </div>
-
-
 
             <!-- Filter Section -->
-
-            <div class="filter-section mb-4">
-
-                <div class="row align-items-end">
-
-                    <div class="col-md-3">
-
-                        <label for="period" class="form-label fw-semibold">
-
-                            <i class="bi bi-calendar-range me-1"></i>Time Period
-
-                        </label>
-
-                        <form method="GET" class="d-flex gap-2">
-
-                            <select class="form-select" id="period" name="period" onchange="this.form.submit()">
-
-                                <option value="all" <?php echo $period_filter === 'all' ? 'selected' : ''; ?>>
-
-                                    All Time
-
-                                </option>
-
-                                <option value="today" <?php echo $period_filter === 'today' ? 'selected' : ''; ?>>
-
-                                    Today
-
-                                </option>
-
-                                <option value="week" <?php echo $period_filter === 'week' ? 'selected' : ''; ?>>
-
-                                    Last 7 Days
-
-                                </option>
-
-                                <option value="month" <?php echo $period_filter === 'month' ? 'selected' : ''; ?>>
-
-                                    Last 30 Days
-
-                                </option>
-
-                                <option value="year" <?php echo $period_filter === 'year' ? 'selected' : ''; ?>>
-
-                                    Last 365 Days
-
-                                </option>
-
-                            </select>
-
-                            <select class="form-select" id="fuel_type" name="fuel_type" onchange="this.form.submit()">
-
-                                <option value="" <?php echo empty($fuel_type_filter) ? 'selected' : ''; ?>>
-
-                                    All Fuel Types
-
-                                </option>
-
-                                <?php foreach ($fuel_types as $fuel_type): ?>
-
-                                    <option value="<?php echo $fuel_type['id']; ?>" 
-
-                                            <?php echo $fuel_type_filter === $fuel_type['id'] ? 'selected' : ''; ?>>
-
-                                        <?php echo htmlspecialchars($fuel_type['name']); ?>
-
-                                    </option>
-
-                                <?php endforeach; ?>
-
-                            </select>
-
-                            <?php if (!empty($fuel_type_filter) || $period_filter !== 'all'): ?>
-
-                                <a href="fuel_in.php" class="btn btn-outline-secondary">
-
-                                    <i class="bi bi-x-circle me-1"></i>
-
-                                    Clear
-
-                                </a>
-
-                            <?php endif; ?>
-
-                        </form>
-
-                    </div>
-
-                    <div class="col-md-9">
-
-                        <div class="text-muted">
-
-                            <small>
-
-                                <?php if ($period_filter !== 'all' || !empty($fuel_type_filter)): ?>
-
-                                    <i class="bi bi-funnel me-1"></i>
-
-                                    Showing transactions for 
-
-                                    <?php 
-
-                                    $period_labels = [
-
-                                        'today' => 'Today',
-
-                                        'week' => 'Last 7 Days',
-
-                                        'month' => 'Last 30 Days',
-
-                                        'year' => 'Last 365 Days'
-
-                                    ];
-
-                                    if ($period_filter !== 'all') {
-
-                                        echo '<span class="badge bg-primary me-1">' . htmlspecialchars($period_labels[$period_filter]) . '</span>';
-
-                                    }
-
-                                    if (!empty($fuel_type_filter)) {
-
-                                        echo '<span class="badge bg-success">Selected Fuel Type</span>';
-
-                                    }
-
-                                    ?>
-
-                                <?php else: ?>
-
-                                    <i class="bi bi-info-circle me-1"></i>
-
-                                    Showing all fuel IN transactions. Use filters above to narrow results.
-
-                                <?php endif; ?>
-
-                            </small>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-
-        <!-- Today's Summary -->
-
-        <div class="row mb-4">
-            <?php 
-            // Create fuel type name mapping for display
-            $fuel_type_names = [
-                1 => 'diesel',
-                2 => 'gasoline', 
-                3 => 'premium'
-            ];
-            
-            // Check if there are summary results
-            $summary_count = 0;
-            $today_fuel_in_result->data_seek(0);
-            while ($summary = $today_fuel_in_result->fetch_assoc()) {
-                $summary_count++;
-            }
-            
-            // Reset pointer for display
-            $today_fuel_in_result->data_seek(0);
-            
-            if ($summary_count > 0):
-                while ($summary = $today_fuel_in_result->fetch_assoc()): 
-                    $fuel_type_name = $fuel_type_names[$summary['fuel_type']] ?? 'Unknown';
-            ?>
-                <div class="col-md-4">
-                    <div class="stats-card h-100">
-                        <div class="d-flex align-items-center">
-                            <div class="fuel-icon fuel-in-icon me-3">
-                                <i class="bi bi-droplet text-white"></i>
+            <div class="section-card">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <div class="d-flex align-items-center gap-3 flex-wrap">
+                            <div>
+                                <label class="form-label fw-semibold mb-1">Fuel Type:</label>
+                                <select class="form-select form-select-sm" name="fuel_type" onchange="window.location.href='?fuel_type='+this.value+'&period=<?php echo urlencode($period_filter); ?>'">
+                                    <option value="">All Types</option>
+                                    <option value="diesel" <?php echo $fuel_type_filter === 'diesel' ? 'selected' : ''; ?>>Diesel</option>
+                                    <option value="gasoline" <?php echo $fuel_type_filter === 'gasoline' ? 'selected' : ''; ?>>Gasoline</option>
+                                    <option value="premium" <?php echo $fuel_type_filter === 'premium' ? 'selected' : ''; ?>>Premium</option>
+                                </select>
                             </div>
                             <div>
-                                <h6 class="text-muted mb-2"><?php echo ucfirst(htmlspecialchars($fuel_type_name)); ?></h6>
-                                <h4 class="mb-0 text-success">
-                                    <?php echo number_format($summary['total_quantity'], 2); ?>
-                                    <small class="fs-6">Liters</small>
-                                </h4>
-                                <small class="text-muted">Today's Total</small>
+                                <label class="form-label fw-semibold mb-1">Period:</label>
+                                <select class="form-select form-select-sm" name="period" onchange="window.location.href='?period='+this.value+'&fuel_type=<?php echo urlencode($fuel_type_filter); ?>'">
+                                    <option value="all" <?php echo $period_filter === 'all' ? 'selected' : ''; ?>>All Time</option>
+                                    <option value="today" <?php echo $period_filter === 'today' ? 'selected' : ''; ?>>Today</option>
+                                    <option value="week" <?php echo $period_filter === 'week' ? 'selected' : ''; ?>>Last 7 Days</option>
+                                    <option value="month" <?php echo $period_filter === 'month' ? 'selected' : ''; ?>>Last 30 Days</option>
+                                    <option value="year" <?php echo $period_filter === 'year' ? 'selected' : ''; ?>>Last Year</option>
+                                </select>
                             </div>
                         </div>
                     </div>
-                </div>
-            <?php 
-                endwhile; 
-            else:
-            ?>
-                <div class="col-12">
-                    <div class="stats-card h-100">
-                        <div class="text-center py-3">
-                            <i class="bi bi-info-circle text-muted" style="font-size: 2rem;"></i>
-                            <p class="text-muted mb-0">No fuel transactions for today</p>
-                        </div>
+                    <div class="col-md-4 text-end">
+                        <a href="fuel_in.php" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-arrow-clockwise me-1"></i>
+                            Reset Filters
+                        </a>
                     </div>
                 </div>
-            <?php endif; ?>
-        </div>
+            </div>
 
-
-
-        <!-- Fuel IN Transactions Table -->
-        <div class="table-container">
+            <!-- Fuel Transactions Table -->
+            <div class="section-card">
             <h4 class="mb-3">
                 <i class="bi bi-arrow-down-circle text-success me-2"></i>
                 Fuel IN Transaction History
@@ -709,12 +535,14 @@ if ($fuel_in_result) {
                     <p class="text-muted">No fuel IN transactions found in database.</p>
                 </div>
             <?php endif; ?>
+            </div>
         </div>
-    </div>
+
+    <?php require_once 'includes/logout-modal.php'; ?>
+    <?php require_once 'includes/change-password-modal.php'; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
+    <?php require_once 'includes/sidebar-scripts.php'; ?>
 </body>
-
 </html>
 
