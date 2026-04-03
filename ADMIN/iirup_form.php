@@ -269,7 +269,7 @@ if ($result && $row = $result->fetch_assoc()) {
                     <p class="text-muted mb-0">Manage Inventory and Inspection Report of Unserviceable Property forms</p>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <a href="iirup_entries.php" class="btn btn-outline-secondary btn-sm">
+                    <a href="iirup_entries.php" class="btn btn-primary">
                         <i class="bi bi-list"></i> View Entries
                     </a>
                 </div>

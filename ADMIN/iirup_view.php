@@ -102,47 +102,58 @@ if ($result && $row = $result->fetch_assoc()) {
             margin-bottom: 2rem;
         }
 
-        .iirup-number {
-            background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: var(--border-radius);
-            font-weight: 600;
-            display: inline-block;
-            margin-bottom: 1rem;
+        .iirup-header {
+            text-align: center;
+            margin-bottom: 30px;
         }
 
-        .status-badge {
-            padding: 0.25rem 0.75rem;
-            border-radius: var(--border-radius);
-            font-size: 0.75rem;
+        .iirup-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .iirup-subtitle {
+            font-size: 1.2rem;
             font-weight: 600;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .iirup-form-number {
+            font-size: 1.1rem;
+            font-weight: bold;
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+            color: white;
+            border-radius: 4px;
+            display: inline-block;
+            margin: 10px 0;
+        }
+
+        .accountable-section {
+            border: 2px solid #333;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+            background-color: #f8f9fa;
+        }
+
+        .accountable-label {
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
             text-transform: uppercase;
         }
 
-        .status-draft {
-            background-color: #f8f9fa;
-            color: #6c757d;
-        }
-
-        .status-submitted {
-            background-color: #d1ecf1;
-            color: #0c5460;
-        }
-
-        .status-approved {
-            background-color: #d4edda;
-            color: #155724;
-        }
-
-        .status-rejected {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-
-        .status-processed {
-            background-color: #cce5ff;
-            color: #004085;
+        .accountable-name {
+            font-size: 1.3rem;
+            font-weight: bold;
+            border-bottom: 2px solid #333;
+            padding-bottom: 5px;
+            margin-bottom: 5px;
         }
 
         .table-responsive {
@@ -150,21 +161,84 @@ if ($result && $row = $result->fetch_assoc()) {
             overflow: hidden;
         }
 
-        .table-bordered {
+        .iirup-table {
+            border: 2px solid #333;
+            font-size: 0.8rem;
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        .iirup-table th {
+            background-color: #e9ecef;
+            border: 1px solid #333;
+            font-weight: bold;
+            text-align: center;
+            padding: 8px 4px;
+            font-size: 0.75rem;
+        }
+
+        .iirup-table td {
+            border: 1px solid #333;
+            padding: 6px 4px;
+            font-size: 0.7rem;
+            text-align: center;
+        }
+
+        .iirup-table td.text-left {
+            text-align: left;
+        }
+
+        .header-inventory {
+            background-color: #d4edda !important;
+            color: #155724;
+        }
+
+        .header-disposal {
+            background-color: #fff3cd !important;
+            color: #856404;
+        }
+
+        .certification-section {
+            margin: 30px 0;
+            padding: 20px;
+            background-color: #f8f9fa;
             border: 1px solid #dee2e6;
         }
 
-        .signature-section {
-            border-top: 2px solid #dee2e6;
-            padding-top: 2rem;
-            margin-top: 2rem;
+        .certification-text {
+            font-style: italic;
+            margin-bottom: 15px;
+            line-height: 1.4;
         }
 
-        .disposal-section {
-            background-color: #f8f9fa;
-            border-radius: var(--border-radius);
-            padding: 1.5rem;
-            margin-top: 2rem;
+        .signature-section {
+            border-top: 2px solid #333;
+            padding-top: 30px;
+            margin-top: 30px;
+        }
+
+        .signature-box {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .signature-title {
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .signature-line {
+            border-bottom: 2px solid #333;
+            padding-bottom: 5px;
+            margin-bottom: 5px;
+            min-height: 30px;
+        }
+
+        .signature-label {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 15px;
         }
 
         @media print {
@@ -174,10 +248,24 @@ if ($result && $row = $result->fetch_assoc()) {
 
             .form-card {
                 box-shadow: none;
+                border: none;
             }
 
             .page-header {
                 display: none !important;
+            }
+
+            body {
+                background: white;
+            }
+
+            .iirup-table {
+                font-size: 0.6rem;
+            }
+
+            .iirup-table th,
+            .iirup-table td {
+                padding: 4px 2px;
             }
         }
     </style>
@@ -206,15 +294,34 @@ if ($result && $row = $result->fetch_assoc()) {
                         <p class="text-muted mb-0">View Individual Item Request for User Property details</p>
                     </div>
                     <div class="col-md-4 text-md-end no-print">
-                        <a href="iirup_entries.php" class="btn btn-outline-secondary btn-sm me-2">
-                            <i class="bi bi-arrow-left"></i> Back to Entries
-                        </a>
-                        <button class="btn btn-outline-info btn-sm me-2" onclick="window.open('print_iirup.php?id=<?php echo $iirup_id; ?>', '_blank')">
-                            <i class="bi bi-printer"></i> Print
-                        </button>
-                        <a href="iirup_form.php" class="btn btn-primary btn-sm">
-                            <i class="bi bi-plus-circle"></i> New IIRUP
-                        </a>
+                        <div class="dropdown">
+                            <button class="btn btn-primary dropdown-toggle" type="button" id="actionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-gear"></i> Actions
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionsDropdown">
+                                <li>
+                                    <a href="iirup_entries.php" class="dropdown-item">
+                                        <i class="bi bi-arrow-left"></i> Back to Entries
+                                    </a>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item" onclick="window.open('print_iirup.php?id=<?php echo $iirup_id; ?>', '_blank')">
+                                        <i class="bi bi-printer"></i> Print
+                                    </button>
+                                </li>
+                                <li>
+                                    <a href="iirup_form.php" class="dropdown-item">
+                                        <i class="bi bi-plus-circle"></i> New IIRUP
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <button class="dropdown-item" onclick="location.reload()">
+                                        <i class="bi bi-arrow-clockwise"></i> Refresh Page
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -222,100 +329,94 @@ if ($result && $row = $result->fetch_assoc()) {
             <!-- IIRUP Form -->
             <div class="form-card">
                 <!-- Form Header -->
-                <div style="text-align: center; margin-bottom: 20px;">
+                <div class="iirup-header">
                     <?php
                     if (!empty($header_image)) {
-                        echo '<div style="margin-bottom: 10px;">';
-                        echo '<img src="../uploads/forms/' . htmlspecialchars($header_image) . '" alt="Header Image" style="width: 100%; max-height: 120px; object-fit: contain;">';
+                        echo '<div style="margin-bottom: 20px;">';
+                        echo '<img src="../uploads/forms/' . htmlspecialchars($header_image) . '" alt="Header Image" style="width: 100%; max-height: 150px; object-fit: contain;">';
                         echo '</div>';
                     }
                     ?>
-
-                </div>
-
-                <!-- Form Information -->
-                <div class="row mb-3">
-                    <div class="col-md-12 text-center">
-                        <label class="form-label" style="font-style: italic; font-family: 'Times New Roman', serif;">As of <?php echo htmlspecialchars($iirup_form['as_of_year']); ?></label>
-                    </div>
+                    
+                    <div style="font-style: italic; margin-top: 10px;">As of <?php echo htmlspecialchars($iirup_form['as_of_year']); ?></div>
                 </div>
 
                 <!-- Accountable Officer Information -->
-                <div class="row mb-3">
-                    <div class="col-md-4 text-center">
-                        <p class="form-control-plaintext" style="border-bottom: 2px solid #333; padding-bottom: 5px;"><?php echo htmlspecialchars($iirup_form['accountable_officer']); ?></p>
-                        <label class="form-label">(Accountable Officer)</label>
-
-                    </div>
-                    <div class="col-md-4 text-center">
-                        <p class="form-control-plaintext" style="border-bottom: 2px solid #333; padding-bottom: 5px;"><?php echo htmlspecialchars($iirup_form['designation']); ?></p>
-                        <label class="form-label">(Designation)</label>
-
-                    </div>
-                    <div class="col-md-4 text-center">
-                        <p class="form-control-plaintext" style="border-bottom: 2px solid #333; padding-bottom: 5px;"><?php echo htmlspecialchars($iirup_form['department_office']); ?></p>
-                        <label class="form-label">(Department/Office)</label>
-
+                <div class="accountable-section">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="accountable-label">Accountable Officer</div>
+                            <div class="accountable-name"><?php echo htmlspecialchars($iirup_form['accountable_officer']); ?></div>
+                            <div style="font-size: 0.9rem; margin-top: 5px;"><?php echo htmlspecialchars($iirup_form['accountable_officer_designation']); ?></div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="accountable-label">Designation</div>
+                            <div class="accountable-name"><?php echo htmlspecialchars($iirup_form['designation']); ?></div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="accountable-label">Department/Office</div>
+                            <div class="accountable-name"><?php echo htmlspecialchars($iirup_form['department_office']); ?></div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Items and Disposal Table -->
                 <div class="mb-4">
                     <div class="table-responsive">
-                        <table class="table table-bordered" style="font-size: 0.7rem; table-layout: fixed; width: 100%;">
-                            <thead class="table-light">
+                        <table class="iirup-table">
+                            <thead>
                                 <tr>
-                                    <th colspan="10" class="text-center" style="background-color: #f8f9fa; font-weight: bold;">INVENTORY</th>
-                                    <th colspan="11" class="text-center" style="background-color: #e9ecef; font-weight: bold;">INSPECTION AND DISPOSAL</th>
+                                    <th colspan="10" class="header-inventory">INVENTORY</th>
+                                    <th colspan="11" class="header-disposal">INSPECTION AND DISPOSAL</th>
                                 </tr>
                                 <tr>
-                                    <th style="width: 6%;">Date Acquired</th>
-                                    <th style="width: 18%;">Particulars</th>
-                                    <th style="width: 7%;">Property No.</th>
-                                    <th style="width: 6%;">Qty</th>
-                                    <th style="width: 7%;">Unit Cost</th>
-                                    <th style="width: 7%;">Total Cost</th>
-                                    <th style="width: 8%;">Accum. Depreciation</th>
-                                    <th style="width: 8%;">Accum. Impairment losses</th>
-                                    <th style="width: 8%;">Carrying amount</th>
-                                    <th style="width: 5%;">Remarks</th>
-                                    <th style="width: 6%;">Sale</th>
-                                    <th style="width: 6%;">Transfer</th>
-                                    <th style="width: 6%;">Destruction</th>
-                                    <th style="width: 5%;">Others</th>
-                                    <th style="width: 6%;">Total</th>
-                                    <th style="width: 6%;">Appraised value</th>
+                                    <th style="width: 5%;">Date Acquired</th>
+                                    <th style="width: 15%;">Particulars</th>
+                                    <th style="width: 6%;">Property No.</th>
+                                    <th style="width: 5%;">Qty</th>
+                                    <th style="width: 6%;">Unit Cost</th>
+                                    <th style="width: 6%;">Total Cost</th>
+                                    <th style="width: 7%;">Accum. Depreciation</th>
+                                    <th style="width: 7%;">Accum. Impairment losses</th>
+                                    <th style="width: 7%;">Carrying amount</th>
+                                    <th style="width: 4%;">Remarks</th>
+                                    <th style="width: 5%;">Sale</th>
+                                    <th style="width: 5%;">Transfer</th>
+                                    <th style="width: 5%;">Destruction</th>
+                                    <th style="width: 4%;">Others</th>
+                                    <th style="width: 5%;">Total</th>
+                                    <th style="width: 5%;">Appraised value</th>
                                     <th style="width: 4%;">OR no.</th>
-                                    <th style="width: 5%;">Amount</th>
-                                    <th style="width: 5%;">Dept</th>
-                                    <th style="width: 4%;">Code</th>
-                                    <th style="width: 6%;">Date received</th>
+                                    <th style="width: 4%;">Amount</th>
+                                    <th style="width: 4%;">Dept</th>
+                                    <th style="width: 3%;">Code</th>
+                                    <th style="width: 5%;">Date received</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php foreach ($iirup_items as $index => $item): ?>
                                     <tr>
-                                        <td style="font-size: 0.65rem;"><?php echo !empty($item['date_acquired']) ? date('M d, Y', strtotime($item['date_acquired'])) : ''; ?></td>
-                                        <td style="font-size: 0.65rem;"><?php echo htmlspecialchars($item['particulars']); ?></td>
-                                        <td style="font-size: 0.65rem;"><?php echo htmlspecialchars($item['property_no']); ?></td>
-                                        <td style="font-size: 0.65rem;"><?php echo number_format($item['quantity'], 2); ?></td>
-                                        <td style="font-size: 0.65rem;">₱<?php echo number_format($item['unit_cost'], 2); ?></td>
-                                        <td style="font-size: 0.65rem;">₱<?php echo number_format($item['total_cost'], 2); ?></td>
-                                        <td style="font-size: 0.65rem;">₱<?php echo number_format($item['accumulated_depreciation'], 2); ?></td>
-                                        <td style="font-size: 0.65rem;">₱<?php echo number_format($item['impairment_losses'], 2); ?></td>
-                                        <td style="font-size: 0.65rem;">₱<?php echo number_format($item['carrying_amount'], 2); ?></td>
-                                        <td style="font-size: 0.65rem;"><?php echo htmlspecialchars($item['inventory_remarks']); ?></td>
-                                        <td style="font-size: 0.65rem;">₱<?php echo number_format($item['disposal_sale'], 2); ?></td>
-                                        <td style="font-size: 0.65rem;">₱<?php echo number_format($item['disposal_transfer'], 2); ?></td>
-                                        <td style="font-size: 0.65rem;">₱<?php echo number_format($item['disposal_destruction'], 2); ?></td>
-                                        <td style="font-size: 0.65rem;"><?php echo htmlspecialchars($item['disposal_others']); ?></td>
-                                        <td style="font-size: 0.65rem;">₱<?php echo number_format($item['disposal_total'], 2); ?></td>
-                                        <td style="font-size: 0.65rem;">₱<?php echo number_format($item['appraised_value'], 2); ?></td>
-                                        <td style="font-size: 0.65rem;"><?php echo htmlspecialchars($item['or_no']); ?></td>
-                                        <td style="font-size: 0.65rem;">₱<?php echo number_format($item['amount'], 2); ?></td>
-                                        <td style="font-size: 0.65rem;"><?php echo htmlspecialchars($item['dept_office']); ?></td>
-                                        <td style="font-size: 0.65rem;"><?php echo htmlspecialchars($item['control_no']); ?></td>
-                                        <td style="font-size: 0.65rem;"><?php echo !empty($item['date_received']) ? date('M d, Y', strtotime($item['date_received'])) : ''; ?></td>
+                                        <td><?php echo !empty($item['date_acquired']) ? date('M d, Y', strtotime($item['date_acquired'])) : ''; ?></td>
+                                        <td class="text-left"><?php echo htmlspecialchars($item['particulars']); ?></td>
+                                        <td><?php echo htmlspecialchars($item['property_no']); ?></td>
+                                        <td><?php echo number_format($item['quantity'], 2); ?></td>
+                                        <td>₱<?php echo number_format($item['unit_cost'], 2); ?></td>
+                                        <td>₱<?php echo number_format($item['total_cost'], 2); ?></td>
+                                        <td>₱<?php echo number_format($item['accumulated_depreciation'], 2); ?></td>
+                                        <td>₱<?php echo number_format($item['impairment_losses'], 2); ?></td>
+                                        <td>₱<?php echo number_format($item['carrying_amount'], 2); ?></td>
+                                        <td><?php echo htmlspecialchars($item['inventory_remarks']); ?></td>
+                                        <td>₱<?php echo number_format($item['disposal_sale'], 2); ?></td>
+                                        <td>₱<?php echo number_format($item['disposal_transfer'], 2); ?></td>
+                                        <td>₱<?php echo number_format($item['disposal_destruction'], 2); ?></td>
+                                        <td><?php echo htmlspecialchars($item['disposal_others']); ?></td>
+                                        <td>₱<?php echo number_format($item['disposal_total'], 2); ?></td>
+                                        <td>₱<?php echo number_format($item['appraised_value'], 2); ?></td>
+                                        <td><?php echo htmlspecialchars($item['or_no']); ?></td>
+                                        <td>₱<?php echo number_format($item['amount'], 2); ?></td>
+                                        <td><?php echo htmlspecialchars($item['dept_office']); ?></td>
+                                        <td><?php echo htmlspecialchars($item['control_no']); ?></td>
+                                        <td><?php echo !empty($item['date_received']) ? date('M d, Y', strtotime($item['date_received'])) : ''; ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>
@@ -323,16 +424,23 @@ if ($result && $row = $result->fetch_assoc()) {
                     </div>
                 </div>
 
-                <div class="signature-label">
+                <!-- Certification Section -->
+                <div class="certification-section">
                     <div class="row">
                         <div class="col-md-6">
-                            <p>I HEREBY request inspection and disposition, pursuant to Section 79 of PD 1445, of property enumerated above.</p>
+                            <div class="certification-text">
+                                I HEREBY request inspection and disposition, pursuant to Section 79 of PD 1445, of property enumerated above.
+                            </div>
                         </div>
                         <div class="col-md-3">
-                            I CERTIFY that I have inspected each and every article enumerated in this report, and that disposition made thereof was, in my judgment, best for public interest.
+                            <div class="certification-text">
+                                I CERTIFY that I have inspected each and every article enumerated in this report, and that disposition made thereof was, in my judgment, best for public interest.
+                            </div>
                         </div>
                         <div class="col-md-3">
-                            I CERTIFY that I have witnessed disposition of articles enumerated on this report this _____ day of _____.
+                            <div class="certification-text">
+                                I CERTIFY that I have witnessed disposition of articles enumerated on this report this _____ day of _____.
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -341,31 +449,40 @@ if ($result && $row = $result->fetch_assoc()) {
                 <div class="signature-section">
                     <div class="row">
                         <div class="col-md-3">
-                            <h6><strong>Requested by:</strong></h6>
-                            <p class="text-center" style="border-bottom: 2px solid #333; padding-bottom: 5px;"><?php echo htmlspecialchars($iirup_form['accountable_officer_name']); ?></p>
-                            <p class="text-center" style="font-size: 0.7rem;">(Signature over Printed Name of Accountable Officer)</p>
-                            <p class="text-center" style="border-bottom: 2px solid #333; padding-bottom: 5px;"><?php echo htmlspecialchars($iirup_form['accountable_officer_designation']); ?></p>
-                            <p class="text-center" style="font-size: 0.7rem;">(Designation of Accountable Officer)</p>
+                            <div class="signature-box">
+                                <div class="signature-title">REQUESTED BY:</div>
+                                <div class="signature-line"><?php echo htmlspecialchars($iirup_form['accountable_officer_name']); ?></div>
+                                <div class="signature-label">(Signature over Printed Name)</div>
+                                <div class="signature-line"><?php echo htmlspecialchars($iirup_form['accountable_officer_designation']); ?></div>
+                                <div class="signature-label">(Designation)</div>
+                            </div>
                         </div>
                         <div class="col-md-3">
-                            <h6><strong>Approved by:</strong></h6>
-                            <p class="text-center" style="border-bottom: 2px solid #333; padding-bottom: 5px;"><?php echo htmlspecialchars($iirup_form['authorized_official_name']); ?></p>
-                            <p class="text-center" style="font-size: 0.7rem;">(Signature over Printed Name of Authorized Official)</p>
-                            <p class="text-center" style="border-bottom: 2px solid #333; padding-bottom: 5px;"><?php echo htmlspecialchars($iirup_form['authorized_official_designation']); ?></p>
-                            <p class="text-center" style="font-size: 0.7rem;">(Designation of Authorized Official)</p>
-
-
+                            <div class="signature-box">
+                                <div class="signature-title">APPROVED BY:</div>
+                                <div class="signature-line"><?php echo htmlspecialchars($iirup_form['authorized_official_name']); ?></div>
+                                <div class="signature-label">(Signature over Printed Name)</div>
+                                <div class="signature-line"><?php echo htmlspecialchars($iirup_form['authorized_official_designation']); ?></div>
+                                <div class="signature-label">(Designation)</div>
+                            </div>
                         </div>
                         <div class="col-md-3">
-                           
-                            <p class="text-center" style="border-bottom: 2px solid #333; padding-bottom: 5px;"><?php echo htmlspecialchars($iirup_form['inspection_officer_name']); ?></p>
-                            <p class="text-center" style="font-size: 0.7rem;">(Signature over Printed Name of Inspection
-                                Officer)</p>
+                            <div class="signature-box">
+                                <div class="signature-title">INSPECTED BY:</div>
+                                <div class="signature-line"><?php echo htmlspecialchars($iirup_form['inspection_officer_name']); ?></div>
+                                <div class="signature-label">(Signature over Printed Name)</div>
+                                <div class="signature-line"><?php echo htmlspecialchars($iirup_form['inspection_officer_designation'] ?? ''); ?></div>
+                                <div class="signature-label">(Designation)</div>
+                            </div>
                         </div>
                         <div class="col-md-3">
-                           
-                            <p class="text-center" style="border-bottom: 2px solid #333; padding-bottom: 5px;"><?php echo htmlspecialchars($iirup_form['witness_name']); ?></p>
-                            <p class="text-center" style="font-size: 0.7rem;">(Signature over Printed Name of Witness)</p>
+                            <div class="signature-box">
+                                <div class="signature-title">WITNESSED BY:</div>
+                                <div class="signature-line"><?php echo htmlspecialchars($iirup_form['witness_name']); ?></div>
+                                <div class="signature-label">(Signature over Printed Name)</div>
+                                <div class="signature-line"><?php echo htmlspecialchars($iirup_form['witness_designation'] ?? ''); ?></div>
+                                <div class="signature-label">(Designation)</div>
+                            </div>
                         </div>
                     </div>
                 </div>
