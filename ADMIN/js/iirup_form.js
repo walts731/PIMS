@@ -3,8 +3,6 @@
 
 // Global variables
 let currentRow = null;
-var iirupSearchTimeout;
-var iirupSearchIndex = -1;
 
 // Session storage key for IIRUP form data
 const IIRUP_STORAGE_KEY = 'iirup_form_data';
@@ -237,8 +235,8 @@ document.addEventListener('DOMContentLoaded', function() {
             new bootstrap.Modal(modal);
         });
         
-        // Initialize autocomplete functionality
-        initAutocomplete();
+        // Initialize datalist functionality
+        initDatalist();
         
         // Load existing form data from session storage (only if no success message)
         const hasStoredData = loadFormDataFromSession();
@@ -352,7 +350,7 @@ function addIIRUPRow() {
         
         const cells = [
             '<input type="date" class="form-control form-control-sm" name="date_acquired[]">',
-            '<div class="autocomplete-container position-relative"><input type="text" class="form-control form-control-sm" name="particulars[]" placeholder="Type to search assets..." autocomplete="off"><div class="autocomplete-dropdown"></div></div>',
+            '<div class="position-relative"><input type="text" class="form-control form-control-sm" name="particulars[]" placeholder="Type to search assets..." list="assetList" autocomplete="off"><button type="button" class="btn btn-sm btn-outline-secondary position-absolute" style="right: 2px; top: 2px; padding: 2px 6px; font-size: 10px;" onclick="clearParticulars(this)" title="Clear"><i class="bi bi-x"></i></button></div>',
             '<input type="text" class="form-control form-control-sm" name="property_no[]">',
             '<input type="number" class="form-control form-control-sm" name="qty[]">',
             '<input type="number" step="0.01" class="form-control form-control-sm" name="unit_cost[]">',
@@ -382,6 +380,13 @@ function addIIRUPRow() {
             const cell = newRow.insertCell(index);
             cell.innerHTML = cellHtml;
         });
+        
+        // Re-initialize autocomplete for the new row
+        const newParticularsInput = newRow.querySelector('input[name="particulars[]"]');
+        if (newParticularsInput) {
+            console.log('New row added, autocomplete initialized');
+        }
+        
     } catch (error) {
         console.error('Error adding row:', error);
         showModal('Error', 'Error adding row. Please try again.', 'error');
@@ -632,187 +637,111 @@ function saveFillData() {
     }
 }
 
-function initAutocomplete() {
-    // Add event listeners to all particulars inputs (both table and modal)
+// Initialize datalist functionality
+function initDatalist() {
+    // Add event listeners to all particulars inputs for datalist selection
     document.addEventListener('input', function(e) {
-        if (e.target.matches('input[name="particulars[]"]') || e.target.matches('#modal_particulars')) {
+        if (e.target.matches('input[name="particulars[]"]')) {
             const input = e.target;
-            const container = input.closest('.autocomplete-container');
-            const dropdown = container.querySelector('.autocomplete-dropdown');
             
-            clearTimeout(iirupSearchTimeout);
-            iirupSearchTimeout = setTimeout(() => {
-                searchAssets(input.value, dropdown, input);
-            }, 150);
-        }
-    });
-    
-    // Close dropdown when clicking outside
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('.autocomplete-container')) {
-            document.querySelectorAll('.autocomplete-dropdown').forEach(dropdown => {
-                dropdown.style.display = 'none';
-            });
-        }
-    });
-    
-    // Keyboard navigation
-    document.addEventListener('keydown', function(e) {
-        if (e.target.matches('input[name="particulars[]"]') || e.target.matches('#modal_particulars')) {
-            const container = e.target.closest('.autocomplete-container');
-            const dropdown = container.querySelector('.autocomplete-dropdown');
-            const items = dropdown.querySelectorAll('.autocomplete-item');
+            // Auto-save when user types
+            setTimeout(saveFormDataToSession, 500);
             
-            if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                iirupSearchIndex = Math.min(iirupSearchIndex + 1, items.length - 1);
-                updateSelection(items);
-            } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                iirupSearchIndex = Math.max(iirupSearchIndex - 1, -1);
-                updateSelection(items);
-            } else if (e.key === 'Enter') {
-                e.preventDefault();
-                if (iirupSearchIndex >= 0 && items[iirupSearchIndex]) {
-                    items[iirupSearchIndex].click();
+            // Check if user selected from datalist by comparing with available options
+            setTimeout(() => {
+                const selectedValue = input.value;
+                if (selectedValue) {
+                    // Find the matching option in the datalist
+                    const datalist = document.getElementById('assetList');
+                    const options = datalist.querySelectorAll('option');
+                    
+                    for (let option of options) {
+                        if (option.value === selectedValue) {
+                            // Fill the form with asset data
+                            fillRowFromDatalist(input, option);
+                            break;
+                        }
+                    }
                 }
-            } else if (e.key === 'Escape') {
-                dropdown.style.display = 'none';
-                iirupSearchIndex = -1;
+            }, 100); // Small delay to ensure datalist selection is processed
+        }
+    });
+    
+    // Also handle blur event as fallback
+    document.addEventListener('blur', function(e) {
+        if (e.target.matches('input[name="particulars[]"]')) {
+            const input = e.target;
+            const selectedValue = input.value;
+            
+            if (selectedValue) {
+                // Find the matching option in the datalist
+                const datalist = document.getElementById('assetList');
+                const options = datalist.querySelectorAll('option');
+                
+                for (let option of options) {
+                    if (option.value === selectedValue) {
+                        // Fill the form with asset data
+                        fillRowFromDatalist(input, option);
+                        break;
+                    }
+                }
             }
         }
-    });
+    }, true); // Use capture to ensure it fires
 }
 
-function searchAssets(query, dropdown, input) {
-    if (query.length < 1) {
-        dropdown.style.display = 'none';
+function fillRowFromDatalist(input, option) {
+    console.log('Filling row from datalist selection');
+    const row = input.closest('tr');
+    if (!row) {
+        console.error('Could not find parent row');
         return;
     }
     
-    console.log('Searching for:', query);
-    fetch('../api/search_assets.php?q=' + encodeURIComponent(query))
-        .then(response => response.json())
-        .then(data => {
-            console.log('Search results:', data);
-            if (data.success && data.assets.length > 0) {
-                displaySearchResults(data.assets, dropdown, input);
-            } else {
-                dropdown.style.display = 'none';
-            }
-        })
-        .catch(error => {
-            console.error('Error searching assets:', error);
-            dropdown.style.display = 'none';
-        });
-}
-
-function displaySearchResults(assets, dropdown, input) {
-    dropdown.innerHTML = '';
-    iirupSearchIndex = -1;
+    // Get asset data from data attributes
+    const assetData = {
+        id: option.getAttribute('data-id'),
+        description: option.value,
+        property_no: option.getAttribute('data-property_no'),
+        inventory_tag: option.getAttribute('data-inventory_tag'),
+        value: option.getAttribute('data-value'),
+        acquisition_date: option.getAttribute('data-acquisition_date'),
+        office_name: option.getAttribute('data-office_name'),
+        model: option.getAttribute('data-model'),
+        serial_number: option.getAttribute('data-serial_number'),
+        employee_name: option.getAttribute('data-employee_name')
+    };
     
-    assets.forEach((asset, index) => {
-        const item = document.createElement('div');
-        item.className = 'autocomplete-item';
-        item.innerHTML = `
-            <strong>${asset.description}</strong>
-            <small>Property No: ${asset.property_no || 'N/A'} | Inventory Tag: ${asset.inventory_tag || 'N/A'} | Value: ₱${parseFloat(asset.value || 0).toFixed(2)} | Status: ${asset.status}</small>
-        `;
-        
-        item.addEventListener('click', function() {
-            if (input.id === 'modal_particulars') {
-                selectAssetForModal(asset, input);
-            } else {
-                selectAsset(asset, input);
-            }
-            dropdown.style.display = 'none';
-        });
-        
-        dropdown.appendChild(item);
-    });
+    console.log('Asset data:', assetData);
     
-    dropdown.style.display = 'block';
-}
-
-function updateSelection(items) {
-    items.forEach((item, index) => {
-        if (index === iirupSearchIndex) {
-            item.classList.add('selected');
-            item.scrollIntoView({ block: 'nearest' });
-        } else {
-            item.classList.remove('selected');
-        }
-    });
-}
-
-function selectAsset(asset, input) {
-    const row = input.closest('tr');
-    const table = document.getElementById('iirupItemsTable');
-    const tbody = table.getElementsByTagName('tbody')[0];
-    
-    // Check if this is the first row and it's empty (has no meaningful data)
-    const isFirstRow = tbody.rows[0] === row;
-    const isFirstRowEmpty = isFirstRow && isRowEmpty(row);
-    
-    // Check for duplicate property number before adding
-    if (asset.property_no && isPropertyNoDuplicate(asset.property_no)) {
+    // Check for duplicate property number
+    if (assetData.property_no && isPropertyNoDuplicate(assetData.property_no, row)) {
         showModal('Warning', 'This property number already exists in the form. Each asset can only be added once.', 'warning');
-        return; // Don't add the asset
+        input.value = ''; // Clear the input
+        return;
     }
     
-    // If this is not the first row or the first row is not empty, add a new row
-    if (!isFirstRow || !isFirstRowEmpty) {
-        addIIRUPRow();
-        const newRow = tbody.rows[tbody.rows.length - 1];
-        const success = fillRowWithAssetData(newRow, asset);
-        if (!success) {
-            // If filling failed (due to duplicate), remove the newly added row
-            newRow.remove();
+    // Fill the form fields with asset data
+    fillRowWithAssetData(row, assetData);
+    
+    // Auto-fill Accountable Officer field if employee is available
+    if (assetData.employee_name) {
+        const accountableOfficerInput = document.querySelector('input[name="accountable_officer"]');
+        if (accountableOfficerInput && !accountableOfficerInput.value) {
+            accountableOfficerInput.value = assetData.employee_name;
+            accountableOfficerInput.style.backgroundColor = '#e8f5e8';
+            accountableOfficerInput.style.border = '1px solid #28a745';
+            console.log('Auto-filled accountable officer:', assetData.employee_name);
         }
-    } else {
-        // Fill the current (first) row with asset data
-        fillRowWithAssetData(row, asset);
     }
     
-    // Save the updated form data to session storage
+    // Save form data
     setTimeout(saveFormDataToSession, 100);
-}
-
-function isRowEmpty(row) {
-    const inputs = row.getElementsByTagName('input');
-    const selects = row.getElementsByTagName('select');
-    
-    // Check if all meaningful fields are empty
-    const particularsInput = row.querySelector('input[name="particulars[]"]');
-    const propertyNoInput = row.querySelector('input[name="property_no[]"]');
-    const qtyInput = row.querySelector('input[name="qty[]"]');
-    
-    return (!particularsInput || !particularsInput.value.trim()) && 
-           (!propertyNoInput || !propertyNoInput.value.trim()) && 
-           (!qtyInput || !qtyInput.value);
-}
-
-// Check for duplicate property numbers in the table
-function isPropertyNoDuplicate(propertyNo, excludeRow = null) {
-    const table = document.getElementById('iirupItemsTable');
-    if (!table) return false;
-    
-    const tbody = table.getElementsByTagName('tbody')[0];
-    const rows = tbody.getElementsByTagName('tr');
-    
-    for (let i = 0; i < rows.length; i++) {
-        if (excludeRow && rows[i] === excludeRow) continue; // Skip the row we're checking
-        
-        const propertyNoInput = rows[i].querySelector('input[name="property_no[]"]');
-        if (propertyNoInput && propertyNoInput.value.trim() === propertyNo.trim()) {
-            return true; // Found duplicate
-        }
-    }
-    
-    return false; // No duplicate found
+    console.log('Row filled successfully');
 }
 
 function fillRowWithAssetData(row, asset) {
+    console.log('Filling row with asset data:', asset);
     const inputs = row.getElementsByTagName('input');
     const selects = row.getElementsByTagName('select');
     
@@ -822,45 +751,61 @@ function fillRowWithAssetData(row, asset) {
         return false; // Don't fill the row
     }
     
-    // Fill the form fields with asset data
-    // Find the correct input indices (accounting for the autocomplete container)
-    let inputIndex = 0;
-    for (let i = 0; i < inputs.length; i++) {
-        if (inputs[i].name === 'particulars[]') {
-            inputs[i].value = asset.description;
-            inputIndex = i;
-            break;
-        }
+    // Fill the description/particulars field
+    const particularsInput = row.querySelector('input[name="particulars[]"]');
+    if (particularsInput && asset.description) {
+        particularsInput.value = asset.description;
+        particularsInput.style.backgroundColor = '#e8f5e8';
+        particularsInput.style.border = '1px solid #28a745';
+        console.log('Filled description:', asset.description);
     }
     
     // Fill property_no field
     const propertyNo = row.querySelector('input[name="property_no[]"]');
     if (propertyNo && asset.property_no) {
         propertyNo.value = asset.property_no;
+        propertyNo.style.backgroundColor = '#e8f5e8';
+        propertyNo.style.border = '1px solid #28a745';
+        console.log('Filled property number:', asset.property_no);
     }
     
-    // Fill other fields with asset data
+    // Fill acquisition date
     const dateAcquired = row.querySelector('input[name="date_acquired[]"]');
     if (dateAcquired && asset.acquisition_date) {
         const dateObj = new Date(asset.acquisition_date);
         if (!isNaN(dateObj.getTime())) {
             dateAcquired.value = dateObj.toISOString().split('T')[0];
+            dateAcquired.style.backgroundColor = '#e8f5e8';
+            dateAcquired.style.border = '1px solid #28a745';
+            console.log('Filled acquisition date:', dateAcquired.value);
         }
     }
     
+    // Fill quantity
     const qty = row.querySelector('input[name="qty[]"]');
     if (qty) {
         qty.value = 1;
+        qty.style.backgroundColor = '#e8f5e8';
+        qty.style.border = '1px solid #28a745';
+        console.log('Filled quantity: 1');
     }
     
+    // Fill unit cost
     const unitCost = row.querySelector('input[name="unit_cost[]"]');
     if (unitCost && asset.value) {
         unitCost.value = asset.value;
+        unitCost.style.backgroundColor = '#e8f5e8';
+        unitCost.style.border = '1px solid #28a745';
+        console.log('Filled unit cost:', asset.value);
     }
     
+    // Fill total cost
     const totalCost = row.querySelector('input[name="total_cost[]"]');
     if (totalCost && asset.value) {
         totalCost.value = asset.value;
+        totalCost.style.backgroundColor = '#e8f5e8';
+        totalCost.style.border = '1px solid #28a745';
+        console.log('Filled total cost:', asset.value);
     }
     
     // Set department/office if available
@@ -882,19 +827,13 @@ function fillRowWithAssetData(row, asset) {
                 deptOffice.appendChild(newOption);
             }
             deptOffice.value = asset.office_name;
+            deptOffice.style.backgroundColor = '#e8f5e8';
+            deptOffice.style.border = '1px solid #28a745';
+            console.log('Filled department/office:', asset.office_name);
         }
     }
     
-    // Auto-fill Accountable Officer field if employee is available
-    if (asset.employee_name) {
-        const accountableOfficerInput = document.querySelector('input[name="accountable_officer"]');
-        if (accountableOfficerInput) {
-            accountableOfficerInput.value = asset.employee_name;
-            accountableOfficerInput.style.backgroundColor = '#e8f5e8';
-            accountableOfficerInput.style.border = '1px solid #28a745';
-        }
-    }
-    
+    console.log('Row filled successfully with all fields');
     return true; // Successfully filled
 }
 
@@ -957,18 +896,46 @@ function selectAssetForModal(asset, input) {
     }
 }
 
+function isRowEmpty(row) {
+    const inputs = row.getElementsByTagName('input');
+    const selects = row.getElementsByTagName('select');
+    
+    // Check if all meaningful fields are empty
+    const particularsInput = row.querySelector('input[name="particulars[]"]');
+    const propertyNoInput = row.querySelector('input[name="property_no[]"]');
+    const qtyInput = row.querySelector('input[name="qty[]"]');
+    
+    return (!particularsInput || !particularsInput.value.trim()) && 
+           (!propertyNoInput || !propertyNoInput.value.trim()) && 
+           (!qtyInput || !qtyInput.value);
+}
+
+// Check for duplicate property numbers in the table
+function isPropertyNoDuplicate(propertyNo, excludeRow = null) {
+    const table = document.getElementById('iirupItemsTable');
+    if (!table) return false;
+    
+    const tbody = table.getElementsByTagName('tbody')[0];
+    const rows = tbody.getElementsByTagName('tr');
+    
+    for (let i = 0; i < rows.length; i++) {
+        if (excludeRow && rows[i] === excludeRow) continue; // Skip the row we're checking
+        
+        const propertyNoInput = rows[i].querySelector('input[name="property_no[]"]');
+        if (propertyNoInput && propertyNoInput.value.trim() === propertyNo.trim()) {
+            return true; // Found duplicate
+        }
+    }
+    
+    return false; // No duplicate found
+}
+
 function clearParticulars(button) {
-    const container = button.closest('.autocomplete-container');
+    const container = button.closest('div');
     const input = container.querySelector('input[name="particulars[]"]');
     if (input) {
         input.value = '';
         input.focus();
-    }
-    
-    // Hide autocomplete dropdown if visible
-    const dropdown = container.querySelector('.autocomplete-dropdown');
-    if (dropdown) {
-        dropdown.style.display = 'none';
     }
 }
 

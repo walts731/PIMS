@@ -2,10 +2,14 @@
 session_start();
 require_once '../config.php';
 
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 // Check if user is logged in and has appropriate role
 if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['system_admin', 'admin'])) {
     http_response_code(403);
-    echo json_encode(['error' => 'Unauthorized']);
+    echo json_encode(['success' => false, 'error' => 'Unauthorized']);
     exit();
 }
 
@@ -15,11 +19,17 @@ header('Content-Type: application/json');
 $query = isset($_GET['q']) ? trim($_GET['q']) : '';
 
 if (empty($query)) {
-    echo json_encode([]);
+    echo json_encode([
+        'success' => true,
+        'assets' => []
+    ]);
     exit();
 }
 
 try {
+    // Debug: Log the search query
+    error_log("Search query: " . $query);
+    
     // Search for assets with desktop computer specifications
     $search_sql = "SELECT ai.id, ai.description, ai.property_no, ai.inventory_tag, ai.value, 
                    ai.acquisition_date, ai.office_name, ai.model, ai.serial_number,
@@ -44,9 +54,17 @@ try {
     
     $search_param = "%{$query}%";
     $stmt = $conn->prepare($search_sql);
+    
+    if (!$stmt) {
+        error_log("Prepare failed: " . $conn->error);
+        throw new Exception("Database prepare failed");
+    }
+    
     $stmt->bind_param("ssss", $search_param, $search_param, $search_param, $search_param);
     $stmt->execute();
     $result = $stmt->get_result();
+    
+    error_log("Search result count: " . $result->num_rows);
     
     $assets = [];
     while ($row = $result->fetch_assoc()) {
@@ -64,7 +82,8 @@ try {
             'category_code' => $row['category_code'],
             'sub_category_name' => $row['sub_category_name'],
             'sub_category_code' => $row['sub_category_code'],
-            'employee_name' => trim($row['firstname'] . ' ' . $row['lastname'])
+            'employee_name' => trim($row['firstname'] . ' ' . $row['lastname']),
+            'status' => 'serviceable' // Since we're filtering for serviceable assets
         ];
         
         // Add desktop computer specifications if available
@@ -106,11 +125,15 @@ try {
         $assets[] = $asset;
     }
     
-    echo json_encode($assets);
+    echo json_encode([
+        'success' => true,
+        'assets' => $assets
+    ]);
     
 } catch (Exception $e) {
+    error_log("Search error: " . $e->getMessage());
     http_response_code(500);
-    echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+    echo json_encode(['success' => false, 'error' => 'Database error: ' . $e->getMessage()]);
 }
 
 $stmt->close();

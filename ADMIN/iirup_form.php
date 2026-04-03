@@ -236,50 +236,6 @@ if ($result && $row = $result->fetch_assoc()) {
             color: #666;
         }
         
-        /* Autocomplete styles */
-        .autocomplete-container {
-            position: relative;
-        }
-        
-        .autocomplete-dropdown {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: white;
-            border: 1px solid #dee2e6;
-            border-top: none;
-            max-height: 200px;
-            overflow-y: auto;
-            z-index: 1000;
-            display: none;
-        }
-        
-        .autocomplete-item {
-            padding: 8px 12px;
-            cursor: pointer;
-            border-bottom: 1px solid #f8f9fa;
-            font-size: 11px;
-        }
-        
-        .autocomplete-item:hover {
-            background-color: #f8f9fa;
-        }
-        
-        .autocomplete-item.selected {
-            background-color: #e9ecef;
-        }
-        
-        .autocomplete-item strong {
-            color: var(--primary-color);
-        }
-        
-        .autocomplete-item small {
-            color: #6c757d;
-            display: block;
-            margin-top: 2px;
-        }
-        
         /* Clear button styles */
         .position-relative {
             position: relative !important;
@@ -409,13 +365,10 @@ if ($result && $row = $result->fetch_assoc()) {
                                             <tr>
                                                 <td><input type="date" class="form-control form-control-sm" name="date_acquired[]"></td>
                                                 <td>
-                                                    <div class="autocomplete-container position-relative">
-                                                        <input type="text" class="form-control form-control-sm" name="particulars[]" placeholder="Type to search assets..." autocomplete="off">
-                                                        <button type="button" class="btn btn-sm btn-outline-secondary position-absolute" style="right: 2px; top: 2px; padding: 2px 6px; font-size: 10px;" onclick="clearParticulars(this)" title="Clear">
-                                                            <i class="bi bi-x"></i>
-                                                        </button>
-                                                        <div class="autocomplete-dropdown"></div>
-                                                    </div>
+                                                    <input type="text" class="form-control form-control-sm" name="particulars[]" placeholder="Type to search assets..." list="assetList" autocomplete="off">
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary position-absolute" style="right: 2px; top: 2px; padding: 2px 6px; font-size: 10px;" onclick="clearParticulars(this)" title="Clear">
+                                                        <i class="bi bi-x"></i>
+                                                    </button>
                                                 </td>
                                                 <td><input type="text" class="form-control form-control-sm" name="property_no[]"></td>
                                                 <td><input type="number" class="form-control form-control-sm" name="qty[]"></td>
@@ -536,6 +489,48 @@ if ($result && $row = $result->fetch_assoc()) {
     <?php include 'includes/logout-modal.php'; ?>
     <?php include 'includes/change-password-modal.php'; ?>
     <?php include 'includes/iirup_modals.php'; ?>
+    
+    <!-- Datalist for asset search -->
+    <datalist id="assetList">
+        <?php
+        // Fetch all serviceable assets for the datalist
+        $assets_sql = "SELECT ai.id, ai.description, ai.property_no, ai.inventory_tag, ai.value, 
+                      ai.acquisition_date, ai.office_name, ai.model, ai.serial_number,
+                      ac.category_name, ac.category_code,
+                      e.firstname, e.lastname
+               FROM asset_items ai 
+               LEFT JOIN assets a ON ai.asset_id = a.id 
+               LEFT JOIN asset_categories ac ON a.asset_categories_id = ac.id 
+               LEFT JOIN employees e ON ai.employee_id = e.id 
+               WHERE ai.status = 'serviceable'
+               ORDER BY ai.description, ai.property_no";
+        
+        $assets_result = $conn->query($assets_sql);
+        if ($assets_result) {
+            while ($asset = $assets_result->fetch_assoc()) {
+                $display_text = htmlspecialchars($asset['description']);
+                $property_no = htmlspecialchars($asset['property_no'] ?? '');
+                $inventory_tag = htmlspecialchars($asset['inventory_tag'] ?? '');
+                $value = number_format($asset['value'] ?? 0, 2);
+                $employee_name = htmlspecialchars(trim(($asset['firstname'] ?? '') . ' ' . ($asset['lastname'] ?? '')));
+                
+                // Create detailed option value
+                $option_value = $display_text;
+                if ($property_no) $option_value .= " | PN: " . $property_no;
+                if ($inventory_tag) $option_value .= " | IT: " . $inventory_tag;
+                if ($asset['value']) $option_value .= " | Value: ₱" . $value;
+                if ($employee_name) $option_value .= " | Employee: " . $employee_name;
+                
+                echo '<option value="' . htmlspecialchars($display_text) . '" data-id="' . $asset['id'] . '" ';
+                echo 'data-property_no="' . $property_no . '" data-inventory_tag="' . $inventory_tag . '" ';
+                echo 'data-value="' . ($asset['value'] ?? 0) . '" data-acquisition_date="' . ($asset['acquisition_date'] ?? '') . '" ';
+                echo 'data-office_name="' . htmlspecialchars($asset['office_name'] ?? '') . '" data-model="' . htmlspecialchars($asset['model'] ?? '') . '" ';
+                echo 'data-serial_number="' . htmlspecialchars($asset['serial_number'] ?? '') . '" data-employee_name="' . $employee_name . '">';
+                echo $option_value . '</option>';
+            }
+        }
+        ?>
+    </datalist>
     
     <?php include 'includes/sidebar-scripts.php'; ?>
 
