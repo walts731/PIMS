@@ -16,9 +16,20 @@ if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['system_admin', '
 
 logSystemAction($_SESSION['user_id'], 'access', 'main_user_fuel_out', 'Main user accessed fuel OUT page');
 
+// Get offices for dropdown
+$offices = [];
+$offices_query = "SELECT id, office_name FROM offices ORDER BY office_name";
+$offices_result = $conn->query($offices_query);
+if ($offices_result) {
+    while ($row = $offices_result->fetch_assoc()) {
+        $offices[] = $row;
+    }
+}
+
 // Get filter parameters
 $fuel_type_filter = isset($_GET['fuel_type']) ? (int)$_GET['fuel_type'] : 0;
 $period_filter = isset($_GET['period']) ? trim((string)$_GET['period']) : 'all';
+$office_filter = isset($_GET['office']) ? (int)$_GET['office'] : 0;
 
 // Calculate date range based on period filter
 $date_condition = "";
@@ -27,16 +38,16 @@ $date_types = "";
 
 switch ($period_filter) {
     case 'today':
-        $date_condition = " AND DATE(ft.transaction_date) = CURDATE()";
+        $date_condition = " AND DATE(fo.fo_date) = CURDATE()";
         break;
     case 'week':
-        $date_condition = " AND ft.transaction_date >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
+        $date_condition = " AND fo.fo_date >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
         break;
     case 'month':
-        $date_condition = " AND ft.transaction_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+        $date_condition = " AND fo.fo_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
         break;
     case 'year':
-        $date_condition = " AND ft.transaction_date >= DATE_SUB(NOW(), INTERVAL 365 DAY)";
+        $date_condition = " AND fo.fo_date >= DATE_SUB(NOW(), INTERVAL 365 DAY)";
         break;
     default:
         $date_condition = "";
@@ -78,16 +89,29 @@ if (empty($total_fuel_out_all) && in_array('fuel_transactions', $existing_tables
 }
 
 // Get recent fuel out transactions with filters
-$fuel_out_query = "SELECT ft.*, u.first_name, u.last_name, e.firstname as emp_firstname, e.lastname as emp_lastname
-                   FROM fuel_transactions ft 
-                   LEFT JOIN users u ON ft.user_id = u.id 
-                   LEFT JOIN employees e ON ft.employee_id = e.id
-                   WHERE ft.transaction_type = 'OUT'";
+$fuel_out_query = "SELECT fo.*, u.first_name, u.last_name, ft.name as fuel_type_name
+                   FROM fuel_out fo 
+                   LEFT JOIN users u ON fo.created_by = u.id 
+                   LEFT JOIN fuel_types ft ON fo.fo_fuel_type = ft.id
+                   WHERE 1=1";
 
 // Add filters to query
 $where_conditions = [];
 if ($fuel_type_filter > 0) {
-    $where_conditions[] = "ft.fuel_type = " . $fuel_type_filter;
+    $where_conditions[] = "fo.fo_fuel_type = " . $fuel_type_filter;
+}
+if ($office_filter > 0) {
+    // Get the office name from the offices array
+    $selected_office_name = '';
+    foreach ($offices as $office) {
+        if ($office['id'] == $office_filter) {
+            $selected_office_name = $office['office_name'];
+            break;
+        }
+    }
+    if (!empty($selected_office_name)) {
+        $where_conditions[] = "fo.office_name = '" . $conn->real_escape_string($selected_office_name) . "'";
+    }
 }
 if (!empty($date_condition)) {
     $where_conditions[] = substr($date_condition, 5); // Remove " AND " prefix
@@ -97,42 +121,57 @@ if (!empty($where_conditions)) {
     $fuel_out_query .= " AND " . implode(" AND ", $where_conditions);
 }
 
-$fuel_out_query .= " ORDER BY ft.created_at DESC";
+$fuel_out_query .= " ORDER BY fo.created_at DESC";
 $fuel_out_result = $conn->query($fuel_out_query);
 
 // Get filtered period fuel out summary
 $summary_date_condition = "";
 switch ($period_filter) {
     case 'today':
-        $summary_date_condition = " AND DATE(ft.transaction_date) = CURDATE()";
+        $summary_date_condition = " AND DATE(fo.fo_date) = CURDATE()";
         break;
     case 'week':
-        $summary_date_condition = " AND ft.transaction_date >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
+        $summary_date_condition = " AND fo.fo_date >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
         break;
     case 'month':
-        $summary_date_condition = " AND ft.transaction_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+        $summary_date_condition = " AND fo.fo_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
         break;
     case 'year':
-        $summary_date_condition = " AND ft.transaction_date >= DATE_SUB(NOW(), INTERVAL 365 DAY)";
+        $summary_date_condition = " AND fo.fo_date >= DATE_SUB(NOW(), INTERVAL 365 DAY)";
         break;
     default:
-        $summary_date_condition = " AND DATE(ft.transaction_date) = CURDATE()"; // Default to today for summary
+        $summary_date_condition = " AND DATE(fo.fo_date) = CURDATE()"; // Default to today for summary
         break;
 }
 
-$today_fuel_out_query = "SELECT fuel_type, SUM(quantity) as total_quantity 
-                        FROM fuel_transactions ft
-                        WHERE transaction_type = 'OUT'";
+$today_fuel_out_query = "SELECT ft.name as fuel_type, SUM(fo.fo_liters) as total_quantity 
+                        FROM fuel_out fo
+                        LEFT JOIN fuel_types ft ON fo.fo_fuel_type = ft.id
+                        WHERE 1=1";
 
 // Add fuel type filter to summary if selected
 if ($fuel_type_filter > 0) {
-    $today_fuel_out_query .= " AND fuel_type = " . $fuel_type_filter;
+    $today_fuel_out_query .= " AND fo.fo_fuel_type = " . $fuel_type_filter;
+}
+
+// Add office filter to summary if selected
+if ($office_filter > 0) {
+    $selected_office_name = '';
+    foreach ($offices as $office) {
+        if ($office['id'] == $office_filter) {
+            $selected_office_name = $office['office_name'];
+            break;
+        }
+    }
+    if (!empty($selected_office_name)) {
+        $today_fuel_out_query .= " AND fo.office_name = '" . $conn->real_escape_string($selected_office_name) . "'";
+    }
 }
 
 // Add date condition to summary
 $today_fuel_out_query .= $summary_date_condition;
 
-$today_fuel_out_query .= " GROUP BY fuel_type";
+$today_fuel_out_query .= " GROUP BY fo.fo_fuel_type, ft.name";
 $today_fuel_out_result = $conn->query($today_fuel_out_query);
 
 // Get fuel types for dropdown
@@ -403,7 +442,18 @@ if ($fuel_out_result) {
                                 </option>
                             <?php endwhile; ?>
                         </select>
-                        <?php if ($fuel_type_filter > 0 || $period_filter !== 'all'): ?>
+                        <select class="form-select" id="office" name="office" onchange="this.form.submit()">
+                            <option value="0" <?php echo $office_filter === 0 ? 'selected' : ''; ?>>
+                                All Offices
+                            </option>
+                            <?php foreach ($offices as $office): ?>
+                                <option value="<?php echo (int)$office['id']; ?>" 
+                                        <?php echo $office_filter === (int)$office['id'] ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($office['office_name']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <?php if ($fuel_type_filter > 0 || $period_filter !== 'all' || $office_filter > 0): ?>
                             <a href="fuel_out.php" class="btn btn-outline-secondary">
                                 <i class="bi bi-x-circle me-1"></i>
                                 Clear
@@ -414,7 +464,7 @@ if ($fuel_out_result) {
                 <div class="col-md-9">
                     <div class="text-muted">
                         <small>
-                            <?php if ($period_filter !== 'all' || $fuel_type_filter > 0): ?>
+                            <?php if ($period_filter !== 'all' || $fuel_type_filter > 0 || $office_filter > 0): ?>
                                 <i class="bi bi-funnel me-1"></i>
                                 Showing transactions for 
                                 <?php 
@@ -430,6 +480,9 @@ if ($fuel_out_result) {
                                 if ($fuel_type_filter > 0) {
                                     echo '<span class="badge bg-danger">Selected Fuel Type</span>';
                                 }
+                                if ($office_filter > 0) {
+                                    echo '<span class="badge bg-info">Selected Office</span>';
+                                }
                                 ?>
                             <?php else: ?>
                                 <i class="bi bi-info-circle me-1"></i>
@@ -439,20 +492,6 @@ if ($fuel_out_result) {
                     </div>
                 </div>
             </div>
-        </div>
-
-        <!-- Today's Summary -->
-        <div class="row mb-4">
-            <?php while ($summary = $today_fuel_out_result->fetch_assoc()): ?>
-                <div class="col-md-4">
-                    <div class="card border-danger">
-                        <div class="card-body text-center">
-                            <h5 class="card-title text-danger"><?php echo number_format($summary['total_quantity'], 2); ?> L</h5>
-                            <p class="card-text"><?php echo ucfirst(htmlspecialchars($summary['fuel_type'])); ?> Today</p>
-                        </div>
-                    </div>
-                </div>
-            <?php endwhile; ?>
         </div>
 
         <!-- Fuel OUT Table -->
@@ -472,54 +511,54 @@ if ($fuel_out_result) {
                     <thead>
                         <tr>
                             <th><i class="bi bi-calendar3 me-1"></i>Date</th>
+                            <th><i class="bi bi-clock me-1"></i>Time</th>
                             <th><i class="bi bi-fuel-pump me-1"></i>Fuel Type</th>
                             <th><i class="bi bi-droplet me-1"></i>Quantity (L)</th>
-                            <th><i class="bi bi-person me-1"></i>Employee</th>
+                            <th><i class="bi bi-person me-1"></i>Receiver</th>
                             <th><i class="bi bi-chat-text me-1"></i>Purpose</th>
                             <th><i class="bi bi-truck me-1"></i>Vehicle/Equipment</th>
-                            <th><i class="bi bi-person-check me-1"></i>Recorded By</th>
+                            <th><i class="bi bi-building me-1"></i>Office</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php if ($fuel_out_result->num_rows > 0): ?>
+                        <?php if ($fuel_out_result && $fuel_out_result->num_rows > 0): ?>
                             <?php while ($transaction = $fuel_out_result->fetch_assoc()): ?>
                                 <tr>
                                     <td>
-                                        <strong><?php echo date('M d, Y g:i A', strtotime($transaction['transaction_date'])); ?></strong>
+                                        <strong><?php echo date('M d, Y', strtotime($transaction['fo_date'])); ?></strong>
+                                    </td>
+                                    <td>
+                                        <?php echo date('g:i A', strtotime($transaction['fo_time_in'])); ?>
                                     </td>
                                     <td>
                                         <span class="badge bg-light text-danger">
-                                            <?php echo ucfirst(htmlspecialchars($transaction['fuel_type'])); ?>
+                                            <?php echo htmlspecialchars($transaction['fuel_type_name'] ?? 'N/A'); ?>
                                         </span>
                                     </td>
                                     <td>
                                         <strong class="text-danger">
-                                            <?php echo number_format($transaction['quantity'], 2); ?>
+                                            <?php echo number_format($transaction['fo_liters'], 2); ?>
                                         </strong>
                                     </td>
                                     <td>
-                                        <?php 
-                                        if ($transaction['employee_id']) {
-                                            echo htmlspecialchars($transaction['emp_firstname'] . ' ' . $transaction['emp_lastname']);
-                                        } else {
-                                            echo htmlspecialchars($transaction['recipient_name'] ?? 'N/A');
-                                        }
-                                        ?>
+                                        <?php echo htmlspecialchars($transaction['fo_receiver'] ?? 'N/A'); ?>
                                     </td>
                                     <td>
-                                        <?php echo htmlspecialchars($transaction['purpose'] ?? 'N/A'); ?>
+                                        <?php echo htmlspecialchars($transaction['fo_request'] ?? 'N/A'); ?>
                                     </td>
                                     <td>
-                                        <?php echo htmlspecialchars($transaction['vehicle_equipment'] ?? 'N/A'); ?>
+                                        <?php echo htmlspecialchars($transaction['fo_plate_no'] ?? 'N/A'); ?>
                                     </td>
                                     <td>
-                                        <?php echo htmlspecialchars($transaction['first_name'] . ' ' . $transaction['last_name']); ?>
+                                        <span class="badge bg-secondary">
+                                            <?php echo htmlspecialchars($transaction['office_name'] ?? 'Main Office'); ?>
+                                        </span>
                                     </td>
                                 </tr>
                             <?php endwhile; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="7" class="text-center py-4">
+                                <td colspan="8" class="text-center py-4">
                                     <div class="text-muted">
                                         <i class="bi bi-arrow-up-circle" style="font-size: 3rem;"></i>
                                         <p class="mt-2 mb-0">No fuel out transactions found</p>

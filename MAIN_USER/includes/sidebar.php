@@ -208,10 +208,6 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <i class="bi bi-fuel-pump"></i>
             Fuel Management
         </a>
-        <a href="scan_qr.php" class="sidebar-nav-item <?php echo $current_page == 'scan_qr.php' ? 'active' : ''; ?>">
-            <i class="bi bi-qr-code-scan"></i>
-            QR Scanner
-        </a>
         <a href="#" class="sidebar-nav-item" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
             <i class="bi bi-key"></i>
             Change Password

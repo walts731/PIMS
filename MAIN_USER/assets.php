@@ -447,8 +447,8 @@ if (!$conn || $conn->connect_error) {
                         <?php endif; ?>
                     </div>
                     <div class="col-md-4 text-md-end">
-                        <div class="d-flex align-items-center justify-content-md-end gap-2 flex-wrap">
-                            <div class="d-inline-block" style="min-width: 180px;">
+                        <div class="d-flex align-items-center justify-content-md-end gap-2 flex-nowrap">
+                            <div class="flex-shrink-0" style="min-width: 160px;">
                                 <select class="form-select form-select-sm" id="officeFilter">
                                     <option value="0" <?php echo $office_filter === 0 ? 'selected' : ''; ?>>All Offices</option>
                                     <?php foreach ($offices as $office): ?>
@@ -458,7 +458,7 @@ if (!$conn || $conn->connect_error) {
                                     <?php endforeach; ?>
                                 </select>
                             </div>
-                            <div class="d-inline-block" style="min-width: 180px;">
+                            <div class="flex-shrink-0" style="min-width: 160px;">
                                 <select class="form-select form-select-sm" id="statusFilter">
                                     <option value="" <?php echo $status_filter === '' ? 'selected' : ''; ?>>All Statuses</option>
                                     <option value="serviceable" <?php echo $status_filter === 'serviceable' ? 'selected' : ''; ?>>Serviceable</option>
@@ -468,7 +468,7 @@ if (!$conn || $conn->connect_error) {
                                     <option value="no_tag" <?php echo $status_filter === 'no_tag' ? 'selected' : ''; ?>>No Tag</option>
                                 </select>
                             </div>
-                            <div class="d-inline-block" style="min-width: 180px;">
+                            <div class="flex-shrink-0" style="min-width: 160px;">
                                 <select class="form-select form-select-sm" id="categoryFilter">
                                     <option value="0" <?php echo $category_filter === 0 ? 'selected' : ''; ?>>All Categories</option>
                                     <?php foreach ($categories as $category): ?>
@@ -478,20 +478,11 @@ if (!$conn || $conn->connect_error) {
                                     <?php endforeach; ?>
                                 </select>
                             </div>
-                            <div class="d-inline-block" style="min-width: 180px;">
-                                <select class="form-select form-select-sm" id="formTypeFilter">
-                                    <option value="" <?php echo ($par_filter === '' && $ics_filter === '' && $consumable_filter === '') ? 'selected' : ''; ?>>All Form Types</option>
-                                    <option value="par_yes" <?php echo $par_filter === 'yes' && $ics_filter === '' && $consumable_filter === '' ? 'selected' : ''; ?>>With PAR</option>
-                                    <option value="par_no" <?php echo $par_filter === 'no' && $ics_filter === '' && $consumable_filter === '' ? 'selected' : ''; ?>>No PAR</option>
-                                    <option value="ics_yes" <?php echo $ics_filter === 'yes' && $par_filter === '' && $consumable_filter === '' ? 'selected' : ''; ?>>With ICS</option>
-                                    <option value="ics_no" <?php echo $ics_filter === 'no' && $par_filter === '' && $consumable_filter === '' ? 'selected' : ''; ?>>No ICS</option>
-                                    <option value="consumable_yes" <?php echo $consumable_filter === 'yes' && $par_filter === '' && $ics_filter === '' ? 'selected' : ''; ?>>Consumable</option>
-                                    <option value="consumable_no" <?php echo $consumable_filter === 'no' && $par_filter === '' && $ics_filter === '' ? 'selected' : ''; ?>>Non-Consumable</option>
-                                </select>
+                            <div class="flex-shrink-0">
+                                <a class="btn btn-outline-primary btn-sm" href="assets.php">
+                                    <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+                                </a>
                             </div>
-                            <a class="btn btn-outline-primary btn-sm" href="assets.php">
-                                <i class="bi bi-arrow-clockwise me-1"></i> Refresh
-                            </a>
                         </div>
                     </div>
                 </div>
@@ -507,9 +498,6 @@ if (!$conn || $conn->connect_error) {
                                 <th>Category</th>
                                 <th>Office</th>
                                 <th>Status</th>
-                                <th>Borrower</th>
-                                <th class="text-end">Value</th>
-                                <th>Last Updated</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -573,31 +561,6 @@ if (!$conn || $conn->connect_error) {
                                             </span>
                                         </td>
                                         <td class="ps-3">
-                                            <?php if (!empty($row['borrow_request_id'])): ?>
-                                                <div>
-                                                    <strong><?php echo htmlspecialchars(($row['borrower_firstname'] ?? '') . ' ' . ($row['borrower_lastname'] ?? '')); ?></strong>
-                                                    <?php if (!empty($row['borrowed_date'])): ?>
-                                                        <div class="small text-info">Since: <?php echo date('M j, Y', strtotime($row['borrowed_date'])); ?></div>
-                                                    <?php endif; ?>
-                                                    <?php if (!empty($row['expected_return_date'])): ?>
-                                                        <div class="small text-warning">Due: <?php echo date('M j, Y', strtotime($row['expected_return_date'])); ?></div>
-                                                    <?php endif; ?>
-                                                    <?php if (!empty($row['quantity_requested']) && $row['quantity_requested'] > 1): ?>
-                                                        <div class="small text-primary">Qty: <?php echo (int)$row['quantity_requested']; ?></div>
-                                                    <?php endif; ?>
-                                                    <?php if (!empty($row['purpose'])): ?>
-                                                        <div class="small text-muted" style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="<?php echo htmlspecialchars($row['purpose']); ?>">
-                                                            <?php echo htmlspecialchars(substr($row['purpose'], 0, 30)) . (strlen($row['purpose']) > 30 ? '...' : ''); ?>
-                                                        </div>
-                                                    <?php endif; ?>
-                                                </div>
-                                            <?php else: ?>
-                                                <span class="text-muted">-</span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td class="text-end ps-3"><?php echo number_format((float)($row['item_value'] ?? 0), 2); ?></td>
-                                        <td class="text-muted small ps-3"><?php echo htmlspecialchars($row['updated_at'] ?? ''); ?></td>
-                                        <td class="ps-3">
                                             <a href="view_asset_item.php?id=<?php echo (int)$row['item_id']; ?>" class="btn btn-sm btn-outline-info me-1">
                                                 <i class="bi bi-eye"></i> View
                                             </a>
@@ -606,7 +569,7 @@ if (!$conn || $conn->connect_error) {
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="9" class="text-center text-muted py-4">No assets found.</td>
+                                    <td colspan="6" class="text-center text-muted py-4">No assets found.</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>

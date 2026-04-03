@@ -24,29 +24,12 @@ $error = null;
 
 // Filter parameters
 $office_filter = isset($_GET['office_id']) ? (int)$_GET['office_id'] : 0;
-$status_filter = isset($_GET['status']) ? trim((string)$_GET['status']) : '';
-$category_filter = isset($_GET['category_id']) ? (int)$_GET['category_id'] : 0;
-
-$allowed_statuses = ['serviceable', 'unserviceable', 'red_tagged', 'in_use', 'no_tag'];
-if ($status_filter !== '' && !in_array($status_filter, $allowed_statuses, true)) {
-    $status_filter = '';
-}
 
 $categories = [];
 if (!$conn || $conn->connect_error) {
     $error = 'Database connection failed: ' . ($conn->connect_error ?? 'Unknown error');
 } else {
     try {
-        // Get all categories
-        $category_query = "SELECT id, category_name FROM asset_categories ORDER BY category_name ASC";
-        $category_result = $conn->query($category_query);
-        
-        if ($category_result) {
-            while ($category = $category_result->fetch_assoc()) {
-                $categories[] = $category;
-            }
-        }
-        
         // Get all offices for dropdown (unfiltered)
         $all_offices_query = "SELECT id, office_name, branch FROM offices WHERE branch IS NULL ORDER BY office_name ASC";
         $all_offices_result = $conn->query($all_offices_query);
@@ -62,57 +45,24 @@ if (!$conn || $conn->connect_error) {
         $params = [];
         $types = "";
         
-        // When filtering by specific status, we need to ensure we're counting correctly
-        if ($status_filter !== '') {
-            // For status filtering, we only count the filtered status
-            $office_query = "SELECT 
-                                o.id,
-                                o.office_name,
-                                o.branch,
-                                p.office_name as parent_office_name,
-                                p.office_code as parent_office_code,
-                                COUNT(ai.id) as total_assets,
-                                COALESCE(SUM(ai.value), 0) as total_value";
-            
-            // Add only the filtered status count
-            if ($status_filter === 'serviceable') {
-                $office_query .= ", COUNT(ai.id) as serviceable_count, 0 as unserviceable_count, 0 as red_tagged_count, 0 as borrowed_count, 0 as no_tag_count";
-            } elseif ($status_filter === 'unserviceable') {
-                $office_query .= ", 0 as serviceable_count, COUNT(ai.id) as unserviceable_count, 0 as red_tagged_count, 0 as borrowed_count, 0 as no_tag_count";
-            } elseif ($status_filter === 'red_tagged') {
-                $office_query .= ", 0 as serviceable_count, 0 as unserviceable_count, COUNT(ai.id) as red_tagged_count, 0 as borrowed_count, 0 as no_tag_count";
-            } elseif ($status_filter === 'in_use') {
-                $office_query .= ", 0 as serviceable_count, 0 as unserviceable_count, 0 as red_tagged_count, COUNT(ai.id) as borrowed_count, 0 as no_tag_count";
-            } elseif ($status_filter === 'no_tag') {
-                $office_query .= ", 0 as serviceable_count, 0 as unserviceable_count, 0 as red_tagged_count, 0 as borrowed_count, COUNT(ai.id) as no_tag_count";
-            }
-            
-            $office_query .= " FROM offices o
-                            LEFT JOIN asset_items ai ON o.id = ai.office_id AND ai.status = ?
-                            LEFT JOIN assets a ON ai.asset_id = a.id
-                            LEFT JOIN offices p ON o.branch = p.id";
-            $params[] = $status_filter;
-            $types .= "s";
-        } else {
-            // Original query for no status filter
-            $office_query = "SELECT 
-                                o.id,
-                                o.office_name,
-                                o.branch,
-                                p.office_name as parent_office_name,
-                                p.office_code as parent_office_code,
-                                COUNT(ai.id) as total_assets,
-                                COALESCE(SUM(ai.value), 0) as total_value,
-                                COUNT(CASE WHEN ai.status = 'serviceable' THEN 1 END) as serviceable_count,
-                                COUNT(CASE WHEN ai.status = 'unserviceable' THEN 1 END) as unserviceable_count,
-                                COUNT(CASE WHEN ai.status = 'red_tagged' THEN 1 END) as red_tagged_count,
-                                COUNT(CASE WHEN ai.status = 'in_use' THEN 1 END) as borrowed_count,
-                                COUNT(CASE WHEN ai.status = 'no_tag' THEN 1 END) as no_tag_count
-                            FROM offices o
-                            LEFT JOIN asset_items ai ON o.id = ai.office_id
-                            LEFT JOIN assets a ON ai.asset_id = a.id
-                            LEFT JOIN offices p ON o.branch = p.id";
-        }
+        // Original query for no status filter
+        $office_query = "SELECT 
+                            o.id,
+                            o.office_name,
+                            o.branch,
+                            p.office_name as parent_office_name,
+                            p.office_code as parent_office_code,
+                            COUNT(ai.id) as total_assets,
+                            COALESCE(SUM(ai.value), 0) as total_value,
+                            COUNT(CASE WHEN ai.status = 'serviceable' THEN 1 END) as serviceable_count,
+                            COUNT(CASE WHEN ai.status = 'unserviceable' THEN 1 END) as unserviceable_count,
+                            COUNT(CASE WHEN ai.status = 'red_tagged' THEN 1 END) as red_tagged_count,
+                            COUNT(CASE WHEN ai.status = 'in_use' THEN 1 END) as borrowed_count,
+                            COUNT(CASE WHEN ai.status = 'no_tag' THEN 1 END) as no_tag_count
+                        FROM offices o
+                        LEFT JOIN asset_items ai ON o.id = ai.office_id
+                        LEFT JOIN assets a ON ai.asset_id = a.id
+                        LEFT JOIN offices p ON o.branch = p.id";
         
         // Add branch filter to show only main offices (hide branches)
         $where_conditions[] = "o.branch IS NULL";
@@ -123,23 +73,11 @@ if (!$conn || $conn->connect_error) {
             $types .= "i";
         }
         
-        if ($category_filter > 0) {
-            $where_conditions[] = "a.asset_categories_id = ?";
-            $params[] = $category_filter;
-            $types .= "i";
-        }
-        
         if (!empty($where_conditions)) {
             $office_query .= " WHERE " . implode(" AND ", $where_conditions);
         }
         
         $office_query .= " GROUP BY o.id, o.office_name";
-        
-        // When filtering by status, only show offices that have items with that status
-        if ($status_filter !== '') {
-            $office_query .= " HAVING total_assets > 0";
-        }
-        
         $office_query .= " ORDER BY o.office_name ASC";
         
         $office_stmt = $conn->prepare($office_query);
@@ -224,12 +162,6 @@ if (!$conn || $conn->connect_error) {
         if ($office_filter > 0) {
             $borrowed_query .= " AND o.id = ?";
             $borrowed_params[] = $office_filter;
-            $borrowed_types .= "i";
-        }
-        
-        if ($category_filter > 0) {
-            $borrowed_query .= " AND ac.id = ?";
-            $borrowed_params[] = $category_filter;
             $borrowed_types .= "i";
         }
         
@@ -814,12 +746,6 @@ if (!$conn || $conn->connect_error) {
         .btn-sm {
             font-size: 0.95rem;
             padding: 0.625rem 1rem;
-        }
-        
-        .main-content {
-            padding: 0.75rem;
-        }
-    }
     </style>
 </head>
 <body>
@@ -847,7 +773,7 @@ if (!$conn || $conn->connect_error) {
                     <div class="col-md-4 text-md-end">
                         <div class="d-flex align-items-center justify-content-md-end gap-2 flex-wrap">
                             <div class="d-inline-block" style="min-width: 180px;">
-                                <select class="form-select form-select-sm" id="officeFilter" <?php echo $office_filter > 0 ? 'style="background-color: #007bff; color: white; border-color: #0056b3; font-weight: bold;"' : ''; ?>>
+                                <select class="form-select form-select-sm" id="officeFilter" onchange="applyOfficeFilter()" <?php echo $office_filter > 0 ? 'style="background-color: #007bff; color: white; border-color: #0056b3; font-weight: bold;"' : ''; ?>>
                                     <?php if ($office_filter > 0): ?>
                                         <?php foreach ($all_offices as $office): ?>
                                             <?php if ($office_filter === (int)$office['id']): ?>
@@ -866,26 +792,6 @@ if (!$conn || $conn->connect_error) {
                                     <?php endif; ?>
                                 </select>
                             </div>
-                            <div class="d-inline-block" style="min-width: 180px;">
-                                <select class="form-select form-select-sm" id="statusFilter" <?php echo $status_filter !== '' ? 'style="background-color: #007bff; color: white; border-color: #0056b3; font-weight: bold;"' : ''; ?>>
-                                    <option value="" <?php echo $status_filter === '' ? 'selected' : ''; ?>>All Statuses</option>
-                                    <option value="serviceable" <?php echo $status_filter === 'serviceable' ? 'selected' : ''; ?>>Serviceable</option>
-                                    <option value="unserviceable" <?php echo $status_filter === 'unserviceable' ? 'selected' : ''; ?>>Unserviceable</option>
-                                    <option value="red_tagged" <?php echo $status_filter === 'red_tagged' ? 'selected' : ''; ?>>Red-Tagged</option>
-                                    <option value="in_use" <?php echo $status_filter === 'in_use' ? 'selected' : ''; ?>>Borrowed</option>
-                                    <option value="no_tag" <?php echo $status_filter === 'no_tag' ? 'selected' : ''; ?>>No Tag</option>
-                                </select>
-                            </div>
-                            <div class="d-inline-block" style="min-width: 180px;">
-                                <select class="form-select form-select-sm" id="categoryFilter" <?php echo $category_filter > 0 ? 'style="background-color: #007bff; color: white; border-color: #0056b3; font-weight: bold;"' : ''; ?>>
-                                    <option value="0" <?php echo $category_filter === 0 ? 'selected' : ''; ?>>All Categories</option>
-                                    <?php foreach ($categories as $category): ?>
-                                        <option value="<?php echo (int)$category['id']; ?>" <?php echo $category_filter === (int)$category['id'] ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($category['category_name']); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
                             <a class="btn btn-outline-primary btn-sm" href="offices.php">
                                 <i class="bi bi-arrow-clockwise"></i> Refresh
                             </a>
@@ -895,27 +801,24 @@ if (!$conn || $conn->connect_error) {
             </div>
 
             <!-- Filter Summary -->
-            <?php if ($status_filter !== '' || $category_filter > 0 || $office_filter > 0): ?>
+            <?php if ($office_filter > 0): ?>
                 <div class="alert alert-info mb-3" role="alert">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <i class="bi bi-funnel me-2"></i>
                             <strong>Active Filters:</strong>
-                            <?php if ($status_filter !== ''): ?>
-                                <span class="badge bg-success me-1">Status: <?php echo ucfirst(str_replace('_', ' ', $status_filter)); ?></span>
-                            <?php endif; ?>
-                            <?php if ($category_filter > 0): ?>
-                                <span class="badge bg-info me-1">Category: <?php echo htmlspecialchars(array_column($categories, 'category_name', 'id')[$category_filter] ?? 'Unknown'); ?></span>
-                            <?php endif; ?>
                             <?php if ($office_filter > 0): ?>
-                                <?php $selected_office = array_filter($all_offices, function($office) use ($office_filter) { return $office['id'] == $office_filter; }); ?>
-                                <?php if (!empty($selected_office)): ?>
-                                    <?php $office_data = reset($selected_office); ?>
-                                    <span class="badge bg-primary me-1">Office: <?php echo htmlspecialchars($office_data['office_name']); ?></span>
-                                <?php endif; ?>
+                                <span class="badge bg-primary me-1">Office: <?php 
+                                    foreach ($all_offices as $office) {
+                                        if ($office_filter === (int)$office['id']) {
+                                            echo htmlspecialchars($office['office_name']);
+                                            break;
+                                        }
+                                    }
+                                ?></span>
                             <?php endif; ?>
                         </div>
-                        <a href="offices.php" class="btn btn-sm btn-outline-secondary">Clear Filters</a>
+                        <a href="offices.php" class="btn btn-sm btn-outline-light">Clear All</a>
                     </div>
                 </div>
             <?php endif; ?>
@@ -1008,8 +911,6 @@ if (!$conn || $conn->connect_error) {
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const officeFilter = document.getElementById('officeFilter');
-            const statusFilter = document.getElementById('statusFilter');
-            const categoryFilter = document.getElementById('categoryFilter');
 
             function applyFilters() {
                 const currentUrl = new URL(window.location.href);
@@ -1022,76 +923,46 @@ if (!$conn || $conn->connect_error) {
                     currentUrl.searchParams.delete('office_id');
                 }
 
-                // Apply status filter
-                const statusValue = statusFilter.value || '';
-                if (statusValue) {
-                    currentUrl.searchParams.set('status', statusValue);
-                } else {
-                    currentUrl.searchParams.delete('status');
-                }
-
-                // Apply category filter
-                const categoryValue = parseInt(categoryFilter.value || '0', 10);
-                if (categoryValue > 0) {
-                    currentUrl.searchParams.set('category_id', String(categoryValue));
-                } else {
-                    currentUrl.searchParams.delete('category_id');
-                }
-
                 window.location.href = currentUrl.toString();
             }
 
-            // Add event listeners
+            // Add event listener
             if (officeFilter) {
                 officeFilter.addEventListener('change', applyFilters);
-            }
-            if (statusFilter) {
-                statusFilter.addEventListener('change', applyFilters);
-            }
-            if (categoryFilter) {
-                categoryFilter.addEventListener('change', applyFilters);
             }
 
             // Return item function
             function returnItem(itemId) {
                 if (confirm('Are you sure you want to return this item?')) {
                     // Show loading state
-                    const button = event.target;
-                    const originalText = button.innerHTML;
-                    button.innerHTML = '<i class="bi bi-hourglass-split"></i> Processing...';
-                    button.disabled = true;
-
-                    // Create form data
-                    const formData = new FormData();
-                    formData.append('action', 'return');
-                    formData.append('item_id', itemId);
-                    formData.append('user_id', <?php echo (int)($_SESSION['user_id'] ?? 0); ?>);
-
-                    // Send request
-                    fetch('process_borrow.php', {
-                        method: 'POST',
-                        body: formData
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            alert('Item returned successfully!');
-                            // Reload page to show updated status
-                            window.location.reload();
-                        } else {
-                            alert('Error: ' + (data.message || 'Failed to return item'));
-                            // Restore button
-                            button.innerHTML = originalText;
-                            button.disabled = false;
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('An error occurred while returning the item.');
-                        // Restore button
-                        button.innerHTML = originalText;
-                        button.disabled = false;
-                    });
+                    const button = document.querySelector(`[data-item-id="${itemId}"]`);
+                    if (button) {
+                        const originalText = button.innerHTML;
+                        button.innerHTML = '<i class="bi bi-hourglass-split"></i> Returning...';
+                        button.disabled = true;
+                        
+                        // Make AJAX request
+                        fetch(`../includes/return_item.php?id=${itemId}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    alert('Item returned successfully!');
+                                    location.reload();
+                                } else {
+                                    alert('Error: ' + (data.message || 'Failed to return item'));
+                                    // Restore button
+                                    button.innerHTML = originalText;
+                                    button.disabled = false;
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                                alert('An error occurred while returning the item.');
+                                // Restore button
+                                button.innerHTML = originalText;
+                                button.disabled = false;
+                            });
+                    }
                 }
             }
         });

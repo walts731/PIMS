@@ -261,15 +261,6 @@ if (!$conn || $conn->connect_error) {
                     <div class="col-md-8">
                         <h1 class="mb-1" style="font-weight: 700; color: #191BA9;">
                             <i class="bi bi-building me-2"></i>Assets per Office
-                            <?php if ($office_filter > 0): ?>
-                                <a href="branches.php?office_id=<?php echo (int)$office_filter; ?>" class="btn btn-outline-success btn-sm ms-3">
-                                    <i class="bi bi-diagram-3"></i> Branches
-                                </a>
-                            <?php else: ?>
-                                <a href="branches.php" class="btn btn-outline-success btn-sm ms-3">
-                                    <i class="bi bi-diagram-3"></i> All Branches
-                                </a>
-                            <?php endif; ?>
                         </h1>
                         <p class="text-muted mb-0">Viewing assets organized by office location with filters.</p>
                         <?php if ($error): ?>
@@ -281,19 +272,9 @@ if (!$conn || $conn->connect_error) {
                     </div>
                     <div class="col-md-4 text-md-end">
                         <div class="d-flex align-items-center justify-content-md-end gap-2 flex-wrap">
-                            <a class="btn btn-outline-primary btn-sm" href="assets_per_office.php">
-                                <i class="bi bi-arrow-clockwise"></i> Refresh
+                            <a class="btn btn-outline-secondary btn-sm" href="offices.php">
+                                <i class="bi bi-arrow-left"></i> Back
                             </a>
-                            <div class="d-inline-block" style="min-width: 200px;">
-                                <select class="form-select form-select-sm" id="officeFilter">
-                                    <option value="0" <?php echo $office_filter === 0 ? 'selected' : ''; ?>>All Offices</option>
-                                    <?php foreach ($offices as $office): ?>
-                                        <option value="<?php echo (int)$office['id']; ?>" <?php echo $office_filter === (int)$office['id'] ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($office['office_name']); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
                             <div class="d-inline-block" style="min-width: 180px;">
                                 <select class="form-select form-select-sm" id="statusFilter">
                                     <option value="" <?php echo $status_filter === '' ? 'selected' : ''; ?>>All Statuses</option>
@@ -336,7 +317,23 @@ if (!$conn || $conn->connect_error) {
                                 <span class="badge bg-info me-1">Category: <?php echo htmlspecialchars(array_column($categories, 'category_name', 'id')[$category_filter] ?? 'Unknown'); ?></span>
                             <?php endif; ?>
                         </div>
-                        <a href="assets_per_office.php" class="btn btn-sm btn-outline-secondary">Clear Filters</a>
+                        <div class="d-flex gap-2">
+                            <?php if ($office_filter > 0): ?>
+                                <a href="branches.php?office_id=<?php echo (int)$office_filter; ?>" class="btn btn-sm btn-outline-success">
+                                    <i class="bi bi-diagram-3"></i> Branches
+                                </a>
+                                <a href="consumables.php?office_id=<?php echo (int)$office_filter; ?>" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-box-seam"></i> Office Consumable
+                                </a>
+                            <?php else: ?>
+                                <a href="branches.php" class="btn btn-sm btn-outline-success">
+                                    <i class="bi bi-diagram-3"></i> All Branches
+                                </a>
+                                <a href="consumables.php" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-box-seam"></i> Office Consumable
+                                </a>
+                            <?php endif; ?>
+                        </div>
                     </div>
                 </div>
             <?php endif; ?>
@@ -478,20 +475,11 @@ if (!$conn || $conn->connect_error) {
     <?php require_once 'includes/sidebar-scripts.php'; ?>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const officeFilter = document.getElementById('officeFilter');
             const statusFilter = document.getElementById('statusFilter');
             const categoryFilter = document.getElementById('categoryFilter');
 
             function applyFilters() {
                 const currentUrl = new URL(window.location.href);
-
-                // Apply office filter
-                const officeValue = parseInt(officeFilter.value || '0', 10);
-                if (officeValue > 0) {
-                    currentUrl.searchParams.set('office_id', String(officeValue));
-                } else {
-                    currentUrl.searchParams.delete('office_id');
-                }
 
                 // Apply status filter
                 const statusValue = statusFilter.value || '';
@@ -513,9 +501,6 @@ if (!$conn || $conn->connect_error) {
             }
 
             // Add event listeners
-            if (officeFilter) {
-                officeFilter.addEventListener('change', applyFilters);
-            }
             if (statusFilter) {
                 statusFilter.addEventListener('change', applyFilters);
             }
@@ -548,5 +533,5 @@ if (!$conn || $conn->connect_error) {
                 });
             });
 
-                    });
+        });
     </script>
