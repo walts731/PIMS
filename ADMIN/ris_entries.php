@@ -94,11 +94,6 @@ if ($result && $row = $result->fetch_assoc()) {
                                     <i class="bi bi-plus-circle"></i> New RIS
                                 </a>
                             </li>
-                            <li>
-                                <button class="dropdown-item" onclick="exportRISData()">
-                                    <i class="bi bi-download"></i> Export
-                                </button>
-                            </li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <button class="dropdown-item" onclick="location.reload()">

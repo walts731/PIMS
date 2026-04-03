@@ -80,7 +80,7 @@ if ($result && $row = $result->fetch_assoc()) {
     <link href="assets/css/admin-unified.css" rel="stylesheet">
     <style>
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'DejaVu Sans', sans-serif;
             background: linear-gradient(135deg, var(--light-color) 0%, var(--light-accent) 100%);
             min-height: 100vh;
             overflow-x: hidden;
@@ -107,168 +107,97 @@ if ($result && $row = $result->fetch_assoc()) {
         }
         
         .excel-header {
-            padding: 30px;
+            padding: 15px 0;
             border-bottom: 1px solid #333;
             text-align: center;
             background: #fff;
         }
         
         .excel-header h4 {
-            color: #1a1a1a;
-            letter-spacing: 1px;
+            color: #000;
             font-weight: bold;
             margin-bottom: 0;
+            font-size: 16px;
+            font-family: 'DejaVu Sans', sans-serif;
         }
         
-        .info-row {
-            display: flex;
-            border-bottom: 1px solid #333;
-            background: #fff;
+        .header-img {
+            text-align: center;
+            margin-bottom: 10px;
         }
         
-        .info-cell {
-            flex: 1;
-            padding: 15px 20px;
-            border-right: 1px solid #333;
+        .header-img img {
+            max-width: 100%;
+            height: auto;
         }
         
-        .info-cell:last-child {
-            border-right: none;
+        .meta {
+            margin: 10px 0;
+            font-size: 12px;
         }
         
-        .info-label {
-            font-weight: 800;
-            font-size: 10px;
-            text-transform: uppercase;
-            color: var(--secondary-color);
-            margin-bottom: 5px;
-            letter-spacing: 0.5px;
-        }
-        
-        .info-value {
-            font-weight: 600;
-            font-size: 15px;
-            color: #1a1a1a;
-        }
-        
-        .excel-grid-table {
-            width: 100%;
+        .meta table {
+            border: 1px solid #000;
             border-collapse: collapse;
+            width: 100%;
         }
         
-        .excel-grid-table th, .excel-grid-table td {
-            border: 1px solid #333;
-            padding: 12px 15px;
-            font-size: 13px;
+        .meta td {
+            border: 1px solid #000;
+            padding: 4px;
+            font-size: 11px;
+            text-align: left;
+        }
+        
+        .items-table {
+            border: 1px solid #000;
+            border-collapse: collapse;
+            width: 100%;
+            table-layout: fixed;
+        }
+        
+        .items-table th, 
+        .items-table td {
+            border-left: 1px solid #000;
+            border-right: 1px solid #000;
+            padding: 4px;
+            text-align: center;
+            font-size: 11px;
+            font-family: 'DejaVu Sans', sans-serif;
             vertical-align: middle;
         }
         
-        .excel-grid-table th {
-            background: #f8f9fa;
-            font-weight: 700;
-            text-transform: uppercase;
-            text-align: center;
-            color: #333;
+        .items-table th {
+            font-weight: bold;
+            background: #f2f2f2;
+            border-top: 1px solid #000;
+            border-bottom: 1px solid #000;
         }
         
-        .purpose-section {
-            padding: 20px;
-            border-bottom: 1px solid #333;
+        .items-table .text-left {
+            text-align: left;
         }
         
-        .purpose-label {
-            font-weight: 800;
-            font-size: 10px;
-            text-transform: uppercase;
-            color: var(--secondary-color);
-            margin-bottom: 8px;
-            letter-spacing: 0.5px;
+        .grand-total {
+            font-weight: bold;
+            color: red;
+            border-top: 1px solid #000;
         }
         
-        .purpose-text {
-            font-weight: 500;
-            font-size: 14px;
-            color: #1a1a1a;
-            line-height: 1.5;
-        }
-        
-        .nothing-follows {
-            text-align: center;
-            font-style: italic;
-            padding: 20px;
-            color: #666;
-            font-size: 13px;
-        }
-        
-        .signature-section {
-            background: #fff;
-        }
-        
-        .signature-table {
-            width: 100%;
+        .footer-table {
+            border: 1px solid #000;
             border-collapse: collapse;
+            margin-top: 10px;
+            width: 100%;
         }
         
-        .signature-table td {
-            border: 1px solid #333;
-            padding: 25px 20px;
-            vertical-align: top;
-            width: 25%;
-        }
-        
-        .sig-label {
-            font-weight: 700;
-            margin-bottom: 15px;
-            font-size: 12px;
-            color: #333;
-            text-align: center;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .sig-line {
-            border-bottom: 2px solid #333;
-            height: 40px;
-            margin-bottom: 8px;
-        }
-        
-        .sig-info {
-            font-size: 10px;
-            color: #666;
-            margin-bottom: 5px;
-            text-align: center;
-        }
-        
-        .sig-name {
-            text-align: center;
-            font-weight: 700;
-            text-transform: uppercase;
-            border-bottom: 1px solid #333;
-            margin-bottom: 5px;
-            font-size: 13px;
-            padding-bottom: 2px;
-            min-height: 20px;
-        }
-        
-        .sig-position {
-            text-align: center;
+        .footer-table th, 
+        .footer-table td {
+            border: 1px solid #000;
+            padding: 4px;
             font-size: 11px;
-            font-weight: 500;
-            color: #555;
-            font-style: italic;
-            border-bottom: 1px solid #333;
-            margin-bottom: 8px;
-            min-height: 18px;
-            padding-bottom: 2px;
-        }
-        
-        .sig-date {
             text-align: center;
-            font-size: 12px;
-            border-bottom: 1px solid #333;
-            min-height: 20px;
-            padding-bottom: 2px;
-            font-weight: 500;
+            font-family: 'DejaVu Sans', sans-serif;
         }
         
         .main-content {
@@ -287,6 +216,9 @@ if ($result && $row = $result->fetch_assoc()) {
             body { background: white; }
             .main-content { padding: 0; }
             .page-header { display: none !important; }
+            .meta td { padding: 2px 3px; }
+            .items-table th, .items-table td { padding: 3px 4px; font-size: 10px; }
+            .footer-table th, .footer-table td { padding: 3px 4px; font-size: 10px; }
         }
     </style>
 </head>
@@ -313,15 +245,23 @@ if ($result && $row = $result->fetch_assoc()) {
                     <p class="text-muted mb-0">View Requisition and Issue Slip details</p>
                 </div>
                 <div class="col-md-4 text-md-end no-print">
-                    <a href="ris_entries.php" class="btn btn-outline-secondary btn-sm me-2">
-                        <i class="bi bi-arrow-left"></i> Back to Entries
-                    </a>
-                    <button class="btn btn-outline-info btn-sm me-2" onclick="window.open('print_ris.php?id=<?php echo $ris_id; ?>', '_blank')">
-                        <i class="bi bi-printer"></i> Print
-                    </button>
-                    <a href="ris_form.php" class="btn btn-primary btn-sm">
-                        <i class="bi bi-plus-circle"></i> New RIS
-                    </a>
+                    <div class="dropdown d-inline-block me-2">
+                        <button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="actionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-gear"></i> Actions
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionsDropdown">
+                            <li><a class="dropdown-item" href="#" onclick="window.open('print_ris.php?id=<?php echo $ris_id; ?>', '_blank')">
+                                <i class="bi bi-printer text-info"></i> Print RIS
+                            </a></li>
+                            <li><a class="dropdown-item" href="ris_entries.php">
+                                <i class="bi bi-arrow-left text-secondary"></i> Back to Entries
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="ris_form.php">
+                                <i class="bi bi-plus-circle text-success"></i> New RIS
+                            </a></li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
@@ -332,179 +272,146 @@ if ($result && $row = $result->fetch_assoc()) {
             <div class="excel-header">
                 <?php 
                 if (!empty($header_image)) {
-                    echo '<div style="margin-bottom: 15px;">';
-                    echo '<img src="../uploads/forms/' . htmlspecialchars($header_image) . '" alt="Header Image" style="width: 100%; max-height: 80px; object-fit: contain;">';
+                    echo '<div class="header-img">';
+                    echo '<img src="../uploads/forms/' . htmlspecialchars($header_image) . '" alt="Header Image">';
                     echo '</div>';
                 }
                 ?>
                 <h4>REQUISITION AND ISSUE SLIP</h4>
             </div>
             
-            <!-- Entity Information Header -->
-            <div class="info-row">
-                <div class="info-cell">
-                    <div class="info-label">Division</div>
-                    <div class="info-value"><?php echo htmlspecialchars($ris_form['division']); ?></div>
-                </div>
-                <div class="info-cell">
-                    <div class="info-label">Responsibility Center</div>
-                    <div class="info-value"><?php echo htmlspecialchars($ris_form['responsibility_center']); ?></div>
-                </div>
-                <div class="info-cell">
-                    <div class="info-label">RIS No</div>
-                    <div class="info-value text-primary"><?php echo htmlspecialchars($ris_form['ris_no']); ?></div>
-                </div>
-                <div class="info-cell">
-                    <div class="info-label">Date</div>
-                    <div class="info-value">
-                        <?php if (!empty($ris_form['date']) && $ris_form['date'] !== '0000-00-00' && $ris_form['date'] !== null): ?>
-                            <?php echo date('F d, Y', strtotime($ris_form['date'])); ?>
-                        <?php else: ?>
-                            <span style="color: #999;">No date set</span>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Entity Information Values -->
-            <div class="info-row">
-                <div class="info-cell">
-                    <div class="info-label">Office</div>
-                    <div class="info-value"><?php echo htmlspecialchars($ris_form['office']); ?></div>
-                </div>
-                <div class="info-cell">
-                    <div class="info-label">Code</div>
-                    <div class="info-value"><?php echo htmlspecialchars($ris_form['code']); ?></div>
-                </div>
-                <div class="info-cell">
-                    <div class="info-label">SAI No</div>
-                    <div class="info-value"><?php echo htmlspecialchars($ris_form['sai_no']); ?></div>
-                </div>
-                <div class="info-cell">
-                    <div class="info-label">Date</div>
-                    <div class="info-value">
-                        <?php if (!empty($ris_form['date_2']) && $ris_form['date_2'] !== '0000-00-00' && $ris_form['date_2'] !== null): ?>
-                            <?php echo date('F d, Y', strtotime($ris_form['date_2'])); ?>
-                        <?php else: ?>
-                            <span style="color: #999;">No date set</span>
-                        <?php endif; ?>
-                    </div>
-                </div>
+            <!-- Meta Information -->
+            <div class="meta">
+                <table>
+                    <tr>
+                        <td><strong>DIVISION:</strong> <?php echo htmlspecialchars($ris_form['division']); ?></td>
+                        <td><strong>Responsibility Center:</strong> <?php echo htmlspecialchars($ris_form['responsibility_center']); ?></td>
+                        <td><strong>RIS NO:</strong> <?php echo htmlspecialchars($ris_form['ris_no']); ?></td>
+                        <td><strong>DATE:</strong> 
+                            <?php if (!empty($ris_form['date']) && $ris_form['date'] !== '0000-00-00' && $ris_form['date'] !== null): ?>
+                                <?php echo date('F d, Y', strtotime($ris_form['date'])); ?>
+                            <?php else: ?>
+                                <span style="color: #999;">No date set</span>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>OFFICE:</strong> <?php echo htmlspecialchars($ris_form['office']); ?></td>
+                        <td><strong>Code:</strong> <?php echo htmlspecialchars($ris_form['code']); ?></td>
+                        <td><strong>SAI NO:</strong> <?php echo htmlspecialchars($ris_form['sai_no']); ?></td>
+                        <td></td>
+                    </tr>
+                </table>
             </div>
             
             <!-- Items Table -->
-            <table class="excel-grid-table">
+            <table class="items-table">
                 <thead>
                     <tr>
-                        <th width="10%">Stock No</th>
-                        <th width="8%">Unit</th>
-                        <th width="35%">Description</th>
-                        <th width="8%">Quantity</th>
-                        <th width="12%">Price</th>
-                        <th width="12%">Total Amount</th>
+                        <th colspan="4">REQUISITION</th>
+                        <th colspan="3">ISSUANCE</th>
+                    </tr>
+                    <tr>
+                        <th>Stock No</th>
+                        <th>Unit</th>
+                        <th>Description</th>
+                        <th>Quantity</th>
+                        <th>Signature</th>
+                        <th>Price</th>
+                        <th>Total Amount</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($ris_items as $item): ?>
                         <tr>
-                            <td class="text-center"><?php echo htmlspecialchars($item['stock_no']); ?></td>
-                            <td class="text-center"><?php echo htmlspecialchars($item['unit']); ?></td>
-                            <td><?php echo htmlspecialchars($item['description']); ?></td>
-                            <td class="text-center"><?php echo number_format($item['quantity'], 2); ?></td>
-                            <td class="text-end">₱<?php echo number_format($item['price'], 2); ?></td>
-                            <td class="text-end">₱<?php echo number_format($item['total_amount'], 2); ?></td>
+                            <td><?php echo htmlspecialchars($item['stock_no']); ?></td>
+                            <td><?php echo htmlspecialchars($item['unit']); ?></td>
+                            <td class="text-left"><?php echo htmlspecialchars($item['description']); ?></td>
+                            <td><?php echo number_format($item['quantity'], 2); ?></td>
+                            <td></td>
+                            <td><?php echo number_format($item['price'], 2); ?></td>
+                            <td><?php echo number_format($item['total_amount'], 2); ?></td>
                         </tr>
                     <?php endforeach; ?>
-                </tbody>
-                <tfoot>
+                    
+                    <?php if (!empty($ris_items)): ?>
                     <tr>
-                        <th colspan="5" class="text-end" style="font-weight: 700;">Total</th>
-                        <th class="text-end" style="font-weight: 700;">₱<?php echo number_format(array_sum(array_column($ris_items, 'total_amount')), 2); ?></th>
+                        <td colspan="7" style="text-align: center; font-style: italic; padding: 6px 0; border-top: 1px solid #000;">— NOTHING FOLLOWS —</td>
                     </tr>
-                </tfoot>
+                    <?php endif; ?>
+                    
+                    <?php 
+                    // Fill blank rows to match generate_ris_pdf.php format
+                    $minRows = 15;
+                    $currentRows = count($ris_items);
+                    $emptyRows = max(0, $minRows - $currentRows);
+                    
+                    for ($i = 0; $i < $emptyRows; $i++) {
+                        echo '<tr>';
+                        echo '<td>&nbsp;</td>';
+                        echo '<td></td>';
+                        echo '<td></td>';
+                        echo '<td></td>';
+                        echo '<td></td>';
+                        echo '<td></td>';
+                        echo '<td></td>';
+                        echo '</tr>';
+                    }
+                    ?>
+                    
+                    <?php $grandTotal = array_sum(array_column($ris_items, 'total_amount')); ?>
+                    <tr>
+                        <td colspan="6" style="text-align:right; border-top:1px solid #000;"><strong>Grand Total:</strong></td>
+                        <td class="grand-total"><?php echo number_format($grandTotal, 2); ?></td>
+                    </tr>
+                    <tr>
+                        <td colspan="7" style="text-align:left; border-top:1px solid #000;"><strong>Purpose:</strong> <?php echo htmlspecialchars($ris_form['purpose']); ?></td>
+                    </tr>
+                </tbody>
             </table>
             
-            <!-- Purpose -->
-            <div class="purpose-section">
-                <div class="purpose-label">Purpose</div>
-                <div class="purpose-text"><?php echo htmlspecialchars($ris_form['purpose']); ?></div>
-            </div>
-            
-            <div class="nothing-follows">
-                Nothing follows
-            </div>
-            
-            <!-- Signature Section -->
-            <div class="signature-section">
-                <table class="signature-table">
+            <!-- Footer Signatures -->
+            <table class="footer-table">
+                <thead>
                     <tr>
-                        <td>
-                            <div class="sig-label">Requested By</div>
-                            <div class="sig-line"></div>
-                            <div class="sig-info">Signature over Printed Name</div>
-                            <div class="sig-name"><?php echo htmlspecialchars($ris_form['requested_by']); ?></div>
-                            <div class="sig-info">Designation</div>
-                            <div class="sig-position"><?php echo htmlspecialchars($ris_form['requested_by_position']); ?></div>
-                            <div class="sig-info">Date</div>
-                            <div class="sig-date">
-                                <?php if (!empty($ris_form['requested_date']) && $ris_form['requested_date'] !== '0000-00-00'): ?>
-                                    <?php echo date('m/d/Y', strtotime($ris_form['requested_date'])); ?>
-                                <?php else: ?>
-                                    ____________
-                                <?php endif; ?>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="sig-label">Approved By</div>
-                            <div class="sig-line"></div>
-                            <div class="sig-info">Signature over Printed Name</div>
-                            <div class="sig-name"><?php echo htmlspecialchars($ris_form['approved_by']); ?></div>
-                            <div class="sig-info">Designation</div>
-                            <div class="sig-position"><?php echo htmlspecialchars($ris_form['approved_by_position']); ?></div>
-                            <div class="sig-info">Date</div>
-                            <div class="sig-date">
-                                <?php if (!empty($ris_form['approved_date']) && $ris_form['approved_date'] !== '0000-00-00'): ?>
-                                    <?php echo date('m/d/Y', strtotime($ris_form['approved_date'])); ?>
-                                <?php else: ?>
-                                    ____________
-                                <?php endif; ?>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="sig-label">Issued By</div>
-                            <div class="sig-line"></div>
-                            <div class="sig-info">Signature over Printed Name</div>
-                            <div class="sig-name"><?php echo htmlspecialchars($ris_form['issued_by']); ?></div>
-                            <div class="sig-info">Designation</div>
-                            <div class="sig-position"><?php echo htmlspecialchars($ris_form['issued_by_position']); ?></div>
-                            <div class="sig-info">Date</div>
-                            <div class="sig-date">
-                                <?php if (!empty($ris_form['issued_date']) && $ris_form['issued_date'] !== '0000-00-00'): ?>
-                                    <?php echo date('m/d/Y', strtotime($ris_form['issued_date'])); ?>
-                                <?php else: ?>
-                                    ____________
-                                <?php endif; ?>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="sig-label">Received By</div>
-                            <div class="sig-line"></div>
-                            <div class="sig-info">Signature over Printed Name</div>
-                            <div class="sig-name"><?php echo htmlspecialchars($ris_form['received_by']); ?></div>
-                            <div class="sig-info">Designation</div>
-                            <div class="sig-position"><?php echo htmlspecialchars($ris_form['received_by_position']); ?></div>
-                            <div class="sig-info">Date</div>
-                            <div class="sig-date">
-                                <?php if (!empty($ris_form['received_date']) && $ris_form['received_date'] !== '0000-00-00'): ?>
-                                    <?php echo date('m/d/Y', strtotime($ris_form['received_date'])); ?>
-                                <?php else: ?>
-                                    ____________
-                                <?php endif; ?>
-                            </div>
-                        </td>
+                        <th></th>
+                        <th>Requested By</th>
+                        <th>Approved By</th>
+                        <th>Issued By</th>
+                        <th>Received By</th>
                     </tr>
-                </table>
-            </div>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Signature</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>Printed Name</td>
+                        <td><?php echo htmlspecialchars($ris_form['requested_by']); ?></td>
+                        <td><?php echo htmlspecialchars($ris_form['approved_by']); ?></td>
+                        <td><?php echo htmlspecialchars($ris_form['issued_by']); ?></td>
+                        <td><?php echo htmlspecialchars($ris_form['received_by']); ?></td>
+                    </tr>
+                    <tr>
+                        <td>Designation</td>
+                        <td><?php echo htmlspecialchars($ris_form['requested_by_position']); ?></td>
+                        <td><?php echo htmlspecialchars($ris_form['approved_by_position']); ?></td>
+                        <td><?php echo htmlspecialchars($ris_form['issued_by_position']); ?></td>
+                        <td><?php echo htmlspecialchars($ris_form['received_by_position']); ?></td>
+                    </tr>
+                    <tr>
+                        <td>Date</td>
+                        <td><?php if (!empty($ris_form['requested_date']) && $ris_form['requested_date'] !== '0000-00-00') echo date('m/d/Y', strtotime($ris_form['requested_date'])); ?></td>
+                        <td><?php if (!empty($ris_form['approved_date']) && $ris_form['approved_date'] !== '0000-00-00') echo date('m/d/Y', strtotime($ris_form['approved_date'])); ?></td>
+                        <td><?php if (!empty($ris_form['issued_date']) && $ris_form['issued_date'] !== '0000-00-00') echo date('m/d/Y', strtotime($ris_form['issued_date'])); ?></td>
+                        <td><?php if (!empty($ris_form['received_date']) && $ris_form['received_date'] !== '0000-00-00') echo date('m/d/Y', strtotime($ris_form['received_date'])); ?></td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 
@@ -513,5 +420,37 @@ if ($result && $row = $result->fetch_assoc()) {
     <?php include 'includes/sidebar-scripts.php'; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function confirmDelete(risId, risNo) {
+            if (confirm('Are you sure you want to delete RIS No: ' + risNo + '?\n\nThis action cannot be undone and will permanently delete this RIS form and all its items.')) {
+                // Create and submit a form for deletion
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = 'process_ris.php';
+                form.style.display = 'none';
+                
+                const csrfToken = document.createElement('input');
+                csrfToken.type = 'hidden';
+                csrfToken.name = 'csrf_token';
+                csrfToken.value = '<?php echo $_SESSION['csrf_token'] ?? ''; ?>';
+                form.appendChild(csrfToken);
+                
+                const actionInput = document.createElement('input');
+                actionInput.type = 'hidden';
+                actionInput.name = 'action';
+                actionInput.value = 'delete';
+                form.appendChild(actionInput);
+                
+                const idInput = document.createElement('input');
+                idInput.type = 'hidden';
+                idInput.name = 'id';
+                idInput.value = risId;
+                form.appendChild(idInput);
+                
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+    </script>
 </body>
 </html>
