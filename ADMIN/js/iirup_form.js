@@ -265,14 +265,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Save data when form inputs change
     document.addEventListener('input', function(e) {
         if (e.target.closest('#iirupItemsTable')) {
-            // Check for duplicate property number when user types
-            if (e.target.name === 'property_no[]' && e.target.value.trim()) {
-                const row = e.target.closest('tr');
-                if (isPropertyNoDuplicate(e.target.value.trim(), row)) {
-                    // Show warning but don't prevent typing (user might be correcting)
-                    showModal('Warning', 'This property number already exists in the form. Each asset can only be added once.', 'warning');
-                }
-            }
             saveFormDataToSession();
         }
     });
@@ -604,13 +596,6 @@ function saveFillData() {
         const modal_total_cost = document.getElementById('modal_total_cost');
         const modal_dept_office = document.getElementById('modal_dept_office');
         
-        // Check for duplicate property number (excluding current row)
-        const newPropertyNo = modal_property_no ? modal_property_no.value : '';
-        if (newPropertyNo && isPropertyNoDuplicate(newPropertyNo, currentRow)) {
-            showModal('Warning', 'This property number already exists in the form. Each asset can only be added once.', 'warning');
-            return; // Don't save the data
-        }
-        
         // Save modal values back to the row (7 fields now: 6 inputs + 1 select)
         if (modal_date_acquired && inputs[0]) inputs[0].value = modal_date_acquired.value;
         if (modal_particulars && inputs[1]) inputs[1].value = modal_particulars.value;
@@ -714,13 +699,6 @@ function fillRowFromDatalist(input, option) {
     
     console.log('Asset data:', assetData);
     
-    // Check for duplicate property number
-    if (assetData.property_no && isPropertyNoDuplicate(assetData.property_no, row)) {
-        showModal('Warning', 'This property number already exists in the form. Each asset can only be added once.', 'warning');
-        input.value = ''; // Clear the input
-        return;
-    }
-    
     // Fill the form fields with asset data
     fillRowWithAssetData(row, assetData);
     
@@ -744,12 +722,6 @@ function fillRowWithAssetData(row, asset) {
     console.log('Filling row with asset data:', asset);
     const inputs = row.getElementsByTagName('input');
     const selects = row.getElementsByTagName('select');
-    
-    // Check for duplicate property number
-    if (asset.property_no && isPropertyNoDuplicate(asset.property_no, row)) {
-        showModal('Warning', 'This property number already exists in the form. Each asset can only be added once.', 'warning');
-        return false; // Don't fill the row
-    }
     
     // Fill the description/particulars field
     const particularsInput = row.querySelector('input[name="particulars[]"]');
@@ -838,12 +810,6 @@ function fillRowWithAssetData(row, asset) {
 }
 
 function selectAssetForModal(asset, input) {
-    // Check for duplicate property number in existing rows
-    if (asset.property_no && isPropertyNoDuplicate(asset.property_no)) {
-        showModal('Warning', 'This property number already exists in the form. Each asset can only be added once.', 'warning');
-        return; // Don't fill the modal
-    }
-    
     // Fill modal fields with asset data
     const particularsField = document.getElementById('modal_particulars');
     particularsField.value = asset.description;
@@ -912,21 +878,40 @@ function isRowEmpty(row) {
 
 // Check for duplicate property numbers in the table
 function isPropertyNoDuplicate(propertyNo, excludeRow = null) {
+    console.log('Checking for duplicate property number:', propertyNo);
+    console.log('Excluding row:', excludeRow);
+    
     const table = document.getElementById('iirupItemsTable');
-    if (!table) return false;
+    if (!table) {
+        console.log('Table not found');
+        return false;
+    }
     
     const tbody = table.getElementsByTagName('tbody')[0];
     const rows = tbody.getElementsByTagName('tr');
     
+    console.log('Total rows in table:', rows.length);
+    
     for (let i = 0; i < rows.length; i++) {
-        if (excludeRow && rows[i] === excludeRow) continue; // Skip the row we're checking
+        const row = rows[i];
+        console.log('Checking row', i, 'against exclude row:', excludeRow === row);
+        
+        if (excludeRow && rows[i] === excludeRow) {
+            console.log('Skipping excluded row', i);
+            continue; // Skip the row we're checking
+        }
         
         const propertyNoInput = rows[i].querySelector('input[name="property_no[]"]');
-        if (propertyNoInput && propertyNoInput.value.trim() === propertyNo.trim()) {
+        const existingPropertyNo = propertyNoInput ? propertyNoInput.value.trim() : '';
+        console.log('Row', i, 'property number:', existingPropertyNo);
+        
+        if (propertyNoInput && existingPropertyNo === propertyNo.trim()) {
+            console.log('Found duplicate property number:', existingPropertyNo);
             return true; // Found duplicate
         }
     }
     
+    console.log('No duplicate found for property number:', propertyNo);
     return false; // No duplicate found
 }
 
