@@ -487,9 +487,8 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
                                         <th style="width: 10%;">Date Acquired</th>
                                         <th style="width: 8%;">Item No.</th>
                                         <th style="width: 15%;">ICS & PAR No./Date</th>
-                                        <th style="width: 25%;">Description</th>
-                                        <th style="width: 10%;">Quantity</th>
-                                        <th style="width: 10%;">Unit Price</th>
+                                        <th style="width: 30%;">Description</th>
+                                        <th style="width: 15%;">Unit Price</th>
                                         <th style="width: 12%;">Total Amount</th>
                                         <th style="width: 12%;">Condition of Inventory</th>
                                         <th style="width: 10%;">Action</th>
@@ -505,7 +504,6 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
                                                 <option value="">Select Asset</option>
                                             </select>
                                         </td>
-                                        <td><input type="number" step="0.01" class="form-control form-control-sm bg-light" name="quantity[]" value="1" min="1" readonly></td>
                                         <td><input type="number" step="0.01" class="form-control form-control-sm" name="unit_price[]" required onchange="calculateITRTotal(this)"></td>
                                         <td><input type="number" step="0.01" class="form-control form-control-sm" name="total_amount[]" readonly></td>
                                         <td>
@@ -524,7 +522,7 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
                     <!-- Purpose -->
                     <div class="mb-3">
                         <label class="form-label"><strong>Purpose of Transfer:</strong></label>
-                        <textarea class="form-control" name="purpose" rows="3" required></textarea>
+                        <textarea class="form-control" name="purpose" rows="3"></textarea>
                     </div>
 
                     <!-- Signature Section -->
@@ -614,7 +612,6 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
                 '<input type="text" class="form-control form-control-sm" name="item_no[]" value="' + nextItemNo + '" readonly>',
                 '<input type="text" class="form-control form-control-sm" name="ics_par_no[]" placeholder="ICS & PAR No./Date">',
                 '<select class="form-select form-select-sm" name="description[]" required><option value="">Select Asset</option></select>',
-                '<input type="number" step="0.01" class="form-control form-control-sm bg-light" name="quantity[]" value="1" min="1" readonly>',
                 '<input type="number" step="0.01" class="form-control form-control-sm" name="unit_price[]" required onchange="calculateITRTotal(this)">',
                 '<input type="number" step="0.01" class="form-control form-control-sm" name="total_amount[]" readonly>',
                 '<input type="text" class="form-control form-control-sm" name="condition[]" value="serviceable" readonly>',
@@ -625,6 +622,45 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
                 const cell = newRow.insertCell(index);
                 cell.innerHTML = cellHtml;
             });
+
+            // Initialize Select2 for the new asset dropdown
+            const newSelect = newRow.querySelector('select[name="description[]"]');
+            if (newSelect) {
+                $(newSelect).select2({
+                    theme: 'bootstrap-5',
+                    placeholder: 'Select Asset',
+                    allowClear: true,
+                    width: '100%'
+                });
+
+                // Handle asset selection for the new dropdown
+                $(newSelect).on('change', function() {
+                    const selectedOption = $(this).find('option:selected');
+                    const row = $(this).closest('tr');
+
+                    if (selectedOption.val()) {
+                        // Get asset data from data attributes
+                        const assetData = {
+                            description: selectedOption.text(),
+                            acquisition_date: selectedOption.data('acquisition-date'),
+                            property_no: selectedOption.data('property-no'),
+                            value: selectedOption.data('value')
+                        };
+
+                        // Fill form fields
+                        fillAssetFields(row, assetData);
+                    } else {
+                        // Clear fields when no asset selected
+                        clearAssetFields(row);
+                    }
+                });
+
+                // Populate the new dropdown with current employee's assets
+                const employeeId = $('#from_employee_search').val();
+                if (employeeId) {
+                    updateAllAssetDropdowns();
+                }
+            }
         }
 
         function removeITRRow(button) {

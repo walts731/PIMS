@@ -50,7 +50,7 @@ try {
     while ($row = $result->fetch_assoc()) {
         $assets[] = [
             'id' => $row['id'],
-            'description' => $row['description'],
+            'description' => $row['description'] . ' - ' . $row['property_no'],
             'value' => $row['value'],
             'acquisition_date' => $row['acquisition_date'],
             'status' => $row['status'],
