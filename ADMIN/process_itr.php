@@ -134,6 +134,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $itr_form_id = $stmt->insert_id;
         $stmt->close();
         
+        // Insert ITR items
+        for ($i = 0; $i < count($items); $i++) {
+            if (!empty($items[$i]) && !empty($descriptions[$i])) {
+                // Convert date format for date_acquired
+                $date_acquired_db = null;
+                if (!empty($date_acquireds[$i])) {
+                    $date_parts = explode('/', $date_acquireds[$i]);
+                    if (count($date_parts) === 3) {
+                        $date_acquired_db = $date_parts[2] . '-' . $date_parts[0] . '-' . $date_parts[1];
+                    } else {
+                        $date_acquired_db = $date_acquireds[$i];
+                    }
+                }
+                
+                $item_no = mysqli_real_escape_string($conn, $items[$i]);
+                $description = mysqli_real_escape_string($conn, $descriptions[$i]);
+                $ics_par_no = mysqli_real_escape_string($conn, $ics_par_nos[$i] ?? '');
+                $quantity = floatval($quantities[$i] ?? 1);
+                $unit = 'pcs'; // Default unit
+                $unit_price = floatval($unit_prices[$i] ?? 0);
+                $total_amount = floatval($total_amounts[$i] ?? 0);
+                $condition = mysqli_real_escape_string($conn, $conditions[$i] ?? 'serviceable');
+                $remarks = mysqli_real_escape_string($conn, $remarks[$i] ?? '');
+                
+                $stmt = $conn->prepare("INSERT INTO itr_items (form_id, item_no, date_acquired, ics_par_no, description, quantity, unit, unit_price, total_amount, condition_of_inventory, remarks, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)");
+                $stmt->bind_param("iissssdssss", $itr_form_id, $item_no, $date_acquired_db, $ics_par_no, $description, $quantity, $unit, $unit_price, $total_amount, $condition, $remarks);
+                
+                if (!$stmt->execute()) {
+                    throw new Exception('Failed to save ITR item: ' . $stmt->error);
+                }
+                $stmt->close();
+            }
+        }
+        
         // Update asset_items table - transfer ownership to "To" employee
         // Use asset_id for precise updates instead of description
         for ($i = 0; $i < count($items); $i++) {
