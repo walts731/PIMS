@@ -80,7 +80,7 @@ if ($result && $row = $result->fetch_assoc()) {
     <style>
         body {
             font-family: 'Times New Roman', serif;
-            background: linear-gradient(135deg, #F6F6F6 0%, #D6E4F0 100%);
+            background: white;
             min-height: 100vh;
             overflow-x: hidden;
         }
@@ -96,10 +96,11 @@ if ($result && $row = $result->fetch_assoc()) {
 
         .form-card {
             background: white;
-            border-radius: var(--border-radius-lg);
+            border-radius: 0;
             padding: 2rem;
-            box-shadow: var(--shadow);
+            box-shadow: none;
             margin-bottom: 2rem;
+            border: 1px solid #000;
         }
 
         .iirup-header {
@@ -107,38 +108,12 @@ if ($result && $row = $result->fetch_assoc()) {
             margin-bottom: 30px;
         }
 
-        .iirup-title {
-            font-size: 1.8rem;
-            font-weight: bold;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .iirup-subtitle {
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin-bottom: 5px;
-            color: #333;
-        }
-
-        .iirup-form-number {
-            font-size: 1.1rem;
-            font-weight: bold;
-            padding: 8px 16px;
-            background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
-            color: white;
-            border-radius: 4px;
-            display: inline-block;
-            margin: 10px 0;
-        }
-
         .accountable-section {
-            border: 2px solid #333;
+            border: 2px solid #000;
             padding: 20px;
             margin: 20px 0;
             text-align: center;
-            background-color: #f8f9fa;
+            background-color: white;
         }
 
         .accountable-label {
@@ -151,26 +126,26 @@ if ($result && $row = $result->fetch_assoc()) {
         .accountable-name {
             font-size: 1.3rem;
             font-weight: bold;
-            border-bottom: 2px solid #333;
+            border-bottom: 2px solid #000;
             padding-bottom: 5px;
             margin-bottom: 5px;
         }
 
         .table-responsive {
-            border-radius: var(--border-radius);
+            border-radius: 0;
             overflow: hidden;
         }
 
         .iirup-table {
-            border: 2px solid #333;
+            border: 2px solid #000;
             font-size: 0.8rem;
             table-layout: fixed;
             width: 100%;
         }
 
         .iirup-table th {
-            background-color: #e9ecef;
-            border: 1px solid #333;
+            background-color: white;
+            border: 1px solid #000;
             font-weight: bold;
             text-align: center;
             padding: 8px 4px;
@@ -178,7 +153,7 @@ if ($result && $row = $result->fetch_assoc()) {
         }
 
         .iirup-table td {
-            border: 1px solid #333;
+            border: 1px solid #000;
             padding: 6px 4px;
             font-size: 0.7rem;
             text-align: center;
@@ -189,20 +164,22 @@ if ($result && $row = $result->fetch_assoc()) {
         }
 
         .header-inventory {
-            background-color: #d4edda !important;
-            color: #155724;
+            background-color: white !important;
+            color: #000;
+            font-weight: bold;
         }
 
         .header-disposal {
-            background-color: #fff3cd !important;
-            color: #856404;
+            background-color: white !important;
+            color: #000;
+            font-weight: bold;
         }
 
         .certification-section {
             margin: 30px 0;
             padding: 20px;
-            background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
+            background-color: white;
+            border: 1px solid #000;
         }
 
         .certification-text {
@@ -212,7 +189,7 @@ if ($result && $row = $result->fetch_assoc()) {
         }
 
         .signature-section {
-            border-top: 2px solid #333;
+            border-top: 2px solid #000;
             padding-top: 30px;
             margin-top: 30px;
         }
@@ -229,7 +206,7 @@ if ($result && $row = $result->fetch_assoc()) {
         }
 
         .signature-line {
-            border-bottom: 2px solid #333;
+            border-bottom: 2px solid #000;
             padding-bottom: 5px;
             margin-bottom: 5px;
             min-height: 30px;
@@ -237,7 +214,7 @@ if ($result && $row = $result->fetch_assoc()) {
 
         .signature-label {
             font-size: 0.8rem;
-            color: #666;
+            color: #000;
             margin-bottom: 15px;
         }
 
@@ -248,7 +225,7 @@ if ($result && $row = $result->fetch_assoc()) {
 
             .form-card {
                 box-shadow: none;
-                border: none;
+                border: 1px solid #000;
             }
 
             .page-header {
