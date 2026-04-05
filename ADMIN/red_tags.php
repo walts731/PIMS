@@ -22,6 +22,9 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
 // Log red tags page access
 logSystemAction($_SESSION['user_id'], 'access', 'red_tags', 'Admin accessed red tags page');
 
+// Generate and store CSRF token
+$_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+
 // Handle filter
 $office_filter = intval($_GET['office'] ?? 0);
 
@@ -223,6 +226,11 @@ try {
                                 </button>
                             </li>
                             <li>
+                                <button type="button" class="dropdown-item" onclick="bulkDisposeTags()">
+                                    <i class="bi bi-trash"></i> Bulk Dispose Selected
+                                </button>
+                            </li>
+                            <li>
                                 <a href="unserviceable_assets.php" class="dropdown-item">
                                     <i class="bi bi-x-circle"></i> Unserviceable Assets
                                 </a>
@@ -380,7 +388,7 @@ try {
                     <form id="disposeForm" method="POST" action="process_disposal.php">
                         <input type="hidden" name="red_tag_id" id="disposeRedTagId">
                         <input type="hidden" name="action" value="dispose">
-                        <input type="hidden" name="csrf_token" value="<?php echo bin2hex(random_bytes(32)); ?>">
+                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
                         
                         <div class="alert alert-warning">
                             <i class="bi bi-exclamation-triangle"></i>
@@ -548,6 +556,54 @@ try {
                 // Submit the form
                 document.getElementById('disposeForm').submit();
             };
+            
+            // Bulk dispose selected tags
+            window.bulkDisposeTags = function() {
+                var checkboxes = document.querySelectorAll('.tag-checkbox:checked');
+                if (checkboxes.length === 0) {
+                    var modal = new bootstrap.Modal(document.getElementById('noSelectionModal'));
+                    modal.show();
+                    return;
+                }
+
+                var tagIds = [];
+                var itemsList = '';
+                
+                checkboxes.forEach(function(checkbox) {
+                    var row = checkbox.closest('tr');
+                    var controlNo = row.cells[1].textContent.trim();
+                    var description = row.cells[3].textContent.trim();
+                    
+                    tagIds.push(checkbox.value);
+                    itemsList += '<div><strong>' + controlNo + '</strong> - ' + description + '</div>';
+                });
+
+                document.getElementById('bulkDisposeTagIds').value = tagIds.join(',');
+                document.getElementById('selectedItemsList').innerHTML = itemsList;
+                
+                // Show bulk dispose modal
+                var modal = new bootstrap.Modal(document.getElementById('bulkDisposeModal'));
+                modal.show();
+            };
+            
+            // Confirm bulk disposal and submit form
+            window.confirmBulkDispose = function() {
+                var reason = document.getElementById('bulkDisposalReason').value.trim();
+                var date = document.getElementById('bulkDisposalDate').value;
+                
+                if (!reason) {
+                    alert('Please enter a disposal reason.');
+                    return;
+                }
+                
+                if (!date) {
+                    alert('Please select a disposal date.');
+                    return;
+                }
+                
+                // Submit bulk dispose form
+                document.getElementById('bulkDisposeForm').submit();
+            };
         });
     </script>
     
@@ -570,6 +626,58 @@ try {
                 <div class="modal-footer">
                     <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
                         <i class="bi bi-check-circle"></i> OK
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Dispose Modal -->
+    <div class="modal fade" id="bulkDisposeModal" tabindex="-1" aria-labelledby="bulkDisposeModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="bulkDisposeModalLabel">
+                        <i class="bi bi-exclamation-triangle text-warning"></i> Bulk Dispose Red Tags
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="bulkDisposeForm" method="POST" action="process_bulk_dispose_debug.php">
+                        <input type="hidden" name="tag_ids" id="bulkDisposeTagIds">
+                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
+                        
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <strong>Warning:</strong> This action cannot be undone. All selected items will be marked as disposed and removed from active inventory.
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label"><strong>Selected Items:</strong></label>
+                            <div id="selectedItemsList" class="border rounded p-2 bg-light" style="max-height: 200px; overflow-y: auto;">
+                                <!-- Selected items will be listed here -->
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="bulkDisposalReason" class="form-label"><strong>Disposal Reason:</strong></label>
+                            <textarea class="form-control" id="bulkDisposalReason" name="disposal_reason" rows="3" 
+                                      placeholder="Enter reason for bulk disposal..." required></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="bulkDisposalDate" class="form-label"><strong>Disposal Date:</strong></label>
+                            <input type="date" class="form-control" id="bulkDisposalDate" name="disposal_date" 
+                                   value="<?php echo date('Y-m-d'); ?>" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </button>
+                    <button type="button" class="btn btn-warning" onclick="confirmBulkDispose()">
+                        <i class="bi bi-trash"></i> Confirm Bulk Dispose
                     </button>
                 </div>
             </div>
