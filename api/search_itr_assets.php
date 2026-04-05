@@ -36,8 +36,6 @@ try {
     $sql .= " AND ai.status = 'serviceable'
             AND ai.property_no IS NOT NULL 
             AND ai.property_no != ''
-            AND ai.inventory_tag IS NOT NULL 
-            AND ai.inventory_tag != ''
             AND ai.value IS NOT NULL 
             AND ai.value > 0
             ORDER BY ai.description
