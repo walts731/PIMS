@@ -195,38 +195,6 @@ if ($categories_result) {
             </div>
         <?php endif; ?>
 
-        <!-- Statistics Cards -->
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="stats-card">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-grow-1">
-                            <h6 class="text-muted mb-2">Total Unserviceable</h6>
-                            <div class="stats-number"><?php echo $total_unserviceable; ?></div>
-                        </div>
-                        <div class="ms-3">
-                            <i class="bi bi-exclamation-triangle" style="font-size: 2rem; color: #dc3545;"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="stats-card">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-grow-1">
-                            <h6 class="text-muted mb-2">Total Value</h6>
-                            <div class="stats-number">₱<?php echo number_format($total_value, 2); ?></div>
-                        </div>
-                        <div class="ms-3">
-                            <i class="bi bi-currency-peso" style="font-size: 2rem; color: #28a745;"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-           
-        </div>
-
-        
         <!-- Assets Table -->
         <div class="table-container">
             <div class="table-responsive">

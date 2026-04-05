@@ -280,34 +280,7 @@ try {
             </div>
         </div>
         
-        <div class="row g-3 mb-4">
-            <div class="col-6 col-md-3">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo number_format($stats['total_disposed']); ?></div>
-                    <div class="stats-label"><i class="bi bi-trash3"></i> Total Disposed</div>
-                </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo number_format($stats['total_value'], 2); ?></div>
-                    <div class="stats-label"><i class="bi bi-currency-dollar"></i> Total Value</div>
-                </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo number_format($stats['this_month']); ?></div>
-                    <div class="stats-label"><i class="bi bi-calendar-month"></i> This Month</div>
-                </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo number_format($stats['this_year']); ?></div>
-                    <div class="stats-label"><i class="bi bi-calendar-year"></i> This Year</div>
-                </div>
-            </div>
-        </div>
-        
-            <?php if (empty($disposed_items)): ?>
+        <?php if (empty($disposed_items)): ?>
                 <div class="empty-state">
                     <i class="bi bi-trash3"></i>
                     <h4>No Disposed Items</h4>
