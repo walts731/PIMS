@@ -41,18 +41,12 @@ if ($result && $row = $result->fetch_assoc()) {
     $header_image = $row['header_image'];
 }
 
-// Get employees who have assets assigned to them for "From" dropdown
+// Get employees for "From" dropdown (all permanent and uncleared employees)
 $employees = [];
-$employees_sql = "SELECT DISTINCT e.id, e.employee_no, e.firstname, e.lastname 
+$employees_sql = "SELECT e.id, e.employee_no, e.firstname, e.middle_name, e.lastname, o.office_name 
                    FROM employees e 
-                   INNER JOIN asset_items ai ON e.id = ai.employee_id 
-                   WHERE ai.status = 'serviceable' 
-                   AND ai.property_no IS NOT NULL 
-                   AND ai.property_no != '' 
-                   AND ai.inventory_tag IS NOT NULL 
-                   AND ai.inventory_tag != '' 
-                   AND ai.value IS NOT NULL 
-                   AND ai.value > 0
+                   LEFT JOIN offices o ON e.office_id = o.id 
+                   WHERE e.employment_status IN ('permanent', 'uncleared')
                    ORDER BY e.lastname, e.firstname";
 $employees_result = $conn->query($employees_sql);
 while ($employee_row = $employees_result->fetch_assoc()) {
@@ -61,7 +55,11 @@ while ($employee_row = $employees_result->fetch_assoc()) {
 
 // Get all permanent employees for "To" dropdown (can receive assets)
 $to_employees = [];
-$to_employees_sql = "SELECT id, employee_no, firstname, lastname FROM employees WHERE employment_status = 'permanent' ORDER BY lastname, firstname";
+$to_employees_sql = "SELECT e.id, e.employee_no, e.firstname, e.middle_name, e.lastname, o.office_name 
+                     FROM employees e 
+                     LEFT JOIN offices o ON e.office_id = o.id 
+                     WHERE e.employment_status = 'permanent' 
+                     ORDER BY e.lastname, e.firstname";
 $to_employees_result = $conn->query($to_employees_sql);
 while ($employee_row = $to_employees_result->fetch_assoc()) {
     $to_employees[] = $employee_row;
@@ -389,10 +387,14 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
                         <div class="col-md-8">
                             <label class="form-label"><strong>From Accountable Officer/Agency/Fund Cluster:</strong></label>
                             <select class="form-select" id="from_employee_search" name="from_office" required>
-                                <option value="">Select Employee (With Transferable Assets)</option>
+                                <option value="">Select Employee (Permanent & Uncleared)</option>
                                 <?php foreach ($employees as $employee): ?>
                                     <option value="<?php echo $employee['id']; ?>">
-                                        <?php echo htmlspecialchars($employee['employee_no'] . ' - ' . $employee['lastname'] . ', ' . $employee['firstname']); ?>
+                                        <?php 
+                                        $middle_initial = !empty($employee['middle_name']) ? substr($employee['middle_name'], 0, 1) . '. ' : '';
+                                        $office_name = !empty($employee['office_name']) ? '/' . $employee['office_name'] : '';
+                                        echo htmlspecialchars($employee['firstname'] . ' ' . $middle_initial . $employee['lastname'] . $office_name); 
+                                        ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
@@ -411,7 +413,11 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
                                 <option value="">Select Employee (Permanent Only)</option>
                                 <?php foreach ($to_employees as $employee): ?>
                                     <option value="<?php echo $employee['id']; ?>">
-                                        <?php echo htmlspecialchars($employee['employee_no'] . ' - ' . $employee['lastname'] . ', ' . $employee['firstname']); ?>
+                                        <?php 
+                                        $middle_initial = !empty($employee['middle_name']) ? substr($employee['middle_name'], 0, 1) . '. ' : '';
+                                        $office_name = !empty($employee['office_name']) ? '/' . $employee['office_name'] : '';
+                                        echo htmlspecialchars($employee['firstname'] . ' ' . $middle_initial . ' ' . $employee['lastname'] . $office_name); 
+                                        ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
@@ -454,11 +460,16 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
                                 <option value="">Select Employee</option>
                                 <?php 
                                 // Get all employees for end user dropdown
-                                $all_employees_sql = "SELECT id, employee_no, firstname, lastname FROM employees ORDER BY lastname, firstname";
+                                $all_employees_sql = "SELECT e.id, e.employee_no, e.firstname, e.middle_name, e.lastname, o.office_name 
+                                                     FROM employees e 
+                                                     LEFT JOIN offices o ON e.office_id = o.id 
+                                                     ORDER BY e.lastname, e.firstname";
                                 $all_employees_result = $conn->query($all_employees_sql);
                                 while ($employee_row = $all_employees_result->fetch_assoc()) {
-                                    echo '<option value="' . htmlspecialchars($employee_row['employee_no'] . ' - ' . $employee_row['lastname'] . ', ' . $employee_row['firstname']) . '">';
-                                    echo htmlspecialchars($employee_row['employee_no'] . ' - ' . $employee_row['lastname'] . ', ' . $employee_row['firstname']);
+                                    $middle_initial = !empty($employee_row['middle_name']) ? substr($employee_row['middle_name'], 0, 1) . '. ' : '';
+                                    $office_name = !empty($employee_row['office_name']) ? '/' . $employee_row['office_name'] : '';
+                                    echo '<option value="' . htmlspecialchars($employee_row['firstname'] . ' ' . $middle_initial . $employee_row['lastname'] . $office_name) . '">';
+                                    echo htmlspecialchars($employee_row['firstname'] . ' ' . $middle_initial . $employee_row['lastname'] . $office_name);
                                     echo '</option>';
                                 }
                                 ?>
