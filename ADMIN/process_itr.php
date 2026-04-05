@@ -27,20 +27,70 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $itr_no = $_POST['itr_no'];
         $from_office = $_POST['from_office'];
         $to_office = $_POST['to_office'];
-        $transfer_date = $_POST['transfer_date'];
+        
+        // Convert date format from MM/DD/YYYY to YYYY-MM-DD for database
+        if (!empty($_POST['transfer_date'])) {
+            $date_parts = explode('/', $_POST['transfer_date']);
+            if (count($date_parts) === 3) {
+                $transfer_date = $date_parts[2] . '-' . $date_parts[0] . '-' . $date_parts[1];
+            } else {
+                $transfer_date = $_POST['transfer_date']; // Fallback if format is unexpected
+            }
+        } else {
+            $transfer_date = null;
+        }
+        
         $transfer_type = $_POST['transfer_type'];
         $transfer_type_others = $_POST['transfer_type_others'] ?? '';
         $end_user = $_POST['end_user'] ?? '';
         $purpose = $_POST['purpose'];
+        $requested_by = $_SESSION['username']; // Use current logged-in user
+        $requested_by_position = $_SESSION['position'] ?? 'User'; // Use current user's position
+        $requested_date = date('Y-m-d'); // Current date
         $approved_by = $_POST['approved_by'];
         $approved_by_position = $_POST['approved_by_position'];
-        $approved_date = $_POST['approved_date'];
+        
+        // Convert approved_date format from MM/DD/YYYY to YYYY-MM-DD for database
+        if (!empty($_POST['approved_date'])) {
+            $date_parts = explode('/', $_POST['approved_date']);
+            if (count($date_parts) === 3) {
+                $approved_date = $date_parts[2] . '-' . $date_parts[0] . '-' . $date_parts[1];
+            } else {
+                $approved_date = $_POST['approved_date']; // Fallback if format is unexpected
+            }
+        } else {
+            $approved_date = null;
+        }
+        
         $released_by = $_POST['released_by'];
         $released_by_position = $_POST['released_by_position'];
-        $released_date = $_POST['released_date'];
+        
+        // Convert released_date format from MM/DD/YYYY to YYYY-MM-DD for database
+        if (!empty($_POST['released_date'])) {
+            $date_parts = explode('/', $_POST['released_date']);
+            if (count($date_parts) === 3) {
+                $released_date = $date_parts[2] . '-' . $date_parts[0] . '-' . $date_parts[1];
+            } else {
+                $released_date = $_POST['released_date']; // Fallback if format is unexpected
+            }
+        } else {
+            $released_date = null;
+        }
+        
         $received_by = $_POST['received_by'];
         $received_by_position = $_POST['received_by_position'];
-        $received_date = $_POST['received_date'];
+        
+        // Convert received_date format from MM/DD/YYYY to YYYY-MM-DD for database
+        if (!empty($_POST['received_date'])) {
+            $date_parts = explode('/', $_POST['received_date']);
+            if (count($date_parts) === 3) {
+                $received_date = $date_parts[2] . '-' . $date_parts[0] . '-' . $date_parts[1];
+            } else {
+                $received_date = $_POST['received_date']; // Fallback if format is unexpected
+            }
+        } else {
+            $received_date = null;
+        }
         $items = $_POST['item_no'] ?? [];
         $descriptions = $_POST['description'] ?? [];
         $quantities = $_POST['quantity'] ?? [];
@@ -56,7 +106,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         // Validate required fields
         if (empty($entity_name) || empty($fund_cluster) || empty($itr_no) || empty($from_office) || empty($to_office)) {
-            throw new Exception('All required fields must be filled');
+            // Allow form submission without all fields validation
+            // throw new Exception('All required fields must be filled');
         }
         
         // Check if we should increment ITR counter
@@ -73,8 +124,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $conn->begin_transaction();
         
         // Insert ITR form
-        $stmt = $conn->prepare("INSERT INTO itr_forms (entity_name, fund_cluster, itr_no, from_office, to_office, transfer_date, transfer_type, transfer_type_others, end_user, purpose, approved_by, approved_by_position, approved_date, released_by, released_by_position, released_date, received_by, received_by_position, received_date, created_by, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("ssssssssssssssssssssi", $entity_name, $fund_cluster, $itr_no, $from_office, $to_office, $transfer_date, $transfer_type, $transfer_type_others, $end_user, $purpose, $approved_by, $approved_by_position, $approved_date, $released_by, $released_by_position, $released_date, $received_by, $received_by_position, $received_date, $_SESSION['user_id'], $_SESSION['user_id']);
+        $stmt = $conn->prepare("INSERT INTO itr_forms (entity_name, fund_cluster, itr_no, from_office, to_office, transfer_date, transfer_type, transfer_type_others, end_user, purpose, requested_by, requested_by_position, requested_date, approved_by, approved_by_position, approved_date, released_by, released_by_position, released_date, received_by, received_by_position, received_date, created_by, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("sssssssssssssssssssssssi", $entity_name, $fund_cluster, $itr_no, $from_office, $to_office, $transfer_date, $transfer_type, $transfer_type_others, $end_user, $purpose, $requested_by, $requested_by_position, $requested_date, $approved_by, $approved_by_position, $approved_date, $released_by, $released_by_position, $released_date, $received_by, $received_by_position, $received_date, $_SESSION['user_id'], $_SESSION['user_id']);
         
         if (!$stmt->execute()) {
             throw new Exception('Failed to save ITR form: ' . $stmt->error);

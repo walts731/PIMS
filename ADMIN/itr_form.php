@@ -974,14 +974,20 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
             const selectedOption = $('#to_employee_search').find('option:selected');
             if (selectedOption.length) {
                 const optionText = selectedOption.text();
-                // Extract employee name from format "EMP0001 - Dela Cruz, Juan"
-                const parts = optionText.split(' - ');
-                if (parts.length >= 2) {
-                    const employeeName = parts[1]; // "Dela Cruz, Juan"
+                // The format is "John A. Doe/Office Name"
+                // Extract employee name before the slash
+                const parts = optionText.split('/');
+                if (parts.length >= 1) {
+                    const employeeName = parts[0].trim(); // "John A. Doe"
                     receivedByInput.val(employeeName);
                     
-                    // Set a default position (can be customized later)
-                    receivedByPositionInput.val('Employee');
+                    // Extract office name if available
+                    if (parts.length >= 2) {
+                        const officeName = parts[1].trim();
+                        receivedByPositionInput.val(officeName);
+                    } else {
+                        receivedByPositionInput.val('Employee');
+                    }
                 }
             }
         }
