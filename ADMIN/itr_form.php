@@ -120,7 +120,7 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventory Transfer Request - PIMS</title>
+    <title>Property Transfer Request - PIMS</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
@@ -303,7 +303,7 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
 <body>
     <?php
     // Set page title for topbar
-    $page_title = 'Inventory Transfer Request';
+    $page_title = 'Property Transfer Request';
     ?>
     <!-- Main Content Wrapper -->
     <div class="main-wrapper" id="mainWrapper">
@@ -318,12 +318,12 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
                 <div class="row align-items-center">
                     <div class="col-md-8">
                         <h1 class="mb-2">
-                            <i class="bi bi-file-earmark-text"></i> Inventory Transfer Request
+                            <i class="bi bi-file-earmark-text"></i> Property Transfer Request
                         </h1>
                         <p class="text-muted mb-0">Manage Inventory Transfer Request forms</p>
                     </div>
                     <div class="col-md-4 text-md-end">
-                        <a href="itr_entries.php" class="btn btn-outline-secondary">
+                        <a href="itr_entries.php" class="btn btn-primary">
                             <i class="bi bi-list-ul"></i> View Entries
                         </a>
                     </div>
