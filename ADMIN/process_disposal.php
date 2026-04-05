@@ -39,12 +39,6 @@ if ($red_tag_id === 0 && $asset_item_id === 0) {
     exit();
 }
 
-if (empty($disposal_reason)) {
-    $_SESSION['error'] = 'Disposal reason is required.';
-    header('Location: red_tags.php');
-    exit();
-}
-
 if (empty($disposal_date)) {
     $_SESSION['error'] = 'Disposal date is required.';
     header('Location: red_tags.php');
@@ -81,14 +75,13 @@ try {
         // Update red tag status to disposed
         $update_sql = "UPDATE red_tags SET 
                        action = 'disposed',
-                       disposal_reason = ?,
                        disposal_date = ?,
                        updated_at = CURRENT_TIMESTAMP,
                        updated_by = ?
                        WHERE id = ?";
         
         $stmt = $conn->prepare($update_sql);
-        $stmt->bind_param("ssii", $disposal_reason, $disposal_date, $_SESSION['user_id'], $red_tag_id);
+        $stmt->bind_param("sii", $disposal_date, $_SESSION['user_id'], $red_tag_id);
         $stmt->execute();
         $stmt->close();
         

@@ -29,7 +29,6 @@ if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token']) ||
 
 // Validate required fields
 if (!isset($_POST['tag_ids']) || empty($_POST['tag_ids']) || 
-    !isset($_POST['disposal_reason']) || empty(trim($_POST['disposal_reason'])) ||
     !isset($_POST['disposal_date']) || empty($_POST['disposal_date'])) {
     
     $_SESSION['error'] = 'Missing required fields. Please fill all required information.';
@@ -104,12 +103,11 @@ try {
             // Update red tag with disposal information
             $update_sql = "UPDATE red_tags 
                          SET action = 'disposed',
-                             disposal_reason = ?,
                              disposal_date = ?,
                              updated_by = ?
                          WHERE id = ?";
             $stmt = $conn->prepare($update_sql);
-            $stmt->bind_param("sssi", $disposal_reason, $disposal_date, $user_id, $tag_id);
+            $stmt->bind_param("sii", $disposal_date, $user_id, $tag_id);
             
             error_log("Updating red tag ID $tag_id with disposal info");
             

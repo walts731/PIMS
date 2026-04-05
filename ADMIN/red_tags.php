@@ -408,7 +408,7 @@ try {
                         <div class="mb-3">
                             <label for="disposalReason" class="form-label"><strong>Disposal Reason:</strong></label>
                             <textarea class="form-control" id="disposalReason" name="disposal_reason" rows="3" 
-                                      placeholder="Enter reason for disposal..." required></textarea>
+                                      placeholder="Enter reason for disposal (optional)..."></textarea>
                         </div>
                         
                         <div class="mb-3">
@@ -540,20 +540,14 @@ try {
             
             // Confirm disposal and submit form
             window.confirmDisposal = function() {
-                var reason = document.getElementById('disposalReason').value.trim();
                 var date = document.getElementById('disposalDate').value;
-                
-                if (!reason) {
-                    alert('Please enter a disposal reason.');
-                    return;
-                }
                 
                 if (!date) {
                     alert('Please select a disposal date.');
                     return;
                 }
                 
-                // Submit the form
+                // Submit form
                 document.getElementById('disposeForm').submit();
             };
             
@@ -588,13 +582,7 @@ try {
             
             // Confirm bulk disposal and submit form
             window.confirmBulkDispose = function() {
-                var reason = document.getElementById('bulkDisposalReason').value.trim();
                 var date = document.getElementById('bulkDisposalDate').value;
-                
-                if (!reason) {
-                    alert('Please enter a disposal reason.');
-                    return;
-                }
                 
                 if (!date) {
                     alert('Please select a disposal date.');
@@ -662,7 +650,7 @@ try {
                         <div class="mb-3">
                             <label for="bulkDisposalReason" class="form-label"><strong>Disposal Reason:</strong></label>
                             <textarea class="form-control" id="bulkDisposalReason" name="disposal_reason" rows="3" 
-                                      placeholder="Enter reason for bulk disposal..." required></textarea>
+                                      placeholder="Enter reason for bulk disposal (optional)..."></textarea>
                         </div>
                         
                         <div class="mb-3">

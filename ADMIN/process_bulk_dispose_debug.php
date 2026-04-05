@@ -51,12 +51,10 @@ error_log("CSRF token validation PASSED");
 
 // Validate required fields
 if (!isset($_POST['tag_ids']) || empty($_POST['tag_ids']) || 
-    !isset($_POST['disposal_reason']) || empty(trim($_POST['disposal_reason'])) ||
     !isset($_POST['disposal_date']) || empty($_POST['disposal_date'])) {
     
     error_log("Missing required fields");
     error_log("Tag IDs: " . ($_POST['tag_ids'] ?? 'NOT SET'));
-    error_log("Reason: " . ($_POST['disposal_reason'] ?? 'NOT SET'));
     error_log("Date: " . ($_POST['disposal_date'] ?? 'NOT SET'));
     
     $_SESSION['error'] = 'Missing required fields. Please fill all required information.';
@@ -114,15 +112,14 @@ try {
                 continue;
             }
             
-            // Simple update without complex conditions
+            // Simple update without disposal reason requirement
             $update_sql = "UPDATE red_tags 
                          SET action = 'disposed',
-                             disposal_reason = ?,
                              disposal_date = ?,
                              updated_by = ?
                          WHERE id = ?";
             $stmt = $conn->prepare($update_sql);
-            $stmt->bind_param("sssi", $disposal_reason, $disposal_date, $user_id, $tag_id);
+            $stmt->bind_param("sii", $disposal_date, $user_id, $tag_id);
             
             if ($stmt->execute()) {
                 error_log("SUCCESS: Updated red tag ID $tag_id");
