@@ -19,7 +19,7 @@ $conn->set_charset("utf8");
 // Query functions
 function getFuelInData($conn) {
     $sql = "SELECT fi.id, fi.date_time, fi.fuel_type, fi.quantity, fi.unit_price, fi.total_cost, fi.storage_location, 
-                   fi.delivery_receipt, fi.supplier_name, fi.received_by, fi.remarks, fi.created_by, fi.created_at,
+                   fi.delivery_receipt, fi.supplier_name, fi.received_by, fi.remarks, fi.created_by, fi.created_at, fi.transaction_id,
                    ft.name as fuel_type_name
             FROM fuel_in fi
             LEFT JOIN fuel_types ft ON fi.fuel_type = ft.id

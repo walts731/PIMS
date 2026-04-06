@@ -74,7 +74,8 @@ if (!empty($transaction_type_filter)) {
                 '-' as odometer_unit,
                 '-' as tank_number,
                 fi.created_by as user_id,
-                fi.created_at
+                fi.created_at,
+                fi.image
             FROM fuel_in fi
             LEFT JOIN fuel_types ft ON fi.fuel_type = ft.id
             WHERE DATE(fi.date_time) BETWEEN ? AND ?";
@@ -97,18 +98,20 @@ if (!empty($transaction_type_filter)) {
                 'FUEL OUT' as transaction_type,
                 fo.id,
                 fo.fo_date as transaction_date,
-                ft.name as fuel_type_name,
+                fo.fo_time_in,
+                fo.fo_fuel_no,
+                fo.fo_plate_no,
+                fo.fo_request,
                 fo.fo_liters as quantity,
-                '-' as source,
+                fo.fo_vehicle_type,
+                fo.fo_receiver,
+                fo.fo_time_out,
+                ft.name as fuel_type_name,
+                fo.office_name as source,
                 '-' as supplier,
-                fo.fo_receiver as recipient_name,
-                fo.fo_request as purpose,
-                fo.fo_vehicle_type as vehicle_equipment,
-                '-' as odometer_reading,
-                '-' as odometer_unit,
-                '-' as tank_number,
                 fo.created_by as user_id,
-                fo.created_at
+                fo.created_at,
+                fo.image
             FROM fuel_out fo
             LEFT JOIN fuel_types ft ON fo.fo_fuel_type = ft.id
             WHERE DATE(fo.fo_date) BETWEEN ? AND ?";
@@ -225,7 +228,8 @@ if (!empty($transaction_type_filter)) {
                 '-' as odometer_unit,
                 '-' as tank_number,
                 fi.created_by as user_id,
-                fi.created_at
+                fi.created_at,
+                fi.image
             FROM fuel_in fi
             LEFT JOIN fuel_types ft ON fi.fuel_type = ft.id
             WHERE DATE(fi.date_time) BETWEEN ? AND ?";
@@ -242,7 +246,7 @@ if (!empty($transaction_type_filter)) {
                 CONCAT(fo.fo_date, ' ', fo.fo_time_in) as transaction_date,
                 ft.name as fuel_type_name,
                 fo.fo_liters as quantity,
-                '-' as source,
+                fo.office_name as source,
                 '-' as supplier,
                 fo.fo_receiver as recipient_name,
                 fo.fo_request as purpose,
@@ -251,7 +255,8 @@ if (!empty($transaction_type_filter)) {
                 '-' as odometer_unit,
                 '-' as tank_number,
                 fo.created_by as user_id,
-                fo.created_at
+                fo.created_at,
+                fo.image
             FROM fuel_out fo
             LEFT JOIN fuel_types ft ON fo.fo_fuel_type = ft.id
             WHERE DATE(fo.fo_date) BETWEEN ? AND ?";
@@ -259,11 +264,60 @@ if (!empty($transaction_type_filter)) {
         $all_types .= "ss";
     }
     
-    // Oil In transactions DISABLED (oil_in table doesn't exist)
+    // Add Oil In transactions (if oil type filter is not set or matches)
+    if (empty($oil_type_filter)) {
+        $sql_parts[] = "
+            SELECT 
+                'OIL IN' as transaction_type,
+                oi.id,
+                oi.date_time as transaction_date,
+                ot.name as fuel_type_name,
+                oi.quantity,
+                oi.storage_location as source,
+                oi.supplier_name as supplier,
+                oi.received_by as recipient_name,
+                oi.remarks as purpose,
+                '-' as vehicle_equipment,
+                '-' as odometer_reading,
+                '-' as odometer_unit,
+                '-' as tank_number,
+                oi.created_by as user_id,
+                oi.created_at,
+                oi.image
+            FROM oil_in oi
+            LEFT JOIN oil_types ot ON oi.oil_type = ot.id
+            WHERE DATE(oi.date_time) BETWEEN ? AND ?";
+        $all_params = array_merge($all_params, [$start_date, $end_date]);
+        $all_types .= "ss";
+    }
     
-    // Oil Out transactions DISABLED (oil_out table doesn't exist)
+    // Add Oil Out transactions (if oil type filter is not set or matches)
+    if (empty($oil_type_filter)) {
+        $sql_parts[] = "
+            SELECT 
+                'OIL OUT' as transaction_type,
+                oo.id,
+                CONCAT(oo.oil_date, ' ', oo.oil_time_in) as transaction_date,
+                ot.name as fuel_type_name,
+                oo.oil_liters as quantity,
+                oo.office_name as source,
+                '-' as supplier,
+                oo.oil_receiver as recipient_name,
+                oo.oil_request as purpose,
+                oo.oil_vehicle_type as vehicle_equipment,
+                '-' as odometer_reading,
+                '-' as odometer_unit,
+                '-' as tank_number,
+                oo.created_by as user_id,
+                oo.created_at,
+                oo.image
+            FROM oil_out oo
+            LEFT JOIN oil_types ot ON oo.all_oil_type = ot.id
+            WHERE DATE(oo.oil_date) BETWEEN ? AND ?";
+        $all_params = array_merge($all_params, [$start_date, $end_date]);
+        $all_types .= "ss";
+    }
     
-    // Combine all SQL parts with UNION ALL
     if (!empty($sql_parts)) {
         $sql = implode(" UNION ALL ", $sql_parts) . " ORDER BY transaction_date DESC";
         $params = $all_params;

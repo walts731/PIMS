@@ -29,16 +29,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $received_by = $_POST['received_by'];
     $remarks = $_POST['remarks'];
     $created_by = $_POST['created_by'];
+    $transaction_id = $_POST['transaction_id'];
+    
+    // Handle image upload
+    $image_path = '';
+    if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+        $upload_dir = 'uploads/';
+        $file_name = time() . '_' . basename($_FILES['image']['name']);
+        $target_file = $upload_dir . $file_name;
+        
+        // Check if image file is actual image
+        $image_info = getimagesize($_FILES['image']['tmp_name']);
+        if ($image_info !== false) {
+            // Allow certain file formats
+            $allowed_types = ['jpg', 'jpeg', 'png', 'gif'];
+            $file_extension = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+            
+            if (in_array($file_extension, $allowed_types)) {
+                if (move_uploaded_file($_FILES['image']['tmp_name'], $target_file)) {
+                    $image_path = $target_file;
+                } else {
+                    $error_message = "Error uploading image file.";
+                }
+            } else {
+                $error_message = "Only JPG, JPEG, PNG & GIF files are allowed.";
+            }
+        } else {
+            $error_message = "File is not an image.";
+        }
+    }
     
     if (!isset($error_message)) {
         $sql = "INSERT INTO fuel_in (date_time, fuel_type, quantity, unit_price, total_cost, storage_location, 
-                delivery_receipt, supplier_name, received_by, remarks, created_by) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                delivery_receipt, supplier_name, received_by, remarks, created_by, transaction_id, image) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("sidddssssssi", $date_time, $fuel_type, $quantity, $unit_price, $total_cost, 
+        $stmt->bind_param("ssdddssssssss", $date_time, $fuel_type, $quantity, $unit_price, $total_cost, 
                           $storage_location, $delivery_receipt, $supplier_name, $received_by, $remarks, 
-                          $created_by);
+                          $created_by, $transaction_id, $image_path);
         
         if ($stmt->execute()) {
             $success_message = "Fuel In record added successfully!";
@@ -51,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 // Get fuel in data with fuel type names
 $sql = "SELECT fi.id, fi.date_time, fi.fuel_type, fi.quantity, fi.unit_price, fi.total_cost, fi.storage_location, 
-               fi.delivery_receipt, fi.supplier_name, fi.received_by, fi.remarks, fi.created_by, fi.created_at,
+               fi.delivery_receipt, fi.supplier_name, fi.received_by, fi.remarks, fi.created_by, fi.created_at, fi.transaction_id, fi.image,
                ft.name as fuel_type_name
         FROM fuel_in fi
         LEFT JOIN fuel_types ft ON fi.fuel_type = ft.id
@@ -714,10 +743,21 @@ $conn->close();
                                     <input type="text" name="created_by" id="created_by" required>
                                 </div>
                                 <div class="form-group">
+                                    <label for="transaction_id">Transaction ID</label>
+                                    <input type="text" name="transaction_id" id="transaction_id">
+                                </div>
+                                <div class="form-group">
+                                    <label for="image">Upload Image</label>
+                                    <input type="file" name="image" id="image" accept="image/*">
+                                    <small style="color: #6c757d; font-size: 0.875rem; margin-top: 5px; display: block;">Allowed formats: JPG, JPEG, PNG, GIF</small>
+                                </div>
+                                <div class="form-group">
                                     <label for="remarks">Remarks</label>
                                     <textarea name="remarks" id="remarks"></textarea>
                                 </div>
-                                <button type="submit" class="btn btn-primary">Add Fuel In</button>
+                            </div>
+                            <div style="margin-top: 20px;">
+                                <button type="submit" class="btn btn-success">Add Fuel In Record</button>
                             </div>
                         </form>
                     </div>
@@ -740,6 +780,7 @@ $conn->close();
                                     <th>Storage Location</th>
                                     <th>Supplier</th>
                                     <th>Received By</th>
+                                    <th>Image</th>
                                     <th>Created At</th>
                                 </tr>
                             </thead>
@@ -754,6 +795,13 @@ $conn->close();
                                     <td><?php echo htmlspecialchars($row['storage_location']); ?></td>
                                     <td><?php echo htmlspecialchars($row['supplier_name']); ?></td>
                                     <td><?php echo htmlspecialchars($row['received_by']); ?></td>
+                                    <td>
+                                        <?php if (!empty($row['image'])): ?>
+                                            <img src="<?php echo htmlspecialchars($row['image']); ?>" alt="Fuel Image" style="max-width: 80px; max-height: 60px; border-radius: 4px; cursor: pointer;" onclick="window.open('<?php echo htmlspecialchars($row['image']); ?>', '_blank');">
+                                        <?php else: ?>
+                                            <span style="color: #6c757d;">No image</span>
+                                        <?php endif; ?>
+                                    </td>
                                     <td><?php echo htmlspecialchars($row['created_at']); ?></td>
                                 </tr>
                                 <?php endforeach; ?>

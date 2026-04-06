@@ -55,7 +55,7 @@ $fuel_in_data = [];
 if ($show_fuel_in) {
     $fuel_in_sql = "SELECT fi.id, fi.date_time, fi.fuel_type, fi.quantity, fi.unit_price, fi.total_cost, 
                             fi.storage_location, fi.delivery_receipt, fi.supplier_name, fi.received_by, 
-                            fi.remarks, fi.created_by, fi.created_at,
+                            fi.remarks, fi.created_by, fi.created_at, fi.transaction_id, fi.image,
                             ft.name as fuel_type_name
                      FROM fuel_in fi
                      LEFT JOIN fuel_types ft ON fi.fuel_type = ft.id
@@ -86,7 +86,7 @@ $fuel_out_data = [];
 if ($show_fuel_out) {
     $fuel_out_sql = "SELECT fo.id, fo.fo_date, fo.fo_time_in, fo.fo_fuel_no, fo.fo_plate_no, 
                              fo.fo_request, fo.fo_fuel_type, fo.fo_liters, fo.fo_vehicle_type, 
-                             fo.fo_receiver, fo.fo_time_out, fo.created_by, fo.created_at,
+                             fo.fo_receiver, fo.fo_time_out, fo.created_by, fo.created_at, fo.office_name, fo.image,
                              ft.name as fuel_type_name
                       FROM fuel_out fo
                       LEFT JOIN fuel_types ft ON fo.fo_fuel_type = ft.id
@@ -119,13 +119,79 @@ $total_cost = array_sum(array_column($fuel_in_data, 'total_cost'));
 $oilTypesResult = $conn->query("SELECT id, name FROM oil_types WHERE is_active = 1 ORDER BY name");
 $oilTypes = $oilTypesResult ? $oilTypesResult->fetch_all(MYSQLI_ASSOC) : [];
 
-// Get oil in data with filters - DISABLED (oil_in table doesn't exist)
-$show_oil_in = false;
+// Get oil in data with filters
+$show_oil_in = (empty($transaction_type) || $transaction_type === 'OIL IN');
 $oil_in_data = [];
 
-// Get oil out data with filters - DISABLED (oil_out table doesn't exist)
-$show_oil_out = false;
+if ($show_oil_in) {
+    $oil_in_sql = "SELECT oi.id, oi.date_time, oi.oil_type, oi.quantity, oi.unit_price, oi.total_cost, 
+                          oi.storage_location, oi.delivery_receipt, oi.supplier_name, oi.received_by, 
+                          oi.remarks, oi.created_by, oi.created_at, oi.transaction_id, oi.image,
+                          ot.name as oil_type_name
+                   FROM oil_in oi
+                   LEFT JOIN oil_types ot ON oi.oil_type = ot.id
+                   WHERE DATE(oi.date_time) BETWEEN ? AND ?";
+
+    $oil_in_params = [$start_date, $end_date];
+    $oil_in_types = "ss";
+
+    if (!empty($fuel_type_filter)) {
+        $oil_in_sql .= " AND ot.name = ?";
+        $oil_in_params[] = $fuel_type_filter;
+        $oil_in_types .= "s";
+    }
+
+    if (!empty($oil_type_filter)) {
+        $oil_in_sql .= " AND ot.name = ?";
+        $oil_in_params[] = $oil_type_filter;
+        $oil_in_types .= "s";
+    }
+
+    $oil_in_sql .= " ORDER BY oi.date_time DESC";
+
+    $oil_in_stmt = $conn->prepare($oil_in_sql);
+    $oil_in_stmt->bind_param($oil_in_types, ...$oil_in_params);
+    $oil_in_stmt->execute();
+    $oil_in_result = $oil_in_stmt->get_result();
+    $oil_in_data = $oil_in_result ? $oil_in_result->fetch_all(MYSQLI_ASSOC) : [];
+}
+
+// Get oil out data with filters
+$show_oil_out = (empty($transaction_type) || $transaction_type === 'OIL OUT');
 $oil_out_data = [];
+
+if ($show_oil_out) {
+    $oil_out_sql = "SELECT oo.id, oo.oil_date, oo.oil_time_in, oo.oil_oil_no, oo.oil_plate_no, 
+                           oo.oil_request, oo.all_oil_type, oo.oil_liters, oo.oil_vehicle_type, 
+                           oo.oil_receiver, oo.oil_time_out, oo.created_by, oo.created_at, oo.office_name, oo.image,
+                           ot.name as oil_type_name
+                    FROM oil_out oo
+                    LEFT JOIN oil_types ot ON oo.all_oil_type = ot.id
+                    WHERE DATE(oo.oil_date) BETWEEN ? AND ?";
+
+    $oil_out_params = [$start_date, $end_date];
+    $oil_out_types = "ss";
+
+    if (!empty($fuel_type_filter)) {
+        $oil_out_sql .= " AND ot.name = ?";
+        $oil_out_params[] = $fuel_type_filter;
+        $oil_out_types .= "s";
+    }
+
+    if (!empty($oil_type_filter)) {
+        $oil_out_sql .= " AND ot.name = ?";
+        $oil_out_params[] = $oil_type_filter;
+        $oil_out_types .= "s";
+    }
+
+    $oil_out_sql .= " ORDER BY oo.oil_date DESC, oo.oil_time_in DESC";
+
+    $oil_out_stmt = $conn->prepare($oil_out_sql);
+    $oil_out_stmt->bind_param($oil_out_types, ...$oil_out_params);
+    $oil_out_stmt->execute();
+    $oil_out_result = $oil_out_stmt->get_result();
+    $oil_out_data = $oil_out_result ? $oil_out_result->fetch_all(MYSQLI_ASSOC) : [];
+}
 
 // Calculate oil summary statistics
 $total_oil_in = array_sum(array_column($oil_in_data, 'quantity'));
@@ -150,7 +216,8 @@ foreach ($fuel_in_data as $record) {
         'received_by' => $record['received_by'],
         'remarks' => $record['remarks'],
         'created_by' => $record['created_by'],
-        'created_at' => $record['created_at']
+        'created_at' => $record['created_at'],
+        'transaction_id' => $record['transaction_id']
     ];
 }
 
@@ -175,6 +242,47 @@ foreach ($fuel_out_data as $record) {
     ];
 }
 
+// Add Oil In records
+foreach ($oil_in_data as $record) {
+    $all_records[] = [
+        'transaction_date' => $record['date_time'],
+        'transaction_type' => 'OIL IN',
+        'type_name' => $record['oil_type_name'],
+        'quantity' => $record['quantity'],
+        'unit_price' => $record['unit_price'],
+        'total_cost' => $record['total_cost'],
+        'storage_location' => $record['storage_location'],
+        'delivery_receipt' => $record['delivery_receipt'],
+        'supplier_name' => $record['supplier_name'],
+        'received_by' => $record['received_by'],
+        'remarks' => $record['remarks'],
+        'created_by' => $record['created_by'],
+        'created_at' => $record['created_at'],
+        'transaction_id' => $record['transaction_id']
+    ];
+}
+
+// Add Oil Out records
+foreach ($oil_out_data as $record) {
+    $all_records[] = [
+        'transaction_date' => $record['oil_date'] . ' ' . $record['oil_time_in'],
+        'transaction_type' => 'OIL OUT',
+        'type_name' => $record['oil_type_name'],
+        'quantity' => $record['oil_liters'],
+        'unit_price' => 0,
+        'total_cost' => 0,
+        'storage_location' => '',
+        'delivery_receipt' => $record['oil_oil_no'],
+        'supplier_name' => '',
+        'received_by' => $record['oil_receiver'],
+        'remarks' => $record['oil_request'],
+        'created_by' => $record['created_by'],
+        'created_at' => $record['created_at'],
+        'transaction_id' => $record['id'],
+        'vehicle_info' => $record['oil_plate_no'] . ' - ' . $record['oil_vehicle_type']
+    ];
+}
+
 // Sort all records by date (newest first)
 usort($all_records, function($a, $b) {
     return strtotime($b['transaction_date']) - strtotime($a['transaction_date']);
@@ -192,6 +300,16 @@ if (isset($_GET['export']) && $_GET['export'] === 'fuel_in') {
 
 if (isset($_GET['export']) && $_GET['export'] === 'fuel_out') {
     exportFuelOutExcel($fuel_out_data);
+    exit;
+}
+
+if (isset($_GET['export']) && $_GET['export'] === 'oil_in') {
+    exportOilInExcel($oil_in_data);
+    exit;
+}
+
+if (isset($_GET['export']) && $_GET['export'] === 'oil_out') {
+    exportOilOutExcel($oil_out_data);
     exit;
 }
 
