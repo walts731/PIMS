@@ -82,8 +82,50 @@ try {
             break;
             
         case 'delete':
-            // This case is disabled as per user request
-            echo json_encode(['success' => false, 'message' => 'Delete operation is not allowed']);
+            $id = intval($_POST['id']);
+            
+            if ($id <= 0) {
+                echo json_encode(['success' => false, 'message' => 'Invalid infrastructure ID.']);
+                break;
+            }
+            
+            // Get infrastructure data for logging and image cleanup
+            $stmt = $conn->prepare("SELECT item_description, additional_images FROM infrastructure WHERE id = ?");
+            $stmt->bind_param("i", $id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $infrastructure_data = $result->fetch_assoc();
+            $stmt->close();
+            
+            if (!$infrastructure_data) {
+                echo json_encode(['success' => false, 'message' => 'Infrastructure item not found.']);
+                break;
+            }
+            
+            // Delete associated image files
+            if (!empty($infrastructure_data['additional_images'])) {
+                $images = json_decode($infrastructure_data['additional_images'], true);
+                if (is_array($images)) {
+                    foreach ($images as $image) {
+                        $file_path = '../uploads/infrastructure/' . $image;
+                        if (file_exists($file_path)) {
+                            unlink($file_path);
+                        }
+                    }
+                }
+            }
+            
+            // Delete the record
+            $stmt = $conn->prepare("DELETE FROM infrastructure WHERE id = ?");
+            $stmt->bind_param("i", $id);
+            
+            if ($stmt->execute()) {
+                logSystemAction($_SESSION['user_id'], 'infrastructure_deleted', 'infrastructure', "Deleted infrastructure: " . $infrastructure_data['item_description']);
+                echo json_encode(['success' => true, 'message' => 'Infrastructure item deleted successfully!']);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Failed to delete infrastructure item: ' . $stmt->error]);
+            }
+            $stmt->close();
             break;
             
         default:

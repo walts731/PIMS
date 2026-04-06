@@ -323,12 +323,17 @@ while ($row = $loc_result->fetch_assoc()) {
                                     <td><small><?php echo date('M j, Y', strtotime($item['date_constructed'])); ?></small></td>
                                     <td>₱<?php echo number_format($item['acquisition_cost'], 2); ?></td>
                                     <td>
-                                        <button class="btn btn-sm btn-outline-info" onclick="viewInfrastructure(<?php echo $item['id']; ?>)">
-                                            <i class="bi bi-eye"></i> View
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-warning" onclick="editInfrastructure(<?php echo $item['id']; ?>)">
-                                            <i class="bi bi-pencil"></i> Edit
-                                        </button>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <button class="btn btn-outline-info" onclick="viewInfrastructure(<?php echo $item['id']; ?>)" title="View Details">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <button class="btn btn-outline-warning" onclick="editInfrastructure(<?php echo $item['id']; ?>)" title="Edit Item">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button class="btn btn-outline-danger" onclick="deleteInfrastructure(<?php echo $item['id']; ?>, '<?php echo htmlspecialchars(addslashes($item['item_description'])); ?>')" title="Delete Item">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -351,7 +356,37 @@ while ($row = $loc_result->fetch_assoc()) {
 <?php require_once 'includes/logout-modal.php'; ?>
 <?php require_once 'includes/change-password-modal.php'; ?>
 
-<!-- Add Infrastructure Modal -->
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmationModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-danger">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    Delete Infrastructure Item
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <h6><i class="bi bi-exclamation-triangle"></i> Warning: This action cannot be undone!</h6>
+                    <p class="mb-2">You are about to permanently delete:</p>
+                    <p class="fw-bold text-danger mb-2" id="deleteItemName"></p>
+                    <p class="mb-0">This will remove the infrastructure item and all associated data from the system.</p>
+                </div>
+                <p class="text-muted mb-0">Are you sure you want to continue?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                    <i class="bi bi-trash"></i> Delete Permanently
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 <div class="modal fade" id="addInfrastructureModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -451,10 +486,11 @@ while ($row = $loc_result->fetch_assoc()) {
                 <h5 class="modal-title">Edit Infrastructure Item</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form id="editInfrastructureForm" method="POST" action="process_infrastructure.php">
+            <form id="editInfrastructureForm" method="POST" action="process_infrastructure.php" enctype="multipart/form-data">
                 <div class="modal-body">
                     <input type="hidden" name="action" value="edit">
                     <input type="hidden" name="id" id="editInfrastructureId">
+                    <input type="hidden" name="removed_images" id="removedImages" value="">
                     <div class="row">
                         <div class="col-md-6">
                             <label class="form-label">Classification/Type *</label>
@@ -502,6 +538,14 @@ while ($row = $loc_result->fetch_assoc()) {
                     <div class="mt-3">
                         <label class="form-label">Remarks</label>
                         <textarea name="remarks" id="editRemarks" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="mt-3">
+                        <label class="form-label">Additional Images</label>
+                        <div id="existingImages" class="row g-2 mb-3">
+                            <!-- Existing images will be loaded here -->
+                        </div>
+                        <input type="file" name="additional_images[]" id="editAdditionalImages" class="form-control" multiple accept="image/*">
+                        <small class="text-muted">You can add more images or remove existing ones. Supported formats: JPG, PNG, GIF, WebP</small>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -634,28 +678,41 @@ while ($row = $loc_result->fetch_assoc()) {
                     // Add images if they exist
                     if (data.additional_images && data.additional_images.length > 0) {
                         html += `
-                            <div class="row mt-3">
+                            <div class="row mt-4">
                                 <div class="col-12">
-                                    <h6>Additional Images</h6>
-                                    <div class="row">
+                                    <h6><i class="bi bi-images"></i> Additional Images (${data.additional_images.length})</h6>
+                                    <div class="row g-3">
                         `;
                         
                         data.additional_images.forEach(function(image, index) {
                             html += `
-                                <div class="col-md-3 mb-2">
-                                    <img src="../uploads/infrastructure/${image}" class="img-fluid img-thumbnail" alt="Infrastructure Image ${index + 1}" 
-                                         onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2RkZCIvPjx0ZXh0IHg9IjUwIiB5PSI1MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEyIiBmaWxsPSIjOTk5IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+SW1hZ2UgTm90IEZvdW5kPC90ZXh0Pjwvc3ZnPg==';">
+                                <div class="col-md-4 col-sm-6">
+                                    <div class="card">
+                                        <div class="position-relative">
+                                            <img src="../uploads/infrastructure/${image}" class="card-img-top gallery-image" alt="Infrastructure Image ${index + 1}" 
+                                                 style="height: 200px; object-fit: cover; cursor: pointer;" 
+                                                 onclick="openImageModal('../uploads/infrastructure/${image}', ${index + 1})"
+                                                 onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2VkZSIvPjx0ZXh0IHg9IjEwMCIgeT0iMTAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5JbWFnZSBOZXQgRm91bmQ8L3RleHQ+PC9zdmc+';">
+                                            <div class="card-img-overlay d-flex align-items-center justify-content-center opacity-0 hover-opacity-100 bg-dark bg-opacity-50 transition-opacity">
+                                                <button type="button" class="btn btn-light btn-sm" onclick="openImageModal('../uploads/infrastructure/${image}', ${index + 1})" title="View Full Size">
+                                                    <i class="bi bi-zoom-in"></i> View
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="card-body p-2">
+                                            <small class="text-muted">Image ${index + 1}</small>
+                                        </div>
+                                    </div>
                                 </div>
                             `;
                         });
                         
                         html += `
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        `;
-                    }
-                    
+                            `;
+                        }                  
                     $('#viewInfrastructureContent').html(html);
                     $('#viewInfrastructureModal').modal('show');
                 } else {
@@ -689,6 +746,37 @@ while ($row = $loc_result->fetch_assoc()) {
                     $('#editMarketValue').val(data.market_value || '');
                     $('#editDateAppraisal').val(data.date_appraisal || '');
                     $('#editRemarks').val(data.remarks || '');
+                    
+                    // Load existing images
+                    let imagesHtml = '';
+                    if (data.additional_images && data.additional_images.length > 0) {
+                        data.additional_images.forEach(function(image, index) {
+                            imagesHtml += `
+                                <div class="col-md-3 col-sm-4 col-6 position-relative" id="existingImage_${index}">
+                                    <div class="card h-100">
+                                        <img src="../uploads/infrastructure/${image}" class="card-img-top" alt="Image ${index + 1}" 
+                                             style="height: 100px; object-fit: cover;" 
+                                             onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2VkZCIvPjx0ZXh0IHg9IjUwIiB5PSI1MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEwIiBmaWxsPSIjOTk5IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+SW1hZ2UgTm90IEZvdW5kPC90ZXh0Pjwvc3ZnPg==';">
+                                        <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1" 
+                                                onclick="removeExistingImage('${image}', ${index})" 
+                                                title="Remove this image">
+                                            <i class="bi bi-x"></i>
+                                        </button>
+                                        <div class="card-body p-1">
+                                            <small class="text-muted text-center d-block">Image ${index + 1}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        imagesHtml = '<div class="col-12"><small class="text-muted">No existing images</small></div>';
+                    }
+                    
+                    $('#existingImages').html(imagesHtml);
+                    
+                    // Reset removed images field
+                    $('#removedImages').val('');
                     
                     $('#editInfrastructureModal').modal('show');
                 } else {
@@ -748,6 +836,91 @@ while ($row = $loc_result->fetch_assoc()) {
         if (e.key === 'Enter') {
             applyFilters();
         }
+    });
+    
+    // Remove existing image function
+    function removeExistingImage(imageName, index) {
+        if (confirm('Are you sure you want to remove this image?')) {
+            // Hide the image card
+            $('#existingImage_' + index).fadeOut(300, function() {
+                $(this).remove();
+                
+                // Update the removed images hidden field
+                let removedImages = $('#removedImages').val();
+                if (removedImages) {
+                    removedImages += ',' + imageName;
+                } else {
+                    removedImages = imageName;
+                }
+                $('#removedImages').val(removedImages);
+            });
+        }
+    }
+    
+    // Delete Infrastructure function
+    function deleteInfrastructure(id, itemName) {
+        // Set the item name in the modal
+        $('#deleteItemName').text(itemName);
+        
+        // Store the ID for the confirm button
+        $('#confirmDeleteBtn').data('itemId', id);
+        
+        // Show the modal
+        $('#deleteConfirmationModal').modal('show');
+    }
+    
+    // Handle delete confirmation
+    $('#confirmDeleteBtn').on('click', function() {
+        const id = $(this).data('itemId');
+        
+        // Hide the modal
+        $('#deleteConfirmationModal').modal('hide');
+        
+        // Show loading state
+        const deleteBtn = $('button[onclick*="deleteInfrastructure(' + id + '"]');
+        const originalText = deleteBtn.html();
+        deleteBtn.prop('disabled', true).html('<i class="bi bi-hourglass-split"></i> Deleting...');
+        
+        // Send AJAX request
+        $.ajax({
+            url: 'process_infrastructure.php',
+            method: 'POST',
+            data: { action: 'delete', id: id },
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    // Show success message
+                    const successHtml = `
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="bi bi-check-circle"></i> ${response.message}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    `;
+                    
+                    // Insert success message after page header
+                    $('.page-header .row').first().after(successHtml);
+                    
+                    // Animate row removal and reload page
+                    const row = deleteBtn.closest('tr');
+                    row.fadeOut(500, function() {
+                        setTimeout(function() {
+                            window.location.reload();
+                        }, 1500);
+                    });
+                    
+                } else {
+                    alert('Error: ' + response.message);
+                    // Restore button state
+                    deleteBtn.prop('disabled', false).html(originalText);
+                }
+            },
+            error: function(xhr, status, error) {
+                alert('Error deleting infrastructure item. Please try again.');
+                console.error('AJAX Error:', error);
+                // Restore button state
+                deleteBtn.prop('disabled', false).html(originalText);
+            }
+        });
     });
 </script>
 </body>
