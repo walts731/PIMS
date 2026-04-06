@@ -502,7 +502,13 @@ try {
                                         <?php endforeach; ?>
                                     <?php else: ?>
                                         <tr>
-                                            <td colspan="7" class="text-center text-muted py-4">
+                                            <td>&nbsp;</td>
+                                            <td>&nbsp;</td>
+                                            <td>&nbsp;</td>
+                                            <td>&nbsp;</td>
+                                            <td>&nbsp;</td>
+                                            <td>&nbsp;</td>
+                                            <td class="text-center text-muted py-4">
                                                 <i class="bi bi-inbox fs-1"></i>
                                                 <p class="mt-2">No assets found in your office.</p>
                                             </td>
