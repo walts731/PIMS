@@ -98,8 +98,8 @@ if (!$user_firstname || !$user_lastname) {
 // Get request parameters
 $action = $_GET['action'] ?? '';
 $report_type = $_GET['report_type'] ?? '';
-$date_from = $_GET['date_from'] ?? date('Y-m-01'); // First day of current month
-$date_to = $_GET['date_to'] ?? date('Y-m-t'); // Last day of current month
+$date_from = $_GET['date_from'] ?? date('Y-m-d', strtotime('-3 months')); // 3 months ago
+$date_to = $_GET['date_to'] ?? date('Y-m-d'); // Today
 
 switch ($action) {
     case 'export_admin_style_report':
