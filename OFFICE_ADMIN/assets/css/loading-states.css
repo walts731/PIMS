@@ -1,0 +1,406 @@
+/* Loading States and Micro-interactions Framework for OFFICE_ADMIN */
+
+:root {
+    /* Loading Animation Variables */
+    --loading-primary: #191BA9;
+    --loading-secondary: #5CC2F2;
+    --loading-success: #28a745;
+    --loading-warning: #ffc107;
+    --loading-danger: #dc3545;
+    --loading-info: #17a2b8;
+    
+    /* Animation Durations */
+    --loading-fast: 0.3s;
+    --loading-normal: 0.5s;
+    --loading-slow: 1s;
+    
+    /* Spinner Sizes */
+    --spinner-xs: 0.75rem;
+    --spinner-sm: 1rem;
+    --spinner-md: 1.5rem;
+    --spinner-lg: 2rem;
+    --spinner-xl: 3rem;
+}
+
+/* Base Loading Spinner */
+.loading-spinner {
+    display: inline-block;
+    border: 2px solid rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+    border-top-color: var(--loading-primary);
+    animation: spin 1s ease-in-out infinite;
+}
+
+/* Spinner Size Variants */
+.loading-spinner-xs { width: var(--spinner-xs); height: var(--spinner-xs); border-width: 1px; }
+.loading-spinner-sm { width: var(--spinner-sm); height: var(--spinner-sm); }
+.loading-spinner-md { width: var(--spinner-md); height: var(--spinner-md); border-width: 3px; }
+.loading-spinner-lg { width: var(--spinner-lg); height: var(--spinner-lg); border-width: 4px; }
+.loading-spinner-xl { width: var(--spinner-xl); height: var(--spinner-xl); border-width: 5px; }
+
+/* Spinner Color Variants */
+.loading-spinner-primary { border-top-color: var(--loading-primary); }
+.loading-spinner-secondary { border-top-color: var(--loading-secondary); }
+.loading-spinner-success { border-top-color: var(--loading-success); }
+.loading-spinner-warning { border-top-color: var(--loading-warning); }
+.loading-spinner-danger { border-top-color: var(--loading-danger); }
+.loading-spinner-info { border-top-color: var(--loading-info); }
+
+/* Keyframe Animations */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shimmer {
+    0% { background-position: -1000px 0; }
+    100% { background-position: 1000px 0; }
+}
+
+/* Loading States for Different Elements */
+.btn-loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.8;
+}
+
+.btn-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 1rem;
+    height: 1rem;
+    margin: -0.5rem 0 0 -0.5rem;
+    border: 2px solid transparent;
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 0.8s linear infinite;
+}
+
+/* Card Loading States */
+.card-loading {
+    position: relative;
+    overflow: hidden;
+}
+
+.card-loading::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    animation: shimmer 1.5s infinite;
+}
+
+/* Skeleton Loading */
+.skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+}
+
+.skeleton-text {
+    height: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.skeleton-text.title {
+    height: 1.5rem;
+    width: 60%;
+}
+
+.skeleton-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+}
+
+.skeleton-button {
+    height: 2.5rem;
+    width: 100px;
+    border-radius: 4px;
+}
+
+/* Progress Bar Enhancements */
+.progress-enhanced {
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-enhanced .progress-bar {
+    position: relative;
+    transition: width 0.6s ease;
+}
+
+.progress-enhanced .progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    animation: shimmer 2s infinite;
+}
+
+/* Interactive Elements Micro-interactions */
+.interactive-card {
+    transition: all var(--loading-normal) ease;
+    cursor: pointer;
+}
+
+.interactive-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.interactive-card:active {
+    transform: translateY(0);
+}
+
+.interactive-row {
+    transition: background-color var(--loading-fast) ease;
+}
+
+.interactive-row:hover {
+    background-color: rgba(91, 194, 242, 0.1);
+}
+
+.interactive-button {
+    transition: all var(--loading-fast) ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.interactive-button::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.interactive-button:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+.interactive-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Notification Animations */
+.notification-enter {
+    animation: slideIn 0.3s ease-out;
+}
+
+.notification-exit {
+    animation: slideIn 0.3s ease-out reverse;
+}
+
+/* Form Field Micro-interactions */
+.form-field-enhanced {
+    position: relative;
+    transition: all var(--loading-fast) ease;
+}
+
+.form-field-enhanced:focus-within {
+    transform: translateY(-1px);
+}
+
+.form-field-enhanced .form-control:focus {
+    box-shadow: 0 0 0 3px rgba(25, 27, 169, 0.1);
+    border-color: var(--loading-primary);
+}
+
+/* Table Loading States */
+.table-loading {
+    position: relative;
+}
+
+.table-loading::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255,255,255,0.8);
+    backdrop-filter: blur(2px);
+    z-index: 10;
+}
+
+.table-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: var(--spinner-lg);
+    height: var(--spinner-lg);
+    margin: -1rem 0 0 -1rem;
+    border: 3px solid transparent;
+    border-radius: 50%;
+    border-top-color: var(--loading-primary);
+    animation: spin 1s linear infinite;
+    z-index: 11;
+}
+
+/* Status Indicators */
+.status-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+    animation: pulse 2s infinite;
+}
+
+.status-indicator.online { background-color: var(--loading-success); }
+.status-indicator.offline { background-color: var(--loading-danger); }
+.status-indicator.pending { background-color: var(--loading-warning); }
+.status-indicator.processing { 
+    background-color: var(--loading-info);
+    animation: pulse 1s infinite;
+}
+
+/* Hover Effects for Navigation */
+.nav-item-enhanced {
+    position: relative;
+    transition: all var(--loading-fast) ease;
+}
+
+.nav-item-enhanced::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: var(--loading-primary);
+    transform: translateX(-50%);
+    transition: width var(--loading-fast) ease;
+}
+
+.nav-item-enhanced:hover::before {
+    width: 100%;
+}
+
+/* Loading Overlay */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255,255,255,0.9);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.loading-overlay-content {
+    text-align: center;
+}
+
+.loading-overlay-spinner {
+    width: var(--spinner-xl);
+    height: var(--spinner-xl);
+    border: 4px solid transparent;
+    border-radius: 50%;
+    border-top-color: var(--loading-primary);
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
+}
+
+/* Success/Error States */
+.state-success {
+    background-color: rgba(40, 167, 69, 0.1);
+    border: 1px solid var(--loading-success);
+    border-radius: 4px;
+    padding: 0.75rem;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.state-error {
+    background-color: rgba(220, 53, 69, 0.1);
+    border: 1px solid var(--loading-danger);
+    border-radius: 4px;
+    padding: 0.75rem;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.state-warning {
+    background-color: rgba(255, 193, 7, 0.1);
+    border: 1px solid var(--loading-warning);
+    border-radius: 4px;
+    padding: 0.75rem;
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Responsive Loading States */
+@media (max-width: 768px) {
+    .loading-spinner-lg {
+        width: var(--spinner-md);
+        height: var(--spinner-md);
+    }
+    
+    .loading-spinner-xl {
+        width: var(--spinner-lg);
+        height: var(--spinner-lg);
+    }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+    .loading-spinner,
+    .skeleton,
+    .progress-enhanced .progress-bar::after,
+    .status-indicator {
+        animation: none;
+    }
+    
+    .interactive-card:hover,
+    .interactive-button:hover {
+        transform: none;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .loading-spinner,
+    .loading-overlay,
+    .skeleton {
+        display: none !important;
+    }
+}

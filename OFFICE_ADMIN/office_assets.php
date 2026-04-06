@@ -159,6 +159,8 @@ try {
     <link href="../assets/css/index.css" rel="stylesheet">
     <link href="../assets/css/theme-custom.css" rel="stylesheet">
     <link href="dashboard.css?v=<?php echo time(); ?>" rel="stylesheet">
+    <!-- Loading States CSS -->
+    <link href="assets/css/loading-states.css?v=<?php echo time(); ?>" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -732,6 +734,9 @@ try {
     
     <!-- Bootstrap-based Notification Script -->
     <?php require_once 'includes/notification_script_bootstrap.php'; ?>
+    
+    <!-- Loading States and Micro-interactions JS -->
+    <script src="assets/js/loading-interactions.js?v=<?php echo time(); ?>"></script>
     
     <!-- Sidebar Scripts -->
     <script src="../assets/js/sidebar.js"></script>
