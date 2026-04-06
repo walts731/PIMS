@@ -85,7 +85,6 @@ if ($result && $row = $result->fetch_assoc()) {
             min-height: 100vh;
             overflow-x: hidden;
         }
-        
         .page-header {
             background: white;
             border-radius: var(--border-radius-xl);
@@ -94,44 +93,197 @@ if ($result && $row = $result->fetch_assoc()) {
             box-shadow: var(--shadow);
             border-left: 4px solid var(--primary-color);
         }
-        
-        .form-card {
+        .ics-card {
             background: white;
-            border-radius: var(--border-radius-lg);
-            padding: 2rem;
-            box-shadow: var(--shadow);
-            margin-bottom: 2rem;
-        }
-        
-        .ics-number {
-            background: var(--primary-gradient);
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: var(--border-radius);
-            font-weight: 600;
-            display: inline-block;
-            margin-bottom: 1rem;
-        }
-        
-        .table-responsive {
-            border-radius: var(--border-radius);
+            border: 2px solid #333;
+            padding: 0;
+            margin: 0 auto;
+            max-width: 950px;
+            box-shadow: var(--shadow-lg);
+            border-radius: 4px;
             overflow: hidden;
         }
+        .ics-header {
+            padding: 30px;
+            border-bottom: 1px solid #333;
+            background: #fff;
+            position: relative;
+            text-align: center;
+        }
+        .seal-img {
+            width: 80px;
+            height: 80px;
+            position: absolute;
+            top: 30px;
+            left: 30px;
+        }
+        .header-content {
+            display: inline-block;
+            text-align: center;
+        }
+        .header-text {
+            text-align: center;
+        }
+        .header-text p {
+            margin: 0;
+            font-size: 12px;
+            color: #000;
+            font-weight: 500;
+        }
+        .header-text h3 {
+            margin: 5px 0;
+            font-size: 16px;
+            color: #000;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .header-right {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            text-align: right;
+        }
+        .ics-header .title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #000;
+            margin-top: 15px;
+        }
+        .ics-annex {
+            font-size: 12px;
+            color: #000;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .entity-section {
+            width: 100%;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #000;
+            padding-bottom: 10px;
+        }
+        .entity-row {
+            display: flex;
+            margin-bottom: 5px;
+            align-items: flex-end;
+        }
+        .entity-label {
+            width: 100px;
+            font-weight: bold;
+            font-size: 11px;
+            color: #000;
+        }
+        .entity-value {
+            flex: 1;
+            border-bottom: 1px solid #000;
+            min-height: 18px;
+            font-size: 11px;
+            padding: 0 5px;
+            color: #000;
+        }
+        .ics-no-section {
+            width: 250px;
+            margin-left: 20px;
+            display: flex;
+            align-items: flex-end;
+        }
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 0;
+            border: 2px solid #000;
+        }
+        .items-table th,
+        .items-table td {
+            border: 1px solid #000;
+            padding: 4px 6px;
+            text-align: center;
+            vertical-align: top;
+            font-size: 10px;
+            color: #000;
+        }
+        .items-table th {
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 10px;
+            background: #fff;
+            color: #000;
+        }
+        .items-table .text-left { text-align: left; }
+        .items-table .text-right { text-align: right; }
         
-        .table-bordered {
-            border: 1px solid #dee2e6;
+        .quantity-col { width: 70px; }
+        .unit-col { width: 60px; }
+        .unit-cost-col { width: 100px; }
+        .total-cost-col { width: 110px; }
+        .item-no-col { width: 120px; }
+        .useful-life-col { width: 120px; }
+        
+        .total-row td {
+            font-weight: bold;
+            text-align: right;
+            padding-right: 10px;
+        }
+        .footer-section {
+            margin-top: 5px;
+            border: 1px solid #000;
+        }
+        .footer-table {
+            width: 100%;
+            border-collapse: collapse;
         }
         
-        .signature-section {
-            border-top: 2px solid #dee2e6;
-            padding-top: 2rem;
-            margin-top: 2rem;
+        .footer-table td {
+            border: 1px solid #000;
+            padding: 2px;
+            width: 50%;
+            vertical-align: top;
+        }
+        .label-row {
+            font-weight: bold;
+            margin-bottom: 2px;
+            color: #000;
+            font-size: 6px;
+        }
+        .name-line {
+            text-align: center;
+            font-weight: bold;
+            text-transform: uppercase;
+            border-bottom: 1px solid #000;
+            margin-bottom: 0px;
+            font-size: 6px;
+            color: #000;
+            line-height: 1.0;
+            padding: 0px;
+        }
+        .sub-label {
+            text-align: center;
+            font-size: 6px;
+            margin-bottom: 2px;
+            color: #000;
+            line-height: 1.0;
+        }
+        .signature-group {
+            margin-top: 1px;
         }
         
+        .main-content {
+            padding: 2rem;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         @media print {
             .no-print { display: none !important; }
-            .form-card { box-shadow: none; }
+            .ics-card { box-shadow: none; border: 2px solid #000; margin: 0; max-width: 100%; }
+            body { background: white; }
+            .main-content { padding: 0; }
             .page-header { display: none !important; }
+            .sidebar-toggle, .sidebar { display: none !important; }
         }
     </style>
 </head>
@@ -186,125 +338,126 @@ if ($result && $row = $result->fetch_assoc()) {
         </div>
 
         <!-- ICS Form -->
-        <div class="form-card">
-            <!-- Form Header -->
-            <div class="text-center mb-4">
-                <?php 
-                if (!empty($header_image)) {
-                    echo '<div class="mb-3">';
-                    echo '<img src="../uploads/forms/' . htmlspecialchars($header_image) . '" alt="Header Image" class="img-fluid" style="max-height: 120px; object-fit: contain;">';
-                    echo '</div>';
-                }
-                ?>
-                <h4 class="fw-bold text-uppercase">Inventory Custodian Slip</h4>
-            </div>
-            
-            <!-- Entity Information Layout -->
-            <div class="row mb-4 border-bottom pb-3">
-                <div class="col-md-7 border-end">
-                    <div class="row mb-2">
-                        <div class="col-4 fw-bold">Entity Name:</div>
-                        <div class="col-8 border-bottom text-primary fw-semibold"><?php echo htmlspecialchars($ics_form['entity_name']); ?></div>
-                    </div>
-                    <div class="row">
-                        <div class="col-4 fw-bold">Fund Cluster:</div>
-                        <div class="col-8 border-bottom"><?php echo htmlspecialchars($ics_form['fund_cluster']); ?></div>
+        <div class="ics-card">
+            <!-- Header Section -->
+            <div class="ics-header">
+                <img src="<?php echo $logo_path; ?>" alt="<?php echo $system_name; ?> Logo" class="seal-img">
+                <div class="header-content">
+                    <div class="header-text">
+                        <p>Republic of the Philippines</p>
+                        <h3>Municipality of Pilar</h3>
+                        <p>Province of Sorsogon</p>
+                        <h2 class="title">INVENTORY CUSTODIAN SLIP</h2>
                     </div>
                 </div>
-                <div class="col-md-5 ps-md-4">
-                    <div class="row">
-                        <div class="col-5 fw-bold text-nowrap">ICS Number:</div>
-                        <div class="col-7 border-bottom text-danger fw-bold"><?php echo htmlspecialchars($ics_form['ics_no']); ?></div>
+                <div class="header-right">
+                    <div class="ics-annex">
+                        <p>Annex A.1</p>
                     </div>
                 </div>
             </div>
+
             
-            <!-- Items Table - Following Excel Order -->
-            <div class="mb-5">
-                <div class="table-responsive">
-                    <table class="table table-bordered align-middle">
-                        <thead class="table-light text-center small fw-bold">
+            <!-- Entity Information -->
+            <div style="padding: 20px;">
+                <div class="entity-section" style="border-bottom: none;">
+                    <div class="entity-row">
+                        <div class="entity-label">Entity Name:</div>
+                        <div class="entity-value"><?php echo htmlspecialchars($ics_form['entity_name']); ?></div>
+                        <div class="entity-label">Fund Cluster:</div>
+                        <div class="entity-value"><?php echo htmlspecialchars($ics_form['fund_cluster']); ?></div>
+                    </div>
+                </div>
+                
+                <!-- ICS Information -->
+                <div class="entity-section">
+                    <div class="entity-row">
+                        <div class="entity-label">ICS No:</div>
+                        <div class="entity-value" style="font-weight: bold;"><?php echo htmlspecialchars($ics_form['ics_no']); ?></div>
+                    </div>
+                </div>
+
+                
+                <!-- Items Table -->
+                <table class="items-table">
+                    <thead>
+                        <tr>
+                            <th class="quantity-col">Quantity</th>
+                            <th class="unit-col">Unit</th>
+                            <th class="unit-cost-col">Unit Cost</th>
+                            <th class="total-cost-col">Total Cost</th>
+                            <th class="text-left">Description</th>
+                            <th class="item-no-col">Item No.</th>
+                            <th class="useful-life-col">Useful Life</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php 
+                        $total_amount = 0;
+                        foreach ($ics_items as $index => $item): 
+                            $total_amount += $item['total_cost'];
+                        ?>
                             <tr>
-                                <th rowspan="2" style="width: 80px;">Quantity</th>
-                                <th rowspan="2" style="width: 80px;">Unit</th>
-                                <th colspan="2">Amount</th>
-                                <th rowspan="2">Description</th>
-                                <th rowspan="2" style="width: 120px;">Inventory<br>Item No.</th>
-                                <th rowspan="2" style="width: 120px;">Estimated<br>Useful Life</th>
+                                <td><?php echo number_format($item['quantity'], 0); ?></td>
+                                <td><?php echo htmlspecialchars($item['unit']); ?></td>
+                                <td class="text-right"><?php echo number_format($item['unit_cost'], 2); ?></td>
+                                <td class="text-right"><?php echo number_format($item['total_cost'], 2); ?></td>
+                                <td class="text-left"><?php echo htmlspecialchars($item['description']); ?></td>
+                                <td><?php echo htmlspecialchars($item['item_no']); ?></td>
+                                <td><?php echo htmlspecialchars($item['useful_life']); ?></td>
                             </tr>
-                            <tr>
-                                <th style="width: 120px;">Unit Cost</th>
-                                <th style="width: 120px;">Total Cost</th>
-                            </tr>
-                        </thead>
-                        <tbody class="text-center">
-                            <?php foreach ($ics_items as $item): ?>
-                                <tr>
-                                    <td><?php echo number_format($item['quantity'], 0); ?></td>
-                                    <td><?php echo htmlspecialchars($item['unit']); ?></td>
-                                    <td>₱<?php echo number_format($item['unit_cost'], 2); ?></td>
-                                    <td class="fw-bold">₱<?php echo number_format($item['total_cost'], 2); ?></td>
-                                    <td class="text-start"><?php echo htmlspecialchars($item['description']); ?></td>
-                                    <td><small class="text-muted fw-mono"><?php echo htmlspecialchars($item['item_no']); ?></small></td>
-                                    <td><?php echo htmlspecialchars($item['useful_life']); ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                        <tfoot class="table-light fw-bold">
-                            <tr>
-                                <td colspan="3" class="text-end">Total Amount:</td>
-                                <td class="text-center text-primary">₱<?php echo number_format(array_sum(array_column($ics_items, 'total_cost')), 2); ?></td>
-                                <td colspan="3"></td>
-                            </tr>
-                        </tfoot>
+                        <?php endforeach; ?>
+                        <?php 
+                        // Add empty rows to maintain form height
+                        $total_items = count($ics_items);
+                        if ($total_items < 15) {
+                            for ($i = 0; $i < (15 - $total_items); $i++) {
+                                if ($i === 0) {
+                                    echo '<tr><td colspan="7" style="height: 20px; font-style: italic; border-bottom: none;">*** Nothing follows ***</td></tr>';
+                                } else {
+                                    echo '<tr><td colspan="7" style="height: 20px; border-top: none; border-bottom: none;">&nbsp;</td></tr>';
+                                }
+                            }
+                        }
+                        ?>
+                    </tbody>
+                    <tfoot>
+                        <tr class="total-row">
+                            <td colspan="3">TOTAL AMOUNT:</td>
+                            <td class="text-right"><?php echo number_format($total_amount, 2); ?></td>
+                            <td colspan="3"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+                
+                <!-- Footer / Signatures Section -->
+                <div class="footer-section">
+                    <table class="footer-table">
+                        <tr>
+                            <td>
+                                <div class="label-row">Received from:</div>
+                                <div class="signature-group">
+                                    <div class="name-line"><?php echo htmlspecialchars($ics_form['received_from']); ?></div>
+                                    <div class="sub-label">Signature Over Printed Name</div>
+                                    <div class="name-line" style="font-weight: normal; text-transform: none;"><?php echo htmlspecialchars($ics_form['received_from_position']); ?></div>
+                                    <div class="sub-label">Position / Office</div>
+                                    <div class="name-line" style="font-weight: normal; margin-top: 10px;"><?php echo (!empty($ics_form['received_from_date']) && $ics_form['received_from_date'] !== '0000-00-00') ? date('F d, Y', strtotime($ics_form['received_from_date'])) : ''; ?></div>
+                                    <div class="sub-label">Date</div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="label-row">Received by:</div>
+                                <div class="signature-group">
+                                    <div class="name-line"><?php echo htmlspecialchars($ics_form['received_by']); ?></div>
+                                    <div class="sub-label">Signature Over Printed Name</div>
+                                    <div class="name-line" style="font-weight: normal; text-transform: none;"><?php echo htmlspecialchars($ics_form['received_by_position']); ?></div>
+                                    <div class="sub-label">Position / Office</div>
+                                    <div class="name-line" style="font-weight: normal; margin-top: 10px;"><?php echo (!empty($ics_form['received_by_date']) && $ics_form['received_by_date'] !== '0000-00-00') ? date('F d, Y', strtotime($ics_form['received_by_date'])) : ''; ?></div>
+                                    <div class="sub-label">Date</div>
+                                </div>
+                            </td>
+                        </tr>
                     </table>
-                </div>
-                <div class="text-center mt-2">
-                    <p class="text-muted small fst-italic">*** Nothing follows ***</p>
-                </div>
-            </div>
-            
-            <!-- Signature Section - Excel Grid Style -->
-            <div class="signature-section pt-4">
-                <div class="row g-4">
-                    <div class="col-md-6">
-                        <div class="p-3 border rounded shadow-sm bg-light h-100">
-                            <h6 class="fw-bold border-bottom pb-2 mb-3">Received from:</h6>
-                            <div class="text-center py-2 border-bottom fw-bold text-uppercase">
-                                <?php echo htmlspecialchars($ics_form['received_from']); ?>
-                            </div>
-                            <div class="text-center small text-muted mb-3">Signature over Printed Name</div>
-                            
-                            <div class="text-center py-1 border-bottom fst-italic">
-                                <?php echo htmlspecialchars($ics_form['received_from_position']); ?>
-                            </div>
-                            <div class="text-center small text-muted mb-3">Position / Office</div>
-
-                            <div class="text-center py-1 border-bottom">
-                                <?php echo (!empty($ics_form['received_from_date']) && $ics_form['received_from_date'] !== '0000-00-00') ? date('F d, Y', strtotime($ics_form['received_from_date'])) : '&nbsp;'; ?>
-                            </div>
-                            <div class="text-center small text-muted">Date</div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="p-3 border rounded shadow-sm bg-light h-100">
-                            <h6 class="fw-bold border-bottom pb-2 mb-3">Received by:</h6>
-                            <div class="text-center py-2 border-bottom fw-bold text-uppercase">
-                                <?php echo htmlspecialchars($ics_form['received_by']); ?>
-                            </div>
-                            <div class="text-center small text-muted mb-3">Signature over Printed Name</div>
-                            
-                            <div class="text-center py-1 border-bottom fst-italic">
-                                <?php echo htmlspecialchars($ics_form['received_by_position']); ?>
-                            </div>
-                            <div class="text-center small text-muted mb-3">Position / Office</div>
-
-                            <div class="text-center py-1 border-bottom">
-                                <?php echo (!empty($ics_form['received_by_date']) && $ics_form['received_by_date'] !== '0000-00-00') ? date('F d, Y', strtotime($ics_form['received_by_date'])) : '&nbsp;'; ?>
-                            </div>
-                            <div class="text-center small text-muted">Date</div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
