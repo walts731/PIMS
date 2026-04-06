@@ -891,9 +891,9 @@ if ($office_id && $conn) {
         }
         
         // Get available assets from other offices
-        $assets_query = "SELECT ai.id, ai.description, COALESCE(ai.property_no, ai.property_no) as asset_code, ac.category_name, o.office_name, o.id as office_id,
+        $assets_query = "SELECT ai.id, ai.description, ai.property_no as property_number, ac.category_name, o.office_name, o.id as office_id,
                          1 as total_quantity,
-                         1 as available_quantity,
+                         1 as available,
                          ac.id as category_id
                          FROM asset_items ai
                          LEFT JOIN asset_categories ac ON ai.asset_category_id = ac.id
@@ -947,6 +947,8 @@ if ($office_id && $conn) {
     <link href="../assets/css/index.css" rel="stylesheet">
     <link href="../assets/css/theme-custom.css" rel="stylesheet">
     <link href="dashboard.css?v=<?php echo time(); ?>" rel="stylesheet">
+    <!-- Loading States CSS -->
+    <link href="assets/css/loading-states.css?v=<?php echo time(); ?>" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -1095,6 +1097,117 @@ if ($office_id && $conn) {
             opacity: 0.5;
         }
         
+        /* Enhanced Modal Styles */
+        .modal-body .form-field-enhanced {
+            transition: var(--transition);
+        }
+        
+        .modal-body .form-field-enhanced:hover {
+            transform: translateY(-1px);
+        }
+        
+        .modal-body .form-field-enhanced:focus-within {
+            transform: translateY(-1px);
+        }
+        
+        .modal-body .form-control:focus,
+        .modal-body .form-select:focus {
+            box-shadow: 0 0 0 0.2rem rgba(25, 27, 169, 0.25);
+            border-color: var(--primary-color);
+        }
+        
+        .modal-body .interactive-button {
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .modal-body .interactive-button:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .modal-body .interactive-button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        .modal-body .interactive-button:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        /* Enhanced Table Styles */
+        .interactive-table tbody tr {
+            transition: var(--transition);
+        }
+        
+        .interactive-table tbody tr:hover {
+            background-color: rgba(91, 194, 242, 0.1);
+            transform: translateX(2px);
+        }
+        
+        /* Enhanced Asset Selection */
+        .asset-row {
+            transition: var(--transition);
+            cursor: pointer;
+        }
+        
+        .asset-row:hover {
+            background-color: rgba(25, 27, 169, 0.05);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .asset-row.selected {
+            background-color: rgba(25, 27, 169, 0.1);
+            border-left: 3px solid var(--primary-color);
+        }
+        
+        /* Modal z-index fixes */
+        .modal {
+            z-index: 1055;
+        }
+        
+        .modal-backdrop {
+            z-index: 1050;
+        }
+        
+        .modal-dialog {
+            z-index: 1060;
+        }
+        
+        /* Prevent multiple backdrops */
+        .modal-backdrop ~ .modal-backdrop {
+            display: none !important;
+        }
+        
+        /* Ensure modal is visible */
+        .modal.show {
+            display: block !important;
+        }
+        
+        /* Fix modal positioning */
+        #newRequestModal {
+            z-index: 1055;
+        }
+        
+        #newRequestModal .modal-dialog {
+            z-index: 1060;
+        }
+        
+        #newRequestModal .modal-content {
+            z-index: 1061;
+        }
+        
         .bulk-actions-bar {
             background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
             border-bottom: 2px solid #5CC2F2;
@@ -1235,29 +1348,306 @@ $page_title = 'Requests Management';
                     <p class="text-muted mb-0">Manage asset borrow requests - incoming and outgoing</p>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#newRequestModal">
+                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#newRequestModal" onclick="tryOpenNewRequestModal(event)">
                         <i class="bi bi-plus-circle"></i> New Request
                     </button>
                 </div>
             </div>
         </div>
         
-        <!-- Success/Error Messages -->
-        <?php if (isset($_SESSION['success'])): ?>
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="bi bi-check-circle"></i> <?php echo htmlspecialchars($_SESSION['success']); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <!-- New Request Modal - Moved to top for better loading -->
+        <div class="modal fade" id="newRequestModal" tabindex="-1">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">
+                            <i class="bi bi-plus-circle d-none d-md-inline"></i> 
+                            <span class="d-md-none">New Request</span>
+                            <span class="d-none d-md-inline">New Borrow Request</span>
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form method="POST" action="" class="needs-validation">
+                        <input type="hidden" name="action" value="create_request">
+                        <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                        <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
+                            <!-- Mobile-friendly layout with better spacing -->
+                            <div class="row g-3">
+                                <div class="col-12 col-md-6">
+                                    <div class="mb-3 form-field-enhanced">
+                                        <label for="requested_to_office" class="form-label fw-semibold">
+                                            Request To Office 
+                                            <span class="text-danger" aria-label="required">*</span>
+                                        </label>
+                                        <select class="form-select" id="requested_to_office" name="requested_to_office" 
+                                                aria-describedby="officeHelp" aria-required="true" required>
+                                            <option value="">Select Office</option>
+                                            <?php if (!empty($other_offices)): ?>
+                                                <?php foreach ($other_offices as $office): ?>
+                                                    <option value="<?php echo $office['id']; ?>">
+                                                        <?php echo htmlspecialchars($office['office_name']); ?> (<?php echo htmlspecialchars($office['office_code']); ?>)
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            <?php else: ?>
+                                                <option value="" disabled>No offices available</option>
+                                            <?php endif; ?>
+                                        </select>
+                                        <div id="officeHelp" class="form-text">
+                                            Select the office you want to borrow assets from
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <div class="mb-3 form-field-enhanced">
+                                        <label for="asset_category" class="form-label fw-semibold">Asset Category</label>
+                                        <select class="form-select" id="asset_category" name="asset_category">
+                                            <option value="">All Categories</option>
+                                            <?php if (!empty($asset_categories)): ?>
+                                                <?php foreach ($asset_categories as $category): ?>
+                                                    <option value="<?php echo $category['id']; ?>">
+                                                        <?php echo htmlspecialchars($category['category_name']); ?> (<?php echo htmlspecialchars($category['category_code']); ?>)
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            <?php endif; ?>
+                                        </select>
+                                        <small class="text-muted">Filter assets by category</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <div class="mb-3 form-field-enhanced">
+                                        <label class="form-label fw-semibold">
+                                            Asset to Borrow 
+                                            <span class="text-danger" aria-label="required">*</span>
+                                        </label>
+                                        
+                                        <!-- Assets Table -->
+                                        <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                                            <table class="table table-hover table-striped interactive-table" id="assetsTable">
+                                                <thead class="table-light sticky-top">
+                                                    <tr>
+                                                        <th style="width: 50px;">Select</th>
+                                                        <th>Description</th>
+                                                        <th>Property No.</th>
+                                                        <th>Category</th>
+                                                        <th>Office</th>
+                                                        <th class="text-center">Available</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="assetsTableBody">
+                                                    <?php if (empty($available_assets)): ?>
+                                                        <tr>
+                                                            <td colspan="6" class="text-center text-muted py-4">
+                                                                <i class="bi bi-inbox fs-4 d-block mb-2"></i>
+                                                                No assets available for borrowing from other offices.
+                                                            </td>
+                                                        </tr>
+                                                    <?php else: ?>
+                                                        <?php foreach ($available_assets as $asset): ?>
+                                                            <tr class="asset-row" 
+                                                                data-asset-id="<?php echo $asset['id']; ?>"
+                                                                data-office-id="<?php echo $asset['office_id']; ?>"
+                                                                data-category-id="<?php echo $asset['category_id']; ?>">
+                                                                <td>
+                                                                    <input type="radio" name="asset_id" value="<?php echo $asset['id']; ?>" 
+                                                                           class="form-check-input" required>
+                                                                </td>
+                                                                <td><?php echo htmlspecialchars($asset['description']); ?></td>
+                                                                <td><?php echo htmlspecialchars($asset['property_number'] ?: 'N/A'); ?></td>
+                                                                <td><?php echo htmlspecialchars($asset['category_name']); ?></td>
+                                                                <td><?php echo htmlspecialchars($asset['office_name']); ?></td>
+                                                                <td class="text-center">
+                                                                    <span class="badge bg-success" id="availability_<?php echo $asset['id']; ?>">
+                                                                        <?php echo $asset['available']; ?> units
+                                                                    </span>
+                                                                </td>
+                                                            </tr>
+                                                        <?php endforeach; ?>
+                                                    <?php endif; ?>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div class="mt-2">
+                                            <div id="selectedAssetDisplay" class="alert alert-info" style="display: none;">
+                                                <strong>Selected Asset:</strong> <span id="selectedAssetInfo"></span>
+                                            </div>
+                                        </div>
+                                        <div id="assetHelp" class="form-text">
+                                            Only available assets from other offices are shown. Click on a row to select an asset.
+                                        </div>
+                                        <div id="assetAvailability" class="form-text fw-semibold"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row g-3">
+                                <div class="col-12 col-md-4">
+                                    <div class="mb-3 form-field-enhanced">
+                                        <label for="quantity_requested" class="form-label fw-semibold">
+                                            Quantity 
+                                            <span class="text-danger" aria-label="required">*</span>
+                                        </label>
+                                        <input type="number" class="form-control form-control-lg" id="quantity_requested" name="quantity_requested" min="1" value="1" required>
+                                        <small class="text-muted" id="quantity_info">Select an asset to see available quantity</small>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <div class="mb-3 form-field-enhanced">
+                                        <label for="start_date" class="form-label fw-semibold">
+                                            Start Date 
+                                            <span class="text-danger" aria-label="required">*</span>
+                                        </label>
+                                        <input type="date" class="form-control form-control-lg" id="start_date" name="start_date" required>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <div class="mb-3 form-field-enhanced">
+                                        <label for="end_date" class="form-label fw-semibold">
+                                            End Date 
+                                            <span class="text-danger" aria-label="required">*</span>
+                                        </label>
+                                        <input type="date" class="form-control form-control-lg" id="end_date" name="end_date" required>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <div class="mb-3 form-field-enhanced">
+                                        <label for="purpose" class="form-label fw-semibold">
+                                            Purpose of Borrowing 
+                                            <span class="text-danger" aria-label="required">*</span>
+                                        </label>
+                                        <textarea class="form-control form-control-lg" id="purpose" name="purpose" rows="4" 
+                                                placeholder="Please describe the purpose for borrowing this asset..." required
+                                                style="min-height: 100px; resize: vertical;"></textarea>
+                                        <div class="d-flex justify-content-between">
+                                            <small class="text-muted">Minimum 10 characters</small>
+                                            <small class="text-muted" id="charCount">0 / 500</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Progressive Disclosure: Additional Options -->
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <div class="mb-3">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm w-100" 
+                                                data-bs-toggle="collapse" data-bs-target="#additionalOptions"
+                                                aria-expanded="false" aria-controls="additionalOptions">
+                                            <i class="bi bi-chevron-down"></i> 
+                                            Additional Options
+                                            <small class="text-muted">(Optional)</small>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="collapse" id="additionalOptions">
+                                <div class="row g-3">
+                                    <div class="col-12 col-md-6">
+                                        <div class="mb-3 form-field-enhanced">
+                                            <label for="urgency_level" class="form-label fw-semibold">Urgency Level</label>
+                                            <select class="form-select" id="urgency_level" name="urgency_level">
+                                                <option value="normal">Normal (3-5 business days)</option>
+                                                <option value="urgent">Urgent (1-2 business days)</option>
+                                                <option value="emergency">Emergency (Same day)</option>
+                                            </select>
+                                            <small class="text-muted">Select urgency level for processing priority</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <div class="mb-3 form-field-enhanced">
+                                            <label for="delivery_preference" class="form-label fw-semibold">Delivery Preference</label>
+                                            <select class="form-select" id="delivery_preference" name="delivery_preference">
+                                                <option value="pickup">Pickup from Office</option>
+                                                <option value="delivery">Delivery to Location</option>
+                                            </select>
+                                            <small class="text-muted">How would you like to receive the asset?</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-md-6" id="deliveryLocationGroup" style="display: none;">
+                                        <div class="mb-3 form-field-enhanced">
+                                            <label for="delivery_location" class="form-label fw-semibold">Delivery Location</label>
+                                            <input type="text" class="form-control" id="delivery_location" name="delivery_location" 
+                                                   placeholder="Enter delivery location...">
+                                            <small class="text-muted">Specify where asset should be delivered</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-md-6" id="emergencyReasonGroup" style="display: none;">
+                                        <div class="mb-3 form-field-enhanced">
+                                            <label for="emergency_reason" class="form-label fw-semibold">
+                                                Emergency Reason 
+                                                <span class="text-danger">*</span>
+                                            </label>
+                                            <textarea class="form-control" id="emergency_reason" name="emergency_reason" rows="2"
+                                                      placeholder="Please explain emergency situation..."></textarea>
+                                            <small class="text-muted">Required for emergency requests</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Mobile-specific tips -->
+                            <div class="d-md-none">
+                                <div class="alert alert-info alert-sm">
+                                    <i class="bi bi-phone"></i> 
+                                    <strong>Mobile Tip:</strong> Scroll down to see all form fields. Use the info button to view asset details.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer bg-light sticky-bottom">
+                            <div class="d-flex flex-column flex-md-row gap-2 w-100">
+                                <button type="button" class="btn btn-secondary flex-fill flex-md-grow-0 interactive-button" data-bs-dismiss="modal">
+                                    <i class="bi bi-x-circle"></i> Cancel
+                                </button>
+                                <button type="submit" class="btn btn-primary flex-fill flex-md-grow-0 interactive-button">
+                                    <i class="bi bi-send"></i> Submit Request
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
             </div>
-            <?php unset($_SESSION['success']); ?>
-        <?php endif; ?>
+        </div>
         
-        <?php if (isset($_SESSION['error'])): ?>
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="bi bi-exclamation-triangle"></i> <?php echo htmlspecialchars($_SESSION['error']); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <!-- Request Details Modal -->
+    <div class="modal fade" id="detailsModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title"><i class="bi bi-eye"></i> Request Details</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="detailsModalBody">
+                    <!-- Content will be populated dynamically -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
             </div>
-            <?php unset($_SESSION['error']); ?>
-        <?php endif; ?>
+        </div>
+    </div>
+    
+    <!-- Success/Error Messages -->
+    <?php if (isset($_SESSION['success'])): ?>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> <?php echo htmlspecialchars($_SESSION['success']); ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <?php unset($_SESSION['success']); ?>
+    <?php endif; ?>
+    
+    <?php if (isset($_SESSION['error'])): ?>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> <?php echo htmlspecialchars($_SESSION['error']); ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <?php unset($_SESSION['error']); ?>
+    <?php endif; ?>
         
         <!-- Request Statistics -->
         <div class="row mb-4 justify-content-center">
@@ -1483,7 +1873,7 @@ $page_title = 'Requests Management';
                                             <input type="checkbox" id="selectAllRequests" class="form-check-input" title="Select all requests">
                                         </th>
                                         <th>Type</th>
-                                        <th>Requester/Office</th>
+                                        <th>Office</th>
                                         <th>Asset</th>
                                         <th>Purpose</th>
                                         <th>Urgency</th>
@@ -1713,11 +2103,11 @@ $page_title = 'Requests Management';
                     <h5 class="modal-title"><i class="bi bi-arrow-return-left"></i> Return Asset</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <form method="POST" action="" enctype="multipart/form-data">
+                <form method="POST" action="" enctype="multipart/form-data" class="needs-validation">
                     <input type="hidden" name="action" value="return_asset">
                     <input type="hidden" name="request_id" id="returnRequestId">
                     <div class="modal-body">
-                        <div class="mb-3">
+                        <div class="mb-3 form-field-enhanced">
                             <label for="return_condition" class="form-label">Asset Condition</label>
                             <select class="form-control" id="return_condition" name="return_condition" required>
                                 <option value="undamaged" selected>Undamaged - No issues</option>
@@ -1725,12 +2115,12 @@ $page_title = 'Requests Management';
                                 <option value="significant damage">Significant Damage - Major issues</option>
                             </select>
                         </div>
-                        <div class="mb-3">
+                        <div class="mb-3 form-field-enhanced">
                             <label for="return_notes" class="form-label">Return Notes (Optional)</label>
                             <textarea class="form-control" id="return_notes" name="return_notes" rows="3" 
                                     placeholder="Add any notes about the asset condition..."></textarea>
                         </div>
-                        <div class="mb-3">
+                        <div class="mb-3 form-field-enhanced">
                             <label for="return_photo" class="form-label">Asset Photo (Optional)</label>
                             <div class="border rounded p-3 bg-light">
                                 <input type="file" class="form-control" id="return_photo" name="return_photo" 
@@ -1741,8 +2131,10 @@ $page_title = 'Requests Management';
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">
+                        <button type="button" class="btn btn-secondary interactive-button" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary interactive-button">
                             <i class="bi bi-arrow-return-left"></i> Confirm Return
                         </button>
                     </div>
@@ -1751,301 +2143,8 @@ $page_title = 'Requests Management';
         </div>
     </div>
     
-    <!-- New Request Modal -->
-    <div class="modal fade" id="newRequestModal" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title">
-                        <i class="bi bi-plus-circle d-none d-md-inline"></i> 
-                        <span class="d-md-none">New Request</span>
-                        <span class="d-none d-md-inline">New Borrow Request</span>
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <form method="POST" action="">
-                    <input type="hidden" name="action" value="create_request">
-                    <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
-                    <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
-                        <!-- Mobile-friendly layout with better spacing -->
-                        <div class="row g-3">
-                            <div class="col-12 col-md-6">
-                                <div class="mb-3">
-                                    <label for="requested_to_office" class="form-label fw-semibold">
-                                        Request To Office 
-                                        <span class="text-danger" aria-label="required">*</span>
-                                    </label>
-                                    <select class="form-select" id="requested_to_office" name="requested_to_office" 
-                                            aria-describedby="officeHelp" aria-required="true" required>
-                                        <option value="">Select Office</option>
-                                        <?php if (!empty($other_offices)): ?>
-                                            <?php foreach ($other_offices as $office): ?>
-                                                <option value="<?php echo $office['id']; ?>">
-                                                    <?php echo htmlspecialchars($office['office_name']); ?> (<?php echo htmlspecialchars($office['office_code']); ?>)
-                                                </option>
-                                            <?php endforeach; ?>
-                                        <?php else: ?>
-                                            <option value="" disabled>No offices available</option>
-                                        <?php endif; ?>
-                                    </select>
-                                    <div id="officeHelp" class="form-text">
-                                        Select the office you want to borrow assets from
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <div class="mb-3">
-                                    <label for="asset_category" class="form-label fw-semibold">Asset Category</label>
-                                    <select class="form-select" id="asset_category" name="asset_category">
-                                        <option value="">All Categories</option>
-                                        <?php if (!empty($asset_categories)): ?>
-                                            <?php foreach ($asset_categories as $category): ?>
-                                                <option value="<?php echo $category['id']; ?>">
-                                                    <?php echo htmlspecialchars($category['category_name']); ?> (<?php echo htmlspecialchars($category['category_code']); ?>)
-                                                </option>
-                                            <?php endforeach; ?>
-                                        <?php endif; ?>
-                                    </select>
-                                    <small class="text-muted">Filter assets by category</small>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <div class="mb-3">
-                                    <label class="form-label fw-semibold">
-                                        Asset to Borrow 
-                                        <span class="text-danger" aria-label="required">*</span>
-                                    </label>
-                                    
-                                    <!-- Assets Table -->
-                                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                                        <table class="table table-hover table-striped" id="assetsTable">
-                                            <thead class="table-light sticky-top">
-                                                <tr>
-                                                    <th style="width: 50px;">Select</th>
-                                                    <th>Description</th>
-                                                    <th>Property No.</th>
-                                                    <th>Category</th>
-                                                    <th>Office</th>
-                                                    <th class="text-center">Available</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="assetsTableBody">
-                                                <?php if (empty($available_assets)): ?>
-                                                    <tr>
-                                                        <td colspan="6" class="text-center text-muted py-4">
-                                                            <i class="bi bi-inbox fs-4 d-block mb-2"></i>
-                                                            No assets available for borrowing from other offices.
-                                                        </td>
-                                                    </tr>
-                                                <?php else: ?>
-                                                    <?php foreach ($available_assets as $asset): ?>
-                                                        <tr class="asset-row" 
-                                                            data-asset-id="<?php echo $asset['id']; ?>"
-                                                            data-office-id="<?php echo $asset['office_id']; ?>"
-                                                            data-category-id="<?php echo $asset['category_id']; ?>"
-                                                            data-available="<?php echo $asset['available_quantity']; ?>"
-                                                            data-total="<?php echo $asset['total_quantity']; ?>"
-                                                            data-description="<?php echo htmlspecialchars($asset['description']); ?>"
-                                                            data-asset-code="<?php echo htmlspecialchars($asset['asset_code']); ?>"
-                                                            data-office-name="<?php echo htmlspecialchars($asset['office_name']); ?>">
-                                                            <td class="text-center">
-                                                                <input type="radio" name="selected_asset" 
-                                                                       value="<?php echo $asset['id']; ?>"
-                                                                       class="form-check-input asset-selector">
-                                                            </td>
-                                                            <td>
-                                                                <strong><?php echo htmlspecialchars($asset['description']); ?></strong>
-                                                            </td>
-                                                            <td>
-                                                                <code><?php echo htmlspecialchars($asset['asset_code']); ?></code>
-                                                            </td>
-                                                            <td>
-                                                                <span class="badge bg-info">
-                                                                    <?php echo htmlspecialchars($asset['category_name'] ?? 'Uncategorized'); ?>
-                                                                </span>
-                                                            </td>
-                                                            <td>
-                                                                <i class="bi bi-building"></i>
-                                                                <?php echo htmlspecialchars($asset['office_name']); ?>
-                                                            </td>
-                                                            <td class="text-center">
-                                                                <span class="badge bg-success">
-                                                                    <?php echo $asset['available_quantity']; ?> of <?php echo $asset['total_quantity']; ?>
-                                                                </span>
-                                                            </td>
-                                                        </tr>
-                                                    <?php endforeach; ?>
-                                                <?php endif; ?>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    
-                                    <!-- Hidden input to store selected asset -->
-                                    <input type="hidden" id="asset_id" name="asset_id" required>
-                                    
-                                    <!-- Selected Asset Display -->
-                                    <div id="selectedAssetDisplay" class="alert alert-info d-none">
-                                        <h6 class="mb-2">Selected Asset:</h6>
-                                        <div id="selectedAssetInfo"></div>
-                                    </div>
-                                    
-                                    <div id="assetHelp" class="form-text">
-                                        Only available assets from other offices are shown. Click on a row to select an asset.
-                                    </div>
-                                    <div id="assetAvailability" class="form-text fw-semibold"></div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row g-3">
-                            <div class="col-12 col-md-4">
-                                <div class="mb-3">
-                                    <label for="quantity_requested" class="form-label fw-semibold">
-                                        Quantity 
-                                        <span class="text-danger" aria-label="required">*</span>
-                                    </label>
-                                    <input type="number" class="form-control form-control-lg" id="quantity_requested" name="quantity_requested" min="1" value="1" required>
-                                    <small class="text-muted" id="quantity_info">Select an asset to see available quantity</small>
-                                </div>
-                            </div>
-                            <div class="col-12 col-md-4">
-                                <div class="mb-3">
-                                    <label for="start_date" class="form-label fw-semibold">
-                                        Start Date 
-                                        <span class="text-danger" aria-label="required">*</span>
-                                    </label>
-                                    <input type="date" class="form-control form-control-lg" id="start_date" name="start_date" required>
-                                </div>
-                            </div>
-                            <div class="col-12 col-md-4">
-                                <div class="mb-3">
-                                    <label for="end_date" class="form-label fw-semibold">
-                                        End Date 
-                                        <span class="text-danger" aria-label="required">*</span>
-                                    </label>
-                                    <input type="date" class="form-control form-control-lg" id="end_date" name="end_date" required>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <div class="mb-3">
-                                    <label for="purpose" class="form-label fw-semibold">
-                                        Purpose of Borrowing 
-                                        <span class="text-danger" aria-label="required">*</span>
-                                    </label>
-                                    <textarea class="form-control form-control-lg" id="purpose" name="purpose" rows="4" 
-                                            placeholder="Please describe the purpose for borrowing this asset..." required
-                                            style="min-height: 100px; resize: vertical;"></textarea>
-                                    <div class="d-flex justify-content-between">
-                                        <small class="text-muted">Minimum 10 characters</small>
-                                        <small class="text-muted" id="charCount">0 / 500</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Progressive Disclosure: Additional Options -->
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <div class="mb-3">
-                                    <button type="button" class="btn btn-outline-secondary btn-sm w-100" 
-                                            data-bs-toggle="collapse" data-bs-target="#additionalOptions"
-                                            aria-expanded="false" aria-controls="additionalOptions">
-                                        <i class="bi bi-chevron-down"></i> 
-                                        Additional Options
-                                        <small class="text-muted">(Optional)</small>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="collapse" id="additionalOptions">
-                            <div class="row g-3">
-                                <div class="col-12 col-md-6">
-                                    <div class="mb-3">
-                                        <label for="urgency_level" class="form-label fw-semibold">Urgency Level</label>
-                                        <select class="form-select" id="urgency_level" name="urgency_level">
-                                            <option value="normal">Normal (3-5 business days)</option>
-                                            <option value="urgent">Urgent (1-2 business days)</option>
-                                            <option value="emergency">Emergency (Same day)</option>
-                                        </select>
-                                        <small class="text-muted">Select urgency level for processing priority</small>
-                                    </div>
-                                </div>
-                                <div class="col-12 col-md-6">
-                                    <div class="mb-3">
-                                        <label for="delivery_preference" class="form-label fw-semibold">Delivery Preference</label>
-                                        <select class="form-select" id="delivery_preference" name="delivery_preference">
-                                            <option value="pickup">Pickup from Office</option>
-                                            <option value="delivery">Delivery to Location</option>
-                                        </select>
-                                        <small class="text-muted">How would you like to receive the asset?</small>
-                                    </div>
-                                </div>
-                                <div class="col-12 col-md-6" id="deliveryLocationGroup" style="display: none;">
-                                    <div class="mb-3">
-                                        <label for="delivery_location" class="form-label fw-semibold">Delivery Location</label>
-                                        <input type="text" class="form-control" id="delivery_location" name="delivery_location" 
-                                               placeholder="Enter delivery location...">
-                                        <small class="text-muted">Specify where asset should be delivered</small>
-                                    </div>
-                                </div>
-                                <div class="col-12 col-md-6" id="emergencyReasonGroup" style="display: none;">
-                                    <div class="mb-3">
-                                        <label for="emergency_reason" class="form-label fw-semibold">
-                                            Emergency Reason 
-                                            <span class="text-danger">*</span>
-                                        </label>
-                                        <textarea class="form-control" id="emergency_reason" name="emergency_reason" rows="2"
-                                                  placeholder="Please explain emergency situation..."></textarea>
-                                        <small class="text-muted">Required for emergency requests</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Mobile-specific tips -->
-                        <div class="d-md-none">
-                            <div class="alert alert-info alert-sm">
-                                <i class="bi bi-phone"></i> 
-                                <strong>Mobile Tip:</strong> Scroll down to see all form fields. Use the info button to view asset details.
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer bg-light sticky-bottom">
-                        <div class="d-flex flex-column flex-md-row gap-2 w-100">
-                            <button type="button" class="btn btn-secondary flex-fill flex-md-grow-0" data-bs-dismiss="modal">
-                                <i class="bi bi-x-circle"></i> Cancel
-                            </button>
-                            <button type="submit" class="btn btn-primary flex-fill flex-md-grow-0">
-                                <i class="bi bi-send"></i> Submit Request
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Request Details Modal -->
-    <div class="modal fade" id="detailsModal" tabindex="-1">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header bg-info text-white">
-                    <h5 class="modal-title"><i class="bi bi-eye"></i> Request Details</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body" id="detailsModalBody">
-                    <!-- Content will be populated dynamically -->
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                </div>
+        <!-- Request Details Modal -->
+                
             </div>
         </div>
     </div>
@@ -2053,8 +2152,94 @@ $page_title = 'Requests Management';
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Ensure Bootstrap is fully loaded before initializing modals
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize new request modal trigger
+            const newRequestBtn = document.querySelector('[data-bs-target="#newRequestModal"]');
+            if (newRequestBtn) {
+                newRequestBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation(); // Prevent event bubbling
+                    
+                    try {
+                        // Check if modal already exists
+                        let modal = bootstrap.Modal.getInstance(document.getElementById('newRequestModal'));
+                        
+                        // If no instance exists, create one
+                        if (!modal) {
+                            modal = new bootstrap.Modal(document.getElementById('newRequestModal'));
+                        }
+                        
+                        if (modal) {
+                            console.log('Opening modal...');
+                            modal.show();
+                        } else {
+                            console.error('Failed to create modal instance');
+                        }
+                    } catch (error) {
+                        console.error('Error showing modal:', error);
+                        alert('Error opening request form. Please refresh the page.');
+                    }
+                });
+            }
+            
+            // Backup trigger - double click on page header
+            const pageHeader = document.querySelector('.page-header');
+            if (pageHeader) {
+                pageHeader.addEventListener('dblclick', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    try {
+                        let modal = bootstrap.Modal.getInstance(document.getElementById('newRequestModal'));
+                        if (!modal) {
+                            modal = new bootstrap.Modal(document.getElementById('newRequestModal'));
+                        }
+                        if (modal) {
+                            modal.show();
+                            console.log('Modal opened via double-click on header');
+                        }
+                    } catch (error) {
+                        console.error('Error with backup trigger:', error);
+                    }
+                });
+            }
+        });
         
-
+        // Backup function to open modal
+        function tryOpenNewRequestModal(event) {
+            event.preventDefault();
+            event.stopPropagation(); // Prevent event bubbling
+            
+            try {
+                // Clean up any existing backdrops first
+                document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+                    if (backdrop.parentNode) {
+                        backdrop.parentNode.removeChild(backdrop);
+                    }
+                });
+                
+                // Check if modal already exists
+                let modal = bootstrap.Modal.getInstance(document.getElementById('newRequestModal'));
+                
+                // If no instance exists, create one
+                if (!modal) {
+                    modal = new bootstrap.Modal(document.getElementById('newRequestModal'));
+                }
+                
+                if (modal) {
+                    console.log('Opening modal via backup function...');
+                    modal.show();
+                } else {
+                    console.error('Failed to create modal instance');
+                    alert('Error opening request form. Please refresh the page.');
+                }
+            } catch (error) {
+                console.error('Error showing modal:', error);
+                alert('Error opening request form. Please refresh the page.');
+            }
+        }
+        
 console.log('DEBUG: Script tag loaded!');
 
 // ---------------------------------------------------------------------------
@@ -2116,6 +2301,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function quickApprove(requestId) {
     console.log('quickApprove called with requestId:', requestId);
     if (confirm('Are you sure you want to approve this request?')) {
+        showLoading('Approving request...');
         const form = document.createElement('form');
         form.method = 'POST';
         form.innerHTML = `
@@ -2132,6 +2318,7 @@ function quickDeny(requestId) {
     console.log('quickDeny called with requestId:', requestId);
     const reason = prompt('Please enter the reason for denial:');
     if (reason) {
+        showLoading('Denying request...');
         const form = document.createElement('form');
         form.method = 'POST';
         form.innerHTML = `
@@ -2147,6 +2334,7 @@ function quickDeny(requestId) {
 function quickMarkBorrowed(requestId) {
     console.log('quickMarkBorrowed called with requestId:', requestId);
     if (confirm('Mark this asset as borrowed?')) {
+        showLoading('Marking as borrowed...');
         const form = document.createElement('form');
         form.method = 'POST';
         form.innerHTML = `
@@ -3019,9 +3207,17 @@ document.addEventListener('DOMContentLoaded', function () {
     const newRequestForm = document.querySelector('#newRequestModal form');
     if (newRequestForm) {
         newRequestForm.addEventListener('submit', function (e) {
+            const submitBtn = this.querySelector('button[type="submit"]');
+            
             if (!validateFormRealtime(this)) {
                 e.preventDefault();
                 showFormFeedback('error', 'Please fix the errors before submitting');
+                return;
+            }
+            
+            // Show loading state on submit button
+            if (submitBtn) {
+                showButtonLoading(submitBtn, 'Submitting...');
             }
         });
         newRequestForm.querySelectorAll('[required]').forEach(field => {
@@ -3413,6 +3609,9 @@ function viewAssetImage(button) {
     
     <!-- Bootstrap-based Notification Script -->
     <?php require_once 'includes/notification_script_bootstrap.php'; ?>
+    
+    <!-- Loading States and Micro-interactions JS -->
+    <script src="assets/js/loading-interactions.js?v=<?php echo time(); ?>"></script>
     
     <!-- Sidebar Scripts -->
     <script src="../assets/js/sidebar.js"></script>

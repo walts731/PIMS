@@ -229,6 +229,8 @@ foreach ($defaults as $key => $value) {
     <link href="../assets/css/index.css" rel="stylesheet">
     <link href="../assets/css/theme-custom.css" rel="stylesheet">
     <link href="dashboard.css?v=<?php echo time(); ?>" rel="stylesheet">
+    <!-- Loading States CSS -->
+    <link href="assets/css/loading-states.css?v=<?php echo time(); ?>" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -522,19 +524,19 @@ $page_title = 'Office Dashboard';
         <!-- Office Overview Cards -->
         <div class="row mb-4 justify-content-center">
             <div class="col-lg-4 col-md-6">
-                <div class="office-metric-card">
+                <div class="office-metric-card interactive-card">
                     <div class="office-metric-number"><?php echo $stats['total_office_items']; ?></div>
                     <div class="office-metric-label"><i class="bi bi-box-seam"></i> Office Assets</div>
                 </div>
             </div>
             <div class="col-lg-4 col-md-6">
-                <div class="office-metric-card">
+                <div class="office-metric-card interactive-card">
                     <div class="office-metric-number"><?php echo $stats['office_consumables_count']; ?></div>
                     <div class="office-metric-label"><i class="bi bi-archive"></i> Consumables</div>
                 </div>
             </div>
             <div class="col-lg-4 col-md-6">
-                <div class="office-metric-card">
+                <div class="office-metric-card interactive-card">
                     <div class="office-metric-number"><?php echo $stats['pending_requests']; ?></div>
                     <div class="office-metric-label"><i class="bi bi-send"></i> Pending Requests</div>
                 </div>
@@ -816,18 +818,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Refresh Dashboard
 function refreshDashboard() {
-    location.reload();
+    showLoading('Refreshing dashboard...');
+    setTimeout(() => {
+        location.reload();
+    }, 500);
 }
 
 // Export Data
 function exportData() {
-    window.open('export_office_data.php', '_blank');
+    showLoading('Preparing export...');
+    setTimeout(() => {
+        hideLoading();
+        window.open('export_office_data.php', '_blank');
+    }, 1000);
 }
 
 </script>
 
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Loading States and Micro-interactions JS -->
+<script src="assets/js/loading-interactions.js?v=<?php echo time(); ?>"></script>
 <!-- Bootstrap-based Notification Script -->
 <?php require_once 'includes/notification_script_bootstrap.php'; ?>
 <!-- Sidebar Scripts -->

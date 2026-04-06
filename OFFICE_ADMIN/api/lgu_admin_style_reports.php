@@ -488,13 +488,10 @@ function generateAdminStyleReportContent($report_type, $date_from, $date_to, $of
             <div style="flex: 1; text-align: center;">
                 <div class="gov-header" style="padding: 0; background: none;">
                     <div class="gov-title"><h1>Republic of the Philippines</h1></div>
-                    <div class="municipality">' . htmlspecialchars($office_name) . '</div>
-                    <div class="province">Province of Sorsogon</div>
+                    <div class="municipality"><h4>' . htmlspecialchars($office_name) . '</h4></div>
+                    <div class="province"><h3>Province of Sorsogon</h3></div>
                     <div class="print-title">' . ucfirst($report_type) . ' Report</div>
-                    <div class="print-subtitle">Generated on ' . date('F j, Y g:i A') . '</div>
                     <div class="print-subtitle">Report Period: ' . date('F j, Y', strtotime($date_from)) . ' - ' . date('F j, Y', strtotime($date_to)) . '</div>
-                    <div class="print-subtitle">Fiscal Year: ' . date('Y', strtotime($fiscal_year['start_date'])) . ' (' . date('F j, Y', strtotime($fiscal_year['start_date'])) . ' - ' . date('F j, Y', strtotime($fiscal_year['end_date'])) . ')</div>
-                    <div class="print-subtitle">Report ID: ' . $report_id . '</div>
                 </div>
             </div>
             

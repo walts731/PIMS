@@ -177,6 +177,8 @@ $unread_count = $unread_result->fetch_assoc()['count'];
     <link href="../assets/css/index.css" rel="stylesheet">
     <link href="../assets/css/theme-custom.css" rel="stylesheet">
     <link href="dashboard.css?v=<?php echo time(); ?>" rel="stylesheet">
+    <!-- Loading States CSS -->
+    <link href="assets/css/loading-states.css?v=<?php echo time(); ?>" rel="stylesheet">
     
     <style>
         body {
@@ -796,6 +798,8 @@ $unread_count = $unread_result->fetch_assoc()['count'];
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Bootstrap-based Notification Script -->
     <?php require_once 'includes/notification_script_bootstrap.php'; ?>
+    <!-- Loading States and Micro-interactions JS -->
+    <script src="assets/js/loading-interactions.js?v=<?php echo time(); ?>"></script>
     <!-- Sidebar Scripts -->
     <script src="../assets/js/sidebar.js"></script>
     
@@ -827,6 +831,7 @@ $unread_count = $unread_result->fetch_assoc()['count'];
         }
         
         function markAsRead(notificationId) {
+            showLoading('Updating notification...');
             fetch('notifications_handler.php?action=mark_read', {
                 method: 'POST',
                 headers: {
@@ -836,6 +841,7 @@ $unread_count = $unread_result->fetch_assoc()['count'];
             })
             .then(response => response.json())
             .then(data => {
+                hideLoading();
                 if (data.success) {
                     // Update notification badge if it exists
                     updateNotificationBadge();
