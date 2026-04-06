@@ -42,6 +42,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $date_appraisal = $_POST['date_appraisal'] ?? '';
         $remarks = trim($_POST['remarks'] ?? '');
         
+        // Handle image uploads
+        $additional_images = [];
+        if (isset($_FILES['additional_images'])) {
+            $upload_dir = '../uploads/infrastructure/';
+            
+            // Create directory if it doesn't exist
+            if (!file_exists($upload_dir)) {
+                mkdir($upload_dir, 0755, true);
+            }
+            
+            foreach ($_FILES['additional_images']['tmp_name'] as $key => $tmp_name) {
+                if ($_FILES['additional_images']['error'][$key] === UPLOAD_ERR_OK) {
+                    $file_name = $_FILES['additional_images']['name'][$key];
+                    $file_tmp = $_FILES['additional_images']['tmp_name'][$key];
+                    $file_size = $_FILES['additional_images']['size'][$key];
+                    $file_type = $_FILES['additional_images']['type'][$key];
+                    
+                    // Validate file type (images only)
+                    $allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/jpg', 'image/webp'];
+                    if (in_array($file_type, $allowed_types)) {
+                        // Generate unique filename
+                        $file_extension = pathinfo($file_name, PATHINFO_EXTENSION);
+                        $unique_filename = time() . '_' . rand(1000, 9999) . '_' . $key . '.' . $file_extension;
+                        $file_path = $upload_dir . $unique_filename;
+                        
+                        if (move_uploaded_file($file_tmp, $file_path)) {
+                            $additional_images[] = $unique_filename;
+                        }
+                    }
+                }
+            }
+        }
+        
         // Validation
         if (empty($classification)) {
             $message = "Classification is required.";
@@ -60,10 +93,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message_type = "danger";
         } else {
             try {
-                $sql = "INSERT INTO infrastructure (classification, item_description, nature_occupancy, location, date_constructed, property_no, acquisition_cost, market_value, date_appraisal, remarks, created_at) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+                $additional_images_json = json_encode($additional_images);
+                $sql = "INSERT INTO infrastructure (classification, item_description, nature_occupancy, location, date_constructed, property_no, acquisition_cost, market_value, date_appraisal, remarks, additional_images, created_by, created_at) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
                 $stmt = $conn->prepare($sql);
-                $stmt->bind_param("ssssssddss", $classification, $item_description, $nature_occupancy, $location, $date_constructed, $property_no, $acquisition_cost, $market_value, $date_appraisal, $remarks);
+                $stmt->bind_param("ssssssddsssi", $classification, $item_description, $nature_occupancy, $location, $date_constructed, $property_no, $acquisition_cost, $market_value, $date_appraisal, $remarks, $additional_images_json, $_SESSION['user_id']);
                 
                 if ($stmt->execute()) {
                     $message = "Infrastructure item added successfully!";
@@ -325,7 +359,7 @@ while ($row = $loc_result->fetch_assoc()) {
                 <h5 class="modal-title">Add Infrastructure Item</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="POST" action="infrastructure.php">
+            <form method="POST" action="infrastructure.php" enctype="multipart/form-data">
                 <div class="modal-body">
                     <input type="hidden" name="action" value="add">
                     <div class="row">
@@ -375,6 +409,11 @@ while ($row = $loc_result->fetch_assoc()) {
                     <div class="mt-3">
                         <label class="form-label">Remarks</label>
                         <textarea name="remarks" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="mt-3">
+                        <label class="form-label">Additional Images</label>
+                        <input type="file" name="additional_images[]" class="form-control" multiple accept="image/*">
+                        <small class="text-muted">You can select multiple images (JPG, PNG, GIF, etc.)</small>
                     </div>
                 </div>
                 <div class="modal-footer">
