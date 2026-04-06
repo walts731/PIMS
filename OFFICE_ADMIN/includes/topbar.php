@@ -575,8 +575,10 @@
     margin-top: 0.5rem;
     z-index: 1000;
     animation: searchDropdownFadeIn 0.2s ease-out;
-    max-height: 400px;
+    max-height: 600px;
     overflow: hidden;
+    min-width: 450px;
+    max-width: 600px;
 }
 
 @keyframes searchDropdownFadeIn {
@@ -606,7 +608,7 @@
 }
 
 .search-results-body {
-    max-height: 300px;
+    max-height: 500px;
     overflow-y: auto;
 }
 
@@ -617,13 +619,14 @@
 
 .search-result-item {
     display: flex;
-    align-items: center;
-    padding: 0.75rem 1rem;
+    align-items: flex-start;
+    padding: 1rem 1.25rem;
     border-bottom: 1px solid rgba(25, 27, 169, 0.05);
     transition: all 0.2s ease;
     cursor: pointer;
     text-decoration: none;
     color: inherit;
+    min-height: 80px;
 }
 
 .search-result-item:hover {
@@ -636,14 +639,15 @@
 }
 
 .search-result-icon {
-    width: 40px;
-    height: 40px;
+    width: 48px;
+    height: 48px;
     border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: 0.75rem;
-    font-size: 1.2rem;
+    margin-right: 1rem;
+    margin-top: 0.25rem;
+    font-size: 1.3rem;
     flex-shrink: 0;
 }
 
@@ -669,20 +673,25 @@
 
 .search-result-title {
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     color: #1a202c;
-    margin-bottom: 0.25rem;
-    white-space: nowrap;
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
     overflow: hidden;
-    text-overflow: ellipsis;
 }
 
 .search-result-subtitle {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     color: #6c757d;
-    white-space: nowrap;
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
     overflow: hidden;
-    text-overflow: ellipsis;
 }
 
 .search-result-badge {
@@ -734,17 +743,22 @@
 
 .search-result-meta {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 0.5rem;
-    margin-top: 0.25rem;
+    margin-top: 0.5rem;
+    flex-wrap: wrap;
 }
 
 .search-destination {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     color: #6c757d;
     display: flex;
     align-items: center;
     gap: 0.25rem;
+    background: rgba(108, 117, 125, 0.1);
+    padding: 0.2rem 0.5rem;
+    border-radius: 12px;
+    white-space: nowrap;
 }
 
 .search-destination i {
@@ -983,6 +997,20 @@ function displaySearchResults(results, query) {
             const highlightedSubtitle = highlightMatch(result.subtitle, query);
             const destinationInfo = result.destination ? `<span class="search-destination"><i class="bi bi-box-arrow-up-right"></i> ${result.destination}</span>` : '';
             
+            // Additional information for requests
+            let additionalInfo = '';
+            if (result.type === 'request') {
+                if (result.requester) {
+                    additionalInfo += `<span class="search-destination"><i class="bi bi-person"></i> ${result.requester}</span>`;
+                }
+                if (result.office_relation) {
+                    additionalInfo += `<span class="search-destination"><i class="bi bi-building"></i> ${result.office_relation}</span>`;
+                }
+                if (result.start_date && result.end_date) {
+                    additionalInfo += `<span class="search-destination"><i class="bi bi-calendar"></i> ${result.start_date} - ${result.end_date}</span>`;
+                }
+            }
+            
             html += `
                 <a href="${result.url}" class="search-result-item" data-type="${result.type}">
                     <div class="search-result-icon ${result.badge_class}">
@@ -994,6 +1022,7 @@ function displaySearchResults(results, query) {
                         <div class="search-result-meta">
                             <span class="badge ${result.badge_class}">${result.badge}</span>
                             ${destinationInfo}
+                            ${additionalInfo}
                         </div>
                     </div>
                 </a>

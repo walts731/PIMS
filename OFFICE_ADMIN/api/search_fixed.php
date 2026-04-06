@@ -46,6 +46,12 @@ try {
         $results = array_merge($results, $asset_results);
     }
     
+    // Search borrow requests
+    if ($type === 'all' || $type === 'requests') {
+        $request_results = searchBorrowRequests($conn, $query, $user_office_id, $limit);
+        $results = array_merge($results, $request_results);
+    }
+    
     // Sort by relevance score
     usort($results, function($a, $b) {
         return $b['relevance'] <=> $a['relevance'];
@@ -114,6 +120,101 @@ function searchAssetItems($conn, $query, $office_id, $limit) {
     }
     
     return $results;
+}
+
+function searchBorrowRequests($conn, $query, $office_id, $limit) {
+    $results = [];
+    $searchTerm = '%' . $conn->real_escape_string($query) . '%';
+    
+    // Search borrow requests that involve this office (either as requester or requested_to)
+    $sql = "SELECT 
+                br.id,
+                br.purpose,
+                br.status,
+                br.start_date,
+                br.end_date,
+                br.quantity_requested,
+                br.quantity_approved,
+                a.description as asset_description,
+                ai.property_no,
+                u1.first_name as requester_first_name,
+                u1.last_name as requester_last_name,
+                o1.office_name as requester_office,
+                o2.office_name as requested_office,
+                'request' as type,
+                (CASE 
+                    WHEN br.purpose LIKE ? THEN 10 
+                    WHEN a.description LIKE ? THEN 9 
+                    WHEN ai.property_no LIKE ? THEN 8 
+                    WHEN u1.first_name LIKE ? OR u1.last_name LIKE ? THEN 7
+                    WHEN o1.office_name LIKE ? OR o2.office_name LIKE ? THEN 6
+                    ELSE 1 
+                END) as relevance
+            FROM borrow_requests br
+            LEFT JOIN assets a ON br.asset_id = a.id
+            LEFT JOIN asset_items ai ON ai.asset_id = a.id
+            LEFT JOIN users u1 ON br.requested_by = u1.id
+            LEFT JOIN offices o1 ON br.requested_by_office = o1.id
+            LEFT JOIN offices o2 ON br.requested_to_office = o2.id
+            WHERE (br.requested_by_office = ? OR br.requested_to_office = ?)
+            AND (br.purpose LIKE ? OR a.description LIKE ? OR ai.property_no LIKE ? 
+                 OR u1.first_name LIKE ? OR u1.last_name LIKE ? 
+                 OR o1.office_name LIKE ? OR o2.office_name LIKE ?)
+            ORDER BY relevance DESC, br.created_at DESC 
+            LIMIT?";
+    
+    $params = [
+        $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, // for CASE
+        $office_id, $office_id, // for WHERE office filter
+        $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, // for WHERE search
+        $limit
+    ];
+    $types = 'sssssssiiissssssi';
+    
+    $stmt = $conn->prepare($sql);
+    if ($stmt) {
+        $stmt->bind_param($types, ...$params);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        while ($row = $result->fetch_assoc()) {
+            $requester_name = trim($row['requester_first_name'] . ' ' . $row['requester_last_name']);
+            $office_relation = '';
+            
+            if ($row['requester_office'] && $row['requested_office']) {
+                if (strpos($row['requester_office'], $office_id) !== false) {
+                    $office_relation = 'From: ' . $row['requester_office'] . ' → To: ' . $row['requested_office'];
+                } else {
+                    $office_relation = 'From: ' . $row['requester_office'] . ' → To: ' . $row['requested_office'];
+                }
+            }
+            
+            $row['url'] = 'requests.php?search=' . urlencode($query);
+            $row['title'] = $row['purpose'] ? substr($row['purpose'], 0, 50) . '...' : 'Borrow Request';
+            $row['subtitle'] = $row['asset_description'] ? $row['asset_description'] : 'Asset ID: ' . $row['asset_id'];
+            $row['badge'] = ucfirst($row['status']);
+            $row['badge_class'] = getRequestStatusBadgeClass($row['status']);
+            $row['destination'] = 'Requests Page';
+            $row['requester'] = $requester_name;
+            $row['office_relation'] = $office_relation;
+            $results[] = $row;
+        }
+        $stmt->close();
+    }
+    
+    return $results;
+}
+
+function getRequestStatusBadgeClass($status) {
+    switch ($status) {
+        case 'pending': return 'bg-warning';
+        case 'approved': return 'bg-success';
+        case 'denied': return 'bg-danger';
+        case 'borrowed': return 'bg-primary';
+        case 'returned': return 'bg-info';
+        case 'cancelled': return 'bg-secondary';
+        default: return 'bg-secondary';
+    }
 }
 
 function getAssetStatusBadgeClass($status) {
