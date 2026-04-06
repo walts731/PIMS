@@ -1,4 +1,46 @@
 // Sidebar Toggle Functionality
+// Global toggleSidebar function to make it accessible from HTML onclick handlers
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.querySelector('.sidebar-overlay');
+    const topbar = document.querySelector('.topbar');
+    const mainContent = document.querySelector('.main-content');
+    
+    if (!sidebar) return;
+    
+    const isOpen = sidebar.classList.contains('show');
+    
+    if (isOpen) {
+        sidebar.classList.remove('show');
+        // Only hide overlay on mobile/tablet
+        if (window.innerWidth <= 1024) {
+            sidebarOverlay.classList.remove('show');
+        }
+        // Update both toggle buttons
+        document.querySelectorAll('.sidebar-toggle').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        // Adjust main content margin
+        if (window.innerWidth > 1024) {
+            mainContent.style.marginLeft = '0';
+        }
+    } else {
+        sidebar.classList.add('show');
+        // Only show overlay on mobile/tablet
+        if (window.innerWidth <= 1024) {
+            sidebarOverlay.classList.add('show');
+        }
+        // Update both toggle buttons
+        document.querySelectorAll('.sidebar-toggle').forEach(btn => {
+            btn.classList.add('active');
+        });
+        // Adjust main content margin
+        if (window.innerWidth > 1024) {
+            mainContent.style.marginLeft = '280px';
+        }
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const sidebar = document.getElementById('sidebar');
     const sidebarOverlay = document.createElement('div');
@@ -8,41 +50,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Create overlay
     sidebarOverlay.className = 'sidebar-overlay';
     document.body.appendChild(sidebarOverlay);
-    
-    // Handle both toggle buttons
-    function toggleSidebar() {
-        const isOpen = sidebar.classList.contains('show');
-        
-        if (isOpen) {
-            sidebar.classList.remove('show');
-            // Only hide overlay on mobile/tablet
-            if (window.innerWidth <= 1024) {
-                sidebarOverlay.classList.remove('show');
-            }
-            // Update both toggle buttons
-            document.querySelectorAll('.sidebar-toggle').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            // Adjust main content margin
-            if (window.innerWidth > 1024) {
-                mainContent.style.marginLeft = '0';
-            }
-        } else {
-            sidebar.classList.add('show');
-            // Only show overlay on mobile/tablet
-            if (window.innerWidth <= 1024) {
-                sidebarOverlay.classList.add('show');
-            }
-            // Update both toggle buttons
-            document.querySelectorAll('.sidebar-toggle').forEach(btn => {
-                btn.classList.add('active');
-            });
-            // Adjust main content margin
-            if (window.innerWidth > 1024) {
-                mainContent.style.marginLeft = '280px';
-            }
-        }
-    }
     
     // Close sidebar
     function closeSidebar() {

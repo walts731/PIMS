@@ -532,7 +532,7 @@ $report_data['asset_stats']['total_asset_value'] = number_format($report_data['a
                             <i class="bi bi-arrow-clockwise"></i> Refresh
                         </button>
                         <div class="btn-group" role="group">
-                            <button type="button" class="btn export-btn text-white dropdown-toggle" data-bs-toggle="dropdown">
+                            <button type="button" class="btn export-btn text-white dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="bi bi-download"></i> Export
                             </button>
                             <ul class="dropdown-menu">
@@ -868,6 +868,110 @@ $report_data['asset_stats']['total_asset_value'] = number_format($report_data['a
     <script>
         // Initialize Charts
         document.addEventListener('DOMContentLoaded', function() {
+            
+            // Initialize Export Dropdown - Enhanced version
+            console.log('🔧 Initializing export dropdown...');
+            
+            // Try multiple selectors to find export button
+            const exportBtn = document.querySelector('.export-btn.dropdown-toggle') || 
+                              document.querySelector('[data-bs-toggle="dropdown"]') ||
+                              document.querySelector('button.export-btn');
+            
+            console.log('Export button found:', !!exportBtn);
+            console.log('Export button element:', exportBtn);
+            
+            if (exportBtn) {
+                console.log('Export button classes:', exportBtn.className);
+                console.log('Data attributes:', {
+                    'data-bs-toggle': exportBtn.getAttribute('data-bs-toggle'),
+                    'aria-expanded': exportBtn.getAttribute('aria-expanded')
+                });
+                
+                try {
+                    // Remove any existing Bootstrap dropdown instance
+                    const existingInstance = bootstrap.Dropdown.getInstance(exportBtn);
+                    if (existingInstance) {
+                        existingInstance.dispose();
+                        console.log('🗑️ Removed existing dropdown instance');
+                    }
+                    
+                    // Create new Bootstrap dropdown instance
+                    const dropdown = new bootstrap.Dropdown(exportBtn);
+                    console.log('✅ New Bootstrap dropdown created:', dropdown);
+                    
+                    // Add direct click handler to ensure dropdown works
+                    exportBtn.addEventListener('click', function(e) {
+                        console.log('🔘 Export button clicked directly!');
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        // Find dropdown menu
+                        const dropdownMenu = this.nextElementSibling;
+                        if (dropdownMenu) {
+                            console.log('📋 Dropdown menu found:', dropdownMenu);
+                            
+                            // Toggle visibility manually
+                            const isVisible = dropdownMenu.style.display !== 'none' && 
+                                           dropdownMenu.style.display !== '' &&
+                                           dropdownMenu.classList.contains('show');
+                            
+                            if (isVisible) {
+                                dropdownMenu.style.display = 'none';
+                                dropdownMenu.classList.remove('show');
+                                this.setAttribute('aria-expanded', 'false');
+                                console.log('🔽 Dropdown closed manually');
+                            } else {
+                                dropdownMenu.style.display = 'block';
+                                dropdownMenu.classList.add('show');
+                                this.setAttribute('aria-expanded', 'true');
+                                console.log('🔼 Dropdown opened manually');
+                            }
+                        } else {
+                            console.error('❌ Dropdown menu not found!');
+                        }
+                    });
+                    
+                    // Test the dropdown immediately
+                    setTimeout(() => {
+                        console.log('🧪 Testing dropdown after 500ms delay...');
+                        if (dropdown && dropdown._element) {
+                            console.log('✅ Dropdown instance is properly attached');
+                        } else {
+                            console.error('❌ Dropdown instance not properly attached');
+                        }
+                    }, 500);
+                    
+                } catch (error) {
+                    console.error('❌ Error creating Bootstrap dropdown:', error);
+                    console.error('Error details:', error.stack);
+                    
+                    // Fallback: Add manual click handler
+                    exportBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        const dropdownMenu = this.nextElementSibling;
+                        if (dropdownMenu) {
+                            const isShown = dropdownMenu.classList.contains('show');
+                            if (isShown) {
+                                dropdownMenu.classList.remove('show');
+                                this.setAttribute('aria-expanded', 'false');
+                            } else {
+                                dropdownMenu.classList.add('show');
+                                this.setAttribute('aria-expanded', 'true');
+                            }
+                            console.log('🔄 Manual dropdown toggle:', !isShown ? 'opened' : 'closed');
+                        }
+                    });
+                }
+            } else {
+                console.error('❌ Export button not found with any selector');
+                console.log('Available buttons with export-btn class:', 
+                    document.querySelectorAll('.export-btn'));
+                console.log('Available dropdown toggles:', 
+                    document.querySelectorAll('[data-bs-toggle="dropdown"]'));
+            }
+            
             // Request Status Chart - Enhanced with comprehensive status breakdown
             const requestStatusCtx = document.getElementById('requestStatusChart').getContext('2d');
             new Chart(requestStatusCtx, {
@@ -1454,9 +1558,6 @@ $report_data['asset_stats']['total_asset_value'] = number_format($report_data['a
             });
         }
     </script>
-
-<!-- Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <!-- Bootstrap-based Notification Script -->
 <?php require_once 'includes/notification_script_bootstrap.php'; ?>
 <!-- Sidebar Scripts -->

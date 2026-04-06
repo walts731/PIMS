@@ -19,9 +19,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
 
-    // Update notification badge
-    function updateNotificationBadge() {
-
     // Debounce mechanism to prevent repeated requests
     let lastRequestTime = 0;
     const requestCooldown = 5000; // 5 seconds between requests
