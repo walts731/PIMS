@@ -259,6 +259,10 @@ foreach ($software_data as $software) {
             }
         }
     </style>
+    
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css">
 </head>
 <body>
     <?php
@@ -317,92 +321,16 @@ foreach ($software_data as $software) {
             </div>
         </div>
         
-        <!-- Statistics Cards -->
-        <div class="row mb-4">
-            <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $total_count; ?></div>
-                    <div class="stats-label"><i class="bi bi-laptop"></i> Total Software</div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number">₱<?php echo number_format($total_value, 2); ?></div>
-                    <div class="stats-label"><i class="bi bi-cash"></i> Total Purchase Cost</div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo count($categories); ?></div>
-                    <div class="stats-label"><i class="bi bi-tags"></i> Categories</div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $active_count; ?></div>
-                    <div class="stats-label"><i class="bi bi-check-circle"></i> Active Licenses</div>
-                </div>
-            </div>
-        </div>
-        
         <!-- Software Table -->
         <div class="table-container">
             <div class="row mb-3">
                 <div class="col-md-6">
                     <h5 class="mb-0"><i class="bi bi-list-ul"></i> Software Records</h5>
                 </div>
-                <div class="col-md-6">
-                    <div class="row g-2 mb-2">
-                        <div class="col-md-3">
-                            <select class="form-select form-select-sm" id="categoryFilter" onchange="applyFilters()">
-                                <option value="">All Categories</option>
-                                <?php foreach ($categories as $category): ?>
-                                    <option value="<?php echo htmlspecialchars($category); ?>" <?php echo $category_filter == $category ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($category); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <select class="form-select form-select-sm" id="licenseFilter" onchange="applyFilters()">
-                                <option value="">All Licenses</option>
-                                <?php foreach ($license_types as $license): ?>
-                                    <option value="<?php echo htmlspecialchars($license); ?>" <?php echo $license_filter == $license ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($license); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <select class="form-select form-select-sm" id="statusFilter" onchange="applyFilters()">
-                                <option value="">All Status</option>
-                                <option value="active" <?php echo $status_filter == 'active' ? 'selected' : ''; ?>>Active</option>
-                                <option value="inactive" <?php echo $status_filter == 'inactive' ? 'selected' : ''; ?>>Inactive</option>
-                                <option value="expired" <?php echo $status_filter == 'expired' ? 'selected' : ''; ?>>Expired</option>
-                                <option value="pending" <?php echo $status_filter == 'pending' ? 'selected' : ''; ?>>Pending</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="input-group">
-                                <input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Search software..." value="<?php echo htmlspecialchars($search); ?>">
-                                <span class="input-group-text" id="searchIndicator" style="display: none;">
-                                    <i class="bi bi-search"></i>
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-12">
-                            <button class="btn btn-sm btn-outline-secondary" onclick="clearFilters()">
-                                <i class="bi bi-x-circle"></i> Clear Filters
-                            </button>
-                        </div>
-                    </div>
-                </div>
             </div>
             
             <div class="table-responsive">
-                <table class="table table-hover" id="softwareTable">
+                <table class="table table-hover" id="softwareTable" style="width: 100%">
                     <thead class="table-light">
                         <tr>
                             <th>Software Name</th>
@@ -710,16 +638,14 @@ foreach ($software_data as $software) {
             const category = document.getElementById('categoryFilter')?.value || '';
             const license = document.getElementById('licenseFilter')?.value || '';
             const status = document.getElementById('statusFilter')?.value || '';
-            const search = document.getElementById('searchInput')?.value || '';
             
             const params = new URLSearchParams();
             if (category) params.set('category', category);
             if (license) params.set('license', license);
             if (status) params.set('status', status);
-            if (search) params.set('search', search);
             
-            const url = 'software.php' + (params.toString() ? '?' + params.toString() : '');
-            window.location.href = url;
+            const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+            window.location.href = newUrl;
         }
         
         function clearFilters() {
@@ -969,19 +895,110 @@ foreach ($software_data as $software) {
             });
         });
         
-        // Search on Enter key
+        // Initialize DataTable
         document.addEventListener('DOMContentLoaded', function() {
-            const searchInput = document.getElementById('searchInput');
-            
-            if (searchInput) {
-                searchInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        applyFilters();
+            $('#softwareTable').DataTable({
+                responsive: true,
+                pageLength: 25,
+                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                order: [[0, 'asc']],
+                language: {
+                    search: "Search software:",
+                    lengthMenu: "Show _MENU_ software per page",
+                    info: "Showing _START_ to _END_ of _TOTAL_ software",
+                    paginate: {
+                        first: "First",
+                        last: "Last",
+                        next: "Next",
+                        previous: "Previous"
                     }
-                });
-            }
+                },
+                dom: '<"row"<"col-md-3"l><"col-md-2 category-filter-container"><"col-md-2 license-filter-container"><"col-md-2 status-filter-container"><"col-md-3"f>>rtip',
+                initComplete: function(settings, json) {
+                    // Add category filter to DataTables
+                    $('.category-filter-container').html(`
+                        <select id="categoryFilter" class="form-select form-select-sm">
+                            <option value="">All Categories</option>
+                            <?php foreach ($categories as $category): ?>
+                                <option value="<?php echo $category; ?>" <?php echo $category_filter == $category ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($category); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    `);
+                    
+                    // Add license filter to DataTables
+                    $('.license-filter-container').html(`
+                        <select id="licenseFilter" class="form-select form-select-sm">
+                            <option value="">All Licenses</option>
+                            <option value="perpetual">Perpetual</option>
+                            <option value="annual">Annual</option>
+                            <option value="monthly">Monthly</option>
+                            <option value="trial">Trial</option>
+                            <option value="freemium">Freemium</option>
+                            <option value="open-source">Open Source</option>
+                        </select>
+                    `);
+                    
+                    // Add status filter to DataTables
+                    $('.status-filter-container').html(`
+                        <select id="statusFilter" class="form-select form-select-sm">
+                            <option value="">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="expired">Expired</option>
+                            <option value="pending">Pending</option>
+                        </select>
+                    `);
+                    
+                    // Apply filter events
+                    $('#categoryFilter, #licenseFilter, #statusFilter').on('change', function() {
+                        table.draw();
+                    });
+                },
+                buttons: [
+                    {
+                        extend: 'excel',
+                        text: '<i class="bi bi-file-earmark-excel"></i> Excel',
+                        className: 'btn btn-success btn-sm',
+                        exportOptions: {
+                            columns: ':not(:last-child)'
+                        }
+                    },
+                    {
+                        extend: 'pdf',
+                        text: '<i class="bi bi-file-earmark-pdf"></i> PDF',
+                        className: 'btn btn-danger btn-sm',
+                        exportOptions: {
+                            columns: ':not(:last-child)'
+                        }
+                    },
+                    {
+                        extend: 'print',
+                        text: '<i class="bi bi-printer"></i> Print',
+                        className: 'btn btn-primary btn-sm',
+                        exportOptions: {
+                            columns: ':not(:last-child)'
+                        }
+                    }
+                ]
+            });
+            
+            var table = $('#softwareTable').DataTable();
         });
     </script>
+    
+    <!-- DataTables JS -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.bootstrap5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
 </div> <!-- Close main-content -->
 </div> <!-- Close main-wrapper -->
 
