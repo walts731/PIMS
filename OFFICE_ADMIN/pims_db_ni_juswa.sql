@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 31, 2026 at 03:34 AM
+-- Generation Time: Apr 06, 2026 at 08:39 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -49,7 +49,10 @@ INSERT INTO `assets` (`id`, `asset_categories_id`, `asset_subcategory_id`, `desc
 (2, 2, NULL, 'HP Laptop 15s', 'units', 1, 31200.00, 5, '2026-03-23 13:05:52', '2026-03-24 02:44:48'),
 (3, 2, NULL, 'Lenovo ThinkPad E14', 'units', 2, 54500.00, 12, '2026-03-24 03:34:58', '2026-03-24 07:16:04'),
 (4, 2, 11, 'Epson EcoTank L3250', 'units', 3, 10750.00, 4, '2026-03-24 07:37:18', '2026-03-24 07:37:18'),
-(5, 2, NULL, 'Samsung 55\" UHD TV', 'units', 2, 28500.00, 4, '2026-03-24 07:44:35', '2026-03-24 07:51:50');
+(5, 2, NULL, 'Samsung 55\" UHD TV', 'units', 2, 28500.00, 4, '2026-03-24 07:44:35', '2026-03-24 07:51:50'),
+(6, 2, 14, 'LG TV 55\"', 'units', 3, 30000.00, 5, '2026-04-06 01:24:06', '2026-04-06 01:24:06'),
+(7, 2, 3, 'Toshiba Satellite B5J33', 'units', 10, 25000.00, 5, '2026-04-06 01:25:47', '2026-04-06 01:25:47'),
+(8, 28, NULL, 'high school building', 'has', 3, 500000.00, 5, '2026-04-06 01:28:21', '2026-04-06 01:28:21');
 
 -- --------------------------------------------------------
 
@@ -297,13 +300,29 @@ CREATE TABLE `asset_items` (
 INSERT INTO `asset_items` (`id`, `asset_id`, `asset_subcategory_id`, `asset_category_id`, `employee_id`, `end_user`, `category_id`, `ics_id`, `par_id`, `description`, `model`, `serial_number`, `unit`, `property_no`, `ics_par_no`, `inventory_tag`, `date_counted`, `image`, `redtag_image`, `qr_code`, `status`, `disposal_reason`, `disposal_date`, `value`, `acquisition_date`, `office_id`, `office_name`, `created_at`, `last_updated`) VALUES
 (1, 1, 3, NULL, 6, 'Elton John Moises', 2, NULL, NULL, 'ASUS Vivobook 16', NULL, NULL, NULL, '2026-04-05-030-0101-01', NULL, NULL, '2026-03-23', '[\"asset_1_0_1774270603.jpg\"]', NULL, 'qr_asset_1_1774270605.png', 'pending_tag', NULL, NULL, 42995.00, '2026-02-15', 4, 'OMM', '2026-03-23 12:42:03', '2026-03-26 05:49:39'),
 (2, 2, NULL, NULL, 1, 'Roberto Cruz', 2, NULL, NULL, 'HP Laptop 15s', NULL, NULL, NULL, '2026-04-05-030-0102-02', NULL, NULL, '2026-03-24', '[\"asset_2_0_1774320286.jpg\"]', NULL, 'qr_asset_2_1774320288.png', 'serviceable', NULL, NULL, 31200.00, '2026-03-01', 5, 'OVM', '2026-03-23 13:05:52', '2026-03-26 03:36:20'),
-(3, 3, NULL, NULL, 7, 'John Legend', 2, NULL, NULL, 'Lenovo ThinkPad E14', NULL, NULL, NULL, '2026-07-05-030-0103-03', NULL, NULL, '2026-03-24', '[\"asset_3_0_1774336559.jpg\"]', NULL, 'qr_asset_3_1774336564.png', 'serviceable', NULL, NULL, 54500.00, '2026-01-20', 12, 'OSB', '2026-03-24 03:34:58', '2026-03-24 07:16:04'),
+(3, 3, NULL, NULL, 7, 'John Legend', 2, NULL, NULL, 'Lenovo ThinkPad E14', NULL, NULL, NULL, '2026-07-05-030-0103-03', NULL, NULL, '2026-03-24', '[\"asset_3_0_1774336559.jpg\"]', NULL, 'qr_asset_3_1774336564.png', 'pending_tag', NULL, NULL, 54500.00, '2026-01-20', 12, 'OSB', '2026-03-24 03:34:58', '2026-04-06 06:14:35'),
 (4, 3, NULL, NULL, 7, 'Joshua Escano', 2, NULL, NULL, 'Lenovo ThinkPad E14', NULL, NULL, NULL, '2026-07-05-030-0101-03', NULL, NULL, '2026-03-24', '[\"asset_4_0_1774335556.jpg\"]', NULL, 'qr_asset_4_1774335559.png', 'serviceable', NULL, NULL, 54500.00, '2026-01-20', 12, 'OSB', '2026-03-24 03:38:56', '2026-03-24 06:59:19'),
 (5, 4, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Epson EcoTank L3250', NULL, NULL, NULL, '2026-04-05-030-0101-01', NULL, NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 10750.00, '2026-03-10', 4, NULL, '2026-03-24 07:37:18', '2026-03-24 07:37:18'),
 (6, 4, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Epson EcoTank L3250', NULL, NULL, NULL, '2026-04-05-030-0102-01', NULL, NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 10750.00, '2026-03-10', 4, NULL, '2026-03-24 07:37:18', '2026-03-24 07:37:18'),
 (7, 4, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Epson EcoTank L3250', NULL, NULL, NULL, '2026-04-05-030-0103-01', NULL, NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 10750.00, '2026-03-10', 4, NULL, '2026-03-24 07:37:18', '2026-03-24 07:37:18'),
 (8, 5, NULL, NULL, 6, 'Jake Paul', 2, NULL, NULL, 'Samsung 55\\\" UHD TV', 'BU8000', '0AS13CHX400501L', NULL, '2026-04-05-030-0701-01', NULL, NULL, '2026-03-24', '[\"asset_8_0_1774338708.jpg\"]', NULL, 'qr_asset_8_1774338710.png', 'maintenance', NULL, NULL, 28500.00, '2026-02-16', 4, 'OMM', '2026-03-24 07:44:35', '2026-03-25 01:31:52'),
-(9, 5, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Samsung 55\\\" UHD TV', NULL, NULL, NULL, '2026-04-05-030-0702-01', NULL, NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 28500.00, '2026-02-16', 4, NULL, '2026-03-24 07:44:35', '2026-03-24 07:44:35');
+(9, 5, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Samsung 55\\\" UHD TV', NULL, NULL, NULL, '2026-04-05-030-0702-01', NULL, NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 28500.00, '2026-02-16', 4, NULL, '2026-03-24 07:44:35', '2026-03-24 07:44:35'),
+(10, 6, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'LG TV 55\\\"', NULL, NULL, NULL, '2026-04-05-030-0701-02', NULL, NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 30000.00, '2026-04-06', 5, NULL, '2026-04-06 01:24:06', '2026-04-06 01:24:06'),
+(11, 6, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'LG TV 55\\\"', NULL, NULL, NULL, '2026-04-05-030-0702-02', NULL, NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 30000.00, '2026-04-06', 5, NULL, '2026-04-06 01:24:06', '2026-04-06 01:24:06'),
+(12, 6, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'LG TV 55\\\"', NULL, NULL, NULL, '2026-04-05-030-0703-02', NULL, NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 30000.00, '2026-04-06', 5, NULL, '2026-04-06 01:24:06', '2026-04-06 01:24:06'),
+(13, 7, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Toshiba Satellite B5J33', NULL, NULL, NULL, '2026-04-05-030-0101-02', NULL, NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 25000.00, '2026-04-06', 5, NULL, '2026-04-06 01:25:47', '2026-04-06 01:25:47'),
+(14, 7, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Toshiba Satellite B5J33', NULL, NULL, NULL, '2026-04-05-030-0102-02', NULL, NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 25000.00, '2026-04-06', 5, NULL, '2026-04-06 01:25:47', '2026-04-06 01:25:47'),
+(15, 7, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Toshiba Satellite B5J33', NULL, NULL, NULL, '2026-04-05-030-0103-02', NULL, NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 25000.00, '2026-04-06', 5, NULL, '2026-04-06 01:25:47', '2026-04-06 01:25:47'),
+(16, 7, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Toshiba Satellite B5J33', NULL, NULL, NULL, '2026-04-05-030-0104-02', NULL, NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 25000.00, '2026-04-06', 5, NULL, '2026-04-06 01:25:47', '2026-04-06 01:25:47'),
+(17, 7, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Toshiba Satellite B5J33', NULL, NULL, NULL, '2026-04-05-030-0105-02', NULL, NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 25000.00, '2026-04-06', 5, NULL, '2026-04-06 01:25:47', '2026-04-06 01:25:47'),
+(18, 7, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Toshiba Satellite B5J33', NULL, NULL, NULL, '2026-04-05-030-0106-02', NULL, NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 25000.00, '2026-04-06', 5, NULL, '2026-04-06 01:25:47', '2026-04-06 01:25:47'),
+(19, 7, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Toshiba Satellite B5J33', NULL, NULL, NULL, '2026-04-05-030-0107-02', NULL, NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 25000.00, '2026-04-06', 5, NULL, '2026-04-06 01:25:47', '2026-04-06 01:25:47'),
+(20, 7, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Toshiba Satellite B5J33', NULL, NULL, NULL, '2026-04-05-030-0108-02', NULL, NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 25000.00, '2026-04-06', 5, NULL, '2026-04-06 01:25:47', '2026-04-06 01:25:47'),
+(21, 7, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Toshiba Satellite B5J33', NULL, NULL, NULL, '2026-04-05-030-0109-02', NULL, NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 25000.00, '2026-04-06', 5, NULL, '2026-04-06 01:25:47', '2026-04-06 01:25:47'),
+(22, 7, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Toshiba Satellite B5J33', NULL, NULL, NULL, '2026-04-05-030-0110-02', NULL, NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 25000.00, '2026-04-06', 5, NULL, '2026-04-06 01:25:47', '2026-04-06 01:25:47'),
+(23, 8, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'high school building', NULL, NULL, NULL, '2026-07-04-020-0001-02', NULL, NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 500000.00, '2026-04-06', 5, NULL, '2026-04-06 01:28:21', '2026-04-06 01:28:21'),
+(24, 8, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'high school building', NULL, NULL, NULL, '2026-07-04-020-0002-02', NULL, NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 500000.00, '2026-04-06', 5, NULL, '2026-04-06 01:28:21', '2026-04-06 01:28:21'),
+(25, 8, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'high school building', NULL, NULL, NULL, '2026-07-04-020-0003-02', NULL, NULL, NULL, NULL, NULL, NULL, 'no_tag', NULL, NULL, 500000.00, '2026-04-06', 5, NULL, '2026-04-06 01:28:21', '2026-04-06 01:28:21');
 
 --
 -- Triggers `asset_items`
@@ -696,7 +715,8 @@ INSERT INTO `borrow_requests` (`id`, `requested_by`, `requested_by_office`, `req
 (1774428434, 17, 5, 4, 1, 1, NULL, 'test', 'normal', '2026-03-25', '2026-03-25', 'returned', 18, '2026-03-26 09:17:42', 'Approved via quick action', NULL, NULL, NULL, '2026-03-26 10:07:08', 'undamaged', 'ok', NULL, '2026-03-25 16:16:32', '2026-03-26 10:07:08'),
 (1774499929, 17, 5, 4, 1, 1, NULL, 'tester', 'normal', '2026-03-26', '2026-03-26', 'returned', 18, '2026-03-26 10:21:25', 'Approved via quick action', NULL, NULL, NULL, '2026-03-26 10:22:22', 'undamaged', 'test', NULL, '2026-03-26 10:20:38', '2026-03-26 10:22:22'),
 (1774503243, 18, 4, 5, 2, 1, NULL, 'test', 'normal', '2026-03-26', '2026-03-26', 'returned', 17, '2026-03-26 11:35:58', 'Approved via quick action', NULL, NULL, NULL, '2026-03-26 11:36:20', 'undamaged', 'testteststs', 'return_1774503243_1774496180.jpg', '2026-03-26 10:48:10', '2026-03-26 11:36:20'),
-(1774512150, 17, 5, 4, 1, 1, NULL, 'test', 'emergency', '2026-03-26', '2026-03-26', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-03-26 13:49:39', '2026-03-26 13:49:39');
+(1774512150, 17, 5, 4, 1, 1, NULL, 'test', 'emergency', '2026-03-26', '2026-03-26', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-03-26 13:49:39', '2026-03-26 13:49:39'),
+(1775463302, 17, 5, 12, 3, 1, NULL, 'harharharharharhahr', 'normal', '2026-04-06', '2026-04-06', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-04-06 14:14:35', '2026-04-06 14:14:35');
 
 -- --------------------------------------------------------
 
@@ -2025,7 +2045,9 @@ INSERT INTO `report_audit_trail` (`id`, `report_id`, `report_type`, `action`, `u
 (2, 'INV_005_0017_20260330101736', 'inventory', 'exported', 17, 5, '2026-03-30 08:17:36', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '{\"date_from\":\"2026-03-01\",\"date_to\":\"2026-03-30\",\"file_path\":\"..\\/uploads\\/reports\\/LGU_inventory_Report_2026-03-30_10-17-36.html\"}', '../uploads/reports/LGU_inventory_Report_2026-03-30_10-17-36.html'),
 (3, 'INV_005_0017_20260331023643', 'inventory', 'exported', 17, 5, '2026-03-31 00:36:43', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '{\"date_from\":\"2026-03-01\",\"date_to\":\"2026-03-31\",\"file_path\":\"..\\/uploads\\/reports\\/LGU_inventory_Report_2026-03-31_02-36-43.html\"}', '../uploads/reports/LGU_inventory_Report_2026-03-31_02-36-43.html'),
 (4, 'INV_005_0017_20260331025006', 'inventory', 'exported', 17, 5, '2026-03-31 00:50:06', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '{\"date_from\":\"2026-03-01\",\"date_to\":\"2026-03-31\",\"file_path\":\"..\\/uploads\\/reports\\/LGU_inventory_Report_2026-03-31_02-50-06.html\"}', '../uploads/reports/LGU_inventory_Report_2026-03-31_02-50-06.html'),
-(5, 'INV_005_0017_20260331030135', 'inventory', 'exported', 17, 5, '2026-03-31 01:01:36', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '{\"date_from\":\"2026-03-01\",\"date_to\":\"2026-03-31\",\"file_path\":\"..\\/uploads\\/reports\\/LGU_inventory_Report_2026-03-31_03-01-36.html\"}', '../uploads/reports/LGU_inventory_Report_2026-03-31_03-01-36.html');
+(5, 'INV_005_0017_20260331030135', 'inventory', 'exported', 17, 5, '2026-03-31 01:01:36', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '{\"date_from\":\"2026-03-01\",\"date_to\":\"2026-03-31\",\"file_path\":\"..\\/uploads\\/reports\\/LGU_inventory_Report_2026-03-31_03-01-36.html\"}', '../uploads/reports/LGU_inventory_Report_2026-03-31_03-01-36.html'),
+(6, 'INV_005_0017_20260331133247', 'inventory', 'exported', 17, 5, '2026-03-31 05:32:47', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '{\"date_from\":\"2026-03-01\",\"date_to\":\"2026-03-31\",\"file_path\":\"..\\/..\\/uploads\\/reports\\/LGU_Admin_Style_inventory_Report_2026-03-31_13-32-47.html\"}', '../../uploads/reports/LGU_Admin_Style_inventory_Report_2026-03-31_13-32-47.html'),
+(7, 'INV_005_0017_20260331133449', 'inventory', 'exported', 17, 5, '2026-03-31 05:34:49', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '{\"date_from\":\"2026-03-01\",\"date_to\":\"2026-03-31\",\"file_path\":\"..\\/uploads\\/reports\\/LGU_inventory_Report_2026-03-31_13-34-49.html\"}', '../uploads/reports/LGU_inventory_Report_2026-03-31_13-34-49.html');
 
 -- --------------------------------------------------------
 
@@ -2060,7 +2082,9 @@ INSERT INTO `report_generation_history` (`id`, `report_id`, `report_type`, `gene
 (2, 'INV_005_0017_20260330101736', 'inventory', 'manual', 5, 17, '../uploads/reports/LGU_inventory_Report_2026-03-30_10-17-36.html', 5024, NULL, '0', 0.005, 'completed', NULL, '2026-03-30 08:17:36', '2026-03-30 16:17:36'),
 (3, 'INV_005_0017_20260331023643', 'inventory', 'manual', 5, 17, '../uploads/reports/LGU_inventory_Report_2026-03-31_02-36-43.html', 5024, NULL, '0', 0.007, 'completed', NULL, '2026-03-31 00:36:43', '2026-03-31 08:36:43'),
 (4, 'INV_005_0017_20260331025006', 'inventory', 'manual', 5, 17, '../uploads/reports/LGU_inventory_Report_2026-03-31_02-50-06.html', 5024, NULL, '0', 0.005, 'completed', NULL, '2026-03-31 00:50:06', '2026-03-31 08:50:06'),
-(5, 'INV_005_0017_20260331030135', 'inventory', 'manual', 5, 17, '../uploads/reports/LGU_inventory_Report_2026-03-31_03-01-36.html', 5024, NULL, '0', 0.006, 'completed', NULL, '2026-03-31 01:01:35', '2026-03-31 09:01:36');
+(5, 'INV_005_0017_20260331030135', 'inventory', 'manual', 5, 17, '../uploads/reports/LGU_inventory_Report_2026-03-31_03-01-36.html', 5024, NULL, '0', 0.006, 'completed', NULL, '2026-03-31 01:01:35', '2026-03-31 09:01:36'),
+(6, 'INV_005_0017_20260331133247', 'inventory', 'manual', 5, 17, '../../uploads/reports/LGU_Admin_Style_inventory_Report_2026-03-31_13-32-47.html', 30692, NULL, '0', 0.004, 'completed', NULL, '2026-03-31 05:32:47', '2026-03-31 13:32:47'),
+(7, 'INV_005_0017_20260331133449', 'inventory', 'manual', 5, 17, '../uploads/reports/LGU_inventory_Report_2026-03-31_13-34-49.html', 5024, NULL, '0', 0.004, 'completed', NULL, '2026-03-31 05:34:49', '2026-03-31 13:34:49');
 
 -- --------------------------------------------------------
 
@@ -2659,7 +2683,13 @@ INSERT INTO `security_logs` (`id`, `event_type`, `description`, `severity`, `use
 (234, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 04:51:18'),
 (235, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 05:40:41'),
 (236, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-30 07:15:31'),
-(237, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 01:12:21');
+(237, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 01:12:21'),
+(238, 'session_timeout', 'Session timeout for user: OM admin (OM@pims.com)', 'medium', 18, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 02:02:48'),
+(239, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 02:35:43'),
+(240, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 03:07:52'),
+(241, 'session_timeout', 'Session timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 03:38:07'),
+(242, 'session_timeout', 'Session idle timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 06:54:56'),
+(243, 'session_timeout', 'Session idle timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com)', 'medium', 17, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 03:01:03');
 
 -- --------------------------------------------------------
 
@@ -12620,7 +12650,98 @@ INSERT INTO `system_logs` (`id`, `user_id`, `action`, `module`, `description`, `
 (10773, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 01:18:19'),
 (10774, 17, 'logout', 'authentication', 'User logged out: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 01:29:58'),
 (10775, 18, 'login_success', 'authentication', 'User logged in: OM admin (OM@pims.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 01:30:05'),
-(10776, 18, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 01:30:05');
+(10776, 18, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 01:30:05'),
+(10777, 18, 'session_timeout', 'authentication', 'Session expired for user: OM admin (OM@pims.com) after 1963 seconds', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 02:02:48'),
+(10778, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 02:03:02'),
+(10779, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 02:03:02'),
+(10780, 17, 'session_timeout', 'authentication', 'Session expired for user: Joshua Escaño (joshuamarifrancis@gmail.com) after 1961 seconds', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 02:35:43'),
+(10781, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 02:35:52'),
+(10782, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 02:35:52'),
+(10783, 17, 'access', 'inventory_reports', 'Office admin accessed inventory reports', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 02:35:59'),
+(10784, 17, 'session_timeout', 'authentication', 'Session expired for user: Joshua Escaño (joshuamarifrancis@gmail.com) after 1920 seconds', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 03:07:52'),
+(10785, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 03:08:02'),
+(10786, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 03:08:02'),
+(10787, 17, 'session_timeout', 'authentication', 'Session expired for user: Joshua Escaño (joshuamarifrancis@gmail.com) after 1805 seconds', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 03:38:07'),
+(10788, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 03:38:31'),
+(10789, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 03:38:31'),
+(10790, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 05:01:07'),
+(10791, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 05:01:08'),
+(10792, 17, 'access', 'inventory_reports', 'Office admin accessed inventory reports', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 06:12:04'),
+(10793, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 06:13:57'),
+(10794, 17, 'session_timeout', 'authentication', 'Session idle timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com) after 2298 seconds of inactivity', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 06:54:56'),
+(10795, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 06:55:08'),
+(10796, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 06:55:08'),
+(10797, 17, 'access', 'inventory_reports', 'Office admin accessed inventory reports', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-03-31 06:55:29'),
+(10798, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-01 03:21:19'),
+(10799, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-01 03:21:19'),
+(10800, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-01 03:53:34'),
+(10801, 17, 'access', 'inventory_reports', 'Office admin accessed inventory reports', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-01 03:53:36'),
+(10802, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 00:28:16'),
+(10803, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 00:28:16'),
+(10804, 17, 'logout', 'authentication', 'User logged out: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:21:41'),
+(10805, 19, 'login_success', 'authentication', 'User logged in: admin admin (AD@pims.com) with role: admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:21:52'),
+(10806, 19, 'access', 'admin_dashboard', 'Admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:21:52'),
+(10807, 19, 'access', 'assets', 'Admin accessed assets page', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:22:17'),
+(10808, 19, 'access', 'assets', 'Admin accessed assets page', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:24:06'),
+(10809, 19, 'asset_added', 'asset_management', 'Added asset: LG TV 55\\\"', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:24:06'),
+(10810, 19, 'access', 'assets', 'Admin accessed assets page', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:24:06'),
+(10811, 19, 'access', 'assets', 'Admin accessed assets page', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:25:47'),
+(10812, 19, 'asset_added', 'asset_management', 'Added asset: Toshiba Satellite B5J33', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:25:47'),
+(10813, 19, 'access', 'assets', 'Admin accessed assets page', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:25:47'),
+(10814, 19, 'access', 'assets', 'Admin accessed assets page', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:28:21'),
+(10815, 19, 'asset_added', 'asset_management', 'Added asset: high school building', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:28:21'),
+(10816, 19, 'access', 'assets', 'Admin accessed assets page', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:28:21'),
+(10817, 19, 'access', 'assets', 'Admin accessed assets page', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:28:43'),
+(10818, 19, 'access', 'create_tag', 'Admin accessed create tag page', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:28:52'),
+(10819, 19, 'debug', 'create_tag', 'Loaded 7 subcategories for category ID 2', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:28:52'),
+(10820, 19, 'debug', 'create_tag', 'Subcategory: ID 3 - 01 - LAPTOP', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:28:52'),
+(10821, 19, 'debug', 'create_tag', 'Subcategory: ID 2 - 02 - COMPUTER DESKTOP', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:28:52'),
+(10822, 19, 'debug', 'create_tag', 'Subcategory: ID 1 - 03 - ID PRINTER', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:28:52'),
+(10823, 19, 'debug', 'create_tag', 'Subcategory: ID 11 - 04 - CARD PRINTER', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:28:52'),
+(10824, 19, 'debug', 'create_tag', 'Subcategory: ID 12 - 05 - NOTEBOOK', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:28:52'),
+(10825, 19, 'debug', 'create_tag', 'Subcategory: ID 13 - 06 - ADVERTISING MACHINE KIOSK', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:28:52'),
+(10826, 19, 'debug', 'create_tag', 'Subcategory: ID 14 - 07 - SMART TV', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:28:52'),
+(10827, 19, 'access', 'create_tag', 'Admin accessed create tag page', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:29:58'),
+(10828, 19, 'debug', 'create_tag', 'Loaded 7 subcategories for category ID 2', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:29:58'),
+(10829, 19, 'debug', 'create_tag', 'Subcategory: ID 3 - 01 - LAPTOP', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:29:58'),
+(10830, 19, 'debug', 'create_tag', 'Subcategory: ID 2 - 02 - COMPUTER DESKTOP', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:29:58'),
+(10831, 19, 'debug', 'create_tag', 'Subcategory: ID 1 - 03 - ID PRINTER', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:29:58'),
+(10832, 19, 'debug', 'create_tag', 'Subcategory: ID 11 - 04 - CARD PRINTER', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:29:58'),
+(10833, 19, 'debug', 'create_tag', 'Subcategory: ID 12 - 05 - NOTEBOOK', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:29:58'),
+(10834, 19, 'debug', 'create_tag', 'Subcategory: ID 13 - 06 - ADVERTISING MACHINE KIOSK', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:29:58'),
+(10835, 19, 'debug', 'create_tag', 'Subcategory: ID 14 - 07 - SMART TV', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:29:58'),
+(10836, 19, 'access', 'assets', 'Admin accessed assets page', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:30:07'),
+(10837, 19, 'access', 'create_tag', 'Admin accessed create tag page', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:30:14'),
+(10838, 19, 'debug', 'create_tag', 'Loaded 0 subcategories for category ID 28', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:30:14'),
+(10839, 19, 'access', 'assets', 'Admin accessed assets page', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:30:56'),
+(10840, 19, 'access', 'create_tag', 'Admin accessed create tag page', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:31:05'),
+(10841, 19, 'debug', 'create_tag', 'Loaded 7 subcategories for category ID 2', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:31:05'),
+(10842, 19, 'debug', 'create_tag', 'Subcategory: ID 3 - 01 - LAPTOP', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:31:05'),
+(10843, 19, 'debug', 'create_tag', 'Subcategory: ID 2 - 02 - COMPUTER DESKTOP', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:31:05'),
+(10844, 19, 'debug', 'create_tag', 'Subcategory: ID 1 - 03 - ID PRINTER', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:31:05'),
+(10845, 19, 'debug', 'create_tag', 'Subcategory: ID 11 - 04 - CARD PRINTER', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:31:05'),
+(10846, 19, 'debug', 'create_tag', 'Subcategory: ID 12 - 05 - NOTEBOOK', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:31:05'),
+(10847, 19, 'debug', 'create_tag', 'Subcategory: ID 13 - 06 - ADVERTISING MACHINE KIOSK', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:31:05'),
+(10848, 19, 'debug', 'create_tag', 'Subcategory: ID 14 - 07 - SMART TV', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:31:05'),
+(10849, 19, 'logout', 'authentication', 'User logged out: admin admin (AD@pims.com) with role: admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:39:11'),
+(10850, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:39:21'),
+(10851, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 01:39:22'),
+(10852, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 02:15:44'),
+(10853, 17, 'session_timeout', 'authentication', 'Session idle timeout for user: Joshua Escaño (joshuamarifrancis@gmail.com) after 2719 seconds of inactivity', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 03:01:03'),
+(10854, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 03:01:13'),
+(10855, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 03:01:13'),
+(10856, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 03:01:16'),
+(10857, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 03:01:18'),
+(10858, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 03:01:46'),
+(10859, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 03:01:48'),
+(10860, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 03:02:29'),
+(10861, 17, 'create', 'borrow_request', 'Created borrow request for 1 unit(s) of asset #3', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 06:14:35'),
+(10862, 17, 'logout', 'authentication', 'User logged out: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 06:25:58'),
+(10863, 18, 'login_success', 'authentication', 'User logged in: OM admin (OM@pims.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 06:26:08'),
+(10864, 18, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 06:26:08'),
+(10865, 18, 'logout', 'authentication', 'User logged out: OM admin (OM@pims.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 06:35:18'),
+(10866, 17, 'login_success', 'authentication', 'User logged in: Joshua Escaño (joshuamarifrancis@gmail.com) with role: office_admin', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 06:35:31'),
+(10867, 17, 'access', 'office_dashboard', 'Office admin accessed dashboard', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0', '2026-04-06 06:35:31');
 
 -- --------------------------------------------------------
 
@@ -13474,7 +13595,7 @@ ALTER TABLE `user_password_history`
 -- AUTO_INCREMENT for table `assets`
 --
 ALTER TABLE `assets`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `asset_buildings`
@@ -13510,7 +13631,7 @@ ALTER TABLE `asset_furniture`
 -- AUTO_INCREMENT for table `asset_items`
 --
 ALTER TABLE `asset_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
 
 --
 -- AUTO_INCREMENT for table `asset_item_history`
@@ -13576,7 +13697,7 @@ ALTER TABLE `borrow_form_submissions`
 -- AUTO_INCREMENT for table `borrow_requests`
 --
 ALTER TABLE `borrow_requests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1774512474;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1775463303;
 
 --
 -- AUTO_INCREMENT for table `branches`
@@ -13822,13 +13943,13 @@ ALTER TABLE `red_tags`
 -- AUTO_INCREMENT for table `report_audit_trail`
 --
 ALTER TABLE `report_audit_trail`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `report_generation_history`
 --
 ALTER TABLE `report_generation_history`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `report_schedules`
@@ -13882,7 +14003,7 @@ ALTER TABLE `security_audit_logs`
 -- AUTO_INCREMENT for table `security_logs`
 --
 ALTER TABLE `security_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=238;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=244;
 
 --
 -- AUTO_INCREMENT for table `security_metrics`
@@ -13906,7 +14027,7 @@ ALTER TABLE `software`
 -- AUTO_INCREMENT for table `system_logs`
 --
 ALTER TABLE `system_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10777;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10868;
 
 --
 -- AUTO_INCREMENT for table `system_settings`

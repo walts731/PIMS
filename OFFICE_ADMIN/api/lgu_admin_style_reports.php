@@ -98,8 +98,8 @@ if (!$user_firstname || !$user_lastname) {
 // Get request parameters
 $action = $_GET['action'] ?? '';
 $report_type = $_GET['report_type'] ?? '';
-$date_from = $_GET['date_from'] ?? date('Y-m-01');
-$date_to = $_GET['date_to'] ?? date('Y-m-d');
+$date_from = $_GET['date_from'] ?? date('Y-m-01'); // First day of current month
+$date_to = $_GET['date_to'] ?? date('Y-m-t'); // Last day of current month
 
 switch ($action) {
     case 'export_admin_style_report':
@@ -990,14 +990,17 @@ function generateBorrowRequestReportContent($date_from, $date_to) {
     $office_id = $_SESSION['office_id'];
     
     $html = '
-    <div class="section">
-        <div class="section-title">Borrow Requests</div>
-        <table class="table">
+    <div class="report-section">
+        <h3 class="section-title">Borrow Requests Report</h3>
+        <p class="text-muted">Showing all requests for Office ID: ' . $office_id . ' (both incoming and outgoing)</p>
+        <table class="table table-bordered table-striped">
             <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Asset</th>
+                    <th>Request ID</th>
+                    <th>Asset Description</th>
                     <th>Requested By</th>
+                    <th>From Office</th>
+                    <th>To Office</th>
                     <th>Purpose</th>
                     <th>Request Date</th>
                     <th>Status</th>
@@ -1009,14 +1012,19 @@ function generateBorrowRequestReportContent($date_from, $date_to) {
     
     $query = "SELECT br.id, ai.description as asset_description, 
                      CONCAT(req.first_name, ' ', req.last_name) as requested_by_name,
+                     req_o.office_name as requested_by_office,
+                     to_o.office_name as requested_to_office,
                      br.purpose, br.created_at, br.status, br.approved_at,
-                     CONCAT(app.first_name, ' ', app.last_name) as approved_by_name
+                     CONCAT(app.first_name, ' ', app.last_name) as approved_by_name,
+                     br.quantity_requested, br.start_date, br.end_date
               FROM borrow_requests br
               LEFT JOIN asset_items ai ON br.asset_id = ai.id
               LEFT JOIN users req ON br.requested_by = req.id
+              LEFT JOIN offices req_o ON br.requested_by_office = req_o.id
+              LEFT JOIN offices to_o ON br.requested_to_office = to_o.id
               LEFT JOIN users app ON br.approved_by = app.id
               WHERE (br.requested_to_office = ? OR br.requested_by_office = ?)
-              AND br.created_at BETWEEN ? AND ?
+              AND DATE(br.created_at) BETWEEN ? AND ?
               ORDER BY br.created_at DESC";
     
     $stmt = $conn->prepare($query);
@@ -1024,23 +1032,35 @@ function generateBorrowRequestReportContent($date_from, $date_to) {
     $stmt->execute();
     $result = $stmt->get_result();
     
+    $request_count = 0;
     while ($row = $result->fetch_assoc()) {
+        $request_count++;
         $html .= '
                 <tr>
                     <td>' . $row['id'] . '</td>
                     <td>' . htmlspecialchars($row['asset_description'] ?? 'N/A') . '</td>
-                    <td>' . htmlspecialchars($row['requested_by_name']) . '</td>
+                    <td>' . htmlspecialchars($row['requested_by_name'] ?? 'N/A') . '</td>
+                    <td>' . htmlspecialchars($row['requested_by_office'] ?? 'N/A') . '</td>
+                    <td>' . htmlspecialchars($row['requested_to_office'] ?? 'N/A') . '</td>
                     <td>' . htmlspecialchars($row['purpose']) . '</td>
                     <td>' . date('M j, Y H:i', strtotime($row['created_at'])) . '</td>
-                    <td>' . htmlspecialchars($row['status']) . '</td>
+                    <td>' . htmlspecialchars(ucfirst($row['status'])) . '</td>
                     <td>' . htmlspecialchars($row['approved_by_name'] ?? 'N/A') . '</td>
                     <td>' . ($row['approved_at'] ? date('M j, Y H:i', strtotime($row['approved_at'])) : 'N/A') . '</td>
+                </tr>';
+    }
+    
+    if ($request_count == 0) {
+        $html .= '
+                <tr>
+                    <td colspan="10" class="text-center text-muted">No borrow requests found for your office in the selected period.</td>
                 </tr>';
     }
     
     $html .= '
             </tbody>
         </table>
+        <p class="text-muted">Total requests found: ' . $request_count . '</p>
     </div>';
     
     return $html;
