@@ -29,16 +29,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $fo_receiver = $_POST['fo_receiver'];
     $fo_time_out = $_POST['fo_time_out'];
     $created_by = $_POST['created_by'];
+    $office_name = $_POST['office_name'];
+    
+    // Handle image upload
+    $image_path = '';
+    if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+        $upload_dir = 'uploads/';
+        $file_name = time() . '_' . basename($_FILES['image']['name']);
+        $target_file = $upload_dir . $file_name;
+        
+        // Check if image file is actual image
+        $image_info = getimagesize($_FILES['image']['tmp_name']);
+        if ($image_info !== false) {
+            // Allow certain file formats
+            $allowed_types = ['jpg', 'jpeg', 'png', 'gif'];
+            $file_extension = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+            
+            if (in_array($file_extension, $allowed_types)) {
+                if (move_uploaded_file($_FILES['image']['tmp_name'], $target_file)) {
+                    $image_path = $target_file;
+                } else {
+                    $error_message = "Error uploading image file.";
+                }
+            } else {
+                $error_message = "Only JPG, JPEG, PNG & GIF files are allowed.";
+            }
+        } else {
+            $error_message = "File is not an image.";
+        }
+    }
     
     if (!isset($error_message)) {
 
     $sql = "INSERT INTO fuel_out (fo_date, fo_time_in, fo_fuel_no, fo_plate_no, fo_request, fo_fuel_type, 
-            fo_liters, fo_vehicle_type, fo_receiver, fo_time_out, created_by) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            fo_liters, fo_vehicle_type, fo_receiver, fo_time_out, created_by, office_name, image) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("ssssssdsssss", $fo_date, $fo_time_in, $fo_fuel_no, $fo_plate_no, $fo_request, 
-                      $fo_fuel_type, $fo_liters, $fo_vehicle_type, $fo_receiver, $fo_time_out, $created_by);
+    $stmt->bind_param("ssssssdssssss", $fo_date, $fo_time_in, $fo_fuel_no, $fo_plate_no, $fo_request, 
+                      $fo_fuel_type, $fo_liters, $fo_vehicle_type, $fo_receiver, $fo_time_out, $created_by, $office_name, $image_path);
     
     if ($stmt->execute()) {
         $success_message = "Fuel Out record added successfully!";
@@ -51,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 // Get fuel out data with fuel type names
 $sql = "SELECT fo.id, fo.fo_date, fo.fo_time_in, fo.fo_fuel_no, fo.fo_plate_no, fo.fo_request, fo.fo_fuel_type, 
-               fo.fo_liters, fo.fo_vehicle_type, fo.fo_receiver, fo.fo_time_out, fo.created_by, fo.created_at,
+               fo.fo_liters, fo.fo_vehicle_type, fo.fo_receiver, fo.fo_time_out, fo.created_by, fo.created_at, fo.office_name, fo.image,
                ft.name as fuel_type_name
         FROM fuel_out fo
         LEFT JOIN fuel_types ft ON fo.fo_fuel_type = ft.id
