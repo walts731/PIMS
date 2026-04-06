@@ -26,19 +26,23 @@ if (empty($itr_id)) {
     exit();
 }
 
-// Get ITR form details with employee information
+// Get ITR form details with employee and office information
 $itr_form = null;
 $stmt = $conn->prepare("
     SELECT i.*, 
            from_emp.firstname as from_firstname, 
            from_emp.lastname as from_lastname, 
            from_emp.position as from_position,
+           from_office.office_name as from_office_name,
            to_emp.firstname as to_firstname, 
            to_emp.lastname as to_lastname, 
-           to_emp.position as to_position
+           to_emp.position as to_position,
+           to_office.office_name as to_office_name
     FROM itr_forms i 
     LEFT JOIN employees from_emp ON i.from_office = from_emp.id
+    LEFT JOIN offices from_office ON from_emp.office_id = from_office.id
     LEFT JOIN employees to_emp ON i.to_office = to_emp.id
+    LEFT JOIN offices to_office ON to_emp.office_id = to_office.id
     WHERE i.id = ?
 ");
 $stmt->bind_param("i", $itr_id);
@@ -153,8 +157,11 @@ if ($result && $row = $result->fetch_assoc()) {
         .header-text {
             text-align: center;
         }
-        .header-text p {
-            margin: 0;
+        @page {
+            size: A4;
+            margin: 0.3in;
+        }
+        .header-text {
             font-size: 12px;
             color: #000;
             font-weight: 500;
@@ -229,6 +236,7 @@ if ($result && $row = $result->fetch_assoc()) {
             text-align: center;
             vertical-align: top;
             font-size: 10px;
+            color: #000;
         }
         .items-table th {
             font-weight: bold;
@@ -253,7 +261,7 @@ if ($result && $row = $result->fetch_assoc()) {
             padding-right: 10px;
         }
         .footer-section {
-            margin-top: 30px;
+            margin-top: 5px;
             border: 1px solid #000;
         }
         .footer-table {
@@ -263,32 +271,36 @@ if ($result && $row = $result->fetch_assoc()) {
         
         .footer-table td {
             border: 1px solid #000;
-            padding: 10px;
+            padding: 2px;
             width: 33.33%;
             vertical-align: top;
         }
         .label-row {
             font-weight: bold;
-            margin-bottom: 30px;
+            margin-bottom: 2px;
             color: #000;
+            font-size: 6px;
         }
         .name-line {
             text-align: center;
             font-weight: bold;
             text-transform: uppercase;
             border-bottom: 1px solid #000;
-            margin-bottom: 2px;
-            font-size: 11px;
+            margin-bottom: 0px;
+            font-size: 6px;
             color: #000;
+            line-height: 1.0;
+            padding: 0px;
         }
         .sub-label {
             text-align: center;
-            font-size: 10px;
-            margin-bottom: 15px;
+            font-size: 6px;
+            margin-bottom: 2px;
             color: #000;
+            line-height: 1.0;
         }
         .signature-group {
-            margin-top: 20px;
+            margin-top: 1px;
         }
         
         .main-content {
@@ -307,6 +319,7 @@ if ($result && $row = $result->fetch_assoc()) {
             body { background: white; }
             .main-content { padding: 0; }
             .page-header { display: none !important; }
+            .sidebar-toggle, .sidebar { display: none !important; }
         }
     </style>
 </head>
@@ -329,12 +342,25 @@ if ($result && $row = $result->fetch_assoc()) {
                     </p>
                 </div>
                 <div class="col-md-4 text-md-end no-print">
-                    <button class="btn btn-primary me-2" onclick="window.print()">
-                        <i class="bi bi-printer"></i> Print
-                    </button>
-                    <a href="itr_entries.php" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left"></i> Back
-                    </a>
+                    <!-- Actions Dropdown -->
+                    <div class="dropdown d-inline-block">
+                        <button class="btn btn-primary dropdown-toggle" type="button" id="actionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-gear"></i> Actions
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionsDropdown">
+                            <li>
+                                <button class="dropdown-item" onclick="window.print()">
+                                    <i class="bi bi-printer text-primary"></i> Print
+                                </button>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a href="itr_entries.php" class="dropdown-item">
+                                    <i class="bi bi-arrow-left text-secondary"></i> Back to List
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
@@ -374,13 +400,23 @@ if ($result && $row = $result->fetch_assoc()) {
                 <div class="entity-section">
                     <div class="entity-row">
                         <div class="entity-label">From Office:</div>
-                        <div class="entity-value"><?php echo htmlspecialchars($itr_form['from_firstname'] . ' ' . $itr_form['from_lastname']); ?></div>
+                        <div class="entity-value"><?php 
+                            $from_name = trim($itr_form['from_firstname'] . ' ' . $itr_form['from_lastname']);
+                            $from_office = $itr_form['from_office_name'];
+                            echo $from_name && $from_office ? htmlspecialchars($from_name . '/' . $from_office) : 
+                                 ($from_name ? htmlspecialchars($from_name) : 'N/A');
+                        ?></div>
                         <div class="entity-label">Transfer Date:</div>
                         <div class="entity-value"><?php echo date('F d, Y', strtotime($itr_form['transfer_date'])); ?></div>
                     </div>
                     <div class="entity-row">
                         <div class="entity-label">To Office:</div>
-                        <div class="entity-value"><?php echo htmlspecialchars($itr_form['to_firstname'] . ' ' . $itr_form['to_lastname']); ?></div>
+                        <div class="entity-value"><?php 
+                            $to_name = trim($itr_form['to_firstname'] . ' ' . $itr_form['to_lastname']);
+                            $to_office = $itr_form['to_office_name'];
+                            echo $to_name && $to_office ? htmlspecialchars($to_name . '/' . $to_office) : 
+                                 ($to_name ? htmlspecialchars($to_name) : 'N/A');
+                        ?></div>
                         <div class="entity-label">End User:</div>
                         <div class="entity-value"><?php echo htmlspecialchars($itr_form['end_user']); ?></div>
                     </div>
