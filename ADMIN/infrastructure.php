@@ -226,33 +226,6 @@ while ($row = $loc_result->fetch_assoc()) {
             </div>
         </div>
         
-        <!-- Statistics Cards -->
-        <div class="row mb-4">
-            <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $total_count; ?></div>
-                    <div class="stats-label"><i class="bi bi-building"></i> Total Infrastructure</div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number">₱<?php echo number_format($total_value, 2); ?></div>
-                    <div class="stats-label"><i class="bi bi-cash"></i> Total Acquisition Cost</div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo count($classifications); ?></div>
-                    <div class="stats-label"><i class="bi bi-tags"></i> Classifications</div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo count($locations); ?></div>
-                    <div class="stats-label"><i class="bi bi-geo-alt"></i> Locations</div>
-                </div>
-            </div>
-        </div>
         
         <!-- Infrastructure Table -->
         <div class="table-container">
@@ -338,404 +311,405 @@ while ($row = $loc_result->fetch_assoc()) {
             </div>
         </div>
         
-    <!-- Add Infrastructure Modal -->
-    <div class="modal fade" id="addInfrastructureModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Add Infrastructure Item</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <form method="POST" action="infrastructure.php">
-                    <div class="modal-body">
-                        <input type="hidden" name="action" value="add">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <label class="form-label">Classification/Type *</label>
-                                <input type="text" name="classification" class="form-control" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Nature Occupancy</label>
-                                <input type="text" name="nature_occupancy" class="form-control">
-                            </div>
-                        </div>
-                        <div class="mt-3">
-                            <label class="form-label">Item Description *</label>
-                            <textarea name="item_description" class="form-control" rows="3" required></textarea>
-                        </div>
-                        <div class="row mt-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Location *</label>
-                                <input type="text" name="location" class="form-control" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Date Constructed *</label>
-                                <input type="date" name="date_constructed" class="form-control" required>
-                            </div>
-                        </div>
-                        <div class="row mt-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Property No./Other Reference</label>
-                                <input type="text" name="property_no" class="form-control">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Acquisition Cost *</label>
-                                <input type="number" name="acquisition_cost" class="form-control" step="0.01" required>
-                            </div>
-                        </div>
-                        <div class="row mt-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Market/Appraisal Value</label>
-                                <input type="number" name="market_value" class="form-control" step="0.01">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Date of Appraisal</label>
-                                <input type="date" name="date_appraisal" class="form-control">
-                            </div>
-                        </div>
-                        <div class="mt-3">
-                            <label class="form-label">Remarks</label>
-                            <textarea name="remarks" class="form-control" rows="2"></textarea>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Add Infrastructure</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- View Infrastructure Modal -->
-    <div class="modal fade" id="viewInfrastructureModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Infrastructure Details</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body" id="viewInfrastructureContent">
-                    <!-- Content will be loaded dynamically -->
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Edit Infrastructure Modal -->
-    <div class="modal fade" id="editInfrastructureModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Edit Infrastructure Item</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <form id="editInfrastructureForm" method="POST" action="process_infrastructure.php">
-                    <div class="modal-body">
-                        <input type="hidden" name="action" value="edit">
-                        <input type="hidden" name="id" id="editInfrastructureId">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <label class="form-label">Classification/Type *</label>
-                                <input type="text" name="classification" id="editClassification" class="form-control" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Nature Occupancy</label>
-                                <input type="text" name="nature_occupancy" id="editNatureOccupancy" class="form-control">
-                            </div>
-                        </div>
-                        <div class="mt-3">
-                            <label class="form-label">Item Description *</label>
-                            <textarea name="item_description" id="editItemDescription" class="form-control" rows="3" required></textarea>
-                        </div>
-                        <div class="row mt-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Location *</label>
-                                <input type="text" name="location" id="editLocation" class="form-control" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Date Constructed *</label>
-                                <input type="date" name="date_constructed" id="editDateConstructed" class="form-control" required>
-                            </div>
-                        </div>
-                        <div class="row mt-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Property No./Other Reference</label>
-                                <input type="text" name="property_no" id="editPropertyNo" class="form-control">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Acquisition Cost *</label>
-                                <input type="number" name="acquisition_cost" id="editAcquisitionCost" class="form-control" step="0.01" required>
-                            </div>
-                        </div>
-                        <div class="row mt-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Market/Appraisal Value</label>
-                                <input type="number" name="market_value" id="editMarketValue" class="form-control" step="0.01">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Date of Appraisal</label>
-                                <input type="date" name="date_appraisal" id="editDateAppraisal" class="form-control">
-                            </div>
-                        </div>
-                        <div class="mt-3">
-                            <label class="form-label">Remarks</label>
-                            <textarea name="remarks" id="editRemarks" class="form-control" rows="2"></textarea>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Update Infrastructure</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- jQuery -->
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    <?php require_once 'includes/sidebar-scripts.php'; ?>
-    
-    <script>
-        // Filter functions
-        function applyFilters() {
-            const classification = document.getElementById('classificationFilter').value;
-            const location = document.getElementById('locationFilter').value;
-            const search = document.getElementById('searchInput').value;
-            
-            const params = new URLSearchParams();
-            if (classification) params.set('classification', classification);
-            if (location) params.set('location', location);
-            if (search) params.set('search', search);
-            
-            const url = 'infrastructure.php' + (params.toString() ? '?' + params.toString() : '');
-            window.location.href = url;
-        }
-        
-        function clearFilters() {
-            window.location.href = 'infrastructure.php';
-        }
-        
-        // Export function
-        function exportInfrastructure() {
-            let csv = 'Classification,Item Description,Location,Date Constructed,Acquisition Cost,Market Value\n';
-            
-            <?php if (!empty($infrastructure_data)): ?>
-                <?php foreach ($infrastructure_data as $item): ?>
-                    csv += `<?php echo htmlspecialchars($item['classification']); ?>,<?php echo htmlspecialchars($item['item_description']); ?>,<?php echo htmlspecialchars($item['location']); ?>,<?php echo $item['date_constructed']; ?>,<?php echo $item['acquisition_cost']; ?>,<?php echo $item['market_value']; ?>\n`;
-                <?php endforeach; ?>
-            <?php endif; ?>
-            
-            // Download CSV
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'infrastructure_export.csv';
-            a.click();
-            window.URL.revokeObjectURL(url);
-        }
-        
-        // View Infrastructure function
-        function viewInfrastructure(id) {
-            $.ajax({
-                url: 'api/infrastructure.php?action=get&id=' + id,
-                method: 'GET',
-                success: function(response) {
-                    if (response.success) {
-                        const data = response.data;
-                        let html = `
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h6>Classification</h6>
-                                    <p>${data.classification || 'N/A'}</p>
-                                </div>
-                                <div class="col-md-6">
-                                    <h6>Nature of Occupancy</h6>
-                                    <p>${data.nature_occupancy || 'N/A'}</p>
-                                </div>
-                            </div>
-                            <div class="row mt-3">
-                                <div class="col-12">
-                                    <h6>Item Description</h6>
-                                    <p>${data.item_description || 'N/A'}</p>
-                                </div>
-                            </div>
-                            <div class="row mt-3">
-                                <div class="col-md-6">
-                                    <h6>Location</h6>
-                                    <p>${data.location || 'N/A'}</p>
-                                </div>
-                                <div class="col-md-6">
-                                    <h6>Date Constructed</h6>
-                                    <p>${data.date_constructed ? new Date(data.date_constructed).toLocaleDateString() : 'N/A'}</p>
-                                </div>
-                            </div>
-                            <div class="row mt-3">
-                                <div class="col-md-6">
-                                    <h6>Property No.</h6>
-                                    <p>${data.property_no || 'N/A'}</p>
-                                </div>
-                                <div class="col-md-6">
-                                    <h6>Acquisition Cost</h6>
-                                    <p>₱${parseFloat(data.acquisition_cost || 0).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
-                                </div>
-                            </div>
-                            <div class="row mt-3">
-                                <div class="col-md-6">
-                                    <h6>Market Value</h6>
-                                    <p>₱${parseFloat(data.market_value || 0).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
-                                </div>
-                                <div class="col-md-6">
-                                    <h6>Date of Appraisal</h6>
-                                    <p>${data.date_appraisal ? new Date(data.date_appraisal).toLocaleDateString() : 'N/A'}</p>
-                                </div>
-                            </div>
-                            <div class="row mt-3">
-                                <div class="col-12">
-                                    <h6>Remarks</h6>
-                                    <p>${data.remarks || 'N/A'}</p>
-                                </div>
-                            </div>
-                            <div class="row mt-3">
-                                <div class="col-12">
-                                    <h6>Record Information</h6>
-                                    <p><small class="text-muted">
-                                        Created: ${data.created_at ? new Date(data.created_at).toLocaleString() : 'N/A'}<br>
-                                        Last Updated: ${data.updated_at ? new Date(data.updated_at).toLocaleString() : 'Never'}
-                                    </small></p>
-                                </div>
-                            </div>
-                        `;
-                        
-                        // Add images if they exist
-                        if (data.additional_images && data.additional_images.length > 0) {
-                            html += `
-                                <div class="row mt-3">
-                                    <div class="col-12">
-                                        <h6>Additional Images</h6>
-                                        <div class="row">
-                            `;
-                            
-                            data.additional_images.forEach(function(image, index) {
-                                html += `
-                                    <div class="col-md-3 mb-2">
-                                        <img src="../uploads/infrastructure/${image}" class="img-fluid img-thumbnail" alt="Infrastructure Image ${index + 1}" 
-                                             onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2RkZCIvPjx0ZXh0IHg9IjUwIiB5PSI1MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEyIiBmaWxsPSIjOTk5IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+SW1hZ2UgTm90IEZvdW5kPC90ZXh0Pjwvc3ZnPg==';">
-                                    </div>
-                                `;
-                            });
-                            
-                            html += `
-                                        </div>
-                                    </div>
-                                </div>
-                            `;
-                        }
-                        
-                        $('#viewInfrastructureContent').html(html);
-                        $('#viewInfrastructureModal').modal('show');
-                    } else {
-                        alert('Error loading infrastructure details: ' + response.message);
-                    }
-                },
-                error: function() {
-                    alert('Error loading infrastructure details. Please try again.');
-                }
-            });
-        }
-        
-        // Edit Infrastructure function
-        function editInfrastructure(id) {
-            $.ajax({
-                url: 'api/infrastructure.php?action=get&id=' + id,
-                method: 'GET',
-                success: function(response) {
-                    if (response.success) {
-                        const data = response.data;
-                        
-                        // Populate form fields
-                        $('#editInfrastructureId').val(data.id);
-                        $('#editClassification').val(data.classification || '');
-                        $('#editNatureOccupancy').val(data.nature_occupancy || '');
-                        $('#editItemDescription').val(data.item_description || '');
-                        $('#editLocation').val(data.location || '');
-                        $('#editDateConstructed').val(data.date_constructed || '');
-                        $('#editPropertyNo').val(data.property_no || '');
-                        $('#editAcquisitionCost').val(data.acquisition_cost || '');
-                        $('#editMarketValue').val(data.market_value || '');
-                        $('#editDateAppraisal').val(data.date_appraisal || '');
-                        $('#editRemarks').val(data.remarks || '');
-                        
-                        $('#editInfrastructureModal').modal('show');
-                    } else {
-                        alert('Error loading infrastructure data: ' + response.message);
-                    }
-                },
-                error: function() {
-                    alert('Error loading infrastructure data. Please try again.');
-                }
-            });
-        }
-        
-        // Handle edit form submission via AJAX
-        $('#editInfrastructureForm').on('submit', function(e) {
-            e.preventDefault();
-            
-            $.ajax({
-                url: $(this).attr('action'),
-                method: 'POST',
-                data: $(this).serialize(),
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
-                        // Close modal and show success message
-                        $('#editInfrastructureModal').modal('hide');
-                        
-                        // Show success message
-                        const successHtml = `
-                            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                                <i class="bi bi-check-circle"></i> ${response.message}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                            </div>
-                        `;
-                        
-                        // Insert success message after page header
-                        $('.page-header .row').first().after(successHtml);
-                        
-                        // Reload page to show updated data
-                        setTimeout(function() {
-                            window.location.reload();
-                        }, 1500);
-                    } else {
-                        // Show error message
-                        alert('Error: ' + response.message);
-                    }
-                },
-                error: function(xhr, status, error) {
-                    // Show error message
-                    alert('Error updating infrastructure item. Please try again.');
-                    console.error('AJAX Error:', error);
-                }
-            });
-        });
-        
-        // Search on Enter key
-        document.getElementById('searchInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                applyFilters();
-            }
-        });
-    </script>
-</div> <!-- Close main-content -->
+    </div> <!-- Close main-content -->
 </div> <!-- Close main-wrapper -->
-    
+
 <?php require_once 'includes/logout-modal.php'; ?>
 <?php require_once 'includes/change-password-modal.php'; ?>
+
+<!-- Add Infrastructure Modal -->
+<div class="modal fade" id="addInfrastructureModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Infrastructure Item</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="infrastructure.php">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="add">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Classification/Type *</label>
+                            <input type="text" name="classification" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Nature Occupancy</label>
+                            <input type="text" name="nature_occupancy" class="form-control">
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <label class="form-label">Item Description *</label>
+                        <textarea name="item_description" class="form-control" rows="3" required></textarea>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Location *</label>
+                            <input type="text" name="location" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Date Constructed *</label>
+                            <input type="date" name="date_constructed" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Property No./Other Reference</label>
+                            <input type="text" name="property_no" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Acquisition Cost *</label>
+                            <input type="number" name="acquisition_cost" class="form-control" step="0.01" required>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Market/Appraisal Value</label>
+                            <input type="number" name="market_value" class="form-control" step="0.01">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Date of Appraisal</label>
+                            <input type="date" name="date_appraisal" class="form-control">
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <label class="form-label">Remarks</label>
+                        <textarea name="remarks" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Infrastructure</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- View Infrastructure Modal -->
+<div class="modal fade" id="viewInfrastructureModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Infrastructure Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="viewInfrastructureContent">
+                <!-- Content will be loaded dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Infrastructure Modal -->
+<div class="modal fade" id="editInfrastructureModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Infrastructure Item</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editInfrastructureForm" method="POST" action="process_infrastructure.php">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="edit">
+                    <input type="hidden" name="id" id="editInfrastructureId">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Classification/Type *</label>
+                            <input type="text" name="classification" id="editClassification" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Nature Occupancy</label>
+                            <input type="text" name="nature_occupancy" id="editNatureOccupancy" class="form-control">
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <label class="form-label">Item Description *</label>
+                        <textarea name="item_description" id="editItemDescription" class="form-control" rows="3" required></textarea>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Location *</label>
+                            <input type="text" name="location" id="editLocation" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Date Constructed *</label>
+                            <input type="date" name="date_constructed" id="editDateConstructed" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Property No./Other Reference</label>
+                            <input type="text" name="property_no" id="editPropertyNo" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Acquisition Cost *</label>
+                            <input type="number" name="acquisition_cost" id="editAcquisitionCost" class="form-control" step="0.01" required>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Market/Appraisal Value</label>
+                            <input type="number" name="market_value" id="editMarketValue" class="form-control" step="0.01">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Date of Appraisal</label>
+                            <input type="date" name="date_appraisal" id="editDateAppraisal" class="form-control">
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <label class="form-label">Remarks</label>
+                        <textarea name="remarks" id="editRemarks" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Infrastructure</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<?php require_once 'includes/sidebar-scripts.php'; ?>
+
+<script>
+    // Filter functions
+    function applyFilters() {
+        const classification = document.getElementById('classificationFilter').value;
+        const location = document.getElementById('locationFilter').value;
+        const search = document.getElementById('searchInput').value;
+        
+        const params = new URLSearchParams();
+        if (classification) params.set('classification', classification);
+        if (location) params.set('location', location);
+        if (search) params.set('search', search);
+        
+        const url = 'infrastructure.php' + (params.toString() ? '?' + params.toString() : '');
+        window.location.href = url;
+    }
+    
+    function clearFilters() {
+        window.location.href = 'infrastructure.php';
+    }
+    
+    // Export function
+    function exportInfrastructure() {
+        let csv = 'Classification,Item Description,Location,Date Constructed,Acquisition Cost,Market Value\n';
+        
+        <?php if (!empty($infrastructure_data)): ?>
+            <?php foreach ($infrastructure_data as $item): ?>
+                csv += `<?php echo htmlspecialchars($item['classification']); ?>,<?php echo htmlspecialchars($item['item_description']); ?>,<?php echo htmlspecialchars($item['location']); ?>,<?php echo $item['date_constructed']; ?>,<?php echo $item['acquisition_cost']; ?>,<?php echo $item['market_value']; ?>\n`;
+            <?php endforeach; ?>
+        <?php endif; ?>
+        
+        // Download CSV
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'infrastructure_export.csv';
+        a.click();
+        window.URL.revokeObjectURL(url);
+    }
+    
+    // View Infrastructure function
+    function viewInfrastructure(id) {
+        $.ajax({
+            url: 'api/infrastructure.php?action=get&id=' + id,
+            method: 'GET',
+            success: function(response) {
+                if (response.success) {
+                    const data = response.data;
+                    let html = `
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Classification</h6>
+                                <p>${data.classification || 'N/A'}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Nature of Occupancy</h6>
+                                <p>${data.nature_occupancy || 'N/A'}</p>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <h6>Item Description</h6>
+                                <p>${data.item_description || 'N/A'}</p>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <h6>Location</h6>
+                                <p>${data.location || 'N/A'}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Date Constructed</h6>
+                                <p>${data.date_constructed ? new Date(data.date_constructed).toLocaleDateString() : 'N/A'}</p>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <h6>Property No.</h6>
+                                <p>${data.property_no || 'N/A'}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Acquisition Cost</h6>
+                                <p>₱${parseFloat(data.acquisition_cost || 0).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <h6>Market Value</h6>
+                                <p>₱${parseFloat(data.market_value || 0).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Date of Appraisal</h6>
+                                <p>${data.date_appraisal ? new Date(data.date_appraisal).toLocaleDateString() : 'N/A'}</p>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <h6>Remarks</h6>
+                                <p>${data.remarks || 'N/A'}</p>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <h6>Record Information</h6>
+                                <p><small class="text-muted">
+                                    Created: ${data.created_at ? new Date(data.created_at).toLocaleString() : 'N/A'}<br>
+                                    Last Updated: ${data.updated_at ? new Date(data.updated_at).toLocaleString() : 'Never'}
+                                </small></p>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Add images if they exist
+                    if (data.additional_images && data.additional_images.length > 0) {
+                        html += `
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <h6>Additional Images</h6>
+                                    <div class="row">
+                        `;
+                        
+                        data.additional_images.forEach(function(image, index) {
+                            html += `
+                                <div class="col-md-3 mb-2">
+                                    <img src="../uploads/infrastructure/${image}" class="img-fluid img-thumbnail" alt="Infrastructure Image ${index + 1}" 
+                                         onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2RkZCIvPjx0ZXh0IHg9IjUwIiB5PSI1MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEyIiBmaWxsPSIjOTk5IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+SW1hZ2UgTm90IEZvdW5kPC90ZXh0Pjwvc3ZnPg==';">
+                                </div>
+                            `;
+                        });
+                        
+                        html += `
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    $('#viewInfrastructureContent').html(html);
+                    $('#viewInfrastructureModal').modal('show');
+                } else {
+                    alert('Error loading infrastructure details: ' + response.message);
+                }
+            },
+            error: function() {
+                alert('Error loading infrastructure details. Please try again.');
+            }
+        });
+    }
+    
+    // Edit Infrastructure function
+    function editInfrastructure(id) {
+        $.ajax({
+            url: 'api/infrastructure.php?action=get&id=' + id,
+            method: 'GET',
+            success: function(response) {
+                if (response.success) {
+                    const data = response.data;
+                    
+                    // Populate form fields
+                    $('#editInfrastructureId').val(data.id);
+                    $('#editClassification').val(data.classification || '');
+                    $('#editNatureOccupancy').val(data.nature_occupancy || '');
+                    $('#editItemDescription').val(data.item_description || '');
+                    $('#editLocation').val(data.location || '');
+                    $('#editDateConstructed').val(data.date_constructed || '');
+                    $('#editPropertyNo').val(data.property_no || '');
+                    $('#editAcquisitionCost').val(data.acquisition_cost || '');
+                    $('#editMarketValue').val(data.market_value || '');
+                    $('#editDateAppraisal').val(data.date_appraisal || '');
+                    $('#editRemarks').val(data.remarks || '');
+                    
+                    $('#editInfrastructureModal').modal('show');
+                } else {
+                    alert('Error loading infrastructure data: ' + response.message);
+                }
+            },
+            error: function() {
+                alert('Error loading infrastructure data. Please try again.');
+            }
+        });
+    }
+    
+    // Handle edit form submission via AJAX
+    $('#editInfrastructureForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        $.ajax({
+            url: $(this).attr('action'),
+            method: 'POST',
+            data: $(this).serialize(),
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    // Close modal and show success message
+                    $('#editInfrastructureModal').modal('hide');
+                    
+                    // Show success message
+                    const successHtml = `
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="bi bi-check-circle"></i> ${response.message}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    `;
+                    
+                    // Insert success message after page header
+                    $('.page-header .row').first().after(successHtml);
+                    
+                    // Reload page to show updated data
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    // Show error message
+                    alert('Error: ' + response.message);
+                }
+            },
+            error: function(xhr, status, error) {
+                // Show error message
+                alert('Error updating infrastructure item. Please try again.');
+                console.error('AJAX Error:', error);
+            }
+        });
+    });
+    
+    // Search on Enter key
+    document.getElementById('searchInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            applyFilters();
+        }
+    });
+</script>
 </body>
 </html>
