@@ -94,11 +94,11 @@ if (isset($_FILES['asset_images']) && is_array($_FILES['asset_images']['name']))
             ];
             
             // Validate file
-            $allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+            $allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/avif'];
             $max_size = 5 * 1024 * 1024; // 5MB per file
             
             if (!in_array($file['type'], $allowed_types)) {
-                $_SESSION['error'] = 'Invalid file type: ' . $file['name'] . '. Only JPG, PNG, and GIF files are allowed.';
+                $_SESSION['error'] = 'Invalid file type: ' . $file['name'] . '. Only JPG, PNG, GIF, WebP, and AVIF files are allowed.';
                 header('Location: create_tag.php?id=' . $item_id);
                 exit();
             }

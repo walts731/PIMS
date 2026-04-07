@@ -5,10 +5,8 @@ $subcategory_fields = [
     // Peripherals can be added dynamically for any asset type
     'LAPTOP' => [
         // Basic Information
-        'model' => ['label' => 'Model', 'type' => 'text', 'required' => true],
-        'serial_number' => ['label' => 'Serial Number', 'type' => 'text', 'required' => true],
         'processor' => ['label' => 'Processor', 'type' => 'text', 'required' => false],
-        'ram' => ['label' => 'RAM (GB)', 'type' => 'text', 'required' => false],
+        'ram_capacity' => ['label' => 'RAM (GB)', 'type' => 'text', 'required' => false],
         'storage_capacity' => ['label' => 'Storage Capacity', 'type' => 'text', 'required' => false],
         'storage_type' => ['label' => 'Storage Type', 'type' => 'select', 'required' => false, 'options' => [
             ['value' => 'ssd', 'text' => 'SSD'],
@@ -17,37 +15,13 @@ $subcategory_fields = [
         ]],
         'graphics' => ['label' => 'Graphics Card', 'type' => 'text', 'required' => false],
         'operating_system' => ['label' => 'Operating System', 'type' => 'text', 'required' => false],
-        'brand' => ['label' => 'Brand', 'type' => 'text', 'required' => false],
-        'warranty' => ['label' => 'Warranty Period', 'type' => 'text', 'required' => false],
-        
-        // Physical Characteristics
-        'screen_size' => ['label' => 'Screen Size (inches)', 'type' => 'text', 'required' => false],
-        'weight' => ['label' => 'Weight (kg)', 'type' => 'text', 'required' => false],
-        'color' => ['label' => 'Color', 'type' => 'text', 'required' => false],
-        
-        // Battery and Power
-        'battery_type' => ['label' => 'Battery Type', 'type' => 'text', 'required' => false],
-        'battery_capacity' => ['label' => 'Battery Capacity (Wh)', 'type' => 'text', 'required' => false],
-        'power_adapter' => ['label' => 'Power Adapter', 'type' => 'text', 'required' => false],
-        
-        // Connectivity
-        'wifi' => ['label' => 'WiFi', 'type' => 'text', 'required' => false],
-        'bluetooth' => ['label' => 'Bluetooth', 'type' => 'text', 'required' => false],
-        'ports' => ['label' => 'Ports', 'type' => 'text', 'required' => false],
-        
-        // Additional Features
-        'webcam' => ['label' => 'Webcam', 'type' => 'text', 'required' => false],
-        'speakers' => ['label' => 'Speakers', 'type' => 'text', 'required' => false],
-        'microphone' => ['label' => 'Microphone', 'type' => 'text', 'required' => false],
-        'fingerprint_reader' => ['label' => 'Fingerprint Reader', 'type' => 'text', 'required' => false],
-        'backlit_keyboard' => ['label' => 'Backlit Keyboard', 'type' => 'text', 'required' => false]
+        'warranty_provider' => ['label' => 'Warranty Provider', 'type' => 'text', 'required' => false],
+        'warranty_expiry' => ['label' => 'Warranty Expiry', 'type' => 'date', 'required' => false]
     ],
     'COMPUTER' => [
         // Basic Information
-        'model' => ['label' => 'Model', 'type' => 'text', 'required' => true],
-        'serial_number' => ['label' => 'Serial Number', 'type' => 'text', 'required' => true],
         'processor' => ['label' => 'Processor', 'type' => 'text', 'required' => false],
-        'ram' => ['label' => 'RAM (GB)', 'type' => 'text', 'required' => false],
+        'ram_capacity' => ['label' => 'RAM (GB)', 'type' => 'text', 'required' => false],
         'storage_capacity' => ['label' => 'Storage Capacity', 'type' => 'text', 'required' => false],
         'storage_type' => ['label' => 'Storage Type', 'type' => 'select', 'required' => false, 'options' => [
             ['value' => 'ssd', 'text' => 'SSD'],

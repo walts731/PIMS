@@ -191,74 +191,16 @@ if ($conn && !$conn->connect_error) {
                 </div>
             </div>
         <?php else: ?>
-            <!-- Statistics Cards -->
-            <div class="row mb-4">
-                <div class="col-lg-4 col-md-6">
-                    <div class="stats-card">
-                        <div class="stats-number"><?php echo count($asset_items); ?></div>
-                        <div class="stats-label"><i class="bi bi-box"></i> Total Items</div>
-                    </div>
-                </div>
-                <div class="col-lg-4 col-md-6">
-                    <div class="stats-card">
-                        <div class="stats-number">₱<?php echo number_format(array_sum(array_column($asset_items, 'value')), 2); ?></div>
-                        <div class="stats-label"><i class="bi bi-currency-dollar"></i> Total Value</div>
-                    </div>
-                </div>
-                <div class="col-lg-4 col-md-6">
-                    <div class="stats-card">
-                        <div class="stats-number"><?php echo count(array_unique(array_column($asset_items, 'par_id'))); ?></div>
-                        <div class="stats-label"><i class="bi bi-file-text"></i> PAR Forms</div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Filter Section -->
-            <div class="table-container mb-3">
-                <div class="row align-items-center">
-                    <div class="col-md-4">
-                        <div class="d-flex align-items-center gap-2">
-                            <label for="categoryFilter" class="form-label mb-0 fw-semibold">
-                                <i class="bi bi-tags me-1"></i>Category
-                            </label>
-                            <select class="form-select form-select-sm" style="width: auto;" id="categoryFilter" name="category" onchange="autoFilter()">
-                                <option value="">All Categories</option>
-                                <?php foreach ($categories as $category): ?>
-                                    <option value="<?php echo htmlspecialchars($category['category_code']); ?>" 
-                                            <?php echo $selected_category === $category['category_code'] ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($category['category_code']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="d-flex align-items-center gap-2">
-                            <label for="officeFilter" class="form-label mb-0 fw-semibold">
-                                <i class="bi bi-building me-1"></i>Office
-                            </label>
-                            <select class="form-select form-select-sm" style="width: auto;" id="officeFilter" name="office" onchange="autoFilter()">
-                                <option value="">All Offices</option>
-                                <?php foreach ($offices as $office): ?>
-                                    <option value="<?php echo htmlspecialchars($office['office_code']); ?>" 
-                                            <?php echo $selected_office === $office['office_code'] ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($office['office_code']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-md-4 text-end">
-                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearFilters()">
-                            <i class="bi bi-x-circle me-1"></i>Clear Filters
-                        </button>
-                    </div>
-                </div>
-            </div>
-            
+                        
+            <!-- Property Card Table -->
             <div class="table-container">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <h5 class="mb-0"><i class="bi bi-list-ul"></i> Property Card Records</h5>
+                    </div>
+                </div>
                 <div class="table-responsive">
-                    <table class="table table-hover" id="propertyCardTable">
+                    <table class="table table-hover" id="propertyCardTable" style="width: 100%">
                         <thead class="table-light">
                             <tr>
                                 <th>Date</th>
@@ -357,7 +299,67 @@ if ($conn && !$conn->connect_error) {
                         next: "Next",
                         previous: "Previous"
                     }
-                }
+                },
+                dom: '<"row"<"col-md-2"l><"col-md-3 category-filter-container"><"col-md-3 office-filter-container"><"col-md-4"f>>rtip',
+                initComplete: function(settings, json) {
+                    // Add category filter to DataTables
+                    $('.category-filter-container').html(`
+                        <select id="categoryFilter" class="form-select form-select-sm">
+                            <option value="">All Categories</option>
+                            <?php foreach ($categories as $category): ?>
+                                <option value="<?php echo $category['category_code']; ?>" <?php echo $selected_category === $category['category_code'] ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($category['category_name']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    `);
+                    
+                    // Add office filter to DataTables
+                    $('.office-filter-container').html(`
+                        <select id="officeFilter" class="form-select form-select-sm">
+                            <option value="">All Offices</option>
+                            <?php foreach ($offices as $office): ?>
+                                <option value="<?php echo $office['office_code']; ?>" <?php echo $selected_office === $office['office_code'] ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($office['office_name']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    `);
+                    
+                    // Apply filter events with DataTables API
+                    $('#categoryFilter, #officeFilter').on('change', function() {
+                        applyDataTablesFilters();
+                    });
+                    
+                    // Initial filter application
+                    applyDataTablesFilters();
+                },
+                buttons: [
+                    {
+                        extend: 'excel',
+                        text: '<i class="bi bi-file-earmark-excel"></i> Excel',
+                        className: 'btn btn-success btn-sm',
+                        exportOptions: {
+                            columns: ':not(:last-child)'
+                        }
+                    },
+                    {
+                        extend: 'pdf',
+                        text: '<i class="bi bi-file-earmark-pdf"></i> PDF',
+                        className: 'btn btn-danger btn-sm',
+                        exportOptions: {
+                            columns: ':not(:last-child)'
+                        }
+                    },
+                    {
+                        extend: 'print',
+                        text: '<i class="bi bi-printer"></i> Print',
+                        className: 'btn btn-primary btn-sm',
+                        exportOptions: {
+                            columns: ':not(:last-child)'
+                        }
+                    }
+                ]
             });
             
             // Initialize tooltips
@@ -367,8 +369,61 @@ if ($conn && !$conn->connect_error) {
             });
         });
         
+        // DataTables custom filtering function
+        function applyDataTablesFilters() {
+            const table = $('#propertyCardTable').DataTable();
+            const category = $('#categoryFilter').val();
+            const office = $('#officeFilter').val();
+            
+            console.log('Filtering with:', { category, office });
+            
+            // Clear all previous search functions
+            $.fn.dataTable.ext.search = [];
+            
+            // Apply custom search function for each column
+            $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+                const categoryColumn = data[2]; // Category column (index 2) - contains HTML
+                const officeColumn = data[4]; // Office column (index 4) - contains HTML
+                
+                console.log('Row data:', { categoryColumn, officeColumn });
+                
+                // Category filter - extract category code from HTML
+                if (category) {
+                    // Use regex to extract the category badge content
+                    const categoryMatch = categoryColumn.match(/<span[^>]*class="category-badge"[^>]*>(.*?)<\/span>/i);
+                    const categoryCode = categoryMatch ? categoryMatch[1].trim() : '';
+                    
+                    console.log('Category filter:', { filterValue: category, extractedCode: categoryCode });
+                    
+                    // Case-insensitive comparison
+                    if (categoryCode.toLowerCase() !== category.toLowerCase()) {
+                        return false;
+                    }
+                }
+                
+                // Office filter - extract office code from HTML
+                if (office) {
+                    // Use regex to extract the office code content
+                    const officeMatch = officeColumn.match(/<span[^>]*class="office-code-only"[^>]*>(.*?)<\/span>/i);
+                    const officeCode = officeMatch ? officeMatch[1].trim() : '';
+                    
+                    console.log('Office filter:', { filterValue: office, extractedCode: officeCode });
+                    
+                    // Case-insensitive comparison
+                    if (officeCode.toLowerCase() !== office.toLowerCase()) {
+                        return false;
+                    }
+                }
+                
+                return true;
+            });
+            
+            // Redraw table
+            table.draw();
+        }
+        
         function exportToCSV() {
-            // Get current filter parameters
+            // Get current filter values
             const category = document.getElementById('categoryFilter').value;
             const office = document.getElementById('officeFilter').value;
             
@@ -388,7 +443,7 @@ if ($conn && !$conn->connect_error) {
         }
         
         function exportToPDF() {
-            // Get current filter parameters
+            // Get current filter values
             const category = document.getElementById('categoryFilter').value;
             const office = document.getElementById('officeFilter').value;
             
@@ -407,30 +462,7 @@ if ($conn && !$conn->connect_error) {
             window.open(url, '_blank');
         }
         
-        function autoFilter() {
-            const category = document.getElementById('categoryFilter').value;
-            const office = document.getElementById('officeFilter').value;
-            
-            // Build URL with filter parameters
-            let url = 'property_card.php';
-            const params = new URLSearchParams();
-            
-            if (category) params.append('category', category);
-            if (office) params.append('office', office);
-            
-            if (params.toString()) {
-                url += '?' + params.toString();
-            }
-            
-            // Redirect to filtered page
-            window.location.href = url;
-        }
-        
-        function clearFilters() {
-            // Redirect to page without filters
-            window.location.href = 'property_card.php';
-        }
-        
+                
         function showSummary() {
             // Check if there are any items to summarize
             if (<?php echo count($asset_items); ?> === 0) {
@@ -438,7 +470,7 @@ if ($conn && !$conn->connect_error) {
                 return;
             }
             
-            // Get current filter parameters
+            // Get current filter values
             const category = document.getElementById('categoryFilter').value;
             const office = document.getElementById('officeFilter').value;
             

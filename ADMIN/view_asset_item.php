@@ -25,7 +25,7 @@ $item_sql = "SELECT ai.id, ai.asset_id, ai.property_no, ai.ics_par_no, ai.model,
                    subcat.sub_category_name, subcat.sub_category_code,
                    o.office_name,
                    comp.processor, comp.ram_capacity, comp.storage_type, comp.storage_capacity, comp.model as computer_model,
-                   comp.operating_system, comp.serial_number as computer_serial_number,
+                   comp.graphics_card, comp.operating_system, comp.serial_number as computer_serial_number, comp.warranty_provider, comp.warranty_expiry,
                    p.name as peripheral_name, p.model as peripheral_model, p.serial_number as peripheral_serial_number, p.status as peripheral_status,
                    veh.brand as vehicle_brand, veh.model as vehicle_model, veh.plate_number, veh.color, veh.engine_number, veh.chassis_number, veh.year_manufactured,
                    furn.material, furn.dimensions as furniture_dimensions, furn.color as furniture_color, furn.manufacturer as furniture_manufacturer,
@@ -1100,9 +1100,25 @@ $status_display = formatStatus($item['status']);
                     </div>
                     
                     <!-- Computer Equipment Specific Fields -->
-                    <?php if ($item['category_code'] === '030'): ?>
+                    <?php 
+                    // Debug: Check category code and computer data
+                    error_log("DEBUG: Category Code: " . ($item['category_code'] ?? 'NULL'));
+                    error_log("DEBUG: Processor: " . ($item['processor'] ?? 'NULL'));
+                    error_log("DEBUG: RAM: " . ($item['ram_capacity'] ?? 'NULL'));
+                    error_log("DEBUG: Asset ID: " . ($item['id'] ?? 'NULL'));
+                    
+                    if ($item['category_code'] === '030' || (!empty($item['processor']) || !empty($item['ram_capacity']) || !empty($item['storage_capacity']))): 
+                    ?>
                     <div class="detail-section">
-                        <h5 class="mb-3"><i class="bi bi-cpu"></i> Computer Equipment Specifications</h5>
+                        <h5 class="mb-3"><i class="bi bi-cpu"></i> 
+                        <?php 
+                        if ($item['category_code'] === '030') {
+                            echo 'Computer Equipment Specifications';
+                        } else {
+                            echo 'Asset Computer Specifications';
+                        }
+                        ?>
+                    </h5>
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
@@ -1116,6 +1132,14 @@ $status_display = formatStatus($item['status']);
                                 <div class="mb-3">
                                     <div class="detail-label">Storage Capacity</div>
                                     <div class="detail-value"><?php echo $item['storage_capacity'] ? htmlspecialchars($item['storage_capacity']) : '<span class="text-muted">Not specified</span>'; ?></div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="detail-label">Storage Type</div>
+                                    <div class="detail-value"><?php echo $item['storage_type'] ? htmlspecialchars(ucfirst($item['storage_type'])) : '<span class="text-muted">Not specified</span>'; ?></div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="detail-label">Graphics Card</div>
+                                    <div class="detail-value"><?php echo $item['graphics_card'] ? htmlspecialchars($item['graphics_card']) : '<span class="text-muted">Not specified</span>'; ?></div>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -1151,6 +1175,14 @@ $status_display = formatStatus($item['status']);
                                     }
                                     echo $display_model;
                                     ?></div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="detail-label">Warranty Provider</div>
+                                    <div class="detail-value"><?php echo $item['warranty_provider'] ? htmlspecialchars($item['warranty_provider']) : '<span class="text-muted">Not specified</span>'; ?></div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="detail-label">Warranty Expiry</div>
+                                    <div class="detail-value"><?php echo $item['warranty_expiry'] ? date('F j, Y', strtotime($item['warranty_expiry'])) : '<span class="text-muted">Not specified</span>'; ?></div>
                                 </div>
                             </div>
                         </div>
