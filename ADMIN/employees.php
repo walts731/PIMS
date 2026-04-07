@@ -482,34 +482,7 @@ $showing_to = min($page * $per_page, $total_records);
             </div>
         </div>
         
-        <!-- Statistics Cards -->
-        <div class="row mb-4">
-            <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $stats['total_employees']; ?></div>
-                    <div class="stats-label"><i class="bi bi-people"></i> Total Employees</div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $stats['permanent_employees']; ?></div>
-                    <div class="stats-label"><i class="bi bi-person-badge"></i> Permanent Employees</div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $stats['cleared_employees']; ?></div>
-                    <div class="stats-label"><i class="bi bi-shield-check"></i> Cleared Employees</div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $stats['uncleared_employees']; ?></div>
-                    <div class="stats-label"><i class="bi bi-shield-x"></i> Uncleared Employees</div>
-                </div>
-            </div>
-        </div>
-        
+                
         <!-- Employees Table -->
         <div class="table-container">
             <div class="row mb-3">
@@ -583,15 +556,6 @@ $showing_to = min($page * $per_page, $total_records);
                                     <td><?php echo htmlspecialchars($employee['employee_no'] ?? 'N/A'); ?></td>
                                     <td>
                                         <?php echo htmlspecialchars($employee['firstname'] . ' ' . ($employee['middle_name'] ?? '') . ' ' . $employee['lastname']); ?>
-                                        <?php if (!empty($employee['email'])): ?>
-                                            <br><small class="text-muted"><?php echo htmlspecialchars($employee['email']); ?></small>
-                                        <?php endif; ?>
-                                        <?php if (!empty($employee['designation'])):
-                                            $designations = json_decode($employee['designation'], true);
-                                            if (!empty($designations) && is_array($designations)):
-                                                echo '<br><small class="text-primary"><strong>Designations:</strong> ' . htmlspecialchars(implode(', ', $designations)) . '</small>';
-                                            endif;
-                                        endif; ?>
                                     </td>
                                     <td><?php echo htmlspecialchars($employee['office_name'] ?? 'N/A'); ?></td>
                                     <td>
