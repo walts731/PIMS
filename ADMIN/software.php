@@ -40,8 +40,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $license_key = trim($_POST['license_key'] ?? '');
         $purchase_cost = floatval($_POST['purchase_cost'] ?? 0);
         $purchase_date = $_POST['purchase_date'] ?? '';
-        $expiry_date = $_POST['expiry_date'] ?? '';
+        $renewal_date = $_POST['renewal_date'] ?? '';
+        $renewal_cost = floatval($_POST['renewal_cost'] ?? 0);
+        $assigned_to = trim($_POST['assigned_to'] ?? '');
+        $installation_date = $_POST['installation_date'] ?? '';
+        $notes = trim($_POST['notes'] ?? '');
         $status = trim($_POST['status'] ?? 'active');
+        
+        // Convert empty date strings to NULL for database
+        $purchase_date = empty($purchase_date) ? NULL : $purchase_date;
+        $renewal_date = empty($renewal_date) ? NULL : $renewal_date;
+        $installation_date = empty($installation_date) ? NULL : $installation_date;
         
         // Validation
         if (empty($software_name)) {
@@ -58,10 +67,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message_type = "danger";
         } else {
             try {
-                $sql = "INSERT INTO software (software_name, category, description, vendor, version, license_type, license_key, purchase_cost, purchase_date, expiry_date, status, created_at) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+                $sql = "INSERT INTO software (software_name, category, description, vendor, version, license_type, license_key, purchase_cost, purchase_date, renewal_date, renewal_cost, assigned_to, installation_date, notes, status, created_at, created_by) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)";
                 $stmt = $conn->prepare($sql);
-                $stmt->bind_param("sssssssdssss", $software_name, $category, $description, $vendor, $version, $license_type, $license_key, $purchase_cost, $purchase_date, $expiry_date, $status);
+                $stmt->bind_param("sssssssdsssssssi", $software_name, $category, $description, $vendor, $version, $license_type, $license_key, $purchase_cost, $purchase_date, $renewal_date, $renewal_cost, $assigned_to, $installation_date, $notes, $status, $_SESSION['user_id']);
                 
                 if ($stmt->execute()) {
                     $message = "Software added successfully!";
@@ -418,12 +427,23 @@ foreach ($software_data as $software) {
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Category *</label>
-                                <input type="text" name="category" class="form-control" required>
+                                <select name="category" class="form-control" required>
+                                    <option value="">Select Category</option>
+                                    <option value="Operating System">Operating System</option>
+                                    <option value="Office Suite">Office Suite</option>
+                                    <option value="Antivirus">Antivirus</option>
+                                    <option value="Database">Database</option>
+                                    <option value="Development Tools">Development Tools</option>
+                                    <option value="Design Software">Design Software</option>
+                                    <option value="Accounting">Accounting</option>
+                                    <option value="Communication">Communication</option>
+                                    <option value="Other">Other</option>
+                                </select>
                             </div>
                         </div>
                         <div class="mt-3">
                             <label class="form-label">Description</label>
-                            <textarea name="description" class="form-control" rows="3"></textarea>
+                            <textarea name="description" class="form-control" rows="2"></textarea>
                         </div>
                         <div class="row mt-3">
                             <div class="col-md-6">
@@ -438,14 +458,13 @@ foreach ($software_data as $software) {
                         <div class="row mt-3">
                             <div class="col-md-6">
                                 <label class="form-label">License Type *</label>
-                                <select name="license_type" class="form-select" required>
+                                <select name="license_type" class="form-control" required>
                                     <option value="">Select License Type</option>
-                                    <option value="perpetual">Perpetual</option>
-                                    <option value="annual">Annual</option>
-                                    <option value="monthly">Monthly</option>
-                                    <option value="trial">Trial</option>
-                                    <option value="freemium">Freemium</option>
-                                    <option value="open-source">Open Source</option>
+                                    <option value="Free">Free</option>
+                                    <option value="Open Source">Open Source</option>
+                                    <option value="Commercial">Commercial</option>
+                                    <option value="Subscription">Subscription</option>
+                                    <option value="Trial">Trial</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
@@ -455,27 +474,48 @@ foreach ($software_data as $software) {
                         </div>
                         <div class="row mt-3">
                             <div class="col-md-6">
-                                <label class="form-label">Purchase Cost *</label>
-                                <input type="number" name="purchase_cost" class="form-control" step="0.01" required>
+                                <label class="form-label">Purchase Date *</label>
+                                <input type="date" name="purchase_date" class="form-control" required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Purchase Date</label>
-                                <input type="date" name="purchase_date" class="form-control">
+                                <label class="form-label">Purchase Cost *</label>
+                                <input type="number" name="purchase_cost" class="form-control" step="0.01" required>
                             </div>
                         </div>
                         <div class="row mt-3">
                             <div class="col-md-6">
-                                <label class="form-label">Expiry Date</label>
-                                <input type="date" name="expiry_date" class="form-control">
+                                <label class="form-label">Renewal Date</label>
+                                <input type="date" name="renewal_date" class="form-control">
                             </div>
                             <div class="col-md-6">
+                                <label class="form-label">Renewal Cost</label>
+                                <input type="number" name="renewal_cost" class="form-control" step="0.01">
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
                                 <label class="form-label">Status *</label>
-                                <select name="status" class="form-select" required>
-                                    <option value="active">Active</option>
-                                    <option value="inactive">Inactive</option>
-                                    <option value="expired">Expired</option>
-                                    <option value="pending">Pending</option>
+                                <select name="status" class="form-control" required>
+                                    <option value="">Select Status</option>
+                                    <option value="Active">Active</option>
+                                    <option value="Inactive">Inactive</option>
+                                    <option value="Expired">Expired</option>
+                                    <option value="Pending">Pending</option>
                                 </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Assigned To</label>
+                                <input type="text" name="assigned_to" class="form-control">
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Installation Date</label>
+                                <input type="date" name="installation_date" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Notes</label>
+                                <textarea name="notes" class="form-control" rows="1"></textarea>
                             </div>
                         </div>
                     </div>
@@ -650,6 +690,52 @@ foreach ($software_data as $software) {
         
         function clearFilters() {
             window.location.href = 'software.php';
+        }
+        
+        // DataTables custom filtering function
+        function applyDataTablesFilters() {
+            const table = $('#softwareTable').DataTable();
+            const category = $('#categoryFilter').val();
+            const license = $('#licenseFilter').val();
+            const status = $('#statusFilter').val();
+            
+            // Clear all previous search functions
+            $.fn.dataTable.ext.search = [];
+            
+            // Apply custom search function for each column
+            $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+                const categoryColumn = data[1]; // Category column (index 1)
+                const licenseColumn = data[3]; // License Type column (index 3)
+                const statusColumn = data[5]; // Status column (index 5) - contains HTML
+                
+                // Category filter
+                if (category && categoryColumn !== category) {
+                    return false;
+                }
+                
+                // License filter
+                if (license && licenseColumn !== license) {
+                    return false;
+                }
+                
+                // Status filter - extract text from HTML
+                if (status) {
+                    // Create a temporary element to extract text from HTML
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = statusColumn;
+                    const statusText = tempDiv.textContent || tempDiv.innerText || '';
+                    const normalizedStatus = statusText.toLowerCase().trim();
+                    
+                    if (normalizedStatus !== status) {
+                        return false;
+                    }
+                }
+                
+                return true;
+            });
+            
+            // Redraw the table
+            table.draw();
         }
         
         // Export function
@@ -931,12 +1017,11 @@ foreach ($software_data as $software) {
                     $('.license-filter-container').html(`
                         <select id="licenseFilter" class="form-select form-select-sm">
                             <option value="">All Licenses</option>
-                            <option value="perpetual">Perpetual</option>
-                            <option value="annual">Annual</option>
-                            <option value="monthly">Monthly</option>
-                            <option value="trial">Trial</option>
-                            <option value="freemium">Freemium</option>
-                            <option value="open-source">Open Source</option>
+                            <?php foreach ($license_types as $license): ?>
+                                <option value="<?php echo $license; ?>" <?php echo $license_filter == $license ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($license); ?>
+                                </option>
+                            <?php endforeach; ?>
                         </select>
                     `);
                     
@@ -944,17 +1029,31 @@ foreach ($software_data as $software) {
                     $('.status-filter-container').html(`
                         <select id="statusFilter" class="form-select form-select-sm">
                             <option value="">All Status</option>
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
-                            <option value="expired">Expired</option>
-                            <option value="pending">Pending</option>
+                            <option value="active" <?php echo $status_filter == 'active' ? 'selected' : ''; ?>>Active</option>
+                            <option value="inactive" <?php echo $status_filter == 'inactive' ? 'selected' : ''; ?>>Inactive</option>
+                            <option value="expired" <?php echo $status_filter == 'expired' ? 'selected' : ''; ?>>Expired</option>
+                            <option value="pending" <?php echo $status_filter == 'pending' ? 'selected' : ''; ?>>Pending</option>
                         </select>
                     `);
                     
-                    // Apply filter events
+                    // Apply current URL filters to DataTables
+                    <?php if (!empty($category_filter)): ?>
+                    $('#categoryFilter').val('<?php echo $category_filter; ?>');
+                    <?php endif; ?>
+                    <?php if (!empty($license_filter)): ?>
+                    $('#licenseFilter').val('<?php echo $license_filter; ?>');
+                    <?php endif; ?>
+                    <?php if (!empty($status_filter)): ?>
+                    $('#statusFilter').val('<?php echo $status_filter; ?>');
+                    <?php endif; ?>
+                    
+                    // Apply filter events with DataTables API
                     $('#categoryFilter, #licenseFilter, #statusFilter').on('change', function() {
-                        table.draw();
+                        applyDataTablesFilters();
                     });
+                    
+                    // Initial filter application
+                    applyDataTablesFilters();
                 },
                 buttons: [
                     {
