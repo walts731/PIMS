@@ -98,8 +98,12 @@ if (!$user_firstname || !$user_lastname) {
 // Get request parameters
 $action = $_GET['action'] ?? '';
 $report_type = $_GET['report_type'] ?? '';
-$date_from = $_GET['date_from'] ?? date('Y-m-d', strtotime('-3 months')); // 3 months ago
-$date_to = $_GET['date_to'] ?? date('Y-m-d'); // Today
+// Force 3-month date range for better data coverage
+$date_from = date('Y-m-d', strtotime('-3 months')); // 3 months ago
+$date_to = date('Y-m-d'); // Today
+
+// Debug: Log actual dates being used
+error_log("Report dates - From: $date_from, To: $date_to, GET params: " . json_encode($_GET));
 
 switch ($action) {
     case 'export_admin_style_report':
@@ -993,6 +997,7 @@ function generateBorrowRequestReportContent($date_from, $date_to) {
     <div class="report-section">
         <h3 class="section-title">Borrow Requests Report</h3>
         <p class="text-muted">Showing all requests for Office ID: ' . $office_id . ' (both incoming and outgoing)</p>
+        <p class="text-info">Date Range: ' . date('F j, Y', strtotime($date_from)) . ' to ' . date('F j, Y', strtotime($date_to)) . '</p>
         <table class="table table-bordered table-striped">
             <thead>
                 <tr>
