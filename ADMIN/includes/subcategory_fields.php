@@ -65,5 +65,6 @@ $subcategory_fields = [
         'microphone' => ['label' => 'Microphone', 'type' => 'text', 'required' => false],
         'card_reader' => ['label' => 'Card Reader', 'type' => 'text', 'required' => false]
     ]
+  
 ];
 ?>

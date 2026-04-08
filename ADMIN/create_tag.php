@@ -315,7 +315,7 @@ require_once 'includes/subcategory_fields.php';
                             <select class="form-select" id="subcategory_id" name="subcategory_id" <?php echo $selected_category_id == 0 ? 'disabled' : ''; ?> required>
                                 <option value="">Select Subcategory</option>
                                 <?php foreach ($subcategories as $subcategory): ?>
-                                    <option value="<?php echo $subcategory['id']; ?>" <?php echo ($subcategory['id'] == $item['asset_subcategory_id']) ? 'selected' : ''; ?>>
+                                    <option value="<?php echo $subcategory['id']; ?>" data-subcategory-code="<?php echo htmlspecialchars($subcategory['sub_category_code']); ?>" <?php echo ($subcategory['id'] == $item['asset_subcategory_id']) ? 'selected' : ''; ?>>
                                         <?php echo htmlspecialchars($subcategory['sub_category_code'] . ' - ' . $subcategory['sub_category_name']); ?>
                                     </option>
                                 <?php endforeach; ?>
@@ -565,13 +565,97 @@ require_once 'includes/subcategory_fields.php';
             // Example: 2026-04-05-030-00203-06 where 00203 is subcategory code
             let subcategoryCode = '';
             
-            // Try to match full format: YEAR-MONTH-05-category_code-SUBCATEGORY_CODE-series
-            // Example: 2026-04-05-030-0701-01 where 07 is subcategory code (SMART TV)
-            const fullFormatMatch = propertyNumber.match(/^(\d{4})-(\d{2})-05-(\d+)-(\d{2})(\d{2})-(\d+)$/);
+            // Try to match full format: YEAR-MONTH-XX-category_code-SUBCATEGORY_CODE-series
+            // Examples: 2026-04-05-030-00203-06 (subcategory code 00), 2026-07-06-010-0101-07 (subcategory code 01)
+            const fullFormatMatch = propertyNumber.match(/^(\d{4})-(\d{2})-(\d{2})-(\d+)-(\d+)-(\d+)$/);
             if (fullFormatMatch) {
-                const fullSubcategoryCode = fullFormatMatch[4] + fullFormatMatch[5]; // Combine: 07 + 01 = 0701
-                subcategoryCode = fullFormatMatch[4]; // Take first 2 digits as actual subcategory code (07)
-                console.log('Full format detected, full subcategory code:', fullSubcategoryCode, 'actual subcategory code:', subcategoryCode);
+                const fullSubcategoryPart = fullFormatMatch[5]; // Full subcategory part (e.g., "00203" or "0101")
+                subcategoryCode = fullSubcategoryPart.substring(0, 2); // Take first 2 digits as subcategory code
+                console.log('Full format detected, full subcategory part:', fullSubcategoryPart, 'actual subcategory code:', subcategoryCode);
+                
+                // Extract category code and auto-fill category dropdown
+                const middlePart = fullFormatMatch[3]; // Middle part (e.g., "05" or "06")
+                const categoryPart = fullFormatMatch[4]; // Category part (e.g., "030" or "010")
+                const categoryCode = middlePart + '-' + categoryPart; // Combine to get "05-030" or "06-010"
+                console.log('Extracted category code from property number:', categoryCode, '(from parts:', middlePart, '+', categoryPart, ')');
+                
+                // Auto-fill category dropdown
+                const categorySelect = document.getElementById('category_id');
+                if (categorySelect) {
+                    for (let i = 0; i < categorySelect.options.length; i++) {
+                        const option = categorySelect.options[i];
+                        if (option.getAttribute('data-category-code') === categoryCode) {
+                            option.selected = true;
+                            console.log('Auto-selected category:', categoryCode, 'Text:', option.textContent);
+                            
+                            // Extract category name from selected option text
+                            const categoryText = option.textContent;
+                            console.log('=== EXTRACTION DEBUG ===');
+                            console.log('Original categoryText:', JSON.stringify(categoryText));
+                            console.log('Splitting by " - "');
+                            
+                            const parts = categoryText.split(' - ');
+                            console.log('Split parts:', parts);
+                            console.log('Number of parts:', parts.length);
+                            console.log('Part 0:', JSON.stringify(parts[0]));
+                            console.log('Part 1:', JSON.stringify(parts[1]));
+                            
+                            let categoryName = categoryText.trim(); // Default to full text
+                            
+                            if (parts.length > 1) {
+                                // Check if first part looks like a code (contains digits and dash)
+                                const firstPart = parts[0].trim();
+                                const hasCodePattern = /\d/.test(firstPart);
+                                console.log('First part:', JSON.stringify(firstPart));
+                                console.log('Has code pattern:', hasCodePattern);
+                                
+                                if (hasCodePattern) {
+                                    // First part is a code, use second part as name
+                                    categoryName = parts[1].trim();
+                                    console.log('Auto-fill extracted category name:', categoryName, 'from:', categoryText);
+                                    
+                                    // Force correct category name for MV
+                                    console.log('Checking categoryCode for force:', JSON.stringify(categoryCode));
+                                    if (categoryCode === '06-010') {
+                                        categoryName = 'MV';
+                                        console.log('FORCED: Using MV for category code 06-010');
+                                    } else {
+                                        console.log('No force applied - using extracted categoryName:', categoryName);
+                                    }
+                                } else {
+                                    // First part is not a code, use it as name
+                                    categoryName = firstPart;
+                                    console.log('Auto-fill using first part as category name:', categoryName, 'from:', categoryText);
+                                }
+                            } else {
+                                console.log('No dash found, using full text as category name:', categoryName);
+                            }
+                            
+                            console.log('Final extracted categoryName:', JSON.stringify(categoryName));
+                            console.log('=== END EXTRACTION DEBUG ===');
+                            
+                            // Store the extracted category name for the change event handler
+                            categorySelect.dataset.extractedCategoryName = categoryName;
+                            
+                            // Manually call loadCategoryFields with extracted category name FIRST
+                            console.log('=== ABOUT TO CALL MANUALLY ===');
+                            console.log('Extracted categoryName BEFORE setTimeout:', categoryName);
+                            console.log('CategoryName type:', typeof categoryName);
+                            console.log('CategoryName JSON:', JSON.stringify(categoryName));
+                            console.log('Going to call loadCategoryFields with:', categoryName);
+                            
+                            setTimeout(() => {
+                                console.log('=== MANUAL BACKUP CALL DEBUG ===');
+                                console.log('Manually calling loadCategoryFields with extracted category name:', categoryName);
+                                loadCategoryFields(categoryName);
+                            }, 50);
+                            
+                            // No need to trigger change event - manual call is sufficient
+                            
+                            break;
+                        }
+                    }
+                }
                 
                 // Try to find exact match first, then try 2-digit extraction
                 findAndSelectSubcategoryByCode(subcategoryCode);
@@ -718,7 +802,7 @@ require_once 'includes/subcategory_fields.php';
                     const event = new Event('change', { bubbles: true });
                     subcategorySelect.dispatchEvent(event);
                     
-                    // Make the dropdown readonly/disabled to prevent changes
+                    // Make dropdown readonly/disabled to prevent changes
                     subcategorySelect.disabled = true;
                     
                     // Update visual indication
@@ -774,20 +858,74 @@ require_once 'includes/subcategory_fields.php';
         function loadCategoryFields(categoryCode) {
             const container = document.getElementById('categorySpecificFields');
             
+            // Debug logging - ADD MORE DEBUG INFO
+            console.log('=== LOAD CATEGORY FIELDS DEBUG ===');
+            console.log('Input parameter (categoryCode):', JSON.stringify(categoryCode));
+            console.log('Type of input:', typeof categoryCode);
+            console.log('Available category fields:', categoryFields);
+            console.log('Available category keys (Object.keys):', Object.keys(categoryFields));
+            console.log('Direct lookup result:', categoryFields[categoryCode]);
+            console.log('=== END DEBUG ===');
+            
             if (!categoryCode || !categoryFields[categoryCode]) {
-                container.innerHTML = '';
-                return;
+                console.log('No category name or no fields found for:', categoryCode);
+                console.log('Available category names you can use:', Object.keys(categoryFields).join(', '));
+                console.log('Trying to find exact or partial matches...');
+                
+                // Try to find exact match first
+                const availableKeys = Object.keys(categoryFields);
+                let foundMatch = false;
+                
+                // First try exact match (case-insensitive)
+                for (const key of availableKeys) {
+                    if (categoryCode.toUpperCase() === key.toUpperCase()) {
+                        console.log('Found exact match:', key, 'for input:', categoryCode);
+                        categoryCode = key;
+                        foundMatch = true;
+                        break;
+                    }
+                }
+                
+                // If no exact match, try partial matches but exclude single codes like "06"
+                if (!foundMatch) {
+                    for (const key of availableKeys) {
+                        // Skip single codes that are likely to cause false matches
+                        if (key.length <= 2) continue;
+                        
+                        if (categoryCode.toUpperCase().includes(key.toUpperCase()) || key.toUpperCase().includes(categoryCode.toUpperCase())) {
+                            console.log('Found partial match:', key, 'for input:', categoryCode);
+                            categoryCode = key;
+                            foundMatch = true;
+                            break;
+                        }
+                    }
+                }
+                
+                            }
+            
+            // Dynamic section title and icon based on category name
+            let sectionTitle = 'Specific Fields';
+            let sectionIcon = 'bi-gear';
+            
+            if (categoryCode.toUpperCase() === 'MV' || categoryCode.toUpperCase().includes('VEHICLE')) {
+                sectionTitle = 'Vehicle Specifications';
+                sectionIcon = 'bi-truck';
+            } else if (categoryCode.toUpperCase().includes('COMPUTER') || categoryCode.toUpperCase().includes('EQUIPMENT')) {
+                sectionTitle = 'Computer Equipment Specifications';
+                sectionIcon = 'bi-cpu';
             }
             
-            const categoryName = getCategoryName(categoryCode);
-            if (!categoryName) {
-                container.innerHTML = '';
-                return;
-            }
-            
-            let fieldsHtml = '<div class="category-fields"><h6 class="mb-3"><i class="bi bi-gear"></i> ' + categoryName + ' Specific Fields</h6><div class="row">';
+            let fieldsHtml = '<div class="category-fields"><h6 class="mb-3"><i class="' + sectionIcon + '"></i> ' + sectionTitle + '</h6><div class="row">';
             
             const fields = categoryFields[categoryCode];
+            
+            // Check if fields exist before trying to iterate
+            if (!fields) {
+                console.log('No fields found for category:', categoryCode);
+                container.innerHTML = '';
+                return;
+            }
+            
             let fieldCount = 0;
             
             for (const [fieldName, fieldConfig] of Object.entries(fields)) {
@@ -834,6 +972,8 @@ require_once 'includes/subcategory_fields.php';
             // Debug logging
             console.log('Loading subcategory fields for code:', subcategoryCode);
             console.log('Available subcategory fields:', subcategoryFields);
+            console.log('Available keys:', Object.keys(subcategoryFields));
+            console.log('Fields found for this code:', subcategoryFields[subcategoryCode]);
             
             if (!subcategoryCode || !subcategoryFields[subcategoryCode]) {
                 console.log('No subcategory code or no fields found for:', subcategoryCode);
@@ -841,7 +981,19 @@ require_once 'includes/subcategory_fields.php';
                 return;
             }
             
-            let fieldsHtml = '<div class="category-fields"><h6 class="mb-3"><i class="bi bi-gear"></i> Desktop Computer Specific Fields</h6><div class="row">';
+            // Dynamic section title and icon based on subcategory
+            let sectionTitle = 'Specific Fields';
+            let sectionIcon = 'bi-gear';
+            
+            if (subcategoryCode.toUpperCase().includes('LAPTOP') || subcategoryCode.toUpperCase().includes('COMPUTER')) {
+                sectionTitle = 'Computer Specifications';
+                sectionIcon = 'bi-cpu';
+            } else if (subcategoryCode.toUpperCase().includes('VEHICLE') || subcategoryCode.toUpperCase().includes('MV') || subcategoryCode.toUpperCase().includes('MOTOR')) {
+                sectionTitle = 'Vehicle Specifications';
+                sectionIcon = 'bi-truck';
+            }
+            
+            let fieldsHtml = '<div class="category-fields"><h6 class="mb-3"><i class="' + sectionIcon + '"></i> ' + sectionTitle + '</h6><div class="row">';
             
             const fields = subcategoryFields[subcategoryCode];
             console.log('Fields to render:', fields);
@@ -1010,9 +1162,64 @@ require_once 'includes/subcategory_fields.php';
             document.getElementById('category_id').addEventListener('change', function() {
                 const selectedOption = this.options[this.selectedIndex];
                 const categoryCode = selectedOption ? selectedOption.getAttribute('data-category-code') : '';
+                const categoryText = selectedOption ? selectedOption.textContent : '';
                 
-                // Load category-specific fields
-                loadCategoryFields(categoryCode);
+                let categoryName;
+                
+                // Check if we have a pre-extracted category name from auto-fill
+                if (this.dataset.extractedCategoryName) {
+                    categoryName = this.dataset.extractedCategoryName;
+                    console.log('Using pre-extracted category name from auto-fill:', categoryName);
+                    // Clear the stored name after using it
+                    delete this.dataset.extractedCategoryName;
+                    
+                    // Skip the rest of the extraction logic since we already have the correct name
+                    console.log('Skipping extraction logic, using pre-extracted category name:', categoryName);
+                } else {
+                    // Extract category name (after the code) for manual selection
+                    console.log('Original categoryText:', JSON.stringify(categoryText));
+                    console.log('Splitting by " - "');
+                    
+                    const parts = categoryText.split(' - ');
+                    console.log('Split parts:', parts);
+                    console.log('Number of parts:', parts.length);
+                    
+                    categoryName = categoryText.trim(); // Default to full text
+                
+                if (parts.length > 1) {
+                        // Check if first part looks like a code (contains digits and dash)
+                        const firstPart = parts[0].trim();
+                        const hasCodePattern = /\d/.test(firstPart);
+                        
+                        if (hasCodePattern) {
+                            // First part is a code, use second part as name
+                            categoryName = parts[1].trim();
+                            console.log('Detected CODE-NAME format, using category name:', categoryName, 'from:', categoryText);
+                            
+                            // Force correct category name for MV
+                            if (categoryCode === '06-010') {
+                                categoryName = 'MV';
+                                console.log('MANUAL SELECT FORCED: Using MV for category code 06-010');
+                            }
+                        } else {
+                            // First part is not a code, use it as name
+                            categoryName = firstPart;
+                            console.log('Detected NAME-CODE format, using category name:', categoryName, 'from:', categoryText);
+                        }
+                    } else {
+                        console.log('No dash found, using full text:', categoryName);
+                    }
+                }
+                
+                // Debug logging
+                console.log('Category change triggered');
+                console.log('Selected option:', selectedOption);
+                console.log('Selected option text:', categoryText);
+                console.log('Extracted category name:', categoryName);
+                console.log('Original category code:', categoryCode);
+                
+                // Load category-specific fields using category name
+                loadCategoryFields(categoryName);
                 
                 // Load subcategories for the selected category
                 loadSubcategories(this.value);
@@ -1078,7 +1285,15 @@ require_once 'includes/subcategory_fields.php';
                     // Load subcategories with callback to auto-fill after loading
                     loadSubcategories(selectedCategoryId, function() {
                         console.log('Subcategories loaded, now auto-filling from property number:', propertyNoValue);
-                        autoFillSubcategory(propertyNoValue);
+                        
+                        // Add delay to ensure dropdown is fully populated
+                        setTimeout(() => {
+                            console.log('=== SUBCATEGORY AUTO-FILL DEBUG ===');
+                            console.log('About to call autoFillSubcategory with:', propertyNoValue);
+                            console.log('Subcategory select element:', document.getElementById('subcategory_id'));
+                            console.log('Subcategory options count:', document.getElementById('subcategory_id').options.length);
+                            autoFillSubcategory(propertyNoValue);
+                        }, 100);
                     });
                 } else {
                     // Just load subcategories and generate property number for current category
