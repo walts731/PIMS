@@ -115,50 +115,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Get filter parameters
-$search = isset($_GET['search']) ? trim($_GET['search']) : '';
-$classification_filter = isset($_GET['classification']) ? trim($_GET['classification']) : '';
-$location_filter = isset($_GET['location']) ? trim($_GET['location']) : '';
-
-// Build WHERE conditions
-$where_conditions = [];
-$params = [];
-$types = '';
-
-if (!empty($search)) {
-    $where_conditions[] = "(item_description LIKE ? OR property_no LIKE ? OR location LIKE ? OR remarks LIKE ?)";
-    $search_param = '%' . $search . '%';
-    $params[] = $search_param;
-    $params[] = $search_param;
-    $params[] = $search_param;
-    $params[] = $search_param;
-    $types = 'ssss';
-}
-
-if (!empty($classification_filter)) {
-    $where_conditions[] = "classification = ?";
-    $params[] = $classification_filter;
-    $types .= 's';
-}
-
-if (!empty($location_filter)) {
-    $where_conditions[] = "location = ?";
-    $params[] = $location_filter;
-    $types .= 's';
-}
-
-$where_clause = !empty($where_conditions) ? 'WHERE ' . implode(' AND ', $where_conditions) : '';
-
-// Get infrastructure data
+// Get all infrastructure data (DataTables will handle filtering)
 $infrastructure_data = [];
 $total_value = 0;
 $total_count = 0;
 
-$sql = "SELECT * FROM infrastructure $where_clause ORDER BY date_constructed DESC";
+$sql = "SELECT * FROM infrastructure ORDER BY date_constructed DESC";
 $stmt = $conn->prepare($sql);
-if (!empty($params)) {
-    $stmt->bind_param($types, ...$params);
-}
 $stmt->execute();
 $result = $stmt->get_result();
 
@@ -196,6 +159,8 @@ while ($row = $loc_result->fetch_assoc()) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
@@ -267,38 +232,6 @@ while ($row = $loc_result->fetch_assoc()) {
                 <div class="col-md-6">
                     <h5 class="mb-0"><i class="bi bi-list-ul"></i> Infrastructure Records</h5>
                 </div>
-                <div class="col-md-6">
-                    <div class="row g-2">
-                        <div class="col-md-3">
-                            <select class="form-select form-select-sm" id="classificationFilter" onchange="applyFilters()">
-                                <option value="">All Classifications</option>
-                                <?php foreach ($classifications as $classification): ?>
-                                    <option value="<?php echo htmlspecialchars($classification); ?>" <?php echo $classification_filter == $classification ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($classification); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <select class="form-select form-select-sm" id="locationFilter" onchange="applyFilters()">
-                                <option value="">All Locations</option>
-                                <?php foreach ($locations as $location): ?>
-                                    <option value="<?php echo htmlspecialchars($location); ?>" <?php echo $location_filter == $location ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($location); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Search infrastructure..." value="<?php echo htmlspecialchars($search); ?>">
-                        </div>
-                        <div class="col-md-2">
-                            <button class="btn btn-sm btn-outline-secondary" onclick="clearFilters()">
-                                <i class="bi bi-x-circle"></i> Clear
-                            </button>
-                        </div>
-                    </div>
-                </div>
             </div>
             
             <div class="table-responsive">
@@ -311,6 +244,8 @@ while ($row = $loc_result->fetch_assoc()) {
                             <th>Date Constructed</th>
                             <th>Acquisition Cost</th>
                             <th>Actions</th>
+                            <th style="display:none;">Classification ID</th>
+                            <th style="display:none;">Location ID</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -335,11 +270,13 @@ while ($row = $loc_result->fetch_assoc()) {
                                             </button>
                                         </div>
                                     </td>
+                                    <td style="display:none;"><?php echo htmlspecialchars($item['classification']); ?></td>
+                                    <td style="display:none;"><?php echo htmlspecialchars($item['location']); ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="6" class="text-center text-muted py-4">
+                                <td colspan="8" class="text-center text-muted py-4">
                                     <i class="bi bi-inbox fs-1"></i>
                                     <p class="mt-2">No infrastructure items found. Click "Add Infrastructure" to create your first item.</p>
                                 </td>
@@ -561,44 +498,137 @@ while ($row = $loc_result->fetch_assoc()) {
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <!-- jQuery -->
 <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<!-- DataTables JS -->
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
 <?php require_once 'includes/sidebar-scripts.php'; ?>
 
 <script>
-    // Filter functions
-    function applyFilters() {
-        const classification = document.getElementById('classificationFilter').value;
-        const location = document.getElementById('locationFilter').value;
-        const search = document.getElementById('searchInput').value;
+    $(document).ready(function() {
+        // Initialize DataTable
+        let infrastructureTable;
         
-        const params = new URLSearchParams();
-        if (classification) params.set('classification', classification);
-        if (location) params.set('location', location);
-        if (search) params.set('search', search);
+        // Check if table has data rows before initializing DataTables
+        const tableBody = $('#infrastructureTable tbody');
+        const hasData = tableBody.find('tr').length > 0 && !tableBody.find('td[colspan]').length;
         
-        const url = 'infrastructure.php' + (params.toString() ? '?' + params.toString() : '');
-        window.location.href = url;
-    }
+        console.log('Table has data:', hasData);
+        console.log('Table rows found:', tableBody.find('tr').length);
+        
+        // Initialize DataTable with error handling
+        try {
+            if (hasData) {
+                // Only initialize DataTables if there's actual data
+                infrastructureTable = $('#infrastructureTable').DataTable({
+                    responsive: true,
+                    pageLength: 25,
+                    lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                    dom: '<"row"<"col-md-2"l><"col-md-3 classification-filter-container"><"col-md-3 location-filter-container"><"col-md-4"f>>rtip',
+                    language: {
+                        search: "Search infrastructure:",
+                        lengthMenu: "Show _MENU_ items per page",
+                        info: "Showing _START_ to _END_ of _TOTAL_ items",
+                        infoEmpty: "Showing 0 to 0 of 0 items",
+                        infoFiltered: "(filtered from _MAX_ total items)",
+                        zeroRecords: "No matching infrastructure items found"
+                    },
+                    initComplete: function(settings, json) {
+                        console.log('DataTables initialized successfully');
+                        
+                        // Add classification filter to DataTables
+                        $('.classification-filter-container').html(`
+                            <select id="classificationFilter" class="form-select form-select-sm">
+                                <option value="">Classification</option>
+                                <?php foreach ($classifications as $classification): ?>
+                                    <option value="<?php echo htmlspecialchars($classification); ?>"><?php echo htmlspecialchars($classification); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        `);
+                        
+                        // Add location filter to DataTables
+                        $('.location-filter-container').html(`
+                            <select id="locationFilter" class="form-select form-select-sm">
+                                <option value="">Location</option>
+                                <?php foreach ($locations as $location): ?>
+                                    <option value="<?php echo htmlspecialchars($location); ?>"><?php echo htmlspecialchars($location); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        `);
+                    }
+                });
+            } else {
+                // No data - don't initialize DataTables, just add basic styling
+                $('#infrastructureTable').addClass('table-striped');
+                console.log('No data found - DataTables not initialized');
+            }
+        } catch (error) {
+            console.error('DataTables initialization error:', error);
+            // Fallback: make table work without DataTables
+            $('#infrastructureTable').addClass('table-striped');
+        }
+        
+        // DataTables filter functionality
+        $(document).on('change', '#classificationFilter, #locationFilter', function() {
+            if (!infrastructureTable) return;
+            
+            const classificationValue = $('#classificationFilter').val();
+            const locationValue = $('#locationFilter').val();
+            
+            // Apply filters to DataTables using hidden columns
+            // Classification filter (column 6 - hidden Classification ID)
+            if (classificationValue) {
+                infrastructureTable.column(6).search(classificationValue).draw();
+            } else {
+                infrastructureTable.column(6).search('').draw();
+            }
+            
+            // Location filter (column 7 - hidden Location ID)
+            if (locationValue) {
+                infrastructureTable.column(7).search(locationValue).draw();
+            } else {
+                infrastructureTable.column(7).search('').draw();
+            }
+        });
+    });
     
-    function clearFilters() {
-        window.location.href = 'infrastructure.php';
-    }
-    
-    // Export function
+    // Export function (manual export only)
     function exportInfrastructure() {
+        console.log('Export function called');
+        exportTableManually();
+    }
+    
+    // Manual export function
+    function exportTableManually() {
+        console.log('Using manual table export');
         let csv = 'Classification,Item Description,Location,Date Constructed,Acquisition Cost,Market Value\n';
         
-        <?php if (!empty($infrastructure_data)): ?>
-            <?php foreach ($infrastructure_data as $item): ?>
-                csv += `<?php echo htmlspecialchars($item['classification']); ?>,<?php echo htmlspecialchars($item['item_description']); ?>,<?php echo htmlspecialchars($item['location']); ?>,<?php echo $item['date_constructed']; ?>,<?php echo $item['acquisition_cost']; ?>,<?php echo $item['market_value']; ?>\n`;
-            <?php endforeach; ?>
-        <?php endif; ?>
+        $('#infrastructureTable tbody tr').each(function() {
+            const $row = $(this);
+            // Skip empty state rows
+            if ($row.find('td[colspan]').length > 0) {
+                return;
+            }
+            
+            const cells = $row.find('td');
+            const classification = $(cells[0]).text().trim();
+            const description = $(cells[1]).text().trim();
+            const location = $(cells[2]).text().trim();
+            const dateConstructed = $(cells[3]).text().trim();
+            const cost = $(cells[4]).text().trim();
+            
+            csv += '"' + classification + '",' +
+                   '"' + description + '",' +
+                   '"' + location + '",' +
+                   '"' + dateConstructed + '",' +
+                   '"' + cost + '",' +
+                   '""\n'; // Market value (not displayed in table)
+        });
         
-        // Download CSV
         const blob = new Blob([csv], { type: 'text/csv' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'infrastructure_export.csv';
+        a.download = 'infrastructure_' + new Date().toISOString().split('T')[0] + '.csv';
         a.click();
         window.URL.revokeObjectURL(url);
     }

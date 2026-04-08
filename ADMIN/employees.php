@@ -34,6 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     $lastname = trim($_POST['lastname'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $phone = trim($_POST['phone'] ?? '');
+    $employee_no = trim($_POST['employee_no'] ?? ''); // For display only, not updated
     $office_id = intval($_POST['office_id'] ?? 0);
     $position = trim($_POST['position'] ?? '');
     $designation = isset($_POST['designation']) ? array_filter($_POST['designation'], function($val) {
@@ -95,24 +96,37 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                 $message = "Employee not found.";
                 $message_type = "danger";
             } else {
-                // Update employee
-                $update_sql = "UPDATE employees SET firstname = ?, middle_name = ?, lastname = ?, email = ?, phone = ?, office_id = ?, position = ?, designation = ?, employment_status = ?, profile_photo = ? WHERE id = ?";
-                $update_stmt = $conn->prepare($update_sql);
-                $update_stmt->bind_param("sssssissssi", $firstname, $middle_name, $lastname, $email, $phone, $office_id, $position, $designation, $employment_status, $profile_photo, $id);
+                $check_stmt->close();
                 
-                if ($update_stmt->execute()) {
-                    logSystemAction($_SESSION['user_id'], 'update', 'employees', "Updated employee: $firstname $lastname");
-                    $_SESSION['message'] = "Employee updated successfully!";
-                    $_SESSION['message_type'] = "success";
-                    header("Location: employees.php");
-                    exit();
-                } else {
-                    $message = "Error updating employee.";
+                // Check if employee number conflicts with another employee
+                $emp_no_check = $conn->prepare("SELECT id FROM employees WHERE employee_no = ? AND id != ?");
+                $emp_no_check->bind_param("si", $employee_no, $id);
+                $emp_no_check->execute();
+                if ($emp_no_check->get_result()->num_rows > 0) {
+                    $message = "Employee number already exists. Please use a different number.";
                     $message_type = "danger";
+                    $emp_no_check->close();
+                } else {
+                    $emp_no_check->close();
+                    
+                    // Update employee
+                    $update_sql = "UPDATE employees SET firstname = ?, middle_name = ?, lastname = ?, email = ?, phone = ?, employee_no = ?, office_id = ?, position = ?, designation = ?, employment_status = ?, profile_photo = ? WHERE id = ?";
+                    $update_stmt = $conn->prepare($update_sql);
+                    $update_stmt->bind_param("ssssssissssi", $firstname, $middle_name, $lastname, $email, $phone, $employee_no, $office_id, $position, $designation, $employment_status, $profile_photo, $id);
+                
+                    if ($update_stmt->execute()) {
+                        logSystemAction($_SESSION['user_id'], 'update', 'employees', "Updated employee: $firstname $lastname");
+                        $_SESSION['message'] = "Employee updated successfully!";
+                        $_SESSION['message_type'] = "success";
+                        header("Location: employees.php");
+                        exit();
+                    } else {
+                        $message = "Error updating employee.";
+                        $message_type = "danger";
+                    }
+                    $update_stmt->close();
                 }
-                $update_stmt->close();
             }
-            $check_stmt->close();
         } catch (Exception $e) {
             error_log("Error updating employee: " . $e->getMessage());
             $message = "Database error occurred.";
@@ -128,6 +142,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     $lastname = trim($_POST['lastname'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $phone = trim($_POST['phone'] ?? '');
+    $employee_no = trim($_POST['employee_no'] ?? '');
     $office_id = intval($_POST['office_id'] ?? 0);
     $position = trim($_POST['position'] ?? '');
     $designation = isset($_POST['designation']) ? array_filter($_POST['designation'], function($val) {
@@ -172,68 +187,62 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $message = "Please enter a valid email address.";
         $message_type = "danger";
+    } elseif (empty($employee_no)) {
+        $message = "Employee number is required.";
+        $message_type = "danger";
     } elseif ($office_id <= 0) {
         $message = "Please select an office.";
         $message_type = "danger";
     } else {
         try {
-            // Generate employee number
-            $year = date('Y');
-            $prefix = 'EMP';
-            
-            // Get the last employee number for this year
-            $last_stmt = $conn->prepare("SELECT employee_no FROM employees WHERE employee_no LIKE ? ORDER BY employee_no DESC LIMIT 1");
-            $last_pattern = $prefix . $year . '%';
-            $last_stmt->bind_param("s", $last_pattern);
-            $last_stmt->execute();
-            $last_result = $last_stmt->get_result();
-            
-            if ($last_row = $last_result->fetch_assoc()) {
-                $last_number = intval(substr($last_row['employee_no'], -4));
-                $new_number = $last_number + 1;
-            } else {
-                $new_number = 1;
-            }
-            $last_stmt->close();
-            
-            $employee_no = $prefix . $year . str_pad($new_number, 4, '0', STR_PAD_LEFT);
-            
-            // Insert employee
-            $insert_sql = "INSERT INTO employees (employee_no, firstname, middle_name, lastname, email, phone, office_id, position, designation, employment_status, clearance_status, profile_photo, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
-            $insert_stmt = $conn->prepare($insert_sql);
-            $insert_stmt->bind_param("sssssisssssi", $employee_no, $firstname, $middle_name, $lastname, $email, $phone, $office_id, $position, $designation, $employment_status, $clearance_status, $profile_photo);
-            
-            if ($insert_stmt->execute()) {
-                $employee_id = $conn->insert_id;
-                
-                // Rename photo file with employee ID if photo was uploaded
-                if ($profile_photo && !empty($profile_photo)) {
-                    $old_path = '../' . $profile_photo;
-                    $file_extension = pathinfo($old_path, PATHINFO_EXTENSION);
-                    $new_filename = 'employee_' . $employee_id . '_' . time() . '.' . $file_extension;
-                    $new_path = '../uploads/employees/' . $new_filename;
-                    
-                    if (rename($old_path, $new_path)) {
-                        // Update database with new filename
-                        $update_photo_sql = "UPDATE employees SET profile_photo = ? WHERE id = ?";
-                        $update_photo_stmt = $conn->prepare($update_photo_sql);
-                        $new_photo_path = 'uploads/employees/' . $new_filename;
-                        $update_photo_stmt->bind_param("si", $new_photo_path, $employee_id);
-                        $update_photo_stmt->execute();
-                        $update_photo_stmt->close();
-                    }
-                }
-                
-                logSystemAction($_SESSION['user_id'], 'create', 'employees', "Added new employee: $firstname $lastname ($employee_no)");
-                $_SESSION['message'] = "Employee added successfully! Employee No: $employee_no";
-                $_SESSION['message_type'] = "success";
-                header("Location: employees.php");
-                exit();
-            } else {
-                $message = "Error adding employee.";
+            // Check if employee number already exists
+            $check_stmt = $conn->prepare("SELECT id FROM employees WHERE employee_no = ?");
+            $check_stmt->bind_param("s", $employee_no);
+            $check_stmt->execute();
+            if ($check_stmt->get_result()->num_rows > 0) {
+                $message = "Employee number already exists. Please use a different number.";
                 $message_type = "danger";
+                $check_stmt->close();
+            } else {
+                $check_stmt->close();
+                
+                // Insert employee
+                $insert_sql = "INSERT INTO employees (employee_no, firstname, middle_name, lastname, email, phone, office_id, position, designation, employment_status, clearance_status, profile_photo, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+                $insert_stmt = $conn->prepare($insert_sql);
+                $insert_stmt->bind_param("sssssisssssi", $employee_no, $firstname, $middle_name, $lastname, $email, $phone, $office_id, $position, $designation, $employment_status, $clearance_status, $profile_photo);
+                
+                if ($insert_stmt->execute()) {
+                    $employee_id = $conn->insert_id;
+                    
+                    // Rename photo file with employee ID if photo was uploaded
+                    if ($profile_photo && !empty($profile_photo)) {
+                        $old_path = '../' . $profile_photo;
+                        $file_extension = pathinfo($old_path, PATHINFO_EXTENSION);
+                        $new_filename = 'employee_' . $employee_id . '_' . time() . '.' . $file_extension;
+                        $new_path = '../uploads/employees/' . $new_filename;
+                        
+                        if (rename($old_path, $new_path)) {
+                            // Update database with new filename
+                            $update_photo_sql = "UPDATE employees SET profile_photo = ? WHERE id = ?";
+                            $update_photo_stmt = $conn->prepare($update_photo_sql);
+                            $new_photo_path = 'uploads/employees/' . $new_filename;
+                            $update_photo_stmt->bind_param("si", $new_photo_path, $employee_id);
+                            $update_photo_stmt->execute();
+                            $update_photo_stmt->close();
+                        }
+                    }
+                    
+                    logSystemAction($_SESSION['user_id'], 'create', 'employees', "Added new employee: $firstname $lastname ($employee_no)");
+                    $_SESSION['message'] = "Employee added successfully! Employee No: $employee_no";
+                    $_SESSION['message_type'] = "success";
+                    header("Location: employees.php");
+                    exit();
+                } else {
+                    $message = "Error adding employee.";
+                    $message_type = "danger";
+                }
+                $insert_stmt->close();
             }
-            $insert_stmt->close();
         } catch (Exception $e) {
             error_log("Error adding employee: " . $e->getMessage());
             $message = "Database error occurred.";
@@ -262,108 +271,27 @@ $office_filter = isset($_GET['office']) ? intval($_GET['office']) : 0;
 $status_filter = isset($_GET['status']) ? trim($_GET['status']) : '';
 $clearance_filter = isset($_GET['clearance']) ? trim($_GET['clearance']) : '';
 
-// Pagination parameters
-$page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
-$per_page = 10; // Number of records per page
-$offset = ($page - 1) * $per_page;
 
-// Get employees with filters
+// Get all employees (DataTables will handle pagination and filtering)
 $employees = [];
-$total_records = 0;
 try {
-    // First, get total count for pagination
-    $count_sql = "SELECT COUNT(*) as total 
-                  FROM employees e 
-                  LEFT JOIN offices o ON e.office_id = o.id 
-                  WHERE 1=1";
-    
-    $count_params = [];
-    $count_types = '';
-    
-    if ($search_filter !== '') {
-        $count_sql .= " AND (e.firstname LIKE ? OR e.lastname LIKE ? OR e.email LIKE ? OR e.employee_no LIKE ?)";
-        $searchParam = "%{$search_filter}%";
-        $count_params = array_merge($count_params, [$searchParam, $searchParam, $searchParam, $searchParam]);
-        $count_types = $count_types . 'ssss';
-    }
-    
-    if ($office_filter > 0) {
-        $count_sql .= " AND e.office_id = ?";
-        $count_params[] = $office_filter;
-        $count_types = $count_types . 'i';
-    }
-    
-    if ($status_filter !== '') {
-        $count_sql .= " AND e.employment_status = ?";
-        $count_params[] = $status_filter;
-        $count_types = $count_types . 's';
-    }
-    
-    if ($clearance_filter !== '') {
-        $count_sql .= " AND e.clearance_status = ?";
-        $count_params[] = $clearance_filter;
-        $count_types = $count_types . 's';
-    }
-    
-    $count_stmt = $conn->prepare($count_sql);
-    if (!empty($count_params)) {
-        $count_stmt->bind_param($count_types, ...$count_params);
-    }
-    $count_stmt->execute();
-    $total_records = $count_stmt->get_result()->fetch_assoc()['total'];
-    
-    // Now get the paginated data
     $sql = "SELECT e.*, o.office_name,
                    CASE WHEN EXISTS (
                        SELECT 1 FROM asset_items ai WHERE ai.employee_id = e.id
                    ) THEN 'uncleared' ELSE 'cleared' END as computed_clearance_status
             FROM employees e 
             LEFT JOIN offices o ON e.office_id = o.id 
-            WHERE 1=1";
-    
-    $params = [];
-    $types = '';
-
-    if ($search_filter !== '') {
-        $sql .= " AND (e.firstname LIKE ? OR e.lastname LIKE ? OR e.email LIKE ? OR e.employee_no LIKE ?)";
-        $searchParam = "%{$search_filter}%";
-        $params = array_merge($params, [$searchParam, $searchParam, $searchParam, $searchParam]);
-        $types = $types . 'ssss';
-    }
-
-    if ($office_filter > 0) {
-        $sql .= " AND e.office_id = ?";
-        $params[] = $office_filter;
-        $types = $types . 'i';
-    }
-
-    if ($status_filter !== '') {
-        $sql .= " AND e.employment_status = ?";
-        $params[] = $status_filter;
-        $types = $types . 's';
-    }
-
-    if ($clearance_filter !== '') {
-        $sql .= " AND e.clearance_status = ?";
-        $params[] = $clearance_filter;
-        $types = $types . 's';
-    }
-    
-    $sql .= " ORDER BY e.lastname, e.firstname LIMIT ? OFFSET ?";
-    $params[] = $per_page;
-    $params[] = $offset;
-    $types = $types . 'ii';
+            ORDER BY e.lastname, e.firstname";
     
     $stmt = $conn->prepare($sql);
-    if (!empty($params)) {
-        $stmt->bind_param($types, ...$params);
-    }
     $stmt->execute();
     $result = $stmt->get_result();
     
     while ($row = $result->fetch_assoc()) {
         $employees[] = $row;
     }
+    
+    $total_records = count($employees);
     
 } catch (Exception $e) {
     error_log("Error fetching employees: " . $e->getMessage());
@@ -402,10 +330,6 @@ foreach ($employees as $emp) {
     }
 }
 
-// Pagination calculations
-$total_pages = ceil($total_records / $per_page);
-$showing_from = $total_records > 0 ? ($page - 1) * $per_page + 1 : 0;
-$showing_to = min($page * $per_page, $total_records);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -417,6 +341,8 @@ $showing_to = min($page * $per_page, $total_records);
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
@@ -489,42 +415,6 @@ $showing_to = min($page * $per_page, $total_records);
                 <div class="col-md-6">
                     <h5 class="mb-0"><i class="bi bi-list-ul"></i> Employee Records</h5>
                 </div>
-                <div class="col-md-6">
-                    <div class="row g-2">
-                        
-                        <div class="col-md-3">
-                            <select class="form-select form-select-sm" id="officeFilter">
-                                <option value="">All Offices</option>
-                                <?php foreach ($offices as $office): ?>
-                                    <option value="<?php echo $office['id']; ?>" <?php echo $office_filter == $office['id'] ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($office['office_name']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <select class="form-select form-select-sm" id="statusFilter">
-                                <option value="">All Status</option>
-                                <option value="permanent" <?php echo $status_filter == 'permanent' ? 'selected' : ''; ?>>Permanent</option>
-                                <option value="contractual" <?php echo $status_filter == 'contractual' ? 'selected' : ''; ?>>Contractual</option>
-                                <option value="job_order" <?php echo $status_filter == 'job_order' ? 'selected' : ''; ?>>Job Order</option>
-                                <option value="resigned" <?php echo $status_filter == 'resigned' ? 'selected' : ''; ?>>Resigned</option>
-                                <option value="retired" <?php echo $status_filter == 'retired' ? 'selected' : ''; ?>>Retired</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <select class="form-select form-select-sm" id="clearanceFilter">
-                                <option value="">All Clearance</option>
-                                <option value="cleared" <?php echo $clearance_filter == 'cleared' ? 'selected' : ''; ?>>Cleared</option>
-                                <option value="uncleared" <?php echo $clearance_filter == 'uncleared' ? 'selected' : ''; ?>>Uncleared</option>
-                            </select>
-                        </div>
-
-                        <div class="col-md-3">
-                            <input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Search employees..." value="<?php echo htmlspecialchars($search_filter); ?>">
-                        </div>
-                    </div>
-                </div>
             </div>
             
             <div class="table-responsive">
@@ -538,6 +428,9 @@ $showing_to = min($page * $per_page, $total_records);
                             <th>Employment Status</th>
                             <th>Clearance Status</th>
                             <th>Actions</th>
+                            <th style="display:none;">Office ID</th>
+                            <th style="display:none;">Status ID</th>
+                            <th style="display:none;">Clearance ID</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -615,11 +508,14 @@ $showing_to = min($page * $per_page, $total_records);
                                             </button>
                                         </div>
                                     </td>
+                                    <td style="display:none;"><?php echo htmlspecialchars($employee['office_id']); ?></td>
+                                    <td style="display:none;"><?php echo htmlspecialchars($employee['employment_status']); ?></td>
+                                    <td style="display:none;"><?php echo htmlspecialchars($employee['computed_clearance_status']); ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="7" class="text-center text-muted py-4">
+                                <td colspan="10" class="text-center text-muted py-4">
                                     <i class="bi bi-people fs-1"></i>
                                     <p class="mt-2">No employees found.</p>
                                 </td>
@@ -628,110 +524,6 @@ $showing_to = min($page * $per_page, $total_records);
                     </tbody>
                 </table>
             </div>
-            
-            <!-- Pagination -->
-            <?php if ($total_pages > 1): ?>
-            <div class="d-flex justify-content-between align-items-center mt-3">
-                <div class="text-muted">
-                    Showing <?php echo $showing_from; ?> to <?php echo $showing_to; ?> of <?php echo $total_records; ?> employees
-                </div>
-                <nav>
-                    <ul class="pagination pagination-sm mb-0">
-                        <?php
-                        // Build URL parameters for pagination links
-                        $url_params = http_build_query([
-                            'search' => $search_filter,
-                            'office' => $office_filter,
-                            'status' => $status_filter,
-                            'clearance' => $clearance_filter
-                        ]);
-                        
-                        // Previous button
-                        if ($page > 1):
-                            $prev_page = $page - 1;
-                            $prev_url = "?page=$prev_page" . ($url_params ? "&$url_params" : "");
-                        ?>
-                            <li class="page-item">
-                                <a class="page-link" href="<?php echo $prev_url; ?>" aria-label="Previous">
-                                    <span aria-hidden="true">&laquo;</span>
-                                </a>
-                            </li>
-                        <?php else: ?>
-                            <li class="page-item disabled">
-                                <span class="page-link" aria-label="Previous">
-                                    <span aria-hidden="true">&laquo;</span>
-                                </span>
-                            </li>
-                        <?php endif; ?>
-                        
-                        <?php
-                        // Page numbers
-                        $start_page = max(1, $page - 2);
-                        $end_page = min($total_pages, $page + 2);
-                        
-                        if ($start_page > 1):
-                            $first_url = "?page=1" . ($url_params ? "&$url_params" : "");
-                        ?>
-                            <li class="page-item">
-                                <a class="page-link" href="<?php echo $first_url; ?>">1</a>
-                            </li>
-                            <?php if ($start_page > 2): ?>
-                                <li class="page-item disabled">
-                                    <span class="page-link">...</span>
-                                </li>
-                            <?php endif; ?>
-                        <?php endif; ?>
-                        
-                        <?php for ($i = $start_page; $i <= $end_page; $i++): ?>
-                            <?php
-                            $page_url = "?page=$i" . ($url_params ? "&$url_params" : "");
-                            $is_current = $i == $page;
-                            ?>
-                            <li class="page-item <?php echo $is_current ? 'active' : ''; ?>">
-                                <?php if ($is_current): ?>
-                                    <span class="page-link"><?php echo $i; ?></span>
-                                <?php else: ?>
-                                    <a class="page-link" href="<?php echo $page_url; ?>"><?php echo $i; ?></a>
-                                <?php endif; ?>
-                            </li>
-                        <?php endfor; ?>
-                        
-                        <?php
-                        if ($end_page < $total_pages):
-                            $last_url = "?page=$total_pages" . ($url_params ? "&$url_params" : "");
-                        ?>
-                            <?php if ($end_page < $total_pages - 1): ?>
-                                <li class="page-item disabled">
-                                    <span class="page-link">...</span>
-                                </li>
-                            <?php endif; ?>
-                            <li class="page-item">
-                                <a class="page-link" href="<?php echo $last_url; ?>"><?php echo $total_pages; ?></a>
-                            </li>
-                        <?php endif; ?>
-                        
-                        <?php
-                        // Next button
-                        if ($page < $total_pages):
-                            $next_page = $page + 1;
-                            $next_url = "?page=$next_page" . ($url_params ? "&$url_params" : "");
-                        ?>
-                            <li class="page-item">
-                                <a class="page-link" href="<?php echo $next_url; ?>" aria-label="Next">
-                                    <span aria-hidden="true">&raquo;</span>
-                                </a>
-                            </li>
-                        <?php else: ?>
-                            <li class="page-item disabled">
-                                <span class="page-link" aria-label="Next">
-                                    <span aria-hidden="true">&raquo;</span>
-                                </span>
-                            </li>
-                        <?php endif; ?>
-                    </ul>
-                </nav>
-            </div>
-            <?php endif; ?>
         </div>
         
     </div>
@@ -777,6 +569,17 @@ $showing_to = min($page * $per_page, $total_records);
                             <div class="col-md-6 mb-3">
                                 <label for="addPhone" class="form-label">Phone</label>
                                 <input type="tel" class="form-control" id="addPhone" name="phone">
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="addEmployeeNo" class="form-label">Employee No. *</label>
+                                <input type="text" class="form-control" id="addEmployeeNo" name="employee_no" required placeholder="Enter employee number">
+                                <small class="text-muted">Enter unique employee number</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <!-- Empty column for balance -->
                             </div>
                         </div>
                         
@@ -901,6 +704,17 @@ $showing_to = min($page * $per_page, $total_records);
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
+                                <label for="editEmployeeNo" class="form-label">Employee No. *</label>
+                                <input type="text" class="form-control" id="editEmployeeNo" name="employee_no" required value="<?php echo htmlspecialchars($edit_employee['employee_no'] ?? ''); ?>" placeholder="Enter employee number">
+                                <small class="text-muted">Enter unique employee number</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <!-- Empty column for balance -->
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
                                 <label for="editPosition" class="form-label">Position</label>
                                 <input type="text" class="form-control" id="editPosition" name="position" value="<?php echo htmlspecialchars($edit_employee['position'] ?? ''); ?>">
                             </div>
@@ -995,6 +809,9 @@ $showing_to = min($page * $per_page, $total_records);
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
     <?php require_once 'includes/sidebar-scripts.php'; ?>
     <script>
         $(document).ready(function() {
@@ -1003,80 +820,114 @@ $showing_to = min($page * $per_page, $total_records);
                 $('#editEmployeeModal').modal('show');
             <?php endif; ?>
             
-            // Search functionality with debounce
-            $('#searchInput').on('keyup change', function() {
-                // Get current URL parameters
-                var urlParams = new URLSearchParams(window.location.search);
-                
-                var search = $(this).val();
-                
-                // Update search parameter
-                if (search) {
-                    urlParams.set('search', search);
-                } else {
-                    urlParams.delete('search');
-                }
-                
-                // Preserve other filter parameters
-                var office = $('#officeFilter').val();
-                var status = $('#statusFilter').val();
-                var clearance = $('#clearanceFilter').val();
-                
-                if (office) urlParams.set('office', office);
-                if (status) urlParams.set('status', status);
-                if (clearance) urlParams.set('clearance', clearance);
-                
-                // Reset to page 1 when searching
-                urlParams.delete('page');
-                
-                // Reload page with search parameter (with debounce)
-                clearTimeout(window.searchTimeout);
-                window.searchTimeout = setTimeout(function() {
-                    window.location.href = window.location.pathname + '?' + urlParams.toString();
-                }, 500);
-            });
+            // Initialize DataTable
+            let employeesTable;
             
-            // Filter functionality
-            $('#officeFilter, #statusFilter, #clearanceFilter').on('change', function() {
-                // Get current URL parameters
-                var urlParams = new URLSearchParams(window.location.search);
-                
-                // Update filter values
-                var office = $('#officeFilter').val();
-                var status = $('#statusFilter').val();
-                var clearance = $('#clearanceFilter').val();
-                var search = $('#searchInput').val();
-                
-                // Set parameters
-                if (office) {
-                    urlParams.set('office', office);
+            // Check if table has data rows before initializing DataTables
+            const tableBody = $('#employeesTable tbody');
+            const hasData = tableBody.find('tr').length > 0 && !tableBody.find('td[colspan]').length;
+            
+            console.log('Table has data:', hasData);
+            console.log('Table rows found:', tableBody.find('tr').length);
+            
+            // Initialize DataTable with error handling
+            try {
+                if (hasData) {
+                    // Only initialize DataTables if there's actual data
+                    employeesTable = $('#employeesTable').DataTable({
+                        responsive: true,
+                        pageLength: 25,
+                        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                        dom: '<"row"<"col-md-2"l><"col-md-2 office-filter-container"><"col-md-2 status-filter-container"><"col-md-2 clearance-filter-container"><"col-md-4"f>>rtip',
+                        language: {
+                            search: "Search employees:",
+                            lengthMenu: "Show _MENU_ employees per page",
+                            info: "Showing _START_ to _END_ of _TOTAL_ employees",
+                            infoEmpty: "Showing 0 to 0 of 0 employees",
+                            infoFiltered: "(filtered from _MAX_ total employees)",
+                            zeroRecords: "No matching employees found"
+                        },
+                        initComplete: function(settings, json) {
+                            console.log('DataTables initialized successfully');
+                            
+                            // Add office filter to DataTables
+                            $('.office-filter-container').html(`
+                                <select id="officeFilter" class="form-select form-select-sm">
+                                    <option value="">Office</option>
+                                    <?php foreach ($offices as $office): ?>
+                                        <option value="<?php echo $office['id']; ?>"><?php echo htmlspecialchars($office['office_name']); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            `);
+                            
+                            // Add status filter to DataTables
+                            $('.status-filter-container').html(`
+                                <select id="statusFilter" class="form-select form-select-sm">
+                                    <option value="">Status</option>
+                                    <option value="permanent">Permanent</option>
+                                    <option value="contractual">Contractual</option>
+                                    <option value="job_order">Job Order</option>
+                                    <option value="resigned">Resigned</option>
+                                    <option value="retired">Retired</option>
+                                </select>
+                            `);
+                            
+                            // Add clearance filter to DataTables
+                            $('.clearance-filter-container').html(`
+                                <select id="clearanceFilter" class="form-select form-select-sm">
+                                    <option value="">Clearance</option>
+                                    <option value="cleared">Cleared</option>
+                                    <option value="uncleared">Uncleared</option>
+                                </select>
+                            `);
+                            
+                            // Set initial filter values if they exist in URL
+                            const urlParams = new URLSearchParams(window.location.search);
+                            if (urlParams.get('office')) $('#officeFilter').val(urlParams.get('office'));
+                            if (urlParams.get('status')) $('#statusFilter').val(urlParams.get('status'));
+                            if (urlParams.get('clearance')) $('#clearanceFilter').val(urlParams.get('clearance'));
+                        }
+                    });
                 } else {
-                    urlParams.delete('office');
+                    // No data - don't initialize DataTables, just add basic styling
+                    $('#employeesTable').addClass('table-striped');
+                    console.log('No data found - DataTables not initialized');
+                }
+            } catch (error) {
+                console.error('DataTables initialization error:', error);
+                // Fallback: make table work without DataTables
+                $('#employeesTable').addClass('table-striped');
+            }
+            
+            // DataTables filter functionality
+            $(document).on('change', '#officeFilter, #statusFilter, #clearanceFilter', function() {
+                if (!employeesTable) return;
+                
+                const officeValue = $('#officeFilter').val();
+                const statusValue = $('#statusFilter').val();
+                const clearanceValue = $('#clearanceFilter').val();
+                
+                // Apply filters to DataTables using hidden columns
+                // Office filter (column 7 - hidden Office ID)
+                if (officeValue) {
+                    employeesTable.column(7).search(officeValue).draw();
+                } else {
+                    employeesTable.column(7).search('').draw();
                 }
                 
-                if (status) {
-                    urlParams.set('status', status);
+                // Status filter (column 8 - hidden Status ID)
+                if (statusValue) {
+                    employeesTable.column(8).search(statusValue).draw();
                 } else {
-                    urlParams.delete('status');
+                    employeesTable.column(8).search('').draw();
                 }
                 
-                if (clearance) {
-                    urlParams.set('clearance', clearance);
+                // Clearance filter (column 9 - hidden Clearance ID)
+                if (clearanceValue) {
+                    employeesTable.column(9).search(clearanceValue).draw();
                 } else {
-                    urlParams.delete('clearance');
+                    employeesTable.column(9).search('').draw();
                 }
-                
-                if (search) {
-                    urlParams.set('search', search);
-                } else {
-                    urlParams.delete('search');
-                }
-                
-                // Reset to page 1 when filtering
-                urlParams.delete('page');
-                
-                // Reload page with new parameters
-                window.location.href = window.location.pathname + '?' + urlParams.toString();
             });
         });
 
@@ -1146,32 +997,41 @@ $showing_to = min($page * $per_page, $total_records);
             window.location.href = 'employees.php?edit_id=' + id;
         }
         
-        // Export employees function
+        // Export employees function (manual export only)
         function exportEmployees() {
+            console.log('Export function called');
+            exportTableManually();
+        }
+        
+        // Manual export function for when DataTables is not available
+        function exportTableManually() {
+            console.log('Using manual table export');
             let csv = 'Employee No,Name,Middle Name,Email,Office,Position,Designations,Employment Status,Clearance Status\n';
             
-            <?php if (!empty($employees)): ?>
-                <?php foreach ($employees as $employee): ?>
-                    csv += '<?php echo 
-                        '"' . addslashes($employee['employee_no'] ?? 'N/A') . '",' .
-                        '"' . addslashes(($employee['firstname'] ?? '') . ' ' . ($employee['middle_name'] ?? '') . ' ' . ($employee['lastname'] ?? '')) . '",' .
-                        '"' . addslashes($employee['middlename'] ?? '') . '",' .
-                        '"' . addslashes($employee['email'] ?? '') . '",' .
-                        '"' . addslashes($employee['office_name'] ?? 'N/A') . '",' .
-                        '"' . addslashes($employee['position'] ?? '') . '",' .
-                        '"'; 
-                        if (!empty($employee['designation'])) {
-                            $designations = json_decode($employee['designation'], true);
-                            if (!empty($designations) && is_array($designations)) {
-                                echo addslashes(implode(', ', $designations));
-                            }
-                        }
-                        echo '",' .
-                        '"' . addslashes(ucfirst(str_replace('_', ' ', $employee['employment_status'] ?? 'permanent'))) . '",' .
-                        '"' . addslashes(ucfirst($employee['clearance_status'] ?? 'uncleared')) . '"' 
-                    ; ?>' + '\n';
-                <?php endforeach; ?>
-            <?php endif; ?>
+            $('#employeesTable tbody tr').each(function() {
+                const $row = $(this);
+                // Skip empty state rows
+                if ($row.find('td[colspan]').length > 0) {
+                    return;
+                }
+                
+                const cells = $row.find('td');
+                const employeeNo = $(cells[1]).text().trim();
+                const name = $(cells[2]).text().trim();
+                const office = $(cells[3]).text().trim();
+                const status = $(cells[4]).text().trim();
+                const clearance = $(cells[5]).text().trim();
+                
+                csv += '"' + employeeNo + '",' +
+                       '"' + name + '",' +
+                       '",' + // Middle name (not displayed in table)
+                       '",' + // Email (not displayed in table)
+                       '"' + office + '",' +
+                       '",' + // Position (not displayed in table)
+                       '",' + // Designations (not displayed in table)
+                       '"' + status + '",' +
+                       '"' + clearance + '"' + '\n';
+            });
             
             const blob = new Blob([csv], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
