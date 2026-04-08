@@ -31,7 +31,7 @@ $category_fields = [
     'MV' => [
         // Basic Information
         'brand' => ['label' => 'Brand', 'type' => 'text', 'required' => false],
-        'model' => ['label' => 'Model', 'type' => 'text', 'required' => false],
+        
         'plate_number' => ['label' => 'Plate Number', 'type' => 'text', 'required' => false],
         'color' => ['label' => 'Color', 'type' => 'text', 'required' => false],
         

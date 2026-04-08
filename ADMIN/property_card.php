@@ -80,12 +80,12 @@ if ($conn && !$conn->connect_error) {
         
         // Add category filter
         if (!empty($selected_category)) {
-            $query .= " AND ac.category_code = '" . $conn->real_escape_string($selected_category) . "'";
+            $query .= " AND ac.category_name = '" . $conn->real_escape_string($selected_category) . "'";
         }
         
         // Add office filter
         if (!empty($selected_office)) {
-            $query .= " AND (o1.office_code = '" . $conn->real_escape_string($selected_office) . "' OR o2.office_code = '" . $conn->real_escape_string($selected_office) . "')";
+            $query .= " AND (o1.office_name = '" . $conn->real_escape_string($selected_office) . "' OR o2.office_name = '" . $conn->real_escape_string($selected_office) . "')";
         }
         
         $query .= " ORDER BY ai.created_at ASC";
@@ -226,20 +226,17 @@ if ($conn && !$conn->connect_error) {
                                         <span class="property-no"><?php echo htmlspecialchars($item['property_no']); ?></span>
                                     </td>
                                     <td>
-                                        <span class="category-badge"><?php echo htmlspecialchars($item['asset_category_code']); ?></span>
-                                        <br><small class="text-muted"><?php echo htmlspecialchars($item['asset_category']); ?></small>
+                                        <span class="category-badge"><?php echo htmlspecialchars($item['asset_category']); ?></span>
                                     </td>
                                     <td>
                                         <?php echo htmlspecialchars($item['description']); ?>
                                     </td>
                                     <td>
-                                        <span class="office-code-only"><?php echo htmlspecialchars($item['office_code']); ?></span>
-                                        <br><small class="text-muted"><?php echo htmlspecialchars($item['office_name']); ?></small>
+                                        <span class="office-name"><?php echo htmlspecialchars($item['office_name']); ?></span>
                                     </td>
                                     <td>
                                         <?php if ($item['employee_name']): ?>
                                             <?php echo htmlspecialchars($item['employee_name']); ?>
-                                            <br><small class="text-muted"><?php echo htmlspecialchars($item['employee_no']); ?></small>
                                         <?php else: ?>
                                             <span class="text-muted">Not assigned</span>
                                         <?php endif; ?>
@@ -307,7 +304,7 @@ if ($conn && !$conn->connect_error) {
                         <select id="categoryFilter" class="form-select form-select-sm">
                             <option value="">All Categories</option>
                             <?php foreach ($categories as $category): ?>
-                                <option value="<?php echo $category['category_code']; ?>" <?php echo $selected_category === $category['category_code'] ? 'selected' : ''; ?>>
+                                <option value="<?php echo $category['category_name']; ?>" <?php echo $selected_category === $category['category_name'] ? 'selected' : ''; ?>>
                                     <?php echo htmlspecialchars($category['category_name']); ?>
                                 </option>
                             <?php endforeach; ?>
@@ -319,7 +316,7 @@ if ($conn && !$conn->connect_error) {
                         <select id="officeFilter" class="form-select form-select-sm">
                             <option value="">All Offices</option>
                             <?php foreach ($offices as $office): ?>
-                                <option value="<?php echo $office['office_code']; ?>" <?php echo $selected_office === $office['office_code'] ? 'selected' : ''; ?>>
+                                <option value="<?php echo $office['office_name']; ?>" <?php echo $selected_office === $office['office_name'] ? 'selected' : ''; ?>>
                                     <?php echo htmlspecialchars($office['office_name']); ?>
                                 </option>
                             <?php endforeach; ?>

@@ -576,8 +576,8 @@ try {
             logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "Desktop computer condition NOT MET - skipping desktop fields");
         }
     }
-    elseif ($category && $category['category_code'] === '07') {
-        // Vehicles specific fields
+    elseif ($category && ($category['category_code'] === '07' || $category['category_code'] === '06-010')) {
+        // Vehicles specific fields (including MV category 06-010)
         $brand = trim($_POST['brand'] ?? '');
         $model = trim($_POST['model'] ?? '');
         $plate_number = trim($_POST['plate_number'] ?? '');
@@ -614,6 +614,20 @@ try {
         if (!$vehicle_result) {
             throw new Exception('Failed to save vehicle details: ' . mysqli_error($conn));
         }
+        
+        // Log vehicle specifications insertion
+        $vehicle_details = sprintf(
+            "Vehicle specs saved - Brand: %s, Model: %s, Plate: %s, Color: %s, Engine: %s, Chassis: %s, Year: %d",
+            $brand ?: 'Not specified',
+            $model ?: 'Not specified',
+            $plate_number ?: 'Not specified',
+            $color ?: 'Not specified',
+            $engine_number ?: 'Not specified',
+            $chassis_number ?: 'Not specified',
+            $year_model ?: 0
+        );
+        
+        logSystemAction($_SESSION['user_id'], 'update', 'asset_vehicles', $vehicle_details);
     }
     elseif ($category && $category['category_code'] === '02') {
         // Furniture & Fixtures specific fields
