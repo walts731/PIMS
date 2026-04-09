@@ -29,12 +29,24 @@ $print_section = $_GET['section'] ?? 'all';
 
 // Get system settings for print header
 $system_settings = [];
+$system_name = 'Property Inventory Management System';
 if ($conn && !$conn->connect_error) {
-    $result = $conn->query("SELECT * FROM system_settings LIMIT 1");
-    if ($result && $row = $result->fetch_assoc()) {
-        $system_settings = $row;
+    try {
+        $result = $conn->query("SELECT setting_name, setting_value FROM system_settings");
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $system_settings[$row['setting_name']] = $row['setting_value'];
+            }
+        }
+    } catch (Exception $e) {
+        error_log("Error fetching system settings: " . $e->getMessage());
     }
 }
+$system_name = $system_settings['system_name'] ?? $system_name;// Get filter parameters
+$selected_category = $_GET['category'] ?? '';
+$selected_office = $_GET['office'] ?? '';
+$selected_tab = $_GET['tab'] ?? 'fixed';
+$print_section = $_GET['section'] ?? 'all';
 
 // Get summary data
 $office_summary = [];
@@ -44,26 +56,27 @@ $total_value = 0;
 
 if ($conn && !$conn->connect_error) {
     try {
-        // Base query
+        // Base query conditions depending on tab
+        $tab_condition = "";
+        if ($selected_tab == 'semi') {
+            $tab_condition = "(ai.ics_id IS NOT NULL AND ai.ics_id != '') OR (ai.ics_par_no IS NOT NULL AND ai.ics_par_no != '' AND ai.value < 50000)";
+        } else {
+            $tab_condition = "(ai.par_id IS NOT NULL AND ai.par_id != '') OR (ai.ics_par_no IS NOT NULL AND ai.ics_par_no != '' AND ai.value >= 50000)";
+        }
+
         $base_query = "FROM asset_items ai
-                       LEFT JOIN asset_categories ac ON ai.category_id = ac.id
+                       LEFT JOIN asset_categories ac ON ai.asset_category_id = ac.id
                        LEFT JOIN offices o1 ON ai.office_id = o1.id
                        LEFT JOIN employees e ON ai.employee_id = e.id
                        LEFT JOIN offices o2 ON e.office_id = o2.id
-                       LEFT JOIN par_forms pf ON ai.par_id = pf.id
-                       WHERE ai.par_id IS NOT NULL AND ai.par_id != ''";
+                       WHERE ($tab_condition)";
         
         // Add filters
-        $where_conditions = [];
         if (!empty($selected_category)) {
-            $where_conditions[] = "ac.category_code = '" . $conn->real_escape_string($selected_category) . "'";
+            $base_query .= " AND ac.category_name = '" . $conn->real_escape_string($selected_category) . "'";
         }
         if (!empty($selected_office)) {
-            $where_conditions[] = "(o1.office_code = '" . $conn->real_escape_string($selected_office) . "' OR o2.office_code = '" . $conn->real_escape_string($selected_office) . "')";
-        }
-        
-        if (!empty($where_conditions)) {
-            $base_query .= " AND " . implode(" AND ", $where_conditions);
+            $base_query .= " AND (o1.office_name = '" . $conn->real_escape_string($selected_office) . "' OR o2.office_name = '" . $conn->real_escape_string($selected_office) . "')";
         }
         
         // Get office summary
@@ -126,6 +139,7 @@ if ($conn && !$conn->connect_error) {
             margin: 0;
             padding: 0;
             background: white;
+            color: #000000;
         }
         
         .print-header {
@@ -136,14 +150,13 @@ if ($conn && !$conn->connect_error) {
             text-align: center;
             margin-bottom: 15px;
             padding: 10px;
-            background: #f8f9fa;
         }
         
         .gov-title {
             font-size: 18px;
             font-weight: bold;
             margin-bottom: 8px;
-            color: #333;
+            color: #000000;
             line-height: 1.2;
         }
         
@@ -151,26 +164,26 @@ if ($conn && !$conn->connect_error) {
             font-size: 14px;
             font-weight: bold;
             margin-bottom: 4px;
-            color: #000;
+            color: #000000;
         }
         
         .province {
             font-size: 14px;
             font-weight: bold;
             margin-bottom: 15px;
-            color: #000;
+            color: #000000;
         }
         
         .print-title {
             font-size: 16px;
             font-weight: bold;
             margin-bottom: 4px;
-            color: var(--primary-color);
+            color: #000000;
         }
         
         .print-subtitle {
             font-size: 11px;
-            color: #666;
+            color: #000000;
             margin-bottom: 15px;
         }
         
@@ -181,34 +194,6 @@ if ($conn && !$conn->connect_error) {
             padding: 8px;
             background: #f9f9f9;
             border: 1px solid #ddd;
-        }
-        
-        .summary-stats {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        
-        .stat-box {
-            border: 2px solid var(--primary-color);
-            padding: 10px;
-            text-align: center;
-            min-width: 120px;
-            background: #f8f9fa;
-        }
-        
-        .stat-number {
-            font-size: 20px;
-            font-weight: bold;
-            color: var(--primary-color);
-            margin-bottom: 4px;
-        }
-        
-        .stat-label {
-            font-size: 10px;
-            color: #666;
-            text-transform: uppercase;
         }
         
         .summary-section {
@@ -277,21 +262,22 @@ if ($conn && !$conn->connect_error) {
             <!-- Logo on the left -->
             <div style="flex-shrink: 0;">
                 <?php 
+                $print_logo_path = '../assets/images/logo.png';
                 if (!empty($system_settings['system_logo'])) {
-                    echo '<img src="../' . htmlspecialchars($system_settings['system_logo']) . '" alt="' . htmlspecialchars($system_settings['system_name'] ?? 'PIMS') . '" style="max-width: 250px; max-height: 100px;">';
+                    echo '<img src="../' . htmlspecialchars($system_settings['system_logo']) . '" alt="' . htmlspecialchars($system_name) . '" style="max-width: 250px; max-height: 100px;">';
                 } else {
-                    echo '<img src="../img/system_logo.png" alt="' . htmlspecialchars($system_settings['system_name'] ?? 'PIMS') . '" style="max-width: 250px; max-height: 100px;">';
+                    echo '<img src="' . htmlspecialchars($print_logo_path) . '" alt="' . htmlspecialchars($system_name) . '" style="max-width: 250px; max-height: 100px;">';
                 }
                 ?>
             </div>
             
             <!-- Government header on the right -->
-            <div style="flex: 1;">
+            <div style="flex: 1; margin-right: 270px;">
                 <div class="gov-header" style="text-align: center; padding: 0;">
                     <div class="gov-title">Republic of the Philippines</div>
                     <div class="municipality">Municipality of Pilar</div>
                     <div class="province">Province of Sorsogon</div>
-                    <div class="print-title"><?php echo htmlspecialchars($system_settings['system_name'] ?? 'PIMS'); ?> - Property Summary Report</div>
+                    <div class="print-title"><?php echo htmlspecialchars($system_settings['system_name'] ?? 'PIMS'); ?> - <?php echo $selected_tab == 'semi' ? 'Semi-Expandable' : 'PPE'; ?> Summary Report</div>
                     <div class="print-subtitle">Generated on <?php echo date('F j, Y g:i A'); ?></div>
                 </div>
             </div>
@@ -310,26 +296,6 @@ if ($conn && !$conn->connect_error) {
             <?php endif; ?>
         </div>
     <?php endif; ?>
-    
-    <!-- Overall Statistics -->
-    <div class="summary-stats">
-        <div class="stat-box">
-            <div class="stat-number"><?php echo number_format($total_items); ?></div>
-            <div class="stat-label">Total Items</div>
-        </div>
-        <div class="stat-box">
-            <div class="stat-number">₱<?php echo number_format($total_value, 2); ?></div>
-            <div class="stat-label">Total Value</div>
-        </div>
-        <div class="stat-box">
-            <div class="stat-number">₱<?php echo number_format(array_sum(array_column($office_summary, 'total_value')), 2); ?></div>
-            <div class="stat-label">Office Total Value</div>
-        </div>
-        <div class="stat-box">
-            <div class="stat-number">₱<?php echo number_format(array_sum(array_column($category_summary, 'total_value')), 2); ?></div>
-            <div class="stat-label">Category Total Value</div>
-        </div>
-    </div>
     
     <?php if (empty($office_summary) && empty($category_summary)): ?>
         <div class="no-data">

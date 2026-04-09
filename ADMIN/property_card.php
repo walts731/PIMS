@@ -190,14 +190,14 @@ if ($conn && !$conn->connect_error) {
                 <a class="nav-link <?php echo (!isset($_GET['tab']) || $_GET['tab'] == 'fixed') ? 'active' : ''; ?>" 
                    href="?tab=fixed<?php echo $selected_category ? '&category='.urlencode($selected_category) : ''; ?><?php echo $selected_office ? '&office='.urlencode($selected_office) : ''; ?>" 
                    role="tab" style="font-weight: 600;">
-                    <i class="bi bi-card-checklist me-2"></i>Fixed Assets (50k Above)
+                    <i class="bi bi-card-checklist me-2"></i>PPE
                 </a>
             </li>
             <li class="nav-item" role="presentation">
                 <a class="nav-link <?php echo (isset($_GET['tab']) && $_GET['tab'] == 'semi') ? 'active' : ''; ?>" 
                    href="?tab=semi<?php echo $selected_category ? '&category='.urlencode($selected_category) : ''; ?><?php echo $selected_office ? '&office='.urlencode($selected_office) : ''; ?>" 
                    role="tab" style="font-weight: 600;">
-                    <i class="bi bi-box-seam me-2"></i>Semi-Expandable (Below 50k)
+                    <i class="bi bi-box-seam me-2"></i>Semi-Expandable
                 </a>
             </li>
         </ul>
