@@ -1,0 +1,480 @@
+<?php
+session_start();
+require_once '../config.php';
+require_once '../includes/system_functions.php';
+
+// Check if user is logged in
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['system_admin', 'admin'])) {
+    header('Location: ../index.php');
+    exit();
+}
+
+$item_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+
+if ($item_id === 0) {
+    die("Invalid Item ID");
+}
+
+// Get asset item details
+$item = null;
+$item_sql = "SELECT ai.*, 
+                   ac.category_name, ac.category_code,
+                   o.office_name, o.office_code,
+                   e.firstname, e.lastname,
+                   veh.brand as vehicle_brand, veh.model as vehicle_model, veh.plate_number, veh.engine_number, veh.chassis_number,
+                   furn.material, furn.dimensions,
+                   mach.machine_type, mach.serial_number as mach_serial,
+                   comp.processor, comp.ram_capacity, comp.storage_capacity
+            FROM asset_items ai 
+            LEFT JOIN asset_categories ac ON ai.asset_category_id = ac.id
+            LEFT JOIN offices o ON ai.office_id = o.id 
+            LEFT JOIN employees e ON ai.employee_id = e.id
+            LEFT JOIN asset_vehicles veh ON ai.id = veh.asset_item_id
+            LEFT JOIN asset_furniture furn ON ai.id = furn.asset_item_id
+            LEFT JOIN asset_machinery mach ON ai.id = mach.asset_item_id
+            LEFT JOIN asset_computers comp ON ai.id = comp.asset_item_id
+            WHERE ai.id = ?";
+
+$stmt = $conn->prepare($item_sql);
+$stmt->bind_param("i", $item_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$item = $result->fetch_assoc();
+$stmt->close();
+
+if (!$item) {
+    die("Item not found");
+}
+
+// Get system settings for logo
+$system_settings = [];
+$settings_result = $conn->query("SELECT setting_name, setting_value FROM system_settings");
+while ($row = $settings_result->fetch_assoc()) {
+    $system_settings[$row['setting_name']] = $row['setting_value'];
+}
+$logo_path = '../assets/images/logo.png';
+if (!empty($system_settings['system_logo'])) {
+    $logo_path = '../' . $system_settings['system_logo'];
+}
+$system_name = $system_settings['system_name'] ?? 'PIMS';
+
+// Prepare Article description
+$article_details = $item['description'];
+if ($item['category_code'] === '030') { // Computer
+    $article_details .= "\nPROCESSOR: " . ($item['processor'] ?: 'N/A');
+    $article_details .= "\nRAM: " . ($item['ram_capacity'] ?: 'N/A');
+} elseif ($item['category_code'] === '07') { // Vehicles
+    $article_details .= "\nMODEL: " . ($item['vehicle_model'] ?: 'N/A');
+    $article_details .= "\nENGINE: " . ($item['engine_number'] ?: 'N/A');
+}
+
+// Handle Add Improvement Submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_improvement') {
+    $improvement_date = $_POST['improvement_date'] ?: date('Y-m-d');
+    $description = trim($_POST['description']);
+    $qty = intval($_POST['qty']) ?: 1;
+    $amount = floatval($_POST['amount']);
+    $remarks = trim($_POST['remarks']);
+    
+    // Start transaction
+    $conn->begin_transaction();
+    try {
+        // Insert into improvements table
+        $ins_sql = "INSERT INTO asset_item_improvements (item_id, improvement_date, description, qty, amount, remarks) VALUES (?, ?, ?, ?, ?, ?)";
+        $ins_stmt = $conn->prepare($ins_sql);
+        $ins_stmt->bind_param("issids", $item_id, $improvement_date, $description, $qty, $amount, $remarks);
+        $ins_stmt->execute();
+        
+        // Update asset_items total value
+        $upd_sql = "UPDATE asset_items SET value = value + ? WHERE id = ?";
+        $upd_stmt = $conn->prepare($upd_sql);
+        $upd_stmt->bind_param("di", $amount, $item_id);
+        $upd_stmt->execute();
+        
+        // Record in system history
+        logSystemAction($_SESSION['user_id'], 'add_improvement', 'asset_management', "Added improvement/repair of {$amount} to Asset Item ID: {$item_id}");
+        
+        $conn->commit();
+        $_SESSION['success'] = "Improvement added successfully!";
+        header("Location: card_item.php?id=" . $item_id);
+        exit();
+    } catch (Exception $e) {
+        $conn->rollback();
+        $_SESSION['error'] = "Failed to add improvement: " . $e->getMessage();
+    }
+}
+
+// Fetch all improvements
+$improvements = [];
+$imp_result = $conn->query("SELECT * FROM asset_item_improvements WHERE item_id = $item_id ORDER BY improvement_date ASC");
+if ($imp_result) {
+    while ($row = $imp_result->fetch_assoc()) {
+        $improvements[] = $row;
+    }
+}
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property Card Detail - <?php echo htmlspecialchars($item['property_no']); ?> | PIMS</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="../assets/css/index.css" rel="stylesheet">
+    <link href="../assets/css/theme-custom.css" rel="stylesheet">
+    <link href="assets/css/admin-unified.css" rel="stylesheet">
+    
+    <style>
+        .property-card-view {
+            background: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .card-preview {
+            border: 2px solid #000;
+            padding: 20px;
+            box-sizing: border-box;
+            background: #fff;
+            color: #000;
+            font-family: Arial, sans-serif;
+            text-align: left;
+        }
+        
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 5px;
+            position: relative;
+        }
+        
+        .logo-img {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 70px;
+            height: 70px;
+            object-fit: contain;
+        }
+        
+        .header-text {
+            text-align: center;
+        }
+        
+        .gov-title { font-size: 14px; font-weight: bold; }
+        .municipality { font-size: 16px; font-weight: bold; }
+        .province { font-size: 14px; }
+        
+        .main-title {
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 10px;
+            text-decoration: underline;
+        }
+        
+        .office-location {
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            color: #0d6efd;
+            text-decoration: underline;
+            margin-top: 5px;
+        }
+        
+        .office-sub {
+            text-align: center;
+            font-size: 11px;
+            margin-bottom: 20px;
+            color: #666;
+        }
+        
+        .info-grid {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+            font-size: 12px;
+        }
+        
+        .info-grid td {
+            border: 1px solid #000;
+            padding: 6px 10px;
+        }
+        
+        .label { font-weight: normal; color: #333; }
+        .data { font-weight: bold; text-transform: uppercase; }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        
+        .data-table th, .data-table td {
+            border: 1px solid #000;
+            padding: 8px;
+            text-align: center;
+            vertical-align: middle;
+        }
+        
+        .data-table th {
+            background-color: #f8f9fa;
+            text-transform: uppercase;
+        }
+        
+        .article-cell {
+            text-align: left !important;
+            white-space: pre-line;
+            font-weight: bold;
+        }
+
+        @media print {
+            /* Hide all UI elements */
+            .sidebar, .topbar, .page-header, .no-print, .sidebar-toggle, .sidebar-overlay {
+                display: none !important;
+            }
+            
+            /* Reset layout for print */
+            .main-wrapper, .main-content {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100% !important;
+                height: 100% !important;
+                min-height: unset !important;
+                background: white !important;
+                display: block !important;
+            }
+            
+            /* Hide the container box shadow/padding */
+            .property-card-view {
+                padding: 0 !important;
+                box-shadow: none !important;
+                margin: 0 !important;
+                max-width: none !important;
+            }
+
+            .card-preview {
+                width: 8in;
+                height: 5in;
+                border: 2px solid #000;
+                margin: 0 auto;
+            }
+            
+            body { 
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            
+            @page {
+                size: 8.5in 5.5in landscape;
+                margin: 0.25in;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-wrapper" id="mainWrapper">
+        <?php require_once 'includes/sidebar-toggle.php'; ?>
+        <?php require_once 'includes/sidebar.php'; ?>
+        <?php require_once 'includes/topbar.php'; ?>
+
+        <div class="main-content">
+            <div class="page-header no-print">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h1 class="mb-2">
+                            <i class="bi bi-card-text"></i> Property Card Preview
+                        </h1>
+                        <p class="text-muted mb-0">Single item property card record for administrative filing</p>
+                    </div>
+                    <div class="col-md-4 text-md-end no-print">
+                        <div class="dropdown">
+                            <button class="btn btn-primary dropdown-toggle" type="button" id="cardActions" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-gear-fill me-1"></i> Actions
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius: 12px;">
+                                <li>
+                                    <button class="dropdown-item py-2" data-bs-toggle="modal" data-bs-target="#improvementModal">
+                                        <i class="bi bi-plus-circle me-2 text-success"></i> Add Improvement
+                                    </button>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item py-2" onclick="window.print()">
+                                        <i class="bi bi-printer me-2 text-primary"></i> Print Property Card
+                                    </button>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a href="property_card.php" class="dropdown-item py-2 text-danger">
+                                        <i class="bi bi-arrow-left-circle me-2"></i> Back to Property Card
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Toast Notifications -->
+            <?php if (isset($_SESSION['success'])): ?>
+                <div class="alert alert-success alert-dismissible fade show no-print" role="alert">
+                    <i class="bi bi-check-circle me-2"></i> <?php echo $_SESSION['success']; unset($_SESSION['success']); ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            <?php endif; ?>
+            <?php if (isset($_SESSION['error'])): ?>
+                <div class="alert alert-danger alert-dismissible fade show no-print" role="alert">
+                    <i class="bi bi-exclamation-triangle me-2"></i> <?php echo $_SESSION['error']; unset($_SESSION['error']); ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            <?php endif; ?>
+
+            <div class="property-card-view">
+                <div class="card-preview">
+                    <!-- Card Header -->
+                    <div class="header">
+                        <img src="<?php echo htmlspecialchars($logo_path); ?>" alt="Logo" class="logo-img">
+                        <div class="header-text">
+                            <div class="gov-title">Republic of the Philippines</div>
+                            <div class="municipality">Municipality of Pilar</div>
+                            <div class="province">Province of Sorsogon</div>
+                        </div>
+                    </div>
+                    
+                    <div class="main-title">PROPERTY CARD</div>
+                    <div class="office-location"><?php echo htmlspecialchars($item['office_name']); ?></div>
+                    <div class="office-sub">(Department/Office/Location)</div>
+                    
+                    <!-- Item Info Grid -->
+                    <table class="info-grid">
+                        <tr>
+                            <td class="label" style="width: 15%;">Property Number:</td>
+                            <td class="data" style="width: 35%;"><?php echo htmlspecialchars($item['property_no']); ?></td>
+                            <td class="label" style="width: 15%;">Description:</td>
+                            <td class="data" colspan="3"><?php echo htmlspecialchars($item['description']); ?></td>
+                        </tr>
+                        <tr>
+                            <td class="label">Type :</td>
+                            <td class="data"><?php echo htmlspecialchars($item['category_name']); ?></td>
+                            <td class="label">Serial No.</td>
+                            <td class="data" style="width: 20%;"><?php echo htmlspecialchars($item['serial_number'] ?: 'N/A'); ?></td>
+                            <td class="label" style="width: 10%;">Location:</td>
+                            <td class="data"><?php echo htmlspecialchars($item['office_name']); ?></td>
+                        </tr>
+                    </table>
+                    
+                    <!-- Transactions Table -->
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 15%;">Acquisition Date</th>
+                                <th style="width: 25%;">Article</th>
+                                <th style="width: 5%;">Qty</th>
+                                <th style="width: 15%;">Unit Value</th>
+                                <th style="width: 15%;">Improvement / Repairs</th>
+                                <th style="width: 12.5%;">Total</th>
+                                <th style="width: 12.5%;">Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Initial Acquisition Row -->
+                            <tr>
+                                <td><?php echo date('M. Y', strtotime($item['acquisition_date'] ?: $item['created_at'])); ?></td>
+                                <td class="article-cell"><?php echo htmlspecialchars($article_details); ?></td>
+                                <td>1</td>
+                                <td><?php echo number_format($item['value'] - array_sum(array_column($improvements, 'amount')), 2); ?></td>
+                                <td>N/A</td>
+                                <td><strong><?php echo number_format($item['value'] - array_sum(array_column($improvements, 'amount')), 2); ?></strong></td>
+                                <td style="font-weight: bold;"><?php echo strtoupper($item['status']); ?></td>
+                            </tr>
+                            
+                            <!-- Improvement Rows -->
+                            <?php foreach ($improvements as $imp): ?>
+                            <tr>
+                                <td><?php echo date('M. Y', strtotime($imp['improvement_date'])); ?></td>
+                                <td class="article-cell"><?php echo htmlspecialchars($article_details); ?></td>
+                                <td><?php echo $imp['qty']; ?></td>
+                                <td><?php echo number_format($imp['amount'] / $imp['qty'], 2); ?></td>
+                                <td><?php echo htmlspecialchars($imp['description']); ?></td>
+                                <td><strong><?php echo number_format($imp['amount'], 2); ?></strong></td>
+                                <td style="font-weight: bold;"><?php echo strtoupper($imp['remarks'] ?: 'REPAIR/IMP'); ?></td>
+                            </tr>
+                            <?php endforeach; ?>
+
+                            <!-- Fill empty rows if needed for alignment -->
+                            <?php for($i = count($improvements); $i < 4; $i++): ?>
+                            <tr><td height="35"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                            <?php endfor; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Improvement Modal -->
+    <div class="modal fade no-print" id="improvementModal" tabindex="-1" aria-labelledby="improvementModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow" style="border-radius: 15px;">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="improvementModalLabel">
+                        <i class="bi bi-tools text-primary me-2"></i> Add Improvement / Repair
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="POST">
+                    <input type="hidden" name="action" value="add_improvement">
+                    <div class="modal-body pt-4">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Date of Improvement</label>
+                            <input type="date" name="improvement_date" class="form-control" value="<?php echo date('Y-m-d'); ?>" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Description / Article Details</label>
+                            <textarea name="description" class="form-control" rows="3" placeholder="Describe the improvement or repair detail..." required></textarea>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label class="form-label small fw-bold text-muted">Quantity</label>
+                                <input type="number" name="qty" class="form-control" value="1" min="1" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-bold text-muted">Total Cost (Amount)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light">₱</span>
+                                    <input type="number" name="amount" class="form-control" step="0.01" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-0">
+                            <label class="form-label small fw-bold text-muted">Remarks / Status</label>
+                            <input type="text" name="remarks" class="form-control" placeholder="e.g. Serviceable, For Repair">
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 pt-0">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="bi bi-save me-1"></i> Save Data
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../assets/js/jquery.min.js"></script>
+</body>
+</html>

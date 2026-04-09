@@ -147,6 +147,9 @@ if ($conn && !$conn->connect_error) {
                                     <a href="view_asset_item.php?id=<?php echo $item['id']; ?>" class="btn btn-sm btn-outline-primary" title="View Asset Item">
                                         <i class="bi bi-eye"></i>
                                     </a>
+                                    <a href="card_item.php?id=<?php echo $item['id']; ?>" class="btn btn-sm btn-outline-info" title="Print Property Card" target="_blank">
+                                        <i class="bi bi-card-text"></i>
+                                    </a>
                                 </div>
                             </td>
                         </tr>

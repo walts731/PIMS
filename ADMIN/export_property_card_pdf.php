@@ -25,9 +25,10 @@ logSystemAction($_SESSION['user_id'], 'export', 'property_card_pdf', 'User expor
 // Get filter parameters
 $selected_category = $_GET['category'] ?? '';
 $selected_office = $_GET['office'] ?? '';
-
-// Get tab parameter
 $selected_tab = $_GET['tab'] ?? 'fixed';
+
+// Get single ID parameter if provided
+$single_id = $_GET['id'] ?? '';
 
 // Get asset items with filters
 $asset_items = [];
@@ -53,20 +54,30 @@ if ($conn && !$conn->connect_error) {
                   LEFT JOIN employees e ON ai.employee_id = e.id
                   LEFT JOIN offices o2 ON e.office_id = o2.id";
         
-        if ($selected_tab == 'semi') {
-            $query .= " WHERE (ai.ics_id IS NOT NULL AND ai.ics_id != '') OR (ai.ics_par_no IS NOT NULL AND ai.ics_par_no != '' AND ai.value < 50000)";
+        $where_clauses = [];
+        
+        if (!empty($single_id)) {
+            $where_clauses[] = "ai.id = " . intval($single_id);
         } else {
-            $query .= " WHERE (ai.par_id IS NOT NULL AND ai.par_id != '') OR (ai.ics_par_no IS NOT NULL AND ai.ics_par_no != '' AND ai.value >= 50000)";
+            if ($selected_tab == 'semi') {
+                $where_clauses[] = "((ai.ics_id IS NOT NULL AND ai.ics_id != '') OR (ai.ics_par_no IS NOT NULL AND ai.ics_par_no != '' AND ai.value < 50000))";
+            } else {
+                $where_clauses[] = "((ai.par_id IS NOT NULL AND ai.par_id != '') OR (ai.ics_par_no IS NOT NULL AND ai.ics_par_no != '' AND ai.value >= 50000))";
+            }
+            
+            // Add category filter
+            if (!empty($selected_category)) {
+                $where_clauses[] = "ac.category_name = '" . $conn->real_escape_string($selected_category) . "'";
+            }
+            
+            // Add office filter
+            if (!empty($selected_office)) {
+                $where_clauses[] = "(o1.office_name = '" . $conn->real_escape_string($selected_office) . "' OR o2.office_name = '" . $conn->real_escape_string($selected_office) . "')";
+            }
         }
         
-        // Add category filter
-        if (!empty($selected_category)) {
-            $query .= " AND ac.category_name = '" . $conn->real_escape_string($selected_category) . "'";
-        }
-        
-        // Add office filter
-        if (!empty($selected_office)) {
-            $query .= " AND (o1.office_name = '" . $conn->real_escape_string($selected_office) . "' OR o2.office_name = '" . $conn->real_escape_string($selected_office) . "')";
+        if (!empty($where_clauses)) {
+            $query .= " WHERE " . implode(" AND ", $where_clauses);
         }
         
         $query .= " ORDER BY ai.created_at ASC";
