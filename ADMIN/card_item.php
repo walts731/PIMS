@@ -202,40 +202,54 @@ if ($imp_result) {
         .info-grid {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 15px;
-            font-size: 12px;
+            margin-bottom: 10px;
+            font-size: 11px;
+            table-layout: fixed;
         }
         
         .info-grid td {
             border: 1px solid #000;
-            padding: 6px 10px;
+            padding: 4px 6px;
+            word-wrap: break-word;
+            overflow: hidden;
         }
         
-        .label { font-weight: normal; color: #333; }
-        .data { font-weight: bold; text-transform: uppercase; }
+        .label { font-weight: normal; font-size: 10px; width: 15%; }
+        .data { font-weight: bold; text-transform: uppercase; font-size: 11px; }
         
         .data-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 12px;
+            font-size: 10.5px;
+            table-layout: fixed;
         }
         
         .data-table th, .data-table td {
             border: 1px solid #000;
-            padding: 8px;
+            padding: 5px;
             text-align: center;
-            vertical-align: middle;
+            vertical-align: top;
+            word-wrap: break-word;
+            word-break: break-all;
         }
         
         .data-table th {
             background-color: #f8f9fa;
             text-transform: uppercase;
+            font-size: 9px;
+            height: 30px;
         }
         
         .article-cell {
             text-align: left !important;
             white-space: pre-line;
             font-weight: bold;
+            font-size: 9.5px;
+        }
+        
+        .repair-cell {
+            text-align: left !important;
+            font-size: 9.5px;
         }
 
         @media print {
@@ -245,40 +259,46 @@ if ($imp_result) {
             }
             
             /* Reset layout for print */
+            body { 
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                width: 8.5in;
+                height: 5.5in;
+            }
+
             .main-wrapper, .main-content {
                 margin: 0 !important;
                 padding: 0 !important;
-                width: 100% !important;
-                height: 100% !important;
+                width: 8.5in !important;
+                height: 5.5in !important;
                 min-height: unset !important;
                 background: white !important;
                 display: block !important;
+                box-shadow: none !important;
             }
             
-            /* Hide the container box shadow/padding */
             .property-card-view {
                 padding: 0 !important;
                 box-shadow: none !important;
                 margin: 0 !important;
                 max-width: none !important;
+                background: none !important;
+                display: block !important;
             }
 
             .card-preview {
-                width: 8in;
-                height: 5in;
-                border: 2px solid #000;
-                margin: 0 auto;
-            }
-            
-            body { 
-                background: white !important;
-                padding: 0 !important;
-                margin: 0 !important;
+                width: 8in !important;
+                height: 5in !important;
+                border: 2px solid #000 !important;
+                margin: 0.25in auto !important;
+                box-sizing: border-box !important;
+                page-break-inside: avoid;
             }
             
             @page {
                 size: 8.5in 5.5in landscape;
-                margin: 0.25in;
+                margin: 0;
             }
         }
     </style>
@@ -406,7 +426,7 @@ if ($imp_result) {
                                 <td class="article-cell"><?php echo htmlspecialchars($article_details); ?></td>
                                 <td><?php echo $imp['qty']; ?></td>
                                 <td><?php echo number_format($imp['amount'] / $imp['qty'], 2); ?></td>
-                                <td><?php echo htmlspecialchars($imp['description']); ?></td>
+                                <td class="repair-cell"><?php echo htmlspecialchars($imp['description']); ?></td>
                                 <td><strong><?php echo number_format($imp['amount'], 2); ?></strong></td>
                                 <td style="font-weight: bold;"><?php echo strtoupper($imp['remarks'] ?: 'REPAIR/IMP'); ?></td>
                             </tr>
