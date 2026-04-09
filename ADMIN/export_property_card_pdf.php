@@ -26,7 +26,10 @@ logSystemAction($_SESSION['user_id'], 'export', 'property_card_pdf', 'User expor
 $selected_category = $_GET['category'] ?? '';
 $selected_office = $_GET['office'] ?? '';
 
-// Get asset items with PAR ID and filters
+// Get tab parameter
+$selected_tab = $_GET['tab'] ?? 'fixed';
+
+// Get asset items with filters
 $asset_items = [];
 if ($conn && !$conn->connect_error) {
     try {
@@ -37,26 +40,33 @@ if ($conn && !$conn->connect_error) {
                     ai.description,
                     ai.value,
                     ai.par_id,
+                    ai.ics_id,
                     ai.employee_id,
                     ai.office_id,
-                    COALESCE(ac.category_code, 'UNCAT') as asset_category,
+                    COALESCE(ac.category_name, 'Uncategorized') as asset_category,
                     COALESCE(o1.office_name, o2.office_name, 'Unassigned') as office_name,
-                    COALESCE(o1.office_code, o2.office_code, 'NONE') as office_code
+                    COALESCE(o1.office_code, o2.office_code, 'NONE') as office_code,
+                    ai.ics_par_no
                   FROM asset_items ai
-                  LEFT JOIN asset_categories ac ON ai.category_id = ac.id
+                  LEFT JOIN asset_categories ac ON ai.asset_category_id = ac.id
                   LEFT JOIN offices o1 ON ai.office_id = o1.id
                   LEFT JOIN employees e ON ai.employee_id = e.id
-                  LEFT JOIN offices o2 ON e.office_id = o2.id
-                  WHERE ai.par_id IS NOT NULL AND ai.par_id != ''";
+                  LEFT JOIN offices o2 ON e.office_id = o2.id";
+        
+        if ($selected_tab == 'semi') {
+            $query .= " WHERE (ai.ics_id IS NOT NULL AND ai.ics_id != '') OR (ai.ics_par_no IS NOT NULL AND ai.ics_par_no != '' AND ai.value < 50000)";
+        } else {
+            $query .= " WHERE (ai.par_id IS NOT NULL AND ai.par_id != '') OR (ai.ics_par_no IS NOT NULL AND ai.ics_par_no != '' AND ai.value >= 50000)";
+        }
         
         // Add category filter
         if (!empty($selected_category)) {
-            $query .= " AND ac.category_code = '" . $conn->real_escape_string($selected_category) . "'";
+            $query .= " AND ac.category_name = '" . $conn->real_escape_string($selected_category) . "'";
         }
         
         // Add office filter
         if (!empty($selected_office)) {
-            $query .= " AND (o1.office_code = '" . $conn->real_escape_string($selected_office) . "' OR o2.office_code = '" . $conn->real_escape_string($selected_office) . "')";
+            $query .= " AND (o1.office_name = '" . $conn->real_escape_string($selected_office) . "' OR o2.office_name = '" . $conn->real_escape_string($selected_office) . "')";
         }
         
         $query .= " ORDER BY ai.created_at ASC";
@@ -64,10 +74,10 @@ if ($conn && !$conn->connect_error) {
         $result = $conn->query($query);
         if ($result) {
             while ($row = $result->fetch_assoc()) {
-                // Add employee and PAR info separately
+                // Add employee and reference info separately
                 $row['employee_name'] = '';
                 $row['employee_no'] = '';
-                $row['par_no'] = '';
+                $row['ref_no'] = '';
                 
                 // Get employee info
                 if (!empty($row['employee_id'])) {
@@ -79,13 +89,30 @@ if ($conn && !$conn->connect_error) {
                     }
                 }
                 
-                // Get PAR info
-                if (!empty($row['par_id'])) {
-                    $par_query = "SELECT par_no, received_by_name FROM par_forms WHERE id = " . intval($row['par_id']);
-                    $par_result = $conn->query($par_query);
-                    if ($par_result && $par_data = $par_result->fetch_assoc()) {
-                        $row['par_no'] = $par_data['par_no'];
-                        $row['received_by'] = $par_data['received_by_name'];
+                // Get reference info (PAR or ICS)
+                if ($selected_tab == 'semi') {
+                    if (!empty($row['ics_id'])) {
+                        $ics_query = "SELECT ics_no, received_by FROM ics_forms WHERE id = " . intval($row['ics_id']);
+                        $ics_result = $conn->query($ics_query);
+                        if ($ics_result && $ics_data = $ics_result->fetch_assoc()) {
+                            $row['ref_no'] = $ics_data['ics_no'];
+                            $row['received_by'] = $ics_data['received_by'];
+                        }
+                    }
+                    if (empty($row['ref_no'])) {
+                        $row['ref_no'] = $row['ics_par_no'] ?: '';
+                    }
+                } else {
+                    if (!empty($row['par_id'])) {
+                        $par_query = "SELECT par_no, received_by_name FROM par_forms WHERE id = " . intval($row['par_id']);
+                        $par_result = $conn->query($par_query);
+                        if ($par_result && $par_data = $par_result->fetch_assoc()) {
+                            $row['ref_no'] = $par_data['par_no'];
+                            $row['received_by'] = $par_data['received_by_name'];
+                        }
+                    }
+                    if (empty($row['ref_no'])) {
+                        $row['ref_no'] = $row['ics_par_no'] ?: '';
                     }
                 }
                 
@@ -93,7 +120,6 @@ if ($conn && !$conn->connect_error) {
             }
         }
     } catch (Exception $e) {
-        // Error handling
         error_log("Error in property card PDF export: " . $e->getMessage());
     }
 }
@@ -146,7 +172,7 @@ if ($conn && !$conn->connect_error) {
             font-family: 'Inter', sans-serif;
             font-size: 10px;
             line-height: 1.2;
-            color: #212529;
+            color: #000000;
         }
         
         .print-header {
@@ -171,58 +197,34 @@ if ($conn && !$conn->connect_error) {
             font-size: 16px;
             font-weight: bold;
             margin-bottom: 5px;
+            color: #000000;
         }
         
         .municipality {
             font-size: 14px;
             font-weight: bold;
             margin-bottom: 3px;
+            color: #000000;
         }
         
         .province {
             font-size: 14px;
             font-weight: bold;
             margin-bottom: 10px;
+            color: #000000;
         }
         
         .print-title {
             font-size: 18px;
             font-weight: bold;
-            color: var(--primary-color);
+            color: #000000;
             margin-bottom: 5px;
         }
         
         .print-subtitle {
             font-size: 12px;
-            color: #6c757d;
+            color: #000000;
             margin-bottom: 15px;
-        }
-        
-        .stats-row {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
-            justify-content: space-between;
-        }
-        
-        .stat-card {
-            background: var(--primary-gradient);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 8px;
-            flex: 1;
-            text-align: center;
-        }
-        
-        .stat-value {
-            font-size: 14px;
-            font-weight: bold;
-            margin-bottom: 2px;
-        }
-        
-        .stat-label {
-            font-size: 8px;
-            opacity: 0.9;
         }
         
         .table-container {
@@ -237,19 +239,20 @@ if ($conn && !$conn->connect_error) {
         }
         
         th {
-            background-color: var(--primary-color);
-            color: white;
+            background-color: transparent;
+            color: #000000;
             font-weight: bold;
             text-align: center;
             padding: 6px 4px;
-            border: 1px solid #dee2e6;
+            border: 1px solid #000000;
             white-space: nowrap;
         }
         
         td {
             padding: 5px 4px;
-            border: 1px solid #dee2e6;
+            border: 1px solid #000000;
             vertical-align: middle;
+            color: #000000;
         }
         
         .text-center {
@@ -265,59 +268,39 @@ if ($conn && !$conn->connect_error) {
             font-family: 'Courier New', monospace;
         }
         
-        .category-badge {
-            background: rgba(var(--primary-rgb), 0.1);
-            color: var(--primary-color);
-            padding: 2px 4px;
-            border-radius: 3px;
+        .category-badge, .office-code, .quantity-badge {
+            color: #000000;
+            padding: 2px 0;
             font-weight: 500;
             display: inline-block;
-        }
-        
-        .office-code {
-            background: rgba(var(--primary-rgb), 0.1);
-            color: var(--primary-color);
-            padding: 2px 4px;
-            border-radius: 3px;
-            font-weight: 500;
-            font-family: 'Courier New', monospace;
-            display: inline-block;
-        }
-        
-        .quantity-badge {
-            background: rgba(40, 167, 69, 0.1);
-            color: #28a745;
-            padding: 2px 4px;
-            border-radius: 3px;
-            font-weight: bold;
-            text-align: center;
         }
         
         .value-cell {
             font-weight: bold;
             text-align: right;
+            color: #000000;
         }
         
         .balance-qty {
             font-weight: bold;
-            color: #fd7e14;
+            color: #000000;
             text-align: center;
         }
         
         .footer {
             margin-top: 30px;
             padding-top: 15px;
-            border-top: 1px solid #dee2e6;
+            border-top: 1px solid #000000;
             text-align: center;
             font-size: 8px;
-            color: #6c757d;
+            color: #000000;
         }
         
         .no-data {
             text-align: center;
             padding: 40px;
             font-size: 12px;
-            color: #6c757d;
+            color: #000000;
         }
         
         @media print {
@@ -347,7 +330,7 @@ if ($conn && !$conn->connect_error) {
                     <div class="gov-title">Republic of the Philippines</div>
                     <div class="province">Province of Sorsogon</div>
                     <div class="municipality">Municipality of Pilar</div>
-                    <div class="print-title"><?php echo htmlspecialchars($system_name); ?> - Property Card Report</div>
+                    <div class="print-title"><?php echo htmlspecialchars($system_name); ?> - <?php echo $selected_tab == 'semi' ? 'Semi-Expandable' : 'Property Card'; ?> Report</div>
                     <div class="print-subtitle">Generated on <?php echo date('F j, Y g:i A'); ?></div>
                     <?php if (!empty($selected_category) || !empty($selected_office)): ?>
                         <div class="print-subtitle">
@@ -364,26 +347,10 @@ if ($conn && !$conn->connect_error) {
 
     <?php if (empty($asset_items)): ?>
         <div class="no-data">
-            <h4>No Property Items Found</h4>
-            <p>There are no asset items with PAR references matching the current filters.</p>
+            <h4>No <?php echo $selected_tab == 'semi' ? 'Semi-Expandable' : 'Property'; ?> Items Found</h4>
+            <p>There are no asset items with <?php echo $selected_tab == 'semi' ? 'ICS' : 'PAR'; ?> references matching the current filters.</p>
         </div>
     <?php else: ?>
-        <!-- Statistics Row -->
-        <div class="stats-row">
-            <div class="stat-card">
-                <div class="stat-value"><?php echo count($asset_items); ?></div>
-                <div class="stat-label">Total Items</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value">₱<?php echo number_format(array_sum(array_column($asset_items, 'value')), 2); ?></div>
-                <div class="stat-label">Total Value</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value"><?php echo count(array_unique(array_column($asset_items, 'par_id'))); ?></div>
-                <div class="stat-label">PAR Forms</div>
-            </div>
-        </div>
-        
         <div class="table-container">
             <table>
                 <thead>
@@ -395,7 +362,7 @@ if ($conn && !$conn->connect_error) {
                         <th>Office</th>
                         <th>Employee Name</th>
                         <th>Employee No.</th>
-                        <th>PAR No.</th>
+                        <th><?php echo $selected_tab == 'semi' ? 'ICS' : 'PAR'; ?> No.</th>
                         <th class="text-center">Qty</th>
                         <th class="text-right">Unit Cost</th>
                         <th class="text-right">Total Value</th>
@@ -415,7 +382,7 @@ if ($conn && !$conn->connect_error) {
                             <td><span class="office-code"><?php echo htmlspecialchars($item['office_code']); ?></span></td>
                             <td><?php echo htmlspecialchars($item['employee_name'] ?: 'Not assigned'); ?></td>
                             <td><?php echo htmlspecialchars($item['employee_no']); ?></td>
-                            <td><?php echo htmlspecialchars($item['par_no']); ?></td>
+                            <td><?php echo htmlspecialchars($item['ref_no']); ?></td>
                             <td class="text-center"><span class="quantity-badge">1</span></td>
                             <td class="value-cell">₱<?php echo number_format($item['value'], 2); ?></td>
                             <td class="value-cell">₱<?php echo number_format($item['value'], 2); ?></td>

@@ -69,14 +69,16 @@ if ($conn && !$conn->connect_error) {
                     CONCAT(COALESCE(e.firstname, ''), ' ', COALESCE(e.lastname, '')) as employee_name,
                     e.employee_no,
                     pf.par_no,
-                    pf.received_by_name
-                  FROM asset_items ai
-                  LEFT JOIN asset_categories ac ON ai.category_id = ac.id
-                  LEFT JOIN offices o1 ON ai.office_id = o1.id
+                    pf.received_by_name,
+                    ai.ics_par_no
+                   FROM asset_items ai
+                   LEFT JOIN asset_categories ac ON ai.asset_category_id = ac.id
+                   LEFT JOIN offices o1 ON ai.office_id = o1.id
                   LEFT JOIN employees e ON ai.employee_id = e.id
                   LEFT JOIN offices o2 ON e.office_id = o2.id
                   LEFT JOIN par_forms pf ON ai.par_id = pf.id
-                  WHERE ai.par_id IS NOT NULL AND ai.par_id != ''";
+                  WHERE (ai.par_id IS NOT NULL AND ai.par_id != '') 
+                  OR (ai.ics_par_no IS NOT NULL AND ai.ics_par_no != '' AND ai.value >= 50000)";
         
         // Add category filter
         if (!empty($selected_category)) {
@@ -129,6 +131,9 @@ if ($conn && !$conn->connect_error) {
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css">
     <link href="assets/css/admin-unified.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
 </head>
 <body>
     <?php $page_title = 'Property Card'; ?>
@@ -179,88 +184,116 @@ if ($conn && !$conn->connect_error) {
             </div>
         </div>
         
-        <?php if (empty($asset_items)): ?>
-            <div class="property-card-table">
-                <div class="text-center py-5">
-                    <i class="bi bi-inbox" style="font-size: 4rem; color: #adb5bd;"></i>
-                    <h4 class="mt-3 text-muted">No Property Items Found</h4>
-                    <p class="text-muted">There are no asset items with PAR references in the system.</p>
-                    <a href="par_form.php" class="btn btn-primary">
-                        <i class="bi bi-plus-circle me-1"></i> Create PAR Form
-                    </a>
-                </div>
-            </div>
-        <?php else: ?>
-                        
-            <!-- Property Card Table -->
-            <div class="table-container">
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <h5 class="mb-0"><i class="bi bi-list-ul"></i> Property Card Records</h5>
+        <!-- Navigation Tabs -->
+        <ul class="nav nav-tabs mb-4 px-3" id="propertyTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <a class="nav-link <?php echo (!isset($_GET['tab']) || $_GET['tab'] == 'fixed') ? 'active' : ''; ?>" 
+                   href="?tab=fixed<?php echo $selected_category ? '&category='.urlencode($selected_category) : ''; ?><?php echo $selected_office ? '&office='.urlencode($selected_office) : ''; ?>" 
+                   role="tab" style="font-weight: 600;">
+                    <i class="bi bi-card-checklist me-2"></i>Fixed Assets (50k Above)
+                </a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link <?php echo (isset($_GET['tab']) && $_GET['tab'] == 'semi') ? 'active' : ''; ?>" 
+                   href="?tab=semi<?php echo $selected_category ? '&category='.urlencode($selected_category) : ''; ?><?php echo $selected_office ? '&office='.urlencode($selected_office) : ''; ?>" 
+                   role="tab" style="font-weight: 600;">
+                    <i class="bi bi-box-seam me-2"></i>Semi-Expandable (Below 50k)
+                </a>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            <?php 
+            $current_tab = $_GET['tab'] ?? 'fixed';
+            if ($current_tab == 'fixed'): 
+            ?>
+                <?php if (empty($asset_items)): ?>
+                    <div class="property-card-table">
+                        <div class="text-center py-5">
+                            <i class="bi bi-inbox" style="font-size: 4rem; color: #adb5bd;"></i>
+                            <h4 class="mt-3 text-muted">No Property Items Found</h4>
+                            <p class="text-muted">There are no asset items with PAR references in the system.</p>
+                            <a href="par_form.php" class="btn btn-primary">
+                                <i class="bi bi-plus-circle me-1"></i> Create PAR Form
+                            </a>
+                        </div>
                     </div>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-hover" id="propertyCardTable" style="width: 100%">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Date</th>
-                                <th>Property No.</th>
-                                <th>Category</th>
-                                <th>Description</th>
-                                <th>Office</th>
-                                <th>Employee</th>
-                                <th>Value</th>
-                                <th class="no-print">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php 
-                            $item_counter = 1;
-                            foreach ($asset_items as $index => $item): 
-                            ?>
-                                <tr>
-                                    <td>
-                                        <?php echo date('M d, Y', strtotime($item['created_at'])); ?>
-                                    </td>
-                                    <td>
-                                        <span class="property-no"><?php echo htmlspecialchars($item['property_no']); ?></span>
-                                    </td>
-                                    <td>
-                                        <span class="category-badge"><?php echo htmlspecialchars($item['asset_category']); ?></span>
-                                    </td>
-                                    <td>
-                                        <?php echo htmlspecialchars($item['description']); ?>
-                                    </td>
-                                    <td>
-                                        <span class="office-name"><?php echo htmlspecialchars($item['office_name']); ?></span>
-                                    </td>
-                                    <td>
-                                        <?php if ($item['employee_name']): ?>
-                                            <?php echo htmlspecialchars($item['employee_name']); ?>
-                                        <?php else: ?>
-                                            <span class="text-muted">Not assigned</span>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <strong>₱<?php echo number_format($item['value'], 2); ?></strong>
-                                    </td>
-                                    <td class="no-print">
-                                        <div class="btn-group" role="group">
-                                            <a href="view_asset_item.php?id=<?php echo $item['id']; ?>" class="btn btn-sm btn-outline-primary" title="View Asset Item">
-                                                <i class="bi bi-eye"></i>
-                                            </a>
-                                        </div>
-                                    </td>
-                                </tr>
-                            <?php 
-                                $item_counter++;
-                            endforeach; 
-                            ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        <?php endif; ?>
+                <?php else: ?>
+                    <!-- Property Card Table -->
+                    <div class="table-container">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <h5 class="mb-0"><i class="bi bi-list-ul"></i> Property Card Records (Fixed Assets)</h5>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="propertyCardTable" style="width: 100%">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>PAR No.</th>
+                                        <th>Property No.</th>
+                                        <th>Category</th>
+                                        <th>Description</th>
+                                        <th>Office</th>
+                                        <th>Employee</th>
+                                        <th>Value</th>
+                                        <th class="no-print">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php 
+                                    foreach ($asset_items as $item): 
+                                    ?>
+                                        <tr>
+                                            <td>
+                                                <?php echo date('M d, Y', strtotime($item['created_at'])); ?>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-primary"><?php echo htmlspecialchars($item['par_no'] ?: $item['ics_par_no'] ?: 'N/A'); ?></span>
+                                            </td>
+                                            <td>
+                                                <span class="property-no"><?php echo htmlspecialchars($item['property_no']); ?></span>
+                                            </td>
+                                            <td>
+                                                <span class="category-badge"><?php echo htmlspecialchars($item['asset_category']); ?></span>
+                                            </td>
+                                            <td>
+                                                <?php echo htmlspecialchars($item['description']); ?>
+                                            </td>
+                                            <td>
+                                                <span class="office-name"><?php echo htmlspecialchars($item['office_name']); ?></span>
+                                            </td>
+                                            <td>
+                                                <?php if ($item['employee_name']): ?>
+                                                    <?php echo htmlspecialchars($item['employee_name']); ?>
+                                                <?php else: ?>
+                                                    <span class="text-muted">Not assigned</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <strong>₱<?php echo number_format($item['value'], 2); ?></strong>
+                                            </td>
+                                            <td class="no-print">
+                                                <div class="btn-group" role="group">
+                                                    <a href="view_asset_item.php?id=<?php echo $item['id']; ?>" class="btn btn-sm btn-outline-primary" title="View Asset Item">
+                                                        <i class="bi bi-eye"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                <?php endif; ?>
+            <?php else: ?>
+                <!-- Semi-Expandable Tab Content -->
+                <?php include 'semi_expandable.php'; ?>
+            <?php endif; ?>
+        </div>
+
     </div>
     
     <?php require_once 'includes/logout-modal.php'; ?>
@@ -268,9 +301,6 @@ if ($conn && !$conn->connect_error) {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.bootstrap5.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
@@ -281,7 +311,8 @@ if ($conn && !$conn->connect_error) {
     <script>
         // Initialize DataTable and tooltips
         $(document).ready(function() {
-            $('#propertyCardTable').DataTable({
+            if ($('#propertyCardTable').length) {
+                $('#propertyCardTable').DataTable({
                 responsive: true,
                 pageLength: 25,
                 lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
@@ -357,7 +388,8 @@ if ($conn && !$conn->connect_error) {
                         }
                     }
                 ]
-            });
+                });
+            }
             
             // Initialize tooltips
             var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
@@ -368,48 +400,40 @@ if ($conn && !$conn->connect_error) {
         
         // DataTables custom filtering function
         function applyDataTablesFilters() {
+            if (!$('#propertyCardTable').length) return;
             const table = $('#propertyCardTable').DataTable();
             const category = $('#categoryFilter').val();
             const office = $('#officeFilter').val();
             
-            console.log('Filtering with:', { category, office });
-            
             // Clear all previous search functions
             $.fn.dataTable.ext.search = [];
             
-            // Apply custom search function for each column
+            // Apply custom search function
             $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
-                const categoryColumn = data[2]; // Category column (index 2) - contains HTML
-                const officeColumn = data[4]; // Office column (index 4) - contains HTML
+                // Ensure we only filter the propertyCardTable
+                if (settings.nTable.id !== 'propertyCardTable') return true;
+
+                const category = $('#categoryFilter').val();
+                const office = $('#officeFilter').val();
                 
-                console.log('Row data:', { categoryColumn, officeColumn });
+                // Get data and strip HTML just in case
+                const stripHtml = (html) => {
+                    const tmp = document.createElement("DIV");
+                    tmp.innerHTML = html;
+                    return tmp.textContent || tmp.innerText || "";
+                };
                 
-                // Category filter - extract category code from HTML
-                if (category) {
-                    // Use regex to extract the category badge content
-                    const categoryMatch = categoryColumn.match(/<span[^>]*class="category-badge"[^>]*>(.*?)<\/span>/i);
-                    const categoryCode = categoryMatch ? categoryMatch[1].trim() : '';
-                    
-                    console.log('Category filter:', { filterValue: category, extractedCode: categoryCode });
-                    
-                    // Case-insensitive comparison
-                    if (categoryCode.toLowerCase() !== category.toLowerCase()) {
-                        return false;
-                    }
+                const categoryValue = stripHtml(data[3] || ''); 
+                const officeValue = stripHtml(data[5] || '');   
+                
+                // Category filter
+                if (category && categoryValue.trim() !== category) {
+                    return false;
                 }
                 
-                // Office filter - extract office code from HTML
-                if (office) {
-                    // Use regex to extract the office code content
-                    const officeMatch = officeColumn.match(/<span[^>]*class="office-code-only"[^>]*>(.*?)<\/span>/i);
-                    const officeCode = officeMatch ? officeMatch[1].trim() : '';
-                    
-                    console.log('Office filter:', { filterValue: office, extractedCode: officeCode });
-                    
-                    // Case-insensitive comparison
-                    if (officeCode.toLowerCase() !== office.toLowerCase()) {
-                        return false;
-                    }
+                // Office filter
+                if (office && officeValue.trim() !== office) {
+                    return false;
                 }
                 
                 return true;
@@ -421,8 +445,9 @@ if ($conn && !$conn->connect_error) {
         
         function exportToCSV() {
             // Get current filter values
-            const category = document.getElementById('categoryFilter').value;
-            const office = document.getElementById('officeFilter').value;
+            const category = document.getElementById('categoryFilter')?.value || '';
+            const office = document.getElementById('officeFilter')?.value || '';
+            const tab = new URLSearchParams(window.location.search).get('tab') || 'fixed';
             
             // Build URL with filter parameters
             let url = 'export_property_card_csv.php';
@@ -430,10 +455,9 @@ if ($conn && !$conn->connect_error) {
             
             if (category) params.append('category', category);
             if (office) params.append('office', office);
+            params.append('tab', tab);
             
-            if (params.toString()) {
-                url += '?' + params.toString();
-            }
+            url += '?' + params.toString();
             
             // Open export in new window
             window.open(url, '_blank');
@@ -441,8 +465,9 @@ if ($conn && !$conn->connect_error) {
         
         function exportToPDF() {
             // Get current filter values
-            const category = document.getElementById('categoryFilter').value;
-            const office = document.getElementById('officeFilter').value;
+            const category = document.getElementById('categoryFilter')?.value || '';
+            const office = document.getElementById('officeFilter')?.value || '';
+            const tab = new URLSearchParams(window.location.search).get('tab') || 'fixed';
             
             // Build URL with filter parameters
             let url = 'export_property_card_pdf.php';
@@ -450,10 +475,9 @@ if ($conn && !$conn->connect_error) {
             
             if (category) params.append('category', category);
             if (office) params.append('office', office);
+            params.append('tab', tab);
             
-            if (params.toString()) {
-                url += '?' + params.toString();
-            }
+            url += '?' + params.toString();
             
             // Open export in new window
             window.open(url, '_blank');
@@ -462,14 +486,17 @@ if ($conn && !$conn->connect_error) {
                 
         function showSummary() {
             // Check if there are any items to summarize
-            if (<?php echo count($asset_items); ?> === 0) {
+            const currentTab = new URLSearchParams(window.location.search).get('tab') || 'fixed';
+            const itemCount = currentTab === 'fixed' ? <?php echo count($asset_items); ?> : 1; // Simplification for semi tab
+            
+            if (itemCount === 0) {
                 alert('No items available to summarize.');
                 return;
             }
             
             // Get current filter values
-            const category = document.getElementById('categoryFilter').value;
-            const office = document.getElementById('officeFilter').value;
+            const category = document.getElementById('categoryFilter')?.value || '';
+            const office = document.getElementById('officeFilter')?.value || '';
             
             // Build URL with filter parameters
             let url = 'property_summary.php';
@@ -477,10 +504,9 @@ if ($conn && !$conn->connect_error) {
             
             if (category) params.append('category', category);
             if (office) params.append('office', office);
+            params.append('tab', currentTab);
             
-            if (params.toString()) {
-                url += '?' + params.toString();
-            }
+            url += '?' + params.toString();
             
             // Redirect to summary page
             window.location.href = url;
