@@ -80,210 +80,192 @@ if ($result && $row = $result->fetch_assoc()) {
     <link href="assets/css/admin-unified.css" rel="stylesheet">
     <style>
         body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, var(--light-color) 0%, var(--light-accent) 100%);
-            min-height: 100vh;
-            overflow-x: hidden;
+            font-family: Arial, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 0;
+            color: #333;
         }
-        .page-header {
-            background: white;
-            border-radius: var(--border-radius-xl);
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow);
-            border-left: 4px solid var(--primary-color);
-        }
+
         .ics-card {
             background: white;
-            border: 2px solid #333;
+            border: 2px solid #000;
             padding: 0;
-            margin: 0 auto;
-            max-width: 950px;
-            box-shadow: var(--shadow-lg);
-            border-radius: 4px;
-            overflow: hidden;
-        }
-        .ics-header {
-            padding: 30px;
-            border-bottom: 1px solid #333;
-            background: #fff;
+            margin: 20px auto;
+            max-width: 850px;
+            box-shadow: none;
             position: relative;
+        }
+
+        .ics-header {
+            padding: 20px 20px 10px;
+            display: flex;
+            align-items: center;
+            border-bottom: none;
+            position: relative;
+        }
+
+        .ics-header .logo-container {
+            margin-right: 20px;
+        }
+
+        .ics-header .logo-container img {
+            max-height: 80px;
+        }
+
+        .ics-header .header-text {
             text-align: center;
+            flex-grow: 1;
+            margin-right: 50px;
+            line-height: 1.4;
         }
-        .seal-img {
-            width: 80px;
-            height: 80px;
-            position: absolute;
-            top: 30px;
-            left: 30px;
-        }
-        .header-content {
-            display: inline-block;
-            text-align: center;
-        }
-        .header-text {
-            text-align: center;
-        }
-        .header-text p {
+
+        .ics-header .header-text p {
             margin: 0;
-            font-size: 12px;
-            color: #000;
-            font-weight: 500;
+            font-size: 14px;
         }
-        .header-text h3 {
-            margin: 5px 0;
-            font-size: 16px;
-            color: #000;
+
+        .ics-header .annex {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            font-style: italic;
+            font-size: 13px;
+        }
+
+        .ics-title-section {
+            text-align: center;
+            padding: 10px 0;
+        }
+
+        .ics-title-section h2 {
+            font-size: 20px;
             font-weight: bold;
+            margin: 0;
+            letter-spacing: 1px;
             text-transform: uppercase;
         }
-        .header-right {
-            position: absolute;
-            top: 30px;
-            right: 30px;
-            text-align: right;
-        }
-        .ics-header .title {
+
+        .meta-section {
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
             font-size: 14px;
             font-weight: bold;
-            margin-bottom: 5px;
-            color: #000;
-            margin-top: 15px;
         }
-        .ics-annex {
-            font-size: 12px;
-            color: #000;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        .entity-section {
-            width: 100%;
-            margin-bottom: 20px;
-            border-bottom: 1px solid #000;
-            padding-bottom: 10px;
-        }
-        .entity-row {
+
+        .meta-group {
             display: flex;
-            margin-bottom: 5px;
-            align-items: flex-end;
+            flex-direction: column;
+            gap: 5px;
         }
-        .entity-label {
-            width: 100px;
-            font-weight: bold;
-            font-size: 11px;
-            color: #000;
+
+        .meta-item {
+            display: flex;
+            align-items: center;
         }
-        .entity-value {
-            flex: 1;
+
+        .meta-label {
+            min-width: 90px;
+        }
+
+        .meta-value {
             border-bottom: 1px solid #000;
-            min-height: 18px;
-            font-size: 11px;
+            min-width: 200px;
             padding: 0 5px;
-            color: #000;
         }
-        .ics-no-section {
-            width: 250px;
-            margin-left: 20px;
+
+        .excel-grid-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-top: 2px solid #000;
+            border-bottom: 2px solid #000;
+        }
+
+        .excel-grid-table th, .excel-grid-table td {
+            border: 1px solid #000;
+            padding: 5px 8px;
+            font-size: 12px;
+            height: 25px;
+        }
+
+        .excel-grid-table th {
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .amount-header-row th {
+            border-bottom: none;
+        }
+
+        .amount-sub-row th {
+            font-size: 11px;
+        }
+
+        .signature-section {
             display: flex;
-            align-items: flex-end;
+            border-top: none;
         }
-        .items-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 0;
-            border: 2px solid #000;
-        }
-        .items-table th,
-        .items-table td {
+
+        .sig-box {
+            flex: 1;
             border: 1px solid #000;
-            padding: 4px 6px;
-            text-align: center;
-            vertical-align: top;
-            font-size: 10px;
-            color: #000;
+            padding: 10px 15px 25px;
+            display: flex;
+            flex-direction: column;
+            min-height: 180px;
         }
-        .items-table th {
+
+        .sig-box:first-child {
+            border-left: none;
+        }
+
+        .sig-box:last-child {
+            border-right: none;
+        }
+
+        .sig-label {
+            font-weight: bold;
+            font-size: 13px;
+            margin-bottom: 30px;
+        }
+
+        .sig-content {
+            text-align: center;
+            margin-top: auto;
+        }
+
+        .sig-name {
             font-weight: bold;
             text-transform: uppercase;
-            font-size: 10px;
-            background: #fff;
-            color: #000;
-        }
-        .items-table .text-left { text-align: left; }
-        .items-table .text-right { text-align: right; }
-        
-        .quantity-col { width: 70px; }
-        .unit-col { width: 60px; }
-        .unit-cost-col { width: 100px; }
-        .total-cost-col { width: 110px; }
-        .item-no-col { width: 120px; }
-        .useful-life-col { width: 120px; }
-        
-        .total-row td {
-            font-weight: bold;
-            text-align: right;
-            padding-right: 10px;
-        }
-        .footer-section {
-            margin-top: 5px;
-            border: 1px solid #000;
-        }
-        .footer-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        .footer-table td {
-            border: 1px solid #000;
-            padding: 2px;
-            width: 50%;
-            vertical-align: top;
-        }
-        .label-row {
-            font-weight: bold;
+            font-size: 14px;
             margin-bottom: 2px;
-            color: #000;
-            font-size: 6px;
+            text-decoration: underline;
         }
-        .name-line {
-            text-align: center;
-            font-weight: bold;
+
+        .sig-sub {
+            font-size: 12px;
+            margin-bottom: 15px;
             text-transform: uppercase;
+        }
+
+        .sig-line {
+            width: 80%;
+            margin: 0 auto 5px;
             border-bottom: 1px solid #000;
-            margin-bottom: 0px;
-            font-size: 6px;
-            color: #000;
-            line-height: 1.0;
-            padding: 0px;
         }
-        .sub-label {
-            text-align: center;
-            font-size: 6px;
-            margin-bottom: 2px;
-            color: #000;
-            line-height: 1.0;
-        }
-        .signature-group {
-            margin-top: 1px;
-        }
-        
-        .main-content {
-            padding: 2rem;
-            animation: fadeIn 0.5s ease-in-out;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+
+        .sig-date-label {
+            font-size: 11px;
+            margin-top: 2px;
         }
 
         @media print {
-            .no-print { display: none !important; }
-            .ics-card { box-shadow: none; border: 2px solid #000; margin: 0; max-width: 100%; }
-            body { background: white; }
-            .main-content { padding: 0; }
-            .page-header { display: none !important; }
-            .sidebar-toggle, .sidebar { display: none !important; }
+            .no-print, .sidebar, .topbar { display: none !important; }
+            body { background: white; margin: 0; padding: 0; }
+            .ics-card { margin: 0; border: 2px solid #000; width: 100%; max-width: none; }
+            .main-content { padding: 0; margin: 0; }
+            .main-wrapper { padding: 0; margin: 0; }
         }
     </style>
 </head>
@@ -300,166 +282,135 @@ if ($result && $row = $result->fetch_assoc()) {
     
     <!-- Main Content -->
     <div class="main-content">
-        <!-- Page Header -->
         <div class="page-header no-print">
             <div class="row align-items-center">
-                <div class="col-md-8">
-                    <h1 class="mb-2">
-                        <i class="bi bi-file-earmark-text"></i> ICS View
-                    </h1>
-                    <p class="text-muted mb-0">View Inventory Custodian Slip details</p>
+                <div class="col-md-7">
+                    <h1 class="mb-1"><i class="bi bi-file-earmark-text-fill me-2 text-primary"></i>ICS View</h1>
+                    <p class="text-muted mb-0">Official Inventory Custodian Slip format</p>
                 </div>
-                <div class="col-md-4 text-md-end no-print">
-                    <div class="dropdown">
-                        <button class="btn btn-primary dropdown-toggle" type="button" id="actionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-gear"></i> Actions
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="actionsDropdown">
-                            <li>
-                                <button class="dropdown-item" onclick="window.open('print_ics.php?id=<?php echo $ics_id; ?>', '_blank')">
-                                    <i class="bi bi-file-earmark-pdf me-2"></i> Official Printout
-                                </button>
-                            </li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li>
-                                <a class="dropdown-item" href="ics_entries.php">
-                                    <i class="bi bi-list me-2"></i> View All Entries
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item" href="ics_form.php">
-                                    <i class="bi bi-plus-circle me-2"></i> New ICS Slip
-                                </a>
-                            </li>
-                        </ul>
+                <div class="col-md-5 text-md-end">
+                    <div class="btn-group shadow-sm">
+                        <a href="print_ics.php?id=<?php echo $ics_id; ?>" target="_blank" class="btn btn-primary">
+                            <i class="bi bi-printer-fill me-1"></i> Print
+                        </a>
+                        <a href="ics_form.php" class="btn btn-outline-primary">
+                            <i class="bi bi-plus-circle me-1"></i> New
+                        </a>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- ICS Form -->
         <div class="ics-card">
-            <!-- Header Section -->
             <div class="ics-header">
-                <img src="<?php echo $logo_path; ?>" alt="<?php echo $system_name; ?> Logo" class="seal-img">
-                <div class="header-content">
-                    <div class="header-text">
-                        <p>Republic of the Philippines</p>
-                        <h3>Municipality of Pilar</h3>
-                        <p>Province of Sorsogon</p>
-                        <h2 class="title">INVENTORY CUSTODIAN SLIP</h2>
+                <div class="logo-container" style="width: 100%; text-align: center; margin-right: 0;">
+                    <?php if ($header_image): ?>
+                        <img src="../uploads/forms/<?php echo htmlspecialchars($header_image); ?>" alt="Header Image" style="max-height: 120px; width: auto; max-width: 100%;">
+                    <?php else: ?>
+                        <img src="../img/system_logo.png" alt="Logo" style="max-height: 80px;">
+                    <?php endif; ?>
+                </div>
+                <div class="annex">Annex A.3</div>
+            </div>
+
+            <div class="ics-title-section">
+                <h2>INVENTORY CUSTODIAN SLIP</h2>
+            </div>
+
+            <div class="meta-section">
+                <div class="meta-group">
+                    <div class="meta-item">
+                        <span class="meta-label">Entity Name:</span>
+                        <span class="meta-value"><?php echo htmlspecialchars($ics_form['entity_name']); ?></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Fund Cluster:</span>
+                        <span class="meta-value"><?php echo htmlspecialchars($ics_form['fund_cluster']); ?></span>
                     </div>
                 </div>
-                <div class="header-right">
-                    <div class="ics-annex">
-                        <p>Annex A.1</p>
+                <div class="meta-group">
+                    <div class="meta-item">
+                        <span class="meta-label">ICS No :</span>
+                        <span class="meta-value"><?php echo htmlspecialchars($ics_form['ics_no']); ?></span>
                     </div>
                 </div>
             </div>
 
-            
-            <!-- Entity Information -->
-            <div style="padding: 20px;">
-                <div class="entity-section" style="border-bottom: none;">
-                    <div class="entity-row">
-                        <div class="entity-label">Entity Name:</div>
-                        <div class="entity-value"><?php echo htmlspecialchars($ics_form['entity_name']); ?></div>
-                        <div class="entity-label">Fund Cluster:</div>
-                        <div class="entity-value"><?php echo htmlspecialchars($ics_form['fund_cluster']); ?></div>
-                    </div>
-                </div>
-                
-                <!-- ICS Information -->
-                <div class="entity-section">
-                    <div class="entity-row">
-                        <div class="entity-label">ICS No:</div>
-                        <div class="entity-value" style="font-weight: bold;"><?php echo htmlspecialchars($ics_form['ics_no']); ?></div>
-                    </div>
-                </div>
+            <table class="excel-grid-table">
+                <thead>
+                    <tr class="amount-header-row">
+                        <th rowspan="2" width="60">Quantity</th>
+                        <th rowspan="2" width="60">Unit</th>
+                        <th colspan="2">Amount</th>
+                        <th rowspan="2">Description</th>
+                        <th rowspan="2" width="70">Item No.</th>
+                        <th rowspan="2" width="100">Estimated Useful Life</th>
+                    </tr>
+                    <tr class="amount-sub-row">
+                        <th width="80">Unit Cost</th>
+                        <th width="90">Total Cost</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php 
+                    $total_amount = 0;
+                    foreach ($ics_items as $item): 
+                        $total_amount += $item['total_cost'];
+                    ?>
+                        <tr>
+                            <td align="center"><?php echo number_format($item['quantity'], 0); ?></td>
+                            <td align="center"><?php echo htmlspecialchars($item['unit']); ?></td>
+                            <td align="right"><?php echo number_format($item['unit_cost'], 2); ?></td>
+                            <td align="right"><?php echo number_format($item['total_cost'], 2); ?></td>
+                            <td style="padding-left: 10px;"><?php echo htmlspecialchars($item['description']); ?></td>
+                            <td align="center"><?php echo htmlspecialchars($item['item_no']); ?></td>
+                            <td align="center"><strong><?php echo htmlspecialchars($item['useful_life']); ?></strong></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    
+                    <?php 
+                    $remaining = 18 - count($ics_items);
+                    for($i=0; $i<$remaining; $i++): 
+                    ?>
+                        <tr>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <?php if ($remaining > 0 && $i === ($remaining - 1)): ?>
+                                <td align="right" style="color: red; font-weight: bold;"><?php echo number_format($total_amount, 2); ?></td>
+                            <?php else: ?>
+                                <td>&nbsp;</td>
+                            <?php endif; ?>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                        </tr>
+                    <?php endfor; ?>
+                </tbody>
+            </table>
 
-                
-                <!-- Items Table -->
-                <table class="items-table">
-                    <thead>
-                        <tr>
-                            <th class="quantity-col">Quantity</th>
-                            <th class="unit-col">Unit</th>
-                            <th class="unit-cost-col">Unit Cost</th>
-                            <th class="total-cost-col">Total Cost</th>
-                            <th class="text-left">Description</th>
-                            <th class="item-no-col">Item No.</th>
-                            <th class="useful-life-col">Useful Life</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php 
-                        $total_amount = 0;
-                        foreach ($ics_items as $index => $item): 
-                            $total_amount += $item['total_cost'];
-                        ?>
-                            <tr>
-                                <td><?php echo number_format($item['quantity'], 0); ?></td>
-                                <td><?php echo htmlspecialchars($item['unit']); ?></td>
-                                <td class="text-right"><?php echo number_format($item['unit_cost'], 2); ?></td>
-                                <td class="text-right"><?php echo number_format($item['total_cost'], 2); ?></td>
-                                <td class="text-left"><?php echo htmlspecialchars($item['description']); ?></td>
-                                <td><?php echo htmlspecialchars($item['item_no']); ?></td>
-                                <td><?php echo htmlspecialchars($item['useful_life']); ?></td>
-                            </tr>
-                        <?php endforeach; ?>
-                        <?php 
-                        // Add empty rows to maintain form height
-                        $total_items = count($ics_items);
-                        if ($total_items < 15) {
-                            for ($i = 0; $i < (15 - $total_items); $i++) {
-                                if ($i === 0) {
-                                    echo '<tr><td colspan="7" style="height: 20px; font-style: italic; border-bottom: none;">*** Nothing follows ***</td></tr>';
-                                } else {
-                                    echo '<tr><td colspan="7" style="height: 20px; border-top: none; border-bottom: none;">&nbsp;</td></tr>';
-                                }
-                            }
-                        }
-                        ?>
-                    </tbody>
-                    <tfoot>
-                        <tr class="total-row">
-                            <td colspan="3">TOTAL AMOUNT:</td>
-                            <td class="text-right"><?php echo number_format($total_amount, 2); ?></td>
-                            <td colspan="3"></td>
-                        </tr>
-                    </tfoot>
-                </table>
-                
-                <!-- Footer / Signatures Section -->
-                <div class="footer-section">
-                    <table class="footer-table">
-                        <tr>
-                            <td>
-                                <div class="label-row">Received from:</div>
-                                <div class="signature-group">
-                                    <div class="name-line"><?php echo htmlspecialchars($ics_form['received_from']); ?></div>
-                                    <div class="sub-label">Signature Over Printed Name</div>
-                                    <div class="name-line" style="font-weight: normal; text-transform: none;"><?php echo htmlspecialchars($ics_form['received_from_position']); ?></div>
-                                    <div class="sub-label">Position / Office</div>
-                                    <div class="name-line" style="font-weight: normal; margin-top: 10px;"><?php echo (!empty($ics_form['received_from_date']) && $ics_form['received_from_date'] !== '0000-00-00') ? date('F d, Y', strtotime($ics_form['received_from_date'])) : ''; ?></div>
-                                    <div class="sub-label">Date</div>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="label-row">Received by:</div>
-                                <div class="signature-group">
-                                    <div class="name-line"><?php echo htmlspecialchars($ics_form['received_by']); ?></div>
-                                    <div class="sub-label">Signature Over Printed Name</div>
-                                    <div class="name-line" style="font-weight: normal; text-transform: none;"><?php echo htmlspecialchars($ics_form['received_by_position']); ?></div>
-                                    <div class="sub-label">Position / Office</div>
-                                    <div class="name-line" style="font-weight: normal; margin-top: 10px;"><?php echo (!empty($ics_form['received_by_date']) && $ics_form['received_by_date'] !== '0000-00-00') ? date('F d, Y', strtotime($ics_form['received_by_date'])) : ''; ?></div>
-                                    <div class="sub-label">Date</div>
-                                </div>
-                            </td>
-                        </tr>
-                    </table>
+            <div class="signature-section">
+                <div class="sig-box">
+                    <div class="sig-label">Received from:</div>
+                    <div class="sig-content">
+                        <div class="sig-name"><?php echo htmlspecialchars($ics_form['received_from']); ?></div>
+                        <div class="sig-sub"><?php echo htmlspecialchars($ics_form['received_from_position']); ?></div>
+                        <div class="sig-line"></div>
+                        <div class="sig-date-label">Date</div>
+                    </div>
+                </div>
+                <div class="sig-box">
+                    <div class="sig-label">Received by:</div>
+                    <div class="sig-content">
+                        <div class="sig-name"><?php echo htmlspecialchars($ics_form['received_by']); ?></div>
+                        <div class="sig-sub"><?php echo htmlspecialchars($ics_form['received_by_position']); ?></div>
+                        <div class="sig-line"></div>
+                        <div class="sig-date-label">Date</div>
+                    </div>
                 </div>
             </div>
+        </div>
+    </div>
         </div>
     </div>
 
