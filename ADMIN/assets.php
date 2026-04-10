@@ -194,10 +194,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     }
     $category_stmt->close();
     
-    // Check if asset with same description already exists
+    // Check if asset with same description already exists (including subcategory)
     $existing_asset = null;
-    $check_stmt = $conn->prepare("SELECT id, quantity, unit_cost FROM assets WHERE description = ? AND asset_categories_id = ? AND office_id = ?");
-    $check_stmt->bind_param("sii", $description, $asset_categories_id, $office_id);
+    $subcategory_check = $asset_subcategory_id ? " AND asset_subcategory_id = ?" : " AND asset_subcategory_id IS NULL";
+    $check_stmt = $conn->prepare("SELECT id, quantity, unit_cost FROM assets WHERE description = ? AND asset_categories_id = ? AND office_id = ?" . $subcategory_check);
+    if ($asset_subcategory_id) {
+        $check_stmt->bind_param("siii", $description, $asset_categories_id, $office_id, $asset_subcategory_id);
+    } else {
+        $check_stmt->bind_param("sii", $description, $asset_categories_id, $office_id);
+    }
     $check_stmt->execute();
     $check_result = $check_stmt->get_result();
     if ($check_result->num_rows > 0) {
@@ -240,7 +245,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                 $unit_cost = floatval($unit_cost);
                 $existing_asset_id = intval($existing_asset['id']);
                 
-                $update_sql = "UPDATE assets SET quantity = '$new_quantity', unit_cost = '$unit_cost', unit = '$unit', asset_subcategory_id = " . ($asset_subcategory_id ? "'$asset_subcategory_id'" : "NULL") . " WHERE id = '$existing_asset_id'";
+                // Update asset - ONLY update subcategory if it was null before or if explicitly changed
+                // Actually, since we now include subcategory in the check, we don't need to force update it to NULL or anything
+                $update_sql = "UPDATE assets SET quantity = '$new_quantity', unit_cost = '$unit_cost', unit = '$unit' WHERE id = '$existing_asset_id'";
                 error_log("DEBUG: Update SQL: " . $update_sql);
                 
                 if ($conn->query($update_sql)) {

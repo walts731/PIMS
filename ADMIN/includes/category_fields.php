@@ -59,4 +59,21 @@ $category_fields = [
    
    
 ];
+
+// Category Aliases (Mapping numerical codes and common names to abbreviations)
+$category_fields['05-030'] = &$category_fields['ITS'];
+$category_fields['ITS'] = &$category_fields['ITS'];
+$category_fields['Computer Equipment'] = &$category_fields['ITS'];
+
+$category_fields['06'] = &$category_fields['SW'];
+$category_fields['Software'] = &$category_fields['SW'];
+
+$category_fields['03'] = &$category_fields['LND'];
+$category_fields['01'] = &$category_fields['LND'];
+$category_fields['Land'] = &$category_fields['LND'];
+
+$category_fields['07'] = &$category_fields['MV'];
+$category_fields['06-010'] = &$category_fields['MV'];
+$category_fields['Motor Vehicles'] = &$category_fields['MV'];
+$category_fields['Vehicles'] = &$category_fields['MV'];
 ?>

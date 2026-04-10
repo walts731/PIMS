@@ -32,7 +32,7 @@ $item_sql = "SELECT ai.id, ai.asset_id, ai.property_no, ai.ics_par_no, ai.model,
                    mach.machine_type, mach.manufacturer as machinery_manufacturer, mach.model_number, mach.capacity as machinery_capacity, mach.power_requirements, mach.serial_number as machinery_serial_number,
                    oe.brand as office_brand, oe.model as office_model, oe.serial_number as office_serial_number,
                    sw.software_name, sw.version, sw.license_key, sw.license_expiry,
-                   land.lot_area, land.address as land_address, land.tax_declaration_number,
+                   land.lot_number, land.area_size, land.location, land.tax_declaration,
                    e.employee_no, e.firstname, e.lastname, e.email,
                    ics.ics_no,
                    par.par_no
@@ -48,7 +48,7 @@ $item_sql = "SELECT ai.id, ai.asset_id, ai.property_no, ai.ics_par_no, ai.model,
             LEFT JOIN asset_machinery mach ON ai.id = mach.asset_item_id
             LEFT JOIN asset_office_equipment oe ON ai.id = oe.asset_item_id
             LEFT JOIN asset_software sw ON ai.id = sw.asset_item_id
-            LEFT JOIN asset_land land ON ai.id = land.asset_item_id
+            LEFT JOIN asset_land_info land ON ai.id = land.asset_item_id
             LEFT JOIN employees e ON ai.employee_id = e.id 
             LEFT JOIN ics_forms ics ON ai.ics_id = ics.id 
             LEFT JOIN par_forms par ON ai.par_id = par.id 
@@ -401,6 +401,7 @@ function updateCategorySpecificFields($item_id, $category_code, $post_data) {
                 break;
                 
             case '07': // Vehicles
+            case 'MV': // Motor Vehicles
                 $vehicle_fields = [];
                 $vehicle_values = [];
                 $vehicle_types = '';
@@ -611,33 +612,49 @@ function updateCategorySpecificFields($item_id, $category_code, $post_data) {
                 break;
                 
             case '03': // Land
+            case 'LND':
                 $land_fields = [];
                 $land_values = [];
                 $land_types = '';
                 
-                if (isset($post_data['lot_area'])) {
-                    $land_fields[] = "lot_area = ?";
-                    $land_values[] = trim($post_data['lot_area']);
+                if (isset($post_data['lot_number'])) {
+                    $land_fields[] = "lot_number = ?";
+                    $land_values[] = trim($post_data['lot_number']);
                     $land_types .= 's';
                 }
-                if (isset($post_data['land_address'])) {
-                    $land_fields[] = "address = ?";
-                    $land_values[] = trim($post_data['land_address']);
+                if (isset($post_data['area_size'])) {
+                    $land_fields[] = "area_size = ?";
+                    $land_values[] = trim($post_data['area_size']);
                     $land_types .= 's';
                 }
-                if (isset($post_data['tax_declaration_number'])) {
-                    $land_fields[] = "tax_declaration_number = ?";
-                    $land_values[] = trim($post_data['tax_declaration_number']);
+                if (isset($post_data['location'])) {
+                    $land_fields[] = "location = ?";
+                    $land_values[] = trim($post_data['location']);
+                    $land_types .= 's';
+                }
+                if (isset($post_data['tax_declaration'])) {
+                    $land_fields[] = "tax_declaration = ?";
+                    $land_values[] = trim($post_data['tax_declaration']);
                     $land_types .= 's';
                 }
                 
                 if (!empty($land_fields)) {
-                    $land_sql = "UPDATE asset_land SET " . implode(", ", $land_fields) . " WHERE asset_item_id = ?";
-                    $land_values[] = $item_id;
-                    $land_types .= 'i';
+                    $land_sql = "INSERT INTO asset_land_info (asset_item_id, lot_number, area_size, location, tax_declaration, created_by, created_at) 
+                               VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                               ON DUPLICATE KEY UPDATE " . implode(", ", $land_fields) . ", updated_by = ?, updated_at = CURRENT_TIMESTAMP";
+                    
+                    // Values for INSERT
+                    $insert_values = [$item_id, trim($post_data['lot_number'] ?? ''), trim($post_data['area_size'] ?? ''), trim($post_data['location'] ?? ''), trim($post_data['tax_declaration'] ?? ''), $_SESSION['user_id']];
+                    $insert_types = 'isssss';
+                    
+                    // Values for UPDATE part (already in $land_values)
+                    $all_values = array_merge($insert_values, $land_values);
+                    $all_values[] = $_SESSION['user_id']; // For updated_by
+                    
+                    $all_types = $insert_types . $land_types . 'i';
                     
                     $land_stmt = $conn->prepare($land_sql);
-                    $land_stmt->bind_param($land_types, ...$land_values);
+                    $land_stmt->bind_param($all_types, ...$all_values);
                     $land_stmt->execute();
                     $land_stmt->close();
                 }
@@ -984,7 +1001,7 @@ $status_display = formatStatus($item['status']);
                                         if ($item['category_code'] === '030') {
                                             // Computer Equipment - use model from asset_computers table
                                             $display_model = $item['computer_model'] ? htmlspecialchars($item['computer_model']) : '<span class="text-muted">Not specified</span>';
-                                        } elseif ($item['category_code'] === '07') {
+                                        } elseif ($item['category_code'] === '07' || ($item['category_name'] ?? '') === 'MV') {
                                             // Vehicles
                                             $display_model = $item['vehicle_model'] ? htmlspecialchars($item['vehicle_model']) : '<span class="text-muted">Not specified</span>';
                                         } elseif ($item['category_code'] === '04') {
@@ -1160,7 +1177,7 @@ $status_display = formatStatus($item['status']);
                                         if ($item['category_code'] === '030') {
                                             // Computer Equipment - use model from asset_computers table
                                             $display_model = $item['computer_model'] ? htmlspecialchars($item['computer_model']) : '<span class="text-muted">Not specified</span>';
-                                        } elseif ($item['category_code'] === '07') {
+                                        } elseif ($item['category_code'] === '07' || ($item['category_name'] ?? '') === 'MV') {
                                             // Vehicles
                                             $display_model = $item['vehicle_model'] ? htmlspecialchars($item['vehicle_model']) : '<span class="text-muted">Not specified</span>';
                                         } elseif ($item['category_code'] === '04') {
@@ -1315,22 +1332,26 @@ $status_display = formatStatus($item['status']);
                     <?php endif; ?>
                     
                     <!-- Vehicles Specific Fields -->
-                    <?php if ($item['category_code'] === '07'): ?>
+                    <?php if ($item['category_code'] === '07' || ($item['category_name'] ?? '') === 'MV'): ?>
                     <div class="detail-section">
                         <h5 class="mb-3"><i class="bi bi-truck"></i> Vehicle Specifications</h5>
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label class="detail-label">Brand</label>
-                                    <input type="text" class="form-control" name="vehicle_brand" value="<?php echo htmlspecialchars($item['vehicle_brand'] ?? ''); ?>" placeholder="Enter vehicle brand">
+                                    <div class="detail-label">Brand</div>
+                                    <div class="detail-value"><?php echo $item['vehicle_brand'] ? htmlspecialchars($item['vehicle_brand']) : '<span class="text-muted">Not specified</span>'; ?></div>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="detail-label">Model</label>
-                                    <input type="text" class="form-control" name="vehicle_model" value="<?php echo htmlspecialchars($item['vehicle_model'] ?? ''); ?>" placeholder="Enter vehicle model">
+                                    <div class="detail-label">Model</div>
+                                    <div class="detail-value"><?php echo $item['vehicle_model'] ? htmlspecialchars($item['vehicle_model']) : '<span class="text-muted">Not specified</span>'; ?></div>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="detail-label">Plate Number</label>
-                                    <input type="text" class="form-control" name="plate_number" value="<?php echo htmlspecialchars($item['plate_number'] ?? ''); ?>" placeholder="Enter plate number">
+                                    <div class="detail-label">Plate Number</div>
+                                    <div class="detail-value"><?php echo $item['plate_number'] ? htmlspecialchars($item['plate_number']) : '<span class="text-muted">Not specified</span>'; ?></div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="detail-label">Chassis Number</div>
+                                    <div class="detail-value"><?php echo $item['chassis_number'] ? htmlspecialchars($item['chassis_number']) : '<span class="text-muted">Not specified</span>'; ?></div>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -1472,24 +1493,28 @@ $status_display = formatStatus($item['status']);
                     <?php endif; ?>
                     
                     <!-- Land Specific Fields -->
-                    <?php if ($item['category_code'] === '03'): ?>
+                    <?php if ($item['category_code'] === '03' || ($item['category_name'] ?? '') === 'Land' || ($item['category_name'] ?? '') === 'LND'): ?>
                     <div class="detail-section">
                         <h5 class="mb-3"><i class="bi bi-map"></i> Land Specifications</h5>
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <div class="detail-label">Lot Area (sqm)</div>
-                                    <div class="detail-value"><?php echo $item['lot_area'] ? htmlspecialchars($item['lot_area']) : '<span class="text-muted">Not specified</span>'; ?></div>
+                                    <div class="detail-label">Lot Number</div>
+                                    <div class="detail-value"><?php echo $item['lot_number'] ? htmlspecialchars($item['lot_number']) : '<span class="text-muted">Not specified</span>'; ?></div>
                                 </div>
                                 <div class="mb-3">
-                                    <div class="detail-label">Address</div>
-                                    <div class="detail-value"><?php echo $item['land_address'] ? htmlspecialchars($item['land_address']) : '<span class="text-muted">Not specified</span>'; ?></div>
+                                    <div class="detail-label">Area Size (sqm)</div>
+                                    <div class="detail-value"><?php echo $item['area_size'] ? htmlspecialchars($item['area_size']) : '<span class="text-muted">Not specified</span>'; ?></div>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
+                                    <div class="detail-label">Location</div>
+                                    <div class="detail-value"><?php echo $item['location'] ? htmlspecialchars($item['location']) : '<span class="text-muted">Not specified</span>'; ?></div>
+                                </div>
+                                <div class="mb-3">
                                     <div class="detail-label">Tax Declaration Number</div>
-                                    <div class="detail-value"><?php echo $item['tax_declaration_number'] ? htmlspecialchars($item['tax_declaration_number']) : '<span class="text-muted">Not specified</span>'; ?></div>
+                                    <div class="detail-value"><?php echo $item['tax_declaration'] ? htmlspecialchars($item['tax_declaration']) : '<span class="text-muted">Not specified</span>'; ?></div>
                                 </div>
                             </div>
                         </div>

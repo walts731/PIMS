@@ -143,7 +143,7 @@ if (empty($all_images)) {
 }
 
 // Validate required fields
-if (empty($item_id) || empty($category_id) || empty($office_name) || empty($property_no) || empty($person_accountable) || empty($end_user) || empty($date_counted)) {
+if (empty($item_id) || empty($category_id) || empty($office_name) || empty($property_no) || empty($date_counted)) {
     $_SESSION['error'] = 'Please fill in all required fields';
     header('Location: create_tag.php?id=' . $item_id);
     exit();
@@ -380,17 +380,12 @@ try {
     $subcategory = $subcategory_result->fetch_assoc();
     
     // Debug: Log category and subcategory information
-    logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "Category: " . json_encode($category));
-    logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "Subcategory: " . json_encode($subcategory));
-    logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "Subcategory ID: $subcategory_id");
-    logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "POST data: " . json_encode($_POST));
-    
-    // Handle category-specific fields
-    logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "Checking category condition...");
-    logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "Category code: " . ($category['category_code'] ?? 'NULL'));
-    logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "Category condition result: " . ($category && $category['category_code'] === '05-030' ? 'TRUE' : 'FALSE'));
-    
-    if ($category && $category['category_code'] === '05-030') {
+    logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "Form Data - Category ID: $category_id, Subcategory ID: $subcategory_id");
+    logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "POST Data: " . json_encode($_POST));
+    logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "Category Data - Code: " . ($category['category_code'] ?? 'NULL') . ", Name: " . ($category['category_name'] ?? 'NULL'));
+
+    if ($category && ($category['category_code'] === '05-030' || $category['category_code'] === 'ITS' || $category['category_name'] === 'ITS' || stripos($category['category_name'], 'computer') !== false)) {
+        logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "ENTERED COMPUTER/ITS BLOCK - Item ID: $item_id, Category Name: " . $category['category_name']);
         // Collect all form data
         $processor = trim($_POST['processor'] ?? '');
         $ram_capacity = trim($_POST['ram'] ?? '');
@@ -576,7 +571,8 @@ try {
             logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "Desktop computer condition NOT MET - skipping desktop fields");
         }
     }
-    elseif ($category && ($category['category_code'] === '07' || $category['category_code'] === '06-010')) {
+    elseif ($category && ($category['category_code'] === '07' || $category['category_code'] === '06-010' || $category['category_code'] === 'MV' || $category['category_name'] === 'MV' || stripos($category['category_name'], 'vehicle') !== false)) {
+        logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "ENTERED VEHICLE/MV BLOCK - Item ID: $item_id, Category Name: " . $category['category_name']);
         // Vehicles specific fields (including MV category 06-010)
         $brand = trim($_POST['brand'] ?? '');
         $model = trim($_POST['model'] ?? '');
@@ -629,7 +625,8 @@ try {
         
         logSystemAction($_SESSION['user_id'], 'update', 'asset_vehicles', $vehicle_details);
     }
-    elseif ($category && $category['category_code'] === '02') {
+    elseif ($category && ($category['category_code'] === '02' || $category['category_name'] === 'FUR' || stripos($category['category_name'], 'furniture') !== false)) {
+        logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "ENTERED FURNITURE BLOCK - Item ID: $item_id, Category Name: " . $category['category_name']);
         // Furniture & Fixtures specific fields
         $material = trim($_POST['material'] ?? '');
         $dimensions = trim($_POST['dimensions'] ?? '');
@@ -660,7 +657,8 @@ try {
             throw new Exception('Failed to save furniture details: ' . mysqli_error($conn));
         }
     }
-    elseif ($category && $category['category_code'] === '04') {
+    elseif ($category && ($category['category_code'] === '04' || $category['category_name'] === 'MACH' || stripos($category['category_name'], 'machinery') !== false)) {
+        logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "ENTERED MACHINERY BLOCK - Item ID: $item_id, Category Name: " . $category['category_name']);
         // Machinery & Equipment specific fields
         $machine_type = trim($_POST['machine_type'] ?? '');
         $manufacturer = trim($_POST['manufacturer'] ?? '');
@@ -697,7 +695,8 @@ try {
             throw new Exception('Failed to save machinery details: ' . mysqli_error($conn));
         }
     }
-    elseif ($category && $category['category_code'] === '05') {
+    elseif ($category && ($category['category_code'] === '05' || $category['category_name'] === 'OE' || stripos($category['category_name'], 'office') !== false)) {
+        logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "ENTERED OFFICE EQUIP BLOCK - Item ID: $item_id, Category Name: " . $category['category_name']);
         // Office Equipment specific fields
         $brand = trim($_POST['brand'] ?? '');
         $model = trim($_POST['model'] ?? '');
@@ -725,7 +724,8 @@ try {
             throw new Exception('Failed to save office equipment details: ' . mysqli_error($conn));
         }
     }
-    elseif ($category && $category['category_code'] === '06') {
+    elseif ($category && ($category['category_code'] === '06' || $category['category_code'] === 'SW' || $category['category_name'] === 'SW' || stripos($category['category_name'], 'software') !== false)) {
+        logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "ENTERED SOFTWARE/SW BLOCK - Item ID: $item_id, Category Name: " . $category['category_name']);
         // Software specific fields
         $software_name = trim($_POST['software_name'] ?? '');
         $version = trim($_POST['version'] ?? '');
@@ -755,24 +755,30 @@ try {
             throw new Exception('Failed to save software details: ' . mysqli_error($conn));
         }
     }
-    elseif ($category && $category['category_code'] === '03') {
+    elseif ($category && ($category['category_code'] === '03' || $category['category_code'] === 'LND' || $category['category_code'] === '01' || $category['category_name'] === 'LND' || stripos($category['category_name'], 'land') !== false)) {
+        logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "ENTERED LAND BLOCK - Item ID: $item_id, Category Name: " . $category['category_name']);
         // Land specific fields
-        $lot_area = trim($_POST['lot_number'] ?? '');
-        $address = trim($_POST['location'] ?? '');
-        $tax_declaration_number = trim($_POST['tax_declaration'] ?? '');
+        $lot_number = trim($_POST['lot_number'] ?? '');
+        $area_size = trim($_POST['area_size'] ?? '');
+        $location = trim($_POST['location'] ?? '');
+        $tax_declaration = trim($_POST['tax_declaration'] ?? '');
         
+        logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "ENTERED LAND BLOCK - Item ID: $item_id, Lot: $lot_number, Area: $area_size, Loc: $location, Tax: $tax_declaration");
+
         // Escape values for traditional SQL
-        $lot_area_safe = mysqli_real_escape_string($conn, $lot_area);
-        $address_safe = mysqli_real_escape_string($conn, $address);
-        $tax_declaration_number_safe = mysqli_real_escape_string($conn, $tax_declaration_number);
+        $lot_number_safe = mysqli_real_escape_string($conn, $lot_number);
+        $area_size_safe = mysqli_real_escape_string($conn, $area_size);
+        $location_safe = mysqli_real_escape_string($conn, $location);
+        $tax_declaration_safe = mysqli_real_escape_string($conn, $tax_declaration);
         
-        $land_sql = "INSERT INTO asset_land 
-                       (asset_item_id, lot_area, address, tax_declaration_number, created_by, created_at)
-                       VALUES ($item_id, '$lot_area_safe', '$address_safe', '$tax_declaration_number_safe', " . $_SESSION['user_id'] . ", CURRENT_TIMESTAMP)
+        $land_sql = "INSERT INTO asset_land_info 
+                       (asset_item_id, lot_number, area_size, location, tax_declaration, created_by, created_at)
+                       VALUES ($item_id, '$lot_number_safe', '$area_size_safe', '$location_safe', '$tax_declaration_safe', " . $_SESSION['user_id'] . ", CURRENT_TIMESTAMP)
                        ON DUPLICATE KEY UPDATE
-                       lot_area = '$lot_area_safe',
-                       address = '$address_safe',
-                       tax_declaration_number = '$tax_declaration_number_safe',
+                       lot_number = '$lot_number_safe',
+                       area_size = '$area_size_safe',
+                       location = '$location_safe',
+                       tax_declaration = '$tax_declaration_safe',
                        updated_by = " . $_SESSION['user_id'] . ",
                        updated_at = CURRENT_TIMESTAMP";
         

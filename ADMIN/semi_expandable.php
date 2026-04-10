@@ -133,11 +133,7 @@ if ($conn && !$conn->connect_error) {
                                 <span class="office-name"><?php echo htmlspecialchars($item['office_name']); ?></span>
                             </td>
                             <td>
-                                <?php if ($item['employee_name']): ?>
-                                    <?php echo htmlspecialchars($item['employee_name']); ?>
-                                <?php else: ?>
-                                    <span class="text-muted">Not assigned</span>
-                                <?php endif; ?>
+                                <?php echo htmlspecialchars($item['employee_name'] ?: 'Not assigned'); ?>
                             </td>
                             <td>
                                 <strong>₱<?php echo number_format($item['value'], 2); ?></strong>

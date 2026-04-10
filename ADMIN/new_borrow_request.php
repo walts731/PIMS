@@ -221,12 +221,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $serviceable_assets = [];
 try {
     $stmt = $conn->prepare("SELECT ai.id as asset_item_id, a.description as asset_description, ai.description as item_description, 
-                                   ai.property_number, ai.inventory_tag, ai.status, ac.category_name
+                                   ai.property_no, ai.inventory_tag, ai.status, ac.category_name
                            FROM asset_items ai 
                            JOIN assets a ON ai.asset_id = a.id 
                            LEFT JOIN asset_categories ac ON a.asset_categories_id = ac.id
                            WHERE ai.status = 'serviceable' 
-                           ORDER BY a.description, ai.property_number");
+                           ORDER BY a.description, ai.property_no");
     $stmt->execute();
     $result = $stmt->get_result();
     while ($row = $result->fetch_assoc()) {
@@ -274,46 +274,152 @@ if (!empty($serviceable_assets)) {
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, var(--light-color) 0%, var(--light-accent) 100%);
+            background: #f0f2f5;
             min-height: 100vh;
-            overflow-x: hidden;
         }
         
-        .page-header {
+        .borrow-slip-container {
             background: white;
-            border-radius: var(--border-radius-xl);
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow);
-            border-left: 4px solid var(--primary-color);
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            position: relative;
+        }
+
+        /* Slip Header Style */
+        .slip-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 30px;
+            position: relative;
+            border-bottom: 2px solid #333;
+            padding-bottom: 20px;
         }
         
-        .form-section {
-            background: #f8f9fa;
-            padding: 1.5rem;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-        }
-        .form-section h6 {
-            margin-bottom: 1rem;
-            color: var(--primary-color);
-            font-weight: 600;
-        }
-        .items-table {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        .items-table th {
-            background: #f8f9fa;
-            position: sticky;
+        .slip-logo {
+            position: absolute;
+            left: 0;
             top: 0;
-            z-index: 10;
+            width: 85px;
+            height: 85px;
+            object-fit: contain;
         }
-        .form-select:required {
-            border-left: 3px solid #dc3545;
+        
+        .header-center {
+            text-align: center;
         }
-        .form-select:required:focus {
-            border-left-color: var(--primary-color);
+        
+        .header-center h5 { margin: 0; font-size: 16px; font-weight: 500; }
+        .header-center h4 { margin: 5px 0; font-size: 18px; font-weight: bold; }
+        .header-center h3 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: 1px; }
+
+        .doc-info {
+            position: absolute;
+            right: 0;
+            top: 0;
+            text-align: right;
+            font-size: 10px;
+            line-height: 1.4;
+        }
+
+        .slip-title {
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            text-decoration: underline;
+            margin: 20px 0;
+            text-transform: uppercase;
+        }
+
+        /* Document Field Styles */
+        .field-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .field-group {
+            flex: 1;
+        }
+
+        .field-label {
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .field-input {
+            border: none;
+            border-bottom: 1px solid #000;
+            width: 100%;
+            padding: 5px 0;
+            font-size: 16px;
+            background: transparent;
+            outline: none;
+        }
+
+        .field-input:focus {
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        /* Table Styles */
+        .slip-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        .slip-table th {
+            border: 1px solid #ccc;
+            background: #f8f9fa;
+            padding: 12px;
+            text-align: center;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 13px;
+        }
+
+        .slip-table td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            vertical-align: top;
+        }
+
+        .action-row {
+            margin-top: 40px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .signatory-box {
+            width: 45%;
+            text-align: center;
+        }
+
+        .signature-line {
+            border-top: 1px solid #000;
+            margin-top: 40px;
+            padding-top: 5px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        @media print {
+            .no-print, .main-wrapper, .sidebar, .topbar {
+                display: none !important;
+            }
+            .main-content { padding: 0 !important; margin: 0 !important; }
+            .borrow-slip-container {
+                margin: 0;
+                padding: 0;
+                box-shadow: none;
+                width: 100%;
+            }
+            body { background: white; }
         }
     </style>
 </head>
@@ -321,6 +427,18 @@ if (!empty($serviceable_assets)) {
     <?php 
     $page_title = 'New Borrow Request';
     ?>
+<?php
+// Get system settings for logo (Reused from card_item pattern)
+$system_settings = [];
+$settings_result = $conn->query("SELECT setting_name, setting_value FROM system_settings");
+while ($row = $settings_result->fetch_assoc()) {
+    $system_settings[$row['setting_name']] = $row['setting_value'];
+}
+$logo_path = '../assets/images/logo.png';
+if (!empty($system_settings['system_logo'])) {
+    $logo_path = '../' . $system_settings['system_logo'];
+}
+?>
     <!-- Main Content Wrapper -->
     <div class="main-wrapper" id="mainWrapper">
         <?php require_once 'includes/sidebar-toggle.php'; ?>
@@ -329,153 +447,108 @@ if (!empty($serviceable_assets)) {
     
     <!-- Main Content -->
     <div class="main-content">
-        <!-- Page Header -->
-        <div class="page-header">
-            <div class="row align-items-center">
-                <div class="col-md-8">
-                    <h1 class="mb-2">
-                        <i class="bi bi-plus-circle"></i> New Borrow Request
-                    </h1>
-                    <p class="text-muted mb-0">Create a new asset borrowing request</p>
-                    <?php if (isset($error_message) && $error_message): ?>
-                        <div class="alert alert-danger mt-2" role="alert">
-                            <i class="bi bi-exclamation-triangle"></i>
-                            <?php echo htmlspecialchars($error_message); ?>
-                        </div>
-                    <?php endif; ?>
-                    <?php if (isset($success_message) && $success_message): ?>
-                        <div class="alert alert-success mt-2" role="alert">
-                            <i class="bi bi-check-circle"></i>
-                            <?php echo htmlspecialchars($success_message); ?>
-                        </div>
-                    <?php endif; ?>
+        <?php if (!empty($serviceable_assets)): ?>
+        <form method="POST">
+            <input type="hidden" name="action" value="submit_borrow_request">
+            <input type="hidden" name="items_json" id="itemsJsonField">
+
+            <div class="borrow-slip-container">
+                <!-- Slip Header -->
+                <div class="slip-header">
+                    <img src="<?php echo htmlspecialchars($logo_path); ?>" alt="Logo" class="slip-logo">
+                    <div class="header-center">
+                        <h5>Republic of the Philippines</h5>
+                        <h5>Province of Sorsogon</h5>
+                        <h3>LOCAL GOVERNMENT UNIT OF PILAR</h3>
+                    </div>
+                    <div class="doc-info">
+                        Document Code: <strong>PS-DIT-01-F03-01-01</strong><br>
+                        Effective Date: <br>
+                        <strong>22 May 2023</strong>
+                    </div>
                 </div>
-                <div class="col-md-4 text-md-end">
-                    <a href="borrowing.php" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left"></i> Back to Borrowing
-                    </a>
+
+                <div class="slip-title">BORROW SLIP</div>
+
+                <!-- Fields Grid -->
+                <div class="field-row">
+                    <div class="field-group" style="flex: 2;">
+                        <span class="field-label">Name:</span>
+                        <input type="text" class="field-input" name="guest_name" placeholder="Enter Borrower's Name" required>
+                    </div>
+                    <div class="field-group">
+                        <span class="field-label">Date Borrowed:</span>
+                        <input type="date" class="field-input" name="date_borrowed" value="<?php echo date('Y-m-d'); ?>" required>
+                    </div>
+                    <div class="field-group">
+                        <span class="field-label">Schedule of Return:</span>
+                        <input type="date" class="field-input" name="schedule_return" required>
+                    </div>
+                </div>
+
+                <div class="field-row">
+                    <div class="field-group">
+                        <span class="field-label">Contact No.:</span>
+                        <input type="text" class="field-input" name="contact" placeholder="09XX-XXX-XXXX" required>
+                    </div>
+                    <div class="field-group">
+                        <span class="field-label">Barangay:</span>
+                        <input type="text" class="field-input" name="barangay" placeholder="Enter Barangay" required>
+                    </div>
+                    <div class="field-group">
+                        <span class="field-label">Borrower Signature:</span>
+                        <div class="field-input" style="height: 25px; border-bottom: 2px solid #000;"></div>
+                    </div>
+                </div>
+
+                <!-- Items Table -->
+                <table class="slip-table" id="itemsTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 55%;">THINGS BORROWED</th>
+                            <th style="width: 10%;">QTY</th>
+                            <th style="width: 35%;">REMARKS</th>
+                            <th class="no-print" style="width: 50px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="itemsTableBody">
+                        <!-- Items dynamically added here -->
+                    </tbody>
+                </table>
+                <button type="button" class="btn btn-outline-primary btn-sm no-print mb-4" onclick="addItemRow()">
+                    <i class="bi bi-plus-circle me-1"></i> Add Item
+                </button>
+
+                <!-- Signatories Row -->
+                <div class="action-row">
+                    <div class="signatory-box">
+                        <span class="field-label" style="text-align: left;">Releasing Officer:</span>
+                        <input type="text" class="field-input" name="releasing_officer" style="text-align: center;" placeholder="Enter Name" required>
+                        <div class="signature-line">RELEASING OFFICER SIGNATURE</div>
+                    </div>
+                    <div class="signatory-box">
+                        <span class="field-label" style="text-align: left;">Approved by:</span>
+                        <input type="text" class="field-input" name="approved_by" style="text-align: center;" placeholder="Enter Name" required>
+                        <div class="signature-line">APPROVED BY SIGNATURE</div>
+                    </div>
+                </div>
+
+                <div class="mt-5 text-end no-print">
+                    <button type="submit" class="btn btn-primary px-5">
+                        <i class="bi bi-save me-2"></i> Save Borrow Slip
+                    </button>
+                    <a href="borrowing.php" class="btn btn-outline-secondary ms-2">Cancel</a>
                 </div>
             </div>
-        </div>
-
-        <!-- Borrow Request Form -->
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="bi bi-clipboard-check me-2"></i>
-                    Borrow Request Details
-                </h5>
+        </form>
+        <?php else: ?>
+            <div class="alert alert-warning m-4" role="alert">
+                <i class="bi bi-exclamation-triangle"></i>
+                <strong>No serviceable assets available!</strong>
+                Please ensure some assets are marked as serviceable.
+                <a href="assets.php" class="alert-link">Manage Assets</a>
             </div>
-            <div class="card-body">
-                <?php if (empty($serviceable_assets)): ?>
-                    <div class="alert alert-warning" role="alert">
-                        <i class="bi bi-exclamation-triangle"></i>
-                        <strong>No serviceable assets available!</strong><br>
-                        There are currently no assets with "serviceable" status available for borrowing. Please check the Asset Management page to ensure some assets are marked as serviceable.
-                    </div>
-                <?php else: ?>
-                <form method="POST">
-                    <input type="hidden" name="action" value="submit_borrow_request">
-                    <input type="hidden" name="items_json" id="itemsJsonField">
-                    
-                    <!-- Borrower Information -->
-                    <div class="form-section">
-                        <h6><i class="bi bi-person"></i> Borrower Information</h6>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Borrower Name *</label>
-                                    <input type="text" class="form-control" name="guest_name" required>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Barangay *</label>
-                                    <input type="text" class="form-control" name="barangay" placeholder="e.g. San Roque" required>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Contact Number *</label>
-                                    <input type="text" class="form-control" name="contact" placeholder="09XX-XXX-XXXX" required>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Date Borrowed *</label>
-                                    <input type="date" class="form-control" name="date_borrowed" required>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Schedule Information -->
-                    <div class="form-section">
-                        <h6><i class="bi bi-calendar"></i> Schedule Information</h6>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Schedule of Return *</label>
-                                    <input type="date" class="form-control" name="schedule_return" required>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Releasing Officer *</label>
-                                    <input type="text" class="form-control" name="releasing_officer" placeholder="Name of releasing officer" required>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Approved By *</label>
-                                    <input type="text" class="form-control" name="approved_by" required>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Items Section -->
-                    <div class="form-section">
-                        <h6><i class="bi bi-box"></i> Items to Borrow</h6>
-                        <div class="alert alert-info" role="alert">
-                            <i class="bi bi-info-circle"></i>
-                            <strong>Please select an asset from the dropdown menu</strong> for each item row. The quantity will be automatically set to 1 for individual asset items.
-                        </div>
-                        <div class="table-responsive">
-                            <table class="table table-bordered" id="itemsTable">
-                                <thead>
-                                    <tr>
-                                        <th>Description / Asset *</th>
-                                        <th>Available</th>
-                                        <th>Quantity</th>
-                                        <th>Remarks</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="itemsTableBody">
-                                    <!-- Items will be added here dynamically -->
-                                </tbody>
-                            </table>
-                        </div>
-                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="addItemRow()">
-                            <i class="bi bi-plus"></i> Add Item
-                        </button>
-                    </div>
-                    
-                    <div class="row mt-4">
-                        <div class="col-12">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-check-circle"></i> Submit Request
-                            </button>
-                            <a href="borrowing.php" class="btn btn-secondary ms-2">
-                                <i class="bi bi-x-circle"></i> Cancel
-                            </a>
-                        </div>
-                    </div>
-                </form>
-                <?php endif; ?>
-            </div>
-        </div>
+        <?php endif; ?>
     </div>
     
     <?php require_once 'includes/logout-modal.php'; ?>
@@ -507,27 +580,24 @@ if (!empty($serviceable_assets)) {
             row.id = `itemRow${itemCount}`;
             
             const options = serviceableAssets.map((asset, index) => 
-                `<option value="${index}">${asset.asset_description} - ${asset.item_description} (Property No: ${asset.property_number || 'N/A'})</option>`
+                `<option value="${index}">${asset.asset_description} - ${asset.item_description} (Property No: ${asset.property_no || 'N/A'})</option>`
             ).join('');
             
             row.innerHTML = `
-                <td>
-                    <select class="form-select" name="asset_item_id_${itemCount}" onchange="updateAvailableQuantity(${itemCount})" required>
-                        <option value="">Select Asset</option>
+                <td class="p-0">
+                    <select class="form-select border-0 bg-transparent py-3" name="asset_item_id_${itemCount}" onchange="updateAvailableQuantity(${itemCount})" required>
+                        <option value="">-- Click to Select Asset --</option>
                         ${options}
                     </select>
                 </td>
-                <td>
-                    <input type="text" class="form-control" id="available_${itemCount}" readonly value="0">
+                <td class="p-0">
+                    <input type="number" class="form-control border-0 bg-transparent text-center py-3" name="quantity_${itemCount}" min="1" value="1" readonly required>
                 </td>
-                <td>
-                    <input type="number" class="form-control" name="quantity_${itemCount}" min="1" value="1" required>
+                <td class="p-0">
+                    <input type="text" class="form-control border-0 bg-transparent py-3" name="remarks_${itemCount}" placeholder="Add remarks here...">
                 </td>
-                <td>
-                    <input type="text" class="form-control" name="remarks_${itemCount}" placeholder="Add remarks">
-                </td>
-                <td>
-                    <button type="button" class="btn btn-sm btn-danger" onclick="removeItemRow(${itemCount})">
+                <td class="text-center no-print align-middle">
+                    <button type="button" class="btn btn-sm text-danger" onclick="removeItemRow(${itemCount})">
                         <i class="bi bi-trash"></i>
                     </button>
                 </td>
@@ -544,22 +614,19 @@ if (!empty($serviceable_assets)) {
             }
         }
 
-        // Update available quantity
+        // Update available quantity (modified to handle new UI)
         function updateAvailableQuantity(rowId) {
             const select = document.querySelector(`select[name="asset_item_id_${rowId}"]`);
-            const availableInput = document.getElementById(`available_${rowId}`);
             const quantityInput = document.querySelector(`input[name="quantity_${rowId}"]`);
             
             const selectedIndex = select.value;
             if (selectedIndex !== '') {
                 const selectedAsset = serviceableAssets[selectedIndex];
                 if (selectedAsset) {
-                    availableInput.value = '1'; // Individual items always have quantity 1
-                    quantityInput.value = '1'; // Set quantity to 1 and make it readonly
+                    quantityInput.value = '1';
                     quantityInput.readOnly = true;
                 }
             } else {
-                availableInput.value = '0';
                 quantityInput.value = '1';
                 quantityInput.readOnly = false;
             }
@@ -615,13 +682,13 @@ if (!empty($serviceable_assets)) {
                         
                         if (selectedAsset) {
                             // Create the "thing" field with formatted asset information
-                            const thingText = `${selectedAsset.asset_description}\r\nInventory Tag: ${selectedAsset.inventory_tag}\r\nProperty No: ${selectedAsset.property_number}`;
+                            const thingText = `${selectedAsset.asset_description}\r\nInventory Tag: ${selectedAsset.inventory_tag}\r\nProperty No: ${selectedAsset.property_no}`;
                             
                             const itemData = {
                                 asset_item_id: selectedAsset.asset_item_id,
                                 thing: thingText,
                                 inventory_tag: selectedAsset.inventory_tag,
-                                property_no: selectedAsset.property_number,
+                                property_no: selectedAsset.property_no,
                                 category: selectedAsset.category_name || 'Uncategorized',
                                 qty: "1", // String as per example
                                 remarks: remarksInput ? remarksInput.value : ''

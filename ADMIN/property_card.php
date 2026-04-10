@@ -265,11 +265,12 @@ if ($conn && !$conn->connect_error) {
                                                 <span class="office-name"><?php echo htmlspecialchars($item['office_name']); ?></span>
                                             </td>
                                             <td>
-                                                <?php if ($item['employee_name']): ?>
-                                                    <?php echo htmlspecialchars($item['employee_name']); ?>
-                                                <?php else: ?>
-                                                    <span class="text-muted">Not assigned</span>
-                                                <?php endif; ?>
+                                                <?php 
+                                                $excluded_cats = ['LND', 'OInfra', 'Buildings', 'Land Imp'];
+                                                if (!in_array($item['asset_category'], $excluded_cats) && !in_array($item['asset_category_code'], $excluded_cats)): 
+                                                    echo htmlspecialchars($item['employee_name'] ?: 'Not assigned');
+                                                endif;
+                                                ?>
                                             </td>
                                             <td>
                                                 <strong>₱<?php echo number_format($item['value'], 2); ?></strong>

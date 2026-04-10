@@ -20,7 +20,7 @@ $item = null;
 $item_sql = "SELECT ai.*, 
                    ac.category_name, ac.category_code,
                    o.office_name, o.office_code,
-                   e.firstname, e.lastname,
+                   e.firstname, e.lastname, e.employee_no,
                    veh.brand as vehicle_brand, veh.model as vehicle_model, veh.plate_number, veh.engine_number, veh.chassis_number,
                    furn.material, furn.dimensions,
                    mach.machine_type, mach.serial_number as mach_serial,
@@ -67,6 +67,15 @@ if ($item['category_code'] === '030') { // Computer
     $article_details .= "\nMODEL: " . ($item['vehicle_model'] ?: 'N/A');
     $article_details .= "\nENGINE: " . ($item['engine_number'] ?: 'N/A');
 }
+
+// Prep employee name for display
+$emp_name = trim(($item['firstname'] ?? '') . ' ' . ($item['lastname'] ?? ''));
+if (empty($emp_name)) $emp_name = 'N/A';
+
+// Determine if we should show the Accountable column based on category
+$excluded_cats = ['LND', 'OInfra', 'Buildings', 'Land Imp'];
+$show_emp_col = !in_array($item['category_name'], $excluded_cats) && !in_array($item['category_code'], $excluded_cats);
+$article_width = $show_emp_col ? 20 : 35;
 
 // Handle Add Improvement Submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_improvement') {
@@ -244,7 +253,14 @@ if ($imp_result) {
             text-align: left !important;
             white-space: pre-line;
             font-weight: bold;
-            font-size: 9.5px;
+            font-size: 8.5px;
+        }
+
+        .emp-cell {
+            text-align: left !important;
+            white-space: pre-line;
+            font-size: 8.5px;
+            font-weight: 500;
         }
         
         .repair-cell {
@@ -392,19 +408,23 @@ if ($imp_result) {
                             <td class="label" style="width: 10%;">Location:</td>
                             <td class="data"><?php echo htmlspecialchars($item['office_name']); ?></td>
                         </tr>
+
                     </table>
                     
                     <!-- Transactions Table -->
                     <table class="data-table">
                         <thead>
                             <tr>
-                                <th style="width: 15%;">Acquisition Date</th>
-                                <th style="width: 25%;">Article</th>
+                                <th style="width: 10%;">Acquisition Date</th>
+                                <th style="width: <?php echo $article_width; ?>%;">Article</th>
+                                <?php if ($show_emp_col): ?>
+                                    <th style="width: 15%;">Accountable</th>
+                                <?php endif; ?>
                                 <th style="width: 5%;">Qty</th>
-                                <th style="width: 15%;">Unit Value</th>
+                                <th style="width: 12.5%;">Unit Value</th>
                                 <th style="width: 15%;">Improvement / Repairs</th>
                                 <th style="width: 12.5%;">Total</th>
-                                <th style="width: 12.5%;">Remarks</th>
+                                <th style="width: 10%;">Remarks</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -412,6 +432,9 @@ if ($imp_result) {
                             <tr>
                                 <td><?php echo date('M. Y', strtotime($item['acquisition_date'] ?: $item['created_at'])); ?></td>
                                 <td class="article-cell"><?php echo htmlspecialchars($article_details); ?></td>
+                                <?php if ($show_emp_col): ?>
+                                    <td class="emp-cell"><?php echo htmlspecialchars($emp_name); ?></td>
+                                <?php endif; ?>
                                 <td>1</td>
                                 <td><?php echo number_format($item['value'] - array_sum(array_column($improvements, 'amount')), 2); ?></td>
                                 <td>N/A</td>
@@ -424,6 +447,9 @@ if ($imp_result) {
                             <tr>
                                 <td><?php echo date('M. Y', strtotime($imp['improvement_date'])); ?></td>
                                 <td class="article-cell"><?php echo htmlspecialchars($article_details); ?></td>
+                                <?php if ($show_emp_col): ?>
+                                    <td class="emp-cell"><?php echo htmlspecialchars($emp_name); ?></td>
+                                <?php endif; ?>
                                 <td><?php echo $imp['qty']; ?></td>
                                 <td><?php echo number_format($imp['amount'] / $imp['qty'], 2); ?></td>
                                 <td class="repair-cell"><?php echo htmlspecialchars($imp['description']); ?></td>
@@ -434,7 +460,18 @@ if ($imp_result) {
 
                             <!-- Fill empty rows if needed for alignment -->
                             <?php for($i = count($improvements); $i < 4; $i++): ?>
-                            <tr><td height="35"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                            <tr>
+                                <td height="35"></td>
+                                <td></td>
+                                <?php if ($show_emp_col): ?>
+                                    <td></td>
+                                <?php endif; ?>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
                             <?php endfor; ?>
                         </tbody>
                     </table>
@@ -496,5 +533,6 @@ if ($imp_result) {
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../assets/js/jquery.min.js"></script>
+    <?php require_once 'includes/sidebar-scripts.php'; ?>
 </body>
 </html>

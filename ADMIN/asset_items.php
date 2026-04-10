@@ -39,7 +39,10 @@ if (!$asset) {
 
 // Get asset items
 $items = [];
-$items_sql = "SELECT ai.* FROM asset_items ai WHERE ai.asset_id = ? ORDER BY ai.id";
+$items_sql = "SELECT ai.*, CONCAT(e.firstname, ' ', e.lastname) as employee_name, e.employee_no 
+              FROM asset_items ai 
+              LEFT JOIN employees e ON ai.employee_id = e.id
+              WHERE ai.asset_id = ? ORDER BY ai.id";
 $items_stmt = $conn->prepare($items_sql);
 $items_stmt->bind_param("i", $asset_id);
 $items_stmt->execute();
@@ -394,7 +397,7 @@ $disposed_items = count(array_filter($items, function($item) { return $item['sta
                 responsive: true,
                 pageLength: 25,
                 lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
-                order: [[3, 'desc']], // Sort by Acquisition Date by default
+                order: [[4, 'desc']], // Sort by Acquisition Date by default (now index 4)
                 columnDefs: [
                     {
                         targets: 0, // Property No column
@@ -438,7 +441,7 @@ $disposed_items = count(array_filter($items, function($item) { return $item['sta
                         }
                     },
                     {
-                        targets: 4, // Actions column
+                        targets: 5, // Actions column
                         orderable: false,
                         searchable: false,
                         className: 'text-center'
@@ -485,7 +488,7 @@ $disposed_items = count(array_filter($items, function($item) { return $item['sta
                     row[3].replace(/[^0-9.-]+/g, ''), // Value
                     row[4]  // Acquisition Date
                 ];
-                csv += rowData.map(cell => `"${cell.trim()}"`).join(',') + '\n';
+                csv += rowData.map(cell => `"${cell.replace(/"/g, '""')}"`).join(',') + '\n';
             });
             
             const blob = new Blob([csv], { type: 'text/csv' });

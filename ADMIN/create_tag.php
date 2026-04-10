@@ -349,8 +349,8 @@ require_once 'includes/subcategory_fields.php';
                     </div>
                     <div class="col-md-4">
                         <div class="mb-3">
-                            <label for="end_user" class="form-label">End User <span class="required">*</span></label>
-                            <input type="text" class="form-control" id="end_user" name="end_user" placeholder="Enter end user name" required>
+                            <label for="end_user" class="form-label">End User</label>
+                            <input type="text" class="form-control" id="end_user" name="end_user" placeholder="Enter end user name">
                         </div>
                     </div>
                 </div>
@@ -358,8 +358,8 @@ require_once 'includes/subcategory_fields.php';
                 <div class="row">
                     <div class="col-md-6">
                         <div class="mb-3">
-                            <label for="person_accountable" class="form-label">Person Accountable <span class="required">*</span></label>
-                            <select class="form-select" id="person_accountable" name="person_accountable" required>
+                            <label for="person_accountable" class="form-label">Person Accountable</label>
+                            <select class="form-select" id="person_accountable" name="person_accountable">
                                 <option value="">Select Employee</option>
                                 <?php foreach ($employees as $employee): ?>
                                     <option value="<?php echo $employee['id']; ?>" <?php echo ($employee['id'] == $item['employee_id']) ? 'selected' : ''; ?>>

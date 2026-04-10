@@ -273,27 +273,7 @@ if (isset($_SESSION['error_message'])) {
             </div>
         </div>
 
-            <!-- Statistics Cards -->
-        <div class="row mb-4">
-            <div class="col-lg-4 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo count($borrow_requests); ?></div>
-                    <div class="stats-label"><i class="bi bi-clipboard-check"></i> Total Requests</div>
-                </div>
-            </div>
-            <div class="col-lg-4 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo count(array_filter($borrow_requests, fn($r) => $r['status'] === 'approved')); ?></div>
-                    <div class="stats-label"><i class="bi bi-clock"></i> Active Borrowed</div>
-                </div>
-            </div>
-            <div class="col-lg-4 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo count(array_filter($borrow_requests, fn($r) => $r['status'] === 'returned')); ?></div>
-                    <div class="stats-label"><i class="bi bi-check-circle"></i> Returned</div>
-                </div>
-            </div>
-        </div>
+
 
         <!-- Borrow Requests Table -->
         <div class="card">
