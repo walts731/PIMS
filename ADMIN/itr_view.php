@@ -61,9 +61,13 @@ if (!$itr_form) {
 // Get ITR items with asset details
 $itr_items = [];
 $stmt = $conn->prepare("
-    SELECT ii.*, ai.description as asset_description 
+    SELECT ii.*, ai.description as asset_description, 
+           ai.property_no, ai.ics_par_no as asset_ics_par_no,
+           ics.ics_no, par.par_no
     FROM itr_items ii 
     LEFT JOIN asset_items ai ON ii.description = ai.id 
+    LEFT JOIN ics_forms ics ON ai.ics_id = ics.id
+    LEFT JOIN par_forms par ON ai.par_id = par.id
     WHERE ii.form_id = ? 
     ORDER BY ii.id
 ");
@@ -114,217 +118,209 @@ if ($result && $row = $result->fetch_assoc()) {
     <link href="assets/css/admin-unified.css" rel="stylesheet">
     <style>
         body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, var(--light-color) 0%, var(--light-accent) 100%);
-            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
         }
-        .page-header {
+
+        .itr-container {
             background: white;
-            border-radius: var(--border-radius-xl);
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow);
-            border-left: 4px solid var(--primary-color);
-        }
-        .ptr-card {
-            background: white;
-            border: 2px solid #333;
+            border: 2px solid #000;
             padding: 0;
-            margin: 0 auto;
-            max-width: 950px;
-            box-shadow: var(--shadow-lg);
-            border-radius: 4px;
-            overflow: hidden;
-        }
-        .ptr-header {
-            padding: 30px;
-            border-bottom: 1px solid #333;
-            background: #fff;
+            margin: 20px auto;
+            max-width: 900px;
+            box-shadow: none;
             position: relative;
-            text-align: center;
+            box-sizing: border-box;
         }
-        .seal-img {
+
+        .itr-header {
+            padding: 20px;
+            display: flex;
+            align-items: flex-start;
+            border-bottom: none;
+        }
+
+        .logo-box {
             width: 80px;
-            height: 80px;
-            position: absolute;
-            top: 30px;
-            left: 30px;
         }
-        .header-content {
-            display: inline-block;
+
+        .logo-box img {
+            width: 70px;
+            height: auto;
+        }
+
+        .header-central {
+            flex-grow: 1;
             text-align: center;
         }
-        .header-text {
-            text-align: center;
+
+        .header-central p {
+            margin: 0;
+            font-size: 11px;
         }
-        @page {
-            size: A4;
-            margin: 0.3in;
-        }
-        .header-text {
-            font-size: 12px;
-            color: #000;
-            font-weight: 500;
-        }
-        .header-text h3 {
+
+        .header-central h2 {
+            font-size: 18px;
+            font-weight: bold;
             margin: 5px 0;
-            font-size: 16px;
-            color: #000;
-            font-weight: bold;
-            text-transform: uppercase;
+            text-decoration: none;
         }
-        .header-right {
-            position: absolute;
-            top: 30px;
-            right: 30px;
+
+        .annex-box {
+            width: 80px;
             text-align: right;
-        }
-        .ptr-header .title {
-            font-size: 14px;
+            font-style: italic;
+            font-size: 11px;
             font-weight: bold;
-            margin-bottom: 5px;
-            color: #000;
-            margin-top: 15px;
         }
-        .ptr-annex {
+
+        .entity-info-bar {
+            padding: 0 20px 10px;
             font-size: 12px;
-            color: #000;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        .entity-section {
-            width: 100%;
-            margin-bottom: 20px;
-            border-bottom: 1px solid #000;
-            padding-bottom: 10px;
-        }
-        .entity-row {
             display: flex;
-            margin-bottom: 5px;
-            align-items: flex-end;
+            justify-content: space-between;
         }
-        .entity-label {
-            width: 100px;
-            font-weight: bold;
-            font-size: 11px;
-            color: #000;
-        }
-        .entity-value {
-            flex: 1;
+
+        .underline-input {
             border-bottom: 1px solid #000;
-            min-height: 18px;
-            font-size: 11px;
             padding: 0 5px;
-            color: #000;
+            font-weight: bold;
+            text-decoration: underline;
         }
-        .itr-no-section {
-            width: 250px;
-            margin-left: 20px;
-            display: flex;
-            align-items: flex-end;
-        }
-        .items-table {
+
+        .technical-grid {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 0;
-            border: 2px solid #000;
+            border: 1px solid #000;
         }
-        .items-table th,
-        .items-table td {
+
+        .technical-grid td {
+            border: 1px solid #000;
+            padding: 4px 8px;
+            font-size: 10px;
+            vertical-align: middle;
+        }
+
+        .excel-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-top: none;
+        }
+
+        .excel-table th, .excel-table td {
             border: 1px solid #000;
             padding: 4px 6px;
-            text-align: center;
-            vertical-align: top;
-            font-size: 10px;
-            color: #000;
+            font-size: 9px;
+            height: 24px;
         }
-        .items-table th {
+
+        .excel-table th {
+            text-align: center;
             font-weight: bold;
-            text-transform: uppercase;
-            font-size: 10px;
             background: #fff;
-            color: #000;
         }
-        .items-table .text-left { text-align: left; }
-        .items-table .text-right { text-align: right; }
-        
-        .item-no-col { width: 60px; }
-        .date-col { width: 100px; }
-        .ref-col { width: 120px; }
-        .price-col { width: 100px; }
-        .amount-col { width: 110px; }
-        .condition-col { width: 100px; }
-        
-        .total-row td {
-            font-weight: bold;
-            text-align: right;
-            padding-right: 10px;
-        }
-        .footer-section {
-            margin-top: 5px;
+
+        .check-box {
+            display: inline-block;
+            width: 40px;
+            height: 18px;
             border: 1px solid #000;
-        }
-        .footer-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        .footer-table td {
-            border: 1px solid #000;
-            padding: 2px;
-            width: 33.33%;
-            vertical-align: top;
-        }
-        .label-row {
+            text-align: center;
+            line-height: 18px;
+            margin-right: 5px;
             font-weight: bold;
-            margin-bottom: 2px;
-            color: #000;
-            font-size: 6px;
         }
-        .name-line {
+
+        .reason-box {
+            border: 1px solid #000;
+            border-top: none;
+            padding: 5px 10px;
+            height: 80px;
+        }
+
+        .reason-title {
+            font-size: 10px;
+            margin-bottom: 5px;
+        }
+
+        .reason-content {
             text-align: center;
             font-weight: bold;
+            font-size: 10px;
+            margin-top: 10px;
             text-transform: uppercase;
+        }
+
+        .signature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            border: 1px solid #000;
+            border-top: none;
+        }
+
+        .sig-col {
+            border-right: 1px solid #000;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sig-col:last-child {
+            border-right: none;
+        }
+
+        .sig-header {
+            height: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             border-bottom: 1px solid #000;
-            margin-bottom: 0px;
-            font-size: 6px;
-            color: #000;
-            line-height: 1.0;
-            padding: 0px;
+            font-size: 10px;
+            font-weight: normal;
         }
-        .sub-label {
+
+        .sig-row {
+            display: flex;
+            border-bottom: 1px solid #000;
+            height: 22px;
+            align-items: center;
+        }
+
+        .sig-row:last-child {
+            border-bottom: none;
+        }
+
+        .sig-label {
+            width: 70px;
+            padding-left: 5px;
+            font-size: 9px;
+            border-right: 1px solid #000;
+            height: 100%;
+            display: flex;
+            align-items: center;
+        }
+
+        .sig-value {
+            flex-grow: 1;
+            padding: 0 5px;
+            font-size: 10px;
+            font-weight: bold;
             text-align: center;
-            font-size: 6px;
-            margin-bottom: 2px;
-            color: #000;
-            line-height: 1.0;
-        }
-        .signature-group {
-            margin-top: 1px;
-        }
-        
-        .main-content {
-            padding: 2rem;
-            animation: fadeIn 0.5s ease-in-out;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            text-transform: uppercase;
         }
 
         @media print {
-            .no-print { display: none !important; }
-            .ptr-card { box-shadow: none; border: 2px solid #000; margin: 0; max-width: 100%; }
-            body { background: white; }
-            .main-content { padding: 0; }
-            .page-header { display: none !important; }
-            .sidebar-toggle, .sidebar { display: none !important; }
+            @page { size: A4 landscape; margin: 0.25in; }
+            .no-print, .sidebar, .topbar { display: none !important; }
+            body { background: white; margin: 0; padding: 0; }
+            .itr-container { margin: 0; border: 2px solid #000; width: 100%; max-width: none; box-sizing: border-box; }
+            .main-content { padding: 0; margin: 0; }
+            .main-wrapper { padding: 0; margin: 0; }
         }
     </style>
 </head>
 <body>
-    <?php $page_title = 'ITR View'; ?>
+    <?php $page_title = 'Property Transfer Report'; ?>
     <div class="main-wrapper" id="mainWrapper">
         <?php require_once 'includes/sidebar-toggle.php'; ?>
         <?php require_once 'includes/sidebar.php'; ?>
@@ -334,198 +330,189 @@ if ($result && $row = $result->fetch_assoc()) {
         <div class="page-header no-print">
             <div class="row align-items-center">
                 <div class="col-md-8">
-                    <h1 class="mb-2">
-                        <i class="bi bi-arrow-left-right"></i> ITR View
-                    </h1>
-                    <p class="text-muted mb-0">
-                        ITR Number: <strong><?php echo htmlspecialchars($itr_form['itr_no']); ?></strong>
-                    </p>
+                    <h1 class="mb-2"><i class="bi bi-arrow-left-right me-2 text-primary"></i>ITR View</h1>
+                    <p class="text-muted mb-0">Record No: <strong><?php echo htmlspecialchars($itr_form['itr_no']); ?></strong></p>
                 </div>
-                <div class="col-md-4 text-md-end no-print">
-                    <!-- Actions Dropdown -->
-                    <div class="dropdown d-inline-block">
-                        <button class="btn btn-primary dropdown-toggle" type="button" id="actionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-gear"></i> Actions
+                <div class="col-md-4 text-md-end">
+                    <div class="dropdown shadow-sm d-inline-block">
+                        <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-gear-fill me-1"></i> Actions
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionsDropdown">
-                            <li>
-                                <button class="dropdown-item" onclick="window.print()">
-                                    <i class="bi bi-printer text-primary"></i> Print
-                                </button>
-                            </li>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="print_itr.php?id=<?php echo $itr_id; ?>" target="_blank"><i class="bi bi-printer-fill me-2"></i> Print Report</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li>
-                                <a href="itr_entries.php" class="dropdown-item">
-                                    <i class="bi bi-arrow-left text-secondary"></i> Back to List
-                                </a>
-                            </li>
+                            <li><a class="dropdown-item" href="itr_entries.php"><i class="bi bi-list-task me-2"></i> View Entries</a></li>
                         </ul>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="ptr-card">
-            <!-- Header Section -->
-            <div class="ptr-header">
-                <img src="<?php echo $logo_path; ?>" alt="<?php echo $system_name; ?> Logo" class="seal-img">
-                <div class="header-content">
-                    <div class="header-text">
-                        <p>Republic of the Philippines</p>
-                        <h3>Municipality of Pilar</h3>
-                        <p>Province of Sorsogon</p>
-                        <h2 class="title">PROPERTY TRANSFER REQUEST</h2>
-                    </div>
+        <div class="itr-container">
+            <div class="itr-header">
+                <div class="logo-box">
+                    <img src="../img/trans_logo.png" alt="Logo">
                 </div>
-                <div class="header-right">
-                    <div class="ptr-annex">
-                        <p>Annex A.3</p>
-                    </div>
+                <div class="header-central">
+                    <p>Republic of the Philippines</p>
+                    <p><strong>Municipality of Pilar</strong></p>
+                    <p>Province of Sorsogon</p>
+                    <h2 style="margin-top: 15px;">PROPERTY TRANSFER REPORT</h2>
+                </div>
+                <div class="annex-box">Annex A.3</div>
+            </div>
+
+            <div class="entity-info-bar">
+                <div>Entity Name: <span class="underline-input"><?php echo htmlspecialchars($itr_form['entity_name']); ?></span></div>
+                <div>Fund Cluster: <span class="underline-input"><?php echo htmlspecialchars($itr_form['fund_cluster']); ?></span></div>
+            </div>
+
+            <table class="technical-grid">
+                <tr>
+                    <td width="60%">From Accountable Officer/Agency/Fund Cluster: <strong><?php echo htmlspecialchars(($itr_form['from_firstname'] . ' ' . $itr_form['from_lastname']) . ' / ' . $itr_form['from_office_name']); ?></strong></td>
+                    <td width="15%">ITR No. :</td>
+                    <td width="25%"><strong><?php echo htmlspecialchars($itr_form['itr_no']); ?></strong></td>
+                </tr>
+                <tr>
+                    <td>To Accountable Officer/Agency/Fund Cluster: <strong><?php echo htmlspecialchars(($itr_form['to_firstname'] . ' ' . $itr_form['to_lastname']) . ' / ' . $itr_form['to_office_name']); ?></strong></td>
+                    <td>Date :</td>
+                    <td><strong><?php echo date('m/d/Y', strtotime($itr_form['transfer_date'])); ?></strong></td>
+                </tr>
+                <tr>
+                    <td colspan="3">
+                        <div style="display: flex; align-items: flex-start;">
+                            <div style="margin-right: 40px;">Transfer Type: (check only)</div>
+                            <div>
+                                <div style="display: flex; align-items: center; margin-bottom: 5px;">
+                                    <div class="check-box"><?php echo (strtolower($itr_form['transfer_type']) == 'relocate') ? '√' : ''; ?></div> Relocate
+                                </div>
+                                <div style="display: flex; align-items: center;">
+                                    <div class="check-box"><?php echo (strtolower($itr_form['transfer_type']) != 'relocate') ? '√' : ''; ?></div> Others (Specify) <span style="text-decoration: underline; margin-left: 5px;"><?php echo strtolower($itr_form['transfer_type']) != 'relocate' ? htmlspecialchars($itr_form['transfer_type']) : '___________________'; ?></span>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+            <table class="excel-table">
+                <thead>
+                    <tr>
+                        <th width="70">Date Acquired</th>
+                        <th width="45">Item No.</th>
+                        <th width="100">ICS & PAR No./Date</th>
+                        <th>Description</th>
+                        <th width="85">Unit Price</th>
+                        <th width="85">Total Amount</th>
+                        <th width="120">Condition of Inventory</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php 
+                    $total_amount = 0;
+                    foreach ($itr_items as $index => $item): 
+                        $total_amount += $item['total_amount'];
+                    ?>
+                        <tr>
+                            <td align="center"><?php echo !empty($item['date_acquired']) ? date('m/d/Y', strtotime($item['date_acquired'])) : ''; ?></td>
+                            <td align="center"><?php echo $index + 1; ?></td>
+                            <td align="center">
+                                <?php 
+                                if (!empty($item['par_no'])) {
+                                    echo htmlspecialchars($item['par_no']);
+                                } elseif (!empty($item['ics_no'])) {
+                                    echo htmlspecialchars($item['ics_no']);
+                                } elseif (!empty($item['asset_ics_par_no'])) {
+                                    echo htmlspecialchars($item['asset_ics_par_no']);
+                                } else {
+                                    echo htmlspecialchars($item['ics_par_no']);
+                                }
+                                ?>
+                            </td>
+                            <td align="left">
+                                <strong><?php echo htmlspecialchars($item['asset_description'] ?: $item['description']); ?></strong>
+                                <?php if(!empty($item['property_no'])): ?>
+                                    <br><small>Property No: <?php echo htmlspecialchars($item['property_no']); ?></small>
+                                <?php endif; ?>
+                                <?php if(!empty($item['remarks'])): ?>
+                                    <br><small>SN: <?php echo htmlspecialchars($item['remarks']); ?></small>
+                                <?php endif; ?>
+                            </td>
+                            <td align="right"><?php echo number_format($item['unit_price'], 2); ?></td>
+                            <td align="right"><?php echo number_format($item['total_amount'], 2); ?></td>
+                            <td align="center"><?php echo htmlspecialchars($item['condition_of_inventory']); ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    
+                    <?php 
+                    $remaining = 17 - count($itr_items);
+                    for($i=0; $i<$remaining; $i++): 
+                    ?>
+                        <tr>
+                            <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>
+                        </tr>
+                    <?php endfor; ?>
+                </tbody>
+            </table>
+
+            <div class="reason-box">
+                <div class="reason-title">Reason/s for Transfer:</div>
+                <div class="reason-content">
+                    <?php echo nl2br(htmlspecialchars($itr_form['purpose'])); ?>
                 </div>
             </div>
 
-            
-            <!-- Entity Information -->
-            <div style="padding: 20px;">
-                <div class="entity-section">
-                    <div class="entity-row">
-                        <div class="entity-label">Entity Name:</div>
-                        <div class="entity-value"><?php echo htmlspecialchars($itr_form['entity_name']); ?></div>
-                        <div class="entity-label">Fund Cluster:</div>
-                        <div class="entity-value"><?php echo htmlspecialchars($itr_form['fund_cluster']); ?></div>
+            <div class="signature-grid">
+                <!-- Column 1 -->
+                <div class="sig-col">
+                    <div class="sig-header">Approved by:</div>
+                    <div class="sig-row"><div class="sig-label">Signature:</div><div class="sig-value"></div></div>
+                    <div class="sig-row">
+                        <div class="sig-label">Printed Name:</div>
+                        <div class="sig-value"><?php echo htmlspecialchars($itr_form['approved_by']); ?></div>
+                    </div>
+                    <div class="sig-row">
+                        <div class="sig-label">Designation:</div>
+                        <div class="sig-value"><?php echo htmlspecialchars($itr_form['approved_by_position']); ?></div>
+                    </div>
+                    <div class="sig-row">
+                        <div class="sig-label">Date:</div>
+                        <div class="sig-value"><?php echo ($itr_form['approved_date'] && $itr_form['approved_date'] != '0000-00-00') ? date('m/d/Y', strtotime($itr_form['approved_date'])) : ''; ?></div>
                     </div>
                 </div>
-                
-                <!-- Transfer Information -->
-                <div class="entity-section">
-                    <div class="entity-row">
-                        <div class="entity-label">From Office:</div>
-                        <div class="entity-value"><?php 
-                            $from_name = trim($itr_form['from_firstname'] . ' ' . $itr_form['from_lastname']);
-                            $from_office = $itr_form['from_office_name'];
-                            echo $from_name && $from_office ? htmlspecialchars($from_name . '/' . $from_office) : 
-                                 ($from_name ? htmlspecialchars($from_name) : 'N/A');
-                        ?></div>
-                        <div class="entity-label">Transfer Date:</div>
-                        <div class="entity-value"><?php echo date('F d, Y', strtotime($itr_form['transfer_date'])); ?></div>
+                <!-- Column 2 -->
+                <div class="sig-col">
+                    <div class="sig-header">Released/Issued by:</div>
+                    <div class="sig-row"><div class="sig-label">Signature:</div><div class="sig-value"></div></div>
+                    <div class="sig-row">
+                        <div class="sig-label">Printed Name:</div>
+                        <div class="sig-value"><?php echo htmlspecialchars($itr_form['released_by']); ?></div>
                     </div>
-                    <div class="entity-row">
-                        <div class="entity-label">To Office:</div>
-                        <div class="entity-value"><?php 
-                            $to_name = trim($itr_form['to_firstname'] . ' ' . $itr_form['to_lastname']);
-                            $to_office = $itr_form['to_office_name'];
-                            echo $to_name && $to_office ? htmlspecialchars($to_name . '/' . $to_office) : 
-                                 ($to_name ? htmlspecialchars($to_name) : 'N/A');
-                        ?></div>
-                        <div class="entity-label">End User:</div>
-                        <div class="entity-value"><?php echo htmlspecialchars($itr_form['end_user']); ?></div>
+                    <div class="sig-row">
+                        <div class="sig-label">Designation:</div>
+                        <div class="sig-value"><?php echo htmlspecialchars($itr_form['released_by_position']); ?></div>
                     </div>
-                    <div class="entity-row">
-                        <div class="entity-label">Transfer Type:</div>
-                        <div class="entity-value"><?php echo htmlspecialchars($itr_form['transfer_type']); ?></div>
-                        <div class="entity-label">ITR No:</div>
-                        <div class="entity-value" style="font-weight: bold;"><?php echo htmlspecialchars($itr_form['itr_no']); ?></div>
+                    <div class="sig-row">
+                        <div class="sig-label">Date:</div>
+                        <div class="sig-value"><?php echo ($itr_form['released_date'] && $itr_form['released_date'] != '0000-00-00') ? date('m/d/Y', strtotime($itr_form['released_date'])) : date('m/d/Y'); ?></div>
                     </div>
-                    <?php if (!empty($itr_form['purpose'])): ?>
-                    <div class="entity-row">
-                        <div class="entity-label">Purpose:</div>
-                        <div class="entity-value"><?php echo htmlspecialchars($itr_form['purpose']); ?></div>
-                    </div>
-                    <?php endif; ?>
                 </div>
-
-                
-                <!-- Items Table -->
-                <table class="items-table">
-                    <thead>
-                        <tr>
-                            <th class="item-no-col">Item No.</th>
-                            <th class="date-col">Date Acquired</th>
-                            <th class="ref-col">ICS/PAR No.</th>
-                            <th class="text-left">Description</th>
-                            <th class="price-col">Unit Price</th>
-                            <th class="amount-col">Total Amount</th>
-                            <th class="condition-col">Condition</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php 
-                        $total_amount = 0;
-                        foreach ($itr_items as $index => $item): 
-                            $total_amount += $item['total_amount'];
-                        ?>
-                            <tr>
-                                <td><?php echo $index + 1; ?></td>
-                                <td><?php echo $item['date_acquired'] ? date('M d, Y', strtotime($item['date_acquired'])) : ''; ?></td>
-                                <td><?php echo htmlspecialchars($item['ics_par_no']); ?></td>
-                                <td class="text-left"><?php echo htmlspecialchars($item['asset_description'] ?: $item['description']); ?></td>
-                                <td class="text-right"><?php echo number_format($item['unit_price'], 2); ?></td>
-                                <td class="text-right"><?php echo number_format($item['total_amount'], 2); ?></td>
-                                <td><?php echo htmlspecialchars($item['condition_of_inventory']); ?></td>
-                            </tr>
-                        <?php endforeach; ?>
-                        <?php 
-                        // Add empty rows to maintain form height
-                        $total_items = count($itr_items);
-                        if ($total_items < 15) {
-                            for ($i = 0; $i < (15 - $total_items); $i++) {
-                                if ($i === 0) {
-                                    echo '<tr><td colspan="7" style="height: 20px; font-style: italic; border-bottom: none;">*** Nothing follows ***</td></tr>';
-                                } else {
-                                    echo '<tr><td colspan="7" style="height: 20px; border-top: none; border-bottom: none;">&nbsp;</td></tr>';
-                                }
-                            }
-                        }
-                        ?>
-                    </tbody>
-                    <tfoot>
-                        <tr class="total-row">
-                            <td colspan="5">TOTAL AMOUNT:</td>
-                            <td class="text-right"><?php echo number_format($total_amount, 2); ?></td>
-                            <td></td>
-                        </tr>
-                    </tfoot>
-                </table>
-                
-                <!-- Footer / Signatures Section -->
-                <div class="footer-section">
-                    <table class="footer-table">
-                        <tr>
-                            <td>
-                                <div class="label-row">Approved By:</div>
-                                <div class="signature-group">
-                                    <div class="name-line"><?php echo htmlspecialchars($itr_form['approved_by']); ?></div>
-                                    <div class="sub-label">Signature Over Printed Name</div>
-                                    <div class="name-line" style="font-weight: normal; text-transform: none;"><?php echo htmlspecialchars($itr_form['approved_by_position']); ?></div>
-                                    <div class="sub-label">Position / Office</div>
-                                    <div class="name-line" style="font-weight: normal; margin-top: 10px;"><?php echo ($itr_form['approved_date'] && $itr_form['approved_date'] != '0000-00-00') ? date('F d, Y', strtotime($itr_form['approved_date'])) : ''; ?></div>
-                                    <div class="sub-label">Date</div>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="label-row">Released By:</div>
-                                <div class="signature-group">
-                                    <div class="name-line"><?php echo htmlspecialchars($itr_form['released_by']); ?></div>
-                                    <div class="sub-label">Signature Over Printed Name</div>
-                                    <div class="name-line" style="font-weight: normal; text-transform: none;"><?php echo htmlspecialchars($itr_form['released_by_position']); ?></div>
-                                    <div class="sub-label">Position / Office</div>
-                                    <div class="name-line" style="font-weight: normal; margin-top: 10px;"><?php echo ($itr_form['released_date'] && $itr_form['released_date'] != '0000-00-00') ? date('F d, Y', strtotime($itr_form['released_date'])) : ''; ?></div>
-                                    <div class="sub-label">Date</div>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="label-row">Received By:</div>
-                                <div class="signature-group">
-                                    <div class="name-line"><?php echo htmlspecialchars($itr_form['received_by']); ?></div>
-                                    <div class="sub-label">Signature Over Printed Name</div>
-                                    <div class="name-line" style="font-weight: normal; text-transform: none;"><?php echo htmlspecialchars($itr_form['received_by_position']); ?></div>
-                                    <div class="sub-label">Position / Office</div>
-                                    <div class="name-line" style="font-weight: normal; margin-top: 10px;"><?php echo ($itr_form['received_date'] && $itr_form['received_date'] != '0000-00-00') ? date('F d, Y', strtotime($itr_form['received_date'])) : ''; ?></div>
-                                    <div class="sub-label">Date</div>
-                                </div>
-                            </td>
-                        </tr>
-                    </table>
+                <!-- Column 3 -->
+                <div class="sig-col">
+                    <div class="sig-header">Received by:</div>
+                    <div class="sig-row"><div class="sig-label">Signature:</div><div class="sig-value"></div></div>
+                    <div class="sig-row">
+                        <div class="sig-label">Printed Name:</div>
+                        <div class="sig-value"><?php echo htmlspecialchars($itr_form['received_by']); ?></div>
+                    </div>
+                    <div class="sig-row">
+                        <div class="sig-label">Designation:</div>
+                        <div class="sig-value"><?php echo htmlspecialchars($itr_form['received_by_position']); ?></div>
+                    </div>
+                    <div class="sig-row">
+                        <div class="sig-label">Date:</div>
+                        <div class="sig-value"><?php echo ($itr_form['received_date'] && $itr_form['received_date'] != '0000-00-00') ? date('m/d/Y', strtotime($itr_form['received_date'])) : ''; ?></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -535,17 +522,6 @@ if ($result && $row = $result->fetch_assoc()) {
     <?php include 'includes/logout-modal.php'; ?>
     <?php include 'includes/change-password-modal.php'; ?>
     <?php include 'includes/sidebar-scripts.php'; ?>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Auto-focus on print when page loads
-        window.addEventListener('load', function() {
-            // Optional: Auto-show print dialog after a short delay
-            setTimeout(function() {
-                // Uncomment the next line if you want auto-print
-                // window.print();
-            }, 500);
-        });
-    </script>
 </body>
 </html>

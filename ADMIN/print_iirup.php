@@ -74,388 +74,311 @@ logSystemAction($_SESSION['user_id'], 'Printed IIRUP Form', 'forms', "IIRUP ID: 
             margin: 0.3in;
         }
         
-        body {
-            font-family: 'Times New Roman', serif;
-            font-size: 10px;
-            line-height: 1.2;
-            color: #000;
-            background: white;
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
         }
-        
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 8.5px;
+            color: #000;
+            background: white;
+        }
+
         .print-container {
             width: 100%;
-            max-width: 11.5in;
-            margin: 0 auto;
-            padding: 10px;
+            border: 2px solid #000;
             position: relative;
         }
-        
+
         .iirup-header {
+            padding: 10px 20px 5px;
             text-align: center;
-            margin-bottom: 15px;
         }
 
-        .iirup-title {
+        .iirup-header .logo-container {
+            margin-bottom: 5px;
+        }
+
+        .iirup-header img {
+            max-height: 70px;
+            width: auto;
+        }
+
+        .iirup-header h1 {
             font-size: 14px;
             font-weight: bold;
-            margin-bottom: 6px;
+            margin: 3px 0;
             text-transform: uppercase;
-            letter-spacing: 1px;
         }
 
-        .iirup-subtitle {
-            font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 4px;
-            color: #333;
-        }
-
-        .iirup-form-number {
-            font-size: 11px;
-            font-weight: bold;
-            padding: 4px 10px;
-            background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
-            color: white;
-            border-radius: 3px;
-            display: inline-block;
-            margin: 6px 0;
-        }
-
-        .accountable-section {
-            border: 2px solid #333;
-            padding: 12px;
-            margin: 12px 0;
-            text-align: center;
-            background-color: #f8f9fa;
-        }
-
-        .accountable-label {
-            font-weight: bold;
+        .iirup-header p {
             font-size: 10px;
-            margin-bottom: 6px;
-            text-transform: uppercase;
+            font-style: italic;
         }
 
-        .accountable-name {
-            font-size: 11px;
+        .meta-top-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            padding: 5px 20px;
+        }
+
+        .meta-item {
+            text-align: center;
+        }
+
+        .meta-value {
+            border-bottom: 1px solid #000;
+            min-height: 18px;
             font-weight: bold;
-            border-bottom: 2px solid #333;
-            padding-bottom: 2px;
+            font-size: 11px;
             margin-bottom: 2px;
         }
 
-        .iirup-table {
-            border: 2px solid #333;
-            font-size: 8px;
-            table-layout: fixed;
+        .meta-label {
+            font-style: italic;
+            font-size: 9px;
+        }
+
+        .excel-grid-table {
             width: 100%;
             border-collapse: collapse;
+            border-top: 2px solid #000;
+            border-bottom: 2px solid #000;
         }
 
-        .iirup-table th {
-            background-color: #e9ecef;
-            border: 1px solid #333;
-            font-weight: bold;
-            text-align: center;
-            padding: 5px 2px;
-            font-size: 7px;
-            vertical-align: middle;
-        }
-
-        .iirup-table td {
-            border: 1px solid #333;
-            padding: 3px 2px;
+        .excel-grid-table th, .excel-grid-table td {
+            border: 1px solid #000;
+            padding: 2px 3px;
             font-size: 8px;
+            height: 16px;
+        }
+
+        .excel-grid-table th {
             text-align: center;
-            vertical-align: middle;
-        }
-
-        .iirup-table td.text-left {
-            text-align: left;
-        }
-
-        .header-inventory {
-            background-color: #d4edda !important;
-            color: #155724;
             font-weight: bold;
+            background: #f0f0f0;
+        }
+
+        .group-header {
             font-size: 9px;
+            background: #fff;
         }
 
-        .header-disposal {
-            background-color: #fff3cd !important;
-            color: #856404;
-            font-weight: bold;
-            font-size: 9px;
+        .signature-grid {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr 1fr;
         }
 
-        .certification-section {
-            margin: 15px 0;
-            padding: 12px;
-            background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
+        .sig-box {
+            border: 1px solid #000;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            min-height: 150px;
         }
 
-        .certification-text {
-            font-style: italic;
-            margin-bottom: 10px;
-            line-height: 1.2;
-            font-size: 9px;
-        }
+        .sig-box:first-child { border-left: none; }
+        .sig-box:last-child { border-right: none; }
 
-        .signature-section {
-            border-top: 2px solid #333;
-            padding-top: 20px;
-            margin-top: 20px;
-            border: 2px solid #333;
-            padding: 15px;
-            background-color: #f8f9fa;
-        }
-
-        .signature-box {
-            text-align: center;
-            margin-bottom: 12px;
-        }
-
-        .signature-title {
-            font-weight: bold;
-            margin-bottom: 10px;
-            text-align: center;
-            font-size: 9px;
-        }
-
-        .signature-line {
-            border-bottom: 2px solid #333;
-            padding-bottom: 2px;
-            margin-bottom: 2px;
-            min-height: 20px;
-        }
-
-        .signature-label {
-            font-size: 8px;
-            color: #666;
+        .cert-text {
+            font-size: 8.5px;
+            line-height: 1.25;
             margin-bottom: 10px;
         }
 
-        .footer-section {
-            margin-top: 30px;
-            text-align: center;
-            font-size: 9px;
-            color: #666;
+        .sig-content {
+            margin-top: auto;
         }
 
-        @media print {
-            body {
-                margin: 0;
-                padding: 0;
-            }
-            
-            .print-container {
-                padding: 0;
-                max-width: none;
-            }
-            
-            @page {
-                size: A4 landscape;
-                margin: 0.3in;
-            }
+        .sig-dual-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .sig-entry {
+            text-align: center;
+        }
+
+        .sig-name {
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 9.5px;
+            border-bottom: 1px solid #000;
+            display: inline-block;
+            min-width: 90%;
+            margin-bottom: 1px;
+        }
+
+        .sig-sub {
+            font-size: 7.5px;
+            margin-bottom: 3px;
+        }
+
+        .sig-pos {
+            font-size: 8.5px;
+            border-bottom: 1px solid #000;
+            display: inline-block;
+            min-width: 90%;
+        }
+
+        .no-print { display: none !important; }
+
+        @media screen {
+            body { background: #525659; padding: 40px 0; }
+            .print-container { background: white; margin: 0 auto; width: 11in; }
         }
     </style>
 </head>
 <body>
     <div class="print-container">
-        <!-- Form Header -->
         <div class="iirup-header">
-            <?php 
-            if (!empty($header_image)) {
-                echo '<div style="margin-bottom: 12px;">';
-                echo '<img src="../uploads/forms/' . htmlspecialchars($header_image) . '" alt="Header Image" style="width: 100%; max-height: 100px; object-fit: contain;">';
-                echo '</div>';
-            }
-            ?>
-            
-            <div style="font-style: italic; margin-top: 6px; font-size: 10px;">As of <?php echo htmlspecialchars($iirup_form['as_of_year']); ?></div>
+            <div class="logo-container">
+                <?php if ($header_image): ?>
+                    <img src="../uploads/forms/<?php echo htmlspecialchars($header_image); ?>" alt="Banner">
+                <?php else: ?>
+                    <img src="../img/system_logo.png" alt="Logo">
+                <?php endif; ?>
+            </div>
+            <h1>INVENTORY AND INSPECTION REPORT OF UNSERVICEABLE PROPERTY</h1>
+            <p>As of <?php echo htmlspecialchars($iirup_form['as_of_year']); ?></p>
         </div>
 
-        <!-- Accountable Officer Information -->
-        <div class="accountable-section">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <div style="width: 31%;">
-                    <div class="accountable-label">Accountable Officer</div>
-                    <div class="accountable-name"><?php echo htmlspecialchars($iirup_form['accountable_officer']); ?></div>
-                    <div style="font-size: 8px; margin-top: 2px;"><?php echo htmlspecialchars($iirup_form['accountable_officer_designation']); ?></div>
-                </div>
-                <div style="width: 31%;">
-                    <div class="accountable-label">Designation</div>
-                    <div class="accountable-name"><?php echo htmlspecialchars($iirup_form['designation']); ?></div>
-                </div>
-                <div style="width: 31%;">
-                    <div class="accountable-label">Department/Office</div>
-                    <div class="accountable-name"><?php echo htmlspecialchars($iirup_form['department_office']); ?></div>
-                </div>
+        <div class="meta-top-grid">
+            <div class="meta-item">
+                <div class="meta-value"><?php echo htmlspecialchars($iirup_form['accountable_officer']); ?></div>
+                <div class="meta-label">(Name of Accountable Officer)</div>
+            </div>
+            <div class="meta-item">
+                <div class="meta-value"><?php echo htmlspecialchars($iirup_form['designation']); ?></div>
+                <div class="meta-label">(Designation)</div>
+            </div>
+            <div class="meta-item">
+                <div class="meta-value"><?php echo htmlspecialchars($iirup_form['department_office']); ?></div>
+                <div class="meta-label">(Department/Office)</div>
             </div>
         </div>
 
-        <!-- Items and Disposal Table -->
-        <table class="iirup-table">
+        <table class="excel-grid-table">
             <thead>
                 <tr>
-                    <th colspan="10" class="header-inventory">INVENTORY</th>
-                    <th colspan="11" class="header-disposal">INSPECTION AND DISPOSAL</th>
+                    <th colspan="10" class="group-header">INVENTORY</th>
+                    <th colspan="8" class="group-header">INSPECTION and DISPOSAL</th>
                 </tr>
                 <tr>
-                    <th style="width: 5%;">Date Acquired</th>
-                    <th style="width: 14%;">Particulars</th>
-                    <th style="width: 6%;">Property No.</th>
-                    <th style="width: 5%;">Qty</th>
-                    <th style="width: 6%;">Unit Cost</th>
-                    <th style="width: 6%;">Total Cost</th>
-                    <th style="width: 7%;">Accum. Depreciation</th>
-                    <th style="width: 7%;">Accum. Impairment losses</th>
-                    <th style="width: 7%;">Carrying amount</th>
-                    <th style="width: 4%;">Remarks</th>
-                    <th style="width: 5%;">Sale</th>
-                    <th style="width: 5%;">Transfer</th>
-                    <th style="width: 5%;">Destruction</th>
-                    <th style="width: 4%;">Others</th>
-                    <th style="width: 5%;">Total</th>
-                    <th style="width: 5%;">Appraised value</th>
-                    <th style="width: 4%;">OR no.</th>
-                    <th style="width: 4%;">Amount</th>
-                    <th style="width: 4%;">Dept</th>
-                    <th style="width: 3%;">Code</th>
-                    <th style="width: 5%;">Date received</th>
+                    <th rowspan="2" width="55">Date Acquired</th>
+                    <th rowspan="2">Particulars/ Articles</th>
+                    <th rowspan="2" width="60">Property No.</th>
+                    <th rowspan="2" width="25">Qty</th>
+                    <th rowspan="2" width="55">Unit Cost</th>
+                    <th rowspan="2" width="60">Total Cost</th>
+                    <th rowspan="2" width="60">Accum. Dep.</th>
+                    <th rowspan="2" width="60">Accum. Imp.</th>
+                    <th rowspan="2" width="60">Carrying Amount</th>
+                    <th rowspan="2" width="50">Remarks</th>
+                    <th colspan="5" class="sub-group-header">DISPOSAL</th>
+                    <th rowspan="2" width="55">Appraised Value</th>
+                    <th colspan="2" class="sub-group-header">RECORD OF SALES</th>
+                </tr>
+                <tr>
+                    <th width="35">Sale</th>
+                    <th width="35">Transfer</th>
+                    <th width="45">Destruction</th>
+                    <th width="50">Others</th>
+                    <th width="40">Total</th>
+                    <th width="45">OR No.</th>
+                    <th width="50">Amount</th>
+                </tr>
+                <tr style="font-size: 7px; font-weight: normal;">
+                    <th>(1)</th><th>(2)</th><th>(3)</th><th>(4)</th><th>(5)</th><th>(6)</th><th>(7)</th><th>(8)</th><th>(9)</th><th>(10)</th><th>(11)</th><th>(12)</th><th>(13)</th><th>(14)</th><th>(15)</th><th>(16)</th><th>(17)</th><th>(18)</th>
                 </tr>
             </thead>
             <tbody>
                 <?php foreach ($iirup_items as $item): ?>
                     <tr>
-                        <td><?php echo !empty($item['date_acquired']) ? date('M d, Y', strtotime($item['date_acquired'])) : ''; ?></td>
-                        <td class="text-left"><?php echo htmlspecialchars($item['particulars']); ?></td>
-                        <td><?php echo htmlspecialchars($item['property_no']); ?></td>
-                        <td><?php echo number_format($item['quantity'], 2); ?></td>
-                        <td>₱<?php echo number_format($item['unit_cost'], 2); ?></td>
-                        <td>₱<?php echo number_format($item['total_cost'], 2); ?></td>
-                        <td>₱<?php echo number_format($item['accumulated_depreciation'], 2); ?></td>
-                        <td>₱<?php echo number_format($item['impairment_losses'], 2); ?></td>
-                        <td>₱<?php echo number_format($item['carrying_amount'], 2); ?></td>
-                        <td><?php echo htmlspecialchars($item['inventory_remarks']); ?></td>
-                        <td>₱<?php echo number_format($item['disposal_sale'], 2); ?></td>
-                        <td>₱<?php echo number_format($item['disposal_transfer'], 2); ?></td>
-                        <td>₱<?php echo number_format($item['disposal_destruction'], 2); ?></td>
-                        <td><?php echo htmlspecialchars($item['disposal_others']); ?></td>
-                        <td>₱<?php echo number_format($item['disposal_total'], 2); ?></td>
-                        <td>₱<?php echo number_format($item['appraised_value'], 2); ?></td>
-                        <td><?php echo htmlspecialchars($item['or_no']); ?></td>
-                        <td>₱<?php echo number_format($item['amount'], 2); ?></td>
-                        <td><?php echo htmlspecialchars($item['dept_office']); ?></td>
-                        <td><?php echo htmlspecialchars($item['control_no']); ?></td>
-                        <td><?php echo !empty($item['date_received']) ? date('M d, Y', strtotime($item['date_received'])) : ''; ?></td>
+                        <td align="center"><?php echo !empty($item['date_acquired']) ? date('m/d/Y', strtotime($item['date_acquired'])) : ''; ?></td>
+                        <td align="left"><?php echo htmlspecialchars($item['particulars']); ?></td>
+                        <td align="center"><?php echo htmlspecialchars($item['property_no']); ?></td>
+                        <td align="center"><?php echo number_format($item['quantity'], 0); ?></td>
+                        <td align="right"><?php echo number_format($item['unit_cost'], 2); ?></td>
+                        <td align="right"><?php echo number_format($item['total_cost'], 2); ?></td>
+                        <td align="right"><?php echo number_format($item['accumulated_depreciation'], 2); ?></td>
+                        <td align="right"><?php echo number_format($item['impairment_losses'], 2); ?></td>
+                        <td align="right"><?php echo number_format($item['carrying_amount'], 2); ?></td>
+                        <td align="center"><?php echo htmlspecialchars($item['inventory_remarks'] ?? 'Unserviceable'); ?></td>
+                        <td align="right"><?php echo $item['disposal_sale'] > 0 ? number_format($item['disposal_sale'], 2) : ''; ?></td>
+                        <td align="right"><?php echo $item['disposal_transfer'] > 0 ? number_format($item['disposal_transfer'], 2) : ''; ?></td>
+                        <td align="right"><?php echo $item['disposal_destruction'] > 0 ? number_format($item['disposal_destruction'], 2) : ''; ?></td>
+                        <td align="center"><?php echo htmlspecialchars($item['disposal_others']); ?></td>
+                        <td align="right"><?php echo $item['disposal_total'] > 0 ? number_format($item['disposal_total'], 2) : ''; ?></td>
+                        <td align="right"><?php echo $item['appraised_value'] > 0 ? number_format($item['appraised_value'], 2) : ''; ?></td>
+                        <td align="center"><?php echo htmlspecialchars($item['or_no']); ?></td>
+                        <td align="right"><?php echo $item['amount'] > 0 ? number_format($item['amount'], 2) : ''; ?></td>
                     </tr>
                 <?php endforeach; ?>
+                
+                <?php 
+                $remaining = 10 - count($iirup_items);
+                for($i=0; $i<$remaining; $i++): 
+                ?>
+                    <tr>
+                        <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>
+                    </tr>
+                <?php endfor; ?>
             </tbody>
         </table>
 
-        <!-- Certification Section -->
-        <div class="certification-section">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                <div style="width: 48%;">
-                    <div class="certification-text">
-                        I HEREBY request inspection and disposition, pursuant to Section 79 of PD 1445, of property enumerated above.
-                    </div>
-                </div>
-                <div style="width: 24%;">
-                    <div class="certification-text">
-                        I CERTIFY that I have inspected each and every article enumerated in this report, and that disposition made thereof was, in my judgment, best for public interest.
-                    </div>
-                </div>
-                <div style="width: 24%;">
-                    <div class="certification-text">
-                        I CERTIFY that I have witnessed disposition of articles enumerated on this report this _____ day of _____.
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Signature Section -->
-        <div class="signature-section">
-            <div style="display: flex; justify-content: space-between;">
-                <div style="width: 23%;">
-                    <div class="signature-box">
-                        <div class="signature-title">REQUESTED BY:</div>
-                        <div class="signature-line"><?php echo htmlspecialchars($iirup_form['accountable_officer_name']); ?></div>
-                        <div class="signature-label">(Signature over Printed Name)</div>
-                        <div class="signature-line"><?php echo htmlspecialchars($iirup_form['accountable_officer_designation']); ?></div>
-                        <div class="signature-label">(Designation)</div>
-                    </div>
-                </div>
-                <div style="width: 23%;">
-                    <div class="signature-box">
-                        <div class="signature-title">APPROVED BY:</div>
-                        <div class="signature-line"><?php echo htmlspecialchars($iirup_form['authorized_official_name']); ?></div>
-                        <div class="signature-label">(Signature over Printed Name)</div>
-                        <div class="signature-line"><?php echo htmlspecialchars($iirup_form['authorized_official_designation']); ?></div>
-                        <div class="signature-label">(Designation)</div>
-                    </div>
-                </div>
-                <div style="width: 23%;">
-                    <div class="signature-box">
-                        <div class="signature-title">INSPECTED BY:</div>
-                        <div class="signature-line"><?php echo htmlspecialchars($iirup_form['inspection_officer_name']); ?></div>
-                        <div class="signature-label">(Signature over Printed Name)</div>
-                        <div class="signature-line"><?php echo htmlspecialchars($iirup_form['inspection_officer_designation'] ?? ''); ?></div>
-                        <div class="signature-label">(Designation)</div>
-                    </div>
-                </div>
-                <div style="width: 23%;">
-                    <div class="signature-box">
-                        <div class="signature-title">WITNESSED BY:</div>
-                        <div class="signature-line"><?php echo htmlspecialchars($iirup_form['witness_name']); ?></div>
-                        <div class="signature-label">(Signature over Printed Name)</div>
-                        <div class="signature-line"><?php echo htmlspecialchars($iirup_form['witness_designation'] ?? ''); ?></div>
-                        <div class="signature-label">(Designation)</div>
+        <div class="signature-grid">
+            <div class="sig-box">
+                <div class="cert-text">I HEREBY request inspection and disposition, pursuant to Section 79 of PD 1445, of the property enumerated above.</div>
+                <div class="sig-content">
+                    <div class="sig-dual-row">
+                        <div class="sig-entry">
+                            <div style="text-align: left; font-size: 8px; margin-bottom: 20px;">Requested by:</div>
+                            <div class="sig-name"><?php echo htmlspecialchars($iirup_form['accountable_officer_name'] ?? $iirup_form['accountable_officer']); ?></div>
+                            <div class="sig-sub">(Signature of Accountable Officer)</div>
+                            <div class="sig-pos"><?php echo htmlspecialchars($iirup_form['accountable_officer_designation'] ?? $iirup_form['designation']); ?></div>
+                            <div class="sig-sub">(Designation)</div>
+                        </div>
+                        <div class="sig-entry">
+                            <div style="text-align: left; font-size: 8px; margin-bottom: 20px;">Approved by:</div>
+                            <div class="sig-name"><?php echo htmlspecialchars($iirup_form['authorized_official_name']); ?></div>
+                            <div class="sig-sub">(Signature of Authorized Official)</div>
+                            <div class="sig-pos"><?php echo htmlspecialchars($iirup_form['authorized_official_designation']); ?></div>
+                            <div class="sig-sub">(Designation)</div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <!-- Footer Section -->
-        <div class="footer-section">
-            <div style="margin-bottom: 5px;">
-                <strong>Prepared by:</strong> <?php echo htmlspecialchars($_SESSION['username'] ?? 'System'); ?> | 
-                <strong>Date Prepared:</strong> <?php echo date('F j, Y'); ?>
+            <div class="sig-box">
+                <div class="cert-text">I CERTIFY that I have inspected each and every article enumerated in this report, and that the disposition made thereof was, in my judgment, the best for the public interest.</div>
+                <div class="sig-content">
+                    <div class="sig-entry">
+                        <div class="sig-name" style="margin-top: 30px;"><?php echo htmlspecialchars($iirup_form['inspection_officer_name']); ?></div>
+                        <div class="sig-sub">(Signature over Printed Name of Inspection Officer)</div>
+                    </div>
+                </div>
             </div>
-            <div>
-                <em>This form is generated electronically and is valid without signature.</em>
+            <div class="sig-box">
+                <div class="cert-text">I CERTIFY that I have witnessed the disposition of the articles enumerated on this report this _____day of _____________, ________.</div>
+                <div class="sig-content">
+                    <div class="sig-entry">
+                        <div class="sig-name" style="margin-top: 30px;"><?php echo htmlspecialchars($iirup_form['witness_name']); ?></div>
+                        <div class="sig-sub">(Signature over Printed Name of Witness)</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-
     <script>
-        // Preview before print
-        function showPrintPreview() {
-            // Show print preview dialog
-            if (confirm('Do you want to print this IIRUP form?')) {
-                window.print();
-            }
-        }
-
-        // Auto-print when page loads
         window.onload = function() {
-            // Add a small delay to ensure content is fully loaded
-            setTimeout(function() {
-                // Show print preview dialog
-                if (confirm('Do you want to print this IIRUP form?')) {
-                    window.print();
-                }
-            }, 500);
+            setTimeout(function() { window.print(); }, 500);
         };
-        
-        // Close window after printing
-        window.onafterprint = function() {
-            window.close();
-        };
+        window.onafterprint = function() { window.close(); };
     </script>
 </body>
 </html>
