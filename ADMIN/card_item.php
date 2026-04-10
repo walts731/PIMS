@@ -88,23 +88,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     // Start transaction
     $conn->begin_transaction();
     try {
-        // Insert into improvements table
-        $ins_sql = "INSERT INTO asset_item_improvements (item_id, improvement_date, description, qty, amount, remarks) VALUES (?, ?, ?, ?, ?, ?)";
-        $ins_stmt = $conn->prepare($ins_sql);
-        $ins_stmt->bind_param("issids", $item_id, $improvement_date, $description, $qty, $amount, $remarks);
-        $ins_stmt->execute();
+        // Ensure quantity column exists and status is flexible in asset_items
+        $check_q_sql = "SHOW COLUMNS FROM `asset_items` LIKE 'quantity'";
+        $q_result = $conn->query($check_q_sql);
+        if ($q_result->num_rows == 0) {
+            $conn->query("ALTER TABLE `asset_items` ADD COLUMN `quantity` INT DEFAULT 1 AFTER `unit`");
+        }
         
-        // Update asset_items total value
-        $upd_sql = "UPDATE asset_items SET value = value + ? WHERE id = ?";
+        // Also ensure status column can hold longer remarks to avoid truncation
+        $conn->query("ALTER TABLE `asset_items` MODIFY COLUMN `status` VARCHAR(100) DEFAULT 'serviceable'");
+
+        // 1. Insert search for PREVIOUS state (using current $item data) into improvements table
+        $prev_sql = "INSERT INTO asset_item_improvements (item_id, improvement_date, description, qty, amount, remarks) VALUES (?, ?, ?, ?, ?, ?)";
+        $prev_stmt = $conn->prepare($prev_sql);
+        $curr_date = date('Y-m-d');
+        $current_qty = isset($item['quantity']) ? $item['quantity'] : 1;
+        $prev_stmt->bind_param("issids", $item_id, $curr_date, $item['description'], $current_qty, $item['value'], $item['status']);
+        $prev_stmt->execute();
+        
+        // 2. Insert NEW data (from modal) into improvements table
+        $new_sql = "INSERT INTO asset_item_improvements (item_id, improvement_date, description, qty, amount, remarks) VALUES (?, ?, ?, ?, ?, ?)";
+        $new_stmt = $conn->prepare($new_sql);
+        $new_stmt->bind_param("issids", $item_id, $improvement_date, $description, $qty, $amount, $remarks);
+        $new_stmt->execute();
+        
+        // 3. Update asset_items table with the new data
+        $upd_sql = "UPDATE asset_items SET quantity = ?, value = ?, status = ? WHERE id = ?";
         $upd_stmt = $conn->prepare($upd_sql);
-        $upd_stmt->bind_param("di", $amount, $item_id);
+        $upd_stmt->bind_param("idsi", $qty, $amount, $remarks, $item_id);
         $upd_stmt->execute();
         
         // Record in system history
-        logSystemAction($_SESSION['user_id'], 'add_improvement', 'asset_management', "Added improvement/repair of {$amount} to Asset Item ID: {$item_id}");
+        logSystemAction($_SESSION['user_id'], 'add_improvement', 'asset_management', "Added improvement/repair record and updated Asset Item ID: {$item_id} (New Value: {$amount}, Qty: {$qty}, Status: {$remarks})");
         
         $conn->commit();
-        $_SESSION['success'] = "Improvement added successfully!";
+        $_SESSION['success'] = "Improvement and asset status updated successfully!";
         header("Location: card_item.php?id=" . $item_id);
         exit();
     } catch (Exception $e) {
@@ -180,39 +198,39 @@ if ($imp_result) {
             text-align: center;
         }
         
-        .gov-title { font-size: 14px; font-weight: bold; }
-        .municipality { font-size: 16px; font-weight: bold; }
-        .province { font-size: 14px; }
+        .gov-title { font-size: 12px; font-weight: bold; }
+        .municipality { font-size: 14px; font-weight: bold; }
+        .province { font-size: 12px; }
         
         .main-title {
             text-align: center;
-            font-size: 20px;
+            font-size: 18px;
             font-weight: bold;
-            margin-top: 10px;
+            margin-top: 5px;
             text-decoration: underline;
         }
         
         .office-location {
             text-align: center;
-            font-size: 16px;
+            font-size: 13px;
             font-weight: bold;
             color: #0d6efd;
             text-decoration: underline;
-            margin-top: 5px;
+            margin-top: 3px;
         }
         
         .office-sub {
             text-align: center;
-            font-size: 11px;
-            margin-bottom: 20px;
+            font-size: 10px;
+            margin-bottom: 15px;
             color: #666;
         }
         
         .info-grid {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 10px;
-            font-size: 11px;
+            margin-bottom: 8px;
+            font-size: 10px;
             table-layout: fixed;
         }
         
@@ -223,21 +241,21 @@ if ($imp_result) {
             overflow: hidden;
         }
         
-        .label { font-weight: normal; font-size: 10px; width: 15%; }
-        .data { font-weight: bold; text-transform: uppercase; font-size: 11px; }
+        .label { font-weight: normal; font-size: 9px; width: 15%; }
+        .data { font-weight: bold; text-transform: uppercase; font-size: 10px; }
         
         .data-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 10.5px;
+            font-size: 9px;
             table-layout: fixed;
         }
         
         .data-table th, .data-table td {
             border: 1px solid #000;
-            padding: 5px;
+            padding: 3px;
             text-align: center;
-            vertical-align: top;
+            vertical-align: middle;
             word-wrap: break-word;
             word-break: break-all;
         }
@@ -245,27 +263,27 @@ if ($imp_result) {
         .data-table th {
             background-color: #f8f9fa;
             text-transform: uppercase;
-            font-size: 9px;
-            height: 30px;
+            font-size: 8px;
+            height: 25px;
         }
         
         .article-cell {
             text-align: left !important;
             white-space: pre-line;
             font-weight: bold;
-            font-size: 8.5px;
+            font-size: 7.5px;
         }
-
+        
         .emp-cell {
             text-align: left !important;
             white-space: pre-line;
-            font-size: 8.5px;
+            font-size: 7.5px;
             font-weight: 500;
         }
         
         .repair-cell {
             text-align: left !important;
-            font-size: 9.5px;
+            font-size: 8px;
         }
 
         @media print {
@@ -428,6 +446,7 @@ if ($imp_result) {
                             </tr>
                         </thead>
                         <tbody>
+                            <?php if (empty($improvements)): ?>
                             <!-- Initial Acquisition Row -->
                             <tr>
                                 <td><?php echo date('M. Y', strtotime($item['acquisition_date'] ?: $item['created_at'])); ?></td>
@@ -436,11 +455,12 @@ if ($imp_result) {
                                     <td class="emp-cell"><?php echo htmlspecialchars($emp_name); ?></td>
                                 <?php endif; ?>
                                 <td>1</td>
-                                <td><?php echo number_format($item['value'] - array_sum(array_column($improvements, 'amount')), 2); ?></td>
+                                <td><?php echo number_format($item['value'], 2); ?></td>
                                 <td>N/A</td>
-                                <td><strong><?php echo number_format($item['value'] - array_sum(array_column($improvements, 'amount')), 2); ?></strong></td>
+                                <td><strong><?php echo number_format($item['value'], 2); ?></strong></td>
                                 <td style="font-weight: bold;"><?php echo strtoupper($item['status']); ?></td>
                             </tr>
+                            <?php endif; ?>
                             
                             <!-- Improvement Rows -->
                             <?php foreach ($improvements as $imp): ?>
@@ -516,7 +536,11 @@ if ($imp_result) {
                         </div>
                         <div class="mb-0">
                             <label class="form-label small fw-bold text-muted">Remarks / Status</label>
-                            <input type="text" name="remarks" class="form-control" placeholder="e.g. Serviceable, For Repair">
+                            <select name="remarks" class="form-select">
+                                <option value="serviceable" <?php echo ($item['status'] == 'serviceable') ? 'selected' : ''; ?>>Serviceable</option>
+                                <option value="unserviceable" <?php echo ($item['status'] == 'unserviceable') ? 'selected' : ''; ?>>Unserviceable</option>
+                                <option value="maintenance" <?php echo ($item['status'] == 'maintenance') ? 'selected' : ''; ?>>Maintenance</option>
+                            </select>
                         </div>
                     </div>
                     <div class="modal-footer border-0 pt-0">
