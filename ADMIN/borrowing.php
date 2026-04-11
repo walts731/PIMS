@@ -69,7 +69,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt->bind_param("ssssssss", $guest_name, $barangay, $contact, $date_borrowed, 
                                      $schedule_return, $releasing_officer, $approved_by, $items_json);
                     $stmt->execute();
-                    $borrow_id = $stmt->close();
+                    $borrow_id = $stmt->insert_id;
+                    $stmt->close();
 
                     // Update asset items status to borrowed (only if items exist and have asset_item_id)
                     if (!empty($items) && is_array($items)) {
@@ -171,12 +172,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Get serviceable assets for dropdown
 $serviceable_assets = [];
 try {
-    $stmt = $conn->prepare("SELECT a.description, ai.description as item_description, COUNT(ai.id) as available_count, GROUP_CONCAT(ai.id) as asset_ids
-                           FROM asset_items ai 
-                           JOIN assets a ON ai.asset_id = a.id 
-                           WHERE ai.status = 'serviceable' 
-                           GROUP BY a.description, ai.description 
-                           ORDER BY a.description, ai.description");
+    $stmt = $conn->prepare("SELECT ai.id, ai.description, ai.property_no, ai.inventory_tag,
+                           c.category_name, ai.quantity
+                           FROM asset_items ai
+                           LEFT JOIN asset_categories c ON ai.asset_category_id = c.id
+                           WHERE ai.status = 'serviceable' AND ai.quantity > 0
+                           AND c.category_name NOT IN ('LND', 'Buildings', 'OInfra', 'Land Imp')
+                           ORDER BY c.category_name, ai.description");
     $stmt->execute();
     $result = $stmt->get_result();
     while ($row = $result->fetch_assoc()) {
@@ -203,6 +205,20 @@ try {
     $error_message = "Error loading borrow requests: " . $e->getMessage();
 }
 
+// Get unique barangays for filter
+$barangays = [];
+try {
+    $stmt = $conn->prepare("SELECT DISTINCT barangay FROM borrow_form_submissions WHERE barangay IS NOT NULL AND barangay != '' ORDER BY barangay");
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while ($row = $result->fetch_assoc()) {
+        $barangays[] = $row['barangay'];
+    }
+    $stmt->close();
+} catch (Exception $e) {
+    error_log("Error loading barangays: " . $e->getMessage());
+}
+
 // Display messages
 if (isset($_SESSION['success_message'])) {
     $success_message = $_SESSION['success_message'];
@@ -227,10 +243,55 @@ if (isset($_SESSION['error_message'])) {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
     <!-- Custom CSS -->
     <link href="../assets/css/index.css" rel="stylesheet">
     <link href="../assets/css/theme-custom.css" rel="stylesheet">
     <link href="assets/css/admin-unified.css" rel="stylesheet">
+    
+    <style>
+        /* Status Badge Styles */
+        .badge {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .badge-approved {
+            background-color: #d1e7dd;
+            color: #0f5132;
+            border: 1px solid #b8dacc;
+        }
+        
+        .badge-returned {
+            background-color: #cff4fc;
+            color: #055160;
+            border: 1px solid #b6effb;
+        }
+        
+        .badge-pending {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .badge-rejected {
+            background-color: #f8d7da;
+            color: #842029;
+            border: 1px solid #f5c6cb;
+        }
+        
+        /* Ensure badges are visible in table */
+        .table td .badge {
+            display: inline-block;
+            white-space: nowrap;
+        }
+    </style>
 </head>
 <body>
     <?php 
@@ -266,9 +327,34 @@ if (isset($_SESSION['error_message'])) {
                     <?php endif; ?>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <a href="new_borrow_request.php" class="btn btn-primary">
-                        <i class="bi bi-plus-circle"></i> New Borrow Request
-                    </a>
+                    <div class="dropdown">
+                        <button class="btn btn-primary dropdown-toggle" type="button" id="actionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-gear"></i> Actions
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionsDropdown">
+                            <li>
+                                <button class="dropdown-item" onclick="window.location.href='borrow_request.php'">
+                                    <i class="bi bi-plus-circle"></i> New Borrow Request
+                                </button>
+                            </li>
+                                                        <li>
+                                <button class="dropdown-item" onclick="refreshBorrowRequests()">
+                                    <i class="bi bi-arrow-clockwise"></i> Refresh Page
+                                </button>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <button class="dropdown-item" onclick="exportData()">
+                                    <i class="bi bi-download"></i> Export Requests
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item" onclick="printActiveRequests()">
+                                    <i class="bi bi-printer"></i> Print Active Requests
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
@@ -277,17 +363,11 @@ if (isset($_SESSION['error_message'])) {
 
         <!-- Borrow Requests Table -->
         <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="card-header">
                 <h5 class="mb-0">
                     <i class="bi bi-table me-2"></i>
                     Borrow Requests
                 </h5>
-                <div class="d-flex gap-2">
-                    <input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Search requests..." style="width: 200px;">
-                    <button class="btn btn-outline-primary btn-sm" onclick="exportData()">
-                        <i class="bi bi-download"></i> Export
-                    </button>
-                </div>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
@@ -327,6 +407,9 @@ if (isset($_SESSION['error_message'])) {
                                             <button type="button" class="btn btn-sm btn-outline-info" onclick="viewBorrowSlip(<?php echo $request['id']; ?>)">
                                                 <i class="bi bi-eye"></i> View
                                             </button>
+                                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="printBorrowForm(<?php echo $request['id']; ?>)">
+                                                <i class="bi bi-printer"></i> Print
+                                            </button>
                                             <?php if ($request['status'] === 'approved'): ?>
                                                 <button type="button" class="btn btn-sm btn-outline-success" onclick="markAsReturned(<?php echo $request['id']; ?>)">
                                                     <i class="bi bi-check-circle"></i> Return
@@ -343,8 +426,6 @@ if (isset($_SESSION['error_message'])) {
         </div>
     </div>
     
-    <?php require_once 'includes/logout-modal.php'; ?>
-    <?php require_once 'includes/change-password-modal.php'; ?>
 
     <!-- Return Confirmation Modal -->
     <div class="modal fade" id="returnConfirmModal" tabindex="-1">
@@ -374,14 +455,33 @@ if (isset($_SESSION['error_message'])) {
     <?php include 'includes/logout-modal.php'; ?>
     <?php include 'includes/change-password-modal.php'; ?>
 
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
     
     <script>
         // View borrow slip
         function viewBorrowSlip(borrowId) {
             // Redirect to the borrow slip page
             window.location.href = `borrow_slip.php?id=${borrowId}`;
+        }
+
+        // Print borrow form
+        function printBorrowForm(borrowId) {
+            // Open print form in new window
+            const printWindow = window.open(`print_borrow_form.php?id=${borrowId}`, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
+            printWindow.focus();
         }
 
         // Mark as returned
@@ -406,60 +506,165 @@ if (isset($_SESSION['error_message'])) {
             }
         });
 
-        // Search functionality
-        document.getElementById('searchInput').addEventListener('keyup', function() {
-            const searchTerm = this.value.toLowerCase();
-            const table = document.getElementById('borrowRequestsTable');
-            const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+        // Initialize DataTables
+        let borrowRequestsTable;
+        
+        $(document).ready(function() {
+            // Check if table has data rows before initializing DataTables
+            const tableBody = $('#borrowRequestsTable tbody');
+            const hasData = tableBody.find('tr').length > 0 && !tableBody.find('td[colspan]').length;
             
-            for (let i = 0; i < rows.length; i++) {
-                const cells = rows[i].getElementsByTagName('td');
-                let found = false;
-                
-                for (let j = 0; j < cells.length - 1; j++) { // Exclude actions column
-                    const cellText = cells[j].textContent.toLowerCase();
-                    if (cellText.includes(searchTerm)) {
-                        found = true;
-                        break;
-                    }
+            console.log('Table has data:', hasData);
+            console.log('Table rows found:', tableBody.find('tr').length);
+            
+            // Initialize DataTable with error handling
+            try {
+                if (hasData) {
+                    // Only initialize DataTables if there's actual data
+                    borrowRequestsTable = $('#borrowRequestsTable').DataTable({
+                        responsive: true,
+                        pageLength: 25,
+                        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                        order: [[6, 'desc']], // Sort by Submitted date column (index 6) by default
+                        columnDefs: [
+                            {
+                                targets: -1, // Actions column (last column)
+                                orderable: false,
+                                searchable: false
+                            }
+                        ],
+                        dom: '<"row"<"col-md-3"l><"col-md-3 barangay-filter-container"><"col-md-6"f>>rtip',
+                        language: {
+                            search: "Search requests:",
+                            lengthMenu: "Show _MENU_ requests per page",
+                            info: "Showing _START_ to _END_ of _TOTAL_ requests",
+                            paginate: {
+                                first: "First",
+                                last: "Last",
+                                next: "Next",
+                                previous: "Previous"
+                            },
+                            emptyTable: "No borrow requests available",
+                            zeroRecords: "No matching borrow requests found"
+                        },
+                        initComplete: function(settings, json) {
+                            console.log('DataTables initialized successfully');
+                            
+                            // Add barangay filter to DataTables
+                            $('.barangay-filter-container').html(`
+                                <select id="barangayFilter" class="form-select form-select-sm">
+                                    <option value="">All Barangays</option>
+                                    <?php foreach ($barangays as $barangay): ?>
+                                        <option value="<?php echo htmlspecialchars($barangay); ?>">
+                                            <?php echo htmlspecialchars($barangay); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            `);
+                            
+                            // Barangay filter event handler
+                            $('#barangayFilter').on('change', function() {
+                                const barangayValue = $(this).val();
+                                
+                                if (barangayValue) {
+                                    borrowRequestsTable.column(3).search(barangayValue); // Barangay column (index 3)
+                                } else {
+                                    borrowRequestsTable.column(3).search('');
+                                }
+                                
+                                // Redraw the table with applied filter
+                                borrowRequestsTable.draw();
+                            });
+                        }
+                    });
+                } else {
+                    // No data - don't initialize DataTables, just add basic styling
+                    $('#borrowRequestsTable').addClass('table-striped');
+                    console.log('No data found - DataTables not initialized');
                 }
-                
-                rows[i].style.display = found ? '' : 'none';
+            } catch (error) {
+                console.error('DataTables initialization error:', error);
+                // Fallback: make table work without DataTables
+                $('#borrowRequestsTable').addClass('table-striped');
             }
         });
 
-        // Export functionality
+        // Export functionality (updated for DataTables)
         function exportData() {
-            const table = document.getElementById('borrowRequestsTable');
-            const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+            console.log('Export function called');
             
+            if (borrowRequestsTable) {
+                // Use DataTables export functionality if DataTables is initialized
+                try {
+                    const data = borrowRequestsTable.data().toArray();
+                    let csv = 'Guest Name,Date Borrowed,Return Date,Barangay,Contact,Status,Submitted\n';
+                    
+                    data.forEach(row => {
+                        const rowData = [
+                            row[0].replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim(), // Guest Name
+                            row[1].replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim(), // Date Borrowed
+                            row[2].replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim(), // Return Date
+                            row[3].replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim(), // Barangay
+                            row[4].replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim(), // Contact
+                            row[5].replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim(), // Status
+                            row[6].replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()  // Submitted
+                        ];
+                        csv += rowData.map(cell => `"${cell.trim()}"`).join(',') + '\n';
+                    });
+                    
+                    // Download CSV
+                    const blob = new Blob([csv], { type: 'text/csv' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'borrow_requests_export.csv';
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                } catch (error) {
+                    console.error('DataTables export error:', error);
+                    // Fallback to manual table export
+                    exportTableManually();
+                }
+            } else {
+                // DataTables not initialized, use manual export
+                exportTableManually();
+            }
+        }
+        
+        // Manual export function for when DataTables is not available
+        function exportTableManually() {
+            console.log('Using manual table export');
             let csv = 'Guest Name,Date Borrowed,Return Date,Barangay,Contact,Status,Submitted\n';
             
-            for (let i = 0; i < rows.length; i++) {
-                if (rows[i].style.display !== 'none') {
-                    const cells = rows[i].getElementsByTagName('td');
-                    const rowData = [
-                        cells[0].textContent,
-                        cells[1].textContent,
-                        cells[2].textContent,
-                        cells[3].textContent,
-                        cells[4].textContent,
-                        cells[5].textContent.trim(),
-                        cells[6].textContent
-                    ];
-                    csv += rowData.map(cell => `"${cell.replace(/"/g, '""')}"`).join(',') + '\n';
+            $('#borrowRequestsTable tbody tr').each(function() {
+                const $row = $(this);
+                // Skip empty state rows
+                if ($row.find('td[colspan]').length > 0) {
+                    return;
                 }
-            }
+                
+                const rowData = [];
+                $row.find('td').each(function(index) {
+                    let cellText = $(this).text().trim();
+                    // Only include first 7 columns (exclude Actions column)
+                    if (index < 7) {
+                        rowData.push(cellText);
+                    }
+                });
+                
+                if (rowData.length > 0) {
+                    csv += rowData.map(cell => `"${cell}"`).join(',') + '\n';
+                }
+            });
             
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            link.setAttribute('download', `borrow_requests_${new Date().toISOString().split('T')[0]}.csv`);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            // Download CSV
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'borrow_requests_export.csv';
+            a.click();
+            window.URL.revokeObjectURL(url);
         }
     </script>
 
