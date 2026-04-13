@@ -233,30 +233,33 @@ try {
                     <p class="text-muted mb-0">Track all consumable release transactions</p>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <div class="btn-group" role="group">
-                        <div class="btn-group" role="group">
-                            <button type="button" class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-gear"></i> Actions
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li>
-                                    <a class="dropdown-item" href="lend_consumables.php">
-                                        <i class="bi bi-arrow-left-right"></i> Borrowing
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="consumables.php">
-                                        <i class="bi bi-box-seam"></i> Consumables Management
-                                    </a>
-                                </li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    <a class="dropdown-item" href="#" onclick="exportReleaseHistory()">
-                                        <i class="bi bi-download"></i> Export History
-                                    </a>
-                                </li>
-                            </ul>
-                        </div>
+                    <div class="dropdown">
+                        <button class="btn btn-primary dropdown-toggle" type="button" id="actionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-gear"></i> Actions
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionsDropdown">
+                            <li>
+                                <a class="dropdown-item" href="lend_consumables.php">
+                                    <i class="bi bi-arrow-left-right"></i> Borrowing
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="consumables.php">
+                                    <i class="bi bi-box-seam"></i> Consumables Management
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <button class="dropdown-item" onclick="exportReleaseHistory()">
+                                    <i class="bi bi-download"></i> Export History
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item" onclick="location.reload()">
+                                    <i class="bi bi-arrow-clockwise"></i> Refresh Page
+                                </button>
+                            </li>
+                        </ul>
                     </div>
                 </div>
             </div>

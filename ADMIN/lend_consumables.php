@@ -26,182 +26,7 @@ logSystemAction($_SESSION['user_id'], 'access', 'lend_consumables', 'Admin acces
 $message = '';
 $message_type = '';
 
-// CREATE - Add new lend transaction
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'lend') {
-    $consumable_id = intval($_POST['consumable_id'] ?? 0);
-    $quantity_lent = intval($_POST['quantity_lent'] ?? 0);
-    $to_office_id = intval($_POST['to_office_id'] ?? 0);
-    $lent_by = $_SESSION['user_id'];
-    $received_by = trim($_POST['received_by'] ?? '');
-    $date_lent = $_POST['date_lent'] ?? date('Y-m-d H:i:s');
-    $notes = trim($_POST['notes'] ?? '');
-    
-    // Validation
-    if ($consumable_id <= 0) {
-        $message = "Please select a consumable.";
-        $message_type = "danger";
-    } elseif ($quantity_lent <= 0) {
-        $message = "Quantity borrowed must be greater than 0.";
-        $message_type = "danger";
-    } elseif ($to_office_id <= 0) {
-        $message = "Please select a destination office.";
-        $message_type = "danger";
-    } elseif (empty($received_by)) {
-        $message = "Received by is required.";
-        $message_type = "danger";
-    } else {
-        try {
-            // Check consumable availability
-            $consumable_stmt = $conn->prepare("SELECT description, quantity, unit_cost, office_id, for_office_id FROM consumables WHERE id = ? AND quantity >= ?");
-            $consumable_stmt->bind_param("ii", $consumable_id, $quantity_lent);
-            $consumable_stmt->execute();
-            $consumable_result = $consumable_stmt->get_result();
-            
-            if ($consumable_result->num_rows > 0) {
-                $consumable = $consumable_result->fetch_assoc();
-                $total_value = $quantity_lent * $consumable['unit_cost'];
-                
-                // Insert detailed transaction record into lend_consumables table
-                $insert_lend_stmt = $conn->prepare("INSERT INTO lend_consumables (consumable_id, description, quantity_lent, unit_cost, total_value, from_office_id, to_office_id, lent_by, received_by, date_lent, status, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'lent', ?, NOW(), NOW())");
-                $insert_lend_stmt->bind_param("isidiiissss", $consumable_id, $consumable['description'], $quantity_lent, $consumable['unit_cost'], $total_value, $consumable['office_id'], $to_office_id, $lent_by, $received_by, $date_lent, $notes);
-                $insert_lend_stmt->execute();
-                $insert_lend_stmt->close();
-                
-                // Check if balance record exists for this consumable and office
-                $balance_stmt = $conn->prepare("SELECT id, total_borrowed, current_balance FROM consumable_balance WHERE consumable_id = ? AND office_id = ? AND for_office_id = ?");
-                $balance_stmt->bind_param("iii", $consumable_id, $consumable['office_id'], $to_office_id);
-                $balance_stmt->execute();
-                $balance_result = $balance_stmt->get_result();
-                
-                if ($balance_result->num_rows > 0) {
-                    // Update existing balance record
-                    $balance = $balance_result->fetch_assoc();
-                    $new_total_borrowed = $balance['total_borrowed'] + $quantity_lent;
-                    $new_current_balance = $balance['current_balance'] + $quantity_lent;
-                    
-                    $update_balance_stmt = $conn->prepare("UPDATE consumable_balance SET total_borrowed = ?, current_balance = ?, last_updated = NOW() WHERE id = ?");
-                    $update_balance_stmt->bind_param("iii", $new_total_borrowed, $new_current_balance, $balance['id']);
-                    $update_balance_stmt->execute();
-                    $update_balance_stmt->close();
-                } else {
-                    // Insert new balance record
-                    $insert_balance_stmt = $conn->prepare("INSERT INTO consumable_balance (consumable_id, consumable_description, office_id, office_name, for_office_id, total_borrowed, total_deducted, current_balance, last_updated, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())");
-                    
-                    // Get office names
-                    $from_office_stmt = $conn->prepare("SELECT office_name FROM offices WHERE id = ?");
-                    $from_office_stmt->bind_param("i", $consumable['office_id']);
-                    $from_office_stmt->execute();
-                    $from_office_result = $from_office_stmt->get_result();
-                    $from_office_name = $from_office_result->fetch_assoc()['office_name'] ?? 'Unknown';
-                    $from_office_stmt->close();
-                    
-                    $total_deducted = 0;
-                    $insert_balance_stmt->bind_param("isisiiii", $consumable_id, $consumable['description'], $consumable['office_id'], $from_office_name, $to_office_id, $quantity_lent, $total_deducted, $quantity_lent);
-                    $insert_balance_stmt->execute();
-                    $insert_balance_stmt->close();
-                }
-                $balance_stmt->close();
-                
-                // Update consumable quantity
-                $new_quantity = $consumable['quantity'] - $quantity_lent;
-                $update_stmt = $conn->prepare("UPDATE consumables SET quantity = ? WHERE id = ?");
-                $update_stmt->bind_param("ii", $new_quantity, $consumable_id);
-                $update_stmt->execute();
-                $update_stmt->close();
-                
-                // Insert regular inventory record in target office (for_office_id = NULL)
-                $target_check_stmt = $conn->prepare("SELECT id, quantity FROM consumables WHERE description = ? AND office_id = ? AND for_office_id IS NULL FOR UPDATE");
-                $target_check_stmt->bind_param("si", $consumable['description'], $to_office_id);
-                $target_check_stmt->execute();
-                $target_check_result = $target_check_stmt->get_result();
-                
-                if ($target_check_result->num_rows > 0) {
-                    // Update existing regular inventory in target office
-                    $target_consumable = $target_check_result->fetch_assoc();
-                    $new_target_quantity = $target_consumable['quantity'] + $quantity_lent;
-                    
-                    $update_target_stmt = $conn->prepare("UPDATE consumables SET quantity = ? WHERE id = ?");
-                    $update_target_stmt->bind_param("ii", $new_target_quantity, $target_consumable['id']);
-                    $update_target_stmt->execute();
-                    $update_target_stmt->close();
-                } else {
-                    // Insert new regular inventory record in target office
-                    $insert_target_stmt = $conn->prepare("INSERT INTO consumables (description, quantity, unit_cost, reorder_level, office_id, for_office_id) VALUES (?, ?, ?, ?, ?, NULL)");
-                    $insert_target_stmt->bind_param("sidii", 
-                        $consumable['description'], 
-                        $quantity_lent, 
-                        $consumable['unit_cost'], 
-                        0, // Default reorder level
-                        $to_office_id
-                    );
-                    $insert_target_stmt->execute();
-                    $insert_target_stmt->close();
-                }
-                $target_check_stmt->close();
-                
-                // Only recalculate balance records for this specific consumable when borrowing
-                $recalculate_sql = "SELECT 
-                                        lc.consumable_id,
-                                        c.description as consumable_description,
-                                        lc.from_office_id as office_id,
-                                        o1.office_name as office_name,
-                                        lc.to_office_id as for_office_id,
-                                        o2.office_name as for_office_name,
-                                        SUM(lc.quantity_lent) as total_borrowed,
-                                        SUM(CASE WHEN lc.status = 'returned' THEN lc.quantity_lent ELSE 0 END) as total_deducted,
-                                        SUM(CASE WHEN lc.status = 'lent' THEN lc.quantity_lent ELSE 0 END) - SUM(CASE WHEN lc.status = 'returned' THEN lc.quantity_lent ELSE 0 END) as current_balance
-                                    FROM lend_consumables lc
-                                    LEFT JOIN consumables c ON lc.consumable_id = c.id
-                                    LEFT JOIN offices o1 ON lc.from_office_id = o1.id
-                                    LEFT JOIN offices o2 ON lc.to_office_id = o2.id
-                                    WHERE lc.consumable_id = ? AND lc.from_office_id = ? AND lc.to_office_id = ?
-                                    GROUP BY lc.consumable_id, c.description, lc.from_office_id, o1.office_name, lc.to_office_id, o2.office_name";
-                
-                $recalculate_stmt = $conn->prepare($recalculate_sql);
-                $recalculate_stmt->bind_param("iii", $consumable_id, $consumable['office_id'], $to_office_id);
-                $recalculate_stmt->execute();
-                $recalculate_result = $recalculate_stmt->get_result();
-                
-                if ($recalculate_result->num_rows > 0) {
-                    $recalculate_row = $recalculate_result->fetch_assoc();
-                    
-                    // Update or insert the specific balance record
-                    $check_specific_stmt = $conn->prepare("SELECT id FROM consumable_balance WHERE consumable_id = ? AND office_id = ? AND for_office_id = ?");
-                    $check_specific_stmt->bind_param("iii", $recalculate_row['consumable_id'], $recalculate_row['office_id'], $recalculate_row['for_office_id']);
-                    $check_specific_stmt->execute();
-                    $check_specific_result = $check_specific_stmt->get_result();
-                    
-                    if ($check_specific_result->num_rows > 0) {
-                        // Update existing record
-                        $update_specific_stmt = $conn->prepare("UPDATE consumable_balance SET total_borrowed = ?, total_deducted = ?, current_balance = ?, last_updated = NOW() WHERE consumable_id = ? AND office_id = ? AND for_office_id = ?");
-                        $update_specific_stmt->bind_param("iiiiii", $recalculate_row['total_borrowed'], $recalculate_row['total_deducted'], $recalculate_row['current_balance'], $recalculate_row['consumable_id'], $recalculate_row['office_id'], $recalculate_row['for_office_id']);
-                        $update_specific_stmt->execute();
-                        $update_specific_stmt->close();
-                    } else {
-                        // Insert new record
-                        $insert_specific_stmt = $conn->prepare("INSERT INTO consumable_balance (consumable_id, consumable_description, office_id, office_name, for_office_id, total_borrowed, total_deducted, current_balance, last_updated, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())");
-                        $insert_specific_stmt->bind_param("isisiiii", $recalculate_row['consumable_id'], $recalculate_row['consumable_description'], $recalculate_row['office_id'], $recalculate_row['office_name'], $recalculate_row['for_office_id'], $recalculate_row['total_borrowed'], $recalculate_row['total_deducted'], $recalculate_row['current_balance']);
-                        $insert_specific_stmt->execute();
-                        $insert_specific_stmt->close();
-                    }
-                    $check_specific_stmt->close();
-                }
-                $recalculate_stmt->close();
-                
-                $message = "Consumable lent successfully!";
-                $message_type = "success";
-                logSystemAction($_SESSION['user_id'], 'consumable_lent', 'lend_consumables', "Lent {$quantity_lent} units of {$consumable['description']} to office ID {$to_office_id}");
-            } else {
-                $message = "Insufficient consumable quantity or consumable not found.";
-                $message_type = "danger";
-            }
-            $consumable_stmt->close();
-        } catch (Exception $e) {
-            $message = "Error lending consumable: " . $e->getMessage();
-            $message_type = "danger";
-        }
-    }
-}
+// Borrow consumable functionality removed
 
 
 // Handle filter parameters
@@ -320,18 +145,7 @@ try {
     error_log("Error fetching offices: " . $e->getMessage());
 }
 
-// Get available consumables for lending from Supply Office only
-$available_consumables = [];
-try {
-    $result = $conn->query("SELECT id, description, quantity, unit_cost, office_id FROM consumables WHERE quantity > 0 AND office_id = 3 ORDER BY description");
-    if ($result) {
-        while ($row = $result->fetch_assoc()) {
-            $available_consumables[] = $row;
-        }
-    }
-} catch (Exception $e) {
-    error_log("Error fetching consumables: " . $e->getMessage());
-}
+// Available consumables for lending functionality removed
 
 // Get statistics based on filter
 $stats = [];
@@ -435,66 +249,39 @@ try {
                     <?php endif; ?>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <div class="btn-group" role="group">
-                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#lendConsumableModal">
-                            <i class="bi bi-arrow-up-right"></i> Borrow Consumable
+                    <div class="dropdown">
+                        <button class="btn btn-primary dropdown-toggle" type="button" id="actionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-gear"></i> Actions
                         </button>
-                        <div class="btn-group" role="group">
-                            <button type="button" class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-gear"></i> Actions
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li>
-                                    <a class="dropdown-item" href="consumables.php">
-                                        <i class="bi bi-box-seam"></i> Back to Consumables
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="release_history.php">
-                                        <i class="bi bi-clock-history"></i> Release History
-                                    </a>
-                                </li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    <a class="dropdown-item" href="#" onclick="exportBorrowTransactions()">
-                                        <i class="bi bi-download"></i> Export Transactions
-                                    </a>
-                                </li>
-                            </ul>
-                        </div>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionsDropdown">
+                            <li>
+                                <a class="dropdown-item" href="consumables.php">
+                                    <i class="bi bi-box-seam"></i> Back to Consumables
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="release_history.php">
+                                    <i class="bi bi-clock-history"></i> Release History
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <button class="dropdown-item" onclick="exportBorrowTransactions()">
+                                    <i class="bi bi-download"></i> Export Transactions
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item" onclick="location.reload()">
+                                    <i class="bi bi-arrow-clockwise"></i> Refresh Page
+                                </button>
+                            </li>
+                        </ul>
                     </div>
                 </div>
             </div>
         </div>
         
-        <!-- Statistics Cards -->
-        <div class="row mb-4">
-            <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $stats['total_balance_records'] ?? 0; ?></div>
-                    <div class="stats-label"><i class="bi bi-balance-scale"></i> Balance Records</div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $stats['total_borrowed'] ?? 0; ?></div>
-                    <div class="stats-label"><i class="bi bi-box"></i> Total Borrowed</div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $stats['total_current_balance'] ?? 0; ?></div>
-                    <div class="stats-label"><i class="bi bi-arrow-left-right"></i> Current Balance</div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $stats['active_balances'] ?? 0; ?></div>
-                    <div class="stats-label"><i class="bi bi-check-circle"></i> Active Balances</div>
-                </div>
-            </div>
-        </div>
-        
+                
         <!-- Balance Records Table -->
         <div class="table-container">
             <div class="row mb-3 align-items-center">
@@ -578,101 +365,6 @@ try {
     <?php require_once 'includes/logout-modal.php'; ?>
     <?php require_once 'includes/change-password-modal.php'; ?>
     
-    <!-- Lend Consumable Modal -->
-    <div class="modal fade" id="lendConsumableModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-arrow-up-right"></i> Borrow Consumable</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <form method="POST">
-                    <div class="modal-body">
-                        <input type="hidden" name="action" value="lend">
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Consumable from Supply Office *</label>
-                            <input type="text" class="form-control" id="consumableSearch" name="consumable_search" list="consumableList" placeholder="Search and select consumable..." autocomplete="off" required>
-                            <input type="hidden" name="consumable_id" id="consumableId" required>
-                            <datalist id="consumableList">
-                                <?php foreach ($available_consumables as $consumable): ?>
-                                    <option value="<?php echo htmlspecialchars($consumable['description']); ?>" 
-                                            data-id="<?php echo $consumable['id']; ?>"
-                                            data-quantity="<?php echo $consumable['quantity']; ?>"
-                                            data-unit-cost="<?php echo $consumable['unit_cost']; ?>"
-                                            data-display-text="<?php echo htmlspecialchars($consumable['description']); ?> (Available: <?php echo $consumable['quantity']; ?>)">
-                                    </option>
-                                <?php endforeach; ?>
-                            </datalist>
-                            <small class="text-muted">Only consumables stored in Supply Office are available for borrowing</small>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Quantity to Borrow *</label>
-                                    <input type="number" class="form-control" name="quantity_lent" id="quantityLent" min="1" required>
-                                    <small class="text-muted">Available quantity will be shown here</small>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Unit Cost</label>
-                                    <input type="number" class="form-control" id="unitCost" step="0.01" readonly>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">To Office *</label>
-                                    <select class="form-select" name="to_office_id" required>
-                                        <option value="">Select Office</option>
-                                        <?php foreach ($offices as $office): ?>
-                                            <option value="<?php echo $office['id']; ?>">
-                                                <?php echo htmlspecialchars($office['office_name']); ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Received By *</label>
-                                    <input type="text" class="form-control" name="received_by" required>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div class="mb-3">
-                                    <label class="form-label">Date Borrowed *</label>
-                                    <input type="datetime-local" class="form-control" name="date_lent" value="<?php echo date('Y-m-d\TH:i'); ?>" required>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Notes</label>
-                            <textarea class="form-control" name="notes" rows="3"></textarea>
-                        </div>
-                        
-                        <div class="alert alert-info">
-                            <i class="bi bi-info-circle"></i> <strong>Total Value:</strong> <span id="totalValue">0.00</span>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-arrow-up-right"></i> Borrow Consumable
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
     
     
     <!-- Bootstrap JS -->
@@ -768,87 +460,7 @@ try {
             });
         });
         
-        // Searchable datalist functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            const searchInput = document.getElementById('consumableSearch');
-            const hiddenIdInput = document.getElementById('consumableId');
-            const quantityLentInput = document.getElementById('quantityLent');
-            const unitCostInput = document.getElementById('unitCost');
-            const datalist = document.getElementById('consumableList');
-            
-            // Store consumable data for quick lookup
-            const consumableData = {};
-            const options = datalist.querySelectorAll('option');
-            options.forEach(option => {
-                const id = option.dataset.id;
-                if (id) {
-                    consumableData[id] = {
-                        id: id,
-                        description: option.value,
-                        quantity: parseInt(option.dataset.quantity),
-                        unitCost: parseFloat(option.dataset.unitCost),
-                        displayText: option.dataset.displayText
-                    };
-                }
-            });
-            
-            // Handle input change
-            searchInput.addEventListener('input', function() {
-                const inputValue = this.value.trim();
-                const matchingOption = Array.from(options).find(option => 
-                    option.value.toLowerCase() === inputValue.toLowerCase()
-                );
-                
-                if (matchingOption) {
-                    const data = consumableData[matchingOption.dataset.id];
-                    if (data) {
-                        hiddenIdInput.value = data.id;
-                        quantityLentInput.max = data.quantity;
-                        quantityLentInput.placeholder = `Max: ${data.quantity}`;
-                        unitCostInput.value = data.unitCost.toFixed(2);
-                        calculateTotalValue();
-                    }
-                } else {
-                    // Clear fields if no match
-                    hiddenIdInput.value = '';
-                    quantityLentInput.max = '';
-                    quantityLentInput.placeholder = '';
-                    unitCostInput.value = '';
-                    calculateTotalValue();
-                }
-            });
-            
-            // Handle change event for final selection
-            searchInput.addEventListener('change', function() {
-                const inputValue = this.value.trim();
-                const matchingOption = Array.from(options).find(option => 
-                    option.value.toLowerCase() === inputValue.toLowerCase()
-                );
-                
-                if (matchingOption) {
-                    const data = consumableData[matchingOption.dataset.id];
-                    if (data) {
-                        this.value = data.description; // Ensure clean description
-                        hiddenIdInput.value = data.id;
-                    }
-                } else {
-                    // Clear if invalid selection
-                    this.value = '';
-                    hiddenIdInput.value = '';
-                }
-            });
-            
-            // Calculate total value function
-            function calculateTotalValue() {
-                const quantity = parseInt(quantityLentInput.value) || 0;
-                const unitCost = parseFloat(unitCostInput.value) || 0;
-                const totalValue = quantity * unitCost;
-                document.getElementById('totalValue').textContent = totalValue.toFixed(2);
-            }
-            
-            // Quantity change handler
-            quantityLentInput.addEventListener('input', calculateTotalValue);
-        });
+        // Borrow consumable modal functionality removed
         
         // Export balance records function
         function exportBorrowTransactions() {

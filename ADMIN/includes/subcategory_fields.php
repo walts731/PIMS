@@ -3,21 +3,7 @@
 $subcategory_fields = [
     // Note: COMPUTER DESKTOP now uses the general peripherals system
     // Peripherals can be added dynamically for any asset type
-    'LAPTOP' => [
-        // Basic Information
-        'processor' => ['label' => 'Processor', 'type' => 'text', 'required' => false],
-        'ram_capacity' => ['label' => 'RAM (GB)', 'type' => 'text', 'required' => false],
-        'storage_capacity' => ['label' => 'Storage Capacity', 'type' => 'text', 'required' => false],
-        'storage_type' => ['label' => 'Storage Type', 'type' => 'select', 'required' => false, 'options' => [
-            ['value' => 'ssd', 'text' => 'SSD'],
-            ['value' => 'hdd', 'text' => 'HDD'],
-            ['value' => 'hybrid', 'text' => 'Hybrid']
-        ]],
-        'graphics' => ['label' => 'Graphics Card', 'type' => 'text', 'required' => false],
-        'operating_system' => ['label' => 'Operating System', 'type' => 'text', 'required' => false],
-        'warranty_provider' => ['label' => 'Warranty Provider', 'type' => 'text', 'required' => false],
-        'warranty_expiry' => ['label' => 'Warranty Expiry', 'type' => 'date', 'required' => false]
-    ],
+   
     'COMPUTER' => [
         // Basic Information
         'processor' => ['label' => 'Processor', 'type' => 'text', 'required' => false],

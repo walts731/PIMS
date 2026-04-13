@@ -3,29 +3,29 @@
 $category_fields = [
     
     'ITS' => [
-        'processor' => ['label' => 'Processor', 'type' => 'text', 'required' => true],
-        'ram' => ['label' => 'RAM (GB)', 'type' => 'number', 'required' => true],
-        'storage_type' => ['label' => 'Storage Type', 'type' => 'select', 'required' => true, 'options' => [
+        'processor' => ['label' => 'Processor', 'type' => 'text', 'required' => false],
+        'ram' => ['label' => 'RAM (GB)', 'type' => 'number', 'required' => false],
+        'storage_type' => ['label' => 'Storage Type', 'type' => 'select', 'required' => false, 'options' => [
             ['value' => 'ssd', 'text' => 'SSD'],
             ['value' => 'hdd', 'text' => 'HDD'],
             ['value' => 'hybrid', 'text' => 'Hybrid']
         ]],
-        'storage_capacity' => ['label' => 'Storage Capacity (GB)', 'type' => 'number', 'required' => true],
+        'storage_capacity' => ['label' => 'Storage Capacity (GB)', 'type' => 'number', 'required' => false],
         'graphics' => ['label' => 'Graphics Card', 'type' => 'text', 'required' => false],
-        'operating_system' => ['label' => 'Operating System', 'type' => 'text', 'required' => true],
-        'brand' => ['label' => 'Brand', 'type' => 'text', 'required' => true],
+        'operating_system' => ['label' => 'Operating System', 'type' => 'text', 'required' => false],
+        'brand' => ['label' => 'Brand', 'type' => 'text', 'required' => false],
         'warranty' => ['label' => 'Warranty Period', 'type' => 'text', 'required' => false]
     ],
     'SW' => [
-        'software_name' => ['label' => 'Software Name', 'type' => 'text', 'required' => true],
-        'version' => ['label' => 'Version', 'type' => 'text', 'required' => true],
+        'software_name' => ['label' => 'Software Name', 'type' => 'text', 'required' => false],
+        'version' => ['label' => 'Version', 'type' => 'text', 'required' => false],
         'license_key' => ['label' => 'License Key', 'type' => 'text', 'required' => false],
         'expiry_date' => ['label' => 'Expiry Date', 'type' => 'date', 'required' => false]
     ],
     'LND' => [
-        'lot_number' => ['label' => 'Lot Number', 'type' => 'text', 'required' => true],
-        'area_size' => ['label' => 'Area Size (sqm)', 'type' => 'text', 'required' => true],
-        'location' => ['label' => 'Location', 'type' => 'text', 'required' => true],
+        'lot_number' => ['label' => 'Lot Number', 'type' => 'text', 'required' => false],
+        'area_size' => ['label' => 'Area Size (sqm)', 'type' => 'text', 'required' => false],
+        'location' => ['label' => 'Location', 'type' => 'text', 'required' => false],
         'tax_declaration' => ['label' => 'Tax Declaration No', 'type' => 'text', 'required' => false]
     ],
     'MV' => [
