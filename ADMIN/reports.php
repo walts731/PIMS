@@ -13,8 +13,8 @@ if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['system_admin'
 // Log reports page access
 logSystemAction($_SESSION['user_id'], 'reports_accessed', 'reports', 'Accessed reports page');
 
-// Get report type from URL
-$report_type = isset($_GET['type']) ? $_GET['type'] : 'assets';
+// Force report type to summary (analytics)
+$report_type = 'summary';
 
 // Get filter parameters
 $office_filter = isset($_GET['office']) ? intval($_GET['office']) : 0;
@@ -154,8 +154,17 @@ if ($report_type === 'assets') {
         COUNT(*) as total_items,
         SUM(value) as total_value,
         COUNT(CASE WHEN status = 'serviceable' THEN 1 END) as serviceable_count,
+        SUM(CASE WHEN status = 'serviceable' THEN value ELSE 0 END) as serviceable_value,
         COUNT(CASE WHEN status = 'unserviceable' THEN 1 END) as unserviceable_count,
+        SUM(CASE WHEN status = 'unserviceable' THEN value ELSE 0 END) as unserviceable_value,
+        COUNT(CASE WHEN status = 'maintenance' THEN 1 END) as maintenance_count,
+        SUM(CASE WHEN status = 'maintenance' THEN value ELSE 0 END) as maintenance_value,
         COUNT(CASE WHEN status = 'red_tagged' THEN 1 END) as red_tagged_count,
+        SUM(CASE WHEN status = 'red_tagged' THEN value ELSE 0 END) as red_tagged_value,
+        COUNT(CASE WHEN status = 'disposed' THEN 1 END) as disposed_count,
+        SUM(CASE WHEN status = 'disposed' THEN value ELSE 0 END) as disposed_value,
+        COUNT(CASE WHEN status = 'borrowed' THEN 1 END) as borrowed_count,
+        SUM(CASE WHEN status = 'borrowed' THEN value ELSE 0 END) as borrowed_value,
         COUNT(CASE WHEN status = 'no_tag' THEN 1 END) as no_tag_count,
         COUNT(CASE WHEN office_id IS NOT NULL THEN 1 END) as assigned_count,
         COUNT(CASE WHEN office_id IS NULL THEN 1 END) as unassigned_count
@@ -360,9 +369,9 @@ function formatStatus($status) {
             <div class="row align-items-center">
                 <div class="col-md-8">
                     <h1 class="mb-2">
-                        <i class="bi bi-file-earmark-bar-graph"></i> Reports
+                        <i class="bi bi-graph-up"></i> Analytics
                     </h1>
-                    <p class="text-muted mb-0">Generate comprehensive reports for assets and employees</p>
+                    <p class="text-muted mb-0">View comprehensive system analytics and statistics</p>
                 </div>
                 <div class="col-md-4 text-md-end">
                     <div class="dropdown">
@@ -371,13 +380,13 @@ function formatStatus($status) {
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionsDropdown">
                             <li>
-                                <button class="dropdown-item" onclick="exportReport()">
+                                <button class="dropdown-item" onclick="window.open('print_analytics.php', '_blank')">
                                     <i class="bi bi-download"></i> Export
                                 </button>
                             </li>
                             <li>
-                                <button class="dropdown-item" onclick="printReport()">
-                                    <i class="bi bi-printer"></i> Print
+                                <button class="dropdown-item" onclick="window.location.href='analytics.php'">
+                                    <i class="bi bi-graph-up-arrow"></i> Advanced Analytics
                                 </button>
                             </li>
                             <li><hr class="dropdown-divider"></li>
@@ -386,366 +395,116 @@ function formatStatus($status) {
                                     <i class="bi bi-arrow-clockwise"></i> Refresh Page
                                 </button>
                             </li>
-                        </ul>
+                                                    </ul>
                     </div>
                 </div>
             </div>
         </div>
         
-        <!-- Statistics Cards -->
-        <div class="row mb-4">
-            <?php if ($report_type === 'assets'): ?>
-                <div class="col-md-3">
-                    <div class="stats-card">
-                        <div class="stats-number"><?php echo $total_count; ?></div>
-                        <div class="stats-label">Total Assets</div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="stats-card">
-                        <div class="stats-number">₱<?php echo number_format($total_value, 2); ?></div>
-                        <div class="stats-label">Total Value</div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="stats-card">
-                        <div class="stats-number"><?php echo count($offices); ?></div>
-                        <div class="stats-label">Offices</div>
-                    </div>
-                </div>
-            <?php elseif ($report_type === 'employees'): ?>
-                <div class="col-md-3">
-                    <div class="stats-card">
-                        <div class="stats-number"><?php echo $total_count; ?></div>
-                        <div class="stats-label">Total Employees</div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="stats-card">
-                        <div class="stats-number"><?php 
-                            $permanent_count = 0;
-                            foreach ($data as $emp) {
-                                if ($emp['employment_status'] === 'permanent') $permanent_count++;
-                            }
-                            echo $permanent_count;
-                        ?></div>
-                        <div class="stats-label">Permanent</div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="stats-card">
-                        <div class="stats-number"><?php 
-                            $cleared_count = 0;
-                            foreach ($data as $emp) {
-                                if ($emp['clearance_status'] === 'cleared') $cleared_count++;
-                            }
-                            echo $cleared_count;
-                        ?></div>
-                        <div class="stats-label">Cleared</div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="stats-card">
-                        <div class="stats-number"><?php 
-                            $uncleared_count = 0;
-                            foreach ($data as $emp) {
-                                if ($emp['clearance_status'] === 'uncleared') $uncleared_count++;
-                            }
-                            echo $uncleared_count;
-                        ?></div>
-                        <div class="stats-label">Uncleared</div>
-                    </div>
-                </div>
-            <?php endif; ?>
-        </div>
-        
-        <!-- Filters Section -->
-        <div class="filter-card no-print">
-            <h5 class="mb-3"><i class="bi bi-funnel"></i> Filters</h5>
-            <form id="filterForm" method="GET" action="reports.php">
-                <input type="hidden" name="type" value="<?php echo $report_type; ?>">
                 
-                <?php if ($report_type === 'assets'): ?>
-                    <div class="row">
-                        <div class="col-md-3">
-                            <label class="form-label">Office</label>
-                            <select name="office" class="form-select" onchange="document.getElementById('filterForm').submit()">
-                                <option value="">All Offices</option>
-                                <?php foreach ($offices as $office): ?>
-                                    <option value="<?php echo $office['id']; ?>" <?php echo $office_filter == $office['id'] ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($office['office_name']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Category</label>
-                            <select name="category" class="form-select" onchange="document.getElementById('filterForm').submit()">
-                                <option value="">All Categories</option>
-                                <?php foreach ($categories as $category): ?>
-                                    <option value="<?php echo $category['id']; ?>" <?php echo $category_filter == $category['id'] ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($category['category_code'] . ' - ' . $category['category_name']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Status</label>
-                            <select name="status" class="form-select" onchange="document.getElementById('filterForm').submit()">
-                                <option value="">All Status</option>
-                                <?php foreach ($asset_statuses as $status): ?>
-                                    <option value="<?php echo $status; ?>" <?php echo $status_filter === $status ? 'selected' : ''; ?>>
-                                        <?php echo ucfirst(str_replace('_', ' ', $status)); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Date From</label>
-                            <input type="date" name="date_from" class="form-control" value="<?php echo htmlspecialchars($date_from); ?>" onchange="document.getElementById('filterForm').submit()">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Date To</label>
-                            <input type="date" name="date_to" class="form-control" value="<?php echo htmlspecialchars($date_to); ?>" onchange="document.getElementById('filterForm').submit()">
-                        </div>
-                    </div>
-                <?php elseif ($report_type === 'employees'): ?>
-                    <div class="row">
-                        <div class="col-md-3">
-                            <label class="form-label">Employment Status</label>
-                            <select name="employee_status" class="form-select" onchange="document.getElementById('filterForm').submit()">
-                                <option value="">All Status</option>
-                                <?php foreach ($employment_statuses as $status): ?>
-                                    <option value="<?php echo $status; ?>" <?php echo $employee_status_filter === $status ? 'selected' : ''; ?>>
-                                        <?php echo ucfirst(str_replace('_', ' ', $status)); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Clearance Status</label>
-                            <select name="clearance_status" class="form-select" onchange="document.getElementById('filterForm').submit()">
-                                <option value="">All Status</option>
-                                <?php foreach ($clearance_statuses as $status): ?>
-                                    <option value="<?php echo $status; ?>" <?php echo $clearance_status_filter === $status ? 'selected' : ''; ?>>
-                                        <?php echo ucfirst($status); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                    </div>
-                <?php endif; ?>
-                
-                <div class="row mt-3">
-                    <div class="col-12">
-                        <a href="reports.php?type=<?php echo $report_type; ?>" class="btn btn-outline-secondary">
-                            <i class="bi bi-x-circle"></i> Clear Filters
-                        </a>
-                    </div>
-                </div>
-            </form>
-        </div>
-
-        <!-- Report Type Tabs -->
-        <div class="report-card">
-            <ul class="nav nav-tabs" id="reportTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link <?php echo $report_type === 'assets' ? 'active' : ''; ?>" 
-                            onclick="window.location.href='reports.php?type=assets'">
-                        <i class="bi bi-box"></i> Assets Report
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link <?php echo $report_type === 'employees' ? 'active' : ''; ?>" 
-                            onclick="window.location.href='reports.php?type=employees'">
-                        <i class="bi bi-people"></i> Employees Report
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link <?php echo $report_type === 'summary' ? 'active' : ''; ?>" 
-                            onclick="window.location.href='reports.php?type=summary'">
-                        <i class="bi bi-graph-up"></i> Summary Report
-                    </button>
-                </li>
-            </ul>
-        </div>
         
-        <!-- Report Content -->
+        <!-- Analytics Content -->
         <div class="report-table">
-            <?php if ($report_type === 'assets'): ?>
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead>
-                            <tr>
-                                <th>Property No</th>
-                                <th>Description</th>
-                                <th>Category</th>
-                                <th>Office</th>
-                                <th>Status</th>
-                                <th>Value</th>
-                                <th>Acquisition Date</th>
-                                <th>Assigned To</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (empty($data)): ?>
-                                <tr>
-                                    <td colspan="8" class="text-center text-muted">No assets found matching the criteria</td>
-                                </tr>
-                            <?php else: ?>
-                                <?php foreach ($data as $item): ?>
-                                    <tr>
-                                        <td><?php echo htmlspecialchars($item['property_no'] ?? 'N/A'); ?></td>
-                                        <td><?php echo htmlspecialchars($item['description']); ?></td>
-                                        <td><?php echo htmlspecialchars($item['category_code'] ?? ''); ?></td>
-                                        <td><?php echo htmlspecialchars($item['office_name'] ?? 'N/A'); ?></td>
-                                        <td>
-                                            <?php 
-                                            $status_display = formatStatus($item['status']);
-                                            echo '<span class="status-badge ' . $status_display[1] . '">' . $status_display[0] . '</span>';
-                                            ?>
-                                        </td>
-                                        <td>₱<?php echo number_format($item['value'], 2); ?></td>
-                                        <td><?php echo date('M j, Y', strtotime($item['acquisition_date'])); ?></td>
-                                        <td>
-                                            <?php 
-                                            if ($item['employee_no']) {
-                                                echo htmlspecialchars($item['employee_no'] . ' - ' . $item['firstname'] . ' ' . $item['lastname']);
-                                            } else {
-                                                echo '<span class="text-muted">Unassigned</span>';
-                                            }
-                                            ?>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-            <?php elseif ($report_type === 'employees'): ?>
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead>
-                            <tr>
-                                <th>Employee No</th>
-                                <th>Name</th>
-                                <th>Position</th>
-                                <th>Office</th>
-                                <th>Employment Status</th>
-                                <th>Clearance Status</th>
-                                <th>Date Added</th>
-                                <th>Contact</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (empty($data)): ?>
-                                <tr>
-                                    <td colspan="8" class="text-center text-muted">No employees found matching the criteria</td>
-                                </tr>
-                            <?php else: ?>
-                                <?php foreach ($data as $employee): ?>
-                                    <tr>
-                                        <td><?php echo htmlspecialchars($employee['employee_no']); ?></td>
-                                        <td><?php echo htmlspecialchars($employee['firstname'] . ' ' . $employee['lastname']); ?></td>
-                                        <td><?php echo htmlspecialchars($employee['position'] ?? 'N/A'); ?></td>
-                                        <td><?php echo htmlspecialchars($employee['office_name'] ?? 'N/A'); ?></td>
-                                        <td>
-                                            <?php 
-                                            $status_display = formatStatus($employee['employment_status']);
-                                            echo '<span class="status-badge ' . $status_display[1] . '">' . $status_display[0] . '</span>';
-                                            ?>
-                                        </td>
-                                        <td>
-                                            <?php 
-                                            $status_display = formatStatus($employee['clearance_status']);
-                                            echo '<span class="status-badge ' . $status_display[1] . '">' . $status_display[0] . '</span>';
-                                            ?>
-                                        </td>
-                                        <td><?php echo $employee['created_at'] ? date('M j, Y', strtotime($employee['created_at'])) : 'N/A'; ?></td>
-                                        <td>
-                                            <?php 
-                                            $contact = [];
-                                            if ($employee['email']) $contact[] = htmlspecialchars($employee['email']);
-                                            if ($employee['phone']) $contact[] = htmlspecialchars($employee['phone']);
-                                            echo !empty($contact) ? implode('<br>', $contact) : '<span class="text-muted">N/A</span>';
-                                            ?>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-            <?php elseif ($report_type === 'summary'): ?>
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead>
-                            <tr>
-                                <th>Metric</th>
-                                <th>Count</th>
-                                <th>Value</th>
-                                <th>Notes</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>Total Assets</td>
-                                <td class="text-center"><?php echo $total_assets; ?></td>
-                                <td>₱<?php echo number_format($total_asset_value, 2); ?></td>
-                                <td>Overall asset count and value</td>
-                            </tr>
-                            <tr>
-                                <td>Total Employees</td>
-                                <td class="text-center"><?php echo $total_employees; ?></td>
-                                <td>N/A</td>
-                                <td>Overall employee count</td>
-                            </tr>
-                            <tr>
-                                <td>Total Offices</td>
-                                <td class="text-center"><?php echo $total_offices; ?></td>
-                                <td>N/A</td>
-                                <td>Overall office count</td>
-                            </tr>
-                            <tr>
-                                <td>Serviceable Assets</td>
-                                <td class="text-center"><?php echo $asset_stats['serviceable_count'] ?? 0; ?></td>
-                                <td>N/A</td>
-                                <td>Assets in serviceable condition</td>
-                            </tr>
-                            <tr>
-                                <td>Unserviceable Assets</td>
-                                <td class="text-center"><?php echo $asset_stats['unserviceable_count'] ?? 0; ?></td>
-                                <td>N/A</td>
-                                <td>Assets in unserviceable condition</td>
-                            </tr>
-                            <tr>
-                                <td>Red Tagged Assets</td>
-                                <td class="text-center"><?php echo $asset_stats['red_tagged_count'] ?? 0; ?></td>
-                                <td>N/A</td>
-                                <td>Assets with red tags</td>
-                            </tr>
-                            <tr>
-                                <td>Permanent Employees</td>
-                                <td class="text-center"><?php echo $employee_stats['permanent_count'] ?? 0; ?></td>
-                                <td>N/A</td>
-                                <td>Permanent staff count</td>
-                            </tr>
-                            <tr>
-                                <td>Contractual Employees</td>
-                                <td class="text-center"><?php echo $employee_stats['contractual_count'] ?? 0; ?></td>
-                                <td>N/A</td>
-                                <td>Contractual staff count</td>
-                            </tr>
-                            <tr>
-                                <td>Cleared Employees</td>
-                                <td class="text-center"><?php echo $employee_stats['cleared_count'] ?? 0; ?></td>
-                                <td>N/A</td>
-                                <td>Employees with clearance</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            <?php endif; ?>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Metric</th>
+                            <th>Count</th>
+                            <th>Value</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Asset Overview -->
+                        <tr style="background-color: #f8f9fa; font-weight: bold;">
+                            <td colspan="4" style="padding: 8px; border-bottom: 2px solid #dee2e6;">
+                                <i class="bi bi-box"></i> Asset Overview
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Total Assets</td>
+                            <td class="text-center"><?php echo $total_assets; ?></td>
+                            <td>₱<?php echo number_format($total_asset_value, 2); ?></td>
+                            <td>Overall asset count and value</td>
+                        </tr>
+                        <tr>
+                            <td>Serviceable Assets</td>
+                            <td class="text-center"><?php echo $asset_stats['serviceable_count'] ?? 0; ?></td>
+                            <td>₱<?php echo number_format($asset_stats['serviceable_value'] ?? 0, 2); ?></td>
+                            <td>Assets available for use</td>
+                        </tr>
+                        <tr>
+                            <td>Unserviceable Assets</td>
+                            <td class="text-center"><?php echo $asset_stats['unserviceable_count'] ?? 0; ?></td>
+                            <td>₱<?php echo number_format($asset_stats['unserviceable_value'] ?? 0, 2); ?></td>
+                            <td>Assets requiring maintenance</td>
+                        </tr>
+                        <tr>
+                            <td>Maintenance Assets</td>
+                            <td class="text-center"><?php echo $asset_stats['maintenance_count'] ?? 0; ?></td>
+                            <td>₱<?php echo number_format($asset_stats['maintenance_value'] ?? 0, 2); ?></td>
+                            <td>Assets under maintenance</td>
+                        </tr>
+                        <tr>
+                            <td>Red Tagged Assets</td>
+                            <td class="text-center"><?php echo $asset_stats['red_tagged_count'] ?? 0; ?></td>
+                            <td>₱<?php echo number_format($asset_stats['red_tagged_value'] ?? 0, 2); ?></td>
+                            <td>Assets marked for disposal</td>
+                        </tr>
+                        <tr>
+                            <td>Total Disposed Assets</td>
+                            <td class="text-center"><?php echo $asset_stats['disposed_count'] ?? 0; ?></td>
+                            <td>₱<?php echo number_format($asset_stats['disposed_value'] ?? 0, 2); ?></td>
+                            <td>Assets already disposed</td>
+                        </tr>
+                        <tr>
+                            <td>Borrowed Assets</td>
+                            <td class="text-center"><?php echo $asset_stats['borrowed_count'] ?? 0; ?></td>
+                            <td>₱<?php echo number_format($asset_stats['borrowed_value'] ?? 0, 2); ?></td>
+                            <td>Currently borrowed out</td>
+                        </tr>
+                        
+                        <!-- Employee Overview -->
+                        <tr style="background-color: #e3f2fd; font-weight: bold;">
+                            <td colspan="4" style="padding: 8px; border-bottom: 2px solid #dee2e6;">
+                                <i class="bi bi-people"></i> Employee Overview
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Total Employees</td>
+                            <td class="text-center"><?php echo $total_employees; ?></td>
+                            <td>N/A</td>
+                            <td>Overall employee count</td>
+                        </tr>
+                        <tr>
+                            <td>Cleared Employees</td>
+                            <td class="text-center"><?php echo $employee_stats['cleared_count'] ?? 0; ?></td>
+                            <td>N/A</td>
+                            <td>Employees with completed clearance</td>
+                        </tr>
+                        <tr>
+                            <td>Uncleared Employees</td>
+                            <td class="text-center"><?php echo $employee_stats['uncleared_count'] ?? 0; ?></td>
+                            <td>N/A</td>
+                            <td>Employees without clearance</td>
+                        </tr>
+                        
+                        <!-- Office Overview -->
+                        <tr style="background-color: #d1ecf1; font-weight: bold;">
+                            <td colspan="4" style="padding: 8px; border-bottom: 2px solid #dee2e6;">
+                                <i class="bi bi-building"></i> Office Overview
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Total Offices</td>
+                            <td class="text-center"><?php echo $total_offices; ?></td>
+                            <td>N/A</td>
+                            <td>Overall office count</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
     
