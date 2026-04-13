@@ -1,20 +1,34 @@
 <?php
-// Database connection
-$host = 'localhost';
-$username = 'root';
-$password = '';
-$database = 'pims_final';
+// Try to use config.php if it exists, otherwise use hardcoded values
+$conn = null;
 
-// Create connection
-$conn = new mysqli($host, $username, $password, $database);
-
-// Check connection
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
+try {
+    if (file_exists('../config.php')) {
+        require_once '../config.php';
+        // $conn should be defined in config.php
+    } else {
+        // Fallback to hardcoded database connection
+        $host = 'localhost';
+        $username = 'root';
+        $password = '';
+        $database = 'pims_final';
+        
+        $conn = new mysqli($host, $username, $password, $database);
+        
+        if ($conn->connect_error) {
+            throw new Exception("Connection failed: " . $conn->connect_error);
+        }
+        
+        $conn->set_charset("utf8");
+    }
+} catch (Exception $e) {
+    die("Database connection error: " . $e->getMessage() . ". Please contact administrator.");
 }
 
-// Set charset to utf8
-$conn->set_charset("utf8");
+// Ensure $conn is available
+if (!$conn) {
+    die("Database connection not established. Please contact administrator.");
+}
 
 // Handle form submission for adding new fuel in
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_fuel_in') {
