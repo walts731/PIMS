@@ -33,7 +33,7 @@ if ($office_query) {
 
 $consumables = [];
 if ($office_id > 0) {
-    $stmt = $conn->prepare("SELECT id, description, quantity, unit_cost, for_office_id FROM consumables WHERE for_office_id = ? AND quantity > 0 ORDER BY description");
+    $stmt = $conn->prepare("SELECT id, description, quantity, units, unit_cost, for_office_id FROM consumables WHERE for_office_id = ? AND quantity > 0 ORDER BY description");
     $stmt->bind_param("i", $office_id);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -128,7 +128,7 @@ $message_type = isset($_GET['type']) ? $_GET['type'] : '';
                                                 <input type="checkbox" class="form-check-input" id="checkAll">
                                             </th>
                                             <th>Description</th>
-                                            <th>Available Qty</th>
+                                            <th>Available Qty (Units)</th>
                                             <th style="width: 20%">Release Qty</th>
                                         </tr>
                                     </thead>
@@ -139,9 +139,12 @@ $message_type = isset($_GET['type']) ? $_GET['type'] : '';
                                                     <input type="checkbox" class="form-check-input item-check" name="selected_items[]" value="<?php echo $item['id']; ?>">
                                                 </td>
                                                 <td><?php echo htmlspecialchars($item['description']); ?></td>
-                                                <td><?php echo $item['quantity']; ?></td>
+                                                <td><?php echo $item['quantity'] . ' ' . htmlspecialchars($item['units']); ?></td>
                                                 <td>
-                                                    <input type="number" class="form-control form-control-sm qty-input" name="release_quantities[<?php echo $item['id']; ?>]" min="1" max="<?php echo $item['quantity']; ?>" disabled>
+                                                    <div class="input-group input-group-sm">
+                                                        <input type="number" class="form-control qty-input" name="release_quantities[<?php echo $item['id']; ?>]" min="1" max="<?php echo $item['quantity']; ?>" disabled>
+                                                        <span class="input-group-text"><?php echo htmlspecialchars($item['units']); ?></span>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
