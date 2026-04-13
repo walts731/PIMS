@@ -16,6 +16,8 @@ if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['system_admin', '
 
 logSystemAction($_SESSION['user_id'], 'access', 'main_user_fuel_management', 'Main user accessed fuel management page');
 
+$page_title = 'Fuel Management';
+
 $fuel_in_records = [];
 $fuel_out_records = [];
 $offices = [];
@@ -203,31 +205,17 @@ foreach ($balance_by_type as $fuel_type => $data) {
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
     
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="../assets/css/index.css" rel="stylesheet">
+    <link href="../assets/css/theme-custom.css" rel="stylesheet">
+    <link href="../ADMIN/dashboard.css" rel="stylesheet">
+    
     <style>
         /* Global smooth scrolling */
         html {
             scroll-behavior: smooth;
         }
         
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 0;
-            overflow-x: hidden;
-            height: 100vh;
-        }
-        .main-container {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            min-height: 100vh;
-            margin: 0;
-            padding: 2rem;
-            border-radius: 0;
-            animation: slideUp 0.8s ease-out;
-            overflow-y: auto;
-            height: 100vh;
-        }
         @keyframes slideUp {
             from {
                 opacity: 0;
@@ -370,39 +358,41 @@ foreach ($balance_by_type as $fuel_type => $data) {
     </style>
 </head>
 <body>
-    <?php include 'includes/topbar.php'; ?>
-    
-    <div class="main-container">
+    <div class="main-wrapper" id="mainWrapper">
+        <?php require_once 'includes/sidebar-toggle.php'; ?>
+        <?php require_once 'includes/sidebar.php'; ?>
+        <?php require_once 'includes/topbar.php'; ?>
+
+        <div class="main-content">
         <!-- Header Section -->
-        <div class="header-section">
+        <div class="dashboard-header">
             <div class="row align-items-center">
                 <div class="col-md-8">
-                    <h1 class="mb-0">
-                        <i class="bi bi-fuel-pump me-3"></i>
-                        Fuel Management Dashboard
+                    <h1 class="mb-1" style="font-weight: 700; color: #191BA9;">
+                        <i class="bi bi-fuel-pump me-2"></i>Fuel Management
                     </h1>
-                    <p class="mb-0 opacity-75">Complete fuel management with balance analysis</p>
+                    <p class="text-muted mb-0">Complete fuel management with balance analysis</p>
+                    <?php if ($error): ?>
+                        <div class="alert alert-warning mt-2 mb-0 py-2" role="alert">
+                            <i class="bi bi-exclamation-triangle me-1"></i>
+                            <small><?php echo htmlspecialchars($error); ?></small>
+                        </div>
+                    <?php endif; ?>
                 </div>
-                <div class="col-md-4 text-end">
-                    <a href="dashboard.php" class="btn btn-light btn-lg">
-                        <i class="bi bi-arrow-left me-2"></i>
-                        Back to Dashboard
-                    </a>
+                <div class="col-md-4 text-md-end">
+                    <div class="d-flex gap-2 justify-content-md-end">
+                        <a class="btn btn-outline-primary btn-sm" href="fuel_management.php">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <?php if ($error): ?>
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="bi bi-exclamation-triangle me-2"></i>
-                <strong>Error:</strong> <?php echo htmlspecialchars($error); ?>
-            </div>
-        <?php endif; ?>
-
         <!-- Filter Section -->
-        <div class="filter-section mb-4">
-            <div class="row align-items-end">
-                <div class="col-md-12">
+        <div class="row g-3 mb-4">
+            <div class="col-12">
+                <div class="section-card">
                     <form method="GET" class="d-flex flex-wrap gap-2 align-items-end">
                         <div>
                             <label class="form-label fw-semibold">
@@ -440,7 +430,7 @@ foreach ($balance_by_type as $fuel_type => $data) {
                                        value="<?php echo htmlspecialchars($date_from); ?>">
                                 <input type="date" class="form-control form-control-sm" id="date_to" name="date_to" 
                                        value="<?php echo htmlspecialchars($date_to); ?>">
-                                <button type="submit" class="btn btn-gradient btn-sm">
+                                <button type="submit" class="btn btn-primary btn-sm">
                                     <i class="bi bi-funnel me-1"></i>
                                     Apply
                                 </button>
@@ -451,84 +441,15 @@ foreach ($balance_by_type as $fuel_type => $data) {
                             </div>
                         </div>
                     </form>
-                </div>
-            </div>
-            <div class="row mt-3">
-                <div class="col-md-12">
-                    <div class="text-muted">
-                        <small>
-                            <i class="bi bi-info-circle me-1"></i>
-                            Showing data from <strong><?php echo date('M d, Y', strtotime($date_from)); ?></strong> 
-                            to <strong><?php echo date('M d, Y', strtotime($date_to)); ?></strong>
-                            <?php if ($period_filter !== 'custom' && isset($_GET['period'])): ?>
-                                <span class="badge bg-info ms-2"><?php echo ucfirst($period_filter); ?></span>
-                            <?php endif; ?>
-                        </small>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Balance Summary Cards -->
-        <div class="row mb-4">
-            <div class="col-md-4 mb-3">
-                <div class="stats-card h-100">
-                    <div class="d-flex align-items-center">
-                        <div class="fuel-icon" style="background: linear-gradient(135deg, #28a745, #20c997); color: white;">
-                            <i class="bi bi-arrow-down-circle"></i>
-                        </div>
-                        <div>
-                            <h6 class="text-muted mb-2">Total Fuel IN</h6>
-                            <h3 class="mb-0 text-success">
-                                <?php echo number_format($total_fuel_in, 2); ?>
-                                <small>Liters</small>
-                            </h3>
-                            <small class="text-muted"><?php echo count($fuel_in_records); ?> Transactions</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-md-4 mb-3">
-                <div class="stats-card h-100">
-                    <div class="d-flex align-items-center">
-                        <div class="fuel-icon" style="background: linear-gradient(135deg, #dc3545, #c82333); color: white;">
-                            <i class="bi bi-arrow-up-circle"></i>
-                        </div>
-                        <div>
-                            <h6 class="text-muted mb-2">Total Fuel OUT</h6>
-                            <h3 class="mb-0 text-danger">
-                                <?php echo number_format($total_fuel_out, 2); ?>
-                                <small>Liters</small>
-                            </h3>
-                            <small class="text-muted"><?php echo count($fuel_out_records); ?> Transactions</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-md-4 mb-3">
-                <div class="stats-card h-100">
-                    <div class="d-flex align-items-center">
-                        <div class="fuel-icon" style="background: linear-gradient(135deg, #17a2b8, #138496); color: white;">
-                            <i class="bi bi-arrow-left-right"></i>
-                        </div>
-                        <div>
-                            <h6 class="text-muted mb-2">Net Balance</h6>
-                            <h3 class="mb-0 text-<?php echo $net_balance > 0 ? 'success' : ($net_balance < 0 ? 'danger' : 'info'); ?>">
-                                <?php echo number_format($net_balance, 2); ?>
-                                <small>Liters</small>
-                            </h3>
-                            <small class="text-muted">
-                                <?php 
-                                if ($net_balance > 0) {
-                                    echo 'Surplus';
-                                } elseif ($net_balance < 0) {
-                                    echo 'Deficit';
-                                } else {
-                                    echo 'Balanced';
-                                }
-                                ?>
+                    <div class="mt-3">
+                        <div class="text-muted">
+                            <small>
+                                <i class="bi bi-info-circle me-1"></i>
+                                Showing data from <strong><?php echo date('M d, Y', strtotime($date_from)); ?></strong> 
+                                to <strong><?php echo date('M d, Y', strtotime($date_to)); ?></strong>
+                                <?php if ($period_filter !== 'custom' && isset($_GET['period'])): ?>
+                                    <span class="badge bg-info ms-2"><?php echo ucfirst($period_filter); ?></span>
+                                <?php endif; ?>
                             </small>
                         </div>
                     </div>
@@ -536,14 +457,70 @@ foreach ($balance_by_type as $fuel_type => $data) {
             </div>
         </div>
 
+        <!-- Balance Summary Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon green">
+                        <i class="bi bi-arrow-down-circle"></i>
+                    </div>
+                    <div class="stat-value"><?php echo number_format($total_fuel_in, 2); ?></div>
+                    <div class="stat-label">Total Fuel IN</div>
+                    <div class="stat-sublabel"><?php echo count($fuel_in_records); ?> Transactions</div>
+                </div>
+            </div>
+            
+            <div class="col-6 col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon red">
+                        <i class="bi bi-arrow-up-circle"></i>
+                    </div>
+                    <div class="stat-value"><?php echo number_format($total_fuel_out, 2); ?></div>
+                    <div class="stat-label">Total Fuel OUT</div>
+                    <div class="stat-sublabel"><?php echo count($fuel_out_records); ?> Transactions</div>
+                </div>
+            </div>
+            
+            <div class="col-6 col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon blue">
+                        <i class="bi bi-arrow-left-right"></i>
+                    </div>
+                    <div class="stat-value"><?php echo number_format($net_balance, 2); ?></div>
+                    <div class="stat-label">Net Balance</div>
+                    <div class="stat-sublabel">
+                        <?php 
+                        if ($net_balance > 0) {
+                            echo 'Surplus';
+                        } elseif ($net_balance < 0) {
+                            echo 'Deficit';
+                        } else {
+                            echo 'Balanced';
+                        }
+                        ?>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-6 col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon orange">
+                        <i class="bi bi-pie-chart"></i>
+                    </div>
+                    <div class="stat-value"><?php echo count($balance_by_type); ?></div>
+                    <div class="stat-label">Fuel Types</div>
+                    <div class="stat-sublabel">Active categories</div>
+                </div>
+            </div>
+        </div>
+
         <!-- Balance by Fuel Type -->
-        <div class="row mb-4">
+        <div class="row g-3 mb-4">
             <div class="col-12">
-                <div class="stats-card">
-                    <h5 class="mb-3">
-                        <i class="bi bi-pie-chart text-primary me-2"></i>
-                        Balance by Fuel Type
-                    </h5>
+                <div class="section-card">
+                    <div class="section-title">
+                        <i class="bi bi-pie-chart"></i> Balance by Fuel Type
+                    </div>
                     <div class="table-responsive">
                         <table class="table">
                             <thead class="table-light">
@@ -585,13 +562,12 @@ foreach ($balance_by_type as $fuel_type => $data) {
         </div>
 
         <!-- Quick Actions -->
-        <div class="row mb-4">
-            <div class="col-md-12">
-                <div class="stats-card">
-                    <h5 class="mb-3">
-                        <i class="bi bi-lightning text-primary me-2"></i>
-                        Quick Actions
-                    </h5>
+        <div class="row g-3 mb-4">
+            <div class="col-12">
+                <div class="section-card">
+                    <div class="section-title">
+                        <i class="bi bi-lightning"></i> Quick Actions
+                    </div>
                     <div class="row">
                         <div class="col-md-3 mb-2">
                             <a href="fuel_in.php" class="btn btn-success w-100">
@@ -631,16 +607,20 @@ foreach ($balance_by_type as $fuel_type => $data) {
         </div>
 
         <!-- Recent Transactions Preview -->
-        <div class="row">
+        <div class="row g-3">
             <div class="col-12">
-                <div class="stats-card">
-                    <h5 class="mb-3">
-                        <i class="bi bi-clock-history text-primary me-2"></i>
-                        Recent Transactions
-                        <span class="badge bg-info ms-2">
-                            <?php echo count($fuel_in_records) + count($fuel_out_records); ?> Total
-                        </span>
-                    </h5>
+                <div class="section-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="section-title mb-0">
+                            <i class="bi bi-clock-history"></i> Recent Transactions
+                            <span class="badge bg-info ms-2">
+                                <?php echo count($fuel_in_records) + count($fuel_out_records); ?> Total
+                            </span>
+                        </div>
+                        <a href="fuel_transactions.php" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-arrow-right"></i> View All
+                        </a>
+                    </div>
                     
                     <?php if (!empty($fuel_in_records) || !empty($fuel_out_records)): ?>
                         <div class="table-responsive">
@@ -727,12 +707,6 @@ foreach ($balance_by_type as $fuel_type => $data) {
                                 </tbody>
                             </table>
                         </div>
-                        <div class="text-center mt-3">
-                            <a href="fuel_transactions.php" class="btn btn-gradient">
-                                <i class="bi bi-list-ul me-2"></i>
-                                View All Transactions
-                            </a>
-                        </div>
                     <?php else: ?>
                         <div class="text-center py-5">
                             <i class="bi bi-clock-history text-muted" style="font-size: 3rem;"></i>
@@ -745,6 +719,10 @@ foreach ($balance_by_type as $fuel_type => $data) {
         </div>
     </div>
 
+    <?php require_once 'includes/logout-modal.php'; ?>
+    <?php require_once 'includes/change-password-modal.php'; ?>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <?php require_once 'includes/sidebar-scripts.php'; ?>
 </body>
 </html>

@@ -544,7 +544,6 @@ try {
                                 <th><i class="bi bi-upc me-1"></i>Receipt/Plate</th>
                                 <th><i class="bi bi-droplet me-1"></i>Quantity (L)</th>
                                 <th><i class="bi bi-fuel-pump me-1"></i>Fuel Type</th>
-                                <th><i class="bi bi-chat-text me-1"></i>Details</th>
                                 <th><i class="bi bi-building me-1"></i>Office</th>
                             </tr>
                         </thead>
@@ -606,7 +605,6 @@ try {
                                             <?php echo htmlspecialchars($record['fuel_type_name'] ?? 'N/A'); ?>
                                         </span>
                                     </td>
-                                    <td><?php echo htmlspecialchars($record['purpose'] ?? ''); ?></td>
                                     <td>
                                         <span class="badge bg-secondary">
                                             <?php echo htmlspecialchars($record['office_name'] ?? 'N/A'); ?>
