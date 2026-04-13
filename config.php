@@ -2,7 +2,7 @@
 $host = 'localhost';
 $username = 'root';
 $password = '';
-$database = 'pims';
+$database = 'pims_final';
 
 $conn = new mysqli($host, $username, $password, $database);
 

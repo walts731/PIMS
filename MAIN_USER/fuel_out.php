@@ -547,7 +547,7 @@ if ($fuel_out_result) {
                                         <?php echo htmlspecialchars($transaction['fo_request'] ?? 'N/A'); ?>
                                     </td>
                                     <td>
-                                        <?php echo htmlspecialchars($transaction['fo_plate_no'] ?? 'N/A'); ?>
+                                        <?php echo htmlspecialchars($transaction['fo_vehicle_type'] ?? 'N/A'); ?>
                                     </td>
                                     <td>
                                         <span class="badge bg-secondary">

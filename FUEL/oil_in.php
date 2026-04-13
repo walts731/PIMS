@@ -3,7 +3,7 @@
 $host = 'localhost';
 $username = 'root';
 $password = '';
-$database = 'pims';
+$database = 'pims_final';
 
 // Create connection
 $conn = new mysqli($host, $username, $password, $database);
