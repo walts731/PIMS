@@ -177,6 +177,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             $update_source_stmt->execute();
             $update_source_stmt->close();
             
+            // Get target office name first (needed for balance tracking)
+            $office_stmt = $conn->prepare("SELECT office_name FROM offices WHERE id = ?");
+            $office_stmt->bind_param("i", $target_office_id);
+            $office_stmt->execute();
+            $office_result = $office_stmt->get_result();
+            $office_data = $office_result->fetch_assoc();
+            $office_stmt->close();
+            
             // Insert into lend_consumables table
             $total_value = $lend_quantity * $source_data['unit_cost'];
             $lend_stmt = $conn->prepare("INSERT INTO lend_consumables (consumable_id, description, quantity_lent, unit_cost, total_value, from_office_id, to_office_id, lent_by, received_by, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
@@ -195,16 +203,56 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             $lend_stmt->execute();
             $lend_stmt->close();
             
-            // Get target office name for logging
-            $office_stmt = $conn->prepare("SELECT office_name FROM offices WHERE id = ?");
-            $office_stmt->bind_param("i", $target_office_id);
-            $office_stmt->execute();
-            $office_result = $office_stmt->get_result();
-            $office_data = $office_result->fetch_assoc();
-            $office_stmt->close();
+            // Update or insert into consumable_balance table for source office (lending out)
+            $zero_deducted = 0; // Variable for total_deducted (0 for lending)
+            $source_office_name = $source_data['office_name'] ?? 'Unknown';
+            $source_balance_stmt = $conn->prepare("
+                INSERT INTO consumable_balance (consumable_id, consumable_description, office_id, office_name, for_office_id, total_borrowed, total_deducted, current_balance, created_at, last_updated)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+                ON DUPLICATE KEY UPDATE 
+                total_borrowed = total_borrowed + VALUES(total_borrowed),
+                current_balance = current_balance - VALUES(total_borrowed),
+                last_updated = NOW()
+            ");
+            $source_balance_stmt->bind_param("issiiiii", 
+                $source_consumable_id,
+                $source_data['description'],
+                $source_data['office_id'],
+                $source_office_name,
+                $target_office_id,
+                $lend_quantity,
+                $zero_deducted, // total_deducted (0 for lending)
+                $lend_quantity // current_balance to subtract
+            );
+            $source_balance_stmt->execute();
+            $source_balance_stmt->close();
+            
+            // Update or insert into consumable_balance table for target office (receiving)
+            $zero_borrowed = 0; // Variable for total_borrowed (0 for receiving)
+            $target_office_name = $office_data['office_name'];
+            $target_balance_stmt = $conn->prepare("
+                INSERT INTO consumable_balance (consumable_id, consumable_description, office_id, office_name, for_office_id, total_borrowed, total_deducted, current_balance, created_at, last_updated)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+                ON DUPLICATE KEY UPDATE 
+                total_deducted = total_deducted + VALUES(total_deducted),
+                current_balance = current_balance + VALUES(total_deducted),
+                last_updated = NOW()
+            ");
+            $target_balance_stmt->bind_param("issiiiii", 
+                $source_consumable_id,
+                $source_data['description'],
+                $target_office_id,
+                $target_office_name,
+                $source_data['office_id'],
+                $zero_borrowed, // total_borrowed (0 for receiving)
+                $lend_quantity, // total_deducted (amount received)
+                $lend_quantity // current_balance to add
+            );
+            $target_balance_stmt->execute();
+            $target_balance_stmt->close();
             
             // Log lend action
-            $log_remarks = "Lent {$lend_quantity} '{$source_data['description']}' from office ID {$source_data['office_id']} to {$office_data['office_name']}. {$target_action}. Remarks: " . ($remarks ?: 'No remarks');
+            $log_remarks = "Lent {$lend_quantity} '{$source_data['description']}' from office ID {$source_data['office_id']} to {$office_data['office_name']}. {$target_action}. Balance tracking updated. Remarks: " . ($remarks ?: 'No remarks');
             logSystemAction($_SESSION['user_id'], 'consumable_lent', 'consumable_management', $log_remarks);
             
             // Commit transaction
