@@ -947,32 +947,40 @@ $status_display = formatStatus($item['status']);
                     <p class="text-muted mb-0"><?php echo htmlspecialchars($item['description']); ?></p>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <div class="btn-group" role="group">
-                        <button type="button" class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-gear"></i> Actions
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li>
-                                <a href="asset_items_edit.php?id=<?php echo $item_id; ?>" class="dropdown-item">
-                                    <i class="bi bi-pencil"></i> Edit
-                                </a>
-                            </li>
-                            <li>
-                                <a href="asset_items.php?asset_id=<?php echo $asset_id; ?>" class="dropdown-item">
-                                    <i class="bi bi-arrow-left"></i> Back to Items
-                                </a>
-                            </li>
-                            <li>
-                                <a href="print_inventory_tag.php?id=<?php echo $item_id; ?>" class="dropdown-item" target="_blank">
-                                    <i class="bi bi-printer"></i> Print
-                                </a>
-                            </li>
-                            <li>
-                                <a href="export_asset_pdf.php?id=<?php echo $item_id; ?>" class="dropdown-item" target="_blank">
-                                    <i class="bi bi-file-pdf"></i> Export PDF
-                                </a>
-                            </li>
-                        </ul>
+                    <div class="no-print">
+                        <div class="dropdown">
+                            <button class="btn btn-primary dropdown-toggle" type="button" id="actionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-gear"></i> Actions
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionsDropdown">
+                                <li>
+                                    <a href="asset_items_edit.php?id=<?php echo $item_id; ?>" class="dropdown-item">
+                                        <i class="bi bi-pencil"></i> Edit
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="asset_items.php?asset_id=<?php echo $asset_id; ?>" class="dropdown-item">
+                                        <i class="bi bi-arrow-left"></i> Back to Items
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="print_inventory_tag.php?id=<?php echo $item_id; ?>" class="dropdown-item" target="_blank">
+                                        <i class="bi bi-printer"></i> Print
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="export_asset_pdf.php?id=<?php echo $item_id; ?>" class="dropdown-item" target="_blank">
+                                        <i class="bi bi-file-pdf"></i> Export PDF
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <button type="button" class="dropdown-item" onclick="location.reload()">
+                                        <i class="bi bi-arrow-clockwise"></i> Refresh Page
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
