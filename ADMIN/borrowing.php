@@ -173,10 +173,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $serviceable_assets = [];
 try {
     $stmt = $conn->prepare("SELECT ai.id, ai.description, ai.property_no, ai.inventory_tag,
-                           c.category_name, ai.quantity
+                           c.category_name
                            FROM asset_items ai
-                           LEFT JOIN asset_categories c ON ai.asset_category_id = c.id
-                           WHERE ai.status = 'serviceable' AND ai.quantity > 0
+                           LEFT JOIN assets a ON ai.asset_id = a.id
+                           LEFT JOIN asset_categories c ON a.asset_categories_id = c.id
+                           WHERE ai.status = 'serviceable'
                            AND c.category_name NOT IN ('LND', 'Buildings', 'OInfra', 'Land Imp')
                            ORDER BY c.category_name, ai.description");
     $stmt->execute();
@@ -236,6 +237,11 @@ if (isset($_SESSION['error_message'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Borrowing Management - PIMS</title>
+     <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="../favicon/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="../favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../favicon/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="../favicon/apple-touch-icon.png">
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">

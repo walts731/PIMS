@@ -93,13 +93,43 @@
                         <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#changePasswordModal"><i class="bi bi-key"></i> Change Password</a></li>
                         <li><a class="dropdown-item" href="system_settings.php"><i class="bi bi-gear"></i> Settings</a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="../logout.php" onclick="event.preventDefault(); confirmLogout();"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+                        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#logoutModal"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
                     </ul>
                 </div>
             </div>
         </div>
     </div>
 </nav>
+
+<!-- Logout Confirmation Modal -->
+<div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title" id="logoutModalLabel">
+                    <i class="bi bi-box-arrow-right text-danger me-2"></i>
+                    Confirm Logout
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <div class="mb-3">
+                    <i class="bi bi-person-circle text-muted" style="font-size: 3rem;"></i>
+                </div>
+                <h6 class="mb-2">Are you sure you want to logout?</h6>
+                <p class="text-muted mb-0">You will be redirected to the login page.</p>
+            </div>
+            <div class="modal-footer border-0 justify-content-center">
+                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-2"></i>Cancel
+                </button>
+                <a href="../logout.php" class="btn btn-danger px-4">
+                    <i class="bi bi-box-arrow-right me-2"></i>Logout
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
 
 <style>
 /* Notification Bell Styles */
@@ -827,9 +857,4 @@ function updateActiveSuggestion(items) {
     });
 }
 
-function confirmLogout() {
-    if (confirm('Are you sure you want to logout?')) {
-        window.location.href = '../logout.php';
-    }
-}
 </script>
