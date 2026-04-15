@@ -3,8 +3,7 @@
     <div class="container-fluid">
         <a class="navbar-brand d-flex align-items-center" href="dashboard.php">
             <img src="<?php echo $logo_path; ?>" alt="<?php echo $system_name; ?> Logo" class="img-fluid" style="max-height: 35px; border-radius: 6px;">
-            <span class="fw-bold d-none d-sm-inline"><?php echo $system_name; ?></span>
-            <span class="fw-bold d-none d-md-block">PIMS</span>
+            <span class="fw-bold d-inline d-sm-none d-md-inline"><?php echo $system_name; ?></span>
         </a>
         
         <!-- Mobile Icons for Very Small Screens -->
@@ -828,36 +827,312 @@
 @media (max-width: 375px) {
     /* Ultra compact navbar for iPhone SE */
     #mainNavbar {
-        padding: 0.125rem 0.25rem !important;
+        padding: 0.0625rem 0.125rem !important;
         min-height: auto !important;
     }
-    
+
     .container-fluid {
-        padding: 0 0.125rem !important;
+        padding: 0 0.0625rem !important;
     }
-    
+
     /* Even smaller logo */
     .navbar-brand img {
-        max-height: 20px !important;
+        max-height: 18px !important;
+        margin-right: 0 !important;
     }
-    
+
+    /* Hide all text completely */
+    .navbar-brand span {
+        display: none !important;
+    }
+
     /* Minimal icons */
     .d-md-none .nav-link {
-        padding: 0.125rem !important;
-        font-size: 0.9rem;
+        padding: 0.0625rem !important;
+        font-size: 0.7rem;
     }
-    
+
     .d-md-none .navbar-toggler {
-        padding: 0.125rem !important;
-        font-size: 0.9rem;
+        padding: 0.0625rem !important;
+        font-size: 0.7rem;
     }
-    
+
     /* Ultra small notification badge */
     .notification-badge {
-        width: 6px;
-        height: 6px;
-        top: 0;
-        right: 0;
+        width: 4px;
+        height: 4px;
+        top: -1px;
+        right: -1px;
+        font-size: 0;
+    }
+
+    /* Mobile search container ultra compact */
+    #mobileSearchContainer {
+        padding: 0.0625rem 0.125rem;
+    }
+
+    #mobileSearchContainer .form-control {
+        font-size: 0.6rem;
+        padding: 0.125rem 0.1875rem;
+        height: 1.25rem;
+    }
+
+    #mobileSearchContainer .btn {
+        padding: 0.125rem;
+        font-size: 0.6rem;
+        height: 1.25rem;
+    }
+
+    /* Dropdown menus ultra compact */
+    .dropdown-menu {
+        font-size: 0.5rem;
+        padding: 0.0625rem;
+        min-width: 80px;
+    }
+
+    .dropdown-item {
+        font-size: 0.5rem;
+        padding: 0.0625rem 0.125rem;
+        line-height: 0.8;
+    }
+
+    .dropdown-header {
+        font-size: 0.45rem;
+        padding: 0.0625rem 0.125rem;
+    }
+
+    /* Navbar brand ultra compact */
+    .navbar-brand {
+        padding: 0.0625rem !important;
+    }
+
+    /* Collapse container ultra compact */
+    .collapse {
+        padding: 0.0625rem;
+    }
+
+    /* Navbar nav ultra compact */
+    .navbar-nav {
+        gap: 0.0625rem;
+    }
+
+    .navbar-nav .nav-item {
+        margin: 0.015625rem;
+    }
+
+    /* Navbar toggler ultra compact */
+    .navbar-toggler {
+        border: none !important;
+        padding: 0.0625rem !important;
+        font-size: 0.7rem;
+        width: auto;
+        height: auto;
+    }
+
+    .navbar-toggler:focus {
+        box-shadow: none !important;
+    }
+
+    /* Search container ultra compact */
+    .search-container {
+        margin: 0.0625rem;
+    }
+
+    /* Input group ultra compact */
+    .input-group {
+        gap: 0.0625rem;
+    }
+
+    /* Form control ultra compact */
+    .form-control {
+        font-size: 0.6rem;
+        padding: 0.125rem 0.1875rem;
+        height: 1.25rem;
+        border-radius: 0.125rem;
+    }
+
+    /* Button ultra compact */
+    .btn {
+        padding: 0.125rem;
+        font-size: 0.6rem;
+        height: 1.25rem;
+        border-radius: 0.125rem;
+    }
+
+    /* Search suggestions ultra compact */
+    .search-suggestions {
+        font-size: 0.5rem;
+        padding: 0.0625rem;
+    }
+
+    .search-suggestion-item {
+        padding: 0.0625rem 0.125rem;
+        font-size: 0.5rem;
+        line-height: 0.8;
+    }
+
+    .suggestion-text {
+        font-size: 0.5rem;
+    }
+
+    .suggestion-meta {
+        font-size: 0.45rem;
+    }
+
+    .suggestion-type {
+        font-size: 0.4rem;
+        padding: 0.015625rem 0.03125rem;
+    }
+}
+
+/* Ultra Small Screens (< 350px) - Maximum compact topbar */
+@media (max-width: 350px) {
+    /* Maximum compact navbar */
+    #mainNavbar {
+        padding: 0.03125rem 0.0625rem !important;
+        min-height: auto !important;
+    }
+
+    .container-fluid {
+        padding: 0 0.03125rem !important;
+    }
+
+    /* Maximum compact logo */
+    .navbar-brand img {
+        max-height: 14px !important;
+        margin-right: 0 !important;
+    }
+
+    /* Maximum compact icons */
+    .d-md-none .nav-link {
+        padding: 0.03125rem !important;
+        font-size: 0.5rem;
+    }
+
+    .d-md-none .navbar-toggler {
+        padding: 0.03125rem !important;
+        font-size: 0.5rem;
+    }
+
+    /* Maximum compact notification badge */
+    .notification-badge {
+        width: 3px;
+        height: 3px;
+        top: -1px;
+        right: -1px;
+        font-size: 0;
+    }
+
+    /* Maximum compact mobile search */
+    #mobileSearchContainer {
+        padding: 0.03125rem 0.0625rem;
+    }
+
+    #mobileSearchContainer .form-control {
+        font-size: 0.4rem;
+        padding: 0.0625rem 0.09375rem;
+        height: 1rem;
+    }
+
+    #mobileSearchContainer .btn {
+        padding: 0.0625rem;
+        font-size: 0.4rem;
+        height: 1rem;
+    }
+
+    /* Maximum compact dropdowns */
+    .dropdown-menu {
+        font-size: 0.35rem;
+        padding: 0.03125rem;
+        min-width: 60px;
+    }
+
+    .dropdown-item {
+        font-size: 0.35rem;
+        padding: 0.03125rem 0.0625rem;
+        line-height: 0.7;
+    }
+
+    .dropdown-header {
+        font-size: 0.3rem;
+        padding: 0.03125rem 0.0625rem;
+    }
+
+    /* Maximum compact navbar brand */
+    .navbar-brand {
+        padding: 0.03125rem !important;
+    }
+
+    /* Maximum compact collapse */
+    .collapse {
+        padding: 0.03125rem;
+    }
+
+    /* Maximum compact navbar nav */
+    .navbar-nav {
+        gap: 0.03125rem;
+    }
+
+    .navbar-nav .nav-item {
+        margin: 0.0078125rem;
+    }
+
+    /* Maximum compact navbar toggler */
+    .navbar-toggler {
+        padding: 0.03125rem !important;
+        font-size: 0.5rem;
+        border: none !important;
+    }
+
+    /* Maximum compact search container */
+    .search-container {
+        margin: 0.03125rem;
+    }
+
+    /* Maximum compact input group */
+    .input-group {
+        gap: 0.03125rem;
+    }
+
+    /* Maximum compact form control */
+    .form-control {
+        font-size: 0.4rem;
+        padding: 0.0625rem 0.09375rem;
+        height: 1rem;
+        border-radius: 0.0625rem;
+    }
+
+    /* Maximum compact button */
+    .btn {
+        padding: 0.0625rem;
+        font-size: 0.4rem;
+        height: 1rem;
+        border-radius: 0.0625rem;
+    }
+
+    /* Maximum compact search suggestions */
+    .search-suggestions {
+        font-size: 0.35rem;
+        padding: 0.03125rem;
+    }
+
+    .search-suggestion-item {
+        padding: 0.03125rem 0.0625rem;
+        font-size: 0.35rem;
+        line-height: 0.7;
+    }
+
+    .suggestion-text {
+        font-size: 0.35rem;
+    }
+
+    .suggestion-meta {
+        font-size: 0.3rem;
+    }
+
+    .suggestion-type {
+        font-size: 0.25rem;
+        padding: 0.0078125rem 0.015625rem;
     }
 }
 

@@ -1005,6 +1005,3261 @@ body {
     .modal-body {
         padding: 1rem;
     }
+    
+    /* Mobile Table Optimizations */
+    .table {
+        font-size: 0.75rem;
+    }
+    
+    .table th {
+        font-size: 0.7rem;
+        padding: 0.5rem 0.25rem;
+        white-space: nowrap;
+    }
+    
+    .table td {
+        font-size: 0.75rem;
+        padding: 0.5rem 0.25rem;
+        vertical-align: middle;
+    }
+    
+    .table-custom {
+        font-size: 0.75rem;
+    }
+    
+    .table-custom thead th {
+        font-size: 0.7rem;
+        padding: 0.5rem 0.25rem;
+        white-space: nowrap;
+    }
+    
+    .table-custom tbody td {
+        font-size: 0.75rem;
+        padding: 0.5rem 0.25rem;
+    }
+    
+    .table-actions .btn {
+        padding: 0.125rem 0.25rem;
+        font-size: 0.7rem;
+    }
+    
+    .table-container {
+        padding: 0.5rem;
+        overflow-x: auto;
+    }
+    
+    /* Badge and status optimizations */
+    .badge {
+        font-size: 0.65rem;
+        padding: 0.25rem 0.375rem;
+    }
+    
+    /* Form optimizations */
+    .form-control {
+        font-size: 0.6rem;
+        padding: 0.2rem 0.3rem;
+        height: 1.75rem;
+    }
+    
+    /* Scrollable inputs for item fields */
+    .form-control.scrollable-input {
+        overflow-x: auto;
+        white-space: nowrap;
+        scrollbar-width: thin;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .form-control.scrollable-input::-webkit-scrollbar {
+        height: 5px;
+    }
+    
+    .form-control.scrollable-input::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 2.5px;
+    }
+    
+    .form-control.scrollable-input::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 2.5px;
+    }
+    
+    .form-control.scrollable-input::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+    
+    /* Input group with scrollable content */
+    .input-group.scrollable-group {
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .input-group.scrollable-group .form-control {
+        display: inline-block;
+        min-width: 5rem;
+    }
+    
+    /* Table input fields scrollable */
+    .table .form-control {
+        font-size: 0.5rem;
+        padding: 0.1rem 0.2rem;
+        height: 1.25rem;
+        min-width: 3.5rem;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* ICS Form specific table inputs */
+    .ics-form .table .form-control,
+    .par-form .table .form-control,
+    .ris-form .table .form-control,
+    .itr-form .table .form-control,
+    .iirup-form .table .form-control {
+        font-size: 0.5rem;
+        padding: 0.1rem 0.2rem;
+        height: 1.25rem;
+        min-width: 3.5rem;
+        max-width: 5rem;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+    }
+    
+    /* ICS Form table inputs scrollbar styling */
+    .ics-form .table .form-control::-webkit-scrollbar,
+    .par-form .table .form-control::-webkit-scrollbar,
+    .ris-form .table .form-control::-webkit-scrollbar,
+    .itr-form .table .form-control::-webkit-scrollbar,
+    .iirup-form .table .form-control::-webkit-scrollbar {
+        height: 5px;
+    }
+    
+    .ics-form .table .form-control::-webkit-scrollbar-track,
+    .par-form .table .form-control::-webkit-scrollbar-track,
+    .ris-form .table .form-control::-webkit-scrollbar-track,
+    .itr-form .table .form-control::-webkit-scrollbar-track,
+    .iirup-form .table .form-control::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 2.5px;
+    }
+    
+    .ics-form .table .form-control::-webkit-scrollbar-thumb,
+    .par-form .table .form-control::-webkit-scrollbar-thumb,
+    .ris-form .table .form-control::-webkit-scrollbar-thumb,
+    .itr-form .table .form-control::-webkit-scrollbar-thumb,
+    .iirup-form .table .form-control::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 2.5px;
+    }
+    
+    .ics-form .table .form-control::-webkit-scrollbar-thumb:hover,
+    .par-form .table .form-control::-webkit-scrollbar-thumb:hover,
+    .ris-form .table .form-control::-webkit-scrollbar-thumb:hover,
+    .itr-form .table .form-control::-webkit-scrollbar-thumb:hover,
+    .iirup-form .table .form-control::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+    
+    /* Form table cells with inputs */
+    .ics-form .table td,
+    .par-form .table td,
+    .ris-form .table td,
+    .itr-form .table td,
+    .iirup-form .table td {
+        padding: 0.25rem 0.125rem;
+        vertical-align: middle;
+    }
+    
+    /* Form table headers */
+    .ics-form .table th,
+    .par-form .table th,
+    .ris-form .table th,
+    .itr-form .table th,
+    .iirup-form .table th {
+        padding: 0.5rem 0.25rem;
+        font-size: 0.45rem;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+    
+    /* Quantity inputs in forms */
+    .ics-form .table .form-control[type="number"],
+    .par-form .table .form-control[type="number"],
+    .ris-form .table .form-control[type="number"],
+    .itr-form .table .form-control[type="number"],
+    .iirup-form .table .form-control[type="number"] {
+        min-width: 3rem;
+        max-width: 3.5rem;
+        text-align: center;
+    }
+    
+    /* Description inputs in forms */
+    .ics-form .table .form-control.description-input,
+    .par-form .table .form-control.description-input,
+    .ris-form .table .form-control.description-input,
+    .itr-form .table .form-control.description-input,
+    .iirup-form .table .form-control.description-input {
+        min-width: 5rem;
+        max-width: 6rem;
+    }
+    
+    /* Property card inputs scrollable */
+    .property-card .form-control {
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Report table inputs scrollable */
+    .report-table .form-control {
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .form-label {
+        font-size: 0.55rem;
+        margin-bottom: 0.15rem;
+    }
+    
+    .form-group {
+        margin-bottom: 0.375rem;
+    }
+    
+    .form-check {
+        margin-bottom: 0.1875rem;
+    }
+    
+    .form-check-label {
+        font-size: 0.55rem;
+    }
+    
+    .form-text {
+        font-size: 0.45rem;
+        margin-top: 0.075rem;
+    }
+    
+    .form-select {
+        font-size: 0.6rem;
+        padding: 0.2rem 0.3rem;
+        height: 1.75rem;
+    }
+    
+    .form-control[type="textarea"] {
+        font-size: 0.6rem;
+        padding: 0.2rem 0.3rem;
+        min-height: 2.75rem;
+    }
+    
+    .form-control[type="file"] {
+        font-size: 0.5rem;
+        padding: 0.2rem;
+    }
+    
+    .form-control[type="date"],
+    .form-control[type="time"],
+    .form-control[type="datetime-local"] {
+        font-size: 0.5rem;
+        padding: 0.2rem 0.3rem;
+        height: 1.75rem;
+    }
+    
+    .form-check-input {
+        width: 0.625rem;
+        height: 0.625rem;
+    }
+    
+    .form-check-input[type="checkbox"] {
+        width: 1rem;
+        height: 0.5rem;
+    }
+    
+    .form-range {
+        height: 0.625rem;
+    }
+    
+    .input-group-text {
+        font-size: 0.5rem;
+        padding: 0.2rem 0.4rem;
+    }
+    
+    .input-group {
+        gap: 0.2rem;
+    }
+    
+    /* Card optimizations */
+    .card {
+        font-size: 0.85rem;
+    }
+    
+    .card-title {
+        font-size: 0.9rem;
+    }
+    
+    .card-text {
+        font-size: 0.8rem;
+    }
+}
+
+/* Small Screens (>= 576px) - iPhone 8 and larger */
+@media (min-width: 576px) {
+    /* Make all form tables scrollable */
+    #icsItemsTable,
+    #itemsTable,
+    #risItemsTable,
+    #itrItemsTable,
+    #iirupItemsTable,
+    .form-card .table {
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        display: table;
+        width: 100%;
+        table-layout: auto;
+    }
+    
+    #icsItemsTable thead,
+    #icsItemsTable tbody,
+    #icsItemsTable tfoot,
+    #itemsTable thead,
+    #itemsTable tbody,
+    #itemsTable tfoot,
+    #risItemsTable thead,
+    #risItemsTable tbody,
+    #risItemsTable tfoot,
+    #itrItemsTable thead,
+    #itrItemsTable tbody,
+    #itrItemsTable tfoot,
+    #iirupItemsTable thead,
+    #iirupItemsTable tbody,
+    #iirupItemsTable tfoot,
+    .form-card .table thead,
+    .form-card .table tbody,
+    .form-card .table tfoot {
+        display: table-row-group;
+    }
+    
+    #icsItemsTable tr,
+    #itemsTable tr,
+    #risItemsTable tr,
+    #itrItemsTable tr,
+    #iirupItemsTable tr,
+    .form-card .table tr {
+        display: table-row;
+    }
+    
+    #icsItemsTable th,
+    #icsItemsTable td,
+    #itemsTable th,
+    #itemsTable td,
+    #risItemsTable th,
+    #risItemsTable td,
+    #itrItemsTable th,
+    #itrItemsTable td,
+    #iirupItemsTable th,
+    #iirupItemsTable td,
+    .form-card .table th,
+    .form-card .table td {
+        white-space: nowrap;
+        overflow: visible;
+        display: table-cell;
+        vertical-align: middle;
+    }
+    
+    /* Fix colspan/rowspan behavior for all form tables */
+    #icsItemsTable th[colspan],
+    #icsItemsTable td[colspan],
+    #itemsTable th[colspan],
+    #itemsTable td[colspan],
+    #risItemsTable th[colspan],
+    #risItemsTable td[colspan],
+    #itrItemsTable th[colspan],
+    #itrItemsTable td[colspan],
+    #iirupItemsTable th[colspan],
+    #iirupItemsTable td[colspan],
+    .form-card .table th[colspan],
+    .form-card .table td[colspan] {
+        text-align: center;
+    }
+    
+    #icsItemsTable th[rowspan],
+    #icsItemsTable td[rowspan],
+    #itemsTable th[rowspan],
+    #itemsTable td[rowspan],
+    #risItemsTable th[rowspan],
+    #risItemsTable td[rowspan],
+    #itrItemsTable th[rowspan],
+    #itrItemsTable td[rowspan],
+    #iirupItemsTable th[rowspan],
+    #iirupItemsTable td[rowspan],
+    .form-card .table th[rowspan],
+    .form-card .table td[rowspan] {
+        vertical-align: middle;
+    }
+    
+    /* ICS table scrollbar styling */
+    #icsItemsTable::-webkit-scrollbar {
+        height: 5px;
+    }
+    
+    #icsItemsTable::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 2.5px;
+    }
+    
+    #icsItemsTable::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 2.5px;
+    }
+    
+    #icsItemsTable::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+    
+    /* Other form tables scrollbar styling */
+    #itemsTable::-webkit-scrollbar,
+    #risItemsTable::-webkit-scrollbar,
+    #itrItemsTable::-webkit-scrollbar,
+    #iirupItemsTable::-webkit-scrollbar,
+    .form-card .table::-webkit-scrollbar {
+        height: 5px;
+    }
+    
+    #itemsTable::-webkit-scrollbar-track,
+    #risItemsTable::-webkit-scrollbar-track,
+    #itrItemsTable::-webkit-scrollbar-track,
+    #iirupItemsTable::-webkit-scrollbar-track,
+    .form-card .table::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 2.5px;
+    }
+    
+    #itemsTable::-webkit-scrollbar-thumb,
+    #risItemsTable::-webkit-scrollbar-thumb,
+    #itrItemsTable::-webkit-scrollbar-thumb,
+    #iirupItemsTable::-webkit-scrollbar-thumb,
+    .form-card .table::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 2.5px;
+    }
+    
+    #itemsTable::-webkit-scrollbar-thumb:hover,
+    #risItemsTable::-webkit-scrollbar-thumb:hover,
+    #itrItemsTable::-webkit-scrollbar-thumb:hover,
+    #iirupItemsTable::-webkit-scrollbar-thumb:hover,
+    .form-card .table::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+    
+    /* Table responsive container for ICS */
+    .table-responsive:has(#icsItemsTable) {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+    }
+    
+    .table-responsive:has(#icsItemsTable)::-webkit-scrollbar {
+        height: 5px;
+    }
+    
+    .table-responsive:has(#icsItemsTable)::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 2.5px;
+    }
+    
+    .table-responsive:has(#icsItemsTable)::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 2.5px;
+    }
+    
+    .table-responsive:has(#icsItemsTable)::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+}
+
+/* Ultra Small Screens (< 425px) - iPhone SE and smaller */
+@media (max-width: 425px) {
+    /* Ultra compact table styles */
+    .table {
+        font-size: 0.65rem;
+    }
+    
+    .table th {
+        font-size: 0.6rem;
+        padding: 0.375rem 0.125rem;
+        white-space: nowrap;
+        line-height: 1.2;
+    }
+    
+    .table td {
+        font-size: 0.65rem;
+        padding: 0.375rem 0.125rem;
+        line-height: 1.2;
+    }
+    
+    .table-custom {
+        font-size: 0.65rem;
+    }
+    
+    .table-custom thead th {
+        font-size: 0.6rem;
+        padding: 0.375rem 0.125rem;
+        white-space: nowrap;
+        line-height: 1.2;
+    }
+    
+    .table-custom tbody td {
+        font-size: 0.65rem;
+        padding: 0.375rem 0.125rem;
+        line-height: 1.2;
+    }
+    
+    .table-actions .btn {
+        padding: 0.125rem 0.25rem;
+        font-size: 0.6rem;
+        min-width: auto;
+    }
+    
+    .table-container {
+        padding: 0.25rem;
+        font-size: 0.65rem;
+    }
+    
+    /* DataTables organization for 425px portrait */
+    .dataTables_wrapper .dataTables_length,
+    .dataTables_wrapper .dataTables_filter {
+        float: none !important;
+        text-align: center;
+        margin-bottom: 0.5rem;
+    }
+    
+    .dataTables_wrapper .dataTables_length {
+        margin-top: 0.5rem;
+    }
+    
+    .dataTables_wrapper .dataTables_filter {
+        margin-bottom: 0.75rem;
+    }
+    
+    .dataTables_wrapper .dataTables_info,
+    .dataTables_wrapper .dataTables_paginate {
+        float: none !important;
+        text-align: center;
+        margin-top: 0.5rem;
+    }
+    
+    .dataTables_wrapper .dataTables_info {
+        margin-bottom: 0.5rem;
+    }
+    
+    .dataTables_wrapper .dataTables_paginate {
+        margin-top: 0.375rem;
+    }
+    
+    /* Clear floats for proper stacking */
+    .dataTables_wrapper::after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+    
+    .dataTables_length select {
+        font-size: 0.5rem;
+        padding: 0.0625rem 0.125rem;
+        height: 1.25rem;
+        width: auto;
+        min-width: 3rem;
+    }
+    
+    .dataTables_filter input {
+        font-size: 0.5rem;
+        padding: 0.0625rem 0.125rem;
+        height: 1.25rem;
+        width: 10rem;
+        max-width: 75%;
+    }
+    
+    .dataTables_filter label {
+        font-size: 0.5rem;
+        display: block;
+        margin-bottom: 0.2rem;
+    }
+    
+    .dataTables_info {
+        font-size: 0.45rem;
+        padding: 0.05rem;
+        display: block;
+        width: 100%;
+    }
+    
+    .dataTables_paginate .paginate_button {
+        font-size: 0.45rem;
+        padding: 0.03rem 0.06rem;
+        margin: 0.015rem;
+        display: inline-block;
+        height: 1rem;
+        line-height: 1rem;
+    }
+    
+    .dataTables_paginate .paginate_button.current {
+        font-size: 0.45rem;
+        padding: 0.03rem 0.06rem;
+        height: 1rem;
+        line-height: 1rem;
+    }
+    
+    .dataTables_paginate .pagination {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    /* Ultra compact badges */
+    .badge {
+        font-size: 0.55rem;
+        padding: 0.125rem 0.25rem;
+        line-height: 1.2;
+    }
+    
+    /* Ultra compact forms */
+    .form-control {
+        font-size: 0.4rem;
+        padding: 0.1rem 0.15rem;
+        height: 1.25rem;
+    }
+    
+    /* Scrollable inputs for item fields */
+    .form-control.scrollable-input {
+        overflow-x: auto;
+        white-space: nowrap;
+        scrollbar-width: thin;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .form-control.scrollable-input::-webkit-scrollbar {
+        height: 4px;
+    }
+    
+    .form-control.scrollable-input::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 2px;
+    }
+    
+    .form-control.scrollable-input::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 2px;
+    }
+    
+    .form-control.scrollable-input::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+    
+    /* Input group with scrollable content */
+    .input-group.scrollable-group {
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .input-group.scrollable-group .form-control {
+        display: inline-block;
+        min-width: 4rem;
+    }
+    
+    /* Table input fields scrollable */
+    .table .form-control {
+        font-size: 0.35rem;
+        padding: 0.05rem 0.1rem;
+        height: 1rem;
+        min-width: 3rem;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* ICS Form specific table inputs */
+    .ics-form .table .form-control,
+    .par-form .table .form-control,
+    .ris-form .table .form-control,
+    .itr-form .table .form-control,
+    .iirup-form .table .form-control,
+    .form-card .table .form-control {
+        font-size: 0.35rem;
+        padding: 0.05rem 0.1rem;
+        height: 1rem;
+        min-width: 3rem;
+        max-width: 4rem;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        border: 1px solid #dee2e6;
+        border-radius: 0.125rem;
+    }
+    
+    /* Target all form inputs in tables within form cards */
+    .form-card .table .form-control,
+    .table-responsive .table .form-control {
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+    }
+    
+    /* Specific ICS form inputs */
+    #icsItemsTable .form-control {
+        font-size: 0.35rem;
+        padding: 0.05rem 0.1rem;
+        height: 1rem;
+        min-width: 3rem;
+        max-width: 4rem;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        border: 1px solid #dee2e6;
+        border-radius: 0.125rem;
+    }
+    
+    /* Description fields - wider for long text */
+    #icsItemsTable .description-field {
+        min-width: 4rem;
+        max-width: 5rem;
+    }
+    
+    /* Item number fields */
+    #icsItemsTable .item-no-field {
+        min-width: 3.5rem;
+        max-width: 4.5rem;
+    }
+    
+    /* Useful life fields */
+    #icsItemsTable .useful-life-field {
+        min-width: 2.5rem;
+        max-width: 3rem;
+        text-align: center;
+    }
+    
+    /* Cost fields */
+    #icsItemsTable .cost-field {
+        min-width: 3rem;
+        max-width: 3.5rem;
+        text-align: right;
+    }
+    
+    /* Quantity fields */
+    #icsItemsTable .quantity-field {
+        min-width: 2.5rem;
+        max-width: 3rem;
+        text-align: center;
+    }
+    
+    /* Unit fields */
+    #icsItemsTable .unit-field {
+        min-width: 3rem;
+        max-width: 3.5rem;
+    }
+    
+    /* ICS Form table inputs scrollbar styling */
+    .ics-form .table .form-control::-webkit-scrollbar,
+    .par-form .table .form-control::-webkit-scrollbar,
+    .ris-form .table .form-control::-webkit-scrollbar,
+    .itr-form .table .form-control::-webkit-scrollbar,
+    .iirup-form .table .form-control::-webkit-scrollbar,
+    .form-card .table .form-control::-webkit-scrollbar,
+    .table-responsive .table .form-control::-webkit-scrollbar,
+    #icsItemsTable .form-control::-webkit-scrollbar {
+        height: 4px;
+    }
+    
+    .ics-form .table .form-control::-webkit-scrollbar-track,
+    .par-form .table .form-control::-webkit-scrollbar-track,
+    .ris-form .table .form-control::-webkit-scrollbar-track,
+    .itr-form .table .form-control::-webkit-scrollbar-track,
+    .iirup-form .table .form-control::-webkit-scrollbar-track,
+    .form-card .table .form-control::-webkit-scrollbar-track,
+    .table-responsive .table .form-control::-webkit-scrollbar-track,
+    #icsItemsTable .form-control::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 2px;
+    }
+    
+    .ics-form .table .form-control::-webkit-scrollbar-thumb,
+    .par-form .table .form-control::-webkit-scrollbar-thumb,
+    .ris-form .table .form-control::-webkit-scrollbar-thumb,
+    .itr-form .table .form-control::-webkit-scrollbar-thumb,
+    .iirup-form .table .form-control::-webkit-scrollbar-thumb,
+    .form-card .table .form-control::-webkit-scrollbar-thumb,
+    .table-responsive .table .form-control::-webkit-scrollbar-thumb,
+    #icsItemsTable .form-control::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 2px;
+    }
+    
+    .ics-form .table .form-control::-webkit-scrollbar-thumb:hover,
+    .par-form .table .form-control::-webkit-scrollbar-thumb:hover,
+    .ris-form .table .form-control::-webkit-scrollbar-thumb:hover,
+    .itr-form .table .form-control::-webkit-scrollbar-thumb:hover,
+    .iirup-form .table .form-control::-webkit-scrollbar-thumb:hover,
+    .form-card .table .form-control::-webkit-scrollbar-thumb:hover,
+    .table-responsive .table .form-control::-webkit-scrollbar-thumb:hover,
+    #icsItemsTable .form-control::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+    
+    /* Form table cells with inputs */
+    .ics-form .table td,
+    .par-form .table td,
+    .ris-form .table td,
+    .itr-form .table td,
+    .iirup-form .table td {
+        padding: 0.125rem 0.0625rem;
+        vertical-align: middle;
+    }
+    
+    /* Form table headers */
+    .ics-form .table th,
+    .par-form .table th,
+    .ris-form .table th,
+    .itr-form .table th,
+    .iirup-form .table th {
+        padding: 0.25rem 0.125rem;
+        font-size: 0.3rem;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+    
+    /* Quantity inputs in forms */
+    .ics-form .table .form-control[type="number"],
+    .par-form .table .form-control[type="number"],
+    .ris-form .table .form-control[type="number"],
+    .itr-form .table .form-control[type="number"],
+    .iirup-form .table .form-control[type="number"] {
+        min-width: 2.5rem;
+        max-width: 3rem;
+        text-align: center;
+    }
+    
+    /* Description inputs in forms */
+    .ics-form .table .form-control.description-input,
+    .par-form .table .form-control.description-input,
+    .ris-form .table .form-control.description-input,
+    .itr-form .table .form-control.description-input,
+    .iirup-form .table .form-control.description-input {
+        min-width: 4rem;
+        max-width: 5rem;
+    }
+    
+    /* Property card inputs scrollable */
+    .property-card .form-control {
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Report table inputs scrollable */
+    .report-table .form-control {
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .form-label {
+        font-size: 0.35rem;
+        margin-bottom: 0.075rem;
+    }
+    
+    .form-group {
+        margin-bottom: 0.25rem;
+    }
+    
+    .form-check {
+        margin-bottom: 0.125rem;
+    }
+    
+    .form-check-label {
+        font-size: 0.35rem;
+    }
+    
+    .form-text {
+        font-size: 0.3rem;
+        margin-top: 0.05rem;
+    }
+    
+    .form-select {
+        font-size: 0.4rem;
+        padding: 0.1rem 0.15rem;
+        height: 1.25rem;
+    }
+    
+    .form-control[type="textarea"] {
+        font-size: 0.4rem;
+        padding: 0.1rem 0.15rem;
+        min-height: 2rem;
+    }
+    
+    .form-control[type="file"] {
+        font-size: 0.35rem;
+        padding: 0.1rem;
+    }
+    
+    .form-control[type="date"],
+    .form-control[type="time"],
+    .form-control[type="datetime-local"] {
+        font-size: 0.35rem;
+        padding: 0.1rem 0.15rem;
+        height: 1.25rem;
+    }
+    
+    .form-check-input {
+        width: 0.5rem;
+        height: 0.5rem;
+    }
+    
+    .form-check-input[type="checkbox"] {
+        width: 0.75rem;
+        height: 0.375rem;
+    }
+    
+    .form-range {
+        height: 0.5rem;
+    }
+    
+    .input-group-text {
+        font-size: 0.35rem;
+        padding: 0.1rem 0.2rem;
+    }
+    
+    .input-group {
+        gap: 0.1rem;
+    }
+    
+    /* Ultra compact buttons */
+    .btn {
+        font-size: 0.75rem;
+        padding: 0.375rem 0.75rem;
+    }
+    
+    .btn-sm {
+        font-size: 0.65rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    /* Ultra compact cards */
+    .card {
+        font-size: 0.75rem;
+        padding: 0.75rem;
+    }
+    
+    .card-title {
+        font-size: 0.8rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .card-text {
+        font-size: 0.7rem;
+    }
+    
+    /* Dropdown optimizations */
+    .dropdown-item {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .dropdown-menu {
+        font-size: 0.7rem;
+    }
+    
+    /* Modal optimizations */
+    .modal-body {
+        font-size: 0.75rem;
+        padding: 0.75rem;
+    }
+    
+    .modal-title {
+        font-size: 0.9rem;
+    }
+    
+    /* Make all form tables scrollable */
+    #icsItemsTable,
+    #itemsTable,
+    #risItemsTable,
+    #itrItemsTable,
+    #iirupItemsTable,
+    .form-card .table {
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        display: table;
+        width: 100%;
+        table-layout: auto;
+    }
+    
+    #icsItemsTable thead,
+    #icsItemsTable tbody,
+    #icsItemsTable tfoot,
+    #itemsTable thead,
+    #itemsTable tbody,
+    #itemsTable tfoot,
+    #risItemsTable thead,
+    #risItemsTable tbody,
+    #risItemsTable tfoot,
+    #itrItemsTable thead,
+    #itrItemsTable tbody,
+    #itrItemsTable tfoot,
+    #iirupItemsTable thead,
+    #iirupItemsTable tbody,
+    #iirupItemsTable tfoot,
+    .form-card .table thead,
+    .form-card .table tbody,
+    .form-card .table tfoot {
+        display: table-row-group;
+    }
+    
+    #icsItemsTable tr,
+    #itemsTable tr,
+    #risItemsTable tr,
+    #itrItemsTable tr,
+    #iirupItemsTable tr,
+    .form-card .table tr {
+        display: table-row;
+    }
+    
+    #icsItemsTable th,
+    #icsItemsTable td,
+    #itemsTable th,
+    #itemsTable td,
+    #risItemsTable th,
+    #risItemsTable td,
+    #itrItemsTable th,
+    #itrItemsTable td,
+    #iirupItemsTable th,
+    #iirupItemsTable td,
+    .form-card .table th,
+    .form-card .table td {
+        white-space: nowrap;
+        overflow: visible;
+        display: table-cell;
+        vertical-align: middle;
+    }
+    
+    /* Fix colspan/rowspan behavior for all form tables */
+    #icsItemsTable th[colspan],
+    #icsItemsTable td[colspan],
+    #itemsTable th[colspan],
+    #itemsTable td[colspan],
+    #risItemsTable th[colspan],
+    #risItemsTable td[colspan],
+    #itrItemsTable th[colspan],
+    #itrItemsTable td[colspan],
+    #iirupItemsTable th[colspan],
+    #iirupItemsTable td[colspan],
+    .form-card .table th[colspan],
+    .form-card .table td[colspan] {
+        text-align: center;
+    }
+    
+    #icsItemsTable th[rowspan],
+    #icsItemsTable td[rowspan],
+    #itemsTable th[rowspan],
+    #itemsTable td[rowspan],
+    #risItemsTable th[rowspan],
+    #risItemsTable td[rowspan],
+    #itrItemsTable th[rowspan],
+    #itrItemsTable td[rowspan],
+    #iirupItemsTable th[rowspan],
+    #iirupItemsTable td[rowspan],
+    .form-card .table th[rowspan],
+    .form-card .table td[rowspan] {
+        vertical-align: middle;
+    }
+    
+    /* ICS table scrollbar styling */
+    #icsItemsTable::-webkit-scrollbar {
+        height: 4px;
+    }
+    
+    #icsItemsTable::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 2px;
+    }
+    
+    #icsItemsTable::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 2px;
+    }
+    
+    #icsItemsTable::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+    
+    /* Other form tables scrollbar styling */
+    #itemsTable::-webkit-scrollbar,
+    #risItemsTable::-webkit-scrollbar,
+    #itrItemsTable::-webkit-scrollbar,
+    #iirupItemsTable::-webkit-scrollbar,
+    .form-card .table::-webkit-scrollbar {
+        height: 4px;
+    }
+    
+    #itemsTable::-webkit-scrollbar-track,
+    #risItemsTable::-webkit-scrollbar-track,
+    #itrItemsTable::-webkit-scrollbar-track,
+    #iirupItemsTable::-webkit-scrollbar-track,
+    .form-card .table::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 2px;
+    }
+    
+    #itemsTable::-webkit-scrollbar-thumb,
+    #risItemsTable::-webkit-scrollbar-thumb,
+    #itrItemsTable::-webkit-scrollbar-thumb,
+    #iirupItemsTable::-webkit-scrollbar-thumb,
+    .form-card .table::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 2px;
+    }
+    
+    #itemsTable::-webkit-scrollbar-thumb:hover,
+    #risItemsTable::-webkit-scrollbar-thumb:hover,
+    #itrItemsTable::-webkit-scrollbar-thumb:hover,
+    #iirupItemsTable::-webkit-scrollbar-thumb:hover,
+    .form-card .table::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+    
+    /* Table responsive container for ICS */
+    .table-responsive:has(#icsItemsTable) {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+    }
+    
+    .table-responsive:has(#icsItemsTable)::-webkit-scrollbar {
+        height: 4px;
+    }
+    
+    .table-responsive:has(#icsItemsTable)::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 2px;
+    }
+    
+    .table-responsive:has(#icsItemsTable)::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 2px;
+    }
+    
+    .table-responsive:has(#icsItemsTable)::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+}
+
+/* iPhone SE specific (375x667) - Ultra compact */
+@media (max-width: 375px) {
+    /* Ultra extreme compact table styles */
+    .table {
+        font-size: 0.3rem;
+        line-height: 0.7;
+    }
+    
+    .table th {
+        font-size: 0.25rem;
+        padding: 0.0625rem 0.015625rem;
+        white-space: nowrap;
+        line-height: 0.6;
+        vertical-align: middle;
+    }
+    
+    .table td {
+        font-size: 0.3rem;
+        padding: 0.0625rem 0.015625rem;
+        line-height: 0.7;
+        vertical-align: middle;
+    }
+    
+    .table-custom {
+        font-size: 0.3rem;
+        line-height: 0.7;
+    }
+    
+    .table-custom thead th {
+        font-size: 0.25rem;
+        padding: 0.0625rem 0.015625rem;
+        white-space: nowrap;
+        line-height: 0.6;
+        vertical-align: middle;
+    }
+    
+    .table-custom tbody td {
+        font-size: 0.3rem;
+        padding: 0.0625rem 0.015625rem;
+        line-height: 0.7;
+        vertical-align: middle;
+    }
+    
+    .table-actions .btn {
+        padding: 0.015625rem 0.03125rem;
+        font-size: 0.25rem;
+        min-width: auto;
+        margin: 0.00625rem;
+        line-height: 0.6;
+    }
+    
+    /* Table container ultra compact */
+    .table-container {
+        padding: 0.0625rem;
+        margin-bottom: 0.125rem;
+        font-size: 0.3rem;
+    }
+    
+    /* Table borders ultra compact */
+    .table {
+        border-collapse: collapse;
+    }
+    
+    .table th,
+    .table td {
+        border: 0.75px solid #dee2e6;
+    }
+    
+    /* Table striped ultra compact */
+    .table-striped tbody tr:nth-of-type(odd) {
+        background-color: rgba(0, 0, 0, 0.03);
+    }
+    
+    /* Table hover ultra compact */
+    .table-hover tbody tr:hover {
+        background-color: rgba(0, 0, 0, 0.06);
+    }
+    
+    /* Table responsive ultra compact */
+    .table-responsive {
+        font-size: 0.3rem;
+    }
+    
+    /* DataTables specific ultra compact */
+    .dataTables_wrapper {
+        font-size: 0.3rem;
+    }
+    
+    /* DataTables controls layout for iPhone SE portrait */
+    .dataTables_wrapper .dataTables_length,
+    .dataTables_wrapper .dataTables_filter {
+        float: none !important;
+        text-align: center;
+        margin-bottom: 0.375rem;
+    }
+    
+    .dataTables_wrapper .dataTables_length {
+        margin-top: 0.375rem;
+    }
+    
+    .dataTables_wrapper .dataTables_filter {
+        margin-bottom: 0.5rem;
+    }
+    
+    .dataTables_wrapper .dataTables_info,
+    .dataTables_wrapper .dataTables_paginate {
+        float: none !important;
+        text-align: center;
+        margin-top: 0.375rem;
+    }
+    
+    .dataTables_wrapper .dataTables_info {
+        margin-bottom: 0.375rem;
+    }
+    
+    .dataTables_wrapper .dataTables_paginate {
+        margin-top: 0.25rem;
+    }
+    
+    /* Clear floats for proper stacking */
+    .dataTables_wrapper::after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+    
+    .dataTables_length select {
+        font-size: 0.18rem;
+        padding: 0.025rem 0.05rem;
+        height: 0.6rem;
+        width: auto;
+        min-width: 2.5rem;
+    }
+    
+    .dataTables_filter input {
+        font-size: 0.18rem;
+        padding: 0.025rem 0.05rem;
+        height: 0.6rem;
+        width: 8rem;
+        max-width: 80%;
+    }
+    
+    .dataTables_filter label {
+        font-size: 0.18rem;
+        margin-bottom: 0.08rem;
+        display: block;
+    }
+    
+    .dataTables_info {
+        font-size: 0.18rem;
+        padding: 0.025rem;
+        display: block;
+        width: 100%;
+    }
+    
+    .dataTables_paginate .paginate_button {
+        font-size: 0.18rem;
+        padding: 0.015rem 0.03rem;
+        margin: 0.008rem;
+        display: inline-block;
+        height: 0.5rem;
+        line-height: 0.5rem;
+    }
+    
+    .dataTables_paginate .paginate_button.current {
+        font-size: 0.18rem;
+        padding: 0.015rem 0.03rem;
+        height: 0.5rem;
+        line-height: 0.5rem;
+    }
+    
+    .dataTables_paginate .pagination {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    /* Table sorting icons ultra compact */
+    .table .sorting,
+    .table .sorting_asc,
+    .table .sorting_desc {
+        background-size: 10px 10px;
+    }
+    
+    /* Table checkboxes ultra compact */
+    .table input[type="checkbox"] {
+        width: 0.375rem;
+        height: 0.375rem;
+    }
+    
+    /* Table radio buttons ultra compact */
+    .table input[type="radio"] {
+        width: 0.375rem;
+        height: 0.375rem;
+    }
+    
+    /* Ultra extreme compact badges */
+    .badge {
+        font-size: 0.35rem;
+        padding: 0.03125rem 0.0625rem;
+        line-height: 0.9;
+    }
+    
+    /* Ultra extreme compact forms */
+    .form-control {
+        font-size: 0.3rem;
+        padding: 0.05rem 0.075rem;
+        height: 0.875rem;
+    }
+    
+    /* Scrollable inputs for item fields */
+    .form-control.scrollable-input {
+        overflow-x: auto;
+        white-space: nowrap;
+        scrollbar-width: thin;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .form-control.scrollable-input::-webkit-scrollbar {
+        height: 3px;
+    }
+    
+    .form-control.scrollable-input::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 1.5px;
+    }
+    
+    .form-control.scrollable-input::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 1.5px;
+    }
+    
+    .form-control.scrollable-input::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+    
+    /* Input group with scrollable content */
+    .input-group.scrollable-group {
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .input-group.scrollable-group .form-control {
+        display: inline-block;
+        min-width: 3.5rem;
+    }
+    
+    /* Table input fields scrollable */
+    .table .form-control {
+        font-size: 0.25rem;
+        padding: 0.025rem 0.05rem;
+        height: 0.625rem;
+        min-width: 2.5rem;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* ICS Form specific table inputs */
+    .ics-form .table .form-control,
+    .par-form .table .form-control,
+    .ris-form .table .form-control,
+    .itr-form .table .form-control,
+    .iirup-form .table .form-control,
+    .form-card .table .form-control {
+        font-size: 0.25rem;
+        padding: 0.025rem 0.05rem;
+        height: 0.625rem;
+        min-width: 2.5rem;
+        max-width: 3.5rem;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        border: 0.75px solid #dee2e6;
+        border-radius: 0.125rem;
+    }
+    
+    /* Target all form inputs in tables within form cards */
+    .form-card .table .form-control,
+    .table-responsive .table .form-control {
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+    }
+    
+    /* Specific ICS form inputs */
+    #icsItemsTable .form-control {
+        font-size: 0.25rem;
+        padding: 0.025rem 0.05rem;
+        height: 0.625rem;
+        min-width: 2.5rem;
+        max-width: 3.5rem;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        border: 0.75px solid #dee2e6;
+        border-radius: 0.125rem;
+    }
+    
+    /* Description fields - wider for long text */
+    #icsItemsTable .description-field {
+        min-width: 3.5rem;
+        max-width: 4.5rem;
+    }
+    
+    /* Item number fields */
+    #icsItemsTable .item-no-field {
+        min-width: 3rem;
+        max-width: 4rem;
+    }
+    
+    /* Useful life fields */
+    #icsItemsTable .useful-life-field {
+        min-width: 2rem;
+        max-width: 2.5rem;
+        text-align: center;
+    }
+    
+    /* Cost fields */
+    #icsItemsTable .cost-field {
+        min-width: 2.5rem;
+        max-width: 3rem;
+        text-align: right;
+    }
+    
+    /* Quantity fields */
+    #icsItemsTable .quantity-field {
+        min-width: 2rem;
+        max-width: 2.5rem;
+        text-align: center;
+    }
+    
+    /* Unit fields */
+    #icsItemsTable .unit-field {
+        min-width: 2.5rem;
+        max-width: 3rem;
+    }
+    
+    /* ICS Form table inputs scrollbar styling */
+    .ics-form .table .form-control::-webkit-scrollbar,
+    .par-form .table .form-control::-webkit-scrollbar,
+    .ris-form .table .form-control::-webkit-scrollbar,
+    .itr-form .table .form-control::-webkit-scrollbar,
+    .iirup-form .table .form-control::-webkit-scrollbar,
+    .form-card .table .form-control::-webkit-scrollbar,
+    .table-responsive .table .form-control::-webkit-scrollbar,
+    #icsItemsTable .form-control::-webkit-scrollbar {
+        height: 3px;
+    }
+    
+    .ics-form .table .form-control::-webkit-scrollbar-track,
+    .par-form .table .form-control::-webkit-scrollbar-track,
+    .ris-form .table .form-control::-webkit-scrollbar-track,
+    .itr-form .table .form-control::-webkit-scrollbar-track,
+    .iirup-form .table .form-control::-webkit-scrollbar-track,
+    .form-card .table .form-control::-webkit-scrollbar-track,
+    .table-responsive .table .form-control::-webkit-scrollbar-track,
+    #icsItemsTable .form-control::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 1.5px;
+    }
+    
+    .ics-form .table .form-control::-webkit-scrollbar-thumb,
+    .par-form .table .form-control::-webkit-scrollbar-thumb,
+    .ris-form .table .form-control::-webkit-scrollbar-thumb,
+    .itr-form .table .form-control::-webkit-scrollbar-thumb,
+    .iirup-form .table .form-control::-webkit-scrollbar-thumb,
+    .form-card .table .form-control::-webkit-scrollbar-thumb,
+    .table-responsive .table .form-control::-webkit-scrollbar-thumb,
+    #icsItemsTable .form-control::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 1.5px;
+    }
+    
+    .ics-form .table .form-control::-webkit-scrollbar-thumb:hover,
+    .par-form .table .form-control::-webkit-scrollbar-thumb:hover,
+    .ris-form .table .form-control::-webkit-scrollbar-thumb:hover,
+    .itr-form .table .form-control::-webkit-scrollbar-thumb:hover,
+    .iirup-form .table .form-control::-webkit-scrollbar-thumb:hover,
+    .form-card .table .form-control::-webkit-scrollbar-thumb:hover,
+    .table-responsive .table .form-control::-webkit-scrollbar-thumb:hover,
+    #icsItemsTable .form-control::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+    
+    /* Form table cells with inputs */
+    .ics-form .table td,
+    .par-form .table td,
+    .ris-form .table td,
+    .itr-form .table td,
+    .iirup-form .table td {
+        padding: 0.0625rem 0.03125rem;
+        vertical-align: middle;
+    }
+    
+    /* Form table headers */
+    .ics-form .table th,
+    .par-form .table th,
+    .ris-form .table th,
+    .itr-form .table th,
+    .iirup-form .table th {
+        padding: 0.125rem 0.0625rem;
+        font-size: 0.2rem;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+    
+    /* Make all form tables scrollable */
+    #icsItemsTable,
+    #itemsTable,
+    #risItemsTable,
+    #itrItemsTable,
+    #iirupItemsTable,
+    .form-card .table {
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        display: table;
+        width: 100%;
+        table-layout: auto;
+    }
+    
+    #icsItemsTable thead,
+    #icsItemsTable tbody,
+    #icsItemsTable tfoot,
+    #itemsTable thead,
+    #itemsTable tbody,
+    #itemsTable tfoot,
+    #risItemsTable thead,
+    #risItemsTable tbody,
+    #risItemsTable tfoot,
+    #itrItemsTable thead,
+    #itrItemsTable tbody,
+    #itrItemsTable tfoot,
+    #iirupItemsTable thead,
+    #iirupItemsTable tbody,
+    #iirupItemsTable tfoot,
+    .form-card .table thead,
+    .form-card .table tbody,
+    .form-card .table tfoot {
+        display: table-row-group;
+    }
+    
+    #icsItemsTable tr,
+    #itemsTable tr,
+    #risItemsTable tr,
+    #itrItemsTable tr,
+    #iirupItemsTable tr,
+    .form-card .table tr {
+        display: table-row;
+    }
+    
+    #icsItemsTable th,
+    #icsItemsTable td,
+    #itemsTable th,
+    #itemsTable td,
+    #risItemsTable th,
+    #risItemsTable td,
+    #itrItemsTable th,
+    #itrItemsTable td,
+    #iirupItemsTable th,
+    #iirupItemsTable td,
+    .form-card .table th,
+    .form-card .table td {
+        white-space: nowrap;
+        overflow: visible;
+        display: table-cell;
+        vertical-align: middle;
+    }
+    
+    /* Fix colspan/rowspan behavior for all form tables */
+    #icsItemsTable th[colspan],
+    #icsItemsTable td[colspan],
+    #itemsTable th[colspan],
+    #itemsTable td[colspan],
+    #risItemsTable th[colspan],
+    #risItemsTable td[colspan],
+    #itrItemsTable th[colspan],
+    #itrItemsTable td[colspan],
+    #iirupItemsTable th[colspan],
+    #iirupItemsTable td[colspan],
+    .form-card .table th[colspan],
+    .form-card .table td[colspan] {
+        text-align: center;
+    }
+    
+    #icsItemsTable th[rowspan],
+    #icsItemsTable td[rowspan],
+    #itemsTable th[rowspan],
+    #itemsTable td[rowspan],
+    #risItemsTable th[rowspan],
+    #risItemsTable td[rowspan],
+    #itrItemsTable th[rowspan],
+    #itrItemsTable td[rowspan],
+    #iirupItemsTable th[rowspan],
+    #iirupItemsTable td[rowspan],
+    .form-card .table th[rowspan],
+    .form-card .table td[rowspan] {
+        vertical-align: middle;
+    }
+    
+    /* ICS table scrollbar styling */
+    #icsItemsTable::-webkit-scrollbar {
+        height: 3px;
+    }
+    
+    #icsItemsTable::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 1.5px;
+    }
+    
+    #icsItemsTable::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 1.5px;
+    }
+    
+    #icsItemsTable::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+    
+    /* Other form tables scrollbar styling */
+    #itemsTable::-webkit-scrollbar,
+    #risItemsTable::-webkit-scrollbar,
+    #itrItemsTable::-webkit-scrollbar,
+    #iirupItemsTable::-webkit-scrollbar,
+    .form-card .table::-webkit-scrollbar {
+        height: 3px;
+    }
+    
+    #itemsTable::-webkit-scrollbar-track,
+    #risItemsTable::-webkit-scrollbar-track,
+    #itrItemsTable::-webkit-scrollbar-track,
+    #iirupItemsTable::-webkit-scrollbar-track,
+    .form-card .table::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 1.5px;
+    }
+    
+    #itemsTable::-webkit-scrollbar-thumb,
+    #risItemsTable::-webkit-scrollbar-thumb,
+    #itrItemsTable::-webkit-scrollbar-thumb,
+    #iirupItemsTable::-webkit-scrollbar-thumb,
+    .form-card .table::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 1.5px;
+    }
+    
+    #itemsTable::-webkit-scrollbar-thumb:hover,
+    #risItemsTable::-webkit-scrollbar-thumb:hover,
+    #itrItemsTable::-webkit-scrollbar-thumb:hover,
+    #iirupItemsTable::-webkit-scrollbar-thumb:hover,
+    .form-card .table::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+    
+    /* Table responsive container for ICS */
+    .table-responsive:has(#icsItemsTable) {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+    }
+    
+    .table-responsive:has(#icsItemsTable)::-webkit-scrollbar {
+        height: 3px;
+    }
+    
+    .table-responsive:has(#icsItemsTable)::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 1.5px;
+    }
+    
+    .table-responsive:has(#icsItemsTable)::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 1.5px;
+    }
+    
+    .table-responsive:has(#icsItemsTable)::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+    
+    /* Quantity inputs in forms */
+    .ics-form .table .form-control[type="number"],
+    .par-form .table .form-control[type="number"],
+    .ris-form .table .form-control[type="number"],
+    .itr-form .table .form-control[type="number"],
+    .iirup-form .table .form-control[type="number"] {
+        min-width: 2rem;
+        max-width: 2.5rem;
+        text-align: center;
+    }
+    
+    /* Description inputs in forms */
+    .ics-form .table .form-control.description-input,
+    .par-form .table .form-control.description-input,
+    .ris-form .table .form-control.description-input,
+    .itr-form .table .form-control.description-input,
+    .iirup-form .table .form-control.description-input {
+        min-width: 3.5rem;
+        max-width: 4.5rem;
+    }
+    
+    /* Property card inputs scrollable */
+    .property-card .form-control {
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Report table inputs scrollable */
+    .report-table .form-control {
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .form-label {
+        font-size: 0.25rem;
+        margin-bottom: 0.025rem;
+    }
+    
+    .form-group {
+        margin-bottom: 0.1875rem;
+    }
+    
+    .form-check {
+        margin-bottom: 0.09375rem;
+    }
+    
+    .form-check-label {
+        font-size: 0.25rem;
+    }
+    
+    .form-text {
+        font-size: 0.2rem;
+        margin-top: 0.0375rem;
+    }
+    
+    .form-select {
+        font-size: 0.3rem;
+        padding: 0.05rem 0.075rem;
+        height: 0.875rem;
+    }
+    
+    .form-control[type="textarea"] {
+        font-size: 0.3rem;
+        padding: 0.05rem 0.075rem;
+        min-height: 1.5rem;
+    }
+    
+    .form-control[type="file"] {
+        font-size: 0.25rem;
+        padding: 0.05rem;
+    }
+    
+    .form-control[type="date"],
+    .form-control[type="time"],
+    .form-control[type="datetime-local"] {
+        font-size: 0.25rem;
+        padding: 0.05rem 0.075rem;
+        height: 0.875rem;
+    }
+    
+    .form-check-input {
+        width: 0.375rem;
+        height: 0.375rem;
+    }
+    
+    .form-check-input[type="checkbox"] {
+        width: 0.5rem;
+        height: 0.25rem;
+    }
+    
+    .form-range {
+        height: 0.375rem;
+    }
+    
+    .input-group-text {
+        font-size: 0.25rem;
+        padding: 0.05rem 0.1rem;
+    }
+    
+    .input-group {
+        gap: 0.05rem;
+    }
+    
+    /* Ultra extreme compact cards */
+    .card {
+        font-size: 0.45rem;
+        padding: 0.25rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .card-header {
+        padding: 0.25rem;
+        font-size: 0.4rem;
+    }
+    
+    .card-body {
+        padding: 0.25rem;
+        font-size: 0.45rem;
+    }
+    
+    .card-title {
+        font-size: 0.5rem;
+        margin-bottom: 0.125rem;
+        line-height: 0.9;
+    }
+    
+    .card-text {
+        font-size: 0.4rem;
+        line-height: 0.9;
+    }
+    
+    .card-footer {
+        padding: 0.1875rem 0.25rem;
+        font-size: 0.4rem;
+    }
+    
+    /* Stats cards ultra extreme compact */
+    .stats-card {
+        padding: 0.25rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .stats-number {
+        font-size: 0.9rem;
+        line-height: 0.9;
+    }
+    
+    .stats-label {
+        font-size: 0.35rem;
+        margin-top: 0.0625rem;
+    }
+    
+    /* Buttons ultra extreme compact */
+    .btn {
+        font-size: 0.45rem;
+        padding: 0.125rem 0.25rem;
+        line-height: 0.9;
+    }
+    
+    .btn-sm {
+        font-size: 0.4rem;
+        padding: 0.0625rem 0.125rem;
+    }
+    
+    .btn-xs {
+        font-size: 0.35rem;
+        padding: 0.03125rem 0.0625rem;
+    }
+    
+    /* Dropdowns ultra extreme compact */
+    .dropdown-menu {
+        font-size: 0.4rem;
+        padding: 0.0625rem;
+        min-width: 80px;
+    }
+    
+    .dropdown-item {
+        font-size: 0.4rem;
+        padding: 0.0625rem 0.125rem;
+        line-height: 0.9;
+    }
+    
+    .dropdown-header {
+        font-size: 0.35rem;
+        padding: 0.0625rem 0.125rem;
+    }
+    
+    /* Modals ultra extreme compact */
+    .modal-dialog {
+        margin: 0.125rem;
+    }
+    
+    .modal-content {
+        font-size: 0.45rem;
+    }
+    
+    .modal-header {
+        padding: 0.25rem;
+    }
+    
+    .modal-title {
+        font-size: 0.5rem;
+        line-height: 0.9;
+    }
+    
+    .modal-body {
+        font-size: 0.45rem;
+        padding: 0.25rem;
+        line-height: 0.9;
+    }
+    
+    .modal-footer {
+        padding: 0.1875rem 0.25rem;
+    }
+    
+    /* Page headers ultra extreme compact */
+    .page-header {
+        padding: 0.25rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .page-header h1 {
+        font-size: 0.7rem;
+        line-height: 0.9;
+    }
+    
+    .page-header p {
+        font-size: 0.4rem;
+        margin-bottom: 0.125rem;
+    }
+    
+    /* Container and layout ultra extreme compact */
+    .container {
+        padding: 0.125rem;
+    }
+    
+    .container-fluid {
+        padding: 0.0625rem;
+    }
+    
+    .row {
+        margin: -0.0625rem;
+    }
+    
+    .col, .col-1, .col-2, .col-3, .col-4, .col-5, .col-6, .col-7, .col-8, .col-9, .col-10, .col-11, .col-12 {
+        padding: 0.0625rem;
+    }
+    
+    /* Table container ultra extreme compact */
+    .table-container {
+        padding: 0.125rem;
+        margin-bottom: 0.25rem;
+        font-size: 0.45rem;
+    }
+    
+    /* Property cards ultra extreme compact */
+    .property-card {
+        padding: 0.25rem;
+        margin-bottom: 0.25rem;
+        font-size: 0.4rem;
+    }
+    
+    .property-card-table {
+        padding: 0.25rem;
+        font-size: 0.4rem;
+    }
+    
+    /* Report tables ultra extreme compact */
+    .report-table {
+        padding: 0.25rem;
+        font-size: 0.4rem;
+    }
+    
+    /* Navigation ultra extreme compact */
+    .nav {
+        font-size: 0.4rem;
+    }
+    
+    .nav-link {
+        font-size: 0.4rem;
+        padding: 0.125rem 0.1875rem;
+    }
+    
+    /* Pagination ultra extreme compact */
+    .pagination {
+        font-size: 0.4rem;
+    }
+    
+    .page-link {
+        font-size: 0.4rem;
+        padding: 0.0625rem 0.125rem;
+    }
+    
+    /* Forms ultra extreme compact */
+    .form-group {
+        margin-bottom: 0.1875rem;
+    }
+    
+    .form-check {
+        margin-bottom: 0.125rem;
+    }
+    
+    .form-check-label {
+        font-size: 0.4rem;
+    }
+    
+    .form-text {
+        font-size: 0.35rem;
+        margin-top: 0.0625rem;
+    }
+    
+    /* Alerts ultra extreme compact */
+    .alert {
+        font-size: 0.4rem;
+        padding: 0.1875rem 0.25rem;
+    }
+    
+    /* List groups ultra extreme compact */
+    .list-group {
+        font-size: 0.4rem;
+    }
+    
+    .list-group-item {
+        font-size: 0.4rem;
+        padding: 0.125rem 0.1875rem;
+    }
+    
+    /* Breadcrumbs ultra extreme compact */
+    .breadcrumb {
+        font-size: 0.35rem;
+        padding: 0.125rem 0.1875rem;
+    }
+    
+    .breadcrumb-item {
+        font-size: 0.35rem;
+    }
+    
+    /* Progress bars ultra extreme compact */
+    .progress {
+        height: 0.375rem;
+    }
+    
+    .progress-bar {
+        font-size: 0.35rem;
+    }
+    
+    /* Tooltips ultra extreme compact */
+    .tooltip {
+        font-size: 0.35rem;
+    }
+    
+    /* Spinners ultra extreme compact */
+    .spinner-border {
+        width: 0.75rem;
+        height: 0.75rem;
+    }
+    
+    .spinner-border-sm {
+        width: 0.5rem;
+        height: 0.5rem;
+    }
+    
+    /* Icons ultra extreme compact */
+    .bi {
+        font-size: 0.6rem;
+    }
+    
+    /* Input groups ultra extreme compact */
+    .input-group-text {
+        font-size: 0.4rem;
+        padding: 0.0625rem 0.125rem;
+    }
+    
+    /* Select elements ultra extreme compact */
+    .form-select {
+        font-size: 0.45rem;
+        padding: 0.0625rem 0.09375rem;
+        height: 1.25rem;
+    }
+    
+    /* Text areas ultra extreme compact */
+    .form-control[type="textarea"] {
+        font-size: 0.45rem;
+        padding: 0.0625rem 0.09375rem;
+        min-height: 2rem;
+    }
+    
+    /* Checkboxes and radios ultra extreme compact */
+    .form-check-input {
+        width: 0.5rem;
+        height: 0.5rem;
+    }
+    
+    /* Switches ultra extreme compact */
+    .form-check-input[type="checkbox"] {
+        width: 0.75rem;
+        height: 0.375rem;
+    }
+    
+    /* Range inputs ultra extreme compact */
+    .form-range {
+        height: 0.5rem;
+    }
+    
+    /* File inputs ultra extreme compact */
+    .form-control[type="file"] {
+        font-size: 0.4rem;
+        padding: 0.0625rem;
+    }
+    
+    /* Date/time inputs ultra extreme compact */
+    .form-control[type="date"],
+    .form-control[type="time"],
+    .form-control[type="datetime-local"] {
+        font-size: 0.4rem;
+        padding: 0.0625rem 0.09375rem;
+        height: 1.25rem;
+    }
+}
+
+/* Ultra Small Screens (< 350px) - Maximum compact mode */
+@media (max-width: 350px) {
+    /* Maximum compact table styles */
+    .table {
+        font-size: 0.25rem;
+        line-height: 0.6;
+    }
+    
+    .table th {
+        font-size: 0.2rem;
+        padding: 0.03125rem 0.0078125rem;
+        white-space: nowrap;
+        line-height: 0.5;
+        vertical-align: middle;
+    }
+    
+    .table td {
+        font-size: 0.25rem;
+        padding: 0.03125rem 0.0078125rem;
+        line-height: 0.6;
+        vertical-align: middle;
+    }
+    
+    .table-custom {
+        font-size: 0.25rem;
+        line-height: 0.6;
+    }
+    
+    .table-custom thead th {
+        font-size: 0.2rem;
+        padding: 0.03125rem 0.0078125rem;
+        white-space: nowrap;
+        line-height: 0.5;
+        vertical-align: middle;
+    }
+    
+    .table-custom tbody td {
+        font-size: 0.25rem;
+        padding: 0.03125rem 0.0078125rem;
+        line-height: 0.6;
+        vertical-align: middle;
+    }
+    
+    .table-actions .btn {
+        padding: 0.0078125rem 0.015625rem;
+        font-size: 0.2rem;
+        min-width: auto;
+        margin: 0.003125rem;
+        line-height: 0.5;
+    }
+    
+    /* Table container maximum compact */
+    .table-container {
+        padding: 0.03125rem;
+        margin-bottom: 0.0625rem;
+        font-size: 0.25rem;
+    }
+    
+    /* Table borders maximum compact */
+    .table {
+        border-collapse: collapse;
+    }
+    
+    .table th,
+    .table td {
+        border: 0.5px solid #dee2e6;
+    }
+    
+    /* Table striped maximum compact */
+    .table-striped tbody tr:nth-of-type(odd) {
+        background-color: rgba(0, 0, 0, 0.02);
+    }
+    
+    /* Table hover maximum compact */
+    .table-hover tbody tr:hover {
+        background-color: rgba(0, 0, 0, 0.04);
+    }
+    
+    /* Table responsive maximum compact */
+    .table-responsive {
+        font-size: 0.25rem;
+    }
+    
+    /* DataTables specific maximum compact */
+    .dataTables_wrapper {
+        font-size: 0.25rem;
+    }
+    
+    /* DataTables controls layout for portrait small screens */
+    .dataTables_wrapper .dataTables_length,
+    .dataTables_wrapper .dataTables_filter {
+        float: none !important;
+        text-align: center;
+        margin-bottom: 0.25rem;
+    }
+    
+    .dataTables_wrapper .dataTables_length {
+        margin-top: 0.25rem;
+    }
+    
+    .dataTables_wrapper .dataTables_filter {
+        margin-bottom: 0.375rem;
+    }
+    
+    .dataTables_wrapper .dataTables_info,
+    .dataTables_wrapper .dataTables_paginate {
+        float: none !important;
+        text-align: center;
+        margin-top: 0.25rem;
+    }
+    
+    .dataTables_wrapper .dataTables_info {
+        margin-bottom: 0.25rem;
+    }
+    
+    .dataTables_wrapper .dataTables_paginate {
+        margin-top: 0.125rem;
+    }
+    
+    /* Clear floats for proper stacking */
+    .dataTables_wrapper::after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+    
+    .dataTables_length select {
+        font-size: 0.15rem;
+        padding: 0.0125rem 0.025rem;
+        height: 0.5rem;
+        width: auto;
+        min-width: 2rem;
+    }
+    
+    .dataTables_filter input {
+        font-size: 0.15rem;
+        padding: 0.0125rem 0.025rem;
+        height: 0.5rem;
+        width: 6rem;
+        max-width: 85%;
+    }
+    
+    .dataTables_filter label {
+        font-size: 0.15rem;
+        margin-bottom: 0.05rem;
+        display: block;
+    }
+    
+    .dataTables_info {
+        font-size: 0.15rem;
+        padding: 0.0125rem;
+        display: block;
+        width: 100%;
+    }
+    
+    .dataTables_paginate .paginate_button {
+        font-size: 0.15rem;
+        padding: 0.008rem 0.015rem;
+        margin: 0.004rem;
+        display: inline-block;
+        height: 0.4rem;
+        line-height: 0.4rem;
+    }
+    
+    .dataTables_paginate .paginate_button.current {
+        font-size: 0.15rem;
+        padding: 0.008rem 0.015rem;
+        height: 0.4rem;
+        line-height: 0.4rem;
+    }
+    
+    .dataTables_paginate .pagination {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    /* Table sorting icons maximum compact */
+    .table .sorting,
+    .table .sorting_asc,
+    .table .sorting_desc {
+        background-size: 8px 8px;
+    }
+    
+    /* Table checkboxes maximum compact */
+    .table input[type="checkbox"] {
+        width: 0.25rem;
+        height: 0.25rem;
+    }
+    
+    /* Table radio buttons maximum compact */
+    .table input[type="radio"] {
+        width: 0.25rem;
+        height: 0.25rem;
+    }
+    
+    /* Maximum compact badges */
+    .badge {
+        font-size: 0.25rem;
+        padding: 0.015625rem 0.03125rem;
+        line-height: 0.8;
+    }
+    
+    /* Maximum compact forms */
+    .form-control {
+        font-size: 0.25rem;
+        padding: 0.025rem 0.0375rem;
+        height: 0.75rem;
+    }
+    
+    /* Scrollable inputs for item fields */
+    .form-control.scrollable-input {
+        overflow-x: auto;
+        white-space: nowrap;
+        scrollbar-width: thin;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .form-control.scrollable-input::-webkit-scrollbar {
+        height: 2px;
+    }
+    
+    .form-control.scrollable-input::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 1px;
+    }
+    
+    .form-control.scrollable-input::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 1px;
+    }
+    
+    .form-control.scrollable-input::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+    
+    /* Input group with scrollable content */
+    .input-group.scrollable-group {
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .input-group.scrollable-group .form-control {
+        display: inline-block;
+        min-width: 3rem;
+    }
+    
+    /* Table input fields scrollable */
+    .table .form-control {
+        font-size: 0.2rem;
+        padding: 0.015625rem 0.025rem;
+        height: 0.5rem;
+        min-width: 2rem;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* ICS Form specific table inputs */
+    .ics-form .table .form-control,
+    .par-form .table .form-control,
+    .ris-form .table .form-control,
+    .itr-form .table .form-control,
+    .iirup-form .table .form-control,
+    .form-card .table .form-control {
+        font-size: 0.2rem;
+        padding: 0.015625rem 0.025rem;
+        height: 0.5rem;
+        min-width: 2rem;
+        max-width: 3rem;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        border: 0.5px solid #dee2e6;
+        border-radius: 0.125rem;
+    }
+    
+    /* Target all form inputs in tables within form cards */
+    .form-card .table .form-control,
+    .table-responsive .table .form-control {
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+    }
+    
+    /* Specific ICS form inputs */
+    #icsItemsTable .form-control {
+        font-size: 0.2rem;
+        padding: 0.015625rem 0.025rem;
+        height: 0.5rem;
+        min-width: 2rem;
+        max-width: 3rem;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        border: 0.5px solid #dee2e6;
+        border-radius: 0.125rem;
+    }
+    
+    /* Description fields - wider for long text */
+    #icsItemsTable .description-field {
+        min-width: 3rem;
+        max-width: 4rem;
+    }
+    
+    /* Item number fields */
+    #icsItemsTable .item-no-field {
+        min-width: 2.5rem;
+        max-width: 3.5rem;
+    }
+    
+    /* Useful life fields */
+    #icsItemsTable .useful-life-field {
+        min-width: 1.5rem;
+        max-width: 2rem;
+        text-align: center;
+    }
+    
+    /* Cost fields */
+    #icsItemsTable .cost-field {
+        min-width: 2rem;
+        max-width: 2.5rem;
+        text-align: right;
+    }
+    
+    /* Quantity fields */
+    #icsItemsTable .quantity-field {
+        min-width: 1.5rem;
+        max-width: 2rem;
+        text-align: center;
+    }
+    
+    /* Unit fields */
+    #icsItemsTable .unit-field {
+        min-width: 2rem;
+        max-width: 2.5rem;
+    }
+    
+    /* ICS Form table inputs scrollbar styling */
+    .ics-form .table .form-control::-webkit-scrollbar,
+    .par-form .table .form-control::-webkit-scrollbar,
+    .ris-form .table .form-control::-webkit-scrollbar,
+    .itr-form .table .form-control::-webkit-scrollbar,
+    .iirup-form .table .form-control::-webkit-scrollbar,
+    .form-card .table .form-control::-webkit-scrollbar,
+    .table-responsive .table .form-control::-webkit-scrollbar,
+    #icsItemsTable .form-control::-webkit-scrollbar {
+        height: 2px;
+    }
+    
+    .ics-form .table .form-control::-webkit-scrollbar-track,
+    .par-form .table .form-control::-webkit-scrollbar-track,
+    .ris-form .table .form-control::-webkit-scrollbar-track,
+    .itr-form .table .form-control::-webkit-scrollbar-track,
+    .iirup-form .table .form-control::-webkit-scrollbar-track,
+    .form-card .table .form-control::-webkit-scrollbar-track,
+    .table-responsive .table .form-control::-webkit-scrollbar-track,
+    #icsItemsTable .form-control::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 1px;
+    }
+    
+    .ics-form .table .form-control::-webkit-scrollbar-thumb,
+    .par-form .table .form-control::-webkit-scrollbar-thumb,
+    .ris-form .table .form-control::-webkit-scrollbar-thumb,
+    .itr-form .table .form-control::-webkit-scrollbar-thumb,
+    .iirup-form .table .form-control::-webkit-scrollbar-thumb,
+    .form-card .table .form-control::-webkit-scrollbar-thumb,
+    .table-responsive .table .form-control::-webkit-scrollbar-thumb,
+    #icsItemsTable .form-control::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 1px;
+    }
+    
+    .ics-form .table .form-control::-webkit-scrollbar-thumb:hover,
+    .par-form .table .form-control::-webkit-scrollbar-thumb:hover,
+    .ris-form .table .form-control::-webkit-scrollbar-thumb:hover,
+    .itr-form .table .form-control::-webkit-scrollbar-thumb:hover,
+    .iirup-form .table .form-control::-webkit-scrollbar-thumb:hover,
+    .form-card .table .form-control::-webkit-scrollbar-thumb:hover,
+    .table-responsive .table .form-control::-webkit-scrollbar-thumb:hover,
+    #icsItemsTable .form-control::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+    
+    /* Form table cells with inputs */
+    .ics-form .table td,
+    .par-form .table td,
+    .ris-form .table td,
+    .itr-form .table td,
+    .iirup-form .table td {
+        padding: 0.03125rem 0.015625rem;
+        vertical-align: middle;
+    }
+    
+    /* Form table headers */
+    .ics-form .table th,
+    .par-form .table th,
+    .ris-form .table th,
+    .itr-form .table th,
+    .iirup-form .table th {
+        padding: 0.0625rem 0.03125rem;
+        font-size: 0.15rem;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+    
+    /* Quantity inputs in forms */
+    .ics-form .table .form-control[type="number"],
+    .par-form .table .form-control[type="number"],
+    .ris-form .table .form-control[type="number"],
+    .itr-form .table .form-control[type="number"],
+    .iirup-form .table .form-control[type="number"] {
+        min-width: 1.5rem;
+        max-width: 2rem;
+        text-align: center;
+    }
+    
+    /* Description inputs in forms */
+    .ics-form .table .form-control.description-input,
+    .par-form .table .form-control.description-input,
+    .ris-form .table .form-control.description-input,
+    .itr-form .table .form-control.description-input,
+    .iirup-form .table .form-control.description-input {
+        min-width: 3rem;
+        max-width: 4rem;
+    }
+    
+    /* Property card inputs scrollable */
+    .property-card .form-control {
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Report table inputs scrollable */
+    .report-table .form-control {
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Make all form tables scrollable */
+    #icsItemsTable,
+    #itemsTable,
+    #risItemsTable,
+    #itrItemsTable,
+    #iirupItemsTable,
+    .form-card .table {
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        display: table;
+        width: 100%;
+        table-layout: auto;
+    }
+    
+    #icsItemsTable thead,
+    #icsItemsTable tbody,
+    #icsItemsTable tfoot,
+    #itemsTable thead,
+    #itemsTable tbody,
+    #itemsTable tfoot,
+    #risItemsTable thead,
+    #risItemsTable tbody,
+    #risItemsTable tfoot,
+    #itrItemsTable thead,
+    #itrItemsTable tbody,
+    #itrItemsTable tfoot,
+    #iirupItemsTable thead,
+    #iirupItemsTable tbody,
+    #iirupItemsTable tfoot,
+    .form-card .table thead,
+    .form-card .table tbody,
+    .form-card .table tfoot {
+        display: table-row-group;
+    }
+    
+    #icsItemsTable tr,
+    #itemsTable tr,
+    #risItemsTable tr,
+    #itrItemsTable tr,
+    #iirupItemsTable tr,
+    .form-card .table tr {
+        display: table-row;
+    }
+    
+    #icsItemsTable th,
+    #icsItemsTable td,
+    #itemsTable th,
+    #itemsTable td,
+    #risItemsTable th,
+    #risItemsTable td,
+    #itrItemsTable th,
+    #itrItemsTable td,
+    #iirupItemsTable th,
+    #iirupItemsTable td,
+    .form-card .table th,
+    .form-card .table td {
+        white-space: nowrap;
+        overflow: visible;
+        display: table-cell;
+        vertical-align: middle;
+    }
+    
+    /* Fix colspan/rowspan behavior for all form tables */
+    #icsItemsTable th[colspan],
+    #icsItemsTable td[colspan],
+    #itemsTable th[colspan],
+    #itemsTable td[colspan],
+    #risItemsTable th[colspan],
+    #risItemsTable td[colspan],
+    #itrItemsTable th[colspan],
+    #itrItemsTable td[colspan],
+    #iirupItemsTable th[colspan],
+    #iirupItemsTable td[colspan],
+    .form-card .table th[colspan],
+    .form-card .table td[colspan] {
+        text-align: center;
+    }
+    
+    #icsItemsTable th[rowspan],
+    #icsItemsTable td[rowspan],
+    #itemsTable th[rowspan],
+    #itemsTable td[rowspan],
+    #risItemsTable th[rowspan],
+    #risItemsTable td[rowspan],
+    #itrItemsTable th[rowspan],
+    #itrItemsTable td[rowspan],
+    #iirupItemsTable th[rowspan],
+    #iirupItemsTable td[rowspan],
+    .form-card .table th[rowspan],
+    .form-card .table td[rowspan] {
+        vertical-align: middle;
+    }
+    
+    /* ICS table scrollbar styling */
+    #icsItemsTable::-webkit-scrollbar {
+        height: 4px;
+    }
+    
+    /* Other form tables scrollbar styling */
+    #itemsTable::-webkit-scrollbar,
+    #risItemsTable::-webkit-scrollbar,
+    #itrItemsTable::-webkit-scrollbar,
+    #iirupItemsTable::-webkit-scrollbar,
+    .form-card .table::-webkit-scrollbar {
+        height: 4px;
+    }
+    
+    #icsItemsTable::-webkit-scrollbar-track,
+    #itemsTable::-webkit-scrollbar-track,
+    #risItemsTable::-webkit-scrollbar-track,
+    #itrItemsTable::-webkit-scrollbar-track,
+    #iirupItemsTable::-webkit-scrollbar-track,
+    .form-card .table::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 2px;
+    }
+    
+    #icsItemsTable::-webkit-scrollbar-thumb,
+    #itemsTable::-webkit-scrollbar-thumb,
+    #risItemsTable::-webkit-scrollbar-thumb,
+    #itrItemsTable::-webkit-scrollbar-thumb,
+    #iirupItemsTable::-webkit-scrollbar-thumb,
+    .form-card .table::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 2px;
+    }
+    
+    #icsItemsTable::-webkit-scrollbar-thumb:hover,
+    #itemsTable::-webkit-scrollbar-thumb:hover,
+    #risItemsTable::-webkit-scrollbar-thumb:hover,
+    #itrItemsTable::-webkit-scrollbar-thumb:hover,
+    #iirupItemsTable::-webkit-scrollbar-thumb:hover,
+    .form-card .table::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+    
+    /* Table responsive container for ICS */
+    .table-responsive:has(#icsItemsTable) {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+    }
+    
+    .table-responsive:has(#icsItemsTable)::-webkit-scrollbar {
+        height: 4px;
+    }
+    
+    .table-responsive:has(#icsItemsTable)::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 2px;
+    }
+    
+    .table-responsive:has(#icsItemsTable)::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 2px;
+    }
+    
+    .table-responsive:has(#icsItemsTable)::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+    
+    .form-label {
+        font-size: 0.2rem;
+        margin-bottom: 0.0125rem;
+    }
+    
+    .form-group {
+        margin-bottom: 0.125rem;
+    }
+    
+    .form-check {
+        margin-bottom: 0.0625rem;
+    }
+    
+    .form-check-label {
+        font-size: 0.2rem;
+    }
+    
+    .form-text {
+        font-size: 0.15rem;
+        margin-top: 0.025rem;
+    }
+    
+    .form-select {
+        font-size: 0.25rem;
+        padding: 0.025rem 0.0375rem;
+        height: 0.75rem;
+    }
+    
+    .form-control[type="textarea"] {
+        font-size: 0.25rem;
+        padding: 0.025rem 0.0375rem;
+        min-height: 1.25rem;
+    }
+    
+    .form-control[type="file"] {
+        font-size: 0.2rem;
+        padding: 0.025rem;
+    }
+    
+    .form-control[type="date"],
+    .form-control[type="time"],
+    .form-control[type="datetime-local"] {
+        font-size: 0.2rem;
+        padding: 0.025rem 0.0375rem;
+        height: 0.75rem;
+    }
+    
+    .form-check-input {
+        width: 0.25rem;
+        height: 0.25rem;
+    }
+    
+    .form-check-input[type="checkbox"] {
+        width: 0.375rem;
+        height: 0.1875rem;
+    }
+    
+    .form-range {
+        height: 0.25rem;
+    }
+    
+    .input-group-text {
+        font-size: 0.2rem;
+        padding: 0.025rem 0.05rem;
+    }
+    
+    .input-group {
+        gap: 0.025rem;
+    }
+    
+    /* Maximum compact cards */
+    .card {
+        font-size: 0.35rem;
+        padding: 0.125rem;
+        margin-bottom: 0.125rem;
+    }
+    
+    .card-header {
+        padding: 0.125rem;
+        font-size: 0.3rem;
+    }
+    
+    .card-body {
+        padding: 0.125rem;
+        font-size: 0.35rem;
+    }
+    
+    .card-title {
+        font-size: 0.4rem;
+        margin-bottom: 0.0625rem;
+        line-height: 0.8;
+    }
+    
+    .card-text {
+        font-size: 0.3rem;
+        line-height: 0.8;
+    }
+    
+    .card-footer {
+        padding: 0.09375rem 0.125rem;
+        font-size: 0.3rem;
+    }
+    
+    /* Stats cards maximum compact */
+    .stats-card {
+        padding: 0.125rem;
+        margin-bottom: 0.125rem;
+    }
+    
+    .stats-number {
+        font-size: 0.7rem;
+        line-height: 0.8;
+    }
+    
+    .stats-label {
+        font-size: 0.25rem;
+        margin-top: 0.03125rem;
+    }
+    
+    /* Buttons maximum compact */
+    .btn {
+        font-size: 0.35rem;
+        padding: 0.0625rem 0.125rem;
+        line-height: 0.8;
+    }
+    
+    .btn-sm {
+        font-size: 0.3rem;
+        padding: 0.03125rem 0.0625rem;
+    }
+    
+    .btn-xs {
+        font-size: 0.25rem;
+        padding: 0.015625rem 0.03125rem;
+    }
+    
+    /* Dropdowns maximum compact */
+    .dropdown-menu {
+        font-size: 0.3rem;
+        padding: 0.03125rem;
+        min-width: 60px;
+    }
+    
+    .dropdown-item {
+        font-size: 0.3rem;
+        padding: 0.03125rem 0.0625rem;
+        line-height: 0.8;
+    }
+    
+    .dropdown-header {
+        font-size: 0.25rem;
+        padding: 0.03125rem 0.0625rem;
+    }
+    
+    /* Modals maximum compact */
+    .modal-dialog {
+        margin: 0.0625rem;
+    }
+    
+    .modal-content {
+        font-size: 0.35rem;
+    }
+    
+    .modal-header {
+        padding: 0.125rem;
+    }
+    
+    .modal-title {
+        font-size: 0.4rem;
+        line-height: 0.8;
+    }
+    
+    .modal-body {
+        font-size: 0.35rem;
+        padding: 0.125rem;
+        line-height: 0.8;
+    }
+    
+    .modal-footer {
+        padding: 0.09375rem 0.125rem;
+    }
+    
+    /* Page headers maximum compact */
+    .page-header {
+        padding: 0.125rem;
+        margin-bottom: 0.125rem;
+    }
+    
+    .page-header h1 {
+        font-size: 0.5rem;
+        line-height: 0.8;
+    }
+    
+    .page-header p {
+        font-size: 0.3rem;
+        margin-bottom: 0.0625rem;
+    }
+    
+    /* Container and layout maximum compact */
+    .container {
+        padding: 0.0625rem;
+    }
+    
+    .container-fluid {
+        padding: 0.03125rem;
+    }
+    
+    .row {
+        margin: -0.03125rem;
+    }
+    
+    .col, .col-1, .col-2, .col-3, .col-4, .col-5, .col-6, .col-7, .col-8, .col-9, .col-10, .col-11, .col-12 {
+        padding: 0.03125rem;
+    }
+    
+    /* Table container maximum compact */
+    .table-container {
+        padding: 0.0625rem;
+        margin-bottom: 0.125rem;
+        font-size: 0.35rem;
+    }
+    
+    /* Property cards maximum compact */
+    .property-card {
+        padding: 0.125rem;
+        margin-bottom: 0.125rem;
+        font-size: 0.3rem;
+    }
+    
+    .property-card-table {
+        padding: 0.125rem;
+        font-size: 0.3rem;
+    }
+    
+    /* Report tables maximum compact */
+    .report-table {
+        padding: 0.125rem;
+        font-size: 0.3rem;
+    }
+    
+    /* Navigation maximum compact */
+    .nav {
+        font-size: 0.3rem;
+    }
+    
+    .nav-link {
+        font-size: 0.3rem;
+        padding: 0.0625rem 0.09375rem;
+    }
+    
+    /* Pagination maximum compact */
+    .pagination {
+        font-size: 0.3rem;
+    }
+    
+    .page-link {
+        font-size: 0.3rem;
+        padding: 0.03125rem 0.0625rem;
+    }
+    
+    /* Forms maximum compact */
+    .form-group {
+        margin-bottom: 0.09375rem;
+    }
+    
+    .form-check {
+        margin-bottom: 0.0625rem;
+    }
+    
+    .form-check-label {
+        font-size: 0.3rem;
+    }
+    
+    .form-text {
+        font-size: 0.25rem;
+        margin-top: 0.03125rem;
+    }
+    
+    /* Alerts maximum compact */
+    .alert {
+        font-size: 0.3rem;
+        padding: 0.09375rem 0.125rem;
+    }
+    
+    /* List groups maximum compact */
+    .list-group {
+        font-size: 0.3rem;
+    }
+    
+    .list-group-item {
+        font-size: 0.3rem;
+        padding: 0.0625rem 0.09375rem;
+    }
+    
+    /* Breadcrumbs maximum compact */
+    .breadcrumb {
+        font-size: 0.25rem;
+        padding: 0.0625rem 0.09375rem;
+    }
+    
+    .breadcrumb-item {
+        font-size: 0.25rem;
+    }
+    
+    /* Progress bars maximum compact */
+    .progress {
+        height: 0.25rem;
+    }
+    
+    .progress-bar {
+        font-size: 0.25rem;
+    }
+    
+    /* Tooltips maximum compact */
+    .tooltip {
+        font-size: 0.25rem;
+    }
+    
+    /* Spinners maximum compact */
+    .spinner-border {
+        width: 0.5rem;
+        height: 0.5rem;
+    }
+    
+    .spinner-border-sm {
+        width: 0.375rem;
+        height: 0.375rem;
+    }
+    
+    /* Icons maximum compact */
+    .bi {
+        font-size: 0.4rem;
+    }
+    
+    /* Input groups maximum compact */
+    .input-group-text {
+        font-size: 0.3rem;
+        padding: 0.03125rem 0.0625rem;
+    }
+    
+    /* Select elements maximum compact */
+    .form-select {
+        font-size: 0.35rem;
+        padding: 0.03125rem 0.046875rem;
+        height: 1rem;
+    }
+    
+    /* Text areas maximum compact */
+    .form-control[type="textarea"] {
+        font-size: 0.35rem;
+        padding: 0.03125rem 0.046875rem;
+        min-height: 1.5rem;
+    }
+    
+    /* Checkboxes and radios maximum compact */
+    .form-check-input {
+        width: 0.375rem;
+        height: 0.375rem;
+    }
+    
+    /* Switches maximum compact */
+    .form-check-input[type="checkbox"] {
+        width: 0.5rem;
+        height: 0.25rem;
+    }
+    
+    /* Range inputs maximum compact */
+    .form-range {
+        height: 0.375rem;
+    }
+    
+    /* File inputs maximum compact */
+    .form-control[type="file"] {
+        font-size: 0.3rem;
+        padding: 0.03125rem;
+    }
+    
+    /* Date/time inputs maximum compact */
+    .form-control[type="date"],
+    .form-control[type="time"],
+    .form-control[type="datetime-local"] {
+        font-size: 0.3rem;
+        padding: 0.03125rem 0.046875rem;
+        height: 1rem;
+    }
+    
+    /* Body text maximum compact */
+    body {
+        font-size: 0.35rem;
+        line-height: 0.8;
+    }
+    
+    /* Headings maximum compact */
+    h1 {
+        font-size: 0.6rem;
+        line-height: 0.8;
+    }
+    
+    h2 {
+        font-size: 0.5rem;
+        line-height: 0.8;
+    }
+    
+    h3 {
+        font-size: 0.45rem;
+        line-height: 0.8;
+    }
+    
+    h4 {
+        font-size: 0.4rem;
+        line-height: 0.8;
+    }
+    
+    h5 {
+        font-size: 0.35rem;
+        line-height: 0.8;
+    }
+    
+    h6 {
+        font-size: 0.3rem;
+        line-height: 0.8;
+    }
+    
+    /* Paragraphs maximum compact */
+    p {
+        font-size: 0.35rem;
+        line-height: 0.8;
+        margin-bottom: 0.0625rem;
+    }
+    
+    /* Links maximum compact */
+    a {
+        font-size: 0.35rem;
+    }
+    
+    /* Code maximum compact */
+    code {
+        font-size: 0.3rem;
+    }
+    
+    pre {
+        font-size: 0.3rem;
+        padding: 0.0625rem;
+    }
+    
+    /* Blockquotes maximum compact */
+    blockquote {
+        font-size: 0.3rem;
+        padding: 0.0625rem;
+        margin: 0.0625rem 0;
+    }
+    
+    /* Lists maximum compact */
+    ul, ol {
+        font-size: 0.35rem;
+        padding-left: 0.5rem;
+    }
+    
+    li {
+        font-size: 0.35rem;
+        margin-bottom: 0.03125rem;
+    }
+    
+    /* Abbreviations maximum compact */
+    abbr {
+        font-size: 0.3rem;
+    }
+    
+    /* Citations maximum compact */
+    cite {
+        font-size: 0.3rem;
+    }
+    
+    /* Small text maximum compact */
+    small {
+        font-size: 0.25rem;
+    }
+    
+    /* Strong/Bold maximum compact */
+    strong, b {
+        font-size: 0.35rem;
+    }
+    
+    /* Emphasis/Italic maximum compact */
+    em, i {
+        font-size: 0.35rem;
+    }
 }
 
 /* =============================================================================
