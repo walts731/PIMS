@@ -1,81 +1,111 @@
 <?php
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 0); // Don't display errors to user
+ini_set('log_errors', 1);
+
 // Database connection
 $host = 'localhost';
 $username = 'root';
 $password = '';
-$database = 'pims_final';
+$database = 'pims';
 
-// Create connection
-$conn = new mysqli($host, $username, $password, $database);
+try {
+    // Create connection
+    $conn = new mysqli($host, $username, $password, $database);
 
-// Check connection
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
+    // Check connection
+    if ($conn->connect_error) {
+        throw new Exception("Connection failed: " . $conn->connect_error);
+    }
+
+    // Set charset to utf8
+    $conn->set_charset("utf8");
+} catch (Exception $e) {
+    error_log("Database connection error in oil_in.php: " . $e->getMessage());
+    die("A database error occurred. Please contact the administrator.");
 }
-
-// Set charset to utf8
-$conn->set_charset("utf8");
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $date_time = $_POST['date_time'];
-    $oil_type = $_POST['oil_type'];
-    $quantity = $_POST['quantity'];
-    $unit_price = $_POST['unit_price'];
-    $total_cost = $quantity * $unit_price;
-    $storage_location = $_POST['storage_location'];
-    $delivery_receipt = $_POST['delivery_receipt'];
-    $supplier_name = $_POST['supplier_name'];
-    $received_by = $_POST['received_by'];
-    $remarks = $_POST['remarks'];
-    $created_by = 'admin'; // You can modify this to get current user
-    $transaction_id = 'OIL-' . date('YmdHis') . '-' . rand(1000, 9999);
-    
-    // Handle image upload
-    $image_path = '';
-    if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
-        $upload_dir = 'uploads/oil_in/';
-        if (!file_exists($upload_dir)) {
-            mkdir($upload_dir, 0777, true);
+    try {
+        $date_time = $_POST['date_time'];
+        $oil_type = $_POST['oil_type'];
+        $quantity = $_POST['quantity'];
+        $unit_price = $_POST['unit_price'];
+        $total_cost = $quantity * $unit_price;
+        $storage_location = $_POST['storage_location'];
+        $delivery_receipt = $_POST['delivery_receipt'];
+        $supplier_name = $_POST['supplier_name'];
+        $received_by = $_POST['received_by'];
+        $remarks = $_POST['remarks'];
+        $created_by = 'admin'; // You can modify this to get current user
+        $transaction_id = 'OIL-' . date('YmdHis') . '-' . rand(1000, 9999);
+
+        // Handle image upload
+        $image_path = '';
+        if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
+            $upload_dir = 'uploads/oil_in/';
+            if (!file_exists($upload_dir)) {
+                if (!mkdir($upload_dir, 0777, true)) {
+                    error_log("Failed to create directory: " . $upload_dir);
+                }
+            }
+
+            $file_name = time() . '_' . basename($_FILES['image']['name']);
+            $target_file = $upload_dir . $file_name;
+
+            if (move_uploaded_file($_FILES['image']['tmp_name'], $target_file)) {
+                $image_path = $target_file;
+            } else {
+                error_log("Failed to upload file to: " . $target_file);
+            }
         }
-        
-        $file_name = time() . '_' . basename($_FILES['image']['name']);
-        $target_file = $upload_dir . $file_name;
-        
-        if (move_uploaded_file($_FILES['image']['tmp_name'], $target_file)) {
-            $image_path = $target_file;
+
+        // Insert into database (total_cost is a generated column, don't insert it)
+        $sql = "INSERT INTO oil_in (date_time, oil_type, quantity, unit_price, storage_location,
+                delivery_receipt, supplier_name, received_by, remarks, created_by, transaction_id, image)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        $stmt = $conn->prepare($sql);
+        if (!$stmt) {
+            throw new Exception("Prepare failed: " . $conn->error);
         }
+
+        $stmt->bind_param("sidsssssssss", $date_time, $oil_type, $quantity, $unit_price,
+                         $storage_location, $delivery_receipt, $supplier_name, $received_by, $remarks,
+                         $created_by, $transaction_id, $image_path);
+
+        if ($stmt->execute()) {
+            $success_message = "Oil In record added successfully!";
+        } else {
+            throw new Exception("Execute failed: " . $stmt->error);
+        }
+        $stmt->close();
+    } catch (Exception $e) {
+        error_log("Error in oil_in.php form submission: " . $e->getMessage());
+        $error_message = "Error: " . $e->getMessage();
     }
-    
-    // Insert into database
-    $sql = "INSERT INTO oil_in (date_time, oil_type, quantity, unit_price, total_cost, storage_location, 
-            delivery_receipt, supplier_name, received_by, remarks, created_by, transaction_id, image) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-    
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("sidddssssssss", $date_time, $oil_type, $quantity, $unit_price, $total_cost, 
-                     $storage_location, $delivery_receipt, $supplier_name, $received_by, $remarks, 
-                     $created_by, $transaction_id, $image_path);
-    
-    if ($stmt->execute()) {
-        $success_message = "Oil In record added successfully!";
-    } else {
-        $error_message = "Error: " . $stmt->error;
-    }
-    $stmt->close();
 }
 
 // Get oil types for dropdown
-$oilTypesResult = $conn->query("SELECT id, name FROM oil_types WHERE is_active = 1 ORDER BY name");
-$oilTypes = $oilTypesResult ? $oilTypesResult->fetch_all(MYSQLI_ASSOC) : [];
+try {
+    $oilTypesResult = $conn->query("SELECT id, name FROM oil_types WHERE is_active = 1 ORDER BY name");
+    $oilTypes = $oilTypesResult ? $oilTypesResult->fetch_all(MYSQLI_ASSOC) : [];
 
-// Get oil in records with oil type names
-$sql = "SELECT oi.*, ot.name as oil_type_name 
-        FROM oil_in oi 
-        LEFT JOIN oil_types ot ON oi.oil_type = ot.id 
-        ORDER BY oi.date_time DESC";
-$result = $conn->query($sql);
-$oilInData = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+    // Get oil in records with oil type names
+    $sql = "SELECT oi.*, ot.name as oil_type_name
+            FROM oil_in oi
+            LEFT JOIN oil_types ot ON oi.oil_type = ot.id
+            ORDER BY oi.date_time DESC";
+    $result = $conn->query($sql);
+    $oilInData = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+} catch (Exception $e) {
+    error_log("Error in oil_in.php data retrieval: " . $e->getMessage());
+    die("Data retrieval error: " . $e->getMessage());
+    $oilTypes = [];
+    $oilInData = [];
+}
 
 $conn->close();
 ?>
@@ -95,7 +125,7 @@ $conn->close();
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f5f5f5;
+            background: linear-gradient(135deg, #F7F3F3 0%, #C1EAF2 100%);
             color: #333;
         }
 
@@ -107,7 +137,7 @@ $conn->close();
         /* Sidebar Styles */
         .sidebar {
             width: 250px;
-            background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
+            background: linear-gradient(180deg, #191BA9 0%, #5CC2F2 100%);
             color: white;
             position: fixed;
             height: 100vh;
@@ -118,9 +148,9 @@ $conn->close();
 
         .sidebar-header {
             padding: 35px 20px;
-            background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%);
+            background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%);
             text-align: center;
-            border-bottom: 2px solid rgba(255,255,255,0.2);
+            border-bottom: 2px solid rgba(255,255,255,0.3);
             position: relative;
             overflow: hidden;
         }
@@ -183,8 +213,8 @@ $conn->close();
 
         .sidebar-menu a:hover,
         .sidebar-menu a.active {
-            background: rgba(255,255,255,0.1);
-            border-left-color: #3498db;
+            background: rgba(255,255,255,0.2);
+            border-left-color: #C1EAF2;
         }
 
         .sidebar-menu .icon {
@@ -198,7 +228,7 @@ $conn->close();
         .main-content {
             flex: 1;
             margin-left: 250px;
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            background: transparent;
             min-height: 100vh;
             position: relative;
         }
@@ -227,7 +257,7 @@ $conn->close();
         }
 
         header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%);
             color: white;
             padding: 8px 0;
             margin-bottom: 15px;
@@ -289,12 +319,12 @@ $conn->close();
         }
 
         .btn-primary {
-            background-color: #667eea;
+            background: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%);
             color: white;
         }
 
         .btn-primary:hover {
-            background-color: #5a6fd8;
+            background: linear-gradient(135deg, #5CC2F2 0%, #191BA9 100%);
         }
 
         .btn-secondary {
@@ -625,12 +655,6 @@ $conn->close();
                         <a href="reports.php">
                             <span class="icon">�</span>
                             <span>Reports</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="fuel_transactions.php">
-                            <span class="icon">🔄</span>
-                            <span>Transactions</span>
                         </a>
                     </li>
                     <li>

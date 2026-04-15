@@ -186,8 +186,8 @@ if (!$conn || $conn->connect_error) {
             $sql .= " WHERE " . implode(' AND ', $where_clauses);
         }
 
-        // Group by office for per-office display
-        $sql .= " GROUP BY o.id, ai.id ORDER BY o.office_name ASC, ai.last_updated DESC";
+        // Order by office and last updated date for display
+        $sql .= " ORDER BY o.office_name ASC, ai.last_updated DESC";
 
         $stmt = $conn->prepare($sql);
         if (!$stmt) {
