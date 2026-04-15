@@ -107,7 +107,7 @@ try {
     <title>Generate Property Numbers - PIMS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
-    <link href="../assets/css/index.css" rel="stylesheet">
+    <link href="assets/css/admin-unified.css" rel="stylesheet">
 </head>
 <body>
     <?php 

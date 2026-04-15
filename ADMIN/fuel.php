@@ -41,8 +41,6 @@ logSystemAction($_SESSION['user_id'], 'access', 'fuel_inventory', 'User accessed
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     
     <!-- Custom CSS -->
-    <link href="../assets/css/index.css" rel="stylesheet">
-    <link href="../assets/css/theme-custom.css" rel="stylesheet">
     <link href="assets/css/admin-unified.css" rel="stylesheet">
 </head>
 <body>
