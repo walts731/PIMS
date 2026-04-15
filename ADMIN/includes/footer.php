@@ -8,7 +8,41 @@ $system_version = $system_settings['system_version'] ?? '1.0.0';
 ?>
 <!-- Professional Footer -->
 <footer class="admin-footer">
+    <!-- Animated Ship -->
+    <div class="ship-container">
+        <div class="ship">
+            <div class="ship-mast"></div>
+            <div class="ship-sail-main"></div>
+            <div class="ship-sail-secondary"></div>
+            <div class="ship-flag"></div>
+            <div class="ship-hull"></div>
+            <div class="ship-deck"></div>
+        </div>
+    </div>
+    <div class="wave"></div>
+    
     <div class="footer-top">
+        <!-- Night Sky -->
+        <div class="night-sky">
+            <div class="moon"></div>
+            <div class="stars">
+                <div class="star star1"></div>
+                <div class="star star2"></div>
+                <div class="star star3"></div>
+                <div class="star star4"></div>
+                <div class="star star5"></div>
+                <div class="star star6"></div>
+                <div class="star star7"></div>
+                <div class="star star8"></div>
+            </div>
+            <!-- Floating Clouds -->
+            <div class="clouds">
+                <div class="cloud cloud1"></div>
+                <div class="cloud cloud2"></div>
+                <div class="cloud cloud3"></div>
+                <div class="cloud cloud4"></div>
+            </div>
+        </div>
         <div class="container-fluid">
             <div class="row">
                 <!-- System Information -->
@@ -34,7 +68,7 @@ $system_version = $system_settings['system_version'] ?? '1.0.0';
                         <ul class="footer-links">
                             <li><a href="dashboard.php"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
                             <li><a href="asset_items.php"><i class="bi bi-box"></i> Assets</a></li>
-                            <li><a href="employees.php"><i class="bi bi-people"></i> Employees</a></li>
+                            <li><a href="consumables.php"><i class="bi bi-water"></i> Consumables</a></li>
                             <li><a href="reports.php"><i class="bi bi-file-earmark-text"></i> Reports</a></li>
                         </ul>
                     </div>
@@ -45,6 +79,14 @@ $system_version = $system_settings['system_version'] ?? '1.0.0';
     
     <!-- Footer Bottom -->
     <div class="footer-bottom">
+        <!-- Sea Weeds -->
+        <div class="sea-weeds">
+            <div class="seaweed seaweed1"></div>
+            <div class="seaweed seaweed2"></div>
+            <div class="seaweed seaweed3"></div>
+            <div class="seaweed seaweed4"></div>
+            <div class="seaweed seaweed5"></div>
+        </div>
         <div class="container-fluid">
             <div class="row align-items-center">
                 <div class="col-md-6">
@@ -178,7 +220,7 @@ $system_version = $system_settings['system_version'] ?? '1.0.0';
                 <div class="text-center mb-4">
                     <img src="<?php echo $logo_path ?? '../assets/images/logo.png'; ?>" alt="<?php echo htmlspecialchars($system_name); ?>" class="img-fluid mb-3" style="max-height: 80px;">
                     <h4 class="text-success"><?php echo htmlspecialchars($system_name); ?></h4>
-                    <p class="text-muted">Professional Inventory Management System</p>
+                    <p class="text-muted">Pilar Inventory Management System</p>
                 </div>
                 <div class="about-content">
                     <h6 class="text-success">About the System</h6>
@@ -204,7 +246,7 @@ $system_version = $system_settings['system_version'] ?? '1.0.0';
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-success" onclick="window.open('https://pilar.gov.ph')">Official Website</button>
+                <button type="button" class="btn btn-success" onclick="window.open('https://pims.lgu-pilarsor.ph/')">Official Website</button>
             </div>
         </div>
     </div>
@@ -280,5 +322,552 @@ function getSystemSettings() {
     return $settings;
 }
 ?>
+<style>
+/* Animated Ship for Admin Footer */
+.admin-footer {
+    position: relative;
+    overflow: hidden;
+}
+
+.ship-container {
+    position: absolute;
+    bottom: 45px;
+    left: -100px;
+    width: 100%;
+    height: 60px;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.ship {
+    position: absolute;
+    width: 80px;
+    height: 60px;
+    animation: sailAcross 20s linear infinite;
+    transition: transform 0.3s ease;
+}
+
+.ship:hover {
+    transform: scale(1.2);
+}
+
+/* Ship Mast */
+.ship-mast {
+    position: absolute;
+    bottom: 18px;
+    left: 38px;
+    width: 4px;
+    height: 35px;
+    background: linear-gradient(to right, #4a4a4a, #2a2a2a);
+    border-radius: 1px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Main Sail */
+.ship-sail-main {
+    position: absolute;
+    bottom: 35px;
+    left: 15px;
+    width: 0;
+    height: 0;
+    border-right: 28px solid #f8f8f8;
+    border-top: 12px solid transparent;
+    border-bottom: 12px solid transparent;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+    transform: skewY(-2deg);
+}
+
+/* Secondary Sail */
+.ship-sail-secondary {
+    position: absolute;
+    bottom: 40px;
+    left: 42px;
+    width: 0;
+    height: 0;
+    border-left: 20px solid #e8e8e8;
+    border-top: 8px solid transparent;
+    border-bottom: 8px solid transparent;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+    transform: skewY(1deg);
+}
+
+/* Ship Flag */
+.ship-flag {
+    position: absolute;
+    bottom: 50px;
+    left: 40px;
+    width: 0;
+    height: 0;
+    border-left: 10px solid #FF6B6B;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    animation: flagWave 2s ease-in-out infinite;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+}
+
+/* Ship Hull */
+.ship-hull {
+    position: absolute;
+    bottom: 0;
+    width: 80px;
+    height: 22px;
+    background: linear-gradient(to bottom, #8B4513, #654321, #4a3018);
+    border-radius: 0 0 40% 40%;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
+}
+
+/* Ship Deck */
+.ship-deck {
+    position: absolute;
+    bottom: 18px;
+    left: 10px;
+    width: 60px;
+    height: 4px;
+    background: linear-gradient(to right, #a0522d, #8B4513, #a0522d);
+    border-radius: 2px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Flag waving animation */
+@keyframes flagWave {
+    0%, 100% { transform: skewY(0deg); }
+    50% { transform: skewY(5deg); }
+}
+
+@keyframes sailAcross {
+    0% {
+        left: -60px;
+        transform: translateY(0px) rotate(-3deg);
+    }
+    20% {
+        transform: translateY(-5px) rotate(-1deg);
+    }
+    40% {
+        transform: translateY(3px) rotate(1deg);
+    }
+    60% {
+        transform: translateY(-3px) rotate(-2deg);
+    }
+    80% {
+        transform: translateY(2px) rotate(1deg);
+    }
+    100% {
+        left: calc(100% + 60px);
+        transform: translateY(0px) rotate(-3deg);
+    }
+}
+
+/* Sea Weeds */
+.sea-weeds {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 40px;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.seaweed {
+    position: absolute;
+    bottom: 0;
+    width: 6px;
+    background: linear-gradient(to top, #2d5016, #4a7c28);
+    border-radius: 2px 2px 0 0;
+    transform-origin: bottom center;
+}
+
+.seaweed1 {
+    left: 10%;
+    height: 25px;
+    animation: swaySeaweed 3s ease-in-out infinite;
+}
+
+.seaweed2 {
+    left: 25%;
+    height: 35px;
+    animation: swaySeaweed 3.5s ease-in-out infinite 0.5s;
+}
+
+.seaweed3 {
+    left: 45%;
+    height: 30px;
+    animation: swaySeaweed 4s ease-in-out infinite 1s;
+}
+
+.seaweed4 {
+    left: 70%;
+    height: 28px;
+    animation: swaySeaweed 3.2s ease-in-out infinite 0.3s;
+}
+
+.seaweed5 {
+    left: 85%;
+    height: 32px;
+    animation: swaySeaweed 3.8s ease-in-out infinite 0.7s;
+}
+
+@keyframes swaySeaweed {
+    0%, 100% {
+        transform: rotate(-3deg);
+    }
+    50% {
+        transform: rotate(3deg);
+    }
+}
+
+/* Wave effect */
+.wave {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 40px;
+    background: linear-gradient(90deg, 
+        rgba(30, 86, 160, 0.3) 0%, 
+        rgba(30, 86, 160, 0.5) 25%,
+        rgba(30, 86, 160, 0.3) 50%,
+        rgba(30, 86, 160, 0.5) 75%,
+        rgba(30, 86, 160, 0.3) 100%);
+    animation: wave 4s ease-in-out infinite;
+    z-index: 1;
+}
+
+@keyframes wave {
+    0%, 100% {
+        transform: translateY(0px) scaleY(1);
+    }
+    50% {
+        transform: translateY(-10px) scaleY(1.2);
+    }
+}
+
+/* Night Sky */
+.night-sky {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Moon */
+.moon {
+    position: absolute;
+    top: 20px;
+    right: 40px;
+    width: 40px;
+    height: 40px;
+    background: radial-gradient(circle, #fffacd, #f0e68c);
+    border-radius: 50%;
+    box-shadow: 0 0 20px rgba(255, 250, 205, 0.8),
+                0 0 40px rgba(255, 250, 205, 0.4),
+                inset -5px -5px 10px rgba(240, 230, 140, 0.3);
+    animation: moonGlow 4s ease-in-out infinite;
+}
+
+/* Stars */
+.stars {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.star {
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+    animation: twinkle 2s ease-in-out infinite;
+}
+
+.star1 {
+    top: 15px;
+    right: 100px;
+    width: 3px;
+    height: 3px;
+    animation-delay: 0s;
+}
+
+.star2 {
+    top: 35px;
+    right: 150px;
+    width: 2px;
+    height: 2px;
+    animation-delay: 0.3s;
+}
+
+.star3 {
+    top: 25px;
+    right: 200px;
+    width: 4px;
+    height: 4px;
+    animation-delay: 0.6s;
+}
+
+.star4 {
+    top: 45px;
+    right: 120px;
+    width: 2px;
+    height: 2px;
+    animation-delay: 0.9s;
+}
+
+.star5 {
+    top: 10px;
+    right: 180px;
+    width: 3px;
+    height: 3px;
+    animation-delay: 1.2s;
+}
+
+.star6 {
+    top: 40px;
+    right: 250px;
+    width: 2px;
+    height: 2px;
+    animation-delay: 1.5s;
+}
+
+.star7 {
+    top: 30px;
+    right: 80px;
+    width: 3px;
+    height: 3px;
+    animation-delay: 1.8s;
+}
+
+.star8 {
+    top: 50px;
+    right: 220px;
+    width: 2px;
+    height: 2px;
+    animation-delay: 2.1s;
+}
+
+/* Moon glow animation */
+@keyframes moonGlow {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(255, 250, 205, 0.8),
+                    0 0 40px rgba(255, 250, 205, 0.4),
+                    inset -5px -5px 10px rgba(240, 230, 140, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 30px rgba(255, 250, 205, 1),
+                    0 0 60px rgba(255, 250, 205, 0.6),
+                    inset -5px -5px 10px rgba(240, 230, 140, 0.5);
+    }
+}
+
+/* Star twinkle animation */
+@keyframes twinkle {
+    0%, 100% {
+        opacity: 0.3;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.2);
+    }
+}
+
+/* Floating Clouds */
+.clouds {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.cloud {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 100px;
+    opacity: 0.6;
+}
+
+.cloud::before,
+.cloud::after {
+    content: '';
+    position: absolute;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 100px;
+}
+
+.cloud1 {
+    top: 15px;
+    left: -60px;
+    width: 35px;
+    height: 15px;
+    animation: floatCloud1 30s linear infinite;
+}
+
+.cloud1::before {
+    top: -8px;
+    left: 10px;
+    width: 20px;
+    height: 20px;
+}
+
+.cloud1::after {
+    top: -5px;
+    right: 8px;
+    width: 15px;
+    height: 15px;
+}
+
+.cloud2 {
+    top: 40px;
+    left: -80px;
+    width: 45px;
+    height: 18px;
+    animation: floatCloud2 35s linear infinite 5s;
+}
+
+.cloud2::before {
+    top: -10px;
+    left: 15px;
+    width: 25px;
+    height: 25px;
+}
+
+.cloud2::after {
+    top: -6px;
+    right: 10px;
+    width: 18px;
+    height: 18px;
+}
+
+.cloud3 {
+    top: 25px;
+    left: -70px;
+    width: 40px;
+    height: 16px;
+    animation: floatCloud3 40s linear infinite 10s;
+}
+
+.cloud3::before {
+    top: -9px;
+    left: 12px;
+    width: 22px;
+    height: 22px;
+}
+
+.cloud3::after {
+    top: -5px;
+    right: 9px;
+    width: 16px;
+    height: 16px;
+}
+
+.cloud4 {
+    top: 50px;
+    left: -90px;
+    width: 50px;
+    height: 20px;
+    animation: floatCloud4 45s linear infinite 15s;
+}
+
+.cloud4::before {
+    top: -12px;
+    left: 18px;
+    width: 28px;
+    height: 28px;
+}
+
+.cloud4::after {
+    top: -7px;
+    right: 12px;
+    width: 20px;
+    height: 20px;
+}
+
+/* Cloud floating animations */
+@keyframes floatCloud1 {
+    0% {
+        left: -60px;
+        transform: translateY(0px);
+    }
+    25% {
+        transform: translateY(-3px);
+    }
+    50% {
+        transform: translateY(2px);
+    }
+    75% {
+        transform: translateY(-2px);
+    }
+    100% {
+        left: calc(100% + 60px);
+        transform: translateY(0px);
+    }
+}
+
+@keyframes floatCloud2 {
+    0% {
+        left: -80px;
+        transform: translateY(0px);
+    }
+    25% {
+        transform: translateY(2px);
+    }
+    50% {
+        transform: translateY(-3px);
+    }
+    75% {
+        transform: translateY(1px);
+    }
+    100% {
+        left: calc(100% + 80px);
+        transform: translateY(0px);
+    }
+}
+
+@keyframes floatCloud3 {
+    0% {
+        left: -70px;
+        transform: translateY(0px);
+    }
+    25% {
+        transform: translateY(-2px);
+    }
+    50% {
+        transform: translateY(3px);
+    }
+    75% {
+        transform: translateY(-1px);
+    }
+    100% {
+        left: calc(100% + 70px);
+        transform: translateY(0px);
+    }
+}
+
+@keyframes floatCloud4 {
+    0% {
+        left: -90px;
+        transform: translateY(0px);
+    }
+    25% {
+        transform: translateY(1px);
+    }
+    50% {
+        transform: translateY(-2px);
+    }
+    75% {
+        transform: translateY(2px);
+    }
+    100% {
+        left: calc(100% + 90px);
+        transform: translateY(0px);
+    }
+}
+</style>
 </body>
 </html>
