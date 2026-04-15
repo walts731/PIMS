@@ -7,6 +7,14 @@
 
         <div class="navbar-nav ms-auto align-items-center">
             <div class="d-flex align-items-center">
+                <div class="nav-item me-3">
+                    <div class="input-group input-group-sm" style="width: 250px;">
+                        <input type="text" class="form-control" placeholder="Search assets..." id="topbarSearch">
+                        <button class="btn btn-outline-light" type="button" onclick="performSearch()">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                </div>
                 <div class="nav-item me-2">
                     <a href="#" class="nav-link text-white" title="Notifications">
                         <i class="bi bi-bell"></i>
@@ -34,3 +42,35 @@
         </div>
     </div>
 </nav>
+
+<script>
+function performSearch() {
+    const searchValue = document.getElementById('topbarSearch').value.trim();
+    if (searchValue) {
+        // Redirect to assets page with search parameter
+        window.location.href = `assets.php?search=${encodeURIComponent(searchValue)}`;
+    } else {
+        // If empty, redirect to assets page without filters
+        window.location.href = 'assets.php';
+    }
+}
+
+// Add Enter key support for search input
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('topbarSearch');
+    if (searchInput) {
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                performSearch();
+            }
+        });
+        
+        // Set current search value if exists
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentSearch = urlParams.get('search');
+        if (currentSearch) {
+            searchInput.value = currentSearch;
+        }
+    }
+});
+</script>
