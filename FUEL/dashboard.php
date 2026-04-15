@@ -3,7 +3,7 @@
 $host = 'localhost';
 $username = 'root';
 $password = '';
-$database = 'pims_final';
+$database = 'pims';
 
 // Create connection
 $conn = new mysqli($host, $username, $password, $database);
@@ -193,7 +193,7 @@ $conn->close();
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f5f5f5;
+            background: linear-gradient(135deg, #F7F3F3 0%, #C1EAF2 100%);
             color: #333;
         }
 
@@ -205,7 +205,7 @@ $conn->close();
         /* Sidebar Styles */
         .sidebar {
             width: 250px;
-            background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
+            background: linear-gradient(180deg, #191BA9 0%, #5CC2F2 100%);
             color: white;
             position: fixed;
             height: 100vh;
@@ -216,9 +216,9 @@ $conn->close();
 
         .sidebar-header {
             padding: 35px 20px;
-            background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%);
+            background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%);
             text-align: center;
-            border-bottom: 2px solid rgba(255,255,255,0.2);
+            border-bottom: 2px solid rgba(255,255,255,0.3);
             position: relative;
             overflow: hidden;
         }
@@ -281,8 +281,8 @@ $conn->close();
 
         .sidebar-menu a:hover,
         .sidebar-menu a.active {
-            background: rgba(255,255,255,0.1);
-            border-left-color: #3498db;
+            background: rgba(255,255,255,0.2);
+            border-left-color: #C1EAF2;
         }
 
         .sidebar-menu .icon {
@@ -334,7 +334,7 @@ $conn->close();
 
         h1 {
             text-align: center;
-            font-size: 2.5rem;
+            font-size: 1.5rem;
             font-weight: 300;
         }
 
@@ -347,9 +347,9 @@ $conn->close();
 
         .stat-card {
             background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-            padding: 30px;
+            padding: 10px;
             border-radius: 15px;
-            box-shadow: 
+            box-shadow:
                 0 10px 30px rgba(0,0,0,0.1),
                 0 1px 8px rgba(0,0,0,0.06);
             text-align: center;
@@ -366,7 +366,7 @@ $conn->close();
             left: 0;
             right: 0;
             height: 4px;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(90deg, #191BA9 0%, #5CC2F2 100%);
             transform: scaleX(0);
             transition: transform 0.3s ease;
         }
@@ -396,14 +396,14 @@ $conn->close();
         }
 
         .stat-number {
-            font-size: 2rem;
+            font-size: 1.5rem;
             font-weight: bold;
             color: #667eea;
             margin-bottom: 8px;
         }
 
         .stat-label {
-            font-size: 0.9rem;
+            font-size: 0.75rem;
             color: #666;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -444,7 +444,7 @@ $conn->close();
         }
 
         .section-header {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            background: linear-gradient(135deg, #F7F3F3 0%, #C1EAF2 100%);
             padding: 25px;
             border-bottom: 1px solid rgba(0,0,0,0.05);
             display: flex;
@@ -460,7 +460,7 @@ $conn->close();
             left: 25px;
             right: 25px;
             height: 2px;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(90deg, #191BA9 0%, #5CC2F2 100%);
             transform: scaleX(0);
             transition: transform 0.3s ease;
         }
@@ -561,12 +561,12 @@ $conn->close();
         }
 
         .btn-primary {
-            background-color: #667eea;
+            background: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%);
             color: white;
         }
 
         .btn-primary:hover {
-            background-color: #5a6fd8;
+            background: linear-gradient(135deg, #5CC2F2 0%, #191BA9 100%);
         }
 
         .refresh-btn {
@@ -576,17 +576,17 @@ $conn->close();
             width: 60px;
             height: 60px;
             border-radius: 50%;
-            background-color: #667eea;
+            background: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%);
             color: white;
             border: none;
             font-size: 1.5rem;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 12px rgba(25, 27, 169, 0.3);
             transition: all 0.3s ease;
         }
 
         .refresh-btn:hover {
-            background-color: #5a6fd8;
+            background: linear-gradient(135deg, #5CC2F2 0%, #191BA9 100%);
             transform: scale(1.1);
         }
 
@@ -682,7 +682,7 @@ $conn->close();
         }
 
         .navbar-title {
-            font-size: 1.3rem;
+            font-size: 1rem;
             font-weight: 500;
             flex: 1;
         }
@@ -800,12 +800,6 @@ $conn->close();
                         <a href="reports.php">
                             <span class="icon">📈</span>
                             <span>Reports</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="fuel_transactions.php">
-                            <span class="icon">🔄</span>
-                            <span>Transactions</span>
                         </a>
                     </li>
                     <li>

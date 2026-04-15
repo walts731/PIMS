@@ -3,7 +3,7 @@
 $host = 'localhost';
 $username = 'root';
 $password = '';
-$database = 'pims_final';
+$database = 'pims';
 
 // Create connection
 $conn = new mysqli($host, $username, $password, $database);
@@ -147,7 +147,7 @@ $conn->close();
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f5f5f5;
+            background: linear-gradient(135deg, #F7F3F3 0%, #C1EAF2 100%);
             color: #333;
         }
 
@@ -159,7 +159,7 @@ $conn->close();
         /* Sidebar Styles */
         .sidebar {
             width: 250px;
-            background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
+            background: linear-gradient(180deg, #191BA9 0%, #5CC2F2 100%);
             color: white;
             position: fixed;
             height: 100vh;
@@ -170,9 +170,9 @@ $conn->close();
 
         .sidebar-header {
             padding: 35px 20px;
-            background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%);
+            background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%);
             text-align: center;
-            border-bottom: 2px solid rgba(255,255,255,0.2);
+            border-bottom: 2px solid rgba(255,255,255,0.3);
             position: relative;
             overflow: hidden;
         }
@@ -235,8 +235,8 @@ $conn->close();
 
         .sidebar-menu a:hover,
         .sidebar-menu a.active {
-            background: rgba(255,255,255,0.1);
-            border-left-color: #3498db;
+            background: rgba(255,255,255,0.2);
+            border-left-color: #C1EAF2;
         }
 
         .sidebar-menu .icon {
@@ -250,7 +250,9 @@ $conn->close();
         .main-content {
             flex: 1;
             margin-left: 250px;
-            background-color: #f5f5f5;
+            background: transparent;
+            min-height: 100vh;
+            position: relative;
         }
 
         .container {
@@ -260,7 +262,7 @@ $conn->close();
         }
 
         header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%);
             color: white;
             padding: 8px 0;
             margin-bottom: 15px;
@@ -282,12 +284,22 @@ $conn->close();
         }
 
         .section-header {
-            background: #f8f9fa;
-            padding: 20px;
-            border-bottom: 1px solid #dee2e6;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            background: linear-gradient(135deg, #F7F3F3 0%, #C1EAF2 100%);
+            padding: 25px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            position: relative;
+        }
+
+        .section-header::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 25px;
+            right: 25px;
+            height: 2px;
+            background: linear-gradient(90deg, #191BA9 0%, #5CC2F2 100%);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
         }
 
         .section-title {
@@ -350,12 +362,12 @@ $conn->close();
         }
 
         .btn-primary {
-            background-color: #667eea;
+            background: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%);
             color: white;
         }
 
         .btn-primary:hover {
-            background-color: #5a6fd8;
+            background: linear-gradient(135deg, #5CC2F2 0%, #191BA9 100%);
         }
 
         .btn-success {
@@ -648,12 +660,6 @@ $conn->close();
                         <a href="reports.php">
                             <span class="icon">📈</span>
                             <span>Reports</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="fuel_transactions.php">
-                            <span class="icon">🔄</span>
-                            <span>Transactions</span>
                         </a>
                     </li>
                     <li>
