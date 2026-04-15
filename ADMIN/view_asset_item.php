@@ -1798,6 +1798,7 @@ $status_display = formatStatus($item['status']);
     
     <?php require_once 'includes/logout-modal.php'; ?>
     <?php require_once 'includes/change-password-modal.php'; ?>
+    <?php require_once 'includes/footer.php'; ?>
     
     <!-- Disposal Confirmation Modal -->
     <div class="modal fade" id="disposeModal" tabindex="-1" aria-labelledby="disposeModalLabel" aria-hidden="true">

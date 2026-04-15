@@ -604,6 +604,7 @@ $badge_class = match($status) {
 
 <?php require_once 'includes/logout-modal.php'; ?>
 <?php require_once 'includes/change-password-modal.php'; ?>
+<?php require_once 'includes/footer.php'; ?>
 
 <!-- Return Confirmation Modal -->
 <div class="modal fade" id="returnConfirmModal" tabindex="-1" aria-labelledby="returnConfirmModalLabel" aria-hidden="true">

@@ -494,6 +494,7 @@ if ($result && $row = $result->fetch_assoc()) {
     <?php include 'includes/logout-modal.php'; ?>
     <?php include 'includes/change-password-modal.php'; ?>
     <?php include 'includes/iirup_modals.php'; ?>
+    <?php include 'includes/footer.php'; ?>
     
     <!-- Datalist for asset search -->
     <datalist id="assetList">

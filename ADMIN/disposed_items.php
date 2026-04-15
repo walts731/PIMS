@@ -351,6 +351,7 @@ try {
     
     <?php require_once 'includes/logout-modal.php'; ?>
     <?php require_once 'includes/change-password-modal.php'; ?>
+    <?php require_once 'includes/footer.php'; ?>
     
     <!-- Print Preview Modal -->
     <div class="modal fade" id="printPreviewModal" tabindex="-1" aria-labelledby="printPreviewModalLabel" aria-hidden="true">

@@ -597,6 +597,7 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
     <?php include 'includes/logout-modal.php'; ?>
     <?php include 'includes/change-password-modal.php'; ?>
     <?php include 'includes/sidebar-scripts.php'; ?>
+    <?php include 'includes/footer.php'; ?>
 
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>

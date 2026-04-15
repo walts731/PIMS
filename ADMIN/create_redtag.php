@@ -895,6 +895,7 @@ if (empty($red_tag_no)) {
     <?php require_once 'includes/logout-modal.php'; ?>
     <?php require_once 'includes/change-password-modal.php'; ?>
     <?php require_once 'includes/sidebar-scripts.php'; ?>
+    <?php require_once 'includes/footer.php'; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>

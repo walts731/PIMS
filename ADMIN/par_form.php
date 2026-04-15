@@ -581,6 +581,7 @@ if ($result && $row = $result->fetch_assoc()) {
 
     <?php include 'includes/logout-modal.php'; ?>
     <?php include 'includes/change-password-modal.php'; ?>
+    <?php include 'includes/footer.php'; ?>
     
     <!-- Property Number Generator Modal -->
     <div class="modal fade generator-modal" id="propertyNumberGeneratorModal" tabindex="-1" aria-labelledby="propertyNumberGeneratorModalLabel" aria-hidden="true">

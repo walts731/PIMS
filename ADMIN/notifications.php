@@ -420,6 +420,7 @@ function getTimeAgo($datetime) {
     
     <?php require_once 'includes/logout-modal.php'; ?>
     <?php require_once 'includes/change-password-modal.php'; ?>
+    <?php require_once 'includes/footer.php'; ?>
     </div>
     
     <!-- Bootstrap JS -->

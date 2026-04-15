@@ -745,6 +745,7 @@ try {
     
     <?php require_once 'includes/logout-modal.php'; ?>
     <?php require_once 'includes/change-password-modal.php'; ?>
+    <?php require_once 'includes/footer.php'; ?>
     
     <!-- Import Consumables Modal -->
     <div class="modal fade" id="importConsumablesModal" tabindex="-1">

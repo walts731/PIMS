@@ -413,6 +413,7 @@ foreach ($software_data as $software) {
     
     <?php require_once 'includes/logout-modal.php'; ?>
     <?php require_once 'includes/change-password-modal.php'; ?>
+    <?php require_once 'includes/footer.php'; ?>
     
     <!-- Add Software Modal -->
     <div class="modal fade" id="addSoftwareModal" tabindex="-1">
@@ -1108,5 +1109,6 @@ foreach ($software_data as $software) {
 
 <?php require_once 'includes/logout-modal.php'; ?>
 <?php require_once 'includes/change-password-modal.php'; ?>
+<?php require_once 'includes/footer.php'; ?>
 </body>
 </html>
