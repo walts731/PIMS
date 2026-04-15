@@ -59,6 +59,73 @@ $settings = mysqli_fetch_assoc($settings_result);
 // Log borrow slip view
 logSystemAction($_SESSION['user_id'], 'view', 'borrow_slip', "Borrow ID: $borrow_id");
 
+// Handle return action
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'mark_returned') {
+    $borrow_id = $_POST['borrow_id'];
+    
+    try {
+        $conn->begin_transaction();
+
+        // Get borrow details
+        $stmt = $conn->prepare("SELECT items FROM borrow_form_submissions WHERE id = ?");
+        $stmt->bind_param("i", $borrow_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $borrow_data = $result->fetch_assoc();
+        
+        // Parse items from JSON format
+        $items_json = $borrow_data['items'];
+        $items = [];
+        
+        if (!empty($items_json)) {
+            try {
+                $items = json_decode($items_json, true);
+                
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    error_log("JSON decode error: " . json_last_error_msg());
+                    $items = [];
+                }
+            } catch (Exception $e) {
+                error_log("Items decode error: " . $e->getMessage());
+                $items = [];
+            }
+        }
+        $stmt->close();
+
+        // Update borrow status
+        $update_stmt = $conn->prepare("UPDATE borrow_form_submissions SET status = 'returned', updated_at = NOW() WHERE id = ?");
+        $update_stmt->bind_param("i", $borrow_id);
+        $update_stmt->execute();
+        $update_stmt->close();
+
+        // Update asset items status back to serviceable (if asset_item_id exists)
+        foreach ($items as $item) {
+            if (isset($item['asset_item_id'])) {
+                $asset_item_id = $item['asset_item_id'];
+                
+                // Update the specific asset item back to serviceable status
+                $update_asset_stmt = $conn->prepare("UPDATE asset_items SET status = 'serviceable' WHERE id = ?");
+                $update_asset_stmt->bind_param("i", $asset_item_id);
+                $update_asset_stmt->execute();
+                $update_asset_stmt->close();
+                
+                error_log("Updated asset item ID {$asset_item_id} back to serviceable status");
+            }
+        }
+
+        $conn->commit();
+        $_SESSION['success'] = "Items marked as returned successfully!";
+        logSystemAction($_SESSION['user_id'], 'borrow_items_returned', 'borrow_slip', "Borrow ID: $borrow_id");
+
+    } catch (Exception $e) {
+        $conn->rollback();
+        $_SESSION['error'] = "Error marking items as returned: " . $e->getMessage();
+        logSystemAction($_SESSION['user_id'], 'borrow_return_failed', 'borrow_slip', "Error: " . $e->getMessage());
+    }
+    header("Location: borrow_slip.php?id=$borrow_id");
+    exit();
+}
+
 // Status badge helper
 $status = strtolower($borrow_request['status'] ?? 'pending');
 $badge_class = match($status) {
@@ -75,6 +142,11 @@ $badge_class = match($status) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Borrow Slip #<?php echo $borrow_request['id']; ?> - PIMS</title>
 
+     <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="../favicon/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="../favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../favicon/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="../favicon/apple-touch-icon.png">
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
@@ -316,7 +388,7 @@ $badge_class = match($status) {
                                     <i class="bi bi-printer"></i> Print
                                 </button>
                             </li>
-                                                        <li><hr class="dropdown-divider"></li>
+                            <li><hr class="dropdown-divider"></li>
                             <?php if ($status === 'approved'): ?>
                             <li>
                                 <button class="dropdown-item" onclick="markAsReturned(<?php echo $borrow_request['id']; ?>)">
