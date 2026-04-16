@@ -297,6 +297,61 @@ function exportSystemInfo() {
     linkElement.click();
 }
 
+// Theme-aware footer functionality
+function updateFooterTheme() {
+    const footer = document.querySelector('.admin-footer');
+    const nightSky = document.querySelector('.night-sky');
+    const moon = document.querySelector('.moon');
+    const stars = document.querySelector('.stars');
+    const clouds = document.querySelector('.clouds');
+    const isDarkMode = document.body.classList.contains('dark-mode');
+    
+    if (isDarkMode) {
+        // Night mode - show night sky with moon and stars
+        nightSky.style.display = 'block';
+        nightSky.classList.remove('day-mode-sky');
+        nightSky.classList.add('night-mode-sky');
+        footer.classList.add('night-mode-footer');
+        footer.classList.remove('day-mode-footer');
+        
+        // Show moon and stars
+        if (moon) moon.style.display = 'block';
+        if (stars) stars.style.display = 'block';
+        if (clouds) clouds.style.display = 'block';
+    } else {
+        // Light mode - show daylight with sun
+        nightSky.style.display = 'block';
+        nightSky.classList.remove('night-mode-sky');
+        nightSky.classList.add('day-mode-sky');
+        footer.classList.add('day-mode-footer');
+        footer.classList.remove('night-mode-footer');
+        
+        // Hide moon and stars, keep clouds for sun context
+        if (moon) moon.style.display = 'none';
+        if (stars) stars.style.display = 'none';
+        if (clouds) clouds.style.display = 'block';
+    }
+}
+
+// Initialize footer theme on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateFooterTheme();
+    
+    // Watch for theme changes
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                updateFooterTheme();
+            }
+        });
+    });
+    
+    observer.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class']
+    });
+});
+
 // Auto-update time in footer
 setInterval(function() {
     const timeElements = document.querySelectorAll('.footer-info .info-item:nth-child(2) span');
@@ -327,6 +382,157 @@ function getSystemSettings() {
 .admin-footer {
     position: relative;
     overflow: hidden;
+}
+
+/* Day Mode Footer Styles */
+.day-mode-footer {
+    background: linear-gradient(135deg, #87CEEB 0%, #98D8E8 50%, #B0E0E6 100%) !important;
+    color: #2c3e50 !important;
+}
+
+.day-mode-footer::before {
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent) !important;
+}
+
+.day-mode-footer .footer-top,
+.day-mode-footer .footer-bottom {
+    background: transparent !important;
+}
+
+.day-mode-footer .footer-title,
+.day-mode-footer .footer-heading {
+    color: #2c3e50 !important;
+}
+
+.day-mode-footer .footer-description,
+.day-mode-footer .footer-links a,
+.day-mode-footer .info-item,
+.day-mode-footer .copyright {
+    color: #34495e !important;
+}
+
+.day-mode-footer .footer-links a:hover {
+    color: #1e90ff !important;
+    background: rgba(255, 255, 255, 0.5) !important;
+}
+
+.day-mode-footer .footer-bottom {
+    background: rgba(255, 255, 255, 0.2) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+.day-mode-footer .footer-bottom-links a {
+    color: #34495e !important;
+}
+
+.day-mode-footer .footer-bottom-links a:hover {
+    color: #1e90ff !important;
+}
+
+/* Day mode sun */
+.day-mode-sky::after {
+    content: '';
+    position: absolute;
+    top: 20px;
+    right: 40px;
+    width: 50px;
+    height: 50px;
+    background: radial-gradient(circle, #FFD700, #FFA500);
+    border-radius: 50%;
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.8),
+                0 0 60px rgba(255, 215, 0, 0.4);
+    animation: sunGlow 4s ease-in-out infinite;
+    z-index: 10;
+}
+
+/* Hide moon and stars in day mode */
+.day-mode-sky .moon,
+.day-mode-sky .stars {
+    display: none !important;
+}
+
+/* Show clouds in day mode with lighter styling */
+.day-mode-sky .cloud {
+    background: rgba(255, 255, 255, 0.6);
+    opacity: 0.8;
+}
+
+.day-mode-sky .cloud::before,
+.day-mode-sky .cloud::after {
+    background: rgba(255, 255, 255, 0.6);
+}
+
+@keyframes sunGlow {
+    0%, 100% {
+        box-shadow: 0 0 30px rgba(255, 215, 0, 0.8),
+                    0 0 60px rgba(255, 215, 0, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 40px rgba(255, 215, 0, 1),
+                    0 0 80px rgba(255, 215, 0, 0.6);
+    }
+}
+
+/* Night Mode Footer Styles */
+.night-mode-footer {
+    background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%) !important;
+    color: #ffffff !important;
+}
+
+/* Show moon and stars in night mode */
+.night-mode-sky .moon,
+.night-mode-sky .stars {
+    display: block !important;
+}
+
+/* Darker clouds in night mode */
+.night-mode-sky .cloud {
+    background: rgba(255, 255, 255, 0.1);
+    opacity: 0.6;
+}
+
+.night-mode-sky .cloud::before,
+.night-mode-sky .cloud::after {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.night-mode-footer::before {
+    background: linear-gradient(90deg, transparent, rgba(74, 144, 217, 0.1), transparent) !important;
+}
+
+.night-mode-footer .footer-top,
+.night-mode-footer .footer-bottom {
+    background: transparent !important;
+}
+
+.night-mode-footer .footer-title,
+.night-mode-footer .footer-heading {
+    color: #e5e7eb !important;
+}
+
+.night-mode-footer .footer-description,
+.night-mode-footer .footer-links a,
+.night-mode-footer .info-item,
+.night-mode-footer .copyright {
+    color: #9ca3af !important;
+}
+
+.night-mode-footer .footer-links a:hover {
+    color: var(--primary-color) !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.night-mode-footer .footer-bottom {
+    background: rgba(0, 0, 0, 0.3) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.night-mode-footer .footer-bottom-links a {
+    color: #9ca3af !important;
+}
+
+.night-mode-footer .footer-bottom-links a:hover {
+    color: var(--primary-color) !important;
 }
 
 .ship-container {
