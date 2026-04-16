@@ -314,6 +314,7 @@ if (isset($_SESSION['error'])) {
             border-top: 1px solid #e0e4ed;
         }
     </style>
+<?php require_once 'includes/dark-mode-init.php'; ?>
 </head>
 <body>
 <?php $page_title = 'New Borrow Request'; ?>

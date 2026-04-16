@@ -381,6 +381,7 @@ if ($result && $row = $result->fetch_assoc()) {
             letter-spacing: 1px;
         }
     </style>
+<?php require_once 'includes/dark-mode-init.php'; ?>
 </head>
 <body>
     <?php

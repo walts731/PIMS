@@ -20,6 +20,13 @@
                 </a>
             </div>
             
+            <!-- Dark Mode Toggle -->
+            <div class="nav-item me-1">
+                <button class="dark-mode-toggle nav-link text-white" type="button" title="Toggle Dark Mode" onclick="darkMode.toggle()">
+                    <i class="bi bi-moon"></i>
+                </button>
+            </div>
+            
             <!-- Notification Bell -->
             <div class="nav-item me-1">
                 <div class="dropdown">
@@ -150,6 +157,13 @@
                         <a href="scan_qr.php" class="nav-link text-white" title="QR Scanner">
                             <i class="bi bi-qr-code-scan"></i>
                         </a>
+                    </div>
+                    
+                    <!-- Dark Mode Toggle - Desktop only -->
+                    <div class="nav-item me-2">
+                        <button class="dark-mode-toggle nav-link text-white" type="button" title="Toggle Dark Mode" onclick="darkMode.toggle()">
+                            <i class="bi bi-moon"></i>
+                        </button>
                     </div>
                     
                     <!-- Desktop Notifications -->

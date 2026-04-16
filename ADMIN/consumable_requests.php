@@ -53,6 +53,7 @@ logSystemAction($_SESSION['user_id'], 'Accessed Consumable Requests', 'consumabl
         .animate-fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
+<?php require_once 'includes/dark-mode-init.php'; ?>
 </head>
 <body>
     <?php $page_title = 'Office Supplies Consolidator'; ?>

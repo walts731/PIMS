@@ -923,6 +923,7 @@ $status_display = formatStatus($item['status']);
         }
     }
     </style>
+<?php require_once 'includes/dark-mode-init.php'; ?>
 </head>
 <body>
     <?php

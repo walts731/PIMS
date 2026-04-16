@@ -180,6 +180,7 @@ try {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="assets/css/admin-unified.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+<?php require_once 'includes/dark-mode-init.php'; ?>
 </head>
 <body>
     <?php $page_title = 'Red Tags'; ?>

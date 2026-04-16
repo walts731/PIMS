@@ -186,6 +186,7 @@ try {
     <link href="../assets/css/index.css" rel="stylesheet">
     <link href="../assets/css/theme-custom.css" rel="stylesheet">
     <link href="assets/css/admin-unified.css" rel="stylesheet">
+<?php require_once 'includes/dark-mode-init.php'; ?>
 </head>
 <body>
     <?php

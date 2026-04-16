@@ -613,6 +613,7 @@ try {
     <!-- Custom CSS -->
    
     <link href="assets/css/admin-unified.css" rel="stylesheet">
+<?php require_once 'includes/dark-mode-init.php'; ?>
 </head>
 <body>
     <?php
@@ -690,7 +691,7 @@ try {
         <!-- Assets Table -->
         <div class="table-container">
             <div class="table-responsive">
-                <table class="table table-hover" id="assetsTable">
+                <table class="table table-striped table-hover" id="assetsTable">
                     <thead>
                         <tr>
                             <th>Category</th>
@@ -1228,6 +1229,24 @@ try {
                                 searchable: false
                             }
                         ],
+                        createdRow: function(row, data, dataIndex) {
+                            // Apply dark mode styling based on data content
+                            if (typeof darkMode !== 'undefined' && darkMode.isEnabled()) {
+                                // Check if we're in dark mode and apply appropriate classes
+                                $(row).addClass('dark-mode-row');
+                                
+                                // You can add conditional styling based on specific data values
+                                // For example, different styling based on quantity, category, etc.
+                                if (data && data[3]) { // Quantity column (index 3)
+                                    const quantity = parseInt(data[3]);
+                                    if (quantity < 5) {
+                                        $(row).addClass('low-stock-dark');
+                                    } else if (quantity > 50) {
+                                        $(row).addClass('high-stock-dark');
+                                    }
+                                }
+                            }
+                        },
                         dom: '<"row"<"col-md-3"l><"col-md-2 category-filter-container"><"col-md-2 subcategory-filter-container"><"col-md-2 office-filter-container"><"col-md-3"f>>rtip',
                         language: {
                             search: "Search assets:",

@@ -202,38 +202,13 @@ logSystemAction($_SESSION['user_id'], 'access', 'system_settings', 'Accessed sys
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
-    <link href="../assets/css/index.css" rel="stylesheet">
-    <link href="../assets/css/theme-custom.css" rel="stylesheet">
+   
     <link href="assets/css/admin-unified.css" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, var(--light-color) 0%, var(--light-accent) 100%);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        .page-header {
-            background: white;
-            border-radius: var(--border-radius-xl);
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow);
-            border-left: 4px solid var(--primary-color);
-        }
-
+        /* Page-specific styles that complement admin-unified.css */
         .settings-card {
-            background: white;
-            border-radius: var(--border-radius-lg);
             padding: 1.5rem;
-            box-shadow: var(--shadow);
             margin-bottom: 2rem;
-            transition: var(--transition);
-        }
-
-        .settings-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
         }
 
         .settings-section {
@@ -241,51 +216,13 @@ logSystemAction($_SESSION['user_id'], 'access', 'system_settings', 'Accessed sys
         }
 
         .settings-section h6 {
-            color: var(--primary-color);
             font-weight: 600;
             margin-bottom: 1rem;
             padding-bottom: 0.5rem;
             border-bottom: 2px solid var(--primary-color);
         }
 
-        .form-label {
-            font-weight: 500;
-            color: #495057;
-            margin-bottom: 0.5rem;
-        }
-
-        .form-control,
-        .form-select {
-            border-radius: var(--border-radius);
-            border: 1px solid #dee2e6;
-            transition: var(--transition);
-        }
-
-        .form-control:focus,
-        .form-select:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 0.2rem rgba(var(--primary-rgb), 0.25);
-        }
-
-        .form-check-input:checked {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
-        }
-
-        .action-btn {
-            border-radius: var(--border-radius);
-            padding: 0.5rem 1rem;
-            font-weight: 500;
-            transition: var(--transition);
-        }
-
-        .action-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow);
-        }
-
         .info-card {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
             border-radius: var(--border-radius);
             padding: 1rem;
             margin-bottom: 1rem;
@@ -293,34 +230,28 @@ logSystemAction($_SESSION['user_id'], 'access', 'system_settings', 'Accessed sys
 
         .info-label {
             font-weight: 600;
-            color: #6c757d;
             font-size: 0.875rem;
         }
 
         .info-value {
             font-family: 'Courier New', monospace;
             font-weight: 500;
-            color: #212529;
         }
 
         .system-action {
-            background: white;
             border-radius: var(--border-radius);
             padding: 1rem;
             margin-bottom: 1rem;
             border-left: 4px solid var(--primary-color);
-            transition: var(--transition);
-        }
-
-        .system-action:hover {
-            transform: translateX(3px);
-            box-shadow: var(--shadow);
         }
 
         .alert-dismissible .btn-close {
             padding: 0.75rem 1rem;
         }
+
+        /* Settings page specific styles - dark mode handled by dark-mode-init.php */
     </style>
+<?php require_once 'includes/dark-mode-init.php'; ?>
 </head>
 
 <body>
@@ -439,14 +370,31 @@ logSystemAction($_SESSION['user_id'], 'access', 'system_settings', 'Accessed sys
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="mb-3">
-                                            <div class="form-check form-switch">
-                                                <input class="form-check-input" type="checkbox" id="dark_mode"
-                                                    name="dark_mode" value="1"
-                                                    <?php echo $settings['dark_mode'] ? 'checked' : ''; ?>>
-                                                <label class="form-check-label" for="dark_mode">
-                                                    <strong>Dark Mode</strong>
-                                                    <div class="form-text">Use dark theme across the system</div>
-                                                </label>
+                                            <label class="form-label d-block">
+                                                <strong>Dark Mode</strong>
+                                                <small class="text-muted d-block">Use dark theme across the system</small>
+                                            </label>
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="form-check form-switch mb-0">
+                                                    <input class="form-check-input" type="checkbox" id="dark_mode"
+                                                        name="dark_mode" value="1"
+                                                        <?php echo $settings['dark_mode'] ? 'checked' : ''; ?>>
+                                                    <label class="form-check-label" for="dark_mode">
+                                                        Enable Dark Mode
+                                                    </label>
+                                                </div>
+                                                <button type="button" class="btn btn-outline-secondary btn-sm" 
+                                                        onclick="darkMode.toggle()" 
+                                                        title="Toggle Dark Mode Instantly">
+                                                    <i class="bi bi-moon"></i> Quick Toggle
+                                                </button>
+                                            </div>
+                                            <div class="form-text mt-2">
+                                                <small class="text-muted">
+                                                    <i class="bi bi-info-circle"></i> 
+                                                    Use the switch to save preference, or the quick toggle button for instant preview. 
+                                                    Changes are synchronized across all pages.
+                                                </small>
                                             </div>
                                         </div>
                                     </div>
@@ -576,6 +524,47 @@ logSystemAction($_SESSION['user_id'], 'access', 'system_settings', 'Accessed sys
         document.querySelectorAll('input, select, textarea').forEach(element => {
             element.addEventListener('change', autoSaveDraft);
         });
+
+        // Dark mode toggle using centralized system
+        const darkModeToggle = document.getElementById('dark_mode');
+        if (darkModeToggle) {
+            darkModeToggle.addEventListener('change', function() {
+                // Use the centralized dark mode system
+                if (typeof darkMode !== 'undefined') {
+                    darkMode.set(this.checked);
+                } else {
+                    // Fallback if darkMode system not loaded
+                    if (this.checked) {
+                        document.body.classList.add('dark-mode');
+                    } else {
+                        document.body.classList.remove('dark-mode');
+                    }
+                }
+            });
+            
+            // Sync toggle with current dark mode state
+            if (typeof darkMode !== 'undefined') {
+                // Update toggle to match current dark mode state
+                this.checked = darkMode.isEnabled();
+                
+                // Listen for dark mode changes from other sources (like topbar toggle)
+                const observer = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                            const isDark = document.body.classList.contains('dark-mode');
+                            if (darkModeToggle.checked !== isDark) {
+                                darkModeToggle.checked = isDark;
+                            }
+                        }
+                    });
+                });
+                
+                observer.observe(document.body, {
+                    attributes: true,
+                    attributeFilter: ['class']
+                });
+            }
+        }
 
         // Form validation
         document.getElementById('settingsForm').addEventListener('submit', function(e) {

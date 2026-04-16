@@ -221,6 +221,7 @@ if ($result && $row = $result->fetch_assoc()) {
             .footer-table th, .footer-table td { padding: 3px 4px; font-size: 10px; }
         }
     </style>
+<?php require_once 'includes/dark-mode-init.php'; ?>
 </head>
 <body>
     <?php

@@ -339,6 +339,7 @@ if ($imp_result) {
             }
         }
     </style>
+<?php require_once 'includes/dark-mode-init.php'; ?>
 </head>
 <body>
     <div class="main-wrapper" id="mainWrapper">

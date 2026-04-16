@@ -296,6 +296,7 @@ if (isset($_SESSION['error_message'])) {
             white-space: nowrap;
         }
     </style>
+<?php require_once 'includes/dark-mode-init.php'; ?>
 </head>
 <body>
     <?php 

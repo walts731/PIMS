@@ -66,6 +66,7 @@ if ($result && $row = $result->fetch_assoc()) {
     <link href="assets/css/admin-unified.css" rel="stylesheet">
     <!-- DataTables CSS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<?php require_once 'includes/dark-mode-init.php'; ?>
 </head>
 <body>
     <?php $page_title = 'RIS Entries'; ?>

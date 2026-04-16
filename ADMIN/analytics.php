@@ -327,6 +327,7 @@ try {
             transform: translateY(-2px);
         }
     </style>
+<?php require_once 'includes/dark-mode-init.php'; ?>
 </head>
 <body>
     <?php $page_title = 'Advanced Analytics'; ?>

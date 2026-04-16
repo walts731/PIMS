@@ -42,6 +42,7 @@ logSystemAction($_SESSION['user_id'], 'access', 'fuel_inventory', 'User accessed
     
     <!-- Custom CSS -->
     <link href="assets/css/admin-unified.css" rel="stylesheet">
+<?php require_once 'includes/dark-mode-init.php'; ?>
 </head>
 <body>
     <?php
