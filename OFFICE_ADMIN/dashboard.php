@@ -1,27 +1,11 @@
 <?php
 session_start();
-// Replace existing requires with:
+// Use simpler bootstrap approach
 $admin_data = require_once 'includes/bootstrap.php';
 $conn = $admin_data['conn'];
 $office_id = $admin_data['office_id'];
 
-// Check session timeout
-checkSessionTimeout();
-
-// Check if user is logged in
-if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
-    header('Location: ../index.php');
-    exit();
-}
-
-// Check if user has correct role
-if ($_SESSION['role'] !== 'office_admin') {
-    header('Location: ../index.php');
-    exit();
-}
-
-require_once '../config.php';
-require_once '../includes/logger.php';
+// Authentication and dependencies handled by bootstrap
 
 // Log dashboard access
 logSystemAction($_SESSION['user_id'], 'access', 'office_dashboard', 'Office admin accessed dashboard');
