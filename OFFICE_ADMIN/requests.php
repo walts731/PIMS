@@ -1,9 +1,13 @@
 <?php
 session_start();
-require_once '../config.php';
-require_once '../includes/system_functions.php';
-require_once '../includes/logger.php';
-require_once 'includes/notification_functions.php';
+// require_once '../config.php';
+// require_once '../includes/system_functions.php';
+// require_once '../includes/logger.php';
+// require_once 'includes/notification_functions.php';
+
+$admin_data = require_once 'includes/bootstrap.php';
+$conn = $admin_data['conn'];
+$office_id = $admin_data['office_id'];
 
 // Check session timeout
 checkSessionTimeout();
