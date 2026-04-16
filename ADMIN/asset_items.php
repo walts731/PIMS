@@ -103,6 +103,7 @@ $disposed_items = count(array_filter($items, function($item) { return $item['sta
             max-width: 200px;
         }
     </style>
+<?php require_once 'includes/dark-mode-init.php'; ?>
 </head>
 <body>
     <?php $page_title = 'Asset Items'; ?>

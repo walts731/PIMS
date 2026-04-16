@@ -335,6 +335,7 @@ $badge_class = match($status) {
             }
         }
     </style>
+<?php require_once 'includes/dark-mode-init.php'; ?>
 </head>
 <body>
 <?php $page_title = 'Borrow Slip'; ?>

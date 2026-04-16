@@ -266,6 +266,7 @@ if ($result && $row = $result->fetch_assoc()) {
             .main-wrapper { padding: 0; margin: 0; }
         }
     </style>
+<?php require_once 'includes/dark-mode-init.php'; ?>
 </head>
 <body>
     <?php

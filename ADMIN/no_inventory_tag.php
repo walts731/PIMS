@@ -140,6 +140,7 @@ try {
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
     </style>
+<?php require_once 'includes/dark-mode-init.php'; ?>
 </head>
 <body>
     <?php $page_title = 'No Inventory Tag'; ?>

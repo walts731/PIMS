@@ -264,6 +264,7 @@ if ($result && $row = $result->fetch_assoc()) {
             .form-card { box-shadow: none; }
         }
     </style>
+<?php require_once 'includes/dark-mode-init.php'; ?>
 </head>
 <body>
     <?php

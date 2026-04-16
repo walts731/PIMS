@@ -651,6 +651,7 @@ if (empty($red_tag_no)) {
             }
         }
     </style>
+<?php require_once 'includes/dark-mode-init.php'; ?>
 </head>
 <body>
     <?php

@@ -435,6 +435,7 @@ $total_forms_value = $stats['par_value'] + $stats['ics_value'] + $stats['ris_val
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="assets/css/admin-unified.css" rel="stylesheet">
+    <?php require_once 'includes/dark-mode-init.php'; ?>
 </head>
 <body>
     <?php $page_title = 'Admin Dashboard'; ?>

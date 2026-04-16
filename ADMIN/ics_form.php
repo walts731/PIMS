@@ -424,6 +424,7 @@ if ($result && $row = $result->fetch_assoc()) {
             z-index: 10;
         }
     </style>
+<?php require_once 'includes/dark-mode-init.php'; ?>
 </head>
 <body>
     <!-- Toast Container -->

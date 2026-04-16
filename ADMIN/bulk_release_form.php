@@ -60,6 +60,7 @@ $message_type = isset($_GET['type']) ? $_GET['type'] : '';
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
     <link href="assets/css/admin-unified.css" rel="stylesheet">
+<?php require_once 'includes/dark-mode-init.php'; ?>
 </head>
 <body>
     <div class="main-wrapper" id="mainWrapper">

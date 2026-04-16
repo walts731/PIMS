@@ -2,7 +2,7 @@
 // Get current page name for active state
 $current_page = basename($_SERVER['PHP_SELF']);
 
-// Get system settings for logo
+// Get system settings for logo and dark mode
 require_once '../config.php';
 $system_settings = [];
 try {
@@ -17,7 +17,14 @@ try {
     // Fallback to default if database fails
     $system_settings['system_logo'] = '';
     $system_settings['system_name'] = 'PIMS';
+    $system_settings['dark_mode'] = '0';
 }
+
+// Set dark mode class for body
+$dark_mode_class = ($system_settings['dark_mode'] ?? '0') === '1' ? 'dark-mode' : '';
+
+// Add dark mode class to body via JavaScript (runs before DOM loads to prevent flash)
+echo "<script>document.body.classList.add('$dark_mode_class');</script>";
 ?>
 <style>
 <?php if (($system_settings['theme_preset'] ?? 'default') === 'legacy'): ?>

@@ -248,6 +248,7 @@ if ($result && $row = $result->fetch_assoc()) {
             position: absolute !important;
         }
     </style>
+<?php require_once 'includes/dark-mode-init.php'; ?>
 </head>
 <body>
     <?php

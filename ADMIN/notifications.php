@@ -206,6 +206,7 @@ function getTimeAgo($datetime) {
             color: var(--primary-color);
         }
     </style>
+<?php require_once 'includes/dark-mode-init.php'; ?>
 </head>
 <body>
     <?php

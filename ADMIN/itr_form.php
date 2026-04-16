@@ -301,6 +301,7 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
             color: var(--primary-color) !important;
         }
     </style>
+<?php require_once 'includes/dark-mode-init.php'; ?>
 </head>
 
 <body>

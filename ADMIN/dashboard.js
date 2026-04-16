@@ -4,6 +4,62 @@ function refreshDashboard() {
     location.reload();
 }
 
+// Dark mode functionality for dashboard elements
+function applyDashboardDarkMode() {
+    if (typeof darkMode !== 'undefined' && darkMode.isEnabled()) {
+        // Apply dark mode to category items
+        document.querySelectorAll('.category-item').forEach(item => {
+            item.classList.add('dark-mode-category');
+        });
+        
+        // Apply dark mode to activity items
+        document.querySelectorAll('.activity-item').forEach(item => {
+            item.classList.add('dark-mode-activity');
+        });
+        
+        // Apply dark mode to module cards
+        document.querySelectorAll('.module-card').forEach(card => {
+            card.classList.add('dark-mode-module');
+        });
+    } else {
+        // Remove dark mode classes
+        document.querySelectorAll('.category-item').forEach(item => {
+            item.classList.remove('dark-mode-category');
+        });
+        
+        document.querySelectorAll('.activity-item').forEach(item => {
+            item.classList.remove('dark-mode-activity');
+        });
+        
+        document.querySelectorAll('.module-card').forEach(card => {
+            card.classList.remove('dark-mode-module');
+        });
+    }
+}
+
+// Initialize dark mode when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Apply dark mode immediately
+    applyDashboardDarkMode();
+    
+    // Listen for dark mode changes
+    if (typeof darkMode !== 'undefined') {
+        // Listen for dark mode toggle changes
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                    applyDashboardDarkMode();
+                }
+            });
+        });
+        
+        observer.observe(document.body, {
+            attributes: true,
+            attributeFilter: ['class']
+        });
+    }
+});
+
 function exportData() {
     // Get data from the page instead of PHP variables
     const statCards = document.querySelectorAll('.stat-card');
