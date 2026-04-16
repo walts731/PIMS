@@ -2207,38 +2207,38 @@ $page_title = 'Requests Management';
         });
         
         // Backup function to open modal
-        function tryOpenNewRequestModal(event) {
-            event.preventDefault();
-            event.stopPropagation(); // Prevent event bubbling
+    function tryOpenNewRequestModal(event) {
+        event.preventDefault();
+        event.stopPropagation(); // Prevent event bubbling
+        
+        try {
+            // Clean up any existing backdrops first
+            document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+                if (backdrop.parentNode) {
+                    backdrop.parentNode.removeChild(backdrop);
+                }
+            });
             
-            try {
-                // Clean up any existing backdrops first
-                document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
-                    if (backdrop.parentNode) {
-                        backdrop.parentNode.removeChild(backdrop);
-                    }
-                });
-                
-                // Check if modal already exists
-                let modal = bootstrap.Modal.getInstance(document.getElementById('newRequestModal'));
-                
-                // If no instance exists, create one
-                if (!modal) {
-                    modal = new bootstrap.Modal(document.getElementById('newRequestModal'));
-                }
-                
-                if (modal) {
-                    console.log('Opening modal via backup function...');
-                    modal.show();
-                } else {
-                    console.error('Failed to create modal instance');
-                    alert('Error opening request form. Please refresh the page.');
-                }
-            } catch (error) {
-                console.error('Error showing modal:', error);
+            // Check if modal already exists
+            let modal = bootstrap.Modal.getInstance(document.getElementById('newRequestModal'));
+            
+            // If no instance exists, create one
+            if (!modal) {
+                modal = new bootstrap.Modal(document.getElementById('newRequestModal'));
+            }
+            
+            if (modal) {
+                console.log('Opening modal via backup function...');
+                modal.show();
+            } else {
+                console.error('Failed to create modal instance');
                 alert('Error opening request form. Please refresh the page.');
             }
+        } catch (error) {
+            console.error('Error showing modal:', error);
+            alert('Error opening request form. Please refresh the page.');
         }
+    }
         
 console.log('DEBUG: Script tag loaded!');
 
