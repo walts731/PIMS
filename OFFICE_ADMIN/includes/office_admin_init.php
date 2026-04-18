@@ -47,16 +47,38 @@ class OfficeAdminInit {
     }
     
     private function loadDependencies() {
-        require_once dirname(__DIR__) . '/config.php';
-        require_once dirname(__DIR__) . '/includes/system_functions.php';
-        require_once dirname(__DIR__) . '/includes/logger.php';
+        // Correct path from OFFICE_ADMIN/includes/ to PIMS/config.php
+        $config_path = dirname(dirname(__DIR__)) . '/config.php';
+        
+        // Debug: Show the path being used
+        error_log("Loading config from: " . $config_path);
+        
+        if (!file_exists($config_path)) {
+            throw new Exception("Config file not found at: " . $config_path);
+        }
+        
+        // Load config first to establish database connection
+        require_once $config_path;
+        
+        // Ensure global connection is available
+        global $conn;
+        if (!$conn || $conn->connect_error) {
+            throw new Exception("Database connection failed: " . ($conn->connect_error ?? 'Connection not established'));
+        }
+        
+        // Load other dependencies with correct paths
+        require_once dirname(dirname(__DIR__)) . '/includes/system_functions.php';
+        require_once dirname(dirname(__DIR__)) . '/includes/logger.php';
         require_once __DIR__ . '/notification_functions.php';
         
-        $this->conn = $GLOBALS['conn'];
+        $this->conn = $conn;
     }
     
     private function authenticate() {
-        checkSessionTimeout();
+        // Only check session timeout if database is available
+        if ($this->conn && !method_exists($this->conn, 'connect_error')) {
+            checkSessionTimeout();
+        }
         
         if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
             $this->redirect('../index.php');
