@@ -332,13 +332,38 @@ $page_title = 'Categories';
                     <p class="text-muted mb-0">Manage asset categories for classification and depreciation tracking</p>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <div class="btn-group" role="group">
-                        <button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#importCategoriesModal">
-                            <i class="bi bi-upload"></i> Import
+                    <div class="dropdown">
+                        <button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="categoryActionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-gear"></i> Actions
                         </button>
-                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
-                            <i class="bi bi-plus-circle"></i> Add Category
-                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="categoryActionsDropdown">
+                            <li>
+                                <button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#importCategoriesModal">
+                                    <i class="bi bi-upload text-info"></i> Import Categories
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+                                    <i class="bi bi-plus-circle text-primary"></i> Add Category
+                                </button>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <button class="dropdown-item" onclick="exportCategories()">
+                                    <i class="bi bi-download text-success"></i> Export Categories
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item" onclick="refreshCategories()">
+                                    <i class="bi bi-arrow-clockwise text-warning"></i> Refresh Data
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item" onclick="printCategories()">
+                                    <i class="bi bi-printer text-secondary"></i> Print List
+                                </button>
+                            </li>
+                        </ul>
                     </div>
                 </div>
             </div>
@@ -586,6 +611,92 @@ $page_title = 'Categories';
         
     <?php require_once 'includes/logout-modal.php'; ?>
     <?php require_once 'includes/change-password-modal.php'; ?>
+<!-- Import Categories Modal -->
+    <div class="modal fade" id="importCategoriesModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-upload"></i> Import Categories
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="importCategoriesForm" enctype="multipart/form-data">
+                    <div class="modal-body">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>Import Instructions:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>Upload a CSV file with category data</li>
+                                <li>Required columns: Category Name, Category Code</li>
+                                <li>Optional columns: Description, Depreciation Rate, Useful Life Years</li>
+                                <li>First row should contain headers</li>
+                                <li>Duplicate category codes will be skipped</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="importFile" class="form-label">Select CSV File</label>
+                            <input type="file" class="form-control" id="importFile" name="importFile" 
+                                   accept=".csv" required>
+                            <div class="form-text">Only CSV files are allowed. Maximum file size: 5MB.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="skipDuplicates" name="skipDuplicates" checked>
+                                <label class="form-check-label" for="skipDuplicates">
+                                    Skip duplicate category codes
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="updateExisting" name="updateExisting">
+                                <label class="form-check-label" for="updateExisting">
+                                    Update existing categories with same code
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div id="importPreview" class="d-none">
+                            <h6 class="mt-4 mb-3">Import Preview</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered" id="previewTable">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Category Name</th>
+                                            <th>Category Code</th>
+                                            <th>Description</th>
+                                            <th>Depreciation Rate</th>
+                                            <th>Useful Life</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="previewBody">
+                                        <!-- Preview data will be inserted here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-info" id="previewBtn">
+                            <i class="bi bi-eye"></i> Preview
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-upload"></i> Import Categories
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+        
+    <?php require_once 'includes/logout-modal.php'; ?>
+    <?php require_once 'includes/change-password-modal.php'; ?>
 </div> <!-- Close main wrapper -->
 
 <!-- Bootstrap JS -->
@@ -746,6 +857,544 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }, 3000);
     }
+    
+    // Export categories function
+    function exportCategories() {
+        window.location.href = 'export_categories.php';
+    }
+    
+    // Refresh categories function
+    function refreshCategories() {
+        // Show loading state
+        showAlert('Refreshing categories data...', 'info');
+        
+        // Reload the page after a short delay
+        setTimeout(() => {
+            window.location.reload();
+        }, 1000);
+    }
+    
+    // Print categories function
+    function printCategories() {
+        // Get all data from DataTable (not just current page)
+        const table = $('#categoriesTable').DataTable();
+        const allData = table.data().toArray();
+        
+        if (allData.length === 0) {
+            showAlert('No categories data to print', 'warning');
+            return;
+        }
+        
+        // Create a print preview window
+        const printWindow = window.open('', '_blank', 'width=1000,height=800');
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Asset Categories - Print Preview</title>
+                <style>
+                    @page {
+                        size: A4;
+                        margin: 0.5in;
+                    }
+                    
+                    * {
+                        margin: 0;
+                        padding: 0;
+                        box-sizing: border-box;
+                    }
+                    
+                    body {
+                        font-family: Arial, sans-serif;
+                        font-size: 12px;
+                        color: #333;
+                        background: white;
+                    }
+                    
+                    .preview-toolbar {
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        z-index: 1000;
+                        background: #191BA9;
+                        color: white;
+                        padding: 12px 20px;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+                    }
+                    
+                    .preview-toolbar .title {
+                        font-weight: bold;
+                        font-size: 14px;
+                        display: flex;
+                        align-items: center;
+                    }
+                    
+                    .preview-toolbar .actions {
+                        display: flex;
+                        gap: 10px;
+                    }
+                    
+                    .preview-toolbar button {
+                        padding: 6px 12px;
+                        border: none;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        font-size: 12px;
+                        transition: all 0.3s ease;
+                    }
+                    
+                    .preview-toolbar .btn-print {
+                        background: #28a745;
+                        color: white;
+                    }
+                    
+                    .preview-toolbar .btn-print:hover {
+                        background: #218838;
+                        transform: translateY(-1px);
+                    }
+                    
+                    .preview-toolbar .btn-close {
+                        background: #6c757d;
+                        color: white;
+                    }
+                    
+                    .preview-toolbar .btn-close:hover {
+                        background: #5a6268;
+                        transform: translateY(-1px);
+                    }
+                    
+                    .print-container {
+                        width: 100%;
+                        max-width: 8.5in;
+                        margin: 0 auto;
+                        padding: 60px 20px 20px;
+                        background: white;
+                        min-height: 11in;
+                        position: relative;
+                    }
+                    
+                    @media screen {
+                        body {
+                            background: #525659;
+                            padding: 0;
+                        }
+                        .print-container {
+                            background: white;
+                            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+                            margin: 60px auto 20px;
+                        }
+                    }
+                    
+                    @media print {
+                        .no-print { display: none !important; }
+                        body { background: white; margin: 0; padding: 0; }
+                        .print-container { 
+                            box-shadow: none; 
+                            margin: 0 auto; 
+                            padding: 20px;
+                            width: 100%;
+                        }
+                    }
+                    
+                    .report-header {
+                        text-align: center;
+                        margin-bottom: 30px;
+                        border-bottom: 2px solid #191BA9;
+                        padding-bottom: 15px;
+                    }
+                    
+                    .report-header h1 {
+                        color: #191BA9;
+                        font-size: 24px;
+                        font-weight: bold;
+                        margin-bottom: 5px;
+                        text-transform: uppercase;
+                    }
+                    
+                    .report-header .subtitle {
+                        color: #666;
+                        font-size: 14px;
+                        margin-bottom: 10px;
+                    }
+                    
+                    .report-header .meta {
+                        color: #333;
+                        font-size: 12px;
+                        font-weight: bold;
+                    }
+                    
+                    .categories-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 20px 0;
+                    }
+                    
+                    .categories-table th,
+                    .categories-table td {
+                        border: 1px solid #333;
+                        padding: 10px;
+                        text-align: left;
+                        vertical-align: top;
+                    }
+                    
+                    .categories-table th {
+                        background-color: #f8f9fa;
+                        font-weight: bold;
+                        color: #333;
+                        text-transform: uppercase;
+                        font-size: 11px;
+                    }
+                    
+                    .categories-table .category-name {
+                        font-weight: bold;
+                        min-width: 150px;
+                    }
+                    
+                    .categories-table .category-code {
+                        font-family: monospace;
+                        background-color: #f8f9fa;
+                        padding: 4px 8px;
+                        border-radius: 3px;
+                        font-size: 11px;
+                        min-width: 100px;
+                        text-align: center;
+                    }
+                    
+                    .categories-table .description {
+                        max-width: 250px;
+                        word-wrap: break-word;
+                        font-size: 11px;
+                    }
+                    
+                    .categories-table .rate {
+                        text-align: right;
+                        font-weight: bold;
+                        min-width: 80px;
+                    }
+                    
+                    .categories-table .years {
+                        text-align: center;
+                        font-weight: bold;
+                        min-width: 80px;
+                    }
+                    
+                    .categories-table .status-active {
+                        color: #28a745;
+                        font-weight: bold;
+                        text-align: center;
+                        text-transform: uppercase;
+                        font-size: 11px;
+                    }
+                    
+                    .categories-table .status-inactive {
+                        color: #6c757d;
+                        font-weight: bold;
+                        text-align: center;
+                        text-transform: uppercase;
+                        font-size: 11px;
+                    }
+                    
+                    .report-footer {
+                        margin-top: 40px;
+                        padding-top: 20px;
+                        border-top: 1px solid #ddd;
+                        font-size: 11px;
+                        color: #666;
+                        text-align: center;
+                    }
+                    
+                    .report-footer .summary {
+                        font-weight: bold;
+                        margin-bottom: 5px;
+                        color: #333;
+                    }
+                    
+                    .report-footer .user-info {
+                        font-style: italic;
+                    }
+                    
+                    /* Alternating row colors */
+                    .categories-table tbody tr:nth-child(even) {
+                        background-color: #f9f9f9;
+                    }
+                    
+                    .categories-table tbody tr:hover {
+                        background-color: #f0f8ff;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="preview-toolbar no-print">
+                    <div class="title">
+                        <i class="bi bi-printer-fill me-2"></i>Asset Categories Print Preview
+                    </div>
+                    <div class="actions">
+                        <button onclick="window.print()" class="btn-print">
+                            <i class="bi bi-printer me-1"></i>Print Report
+                        </button>
+                        <button onclick="window.close()" class="btn-close">
+                            <i class="bi bi-x-lg me-1"></i>Close Preview
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="print-container">
+                    <div class="report-header">
+                        <h1>Asset Categories Report</h1>
+                        <div class="subtitle">Property and Inventory Management System</div>
+                        <div class="meta">
+                            Generated on: ${new Date().toLocaleString()} | Total Categories: ${allData.length}
+                        </div>
+                    </div>
+                    
+                    <table class="categories-table">
+                        <thead>
+                            <tr>
+                                <th>Category Name</th>
+                                <th>Category Code</th>
+                                <th>Description</th>
+                                <th>Depreciation Rate</th>
+                                <th>Useful Life</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${allData.map((row, index) => {
+                                // Extract data from DataTable row
+                                const categoryName = row[0] || '';
+                                const categoryCode = row[1] || '';
+                                const description = row[2] || '-';
+                                const depreciationRate = row[3] || '0%';
+                                const usefulLife = row[4] || '0 years';
+                                const status = row[5] || 'inactive';
+                                
+                                // Clean text content
+                                const cleanName = categoryName.replace(/<[^>]*>/g, '').trim();
+                                const cleanCode = categoryCode.replace(/<[^>]*>/g, '').trim();
+                                const cleanDescription = description.replace(/<[^>]*>/g, '').trim();
+                                const cleanRate = depreciationRate.replace(/<[^>]*>/g, '').trim();
+                                const cleanLife = usefulLife.replace(/<[^>]*>/g, '').trim();
+                                const cleanStatus = status.replace(/<[^>]*>/g, '').trim().toLowerCase();
+                                
+                                const statusClass = cleanStatus === 'active' ? 'status-active' : 'status-inactive';
+                                
+                                return `
+                                    <tr>
+                                        <td class="category-name">${cleanName}</td>
+                                        <td><span class="category-code">${cleanCode}</span></td>
+                                        <td class="description">${cleanDescription}</td>
+                                        <td class="rate">${cleanRate}</td>
+                                        <td class="years">${cleanLife}</td>
+                                        <td class="${statusClass}">${cleanStatus.charAt(0).toUpperCase() + cleanStatus.slice(1)}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                    
+                    <div class="report-footer">
+                        <div class="summary">
+                            Report Summary: ${allData.length} categories exported from PIMS Asset Management System
+                        </div>
+                        <div class="user-info">
+                            Printed by: ${document.querySelector('.user-info')?.textContent?.trim() || 'System Administrator'} | 
+                            Date: ${new Date().toLocaleDateString()} | 
+                            Page: <span class="page-number"></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Bootstrap Icons -->
+                <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+        
+        // Add page numbering
+        printWindow.onload = function() {
+            // Add page numbers
+            const pageNumbers = printWindow.document.querySelectorAll('.page-number');
+            pageNumbers.forEach((element, index) => {
+                element.textContent = index + 1;
+            });
+        };
+    }
+    
+    // Import categories functionality
+    let importData = [];
+    
+    // Preview button click handler
+    document.getElementById('previewBtn').addEventListener('click', function() {
+        const fileInput = document.getElementById('importFile');
+        const file = fileInput.files[0];
+        
+        if (!file) {
+            showAlert('Please select a CSV file first', 'warning');
+            return;
+        }
+        
+        if (file.size > 5 * 1024 * 1024) { // 5MB limit
+            showAlert('File size exceeds 5MB limit', 'danger');
+            return;
+        }
+        
+        if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
+            showAlert('Please select a CSV file', 'warning');
+            return;
+        }
+        
+        // Read and parse CSV file
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const csvData = e.target.result;
+                importData = parseCSV(csvData);
+                
+                if (importData.length === 0) {
+                    showAlert('No valid data found in CSV file', 'warning');
+                    return;
+                }
+                
+                // Show preview
+                showImportPreview(importData);
+                showAlert(`Preview loaded: ${importData.length} categories found`, 'success');
+                
+            } catch (error) {
+                console.error('Error parsing CSV:', error);
+                showAlert('Error parsing CSV file: ' + error.message, 'danger');
+            }
+        };
+        reader.readAsText(file);
+    });
+    
+    // Parse CSV function
+    function parseCSV(csvData) {
+        const lines = csvData.split('\n').filter(line => line.trim());
+        if (lines.length < 2) {
+            throw new Error('CSV file must have at least a header row and one data row');
+        }
+        
+        const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+        const data = [];
+        
+        for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+            
+            if (values.length >= 2 && values[0] && values[1]) {
+                data.push({
+                    category_name: values[0] || '',
+                    category_code: values[1] || '',
+                    description: values[2] || '',
+                    depreciation_rate: parseFloat(values[3]) || 0,
+                    useful_life_years: parseInt(values[4]) || 0,
+                    status: values[5] || 'active',
+                    row_number: i + 1
+                });
+            }
+        }
+        
+        return data;
+    }
+    
+    // Show import preview
+    function showImportPreview(data) {
+        const previewBody = document.getElementById('previewBody');
+        const previewDiv = document.getElementById('importPreview');
+        
+        previewBody.innerHTML = '';
+        
+        data.forEach(item => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${item.category_name}</td>
+                <td>${item.category_code}</td>
+                <td>${item.description || '-'}</td>
+                <td>${item.depreciation_rate}%</td>
+                <td>${item.useful_life_years || '-'}</td>
+                <td><span class="badge bg-${item.status === 'active' ? 'success' : 'secondary'}">${item.status}</span></td>
+            `;
+            previewBody.appendChild(row);
+        });
+        
+        previewDiv.classList.remove('d-none');
+    }
+    
+    // Import form submit handler
+    document.getElementById('importCategoriesForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        if (importData.length === 0) {
+            showAlert('No data to import. Please preview the file first.', 'warning');
+            return;
+        }
+        
+        const skipDuplicates = document.getElementById('skipDuplicates').checked;
+        const updateExisting = document.getElementById('updateExisting').checked;
+        
+        // Show loading state
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Importing...';
+        submitBtn.disabled = true;
+        
+        // Send import request
+        const formData = new FormData();
+        formData.append('action', 'import');
+        formData.append('data', JSON.stringify(importData));
+        formData.append('skipDuplicates', skipDuplicates);
+        formData.append('updateExisting', updateExisting);
+        
+        fetch('ajax/category_import.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert(data.message, 'success');
+                
+                // Close modal and refresh page after delay
+                setTimeout(() => {
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('importCategoriesModal'));
+                    modal.hide();
+                    
+                    // Reset form
+                    document.getElementById('importCategoriesForm').reset();
+                    document.getElementById('importPreview').classList.add('d-none');
+                    importData = [];
+                    
+                    // Refresh page to show new data
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                }, 2000);
+            } else {
+                showAlert(data.message || 'Import failed', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Import error:', error);
+            showAlert('Error during import: ' + error.message, 'danger');
+        })
+        .finally(() => {
+            // Restore button state
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        });
+    });
+    
+    // Reset preview when file input changes
+    document.getElementById('importFile').addEventListener('change', function() {
+        document.getElementById('importPreview').classList.add('d-none');
+        importData = [];
+    });
 </script>
 <?php require_once 'includes/footer.php'; ?>
 </body>
