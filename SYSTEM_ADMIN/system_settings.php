@@ -28,90 +28,36 @@ require_once '../includes/logger.php';
 // Log settings page access
 logSystemAction($_SESSION['user_id'], 'access', 'settings', 'User accessed system settings page');
 
-// Function to create custom theme CSS
-function createThemeCSS($primary_color, $secondary_color, $accent_color) {
-    $css_content = "
-:root {
-    --primary-color: {$primary_color};
-    --secondary-color: {$secondary_color};
-    --accent-color: {$accent_color};
-    --primary-hover: " . adjustColor($primary_color, -20) . ";
-    --secondary-hover: " . adjustColor($secondary_color, -20) . ";
-    
-    /* Update gradients with new colors */
-    --primary-gradient: linear-gradient(135deg, {$primary_color} 0%, {$secondary_color} 100%);
-    --secondary-gradient: linear-gradient(135deg, {$secondary_color} 0%, {$accent_color} 100%);
-    --accent-gradient: linear-gradient(135deg, {$accent_color} 0%, #F7F3F3 100%);
-}
-
-.bg-primary-custom { background-color: var(--primary-color) !important; }
-.bg-secondary-custom { background-color: var(--secondary-color) !important; }
-.bg-accent-custom { background-color: var(--accent-color) !important; }
-
-.text-primary-custom { color: var(--primary-color) !important; }
-.text-secondary-custom { color: var(--secondary-color) !important; }
-.text-accent-custom { color: var(--accent-color) !important; }
-
-.btn-primary-custom { 
-    background-color: var(--primary-color) !important; 
-    border-color: var(--primary-color) !important;
-    color: white !important;
-}
-.btn-primary-custom:hover { 
-    background-color: var(--primary-hover) !important; 
-    border-color: var(--primary-hover) !important;
-}
-
-.btn-secondary-custom { 
-    background-color: var(--secondary-color) !important; 
-    border-color: var(--secondary-color) !important;
-    color: white !important;
-}
-.btn-secondary-custom:hover { 
-    background-color: var(--secondary-hover) !important; 
-    border-color: var(--secondary-hover) !important;
-}
-
-.card-header-custom { 
-    background-color: var(--primary-color) !important; 
-    color: white !important;
-}
-
-.sidebar-custom { 
-    background-color: var(--primary-color) !important;
-}
-
-.sidebar-custom .nav-link:hover {
-    background-color: var(--primary-hover) !important;
-}
-";
-
-    file_put_contents('../assets/css/theme-custom.css', $css_content);
-}
-
-// Function to adjust color brightness
-function adjustColor($color, $amount) {
-    $color = str_replace('#', '', $color);
-    $r = hexdec(substr($color, 0, 2));
-    $g = hexdec(substr($color, 2, 2));
-    $b = hexdec(substr($color, 4, 2));
-    
-    $r = max(0, min(255, $r + $amount));
-    $g = max(0, min(255, $g + $amount));
-    $b = max(0, min(255, $b + $amount));
-    
-    return '#' . str_pad(dechex($r), 2, '0', STR_PAD_LEFT) . 
-           str_pad(dechex($g), 2, '0', STR_PAD_LEFT) . 
-           str_pad(dechex($b), 2, '0', STR_PAD_LEFT);
-}
 
 // Handle settings updates
-$success_message = '';
-$error_message = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['update_system_settings'])) {
+    $action = $_POST['action'] ?? '';
+
+    if ($action === 'update_settings') {
         try {
+            // Start transaction
+            $conn->begin_transaction();
+
+            // Update general settings
+            $general_settings = [
+                'session_timeout' => intval($_POST['session_timeout'] ?? 30),
+                'dark_mode' => isset($_POST['dark_mode']) ? 1 : 0,
+                'auto_save_interval' => intval($_POST['auto_save_interval'] ?? 5),
+                'items_per_page' => intval($_POST['items_per_page'] ?? 25),
+                'date_format' => $_POST['date_format'] ?? 'Y-m-d',
+                'time_format' => $_POST['time_format'] ?? '24h',
+                'theme_preset' => $_POST['theme_preset'] ?? 'default'
+            ];
+
+            foreach ($general_settings as $key => $value) {
+                $stmt = $conn->prepare("INSERT INTO system_settings (setting_name, setting_value) 
+                                       VALUES (?, ?) 
+                                       ON DUPLICATE KEY UPDATE setting_value = ?, updated_at = NOW()");
+                $stmt->bind_param("sss", $key, $value, $value);
+                $stmt->execute();
+            }
+
             // Handle logo removal
             if (isset($_POST['remove_logo']) && $_POST['remove_logo'] === '1') {
                 // Delete existing logo file
@@ -208,10 +154,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'password_min_length' => $_POST['password_min_length'] ?? '8',
                 'backup_retention_days' => $_POST['backup_retention_days'] ?? '30',
                 'email_notifications' => isset($_POST['email_notifications']) ? '1' : '0',
-                'debug_mode' => isset($_POST['debug_mode']) ? '1' : '0',
-                'primary_color' => $_POST['primary_color'] ?? '#191BA9',
-                'secondary_color' => $_POST['secondary_color'] ?? '#5CC2F2',
-                'accent_color' => $_POST['accent_color'] ?? '#FF6B6B'
+                'debug_mode' => isset($_POST['debug_mode']) ? '1' : '0'
             ];
             
             foreach ($settings as $name => $value) {
@@ -220,18 +163,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $stmt->close();
             
-            // Create custom CSS file for theme colors
-            createThemeCSS($settings['primary_color'], $settings['secondary_color'], $settings['accent_color']);
-            
-            // Log the action
-            logSystemAction($_SESSION['user_id'], 'system_settings_updated', 'system_settings', 'Updated system configuration including theme and logo');
-            
-            $success_message = 'System settings updated successfully!';
+            $conn->commit();
+
+            $_SESSION['success'] = "Settings updated successfully!";
+            logSystemAction($_SESSION['user_id'], 'update', 'system_settings', 'Updated system settings');
             
         } catch (Exception $e) {
-            error_log("Error updating system settings: " . $e->getMessage());
-            $error_message = 'Failed to update system settings: ' . $e->getMessage();
+            $conn->rollback();
+            $_SESSION['error'] = "Error updating settings: " . $e->getMessage();
+            error_log("System Settings Error: " . $e->getMessage());
         }
+
+        header('Location: system_settings.php');
+        exit();
     }
 }
 
@@ -255,9 +199,6 @@ try {
     $system_settings = [
         'system_name' => 'PIMS',
         'system_email' => '',
-        'primary_color' => '#191BA9',
-        'secondary_color' => '#5CC2F2',
-        'accent_color' => '#FF6B6B',
         'system_logo' => ''
     ];
 }
@@ -571,23 +512,27 @@ $current_page = 'system_settings.php';
                 </div>
             </div>
             
-            <?php if ($success_message): ?>
+            <?php if (isset($_SESSION['success'])): ?>
                 <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    <i class="bi bi-check-circle"></i> <?php echo $success_message; ?>
+                    <i class="bi bi-check-circle"></i>
+                    <?php echo htmlspecialchars($_SESSION['success']);
+                    unset($_SESSION['success']); ?>
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             <?php endif; ?>
-            
-            <?php if ($error_message): ?>
+
+            <?php if (isset($_SESSION['error'])): ?>
                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <i class="bi bi-exclamation-triangle"></i> <?php echo $error_message; ?>
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <?php echo htmlspecialchars($_SESSION['error']);
+                    unset($_SESSION['error']); ?>
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             <?php endif; ?>
             
             <!-- System Settings Form -->
             <form id="settingsForm" method="POST" enctype="multipart/form-data">
-                <input type="hidden" name="update_system_settings" value="1">
+                <input type="hidden" name="action" value="update_settings">
                 <input type="hidden" name="remove_logo" id="remove_logo" value="0">
                 
                 <!-- General Settings -->
@@ -618,14 +563,35 @@ $current_page = 'system_settings.php';
                                 </div>
                                 
                                 <div class="row">
-                                    <div class="col-md-4">
+                                    <div class="col-md-6">
                                         <div class="mb-3">
-                                            <label for="session_timeout" class="form-label">Session Timeout (seconds)</label>
-                                            <input type="number" class="form-control" id="session_timeout" name="session_timeout" 
-                                                   value="<?php echo htmlspecialchars($system_settings['session_timeout'] ?? '3600'); ?>" min="300" max="86400">
-                                            <div class="form-text">User session duration</div>
+                                            <label for="session_timeout" class="form-label">Session Timeout (minutes)</label>
+                                            <select class="form-select" id="session_timeout" name="session_timeout">
+                                                <option value="5" <?php echo ($system_settings['session_timeout'] ?? '30') == '5' ? 'selected' : ''; ?>>5 minutes</option>
+                                                <option value="10" <?php echo ($system_settings['session_timeout'] ?? '30') == '10' ? 'selected' : ''; ?>>10 minutes</option>
+                                                <option value="15" <?php echo ($system_settings['session_timeout'] ?? '30') == '15' ? 'selected' : ''; ?>>15 minutes</option>
+                                                <option value="30" <?php echo ($system_settings['session_timeout'] ?? '30') == '30' ? 'selected' : ''; ?>>30 minutes</option>
+                                                <option value="60" <?php echo ($system_settings['session_timeout'] ?? '30') == '60' ? 'selected' : ''; ?>>1 hour</option>
+                                                <option value="120" <?php echo ($system_settings['session_timeout'] ?? '30') == '120' ? 'selected' : ''; ?>>2 hours</option>
+                                                <option value="180" <?php echo ($system_settings['session_timeout'] ?? '30') == '180' ? 'selected' : ''; ?>>3 hours</option>
+                                                <option value="240" <?php echo ($system_settings['session_timeout'] ?? '30') == '240' ? 'selected' : ''; ?>>4 hours</option>
+                                                <option value="360" <?php echo ($system_settings['session_timeout'] ?? '30') == '360' ? 'selected' : ''; ?>>6 hours</option>
+                                                <option value="480" <?php echo ($system_settings['session_timeout'] ?? '30') == '480' ? 'selected' : ''; ?>>8 hours</option>
+                                            </select>
+                                            <div class="form-text">How long users remain logged in without activity</div>
                                         </div>
                                     </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="auto_save_interval" class="form-label">Auto-Save Interval (minutes)</label>
+                                            <input type="number" class="form-control" id="auto_save_interval" name="auto_save_interval"
+                                                value="<?php echo htmlspecialchars($system_settings['auto_save_interval'] ?? '5'); ?>" min="1" max="30">
+                                            <div class="form-text">How often to auto-save form data</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
                                     <div class="col-md-4">
                                         <div class="mb-3">
                                             <label for="max_login_attempts" class="form-label">Max Login Attempts</label>
@@ -642,10 +608,7 @@ $current_page = 'system_settings.php';
                                             <div class="form-text">Minimum password characters</div>
                                         </div>
                                     </div>
-                                </div>
-                                
-                                <div class="row">
-                                    <div class="col-md-6">
+                                    <div class="col-md-4">
                                         <div class="mb-3">
                                             <label for="backup_retention_days" class="form-label">Backup Retention (days)</label>
                                             <input type="number" class="form-control" id="backup_retention_days" name="backup_retention_days" 
@@ -662,11 +625,13 @@ $current_page = 'system_settings.php';
                 <!-- Appearance Settings -->
                 <div class="row mb-4">
                     <div class="col-12">
-                        <div class="card border-0 shadow-lg rounded-4">
-                            <div class="card-header bg-primary text-white rounded-top-4">
-                                <h6 class="mb-0"><i class="bi bi-palette"></i> Appearance Settings</h6>
-                            </div>
-                            <div class="card-body">
+                        <div class="settings-card">
+                            <h5 class="mb-3">
+                                <i class="bi bi-palette"></i> Appearance Settings
+                            </h5>
+
+                            <div class="settings-section">
+                                <h6>System Logo & Theme</h6>
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="mb-3">
@@ -675,7 +640,7 @@ $current_page = 'system_settings.php';
                                                    accept="image/jpeg,image/png,image/gif,image/webp">
                                             <div class="form-text">Upload system logo (Max: 5MB, Formats: JPG, PNG, GIF, WEBP)</div>
                                             <?php if (!empty($system_settings['system_logo'])): ?>
-                                                <div class="mt-3 p-3 border rounded bg-light">
+                                                <div class="mt-3 p-3 border rounded bg-light current-logo-container">
                                                     <div class="d-flex align-items-center justify-content-between">
                                                         <div class="d-flex align-items-center">
                                                             <img src="<?php echo '../' . htmlspecialchars($system_settings['system_logo']); ?>" 
@@ -701,61 +666,84 @@ $current_page = 'system_settings.php';
                                     </div>
                                     <div class="col-md-6">
                                         <div class="mb-3">
-                                            <label for="primary_color" class="form-label">Primary Color</label>
-                                            <div class="input-group">
-                                                <input type="color" class="form-control form-control-color" id="primary_color" name="primary_color" 
-                                                       value="<?php echo htmlspecialchars($system_settings['primary_color'] ?? '#191BA9'); ?>">
-                                                <input type="text" class="form-control" value="<?php echo htmlspecialchars($system_settings['primary_color'] ?? '#191BA9'); ?>" 
-                                                       readonly placeholder="#191BA9">
-                                            </div>
-                                            <div class="form-text">Main theme color for headers and buttons</div>
+                                            <label for="items_per_page" class="form-label">Items Per Page</label>
+                                            <select class="form-select" id="items_per_page" name="items_per_page">
+                                                <option value="10" <?php echo ($system_settings['items_per_page'] ?? '25') == '10' ? 'selected' : ''; ?>>10 items</option>
+                                                <option value="25" <?php echo ($system_settings['items_per_page'] ?? '25') == '25' ? 'selected' : ''; ?>>25 items</option>
+                                                <option value="50" <?php echo ($system_settings['items_per_page'] ?? '25') == '50' ? 'selected' : ''; ?>>50 items</option>
+                                                <option value="100" <?php echo ($system_settings['items_per_page'] ?? '25') == '100' ? 'selected' : ''; ?>>100 items</option>
+                                            </select>
+                                            <div class="form-text">Default number of items to display in tables</div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="theme_preset" class="form-label">Theme Preset</label>
+                                            <select class="form-select" id="theme_preset" name="theme_preset">
+                                                <option value="default" <?php echo ($system_settings['theme_preset'] ?? 'default') == 'default' ? 'selected' : ''; ?>>Modern Navy Blue (#1E56A0)</option>
+                                                <option value="legacy" <?php echo ($system_settings['theme_preset'] ?? 'default') == 'legacy' ? 'selected' : ''; ?>>Classic Bright Blue (#191BA9)</option>
+                                            </select>
+                                            <div class="form-text">Choose the primary color palette for the system</div>
                                         </div>
                                     </div>
                                 </div>
-                                
+                            </div>
+
+                            <div class="settings-section">
+                                <h6>Theme Settings</h6>
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="mb-3">
-                                            <label for="secondary_color" class="form-label">Secondary Color</label>
-                                            <div class="input-group">
-                                                <input type="color" class="form-control form-control-color" id="secondary_color" name="secondary_color" 
-                                                       value="<?php echo htmlspecialchars($system_settings['secondary_color'] ?? '#5CC2F2'); ?>">
-                                                <input type="text" class="form-control" value="<?php echo htmlspecialchars($system_settings['secondary_color'] ?? '#5CC2F2'); ?>" 
-                                                       readonly placeholder="#5CC2F2">
+                                            <label class="form-label d-block">
+                                                <strong>Dark Mode</strong>
+                                                <small class="text-muted d-block">Use dark theme across the system</small>
+                                            </label>
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="form-check form-switch mb-0">
+                                                    <input class="form-check-input" type="checkbox" id="dark_mode"
+                                                        name="dark_mode" value="1"
+                                                        <?php echo ($system_settings['dark_mode'] ?? '0') ? 'checked' : ''; ?>>
+                                                    <label class="form-check-label" for="dark_mode">
+                                                        Enable Dark Mode
+                                                    </label>
+                                                </div>
+                                                <button type="button" class="btn btn-outline-secondary btn-sm" 
+                                                        onclick="darkMode.toggle()" 
+                                                        title="Toggle Dark Mode Instantly">
+                                                    <i class="bi bi-moon"></i> Quick Toggle
+                                                </button>
                                             </div>
-                                            <div class="form-text">Secondary accent color</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label for="accent_color" class="form-label">Accent Color</label>
-                                            <div class="input-group">
-                                                <input type="color" class="form-control form-control-color" id="accent_color" name="accent_color" 
-                                                       value="<?php echo htmlspecialchars($system_settings['accent_color'] ?? '#FF6B6B'); ?>">
-                                                <input type="text" class="form-control" value="<?php echo htmlspecialchars($system_settings['accent_color'] ?? '#FF6B6B'); ?>" 
-                                                       readonly placeholder="#FF6B6B">
+                                            <div class="form-text mt-2">
+                                                <small class="text-muted">
+                                                    <i class="bi bi-info-circle"></i> 
+                                                    Use the switch to save preference, or the quick toggle button for instant preview. 
+                                                    Changes are synchronized across all pages.
+                                                </small>
                                             </div>
-                                            <div class="form-text">Highlight color for important elements</div>
                                         </div>
                                     </div>
                                 </div>
-                                
-                                <!-- Color Preview -->
+                            </div>
+
+                            <div class="settings-section">
+                                <h6>Date & Time Format</h6>
                                 <div class="row">
-                                    <div class="col-12">
+                                    <div class="col-md-6">
                                         <div class="mb-3">
-                                            <label class="form-label">Color Preview</label>
-                                            <div class="d-flex gap-2">
-                                                <div class="color-preview-box text-white p-3 rounded" style="background-color: <?php echo htmlspecialchars($system_settings['primary_color'] ?? '#191BA9'); ?>;">
-                                                    <small>Primary</small>
-                                                </div>
-                                                <div class="color-preview-box text-white p-3 rounded" style="background-color: <?php echo htmlspecialchars($system_settings['secondary_color'] ?? '#5CC2F2'); ?>;">
-                                                    <small>Secondary</small>
-                                                </div>
-                                                <div class="color-preview-box text-white p-3 rounded" style="background-color: <?php echo htmlspecialchars($system_settings['accent_color'] ?? '#FF6B6B'); ?>;">
-                                                    <small>Accent</small>
-                                                </div>
-                                            </div>
+                                            <label for="date_format" class="form-label">Date Format</label>
+                                            <select class="form-select" id="date_format" name="date_format">
+                                                <option value="Y-m-d" <?php echo ($system_settings['date_format'] ?? 'Y-m-d') == 'Y-m-d' ? 'selected' : ''; ?>>YYYY-MM-DD</option>
+                                                <option value="m/d/Y" <?php echo ($system_settings['date_format'] ?? 'Y-m-d') == 'm/d/Y' ? 'selected' : ''; ?>>MM/DD/YYYY</option>
+                                                <option value="d/m/Y" <?php echo ($system_settings['date_format'] ?? 'Y-m-d') == 'd/m/Y' ? 'selected' : ''; ?>>DD/MM/YYYY</option>
+                                                <option value="F j, Y" <?php echo ($system_settings['date_format'] ?? 'Y-m-d') == 'F j, Y' ? 'selected' : ''; ?>>Month DD, YYYY</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="time_format" class="form-label">Time Format</label>
+                                            <select class="form-select" id="time_format" name="time_format">
+                                                <option value="24h" <?php echo ($system_settings['time_format'] ?? '24h') == '24h' ? 'selected' : ''; ?>>24-hour (14:30)</option>
+                                                <option value="12h" <?php echo ($system_settings['time_format'] ?? '24h') == '12h' ? 'selected' : ''; ?>>12-hour (2:30 PM)</option>
+                                            </select>
                                         </div>
                                     </div>
                                 </div>
@@ -1133,35 +1121,10 @@ $current_page = 'system_settings.php';
                 document.getElementById('allow_registration').checked = true;
                 document.getElementById('email_notifications').checked = true;
                 document.getElementById('debug_mode').checked = false;
-                
-                // Reset colors to defaults
-                document.getElementById('primary_color').value = '#191BA9';
-                document.getElementById('secondary_color').value = '#5CC2F2';
-                document.getElementById('accent_color').value = '#FF6B6B';
-                updateColorPreviews();
             }
         }
 
-        // Color picker synchronization
-        function updateColorPreviews() {
-            const primaryColor = document.getElementById('primary_color').value;
-            const secondaryColor = document.getElementById('secondary_color').value;
-            const accentColor = document.getElementById('accent_color').value;
-            
-            // Update text inputs
-            document.querySelector('#primary_color + input[type="text"]').value = primaryColor;
-            document.querySelector('#secondary_color + input[type="text"]').value = secondaryColor;
-            document.querySelector('#accent_color + input[type="text"]').value = accentColor;
-            
-            // Update preview boxes
-            const previewBoxes = document.querySelectorAll('.color-preview-box');
-            if (previewBoxes.length >= 3) {
-                previewBoxes[0].style.backgroundColor = primaryColor;
-                previewBoxes[1].style.backgroundColor = secondaryColor;
-                previewBoxes[2].style.backgroundColor = accentColor;
-            }
-        }
-
+        
         // Logo removal function
         function removeLogo() {
             if (confirm('Are you sure you want to remove the custom logo? The system will revert to the default logo.')) {
@@ -1170,19 +1133,8 @@ $current_page = 'system_settings.php';
             }
         }
 
-        // Add event listeners for color inputs
+        // Add event listeners
         document.addEventListener('DOMContentLoaded', function() {
-            // Color picker events
-            ['primary_color', 'secondary_color', 'accent_color'].forEach(function(colorId) {
-                const colorInput = document.getElementById(colorId);
-                if (colorInput) {
-                    colorInput.addEventListener('input', updateColorPreviews);
-                    colorInput.addEventListener('change', updateColorPreviews);
-                }
-            });
-            
-            // Initialize color previews
-            updateColorPreviews();
 
             // Clear Cache Modal
             const startCacheClearBtn = document.getElementById('startCacheClearBtn');
@@ -1299,6 +1251,13 @@ $current_page = 'system_settings.php';
                     email_notifications: document.getElementById('email_notifications').checked,
                     debug_mode: document.getElementById('debug_mode').checked
                 },
+                appearance: {
+                    dark_mode: document.getElementById('dark_mode').checked,
+                    items_per_page: document.getElementById('items_per_page').value,
+                    date_format: document.getElementById('date_format').value,
+                    time_format: document.getElementById('time_format').value,
+                    theme_preset: document.getElementById('theme_preset').value
+                },
                 exported_at: new Date().toISOString()
             };
             
@@ -1316,6 +1275,65 @@ $current_page = 'system_settings.php';
             console.log('Auto-saving settings draft...');
             // In production, this would save to localStorage or via AJAX
         }, 30000);
+
+        // Dark mode toggle using centralized system
+        const darkModeToggle = document.getElementById('dark_mode');
+        if (darkModeToggle) {
+            darkModeToggle.addEventListener('change', function() {
+                // Use the centralized dark mode system
+                if (typeof darkMode !== 'undefined') {
+                    darkMode.set(this.checked);
+                } else {
+                    // Fallback if darkMode system not loaded
+                    if (this.checked) {
+                        document.body.classList.add('dark-mode');
+                    } else {
+                        document.body.classList.remove('dark-mode');
+                    }
+                }
+            });
+            
+            // Sync toggle with current dark mode state
+            if (typeof darkMode !== 'undefined') {
+                // Update toggle to match current dark mode state
+                darkModeToggle.checked = darkMode.isEnabled();
+                
+                // Listen for dark mode changes from other sources (like topbar toggle)
+                const observer = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                            const isDark = document.body.classList.contains('dark-mode');
+                            if (darkModeToggle.checked !== isDark) {
+                                darkModeToggle.checked = isDark;
+                            }
+                        }
+                    });
+                });
+                
+                observer.observe(document.body, {
+                    attributes: true,
+                    attributeFilter: ['class']
+                });
+            }
+        }
+
+        // Form validation
+        document.getElementById('settingsForm').addEventListener('submit', function(e) {
+            const sessionTimeout = parseInt(document.getElementById('session_timeout').value);
+            const autoSaveInterval = parseInt(document.getElementById('auto_save_interval').value);
+
+            if (sessionTimeout < 5 || sessionTimeout > 480) {
+                e.preventDefault();
+                alert('Session timeout must be between 5 and 480 minutes');
+                return;
+            }
+
+            if (autoSaveInterval < 1 || autoSaveInterval > 30) {
+                e.preventDefault();
+                alert('Auto-save interval must be between 1 and 30 minutes');
+                return;
+            }
+        });
     </script>
     
     <?php require_once 'includes/footer.php'; ?>
