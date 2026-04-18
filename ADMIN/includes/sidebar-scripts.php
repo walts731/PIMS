@@ -1,4 +1,3 @@
-<script>
 // Sidebar functionality
 document.addEventListener('DOMContentLoaded', function() {
     const sidebarToggle = document.getElementById('sidebarToggle');
@@ -8,15 +7,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const navbar = document.querySelector('.navbar');
 
     // Toggle sidebar
-    sidebarToggle.addEventListener('click', function() {
-        
-        toggleSidebar();
-    });
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', function() {
+            toggleSidebar();
+        });
+    }
 
     // Close sidebar when clicking overlay
-    sidebarOverlay.addEventListener('click', function() {
-        closeSidebar();
-    });
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', function() {
+            closeSidebar();
+        });
+    }
 
     // Close sidebar on escape key
     document.addEventListener('keydown', function(e) {
@@ -36,24 +38,20 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function openSidebar() {
-        sidebar.classList.add('active');
-        sidebarOverlay.classList.add('active');
-        sidebarToggle.classList.add('sidebar-active');
-        mainWrapper.classList.add('sidebar-active');
-        if (navbar) {
-            navbar.classList.add('sidebar-active');
-        }
+        if (sidebar) sidebar.classList.add('active');
+        if (sidebarOverlay) sidebarOverlay.classList.add('active');
+        if (sidebarToggle) sidebarToggle.classList.add('sidebar-active');
+        if (mainWrapper) mainWrapper.classList.add('sidebar-active');
+        if (navbar) navbar.classList.add('sidebar-active');
         document.body.style.overflow = 'hidden'; // Prevent background scroll
     }
 
     function closeSidebar() {
-        sidebar.classList.remove('active');
-        sidebarOverlay.classList.remove('active');
-        sidebarToggle.classList.remove('sidebar-active');
-        mainWrapper.classList.remove('sidebar-active');
-        if (navbar) {
-            navbar.classList.remove('sidebar-active');
-        }
+        if (sidebar) sidebar.classList.remove('active');
+        if (sidebarOverlay) sidebarOverlay.classList.remove('active');
+        if (sidebarToggle) sidebarToggle.classList.remove('sidebar-active');
+        if (mainWrapper) mainWrapper.classList.remove('sidebar-active');
+        if (navbar) navbar.classList.remove('sidebar-active');
         document.body.style.overflow = ''; // Restore background scroll
     }
 
@@ -65,4 +63,3 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
-</script>

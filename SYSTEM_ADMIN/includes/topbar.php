@@ -1,34 +1,104 @@
 <!-- Navigation -->
 <nav class="navbar navbar-expand-lg navbar-dark" id="mainNavbar">
     <div class="container-fluid">
-        <a class="navbar-brand" href="dashboard.php">
-            <i class="bi bi-speedometer2"></i>
-            <?php echo ucfirst($page_title ?? 'Dashboard'); ?>
+        <a class="navbar-brand d-flex align-items-center" href="dashboard.php">
+            <img src="<?php echo $logo_path; ?>" alt="<?php echo $system_name; ?> Logo" class="img-fluid" style="max-height: 35px; border-radius: 6px;">
+            <span class="fw-bold d-inline d-sm-none d-md-inline"><?php echo $system_name; ?></span>
         </a>
         
-        <div class="navbar-nav ms-auto">
-            <!-- Search Bar -->
-            <div class="nav-item me-3">
-                <div class="search-container position-relative">
-                    <form class="d-flex" action="../search_handler.php" method="GET" id="searchForm">
-                        <div class="input-group">
-                            <input type="text" class="form-control" name="q" id="searchInput" 
-                                   placeholder="Search..." autocomplete="off"
-                                   value="<?php echo htmlspecialchars($_GET['q'] ?? ''); ?>">
-                            <button class="btn btn-outline-light" type="submit">
-                                <i class="bi bi-search"></i>
-                            </button>
+        <!-- Mobile Icons for Very Small Screens -->
+        <div class="d-md-none d-lg-none d-flex align-items-center">
+            <!-- Search Toggle -->
+            <button class="navbar-toggler border-0 text-white me-1" type="button" id="mobileSearchToggle" title="Toggle Search">
+                <i class="bi bi-search"></i>
+            </button>
+            
+            <!-- QR Scanner -->
+            <div class="nav-item me-1">
+                <a href="scan_qr.php" class="nav-link text-white" title="QR Scanner">
+                    <i class="bi bi-qr-code-scan"></i>
+                </a>
+            </div>
+            
+            <!-- Dark Mode Toggle -->
+            <div class="nav-item me-1">
+                <button class="dark-mode-toggle nav-link text-white" type="button" title="Toggle Dark Mode" onclick="darkMode.toggle()">
+                    <i class="bi bi-moon"></i>
+                </button>
+            </div>
+            
+            <!-- Notification Bell -->
+            <div class="nav-item me-1">
+                <div class="dropdown">
+                    <a class="nav-link text-white position-relative notification-bell" href="#" role="button" data-bs-toggle="dropdown" title="Notifications">
+                        <i class="bi bi-bell"></i>
+                        <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-end notification-dropdown" id="notificationDropdown">
+                        <div class="notification-header">
+                            <h6 class="mb-0">Notifications</h6>
+                            <div class="notification-actions">
+                                <a href="#" class="mark-all-read" title="Mark all as read">
+                                    <i class="bi bi-check2-all"></i>
+                                </a>
+                            </div>
                         </div>
-                    </form>
-                    <!-- Search Suggestions Dropdown -->
-                    <div class="search-suggestions" id="searchSuggestions"></div>
+                        <div class="notification-list" id="notificationList">
+                            <div class="notification-loading">
+                                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="notification-footer">
+                            <a href="../ADMIN/notifications.php" class="view-all-notifications">View All Notifications</a>
+                        </div>
+                    </div>
                 </div>
             </div>
             
-            <!-- Right Side Actions -->
-            <div class="d-flex align-items-center">
-                <!-- Notifications -->
-                <div class="nav-item me-2">
+            <!-- Profile Dropdown -->
+            <div class="nav-item dropdown">
+                <a class="nav-link text-white" href="#" role="button" data-bs-toggle="dropdown" title="Profile">
+                    <i class="bi bi-person-circle"></i>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="profile.php"><i class="bi bi-person"></i> Profile</a></li>
+                    <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#changePasswordModal"><i class="bi bi-key"></i> Change Password</a></li>
+                    <li><a class="dropdown-item" href="system_settings.php"><i class="bi bi-gear"></i> Settings</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#logoutModal"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Mobile Menu Toggle -->
+        <button class="navbar-toggler d-md-none d-lg-none border-0 text-white" type="button" data-bs-toggle="collapse" data-bs-target="#mobileNavbarContent">
+            <i class="bi bi-list"></i>
+        </button>
+        
+        <!-- Mobile Search Container -->
+        <div class="w-100 d-md-none d-lg-none" id="mobileSearchContainer" style="display: none;">
+            <div class="search-container position-relative mt-2">
+                <form class="d-flex" action="search_handler.php" method="GET" id="mobileSearchForm">
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="q" id="mobileSearchInput" 
+                               placeholder="Search..." autocomplete="off"
+                               value="<?php echo htmlspecialchars($_GET['q'] ?? ''); ?>">
+                        <button class="btn btn-outline-light" type="submit">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                </form>
+                <!-- Mobile Search Suggestions Dropdown -->
+                <div class="search-suggestions" id="mobileSearchSuggestions"></div>
+            </div>
+        </div>
+
+        <div class="collapse navbar-collapse" id="mobileNavbarContent">
+            <div class="navbar-nav ms-auto">
+                <!-- Mobile Only: Notification Bell -->
+                <div class="nav-item me-2 d-lg-none d-md-block">
                     <div class="dropdown">
                         <a class="nav-link text-white position-relative notification-bell" href="#" role="button" data-bs-toggle="dropdown" title="Notifications">
                             <i class="bi bi-bell"></i>
@@ -56,43 +126,143 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Desktop Only Elements -->
+        <div class="d-none d-lg-block">
+            <div class="navbar-nav ms-auto">
+                <!-- Search Bar - Desktop only -->
+                <div class="nav-item me-3">
+                    <div class="search-container position-relative">
+                        <form class="d-flex" action="search_handler.php" method="GET" id="searchForm">
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="q" id="searchInput" 
+                                       placeholder="Search..." autocomplete="off"
+                                       value="<?php echo htmlspecialchars($_GET['q'] ?? ''); ?>">
+                                <button class="btn btn-outline-light" type="submit">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                            </div>
+                        </form>
+                        <!-- Search Suggestions Dropdown -->
+                        <div class="search-suggestions" id="searchSuggestions"></div>
+                    </div>
+                </div>
                 
-                <!-- User Profile Dropdown -->
-                <div class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
-                        <div class="user-avatar me-3">
-                            <i class="bi bi-person-circle"></i>
-                        </div>
-                        <div class="user-info">
-                            <div class="user-name"><?php echo htmlspecialchars($_SESSION['first_name'] . ' ' . $_SESSION['last_name']); ?></div>
-                            <div class="user-role">
-                                <?php 
-                                $role = htmlspecialchars(ucfirst(str_replace('_', ' ', $_SESSION['role'])));
-                                $badge_class = 'bg-secondary';
-                                if ($_SESSION['role'] === 'system_admin') {
-                                    $badge_class = 'bg-danger';
-                                } elseif ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'office_admin') {
-                                    $badge_class = 'bg-warning text-dark';
-                                } elseif ($_SESSION['role'] === 'user') {
-                                    $badge_class = 'bg-success';
-                                }
-                                ?>
-                                <span class="badge <?php echo $badge_class; ?>"><?php echo $role; ?></span>
+                <!-- Desktop Right Side Actions -->
+                <div class="d-flex align-items-center">
+                    <!-- QR Scanner - Desktop only -->
+                    <div class="nav-item me-2">
+                        <a href="scan_qr.php" class="nav-link text-white" title="QR Scanner">
+                            <i class="bi bi-qr-code-scan"></i>
+                        </a>
+                    </div>
+                    
+                    <!-- Dark Mode Toggle - Desktop only -->
+                    <div class="nav-item me-2">
+                        <button class="dark-mode-toggle nav-link text-white" type="button" title="Toggle Dark Mode" onclick="darkMode.toggle()">
+                            <i class="bi bi-moon"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Desktop Notifications -->
+                    <div class="nav-item me-2">
+                        <div class="dropdown">
+                            <a class="nav-link text-white position-relative notification-bell" href="#" role="button" data-bs-toggle="dropdown" title="Notifications">
+                                <i class="bi bi-bell"></i>
+                                <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-end notification-dropdown" id="notificationDropdown">
+                                <div class="notification-header">
+                                    <h6 class="mb-0">Notifications</h6>
+                                    <div class="notification-actions">
+                                        <a href="#" class="mark-all-read" title="Mark all as read">
+                                            <i class="bi bi-check2-all"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="notification-list" id="notificationList">
+                                    <div class="notification-loading">
+                                        <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="notification-footer">
+                                    <a href="../ADMIN/notifications.php" class="view-all-notifications">View All Notifications</a>
+                                </div>
                             </div>
                         </div>
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="profile.php"><i class="bi bi-person"></i> Profile</a></li>
-                        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#changePasswordModal"><i class="bi bi-key"></i> Change Password</a></li>
-                        <li><a class="dropdown-item" href="system_settings.php"><i class="bi bi-gear"></i> Settings</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="../logout.php" onclick="event.preventDefault(); confirmLogout();"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
-                    </ul>
+                    </div>
+                    
+                    <!-- User Profile Dropdown - Desktop only -->
+                    <div class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
+                            <div class="user-avatar me-3">
+                                <i class="bi bi-person-circle"></i>
+                            </div>
+                            <div class="user-info">
+                                <div class="user-name"><?php echo htmlspecialchars($_SESSION['first_name'] . ' ' . $_SESSION['last_name']); ?></div>
+                                <div class="user-role">
+                                    <?php 
+                                    $role = htmlspecialchars(ucfirst(str_replace('_', ' ', $_SESSION['role'])));
+                                    $badge_class = 'bg-secondary';
+                                    if ($_SESSION['role'] === 'system_admin') {
+                                        $badge_class = 'bg-danger';
+                                    } elseif ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'office_admin') {
+                                        $badge_class = 'bg-warning text-dark';
+                                    } elseif ($_SESSION['role'] === 'user') {
+                                        $badge_class = 'bg-success';
+                                    }
+                                    ?>
+                                    <span class="badge <?php echo $badge_class; ?>"><?php echo $role; ?></span>
+                                </div>
+                            </div>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="profile.php"><i class="bi bi-person"></i> Profile</a></li>
+                            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#changePasswordModal"><i class="bi bi-key"></i> Change Password</a></li>
+                            <li><a class="dropdown-item" href="system_settings.php"><i class="bi bi-gear"></i> Settings</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#logoutModal"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </nav>
+
+<!-- Logout Confirmation Modal -->
+<div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title" id="logoutModalLabel">
+                    <i class="bi bi-box-arrow-right text-danger me-2"></i>
+                    Confirm Logout
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <div class="mb-3">
+                    <i class="bi bi-person-circle text-muted" style="font-size: 3rem;"></i>
+                </div>
+                <h6 class="mb-2">Are you sure you want to logout?</h6>
+                <p class="text-muted mb-0">You will be redirected to the login page.</p>
+            </div>
+            <div class="modal-footer border-0 justify-content-center">
+                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-2"></i>Cancel
+                </button>
+                <a href="../logout.php" class="btn btn-danger px-4">
+                    <i class="bi bi-box-arrow-right me-2"></i>Logout
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
 
 <style>
 /* Notification Bell Styles */
@@ -411,7 +581,7 @@
     font-size: 0.9rem;
 }
 
-/* Responsive adjustments */
+/* Mobile Responsive Styles */
 @media (max-width: 768px) {
     .search-container .form-control {
         width: 180px;
@@ -424,9 +594,35 @@
     .navbar-brand {
         font-size: 1rem;
     }
+    
+        
+    /* Mobile notification dropdown */
+    .notification-dropdown {
+        width: 280px;
+        max-height: 350px;
+    }
+    
+    /* Compact user avatar on mobile */
+    .user-avatar {
+        font-size: 1.5rem;
+    }
+    
+    .user-avatar i {
+        font-size: 1.5rem;
+    }
 }
 
 @media (max-width: 576px) {
+    /* Compact navbar */
+    #mainNavbar {
+        padding: 0.25rem 0.5rem !important;
+        min-height: auto !important;
+    }
+    
+    .container-fluid {
+        padding: 0 0.25rem !important;
+    }
+    
     .search-container .form-control {
         width: 150px;
     }
@@ -437,6 +633,532 @@
     
     .search-container .form-control::placeholder {
         font-size: 0.8rem;
+    }
+    
+    /* Mobile menu toggle - smaller */
+    .navbar-toggler {
+        padding: 0.15rem 0.25rem !important;
+        font-size: 1rem !important;
+    }
+    
+    /* Mobile notification dropdown - more compact */
+    .notification-dropdown {
+        width: 250px;
+        max-height: 300px;
+        right: -5px;
+    }
+    
+    .notification-title {
+        font-size: 0.8rem;
+    }
+    
+    .notification-message {
+        font-size: 0.75rem;
+    }
+    
+    /* Compact user info on mobile */
+    .user-info .user-name {
+        font-size: 0.75rem;
+        max-width: 60px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    
+    /* Mobile dropdown menu - more compact */
+    .dropdown-menu {
+        font-size: 0.85rem;
+        min-width: 180px;
+    }
+    
+    .dropdown-item {
+        padding: 0.375rem 0.75rem;
+    }
+    
+    /* Mobile brand adjustments - smaller */
+    .navbar-brand {
+        padding: 0.125rem 0.25rem !important;
+    }
+    
+    .navbar-brand img {
+        max-height: 24px !important;
+    }
+    
+    .navbar-brand span {
+        font-size: 0.85rem;
+    }
+    
+    /* Compact nav items */
+    .nav-item.me-2 {
+        margin-right: 0.125rem !important;
+    }
+    
+    /* Smaller notification badge */
+    .notification-badge {
+        width: 14px;
+        height: 14px;
+        font-size: 0.55rem;
+        top: -2px;
+        right: -2px;
+        border-width: 1px;
+    }
+    
+    /* Smaller user avatar */
+    .user-avatar {
+        margin-right: 0.25rem !important;
+        font-size: 1.25rem;
+    }
+    
+    .user-avatar i {
+        font-size: 1.25rem;
+    }
+}
+
+/* Portrait mode specific styles */
+@media (max-width: 576px) and (orientation: portrait) {
+    /* Ultra compact navbar */
+    #mainNavbar {
+        padding: 0.125rem 0.25rem !important;
+    }
+    
+    .container-fluid {
+        padding: 0 0.125rem !important;
+    }
+    
+    /* Tighter spacing between elements */
+    .navbar-nav .d-flex {
+        gap: 0.25rem;
+    }
+    
+    /* Even smaller notification badge */
+    .notification-badge {
+        width: 12px;
+        height: 12px;
+        font-size: 0.5rem;
+        top: -2px;
+        right: -2px;
+        border-width: 1px;
+    }
+    
+    /* Minimal spacing for nav items */
+    .nav-item.me-2 {
+        margin-right: 0.125rem !important;
+    }
+    
+    /* Smaller brand logo */
+    .navbar-brand img {
+        max-height: 20px !important;
+    }
+    
+    .navbar-brand span {
+        font-size: 0.75rem;
+    }
+    
+        
+    /* Smaller user avatar */
+    .user-avatar {
+        margin-right: 0.125rem !important;
+        font-size: 1.1rem;
+    }
+    
+    .user-avatar i {
+        font-size: 1.1rem;
+    }
+    
+    /* Compact user name */
+    .user-info .user-name {
+        font-size: 0.7rem;
+        max-width: 50px;
+    }
+}
+
+/* Very Small Screens (< 425px) - Icon bar mode */
+@media (max-width: 425px) {
+    /* Hide all text completely */
+    .navbar-brand span {
+        display: none !important;
+    }
+    
+    /* Hide mobile menu toggle */
+    .navbar-toggler:not(#mobileSearchToggle) {
+        display: none !important;
+    }
+    
+    /* Hide mobile navbar content */
+    #mobileNavbarContent {
+        display: none !important;
+    }
+    
+    /* Compact logo */
+    .navbar-brand img {
+        max-height: 24px !important;
+        margin-right: 0 !important;
+    }
+    
+    /* Icon bar styling */
+    .d-md-none.d-lg-none.d-flex {
+        gap: 0.25rem;
+    }
+    
+    .d-md-none .nav-link {
+        padding: 0.25rem !important;
+        font-size: 1rem;
+    }
+    
+    .d-md-none .navbar-toggler {
+        padding: 0.25rem !important;
+        font-size: 1rem;
+    }
+    
+    /* Mobile search container */
+    #mobileSearchContainer {
+        padding: 0.25rem 0.5rem;
+    }
+    
+    #mobileSearchContainer .form-control {
+        font-size: 0.85rem;
+        padding: 0.375rem;
+        height: 2rem;
+    }
+    
+    #mobileSearchContainer .btn {
+        padding: 0.375rem;
+        height: 2rem;
+    }
+    
+    /* Hide notification badge text, keep only dot */
+    .notification-badge {
+        width: 8px;
+        height: 8px;
+        font-size: 0;
+        top: -1px;
+        right: -1px;
+        border-width: 1px;
+    }
+}
+
+/* iPhone SE specific (375x667) - Ultra compact */
+@media (max-width: 375px) {
+    /* Ultra compact navbar for iPhone SE */
+    #mainNavbar {
+        padding: 0.0625rem 0.125rem !important;
+        min-height: auto !important;
+    }
+
+    .container-fluid {
+        padding: 0 0.0625rem !important;
+    }
+
+    /* Even smaller logo */
+    .navbar-brand img {
+        max-height: 18px !important;
+        margin-right: 0 !important;
+    }
+
+    /* Hide all text completely */
+    .navbar-brand span {
+        display: none !important;
+    }
+
+    /* Minimal icons */
+    .d-md-none .nav-link {
+        padding: 0.0625rem !important;
+        font-size: 0.7rem;
+    }
+
+    .d-md-none .navbar-toggler {
+        padding: 0.0625rem !important;
+        font-size: 0.7rem;
+    }
+
+    /* Ultra small notification badge */
+    .notification-badge {
+        width: 4px;
+        height: 4px;
+        top: -1px;
+        right: -1px;
+        font-size: 0;
+    }
+
+    /* Mobile search container ultra compact */
+    #mobileSearchContainer {
+        padding: 0.0625rem 0.125rem;
+    }
+
+    #mobileSearchContainer .form-control {
+        font-size: 0.6rem;
+        padding: 0.125rem 0.1875rem;
+        height: 1.25rem;
+    }
+
+    #mobileSearchContainer .btn {
+        padding: 0.125rem;
+        font-size: 0.6rem;
+        height: 1.25rem;
+    }
+
+    /* Dropdown menus ultra compact */
+    .dropdown-menu {
+        font-size: 0.5rem;
+        padding: 0.0625rem;
+        min-width: 80px;
+    }
+
+    .dropdown-item {
+        font-size: 0.5rem;
+        padding: 0.0625rem 0.125rem;
+        line-height: 0.8;
+    }
+
+    .dropdown-header {
+        font-size: 0.45rem;
+        padding: 0.0625rem 0.125rem;
+    }
+
+    /* Navbar brand ultra compact */
+    .navbar-brand {
+        padding: 0.0625rem !important;
+    }
+
+    /* Collapse container ultra compact */
+    .collapse {
+        padding: 0.0625rem;
+    }
+
+    /* Navbar nav ultra compact */
+    .navbar-nav {
+        gap: 0.0625rem;
+    }
+
+    .navbar-nav .nav-item {
+        margin: 0.015625rem;
+    }
+
+    /* Navbar toggler ultra compact */
+    .navbar-toggler {
+        border: none !important;
+        padding: 0.0625rem !important;
+        font-size: 0.7rem;
+        width: auto;
+        height: auto;
+    }
+
+    .navbar-toggler:focus {
+        box-shadow: none !important;
+    }
+
+    /* Search container ultra compact */
+    .search-container {
+        margin: 0.0625rem;
+    }
+
+    /* Input group ultra compact */
+    .input-group {
+        gap: 0.0625rem;
+    }
+
+    /* Form control ultra compact */
+    .form-control {
+        font-size: 0.6rem;
+        padding: 0.125rem 0.1875rem;
+        height: 1.25rem;
+        border-radius: 0.125rem;
+    }
+
+    /* Button ultra compact */
+    .btn {
+        padding: 0.125rem;
+        font-size: 0.6rem;
+        height: 1.25rem;
+        border-radius: 0.125rem;
+    }
+
+    /* Search suggestions ultra compact */
+    .search-suggestions {
+        font-size: 0.5rem;
+        padding: 0.0625rem;
+    }
+
+    .search-suggestion-item {
+        padding: 0.0625rem 0.125rem;
+        font-size: 0.5rem;
+        line-height: 0.8;
+    }
+
+    .suggestion-text {
+        font-size: 0.5rem;
+    }
+
+    .suggestion-meta {
+        font-size: 0.45rem;
+    }
+
+    .suggestion-type {
+        font-size: 0.4rem;
+        padding: 0.015625rem 0.03125rem;
+    }
+}
+
+/* Ultra Small Screens (< 350px) - Maximum compact topbar */
+@media (max-width: 350px) {
+    /* Maximum compact navbar */
+    #mainNavbar {
+        padding: 0.03125rem 0.0625rem !important;
+        min-height: auto !important;
+    }
+
+    .container-fluid {
+        padding: 0 0.03125rem !important;
+    }
+
+    /* Maximum compact logo */
+    .navbar-brand img {
+        max-height: 14px !important;
+        margin-right: 0 !important;
+    }
+
+    /* Maximum compact icons */
+    .d-md-none .nav-link {
+        padding: 0.03125rem !important;
+        font-size: 0.5rem;
+    }
+
+    .d-md-none .navbar-toggler {
+        padding: 0.03125rem !important;
+        font-size: 0.5rem;
+    }
+
+    /* Maximum compact notification badge */
+    .notification-badge {
+        width: 3px;
+        height: 3px;
+        top: -1px;
+        right: -1px;
+        font-size: 0;
+    }
+
+    /* Maximum compact mobile search */
+    #mobileSearchContainer {
+        padding: 0.03125rem 0.0625rem;
+    }
+
+    #mobileSearchContainer .form-control {
+        font-size: 0.4rem;
+        padding: 0.0625rem 0.09375rem;
+        height: 1rem;
+    }
+
+    #mobileSearchContainer .btn {
+        padding: 0.0625rem;
+        font-size: 0.4rem;
+        height: 1rem;
+    }
+
+    /* Maximum compact dropdowns */
+    .dropdown-menu {
+        font-size: 0.35rem;
+        padding: 0.03125rem;
+        min-width: 60px;
+    }
+
+    .dropdown-item {
+        font-size: 0.35rem;
+        padding: 0.03125rem 0.0625rem;
+        line-height: 0.7;
+    }
+
+    .dropdown-header {
+        font-size: 0.3rem;
+        padding: 0.03125rem 0.0625rem;
+    }
+
+    /* Maximum compact navbar brand */
+    .navbar-brand {
+        padding: 0.03125rem !important;
+    }
+
+    /* Maximum compact collapse */
+    .collapse {
+        padding: 0.03125rem;
+    }
+
+    /* Maximum compact navbar nav */
+    .navbar-nav {
+        gap: 0.03125rem;
+    }
+
+    .navbar-nav .nav-item {
+        margin: 0.0078125rem;
+    }
+
+    /* Maximum compact navbar toggler */
+    .navbar-toggler {
+        padding: 0.03125rem !important;
+        font-size: 0.5rem;
+        border: none !important;
+    }
+
+    /* Maximum compact search container */
+    .search-container {
+        margin: 0.03125rem;
+    }
+
+    /* Maximum compact input group */
+    .input-group {
+        gap: 0.03125rem;
+    }
+
+    /* Maximum compact form control */
+    .form-control {
+        font-size: 0.4rem;
+        padding: 0.0625rem 0.09375rem;
+        height: 1rem;
+        border-radius: 0.0625rem;
+    }
+
+    /* Maximum compact button */
+    .btn {
+        padding: 0.0625rem;
+        font-size: 0.4rem;
+        height: 1rem;
+        border-radius: 0.0625rem;
+    }
+
+    /* Maximum compact search suggestions */
+    .search-suggestions {
+        font-size: 0.35rem;
+        padding: 0.03125rem;
+    }
+
+    .search-suggestion-item {
+        padding: 0.03125rem 0.0625rem;
+        font-size: 0.35rem;
+        line-height: 0.7;
+    }
+
+    .suggestion-text {
+        font-size: 0.35rem;
+    }
+
+    .suggestion-meta {
+        font-size: 0.3rem;
+    }
+
+    .suggestion-type {
+        font-size: 0.25rem;
+        padding: 0.0078125rem 0.015625rem;
+    }
+}
+
+/* Landscape mode adjustments */
+@media (max-width: 768px) and (orientation: landscape) {
+    #mobileSearchContainer {
+        margin-bottom: 0.125rem;
+    }
+    
+    .navbar {
+        padding-top: 0.125rem;
+        padding-bottom: 0.125rem;
     }
 }
 </style>
@@ -478,7 +1200,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function updateNotificationBadge() {
-    fetch('../ADMIN/notifications_handler.php?action=get_count', {
+    fetch('notifications_handler.php?action=get_count', {
         credentials: 'include'  // Include cookies for session
     })
         .then(response => {
@@ -514,7 +1236,7 @@ function loadNotifications() {
         </div>
     `;
     
-    fetch('../ADMIN/notifications_handler.php?action=get_notifications&limit=10', {
+    fetch('notifications_handler.php?action=get_notifications&limit=10', {
         credentials: 'include'  // Include cookies for session
     })
         .then(response => {
@@ -600,13 +1322,13 @@ function displayNotifications(notifications) {
             }
             
             // Navigate to related URL if available
-            // This would need to be implemented based on notification's action_url
+            // This would need to be implemented based on the notification's action_url
         });
     });
 }
 
 function markNotificationAsRead(notificationId) {
-    fetch('../ADMIN/notifications_handler.php?action=mark_read', {
+    fetch('notifications_handler.php?action=mark_read', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -635,7 +1357,7 @@ function markNotificationAsRead(notificationId) {
 }
 
 function markAllNotificationsAsRead() {
-    fetch('../ADMIN/notifications_handler.php?action=mark_all_read', {
+    fetch('notifications_handler.php?action=mark_all_read', {
         method: 'POST',
         credentials: 'include'  // Include cookies for session
     })
@@ -653,7 +1375,7 @@ function markAllNotificationsAsRead() {
 }
 
 function deleteNotificationItem(notificationId) {
-    fetch('../ADMIN/notifications_handler.php?action=delete', {
+    fetch('notifications_handler.php?action=delete', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -688,7 +1410,7 @@ function deleteNotificationItem(notificationId) {
     });
 }
 
-// Create notification function (to be called from other parts of system)
+// Create notification function (to be called from other parts of the system)
 window.createNotification = function(userId, title, message, type = 'info', relatedId = null, relatedType = null) {
     // This would typically be called from server-side PHP
     // For client-side notifications, you could use a WebSocket or polling
@@ -699,6 +1421,14 @@ let searchTimeout;
 const searchInput = document.getElementById('searchInput');
 const searchSuggestions = document.getElementById('searchSuggestions');
 const searchForm = document.getElementById('searchForm');
+
+// Mobile search elements
+const mobileSearchToggle = document.getElementById('mobileSearchToggle');
+const mobileSearchContainer = document.getElementById('mobileSearchContainer');
+const mobileSearchInput = document.getElementById('mobileSearchInput');
+const mobileSearchSuggestions = document.getElementById('mobileSearchSuggestions');
+const mobileSearchForm = document.getElementById('mobileSearchForm');
+
 
 // Search suggestions functionality
 searchInput.addEventListener('input', function() {
@@ -717,22 +1447,68 @@ searchInput.addEventListener('input', function() {
     }, 300);
 });
 
+// Mobile search toggle functionality
+if (mobileSearchToggle) {
+    mobileSearchToggle.addEventListener('click', function() {
+        const isVisible = mobileSearchContainer.style.display !== 'none';
+        
+        if (isVisible) {
+            mobileSearchContainer.style.display = 'none';
+            mobileSearchToggle.classList.remove('active');
+        } else {
+            mobileSearchContainer.style.display = 'block';
+            mobileSearchToggle.classList.add('active');
+            mobileSearchInput.focus();
+        }
+    });
+}
+
+// Mobile search input event listener
+if (mobileSearchInput) {
+    let mobileSearchTimeout;
+    
+    mobileSearchInput.addEventListener('input', function() {
+        const query = this.value.trim();
+        
+        clearTimeout(mobileSearchTimeout);
+        
+        if (query.length < 2) {
+            mobileSearchSuggestions.style.display = 'none';
+            return;
+        }
+        
+        // Debounce search requests
+        mobileSearchTimeout = setTimeout(() => {
+            fetchSuggestions(query);
+        }, 300);
+    });
+}
+
 // Hide suggestions when clicking outside
 document.addEventListener('click', function(e) {
     if (!e.target.closest('.search-container')) {
         searchSuggestions.style.display = 'none';
+        if (mobileSearchSuggestions) {
+            mobileSearchSuggestions.style.display = 'none';
+        }
     }
 });
 
 function fetchSuggestions(query) {
-    fetch('../search_suggestions.php?q=' + encodeURIComponent(query))
+    fetch('search_suggestions.php?q=' + encodeURIComponent(query))
         .then(response => response.json())
         .then(data => {
             displaySuggestions(data);
+            if (mobileSearchSuggestions) {
+                displayMobileSuggestions(data);
+            }
         })
         .catch(error => {
             console.error('Error fetching suggestions:', error);
             searchSuggestions.style.display = 'none';
+            if (mobileSearchSuggestions) {
+                mobileSearchSuggestions.style.display = 'none';
+            }
         });
 }
 
@@ -765,6 +1541,37 @@ function displaySuggestions(suggestions) {
     searchSuggestions.style.display = 'block';
 }
 
+function displayMobileSuggestions(suggestions) {
+    if (!mobileSearchSuggestions) return;
+    
+    if (suggestions.length === 0) {
+        mobileSearchSuggestions.innerHTML = '<div class="no-suggestions">No results found</div>';
+        mobileSearchSuggestions.style.display = 'block';
+        return;
+    }
+    
+    let html = '';
+    suggestions.forEach(item => {
+        const typeClass = item.type === 'asset' ? 'suggestion-asset' : 'suggestion-employee';
+        const typeText = item.type === 'asset' ? 'Asset' : 'Employee';
+        
+        html += `
+            <div class="search-suggestion-item" onclick="selectMobileSuggestion('${item.url}')">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="suggestion-text">${highlightMatch(item.text, mobileSearchInput.value.trim())}</div>
+                        ${item.meta ? `<div class="suggestion-meta">${item.meta}</div>` : ''}
+                    </div>
+                    <span class="suggestion-type ${typeClass}">${typeText}</span>
+                </div>
+            </div>
+        `;
+    });
+    
+    mobileSearchSuggestions.innerHTML = html;
+    mobileSearchSuggestions.style.display = 'block';
+}
+
 function highlightMatch(text, query) {
     const regex = new RegExp(`(${query})`, 'gi');
     return text.replace(regex, '<strong>$1</strong>');
@@ -774,14 +1581,29 @@ function selectSuggestion(url) {
     window.location.href = url;
 }
 
+function selectMobileSuggestion(url) {
+    window.location.href = url;
+}
+
 // Handle form submission
 searchForm.addEventListener('submit', function(e) {
     e.preventDefault();
     const query = searchInput.value.trim();
     if (query) {
-        window.location.href = `../search_handler.php?q=${encodeURIComponent(query)}`;
+        window.location.href = `search_handler.php?q=${encodeURIComponent(query)}`;
     }
 });
+
+// Handle mobile form submission
+if (mobileSearchForm) {
+    mobileSearchForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const query = mobileSearchInput.value.trim();
+        if (query) {
+            window.location.href = `search_handler.php?q=${encodeURIComponent(query)}`;
+        }
+    });
+}
 
 // Keyboard navigation
 let currentSuggestionIndex = -1;
@@ -820,9 +1642,4 @@ function updateActiveSuggestion(items) {
     });
 }
 
-function confirmLogout() {
-    if (confirm('Are you sure you want to logout?')) {
-        window.location.href = '../logout.php';
-    }
-}
 </script>

@@ -89,8 +89,8 @@ $current_page = 'security_audit.php';
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
-    <link href="../assets/css/index.css" rel="stylesheet">
-    <link href="../assets/css/theme-custom.css" rel="stylesheet">
+    <link href="assets/css/admin-unified.css" rel="stylesheet">
+<?php require_once 'includes/dark-mode-init.php'; ?>
     <style>
         .page-header {
             background: white;
@@ -842,5 +842,6 @@ $current_page = 'security_audit.php';
             // In production, this would fetch updated data via AJAX
         }, 300000);
     </script>
+<?php require_once 'includes/footer.php'; ?>
 </body>
 </html>

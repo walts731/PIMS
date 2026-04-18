@@ -384,8 +384,8 @@ $page_title = 'Offices';
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
-    <link href="../assets/css/index.css" rel="stylesheet">
-    <link href="../assets/css/theme-custom.css" rel="stylesheet">
+    <link href="assets/css/admin-unified.css" rel="stylesheet">
+<?php require_once 'includes/dark-mode-init.php'; ?>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -1155,5 +1155,6 @@ document.addEventListener('DOMContentLoaded', function() {
         showAlert('Offices exported successfully!', 'success');
     }
 </script>
+<?php require_once 'includes/footer.php'; ?>
 </body>
 </html>

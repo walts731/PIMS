@@ -2,7 +2,7 @@
 // Get current page name for active state
 $current_page = basename($_SERVER['PHP_SELF']);
 
-// Get system settings for logo
+// Get system settings for logo and dark mode
 require_once '../config.php';
 $system_settings = [];
 try {
@@ -17,9 +17,31 @@ try {
     // Fallback to default if database fails
     $system_settings['system_logo'] = '';
     $system_settings['system_name'] = 'PIMS';
+    $system_settings['dark_mode'] = '0';
 }
+
+// Set dark mode class for body
+$dark_mode_class = ($system_settings['dark_mode'] ?? '0') === '1' ? 'dark-mode' : '';
+
+// Add dark mode class to body via JavaScript (runs before DOM loads to prevent flash)
+echo "<script>document.body.classList.add('$dark_mode_class');</script>";
 ?>
 <style>
+<?php if (($system_settings['theme_preset'] ?? 'default') === 'legacy'): ?>
+:root {
+    --primary-color: #191BA9 !important;
+    --primary-hover: #151689 !important;
+    --primary-gradient: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%) !important;
+    --light-accent: #C1EAF2 !important;
+    --secondary-color: #5CC2F2 !important;
+    --light-color: #F7F3F3 !important;
+    --primary-rgb: 25, 27, 169 !important;
+}
+<?php else: ?>
+:root {
+    --primary-rgb: 30, 86, 160 !important;
+}
+<?php endif; ?>
 /* Sidebar Styles */
 .sidebar {
     position: fixed;
@@ -28,7 +50,7 @@ try {
     width: 280px;
     height: 100vh;
     background: var(--primary-gradient);
-    box-shadow: 2px 0 10px rgba(25, 27, 169, 0.1);
+    box-shadow: 2px 0 10px rgba(30, 86, 160, 0.1);
     transition: left 0.3s ease-in-out;
     z-index: 1040;
     overflow-y: auto;
@@ -79,91 +101,108 @@ try {
     border-left-color: white;
 }
 
-.sidebar-nav-item i {
+/* Sidebar Logo */
+.sidebar-logo {
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    margin-right: 1rem;
+}
+
+.sidebar-logo img {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 8px;
+}
+
+.sidebar-title h6 {
+    font-weight: 700;
+    font-size: 1rem;
+    margin: 0;
+}
+
+.sidebar-title small {
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* Dropdown Styles */
+.sidebar-dropdown {
+    position: relative;
+}
+
+.sidebar-dropdown-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0.875rem 1.5rem;
+    color: rgba(255, 255, 255, 0.8);
+    background: none;
+    border: none;
+    text-align: left;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border-left: 3px solid transparent;
+}
+
+.sidebar-dropdown-toggle:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border-left-color: white;
+}
+
+.sidebar-dropdown-toggle.active {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    border-left-color: white;
+}
+
+.sidebar-dropdown-menu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-dropdown-item {
+    display: block;
+    padding: 0.75rem 1.5rem 0.75rem 3rem;
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border-left: 3px solid transparent;
+    font-size: 0.9rem;
+}
+
+.sidebar-dropdown-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border-left-color: white;
+}
+
+.sidebar-dropdown-item.active {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    border-left-color: white;
+}
+
+.sidebar-dropdown i {
     width: 20px;
     margin-right: 0.75rem;
 }
 
-.sidebar-toggle {
-    position: fixed;
-    top: 20px;
-    left: 20px;
-    z-index: 9999;
-    background: var(--primary-gradient);
-    border: none;
-    border-radius: var(--border-radius);
-    color: white;
-    padding: 0.75rem;
-    cursor: pointer;
-    transition: var(--transition);
-    box-shadow: var(--shadow);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 50px;
-    min-height: 50px;
+.sidebar-dropdown-toggle i:last-child {
+    margin-right: 0;
+    transition: transform 0.3s ease;
 }
 
-.sidebar-toggle:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
-}
-
-.sidebar-toggle.sidebar-active {
-    left: 300px;
-}
-
-.sidebar-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 1035;
-    display: none;
-    opacity: 0;
-    transition: opacity 0.3s ease-in-out;
-}
-
-.sidebar-overlay.active {
-    display: block;
-    opacity: 1;
-}
-
-/* Main content shift when sidebar is active */
-.main-wrapper {
-    transition: margin-left 0.3s ease-in-out;
-}
-
-.main-wrapper.sidebar-active {
-    margin-left: 280px;
-}
-
-.navbar {
-    background: var(--primary-gradient);
-    box-shadow: 0 2px 10px rgba(25, 27, 169, 0.1);
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    transition: padding-left 0.3s ease-in-out;
-    padding-left: 80px; /* Space for toggle button when sidebar is closed */
-}
-
-.navbar.sidebar-active {
-    padding-left: 20px; /* Reduce padding when sidebar is open */
-}
-
-.navbar-brand {
-    font-weight: 700;
-    font-size: 1.5rem;
-}
-
-.main-content {
-    padding: 2rem;
-    max-height: calc(100vh - 76px);
-    overflow-y: auto;
-    overflow-x: hidden;
+.sidebar-dropdown-toggle[aria-expanded="true"] i:last-child {
+    transform: rotate(180deg);
 }
 
 /* Responsive adjustments */
@@ -207,7 +246,7 @@ try {
             </div>
             <div class="sidebar-title">
                 <h6 class="mb-0 text-white"><?php echo $system_name; ?></h6>
-                <small class="text-white-50">Inventory System</small>
+                <small class="text-white-50">System Admin</small>
             </div>
         </div>
     </div>
@@ -217,90 +256,153 @@ try {
             <i class="bi bi-speedometer2"></i>
             Dashboard
         </a>
-        <a href="user_management.php" class="sidebar-nav-item <?php echo $current_page == 'user_management.php' ? 'active' : ''; ?>">
-            <i class="bi bi-people"></i>
-            User Management
-        </a>
-        <a href="categories.php" class="sidebar-nav-item <?php echo $current_page == 'categories.php' ? 'active' : ''; ?>">
-            <i class="bi bi-tags"></i>
-            Categories
-        </a>
-        <a href="sub_categories.php" class="sidebar-nav-item <?php echo $current_page == 'sub_categories.php' ? 'active' : ''; ?>">
-            <i class="bi bi-tags-fill"></i>
-            Sub Categories
-        </a>
-        <a href="offices.php" class="sidebar-nav-item <?php echo $current_page == 'offices.php' ? 'active' : ''; ?>">
-            <i class="bi bi-building"></i>
-            Offices
-        </a>
-        <a href="units.php" class="sidebar-nav-item <?php echo $current_page == 'units.php' ? 'active' : ''; ?>">
-            <i class="bi bi-rulers"></i>
-            Units
-        </a>
-        <a href="forms.php" class="sidebar-nav-item <?php echo $current_page == 'forms.php' ? 'active' : ''; ?>">
-            <i class="bi bi-file-earmark-text"></i>
-            Forms
-        </a>
-        <a href="tags.php" class="sidebar-nav-item <?php echo $current_page == 'tags.php' ? 'active' : ''; ?>">
-            <i class="bi bi-tags"></i>
-            Tags
-        </a>
+        
+        <div class="sidebar-dropdown">
+            <button class="sidebar-dropdown-toggle <?php echo (in_array($current_page, ['categories.php', 'sub_categories.php', 'units.php', 'offices.php', 'funds.php'])) ? 'active' : ''; ?>" 
+                    type="button" data-bs-toggle="collapse" data-bs-target="#managementDropdown" 
+                    aria-expanded="<?php echo (in_array($current_page, ['categories.php', 'sub_categories.php', 'units.php', 'offices.php', 'funds.php'])) ? 'true' : 'false'; ?>">
+                <div>
+                    <i class="bi bi-gear"></i>
+                    System Management
+                </div>
+                <i class="bi bi-chevron-down"></i>
+            </button>
+            <div class="collapse <?php echo (in_array($current_page, ['categories.php', 'sub_categories.php', 'units.php', 'offices.php', 'funds.php'])) ? 'show' : ''; ?>" id="managementDropdown">
+                <ul class="sidebar-dropdown-menu">
+                    <li>
+                        <a href="categories.php" class="sidebar-dropdown-item <?php echo $current_page == 'categories.php' ? 'active' : ''; ?>">
+                            <i class="bi bi-tags"></i>
+                            Categories
+                        </a>
+                    </li>
+                    <li>
+                        <a href="sub_categories.php" class="sidebar-dropdown-item <?php echo $current_page == 'sub_categories.php' ? 'active' : ''; ?>">
+                            <i class="bi bi-tag"></i>
+                            Sub Categories
+                        </a>
+                    </li>
+                    <li>
+                        <a href="units.php" class="sidebar-dropdown-item <?php echo $current_page == 'units.php' ? 'active' : ''; ?>">
+                            <i class="bi bi-rulers"></i>
+                            Units
+                        </a>
+                    </li>
+                    <li>
+                        <a href="offices.php" class="sidebar-dropdown-item <?php echo $current_page == 'offices.php' ? 'active' : ''; ?>">
+                            <i class="bi bi-building"></i>
+                            Offices
+                        </a>
+                    </li>
+                    
+                </ul>
+            </div>
+        </div>
+        
+        <div class="sidebar-dropdown">
+            <button class="sidebar-dropdown-toggle <?php echo (in_array($current_page, ['user_management.php', 'backup.php', 'logs.php', 'security_audit.php'])) ? 'active' : ''; ?>" 
+                    type="button" data-bs-toggle="collapse" data-bs-target="#adminDropdown" 
+                    aria-expanded="<?php echo (in_array($current_page, ['user_management.php', 'backup.php', 'logs.php', 'security_audit.php'])) ? 'true' : 'false'; ?>">
+                <div>
+                    <i class="bi bi-shield-check"></i>
+                    Administration
+                </div>
+                <i class="bi bi-chevron-down"></i>
+            </button>
+            <div class="collapse <?php echo (in_array($current_page, ['user_management.php', 'backup.php', 'logs.php', 'security_audit.php'])) ? 'show' : ''; ?>" id="adminDropdown">
+                <ul class="sidebar-dropdown-menu">
+                    <li>
+                        <a href="user_management.php" class="sidebar-dropdown-item <?php echo $current_page == 'user_management.php' ? 'active' : ''; ?>">
+                            <i class="bi bi-people"></i>
+                            User Management
+                        </a>
+                    </li>
+                    <li>
+                        <a href="backup.php" class="sidebar-dropdown-item <?php echo $current_page == 'backup.php' ? 'active' : ''; ?>">
+                            <i class="bi bi-cloud-arrow-up"></i>
+                            Backup System
+                        </a>
+                    </li>
+                    <li>
+                        <a href="logs.php" class="sidebar-dropdown-item <?php echo $current_page == 'logs.php' ? 'active' : ''; ?>">
+                            <i class="bi bi-file-text"></i>
+                            System Logs
+                        </a>
+                    </li>
+                    <li>
+                        <a href="security_audit.php" class="sidebar-dropdown-item <?php echo $current_page == 'security_audit.php' ? 'active' : ''; ?>">
+                            <i class="bi bi-shield-lock"></i>
+                            Security Audit
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="sidebar-dropdown">
+            <button class="sidebar-dropdown-toggle <?php echo (in_array($current_page, ['forms.php', 'form_details.php', 'tags.php'])) ? 'active' : ''; ?>" 
+                    type="button" data-bs-toggle="collapse" data-bs-target="#formsDropdown" 
+                    aria-expanded="<?php echo (in_array($current_page, ['forms.php', 'form_details.php', 'tags.php'])) ? 'true' : 'false'; ?>">
+                <div>
+                    <i class="bi bi-file-earmark-text"></i>
+                    Forms & Tags
+                </div>
+                <i class="bi bi-chevron-down"></i>
+            </button>
+            <div class="collapse <?php echo (in_array($current_page, ['forms.php', 'form_details.php', 'tags.php'])) ? 'show' : ''; ?>" id="formsDropdown">
+                <ul class="sidebar-dropdown-menu">
+                    <li>
+                        <a href="forms.php" class="sidebar-dropdown-item <?php echo $current_page == 'forms.php' ? 'active' : ''; ?>">
+                            <i class="bi bi-file-earmark-text"></i>
+                            Forms Management
+                        </a>
+                    </li>
+                   
+                    <li>
+                        <a href="tags.php" class="sidebar-dropdown-item <?php echo $current_page == 'tags.php' ? 'active' : ''; ?>">
+                            <i class="bi bi-tags"></i>
+                            Tags Management
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="sidebar-dropdown">
+            <button class="sidebar-dropdown-toggle <?php echo (in_array($current_page, ['cloud_config.php', 'cloud_callback.php'])) ? 'active' : ''; ?>" 
+                    type="button" data-bs-toggle="collapse" data-bs-target="#cloudDropdown" 
+                    aria-expanded="<?php echo (in_array($current_page, ['cloud_config.php', 'cloud_callback.php'])) ? 'true' : 'false'; ?>">
+                <div>
+                    <i class="bi bi-cloud"></i>
+                    Cloud Services
+                </div>
+                <i class="bi bi-chevron-down"></i>
+            </button>
+            <div class="collapse <?php echo (in_array($current_page, ['cloud_config.php', 'cloud_callback.php'])) ? 'show' : ''; ?>" id="cloudDropdown">
+                <ul class="sidebar-dropdown-menu">
+                    <li>
+                        <a href="cloud_config.php" class="sidebar-dropdown-item <?php echo $current_page == 'cloud_config.php' ? 'active' : ''; ?>">
+                            <i class="bi bi-gear"></i>
+                            Cloud Configuration
+                        </a>
+                    </li>
+                  
+                </ul>
+            </div>
+        </div>
+        
         <a href="system_settings.php" class="sidebar-nav-item <?php echo $current_page == 'system_settings.php' ? 'active' : ''; ?>">
             <i class="bi bi-gear"></i>
             System Settings
         </a>
-        <a href="security_audit.php" class="sidebar-nav-item <?php echo $current_page == 'security_audit.php' ? 'active' : ''; ?>">
-            <i class="bi bi-shield-exclamation"></i>
-            Security Audit
-        </a>
-        <a href="backup.php" class="sidebar-nav-item <?php echo $current_page == 'backup.php' ? 'active' : ''; ?>">
-            <i class="bi bi-cloud-download"></i>
-            Backup System
-        </a>
-        <a href="cloud_config.php" class="sidebar-nav-item <?php echo $current_page == 'cloud_config.php' ? 'active' : ''; ?>">
-            <i class="bi bi-cloud"></i>
-            Cloud Storage
-        </a>
-        <a href="logs.php" class="sidebar-nav-item <?php echo $current_page == 'logs.php' ? 'active' : ''; ?>">
-            <i class="bi bi-clock-history"></i>
-            System Logs
-        </a>
+        
         <a href="profile.php" class="sidebar-nav-item <?php echo $current_page == 'profile.php' ? 'active' : ''; ?>">
             <i class="bi bi-person-circle"></i>
             My Profile
         </a>
+        
         <div class="sidebar-nav-item" style="margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 2rem;">
             <i class="bi bi-box-arrow-right"></i>
-            <a href="../logout.php" onclick="event.preventDefault(); confirmLogout();" style="color: inherit; text-decoration: none;">Logout</a>
+            <a href="#" data-bs-toggle="modal" data-bs-target="#logoutModal" style="color: inherit; text-decoration: none;">Logout</a>
         </div>
     </nav>
 </aside>
-
-<!-- Logout Confirmation Modal -->
-<div class="modal fade" id="logoutModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-warning text-dark">
-                <h5 class="modal-title"><i class="bi bi-exclamation-triangle"></i> Confirm Logout</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="text-center mb-3">
-                    <i class="bi bi-box-arrow-right fs-1 text-warning"></i>
-                </div>
-                <h6 class="text-center mb-3">Are you sure you want to logout?</h6>
-                <p class="text-muted text-center mb-0">
-                    You will be logged out of the Pilar Inventory Management System. Any unsaved work will be lost.
-                </p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="bi bi-x-circle"></i> Cancel
-                </button>
-                <a href="../logout.php" class="btn btn-warning">
-                    <i class="bi bi-box-arrow-right"></i> Logout
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
