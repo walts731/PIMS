@@ -215,6 +215,60 @@ $page_title = 'Categories';
             border-left: 4px solid var(--primary-color);
         }
         
+        .table-container {
+            background: white;
+            border-radius: var(--border-radius-lg);
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+        }
+        
+        .btn-action {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+            margin: 0 0.125rem;
+        }
+        
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: var(--border-radius-xl);
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .category-badge {
+            background: var(--primary-color);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: var(--border-radius-xl);
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .modal-header {
+            background: var(--primary-gradient);
+            color: white;
+        }
+        
+        .form-label {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .table-hover tbody tr:hover {
+            background-color: rgba(25, 27, 169, 0.05);
+        }
+        
                 
         .sidebar-overlay {
             position: fixed;
@@ -306,11 +360,6 @@ $page_title = 'Categories';
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="categoryActionsDropdown">
                             <li>
-                                <button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#importCategoriesModal">
-                                    <i class="bi bi-upload text-info"></i> Import Categories
-                                </button>
-                            </li>
-                            <li>
                                 <button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
                                     <i class="bi bi-plus-circle text-primary"></i> Add Category
                                 </button>
@@ -346,66 +395,63 @@ $page_title = 'Categories';
         <?php endif; ?>
         
         <!-- Categories Table -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card border-0 shadow-lg rounded-4">
-                    <div class="card-header text-white rounded-top-4" style="background: linear-gradient(135deg, #1E56A0 0%, #163172 100%);">
-                        <h6 class="mb-0"><i class="bi bi-tags"></i> Categories Management</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover" id="categoriesTable">
-                                <thead>
-                                    <tr>
-                                        <th>Category Name</th>
-                                        <th>Code</th>
-                                        <th>Description</th>
-                                        <th>Depreciation Rate</th>
-                                        <th>Useful Life</th>
-                                        <th>Status</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($categories as $category): ?>
-                                        <tr>
-                                            <td>
-                                                <strong><?php echo htmlspecialchars($category['category_name']); ?></strong>
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-secondary"><?php echo htmlspecialchars($category['category_code']); ?></span>
-                                            </td>
-                                            <td><?php echo htmlspecialchars($category['description'] ?? '-'); ?></td>
-                                            <td><?php echo number_format($category['depreciation_rate'], 2); ?>%</td>
-                                            <td><?php echo $category['useful_life_years']; ?> years</td>
-                                            <td>
-                                                <div class="form-check form-switch">
-                                                    <input class="form-check-input status-switch" type="checkbox" 
-                                                           id="status_<?php echo $category['id']; ?>" 
-                                                           data-category-id="<?php echo $category['id']; ?>"
-                                                           <?php echo (!empty($category['status']) && $category['status'] == 'active') ? 'checked' : ''; ?>>
-                                                    <label class="form-check-label" for="status_<?php echo $category['id']; ?>">
-                                                        <span class="badge bg-<?php echo !empty($category['status']) && $category['status'] == 'active' ? 'success' : 'secondary'; ?>">
-                                                            <?php echo !empty($category['status']) && $category['status'] == 'active' ? 'Active' : 'Inactive'; ?>
-                                                        </span>
-                                                    </label>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div class="btn-group" role="group">
-                                                    <button type="button" class="btn btn-sm btn-outline-primary" 
-                                                            onclick="editCategory(<?php echo $category['id']; ?>)">
-                                                        <i class="bi bi-pencil"></i>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+        <div class="table-container">
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <h5 class="mb-0"><i class="bi bi-list-ul"></i> Categories List</h5>
                 </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-hover" id="categoriesTable">
+                    <thead>
+                        <tr>
+                            <th>Category Name</th>
+                            <th>Code</th>
+                            <th>Description</th>
+                            <th>Depreciation Rate</th>
+                            <th>Useful Life</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (!empty($categories)): ?>
+                            <?php foreach ($categories as $category): ?>
+                                <tr>
+                                    <td>
+                                        <strong><?php echo htmlspecialchars($category['category_name']); ?></strong>
+                                    </td>
+                                    <td>
+                                        <span class="category-badge">
+                                            <?php echo htmlspecialchars($category['category_code']); ?>
+                                        </span>
+                                    </td>
+                                    <td><?php echo htmlspecialchars($category['description'] ?? '-'); ?></td>
+                                    <td><?php echo number_format($category['depreciation_rate'], 2); ?>%</td>
+                                    <td><?php echo $category['useful_life_years']; ?> years</td>
+                                    <td>
+                                        <span class="status-badge status-<?php echo !empty($category['status']) && $category['status'] == 'active' ? 'active' : 'inactive'; ?>">
+                                            <?php echo !empty($category['status']) && $category['status'] == 'active' ? 'Active' : 'Inactive'; ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary btn-action" onclick="editCategory(<?php echo $category['id']; ?>)">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">
+                                    <i class="bi bi-inbox fs-1"></i>
+                                    <p class="mt-2">No categories found. Click "Add Category" to create your first category.</p>
+                                </td>
+                            </tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -415,8 +461,8 @@ $page_title = 'Categories';
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Add New Category</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title"><i class="bi bi-plus-circle"></i> Add New Category</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <form method="POST" action="">
                     <input type="hidden" name="action" value="add">
@@ -451,7 +497,9 @@ $page_title = 'Categories';
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Add Category</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Add Category
+                        </button>
                     </div>
                 </form>
             </div>
@@ -463,8 +511,8 @@ $page_title = 'Categories';
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Edit Category</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title"><i class="bi bi-pencil"></i> Edit Category</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <form method="POST" action="">
                     <input type="hidden" name="action" value="edit">
@@ -500,99 +548,15 @@ $page_title = 'Categories';
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Update Category</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-pencil"></i> Update Category
+                        </button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
     
-        
-    <?php require_once 'includes/logout-modal.php'; ?>
-    <?php require_once 'includes/change-password-modal.php'; ?>
-<!-- Import Categories Modal -->
-    <div class="modal fade" id="importCategoriesModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="bi bi-upload"></i> Import Categories
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <form id="importCategoriesForm" enctype="multipart/form-data">
-                    <div class="modal-body">
-                        <div class="alert alert-info">
-                            <i class="bi bi-info-circle"></i>
-                            <strong>Import Instructions:</strong>
-                            <ul class="mb-0 mt-2">
-                                <li>Upload a CSV file with category data</li>
-                                <li>Required columns: Category Name, Category Code</li>
-                                <li>Optional columns: Description, Depreciation Rate, Useful Life Years</li>
-                                <li>First row should contain headers</li>
-                                <li>Duplicate category codes will be skipped</li>
-                            </ul>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="importFile" class="form-label">Select CSV File</label>
-                            <input type="file" class="form-control" id="importFile" name="importFile" 
-                                   accept=".csv" required>
-                            <div class="form-text">Only CSV files are allowed. Maximum file size: 5MB.</div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="skipDuplicates" name="skipDuplicates" checked>
-                                <label class="form-check-label" for="skipDuplicates">
-                                    Skip duplicate category codes
-                                </label>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="updateExisting" name="updateExisting">
-                                <label class="form-check-label" for="updateExisting">
-                                    Update existing categories with same code
-                                </label>
-                            </div>
-                        </div>
-                        
-                        <div id="importPreview" class="d-none">
-                            <h6 class="mt-4 mb-3">Import Preview</h6>
-                            <div class="table-responsive">
-                                <table class="table table-sm table-bordered" id="previewTable">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Category Name</th>
-                                            <th>Category Code</th>
-                                            <th>Description</th>
-                                            <th>Depreciation Rate</th>
-                                            <th>Useful Life</th>
-                                            <th>Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="previewBody">
-                                        <!-- Preview data will be inserted here -->
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-info" id="previewBtn">
-                            <i class="bi bi-eye"></i> Preview
-                        </button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-upload"></i> Import Categories
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
         
     <?php require_once 'includes/logout-modal.php'; ?>
     <?php require_once 'includes/change-password-modal.php'; ?>
@@ -685,53 +649,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
         
-    // Handle status switch changes
-    document.querySelectorAll('.status-switch').forEach(switchElement => {
-        switchElement.addEventListener('change', function() {
-            const categoryId = this.dataset.categoryId;
-            const newStatus = this.checked ? 'active' : 'inactive';
-            
-            // Show loading state
-            const badge = this.nextElementSibling.querySelector('span');
-            const originalText = badge.textContent;
-            badge.textContent = 'Updating...';
-            badge.className = 'badge bg-warning';
-            
-            // Send AJAX request to update status
-            fetch('ajax/update_category_status.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: `category_id=${categoryId}&status=${newStatus}`
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Update badge
-                    badge.textContent = newStatus === 'active' ? 'Active' : 'Inactive';
-                    badge.className = `badge bg-${newStatus === 'active' ? 'success' : 'secondary'}`;
-                    
-                    // Show success message
-                    showAlert(data.message, 'success');
-                } else {
-                    // Revert switch and show error
-                    this.checked = !this.checked;
-                    badge.textContent = originalText;
-                    badge.className = `badge bg-${this.checked ? 'success' : 'secondary'}`;
-                    showAlert(data.message || 'Error updating status', 'danger');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                // Revert switch and show error
-                this.checked = !this.checked;
-                badge.textContent = originalText;
-                badge.className = `badge bg-${this.checked ? 'success' : 'secondary'}`;
-                showAlert('Error updating status', 'danger');
-            });
-        });
-    });
     
     function showAlert(message, type) {
         // Remove existing alerts
@@ -1126,174 +1043,6 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }
     
-    // Import categories functionality
-    let importData = [];
-    
-    // Preview button click handler
-    document.getElementById('previewBtn').addEventListener('click', function() {
-        const fileInput = document.getElementById('importFile');
-        const file = fileInput.files[0];
-        
-        if (!file) {
-            showAlert('Please select a CSV file first', 'warning');
-            return;
-        }
-        
-        if (file.size > 5 * 1024 * 1024) { // 5MB limit
-            showAlert('File size exceeds 5MB limit', 'danger');
-            return;
-        }
-        
-        if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
-            showAlert('Please select a CSV file', 'warning');
-            return;
-        }
-        
-        // Read and parse CSV file
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const csvData = e.target.result;
-                importData = parseCSV(csvData);
-                
-                if (importData.length === 0) {
-                    showAlert('No valid data found in CSV file', 'warning');
-                    return;
-                }
-                
-                // Show preview
-                showImportPreview(importData);
-                showAlert(`Preview loaded: ${importData.length} categories found`, 'success');
-                
-            } catch (error) {
-                console.error('Error parsing CSV:', error);
-                showAlert('Error parsing CSV file: ' + error.message, 'danger');
-            }
-        };
-        reader.readAsText(file);
-    });
-    
-    // Parse CSV function
-    function parseCSV(csvData) {
-        const lines = csvData.split('\n').filter(line => line.trim());
-        if (lines.length < 2) {
-            throw new Error('CSV file must have at least a header row and one data row');
-        }
-        
-        const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-        const data = [];
-        
-        for (let i = 1; i < lines.length; i++) {
-            const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
-            
-            if (values.length >= 2 && values[0] && values[1]) {
-                data.push({
-                    category_name: values[0] || '',
-                    category_code: values[1] || '',
-                    description: values[2] || '',
-                    depreciation_rate: parseFloat(values[3]) || 0,
-                    useful_life_years: parseInt(values[4]) || 0,
-                    status: values[5] || 'active',
-                    row_number: i + 1
-                });
-            }
-        }
-        
-        return data;
-    }
-    
-    // Show import preview
-    function showImportPreview(data) {
-        const previewBody = document.getElementById('previewBody');
-        const previewDiv = document.getElementById('importPreview');
-        
-        previewBody.innerHTML = '';
-        
-        data.forEach(item => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${item.category_name}</td>
-                <td>${item.category_code}</td>
-                <td>${item.description || '-'}</td>
-                <td>${item.depreciation_rate}%</td>
-                <td>${item.useful_life_years || '-'}</td>
-                <td><span class="badge bg-${item.status === 'active' ? 'success' : 'secondary'}">${item.status}</span></td>
-            `;
-            previewBody.appendChild(row);
-        });
-        
-        previewDiv.classList.remove('d-none');
-    }
-    
-    // Import form submit handler
-    document.getElementById('importCategoriesForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        if (importData.length === 0) {
-            showAlert('No data to import. Please preview the file first.', 'warning');
-            return;
-        }
-        
-        const skipDuplicates = document.getElementById('skipDuplicates').checked;
-        const updateExisting = document.getElementById('updateExisting').checked;
-        
-        // Show loading state
-        const submitBtn = this.querySelector('button[type="submit"]');
-        const originalText = submitBtn.innerHTML;
-        submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Importing...';
-        submitBtn.disabled = true;
-        
-        // Send import request
-        const formData = new FormData();
-        formData.append('action', 'import');
-        formData.append('data', JSON.stringify(importData));
-        formData.append('skipDuplicates', skipDuplicates);
-        formData.append('updateExisting', updateExisting);
-        
-        fetch('ajax/category_import.php', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showAlert(data.message, 'success');
-                
-                // Close modal and refresh page after delay
-                setTimeout(() => {
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('importCategoriesModal'));
-                    modal.hide();
-                    
-                    // Reset form
-                    document.getElementById('importCategoriesForm').reset();
-                    document.getElementById('importPreview').classList.add('d-none');
-                    importData = [];
-                    
-                    // Refresh page to show new data
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1000);
-                }, 2000);
-            } else {
-                showAlert(data.message || 'Import failed', 'danger');
-            }
-        })
-        .catch(error => {
-            console.error('Import error:', error);
-            showAlert('Error during import: ' + error.message, 'danger');
-        })
-        .finally(() => {
-            // Restore button state
-            submitBtn.innerHTML = originalText;
-            submitBtn.disabled = false;
-        });
-    });
-    
-    // Reset preview when file input changes
-    document.getElementById('importFile').addEventListener('change', function() {
-        document.getElementById('importPreview').classList.add('d-none');
-        importData = [];
-    });
 </script>
 <?php require_once 'includes/footer.php'; ?>
 </body>
