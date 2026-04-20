@@ -366,8 +366,8 @@ if ($form['form_code'] === 'PAR') {
     <!-- DataTables JS -->
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <?php require_once 'includes/sidebar-scripts.php'; ?>
     <script>
-        <?php require_once 'includes/sidebar-scripts.php'; ?>
         
         $(document).ready(function() {
             // Initialize DataTables

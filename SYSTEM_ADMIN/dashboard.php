@@ -1485,8 +1485,8 @@ $page_title = 'Dashboard';
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <?php require_once 'includes/sidebar-scripts.php'; ?>
     <script>
-        <?php require_once 'includes/sidebar-scripts.php'; ?>
         
         // Dashboard functions
         function refreshDashboard() {

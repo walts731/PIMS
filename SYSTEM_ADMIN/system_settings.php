@@ -1073,8 +1073,8 @@ $current_page = 'system_settings.php';
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <?php require_once 'includes/sidebar-scripts.php'; ?>
     <script>
-        <?php require_once 'includes/sidebar-scripts.php'; ?>
         
         // Fix modal backdrop issues
         document.addEventListener('DOMContentLoaded', function() {
