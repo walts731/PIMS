@@ -1,3 +1,4 @@
+<script>
 // Sidebar functionality
 document.addEventListener('DOMContentLoaded', function() {
     const sidebarToggle = document.getElementById('sidebarToggle');
@@ -28,7 +29,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function toggleSidebar() {
-        const isOpen = sidebar.classList.contains('active');
+        const isOpen = sidebar && sidebar.classList ? sidebar.classList.contains('active') : false;
         
         if (isOpen) {
             closeSidebar();
@@ -38,20 +39,20 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function openSidebar() {
-        if (sidebar) sidebar.classList.add('active');
-        if (sidebarOverlay) sidebarOverlay.classList.add('active');
-        if (sidebarToggle) sidebarToggle.classList.add('sidebar-active');
-        if (mainWrapper) mainWrapper.classList.add('sidebar-active');
-        if (navbar) navbar.classList.add('sidebar-active');
+        if (sidebar && sidebar.classList) sidebar.classList.add('active');
+        if (sidebarOverlay && sidebarOverlay.classList) sidebarOverlay.classList.add('active');
+        if (sidebarToggle && sidebarToggle.classList) sidebarToggle.classList.add('sidebar-active');
+        if (mainWrapper && mainWrapper.classList) mainWrapper.classList.add('sidebar-active');
+        if (navbar && navbar.classList) navbar.classList.add('sidebar-active');
         document.body.style.overflow = 'hidden'; // Prevent background scroll
     }
 
     function closeSidebar() {
-        if (sidebar) sidebar.classList.remove('active');
-        if (sidebarOverlay) sidebarOverlay.classList.remove('active');
-        if (sidebarToggle) sidebarToggle.classList.remove('sidebar-active');
-        if (mainWrapper) mainWrapper.classList.remove('sidebar-active');
-        if (navbar) navbar.classList.remove('sidebar-active');
+        if (sidebar && sidebar.classList) sidebar.classList.remove('active');
+        if (sidebarOverlay && sidebarOverlay.classList) sidebarOverlay.classList.remove('active');
+        if (sidebarToggle && sidebarToggle.classList) sidebarToggle.classList.remove('sidebar-active');
+        if (mainWrapper && mainWrapper.classList) mainWrapper.classList.remove('sidebar-active');
+        if (navbar && navbar.classList) navbar.classList.remove('sidebar-active');
         document.body.style.overflow = ''; // Restore background scroll
     }
 
@@ -63,3 +64,4 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+</script>

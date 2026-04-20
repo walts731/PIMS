@@ -187,7 +187,7 @@ $page_title = 'Categories';
             top: 20px;
             left: 20px;
             z-index: 1051;
-            background: var(--primary-color);
+            background: #1E56A0;
             color: white;
             border: none;
             border-radius: 8px;
@@ -198,7 +198,7 @@ $page_title = 'Categories';
         }
         
         .sidebar-toggle:hover {
-            background: var(--primary-hover);
+            background: #163172;
             transform: scale(1.05);
         }
         
@@ -260,19 +260,6 @@ $page_title = 'Categories';
         /* Ensure sidebar overlay doesn't interfere with modals */
         .sidebar-overlay {
             z-index: 1040;
-        }
-        
-        /* Remove scrollbar from sidebar */
-        .sidebar {
-            overflow: hidden;
-        }
-        
-        .sidebar * {
-            scrollbar-width: none; /* Firefox */
-        }
-        
-        .sidebar::-webkit-scrollbar {
-            display: none; /* Chrome, Safari, Edge */
         }
         
         /* Fix modal backdrop issues */
@@ -362,7 +349,7 @@ $page_title = 'Categories';
         <div class="row mb-4">
             <div class="col-12">
                 <div class="card border-0 shadow-lg rounded-4">
-                    <div class="card-header bg-primary text-white rounded-top-4">
+                    <div class="card-header text-white rounded-top-4" style="background: linear-gradient(135deg, #1E56A0 0%, #163172 100%);">
                         <h6 class="mb-0"><i class="bi bi-tags"></i> Categories Management</h6>
                     </div>
                     <div class="card-body">
@@ -376,7 +363,6 @@ $page_title = 'Categories';
                                         <th>Depreciation Rate</th>
                                         <th>Useful Life</th>
                                         <th>Status</th>
-                                        <th>Created</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -404,12 +390,6 @@ $page_title = 'Categories';
                                                         </span>
                                                     </label>
                                                 </div>
-                                            </td>
-                                            <td>
-                                                <small class="text-muted">
-                                                    <?php echo date('M j, Y', strtotime($category['created_at'])); ?>
-                                                    <br>by <?php echo htmlspecialchars($category['created_by_name'] ?? 'System'); ?>
-                                                </small>
                                             </td>
                                             <td>
                                                 <div class="btn-group" role="group">
