@@ -215,26 +215,7 @@ $page_title = 'Categories';
             border-left: 4px solid var(--primary-color);
         }
         
-        .stats-card {
-            background: white;
-            border-radius: var(--border-radius-lg);
-            padding: 1.5rem;
-            box-shadow: var(--shadow);
-            border-left: 4px solid var(--primary-color);
-            transition: var(--transition);
-        }
-        
-        .stats-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
-        }
-        
-        .stats-number {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--primary-color);
-        }
-        
+                
         .sidebar-overlay {
             position: fixed;
             top: 0;
@@ -369,69 +350,7 @@ $page_title = 'Categories';
             </div>
         </div>
 
-        <!-- Categories Statistics -->
-        <div class="row mb-4">
-            <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="stats-number"><?php echo count($categories); ?></div>
-                            <div class="text-muted">Total Categories</div>
-                            <small class="text-success">
-                                <i class="bi bi-tags"></i> 
-                                Asset Types
-                            </small>
-                        </div>
-                        <div class="text-primary">
-                            <i class="bi bi-tags fs-1"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="stats-number"><?php echo count(array_filter($categories, fn($c) => !empty($c['status']) && $c['status'] == 'active')); ?></div>
-                            <div class="text-muted">Active Categories</div>
-                            <small class="text-success">Ready for Use</small>
-                        </div>
-                        <div class="text-success">
-                            <i class="bi bi-check-circle fs-1"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="stats-number"><?php echo count(array_filter($categories, fn($c) => !empty($c['status']) && $c['status'] == 'inactive')); ?></div>
-                            <div class="text-muted">Inactive Categories</div>
-                            <small class="text-warning">Disabled</small>
-                        </div>
-                        <div class="text-warning">
-                            <i class="bi bi-pause-circle fs-1"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="stats-number"><?php echo count(array_unique(array_column($categories, 'category_code'))); ?></div>
-                            <div class="text-muted">Unique Codes</div>
-                            <small class="text-info">No Duplicates</small>
-                        </div>
-                        <div class="text-info">
-                            <i class="bi bi-code-square fs-1"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
+                
         <?php if ($message): ?>
             <div class="alert alert-<?php echo $message_type; ?> alert-dismissible fade show" role="alert">
                 <?php echo htmlspecialchars($message); ?>
@@ -706,8 +625,8 @@ $page_title = 'Categories';
 <!-- DataTables JS -->
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
-<script>
 <?php require_once 'includes/sidebar-scripts.php'; ?>
+<script>
 
 // Fix modal backdrop issues
 document.addEventListener('DOMContentLoaded', function() {
