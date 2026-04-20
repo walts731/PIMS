@@ -91,20 +91,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                 $headers = array_map('strtolower', $headers);
                 
                 // Validate required columns
-                if (!in_array('office_name', $headers) || !in_array('office_code', $headers)) {
-                    throw new Exception('CSV must contain office_name and office_code columns');
+                if (!in_array('office_name', $headers) || !in_array('office_code', $headers) || !in_array('parent_office', $headers)) {
+                    throw new Exception('CSV must contain office_name, office_code, and parent_office columns');
                 }
                 
                 // Get column indexes
                 $office_name_idx = array_search('office_name', $headers);
                 $office_code_idx = array_search('office_code', $headers);
-                $address_idx = array_search('address', $headers);
-                $state_idx = array_search('state', $headers);
-                $postal_code_idx = array_search('postal_code', $headers);
-                $country_idx = array_search('country', $headers);
-                $phone_idx = array_search('phone', $headers);
-                $email_idx = array_search('email', $headers);
-                $capacity_idx = array_search('capacity', $headers);
+                $parent_office_idx = array_search('parent_office', $headers);
                 
                 // Process each row
                 $row_num = 1;
@@ -118,13 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                     
                     $office_name = trim($data[$office_name_idx] ?? '');
                     $office_code = trim($data[$office_code_idx] ?? '');
-                    $address = trim($data[$address_idx] ?? '');
-                    $state = trim($data[$state_idx] ?? '');
-                    $postal_code = trim($data[$postal_code_idx] ?? '');
-                    $country = trim($data[$country_idx] ?? 'Philippines');
-                    $phone = trim($data[$phone_idx] ?? '');
-                    $email = trim($data[$email_idx] ?? '');
-                    $capacity = intval($data[$capacity_idx] ?? 0);
+                    $parent_office_code = trim($data[$parent_office_idx] ?? '');
                     
                     // Validation
                     if (empty($office_name) || empty($office_code)) {
@@ -133,17 +121,30 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                         continue;
                     }
                     
-                    
-                    if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                        $errors[] = "Row {$row_num}: Invalid email format";
+                    // Validate office code format (numeric, 3-5 digits)
+                    if (!preg_match('/^\d{3,5}$/', $office_code)) {
+                        $errors[] = "Row {$row_num}: Office code must be 3-5 digits (e.g., 050, 123)";
                         $error_count++;
                         continue;
                     }
                     
-                    if ($capacity < 0) {
-                        $errors[] = "Row {$row_num}: Capacity must be a positive number";
-                        $error_count++;
-                        continue;
+                    // Validate parent office if provided
+                    $branch_id = null;
+                    if (!empty($parent_office_code)) {
+                        // Check if parent office exists
+                        $parent_stmt = $conn->prepare("SELECT id FROM offices WHERE office_code = ?");
+                        $parent_stmt->bind_param("s", $parent_office_code);
+                        $parent_stmt->execute();
+                        $parent_result = $parent_stmt->get_result();
+                        
+                        if ($parent_result->num_rows === 0) {
+                            $errors[] = "Row {$row_num}: Parent office code '{$parent_office_code}' not found";
+                            $error_count++;
+                            continue;
+                        }
+                        
+                        $parent_row = $parent_result->fetch_assoc();
+                        $branch_id = $parent_row['id'];
                     }
                     
                     
@@ -162,8 +163,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                         }
                         
                         // Insert office
-                        $stmt = $conn->prepare("INSERT INTO offices (office_name, office_code, address, state, postal_code, country, phone, email, capacity, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                        $stmt->bind_param("ssssssssii", $office_name, $office_code, $address, $state, $postal_code, $country, $phone, $email, $capacity, $_SESSION['user_id']);
+                        $stmt = $conn->prepare("INSERT INTO offices (office_name, office_code, branch, created_by) VALUES (?, ?, ?, ?)");
+                        $stmt->bind_param("ssii", $office_name, $office_code, $branch_id, $_SESSION['user_id']);
                         $stmt->execute();
                         
                         $imported_count++;
@@ -427,24 +428,58 @@ $page_title = 'Offices';
             border-left: 4px solid var(--primary-color);
         }
         
-        .stats-card {
+        .table-container {
             background: white;
             border-radius: var(--border-radius-lg);
             padding: 1.5rem;
             box-shadow: var(--shadow);
-            border-left: 4px solid var(--primary-color);
-            transition: var(--transition);
+            margin-bottom: 2rem;
         }
         
-        .stats-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
+        .btn-action {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+            margin: 0 0.125rem;
         }
         
-        .stats-number {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--primary-color);
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: var(--border-radius-xl);
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .office-badge {
+            background: var(--primary-color);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: var(--border-radius-xl);
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .modal-header {
+            background: var(--primary-gradient);
+            color: white;
+        }
+        
+        .form-label {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .table-hover tbody tr:hover {
+            background-color: rgba(25, 27, 169, 0.05);
         }
         
         .sidebar-overlay {
@@ -544,84 +579,43 @@ $page_title = 'Offices';
                     <p class="text-muted mb-0">Manage office departments for the LGU</p>
                 </div>
                 <div class="col-md-4 text-md-end">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addOfficeModal">
-                                <i class="bi bi-plus-circle"></i> Add Office
-                            </button>
-                            <button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#importOfficesModal">
-                                <i class="bi bi-upload"></i> Import
-                            </button>
-                            <button class="btn btn-success btn-sm" onclick="exportOffices()">
-                                <i class="bi bi-download"></i> Export
-                            </button>
-                        </div>
+                    <div class="dropdown">
+                        <button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="officeActionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-gear"></i> Actions
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="officeActionsDropdown">
+                            <li>
+                                <button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#addOfficeModal">
+                                    <i class="bi bi-plus-circle text-primary"></i> Add Office
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#importOfficesModal">
+                                    <i class="bi bi-upload text-info"></i> Import Offices
+                                </button>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <button class="dropdown-item" onclick="exportOffices()">
+                                    <i class="bi bi-download text-success"></i> Export Offices
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item" onclick="refreshOffices()">
+                                    <i class="bi bi-arrow-clockwise text-warning"></i> Refresh Data
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item" onclick="printOffices()">
+                                    <i class="bi bi-printer text-secondary"></i> Print List
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Offices Statistics -->
-        <div class="row mb-4">
-            <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="stats-number"><?php echo count($offices); ?></div>
-                            <div class="text-muted">Total Offices</div>
-                            <small class="text-success">
-                                <i class="bi bi-diagram-2"></i> 
-                                <?php echo array_sum(array_column($offices, 'child_count')); ?> Sub-Offices
-                            </small>
-                        </div>
-                        <div class="text-primary">
-                            <i class="bi bi-building fs-1"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="stats-number"><?php echo count(array_filter($offices, fn($o) => !empty($o['status']) && $o['status'] == 'active')); ?></div>
-                            <div class="text-muted">Active Offices</div>
-                            <small class="text-success">Operational</small>
-                        </div>
-                        <div class="text-success">
-                            <i class="bi bi-check-circle fs-1"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="stats-number"><?php echo count(array_filter($offices, fn($o) => !empty($o['status']) && $o['status'] == 'inactive')); ?></div>
-                            <div class="text-muted">Inactive Offices</div>
-                            <small class="text-warning">Disabled</small>
-                        </div>
-                        <div class="text-warning">
-                            <i class="bi bi-pause-circle fs-1"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="stats-card">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="stats-number"><?php echo array_sum(array_column($offices, 'capacity')); ?></div>
-                            <div class="text-muted">Total Capacity</div>
-                            <small class="text-info">Personnel</small>
-                        </div>
-                        <div class="text-info">
-                            <i class="bi bi-people fs-1"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
         <?php if ($message): ?>
             <div class="alert alert-<?php echo $message_type; ?> alert-dismissible fade show" role="alert">
                 <?php echo htmlspecialchars($message); ?>
@@ -630,14 +624,14 @@ $page_title = 'Offices';
         <?php endif; ?>
         
         <!-- Offices Table -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card border-0 shadow-lg rounded-4">
-                    <div class="card-header bg-primary text-white rounded-top-4">
-                        <h6 class="mb-0"><i class="bi bi-building"></i> Offices Management</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
+        <div class="table-container">
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <h5 class="mb-0"><i class="bi bi-list-ul"></i> Offices List</h5>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
                             <table class="table table-hover" id="officesTable">
                                 <thead>
                                     <tr>
@@ -657,7 +651,9 @@ $page_title = 'Offices';
                                                 <br><small class="text-muted"><?php echo htmlspecialchars($office['address'] ?? ''); ?></small>
                                             </td>
                                             <td>
-                                                <span class="badge bg-secondary"><?php echo htmlspecialchars($office['office_code']); ?></span>
+                                                <span class="office-badge">
+                                                    <?php echo htmlspecialchars($office['office_code']); ?>
+                                                </span>
                                             </td>
                                             <td>
                                                 <?php if ($office['branch']): ?>
@@ -674,13 +670,6 @@ $page_title = 'Offices';
                                                 <span class="badge bg-info">
                                                     <i class="bi bi-diagram-2"></i> <?php echo $office['child_count']; ?> sub-offices
                                                 </span>
-                                                <?php if ($office['child_count'] > 0): ?>
-                                                    <br>
-                                                    <button type="button" class="btn btn-sm btn-outline-info mt-1" 
-                                                            onclick="showSubOffices(<?php echo $office['id']; ?>, '<?php echo htmlspecialchars($office['office_name']); ?>')">
-                                                        <i class="bi bi-eye"></i> View Sub-Offices
-                                                    </button>
-                                                <?php endif; ?>
                                             </td>
                                             <td>
                                                 <form method="POST" action="" style="display: inline;">
@@ -693,7 +682,7 @@ $page_title = 'Offices';
                                                                onchange="this.form.submit()"
                                                                <?php echo (!empty($office['status']) && $office['status'] == 'active') ? 'checked' : ''; ?>>
                                                         <label class="form-check-label" for="status_<?php echo $office['id']; ?>">
-                                                            <span class="badge bg-<?php echo !empty($office['status']) && $office['status'] == 'active' ? 'success' : 'secondary'; ?>">
+                                                            <span class="status-badge status-<?php echo !empty($office['status']) && $office['status'] == 'active' ? 'active' : 'inactive'; ?>">
                                                                 <?php echo !empty($office['status']) && $office['status'] == 'active' ? 'Active' : 'Inactive'; ?>
                                                             </span>
                                                         </label>
@@ -728,8 +717,8 @@ $page_title = 'Offices';
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Add New Office</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title"><i class="bi bi-plus-circle"></i> Add New Office</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <form method="POST" action="">
                     <input type="hidden" name="action" value="add">
@@ -807,29 +796,93 @@ $page_title = 'Offices';
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Import Offices</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title"><i class="bi bi-upload"></i> Import Offices</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <form method="POST" action="" enctype="multipart/form-data">
                     <input type="hidden" name="action" value="import">
                     <div class="modal-body">
                         <div class="alert alert-info">
                             <i class="bi bi-info-circle"></i>
-                            <strong>Import Instructions:</strong>
-                            <ul class="mb-0 mt-2">
-                                <li>Upload a CSV file with office data</li>
-                                <li>Required columns: office_name, office_code</li>
-                                <li>Optional columns: address, state, postal_code, country, phone, email, capacity</li>
-                                <li>First row should contain column headers</li>
-                                <li>Office codes must be unique and 1-5 uppercase letters</li>
-                            </ul>
+                            <strong>CSV Format Preview:</strong>
+                            <div class="table-responsive mt-2">
+                                <table class="table table-bordered table-sm">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th class="text-center bg-success text-white">office_name *</th>
+                                            <th class="text-center bg-success text-white">office_code *</th>
+                                            <th class="text-center bg-secondary text-white">parent_office</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Head Office</td>
+                                            <td><code>HO</code></td>
+                                            <td><em>empty</em></td>
+                                        </tr>
+                                        <tr>
+                                            <td>North District</td>
+                                            <td><code>ND</code></td>
+                                            <td>HO</td>
+                                        </tr>
+                                        <tr>
+                                            <td>South District</td>
+                                            <td><code>SD</code></td>
+                                            <td>HO</td>
+                                        </tr>
+                                        <tr>
+                                            <td>East District</td>
+                                            <td><code>ED</code></td>
+                                            <td>HO</td>
+                                        </tr>
+                                        <tr>
+                                            <td>West District</td>
+                                            <td><code>WD</code></td>
+                                            <td>HO</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle"></i> <strong>Notes:</strong> 
+                                    Columns marked with * are required. Office codes must be unique and 1-5 uppercase letters.
+                                    Parent office should contain the office_code of the parent office, or leave empty for main offices.
+                                    First row should contain exact column headers as shown above.
+                                </small>
+                            </div>
                         </div>
                         
                         <div class="mb-3">
                             <label for="import_file" class="form-label">CSV File *</label>
                             <input type="file" class="form-control" id="import_file" name="import_file" 
-                                   accept=".csv" required>
+                                   accept=".csv" required onchange="previewCSVFile()">
                             <small class="form-text text-muted">Select a CSV file to import offices</small>
+                        </div>
+                        
+                        <!-- CSV Preview Section -->
+                        <div id="csvPreview" class="mb-3" style="display: none;">
+                            <div class="card border-info">
+                                <div class="card-header bg-info text-white py-2">
+                                    <h6 class="mb-0"><i class="bi bi-eye"></i> CSV Preview</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-striped table-hover" id="previewTable">
+                                            <thead class="table-light">
+                                                <tr id="previewHeaders"></tr>
+                                            </thead>
+                                            <tbody id="previewBody">
+                                                <!-- Preview rows will be inserted here -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="alert alert-info mt-2" id="previewInfo">
+                                        <i class="bi bi-info-circle"></i>
+                                        <small id="previewMessage"></small>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         
                         <div class="mb-3">
@@ -857,8 +910,8 @@ $page_title = 'Offices';
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Edit Office</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title"><i class="bi bi-pencil"></i> Edit Office</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <form method="POST" action="">
                     <input type="hidden" name="action" value="edit">
@@ -946,8 +999,8 @@ $page_title = 'Offices';
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Sub-Offices for <span id="parentOfficeNameDisplay"></span></h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title"><i class="bi bi-diagram-2"></i> Sub-Offices for <span id="parentOfficeNameDisplay"></span></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="table-responsive">
@@ -1131,13 +1184,16 @@ document.addEventListener('DOMContentLoaded', function() {
         // Get current offices data from PHP variable
         const officesData = <?php echo json_encode($offices); ?>;
         
-        // Create CSV content
-        let csvContent = "Office Name,Office Code\n";
+        // Create CSV content with parent office
+        let csvContent = "Office Name,Office Code,Parent Office\n";
         
         officesData.forEach(office => {
             const officeName = (office.office_name || '').replace(/"/g, '""');
             const officeCode = (office.office_code || '').replace(/"/g, '""');
-            csvContent += `"${officeName}","${officeCode}"\n`;
+            const parentOffice = office.parent_office_code && office.parent_office_name 
+                ? `${office.parent_office_code} - ${office.parent_office_name}`.replace(/"/g, '""')
+                : 'Main Office';
+            csvContent += `"${officeName}","${officeCode}","${parentOffice}"\n`;
         });
         
         // Create download link
@@ -1153,6 +1209,563 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Show success message
         showAlert('Offices exported successfully!', 'success');
+    }
+    
+    // Refresh offices function
+    function refreshOffices() {
+        // Show loading state
+        showAlert('Refreshing offices data...', 'info');
+        
+        // Reload the page after a short delay
+        setTimeout(() => {
+            window.location.reload();
+        }, 1000);
+    }
+    
+    // Print offices function
+    function printOffices() {
+        // Get current offices data from PHP variable
+        const officesData = <?php echo json_encode($offices); ?>;
+        
+        if (officesData.length === 0) {
+            showAlert('No offices data to print', 'warning');
+            return;
+        }
+        
+        // Create a print preview window
+        const printWindow = window.open('', '_blank', 'width=1000,height=800');
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Offices - Print Preview</title>
+                <style>
+                    @page {
+                        size: A4;
+                        margin: 0.5in;
+                    }
+                    
+                    * {
+                        margin: 0;
+                        padding: 0;
+                        box-sizing: border-box;
+                    }
+                    
+                    body {
+                        font-family: Arial, sans-serif;
+                        font-size: 12px;
+                        color: #333;
+                        background: white;
+                    }
+                    
+                    .preview-toolbar {
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        z-index: 1000;
+                        background: #191BA9;
+                        color: white;
+                        padding: 12px 20px;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+                    }
+                    
+                    .preview-toolbar .title {
+                        font-weight: bold;
+                        font-size: 14px;
+                        display: flex;
+                        align-items: center;
+                    }
+                    
+                    .preview-toolbar .actions {
+                        display: flex;
+                        gap: 10px;
+                    }
+                    
+                    .preview-toolbar button {
+                        padding: 6px 12px;
+                        border: none;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        font-size: 12px;
+                        transition: all 0.3s ease;
+                    }
+                    
+                    .preview-toolbar .btn-print {
+                        background: #28a745;
+                        color: white;
+                    }
+                    
+                    .preview-toolbar .btn-print:hover {
+                        background: #218838;
+                        transform: translateY(-1px);
+                    }
+                    
+                    .preview-toolbar .btn-close {
+                        background: #6c757d;
+                        color: white;
+                    }
+                    
+                    .preview-toolbar .btn-close:hover {
+                        background: #5a6268;
+                        transform: translateY(-1px);
+                    }
+                    
+                    .print-container {
+                        width: 100%;
+                        max-width: 8.5in;
+                        margin: 0 auto;
+                        padding: 60px 20px 20px;
+                        background: white;
+                        min-height: 11in;
+                        position: relative;
+                    }
+                    
+                    @media screen {
+                        body {
+                            background: #525659;
+                            padding: 0;
+                        }
+                        .print-container {
+                            background: white;
+                            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+                            margin: 60px auto 20px;
+                        }
+                    }
+                    
+                    @media print {
+                        .no-print { display: none !important; }
+                        body { background: white; margin: 0; padding: 0; }
+                        .print-container { 
+                            box-shadow: none; 
+                            margin: 0 auto; 
+                            padding: 20px;
+                            width: 100%;
+                        }
+                    }
+                    
+                    .report-header {
+                        text-align: center;
+                        margin-bottom: 30px;
+                        border-bottom: 2px solid #191BA9;
+                        padding-bottom: 15px;
+                    }
+                    
+                    .report-header h1 {
+                        color: #191BA9;
+                        font-size: 24px;
+                        font-weight: bold;
+                        margin-bottom: 5px;
+                        text-transform: uppercase;
+                    }
+                    
+                    .report-header .subtitle {
+                        color: #666;
+                        font-size: 14px;
+                        margin-bottom: 10px;
+                    }
+                    
+                    .report-header .meta {
+                        color: #333;
+                        font-size: 12px;
+                        font-weight: bold;
+                    }
+                    
+                    .offices-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 20px 0;
+                    }
+                    
+                    .offices-table th,
+                    .offices-table td {
+                        border: 1px solid #333;
+                        padding: 10px;
+                        text-align: left;
+                        vertical-align: top;
+                    }
+                    
+                    .offices-table th {
+                        background-color: #f8f9fa;
+                        font-weight: bold;
+                        color: #333;
+                        text-transform: uppercase;
+                        font-size: 11px;
+                    }
+                    
+                    .offices-table .office-name {
+                        font-weight: bold;
+                        min-width: 150px;
+                    }
+                    
+                    .offices-table .office-code {
+                        font-family: monospace;
+                        background-color: #f8f9fa;
+                        padding: 4px 8px;
+                        border-radius: 3px;
+                        font-size: 11px;
+                        min-width: 100px;
+                        text-align: center;
+                    }
+                    
+                    .offices-table .address {
+                        max-width: 200px;
+                        word-wrap: break-word;
+                        font-size: 11px;
+                    }
+                    
+                    .offices-table .parent-office {
+                        max-width: 200px;
+                        word-wrap: break-word;
+                        font-size: 11px;
+                    }
+                    
+                    .offices-table .sub-offices {
+                        text-align: center;
+                        font-weight: bold;
+                        min-width: 80px;
+                    }
+                    
+                    .offices-table .status-active {
+                        color: #28a745;
+                        font-weight: bold;
+                        text-align: center;
+                        text-transform: uppercase;
+                        font-size: 11px;
+                    }
+                    
+                    .offices-table .status-inactive {
+                        color: #6c757d;
+                        font-weight: bold;
+                        text-align: center;
+                        text-transform: uppercase;
+                        font-size: 11px;
+                    }
+                    
+                    .report-footer {
+                        margin-top: 40px;
+                        padding-top: 20px;
+                        border-top: 1px solid #ddd;
+                        font-size: 11px;
+                        color: #666;
+                        text-align: center;
+                    }
+                    
+                    .report-footer .summary {
+                        font-weight: bold;
+                        margin-bottom: 5px;
+                        color: #333;
+                    }
+                    
+                    .report-footer .user-info {
+                        font-style: italic;
+                    }
+                    
+                    /* Alternating row colors */
+                    .offices-table tbody tr:nth-child(even) {
+                        background-color: #f9f9f9;
+                    }
+                    
+                    .offices-table tbody tr:hover {
+                        background-color: #f0f8ff;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="preview-toolbar no-print">
+                    <div class="title">
+                        <i class="bi bi-printer-fill me-2"></i>Offices Print Preview
+                    </div>
+                    <div class="actions">
+                        <button onclick="window.print()" class="btn-print">
+                            <i class="bi bi-printer me-1"></i>Print Report
+                        </button>
+                        <button onclick="window.close()" class="btn-close">
+                            <i class="bi bi-x-lg me-1"></i>Close Preview
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="print-container">
+                    <div class="report-header">
+                        <h1>Offices Report</h1>
+                        <div class="subtitle">Property and Inventory Management System</div>
+                        <div class="meta">
+                            Generated on: ${new Date().toLocaleString()} | Total Offices: ${officesData.length}
+                        </div>
+                    </div>
+                    
+                    <table class="offices-table">
+                        <thead>
+                            <tr>
+                                <th>Office Name</th>
+                                <th>Office Code</th>
+                                <th>Address</th>
+                                <th>Parent Office</th>
+                                <th>Sub-Offices</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${officesData.map((office, index) => {
+                                const officeName = office.office_name || '';
+                                const officeCode = office.office_code || '';
+                                const address = office.address || '';
+                                const parentOffice = office.branch ? 
+                                    (office.parent_office_code + ' - ' + office.parent_office_name) : 
+                                    'Main Office';
+                                const subOffices = office.child_count || 0;
+                                const status = office.status || 'inactive';
+                                
+                                const statusClass = status === 'active' ? 'status-active' : 'status-inactive';
+                                
+                                return `
+                                    <tr>
+                                        <td class="office-name">${officeName}</td>
+                                        <td><span class="office-code">${officeCode}</span></td>
+                                        <td class="address">${address}</td>
+                                        <td class="parent-office">${parentOffice}</td>
+                                        <td class="sub-offices">${subOffices}</td>
+                                        <td class="${statusClass}">${status.charAt(0).toUpperCase() + status.slice(1)}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                    
+                    <div class="report-footer">
+                        <div class="summary">
+                            Report Summary: ${officesData.length} offices exported from PIMS Asset Management System
+                        </div>
+                        <div class="user-info">
+                            Printed by: System Administrator | 
+                            Date: ${new Date().toLocaleDateString()} | 
+                            Page: <span class="page-number"></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Bootstrap Icons -->
+                <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+        
+        // Add page numbering
+        printWindow.onload = function() {
+            // Add page numbers
+            const pageNumbers = printWindow.document.querySelectorAll('.page-number');
+            pageNumbers.forEach((element, index) => {
+                element.textContent = index + 1;
+            });
+        };
+    }
+    
+    // CSV Preview function
+    function previewCSVFile() {
+        const fileInput = document.getElementById('import_file');
+        const file = fileInput.files[0];
+        
+        if (!file) {
+            hidePreview();
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const text = e.target.result;
+            const lines = text.split('\n').filter(line => line.trim() !== '');
+            
+            if (lines.length < 2) {
+                showPreviewError('CSV file must have at least 2 rows (header + data)');
+                return;
+            }
+            
+            // Parse CSV
+            const headers = parseCSVLine(lines[0]);
+            const data = lines.slice(1, 6).map(line => parseCSVLine(line)); // Show first 5 rows
+            
+            // Validate required columns
+            const requiredColumns = ['office_name', 'office_code'];
+            const missingColumns = requiredColumns.filter(col => !headers.includes(col));
+            
+            if (missingColumns.length > 0) {
+                showPreviewError(`Missing required columns: ${missingColumns.join(', ')}`);
+                return;
+            }
+            
+            // Validate parent_office column
+            if (!headers.includes('parent_office')) {
+                showPreviewError('Missing required column: parent_office');
+                return;
+            }
+            
+            // Show preview
+            showPreview(headers, data, lines.length - 1);
+        };
+        
+        reader.onerror = function() {
+            showPreviewError('Error reading CSV file');
+        };
+        
+        reader.readAsText(file);
+    }
+    
+    function parseCSVLine(line) {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            
+            if (char === '"') {
+                inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+                result.push(current.trim());
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+        
+        result.push(current.trim());
+        return result;
+    }
+    
+    function showPreview(headers, data, totalRows) {
+        const previewDiv = document.getElementById('csvPreview');
+        const headersRow = document.getElementById('previewHeaders');
+        const previewBody = document.getElementById('previewBody');
+        const previewMessage = document.getElementById('previewMessage');
+        
+        // Clear existing content
+        headersRow.innerHTML = '';
+        previewBody.innerHTML = '';
+        
+        // Add headers with proper styling
+        headers.forEach(header => {
+            const isRequired = ['office_name', 'office_code'].includes(header);
+            const requiredIndicator = isRequired ? ' <span class="text-danger">*</span>' : '';
+            headersRow.innerHTML += `<th class="text-center ${isRequired ? 'bg-light' : ''}">${header}${requiredIndicator}</th>`;
+        });
+        
+        // Add data rows with better formatting
+        data.forEach((row, rowIndex) => {
+            const rowHtml = headers.map((header, index) => {
+                const value = row[index] || '';
+                const isRequired = ['office_name', 'office_code'].includes(header);
+                const isMissing = isRequired && !value.trim();
+                
+                let cellClass = '';
+                let cellContent = '';
+                
+                if (isMissing) {
+                    cellClass = 'table-danger text-center';
+                    cellContent = '<i class="bi bi-exclamation-triangle"></i> <em>Required field missing</em>';
+                } else if (value.trim()) {
+                    // Add appropriate styling based on column type
+                    if (header === 'office_code') {
+                        cellClass = 'text-center';
+                        cellContent = `<code class="bg-light px-2 py-1 rounded">${value}</code>`;
+                    } else if (header === 'parent_office') {
+                        cellClass = 'text-center';
+                        if (value.toLowerCase() === 'empty' || !value) {
+                            cellContent = '<em>Main Office</em>';
+                        } else {
+                            cellContent = `<span class="badge bg-info">${value}</span>`;
+                        }
+                    } else {
+                        cellContent = value;
+                    }
+                } else {
+                    if (header === 'parent_office') {
+                        cellClass = 'text-muted text-center';
+                        cellContent = '<em>Main Office</em>';
+                    } else {
+                        cellClass = 'text-muted text-center';
+                        cellContent = '<em>empty</em>';
+                    }
+                }
+                
+                return `<td class="${cellClass}">${cellContent}</td>`;
+            }).join('');
+            
+            // Add row number
+            const rowNumber = rowIndex + 1;
+            previewBody.innerHTML += `<tr>
+                <td class="text-muted text-center fw-bold">${rowNumber}</td>
+                ${rowHtml}
+            </tr>`;
+        });
+        
+        // Add row number header
+        headersRow.innerHTML = '<th class="text-center bg-dark text-white">#</th>' + headersRow.innerHTML;
+        
+        // Show preview info with better formatting
+        const requiredCount = ['office_name', 'office_code'].length;
+        const optionalCount = headers.length - requiredCount;
+        previewMessage.innerHTML = `
+            <strong>Preview Details:</strong><br>
+            <i class="bi bi-table"></i> Showing ${data.length} of ${totalRows} total rows<br>
+            <i class="bi bi-columns-gap"></i> ${headers.length} columns (${requiredCount} required, ${optionalCount} optional)<br>
+            <i class="bi bi-exclamation-circle text-danger"></i> Required fields: office_name, office_code<br>
+            <i class="bi bi-diagram-2 text-info"></i> Parent office: Use office_code of parent or leave empty for main office
+        `;
+        
+        // Show preview section
+        previewDiv.style.display = 'block';
+    }
+    
+    function showPreviewError(message) {
+        const previewDiv = document.getElementById('csvPreview');
+        const previewMessage = document.getElementById('previewMessage');
+        
+        previewMessage.innerHTML = `<i class="bi bi-exclamation-triangle"></i> ${message}`;
+        previewMessage.className = 'text-danger';
+        
+        // Show preview section with error
+        previewDiv.style.display = 'block';
+        
+        // Clear table
+        document.getElementById('previewHeaders').innerHTML = '';
+        document.getElementById('previewBody').innerHTML = '';
+    }
+    
+    function hidePreview() {
+        const previewDiv = document.getElementById('csvPreview');
+        previewDiv.style.display = 'none';
+    }
+    
+    // Show alert function
+    function showAlert(message, type) {
+        // Remove existing alerts
+        document.querySelectorAll('.alert').forEach(alert => alert.remove());
+        
+        // Create new alert
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        // Insert after page header
+        const pageHeader = document.querySelector('.page-header');
+        pageHeader.parentNode.insertBefore(alertDiv, pageHeader.nextSibling);
+        
+        // Auto-dismiss after 3 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 3000);
     }
 </script>
 <?php require_once 'includes/footer.php'; ?>
