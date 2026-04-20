@@ -1200,7 +1200,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function updateNotificationBadge() {
-    fetch('notifications_handler.php?action=get_count', {
+    fetch('../ADMIN/notifications_handler.php?action=get_count', {
         credentials: 'include'  // Include cookies for session
     })
         .then(response => {
@@ -1236,7 +1236,7 @@ function loadNotifications() {
         </div>
     `;
     
-    fetch('notifications_handler.php?action=get_notifications&limit=10', {
+    fetch('../ADMIN/notifications_handler.php?action=get_notifications&limit=10', {
         credentials: 'include'  // Include cookies for session
     })
         .then(response => {
@@ -1328,7 +1328,7 @@ function displayNotifications(notifications) {
 }
 
 function markNotificationAsRead(notificationId) {
-    fetch('notifications_handler.php?action=mark_read', {
+    fetch('../ADMIN/notifications_handler.php?action=mark_read', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -1357,7 +1357,7 @@ function markNotificationAsRead(notificationId) {
 }
 
 function markAllNotificationsAsRead() {
-    fetch('notifications_handler.php?action=mark_all_read', {
+    fetch('../ADMIN/notifications_handler.php?action=mark_all_read', {
         method: 'POST',
         credentials: 'include'  // Include cookies for session
     })
@@ -1375,7 +1375,7 @@ function markAllNotificationsAsRead() {
 }
 
 function deleteNotificationItem(notificationId) {
-    fetch('notifications_handler.php?action=delete', {
+    fetch('../ADMIN/notifications_handler.php?action=delete', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -1495,7 +1495,7 @@ document.addEventListener('click', function(e) {
 });
 
 function fetchSuggestions(query) {
-    fetch('search_suggestions.php?q=' + encodeURIComponent(query))
+    fetch('../ADMIN/search_suggestions.php?q=' + encodeURIComponent(query))
         .then(response => response.json())
         .then(data => {
             displaySuggestions(data);
@@ -1590,7 +1590,7 @@ searchForm.addEventListener('submit', function(e) {
     e.preventDefault();
     const query = searchInput.value.trim();
     if (query) {
-        window.location.href = `search_handler.php?q=${encodeURIComponent(query)}`;
+        window.location.href = `../ADMIN/search_handler.php?q=${encodeURIComponent(query)}`;
     }
 });
 
@@ -1600,7 +1600,7 @@ if (mobileSearchForm) {
         e.preventDefault();
         const query = mobileSearchInput.value.trim();
         if (query) {
-            window.location.href = `search_handler.php?q=${encodeURIComponent(query)}`;
+            window.location.href = `../ADMIN/search_handler.php?q=${encodeURIComponent(query)}`;
         }
     });
 }
