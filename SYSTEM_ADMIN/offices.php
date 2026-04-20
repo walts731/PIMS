@@ -1505,7 +1505,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             <tr>
                                 <th>Office Name</th>
                                 <th>Office Code</th>
-                                <th>Address</th>
                                 <th>Parent Office</th>
                                 <th>Sub-Offices</th>
                                 <th>Status</th>
@@ -1515,7 +1514,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             ${officesData.map((office, index) => {
                                 const officeName = office.office_name || '';
                                 const officeCode = office.office_code || '';
-                                const address = office.address || '';
                                 const parentOffice = office.branch ? 
                                     (office.parent_office_code + ' - ' + office.parent_office_name) : 
                                     'Main Office';
@@ -1528,7 +1526,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <tr>
                                         <td class="office-name">${officeName}</td>
                                         <td><span class="office-code">${officeCode}</span></td>
-                                        <td class="address">${address}</td>
                                         <td class="parent-office">${parentOffice}</td>
                                         <td class="sub-offices">${subOffices}</td>
                                         <td class="${statusClass}">${status.charAt(0).toUpperCase() + status.slice(1)}</td>
