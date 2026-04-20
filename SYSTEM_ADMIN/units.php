@@ -243,28 +243,6 @@ try {
     $message_type = "danger";
 }
 
-// Get unit statistics
-$stats = [];
-try {
-    $sql = "SELECT 
-                COUNT(*) as total_units,
-                SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_units,
-                SUM(CASE WHEN status = 'inactive' THEN 1 ELSE 0 END) as inactive_units,
-                SUM(CASE WHEN unit_type = 'count' THEN 1 ELSE 0 END) as count_units,
-                SUM(CASE WHEN unit_type = 'weight' THEN 1 ELSE 0 END) as weight_units,
-                SUM(CASE WHEN unit_type = 'length' THEN 1 ELSE 0 END) as length_units,
-                SUM(CASE WHEN unit_type = 'volume' THEN 1 ELSE 0 END) as volume_units,
-                SUM(CASE WHEN unit_type = 'area' THEN 1 ELSE 0 END) as area_units,
-                SUM(CASE WHEN unit_type = 'time' THEN 1 ELSE 0 END) as time_units,
-                SUM(CASE WHEN unit_type = 'other' THEN 1 ELSE 0 END) as other_units
-            FROM units";
-    $result = $conn->query($sql);
-    if ($result) {
-        $stats = $result->fetch_assoc();
-    }
-} catch (Exception $e) {
-    error_log("Error fetching stats: " . $e->getMessage());
-}
 
 // Helper function for unit type badge colors
 function getUnitTypeBadgeColor($type) {
@@ -340,31 +318,6 @@ function getUnitTypeBadgeColor($type) {
             position: relative;
         }
 
-        .metric-card {
-            background: linear-gradient(135deg, #191BA9 0%, #5CC2F2 100%);
-            color: white;
-            border-radius: var(--border-radius-lg);
-            padding: 1.5rem;
-            text-align: center;
-            box-shadow: var(--shadow);
-            transition: var(--transition);
-        }
-        
-        .metric-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 25px rgba(25, 27, 169, 0.3);
-        }
-        
-        .metric-number {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-        }
-        
-        .metric-label {
-            font-size: 0.9rem;
-            opacity: 0.9;
-        }
 
         .page-header {
             background: white;
@@ -373,6 +326,60 @@ function getUnitTypeBadgeColor($type) {
             margin-bottom: 2rem;
             box-shadow: var(--shadow);
             border-left: 4px solid var(--primary-color);
+        }
+        
+        .table-container {
+            background: white;
+            border-radius: var(--border-radius-lg);
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+        }
+        
+        .btn-action {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+            margin: 0 0.125rem;
+        }
+        
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: var(--border-radius-xl);
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .unit-badge {
+            background: var(--primary-color);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: var(--border-radius-xl);
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .modal-header {
+            background: var(--primary-gradient);
+            color: white;
+        }
+        
+        .form-label {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .table-hover tbody tr:hover {
+            background-color: rgba(25, 27, 169, 0.05);
         }
     </style>
 </head>
@@ -405,85 +412,48 @@ function getUnitTypeBadgeColor($type) {
                     <?php endif; ?>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUnitModal">
-                        <i class="bi bi-plus-circle"></i> Add Unit
-                    </button>
-                    <button class="btn btn-outline-success btn-sm ms-2" onclick="exportUnits()">
-                        <i class="bi bi-download"></i> Export
-                    </button>
+                    <div class="dropdown">
+                        <button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="unitActionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-gear"></i> Actions
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="unitActionsDropdown">
+                            <li>
+                                <button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#addUnitModal">
+                                    <i class="bi bi-plus-circle text-primary"></i> Add Unit
+                                </button>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <button class="dropdown-item" onclick="exportUnits()">
+                                    <i class="bi bi-download text-success"></i> Export Units
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item" onclick="refreshUnits()">
+                                    <i class="bi bi-arrow-clockwise text-warning"></i> Refresh Data
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item" onclick="printUnits()">
+                                    <i class="bi bi-printer text-secondary"></i> Print List
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
         
-        <!-- Statistics Cards -->
-        <div class="row mb-4">
-            <div class="col-lg-3 col-md-6">
-                <div class="metric-card">
-                    <div class="metric-number"><?php echo $stats['total_units'] ?? 0; ?></div>
-                    <div class="metric-label"><i class="bi bi-rulers"></i> Total Units</div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="metric-card">
-                    <div class="metric-number"><?php echo $stats['active_units'] ?? 0; ?></div>
-                    <div class="metric-label"><i class="bi bi-check-circle"></i> Active Units</div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="metric-card">
-                    <div class="metric-number"><?php echo $stats['inactive_units'] ?? 0; ?></div>
-                    <div class="metric-label"><i class="bi bi-x-circle"></i> Inactive Units</div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="metric-card">
-                    <div class="metric-number"><?php echo ($stats['count_units'] ?? 0) + ($stats['weight_units'] ?? 0) + ($stats['length_units'] ?? 0); ?></div>
-                    <div class="metric-label"><i class="bi bi-tags"></i> Common Types</div>
-                </div>
-            </div>
-        </div>
         
         <!-- Units Table -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card border-0 shadow-lg rounded-4">
-                    <div class="card-header bg-primary text-white rounded-top-4">
-                        <h6 class="mb-0"><i class="bi bi-rulers"></i> Units Management</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <h5 class="mb-0"><i class="bi bi-list-ul"></i> Units List</h5>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="row g-2">
-                                    <div class="col-md-4">
-                                        <select class="form-select form-select-sm" id="typeFilter">
-                                            <option value="">All Types</option>
-                                            <option value="count">Count</option>
-                                            <option value="weight">Weight</option>
-                                            <option value="length">Length</option>
-                                            <option value="volume">Volume</option>
-                                            <option value="area">Area</option>
-                                            <option value="time">Time</option>
-                                            <option value="other">Other</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <select class="form-select form-select-sm" id="statusFilter">
-                                            <option value="">All Status</option>
-                                            <option value="active">Active</option>
-                                            <option value="inactive">Inactive</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <!-- Search removed - using DataTables built-in search -->
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="table-responsive">
+        <div class="table-container">
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <h5 class="mb-0"><i class="bi bi-list-ul"></i> Units List</h5>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
                             <table class="table table-hover" id="unitsTable">
                     <thead>
                         <tr>
@@ -492,7 +462,6 @@ function getUnitTypeBadgeColor($type) {
                             <th>Type</th>
                             <th>Description</th>
                             <th>Status</th>
-                            <th>Created</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -500,25 +469,30 @@ function getUnitTypeBadgeColor($type) {
                         <?php if (!empty($units)): ?>
                             <?php foreach ($units as $unit): ?>
                                 <tr data-type="<?php echo htmlspecialchars($unit['unit_type']); ?>" data-status="<?php echo htmlspecialchars($unit['status']); ?>">
-                                    <td><?php echo htmlspecialchars($unit['unit_name']); ?></td>
-                                    <td><code><?php echo htmlspecialchars($unit['unit_code']); ?></code></td>
+                                    <td>
+                                        <strong><?php echo htmlspecialchars($unit['unit_name']); ?></strong>
+                                    </td>
+                                    <td>
+                                        <span class="unit-badge">
+                                            <?php echo htmlspecialchars($unit['unit_code']); ?>
+                                        </span>
+                                    </td>
                                     <td>
                                         <span class="badge bg-<?php echo getUnitTypeBadgeColor($unit['unit_type']); ?>">
                                             <?php echo ucfirst(htmlspecialchars($unit['unit_type'])); ?>
                                         </span>
                                     </td>
-                                    <td><?php echo htmlspecialchars($unit['description'] ?? ''); ?></td>
+                                    <td><?php echo htmlspecialchars($unit['description'] ?? '-'); ?></td>
                                     <td>
-                                        <span class="badge bg-<?php echo $unit['status'] == 'active' ? 'success' : 'secondary'; ?>">
+                                        <span class="status-badge status-<?php echo $unit['status']; ?>">
                                             <?php echo ucfirst(htmlspecialchars($unit['status'])); ?>
                                         </span>
                                     </td>
-                                    <td><?php echo date('M j, Y', strtotime($unit['created_at'])); ?></td>
                                     <td>
-                                        <button class="btn btn-sm btn-outline-primary" onclick="editUnit(<?php echo $unit['id']; ?>)">
+                                        <button class="btn btn-sm btn-outline-primary btn-action" onclick="editUnit(<?php echo $unit['id']; ?>)">
                                             <i class="bi bi-pencil"></i>
                                         </button>
-                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteUnit(<?php echo $unit['id']; ?>, '<?php echo htmlspecialchars($unit['unit_name']); ?>')">
+                                        <button class="btn btn-sm btn-outline-danger btn-action" onclick="deleteUnit(<?php echo $unit['id']; ?>, '<?php echo htmlspecialchars($unit['unit_name']); ?>')">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </td>
@@ -526,7 +500,7 @@ function getUnitTypeBadgeColor($type) {
                             <?php endforeach; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="7" class="text-center text-muted py-4">
+                                <td colspan="6" class="text-center text-muted py-4">
                                     <i class="bi bi-inbox fs-1"></i>
                                     <p class="mt-2">No units found. Click "Add Unit" to create your first unit.</p>
                                 </td>
@@ -781,32 +755,11 @@ function getUnitTypeBadgeColor($type) {
                             },
                             {
                                 targets: 1, // Code column
-                                orderable: true,
-                                render: function(data, type, row) {
-                                    if (type === 'display') {
-                                        return '<code>' + data + '</code>';
-                                    }
-                                    return data;
-                                }
+                                orderable: true
                             },
                             {
                                 targets: 2, // Type column
-                                orderable: true,
-                                render: function(data, type, row) {
-                                    if (type === 'display') {
-                                        const colors = {
-                                            'count': 'primary',
-                                            'weight': 'success',
-                                            'length': 'info',
-                                            'volume': 'warning',
-                                            'area': 'secondary',
-                                            'time': 'dark',
-                                            'other': 'light'
-                                        };
-                                        return '<span class="badge bg-' + (colors[data] || 'secondary') + '">' + data.charAt(0).toUpperCase() + data.slice(1) + '</span>';
-                                    }
-                                    return data;
-                                }
+                                orderable: true
                             },
                             {
                                 targets: 3, // Description column
@@ -814,20 +767,10 @@ function getUnitTypeBadgeColor($type) {
                             },
                             {
                                 targets: 4, // Status column
-                                orderable: true,
-                                render: function(data, type, row) {
-                                    if (type === 'display') {
-                                        return '<span class="badge bg-' + (data === 'active' ? 'success' : 'secondary') + '">' + data.charAt(0).toUpperCase() + data.slice(1) + '</span>';
-                                    }
-                                    return data;
-                                }
-                            },
-                            {
-                                targets: 5, // Created column
                                 orderable: true
                             },
                             {
-                                targets: 6, // Actions column
+                                targets: 5, // Actions column
                                 orderable: false,
                                 className: 'text-center',
                                 render: function(data, type, row) {
@@ -835,33 +778,7 @@ function getUnitTypeBadgeColor($type) {
                                 }
                             }
                         ],
-                        dom: 'Bfrtip',
-                        buttons: [
-                            {
-                                extend: 'excel',
-                                text: '<i class="bi bi-file-earmark-excel"></i> Excel',
-                                className: 'btn btn-sm btn-success',
-                                exportOptions: {
-                                    columns: [0, 1, 2, 3, 4, 5]
-                                }
-                            },
-                            {
-                                extend: 'pdf',
-                                text: '<i class="bi bi-file-earmark-pdf"></i> PDF',
-                                className: 'btn btn-sm btn-danger',
-                                exportOptions: {
-                                    columns: [0, 1, 2, 3, 4, 5]
-                                }
-                            },
-                            {
-                                extend: 'print',
-                                text: '<i class="bi bi-printer"></i> Print',
-                                className: 'btn btn-sm btn-info',
-                                exportOptions: {
-                                    columns: [0, 1, 2, 3, 4, 5]
-                                }
-                            }
-                        ]
+                        dom: '<"row"<"col-md-6"l><"col-md-6"f>>rtip'
                     });
                 } else {
                     // No data - don't initialize DataTables
@@ -871,30 +788,6 @@ function getUnitTypeBadgeColor($type) {
             }
         });
         
-        // Filter functionality
-        document.getElementById('typeFilter').addEventListener('change', function() {
-            filterTable();
-        });
-        
-        document.getElementById('statusFilter').addEventListener('change', function() {
-            filterTable();
-        });
-        
-        function filterTable() {
-            const typeFilter = document.getElementById('typeFilter').value;
-            const statusFilter = document.getElementById('statusFilter').value;
-            const rows = document.querySelectorAll('#unitsTable tbody tr');
-            
-            rows.forEach(row => {
-                const type = row.getAttribute('data-type');
-                const status = row.getAttribute('data-status');
-                
-                const typeMatch = !typeFilter || type === typeFilter;
-                const statusMatch = !statusFilter || status === statusFilter;
-                
-                row.style.display = typeMatch && statusMatch ? '' : 'none';
-            });
-        }
         
         // Edit unit function
         function editUnit(id) {
@@ -933,14 +826,386 @@ function getUnitTypeBadgeColor($type) {
         
         // Export units function
         function exportUnits() {
-            if (unitsTable) {
-                unitsTable.button().add(0, {
-                    extend: 'excel',
-                    text: 'Export All Units',
-                    className: 'btn btn-success'
-                });
-                unitsTable.button(0).trigger();
+            window.location.href = 'export_units.php';
+        }
+        
+        // Refresh units function
+        function refreshUnits() {
+            // Show loading state
+            showAlert('Refreshing units data...', 'info');
+            
+            // Reload the page after a short delay
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        }
+        
+        // Print units function
+        function printUnits() {
+            // Get all data from DataTable (not just current page)
+            const table = $('#unitsTable').DataTable();
+            const allData = table.data().toArray();
+            
+            if (allData.length === 0) {
+                showAlert('No units data to print', 'warning');
+                return;
             }
+            
+            // Create a print preview window
+            const printWindow = window.open('', '_blank', 'width=1000,height=800');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Units - Print Preview</title>
+                    <style>
+                        @page {
+                            size: A4;
+                            margin: 0.5in;
+                        }
+                        
+                        * {
+                            margin: 0;
+                            padding: 0;
+                            box-sizing: border-box;
+                        }
+                        
+                        body {
+                            font-family: Arial, sans-serif;
+                            font-size: 12px;
+                            color: #333;
+                            background: white;
+                        }
+                        
+                        .preview-toolbar {
+                            position: fixed;
+                            top: 0;
+                            left: 0;
+                            right: 0;
+                            z-index: 1000;
+                            background: #191BA9;
+                            color: white;
+                            padding: 12px 20px;
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+                        }
+                        
+                        .preview-toolbar .title {
+                            font-weight: bold;
+                            font-size: 14px;
+                            display: flex;
+                            align-items: center;
+                        }
+                        
+                        .preview-toolbar .actions {
+                            display: flex;
+                            gap: 10px;
+                        }
+                        
+                        .preview-toolbar button {
+                            padding: 6px 12px;
+                            border: none;
+                            border-radius: 4px;
+                            cursor: pointer;
+                            font-size: 12px;
+                            transition: all 0.3s ease;
+                        }
+                        
+                        .preview-toolbar .btn-print {
+                            background: #28a745;
+                            color: white;
+                        }
+                        
+                        .preview-toolbar .btn-print:hover {
+                            background: #218838;
+                            transform: translateY(-1px);
+                        }
+                        
+                        .preview-toolbar .btn-close {
+                            background: #6c757d;
+                            color: white;
+                        }
+                        
+                        .preview-toolbar .btn-close:hover {
+                            background: #5a6268;
+                            transform: translateY(-1px);
+                        }
+                        
+                        .print-container {
+                            width: 100%;
+                            max-width: 8.5in;
+                            margin: 0 auto;
+                            padding: 60px 20px 20px;
+                            background: white;
+                            min-height: 11in;
+                            position: relative;
+                        }
+                        
+                        @media screen {
+                            body {
+                                background: #525659;
+                                padding: 0;
+                            }
+                            .print-container {
+                                background: white;
+                                box-shadow: 0 0 20px rgba(0,0,0,0.5);
+                                margin: 60px auto 20px;
+                            }
+                        }
+                        
+                        @media print {
+                            .no-print { display: none !important; }
+                            body { background: white; margin: 0; padding: 0; }
+                            .print-container { 
+                                box-shadow: none; 
+                                margin: 0 auto; 
+                                padding: 20px;
+                                width: 100%;
+                            }
+                        }
+                        
+                        .report-header {
+                            text-align: center;
+                            margin-bottom: 30px;
+                            border-bottom: 2px solid #191BA9;
+                            padding-bottom: 15px;
+                        }
+                        
+                        .report-header h1 {
+                            color: #191BA9;
+                            font-size: 24px;
+                            font-weight: bold;
+                            margin-bottom: 5px;
+                            text-transform: uppercase;
+                        }
+                        
+                        .report-header .subtitle {
+                            color: #666;
+                            font-size: 14px;
+                            margin-bottom: 10px;
+                        }
+                        
+                        .report-header .meta {
+                            color: #333;
+                            font-size: 12px;
+                            font-weight: bold;
+                        }
+                        
+                        .units-table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin: 20px 0;
+                        }
+                        
+                        .units-table th,
+                        .units-table td {
+                            border: 1px solid #333;
+                            padding: 10px;
+                            text-align: left;
+                            vertical-align: top;
+                        }
+                        
+                        .units-table th {
+                            background-color: #f8f9fa;
+                            font-weight: bold;
+                            color: #333;
+                            text-transform: uppercase;
+                            font-size: 11px;
+                        }
+                        
+                        .units-table .unit-name {
+                            font-weight: bold;
+                            min-width: 150px;
+                        }
+                        
+                        .units-table .unit-code {
+                            font-family: monospace;
+                            background-color: #f8f9fa;
+                            padding: 4px 8px;
+                            border-radius: 3px;
+                            font-size: 11px;
+                            min-width: 100px;
+                            text-align: center;
+                        }
+                        
+                        .units-table .unit-type {
+                            max-width: 100px;
+                            word-wrap: break-word;
+                            font-size: 11px;
+                        }
+                        
+                        .units-table .description {
+                            max-width: 200px;
+                            word-wrap: break-word;
+                            font-size: 11px;
+                        }
+                        
+                        .units-table .status-active {
+                            color: #28a745;
+                            font-weight: bold;
+                            text-align: center;
+                            text-transform: uppercase;
+                            font-size: 11px;
+                        }
+                        
+                        .units-table .status-inactive {
+                            color: #6c757d;
+                            font-weight: bold;
+                            text-align: center;
+                            text-transform: uppercase;
+                            font-size: 11px;
+                        }
+                        
+                        .report-footer {
+                            margin-top: 40px;
+                            padding-top: 20px;
+                            border-top: 1px solid #ddd;
+                            font-size: 11px;
+                            color: #666;
+                            text-align: center;
+                        }
+                        
+                        .report-footer .summary {
+                            font-weight: bold;
+                            margin-bottom: 5px;
+                            color: #333;
+                        }
+                        
+                        .report-footer .user-info {
+                            font-style: italic;
+                        }
+                        
+                        /* Alternating row colors */
+                        .units-table tbody tr:nth-child(even) {
+                            background-color: #f9f9f9;
+                        }
+                        
+                        .units-table tbody tr:hover {
+                            background-color: #f0f8ff;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="preview-toolbar no-print">
+                        <div class="title">
+                            <i class="bi bi-printer-fill me-2"></i>Units Print Preview
+                        </div>
+                        <div class="actions">
+                            <button onclick="window.print()" class="btn-print">
+                                <i class="bi bi-printer me-1"></i>Print Report
+                            </button>
+                            <button onclick="window.close()" class="btn-close">
+                                <i class="bi bi-x-lg me-1"></i>Close Preview
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="print-container">
+                        <div class="report-header">
+                            <h1>Units Report</h1>
+                            <div class="subtitle">Property and Inventory Management System</div>
+                            <div class="meta">
+                                Generated on: ${new Date().toLocaleString()} | Total Units: ${allData.length}
+                            </div>
+                        </div>
+                        
+                        <table class="units-table">
+                            <thead>
+                                <tr>
+                                    <th>Unit Name</th>
+                                    <th>Code</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${allData.map((row, index) => {
+                                    // Extract data from DataTable row
+                                    const unitName = row[0] || '';
+                                    const unitCode = row[1] || '';
+                                    const unitType = row[2] || '';
+                                    const description = row[3] || '';
+                                    const status = row[4] || 'inactive';
+                                    
+                                    // Clean text content
+                                    const cleanName = unitName.replace(/<[^>]*>/g, '').trim();
+                                    const cleanCode = unitCode.replace(/<[^>]*>/g, '').trim();
+                                    const cleanType = unitType.replace(/<[^>]*>/g, '').trim();
+                                    const cleanDescription = description.replace(/<[^>]*>/g, '').trim();
+                                    const cleanStatus = status.replace(/<[^>]*>/g, '').trim().toLowerCase();
+                                    
+                                    const statusClass = cleanStatus === 'active' ? 'status-active' : 'status-inactive';
+                                    
+                                    return `
+                                        <tr>
+                                            <td class="unit-name">${cleanName}</td>
+                                            <td><span class="unit-code">${cleanCode}</span></td>
+                                            <td class="unit-type">${cleanType}</td>
+                                            <td class="description">${cleanDescription}</td>
+                                            <td class="${statusClass}">${cleanStatus.charAt(0).toUpperCase() + cleanStatus.slice(1)}</td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                        
+                        <div class="report-footer">
+                            <div class="summary">
+                                Report Summary: ${allData.length} units exported from PIMS Asset Management System
+                            </div>
+                            <div class="user-info">
+                                Printed by: System Administrator | 
+                                Date: ${new Date().toLocaleDateString()} | 
+                                Page: <span class="page-number"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Bootstrap Icons -->
+                    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            
+            // Add page numbering
+            printWindow.onload = function() {
+                // Add page numbers
+                const pageNumbers = printWindow.document.querySelectorAll('.page-number');
+                pageNumbers.forEach((element, index) => {
+                    element.textContent = index + 1;
+                });
+            };
+        }
+        
+        // Show alert function
+        function showAlert(message, type) {
+            // Remove existing alerts
+            document.querySelectorAll('.alert').forEach(alert => alert.remove());
+            
+            // Create new alert
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            // Insert after page header
+            const pageHeader = document.querySelector('.page-header');
+            pageHeader.parentNode.insertBefore(alertDiv, pageHeader.nextSibling);
+            
+            // Auto-dismiss after 3 seconds
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 3000);
         }
     </script>
 <?php require_once 'includes/footer.php'; ?>
