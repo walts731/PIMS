@@ -521,7 +521,7 @@ try {
 // Get asset categories for dropdown
 $categories = [];
 try {
-    $result = $conn->query("SELECT id, category_code, category_name FROM asset_categories ORDER BY category_code");
+    $result = $conn->query("SELECT id, category_code, category_name FROM asset_categories WHERE status = 'active' ORDER BY category_code");
     if ($result) {
         while ($row = $result->fetch_assoc()) {
             $categories[] = $row;
