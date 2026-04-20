@@ -6,7 +6,7 @@ function refreshDashboard() {
 
 // Dark mode functionality for dashboard elements
 function applyDashboardDarkMode() {
-    if (typeof darkMode !== 'undefined' && darkMode.isEnabled()) {
+    if (typeof darkMode !== 'undefined' && darkMode && darkMode.isEnabled && darkMode.isEnabled()) {
         // Apply dark mode to category items
         document.querySelectorAll('.category-item').forEach(item => {
             item.classList.add('dark-mode-category');
@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', function() {
     applyDashboardDarkMode();
     
     // Listen for dark mode changes
-    if (typeof darkMode !== 'undefined') {
+    if (typeof darkMode !== 'undefined' && darkMode) {
         // Listen for dark mode toggle changes
         const observer = new MutationObserver(function(mutations) {
             mutations.forEach(function(mutation) {

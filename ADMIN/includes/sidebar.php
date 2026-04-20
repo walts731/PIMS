@@ -24,7 +24,9 @@ try {
 $dark_mode_class = ($system_settings['dark_mode'] ?? '0') === '1' ? 'dark-mode' : '';
 
 // Add dark mode class to body via JavaScript (runs before DOM loads to prevent flash)
-echo "<script>document.body.classList.add('$dark_mode_class');</script>";
+if (!empty($dark_mode_class)) {
+    echo "<script>document.body.classList.add('$dark_mode_class');</script>";
+}
 ?>
 <style>
 <?php if (($system_settings['theme_preset'] ?? 'default') === 'legacy'): ?>
