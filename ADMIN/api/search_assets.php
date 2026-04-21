@@ -49,6 +49,8 @@ try {
             LEFT JOIN asset_desktop_computers desk ON ai.id = desk.asset_item_id
             WHERE (ai.description LIKE ? OR ai.property_no LIKE ? OR ai.inventory_tag LIKE ? OR ai.model LIKE ?)
             AND ai.status = 'serviceable'
+            AND ai.employee_id IS NOT NULL
+            AND ac.category_code NOT IN ('LND', 'OInfra', 'Buildings', 'Land Imp')
             ORDER BY ai.description, ai.property_no
             LIMIT 20";
     
