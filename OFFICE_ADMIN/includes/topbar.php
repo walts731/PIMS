@@ -170,7 +170,7 @@
                 
                 <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item text-primary" href="#" data-bs-toggle="modal" data-bs-target="#changePasswordModal"><i class="bi bi-key"></i> Change Password</a></li>
-                <li><a class="dropdown-item text-danger" href="../logout.php" onclick="event.preventDefault(); confirmLogout();"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+                <li><a class="dropdown-item text-danger" href="#" data-bs-toggle="modal" data-bs-target="#logoutModal"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
 
             </ul>
 
