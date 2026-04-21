@@ -410,20 +410,6 @@ $stats['inactive_forms'] = $result->fetch_assoc()['inactive'];
             border-left: 4px solid var(--primary-color);
         }
         
-        .stat-card {
-            background: white;
-            border-radius: var(--border-radius-lg);
-            padding: 1.5rem;
-            box-shadow: var(--shadow);
-            transition: var(--transition);
-            border-left: 4px solid var(--primary-color);
-        }
-        
-        .stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
-        }
-        
         .form-card {
             background: white;
             border-radius: var(--border-radius-lg);
@@ -606,49 +592,6 @@ $stats['inactive_forms'] = $result->fetch_assoc()['inactive'];
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             <?php endif; ?>
-            
-            <!-- Statistics Cards -->
-            <div class="row mb-4">
-                <div class="col-md-4 mb-3">
-                    <div class="stat-card">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="text-muted mb-2">Total Forms</h6>
-                                <h3 class="mb-0 text-primary"><?php echo $stats['total_forms']; ?></h3>
-                            </div>
-                            <div class="text-primary fs-1">
-                                <i class="bi bi-file-earmark-text"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <div class="stat-card">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="text-muted mb-2">Active Forms</h6>
-                                <h3 class="mb-0 text-success"><?php echo $stats['active_forms']; ?></h3>
-                            </div>
-                            <div class="text-success fs-1">
-                                <i class="bi bi-check-circle"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <div class="stat-card">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="text-muted mb-2">Inactive Forms</h6>
-                                <h3 class="mb-0 text-warning"><?php echo $stats['inactive_forms']; ?></h3>
-                            </div>
-                            <div class="text-warning fs-1">
-                                <i class="bi bi-pause-circle"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
             
             <!-- Forms List -->
             <div class="row">
