@@ -479,80 +479,7 @@ logSystemAction($_SESSION['user_id'], 'Accessed Tags Management', 'tags', 'tags.
             min-height: 60px;
         }
         
-        /* Sidebar Toggle Button Styles */
-        .sidebar-toggle {
-            position: fixed;
-            top: 15px;
-            left: 15px;
-            z-index: 1001;
-            background: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 10px 12px;
-            cursor: pointer;
-            font-size: 18px;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .sidebar-toggle:hover {
-            background: var(--primary-color-dark);
-            transform: scale(1.05);
-        }
-        
-        .sidebar-toggle.sidebar-active {
-            left: 280px;
-        }
-        
-        /* Sidebar Overlay */
-        .sidebar-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-        }
-        
-        .sidebar-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-        
-        /* Ensure sidebar is properly positioned */
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: -280px;
-            width: 280px;
-            height: 100vh;
-            z-index: 1002;
-            transition: left 0.3s ease;
-            overflow: hidden;
-        }
-        
-        .sidebar.active {
-            left: 0;
-        }
-        
-        /* Remove scrollbar from sidebar content */
-        .sidebar * {
-            scrollbar-width: none; /* Firefox */
-        }
-        
-        .sidebar::-webkit-scrollbar {
-            display: none; /* Chrome, Safari, Edge */
-        }
-        
-        /* Main content adjustments */
-        .main-wrapper.sidebar-active {
-            margin-left: 280px;
-        }
+
         
         /* Component styling */
         .component-item {
@@ -597,12 +524,6 @@ logSystemAction($_SESSION['user_id'], 'Accessed Tags Management', 'tags', 'tags.
                     <p class="text-muted mb-0">Configure document number formats and auto-increment settings</p>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <button class="btn btn-outline-primary btn-sm" onclick="exportTagFormats()">
-                        <i class="bi bi-download"></i> Export
-                    </button>
-                    <button class="btn btn-outline-success btn-sm ms-2" onclick="importTagFormats()">
-                        <i class="bi bi-upload"></i> Import
-                    </button>
                 </div>
             </div>
         </div>
@@ -1156,15 +1077,6 @@ function resetCounter(tagType) {
     }
 }
 
-function exportTagFormats() {
-    // TODO: Implement export functionality
-    alert('Export functionality will be implemented');
-}
-
-function importTagFormats() {
-    // TODO: Implement import functionality
-    alert('Import functionality will be implemented');
-}
 
 // Generate initial previews
 document.addEventListener('DOMContentLoaded', function() {
@@ -1190,41 +1102,7 @@ document.querySelectorAll('.tag-form').forEach(form => {
     });
 });
 
-// Sidebar Toggle Functionality
-const sidebarToggle = document.getElementById('sidebarToggle');
-const sidebar = document.getElementById('sidebar');
-const sidebarOverlay = document.getElementById('sidebarOverlay');
-const mainWrapper = document.getElementById('mainWrapper');
 
-function toggleSidebar() {
-    sidebar.classList.toggle('active');
-    sidebarOverlay.classList.toggle('active');
-    mainWrapper.classList.toggle('sidebar-active');
-    sidebarToggle.classList.toggle('sidebar-active');
-}
-
-function closeSidebar() {
-    sidebar.classList.remove('active');
-    sidebarOverlay.classList.remove('active');
-    mainWrapper.classList.remove('sidebar-active');
-    sidebarToggle.classList.remove('sidebar-active');
-}
-
-// Initialize sidebar toggle
-if (sidebarToggle) {
-    sidebarToggle.addEventListener('click', toggleSidebar);
-}
-
-if (sidebarOverlay) {
-    sidebarOverlay.addEventListener('click', closeSidebar);
-}
-
-// Close sidebar on escape key
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && sidebar && sidebar.classList.contains('active')) {
-        closeSidebar();
-    }
-});
 </script>
 <?php require_once 'includes/footer.php'; ?>
 </body>
