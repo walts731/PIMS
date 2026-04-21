@@ -493,7 +493,7 @@ function getNextTagPreview($tag_type) {
 }
 
 // Handle AJAX requests
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'generateNextTag') {
+if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'generateNextTag') {
     header('Content-Type: application/json');
     
     $tag_type = $_POST['tag_type'] ?? '';
