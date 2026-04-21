@@ -3,22 +3,6 @@
 ?>
 
 <!-- IIRUP Form Management -->
-<ul class="nav nav-tabs" id="iirupTabs" role="tablist">
-    <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="iirup-preview-tab" data-bs-toggle="tab" data-bs-target="#iirup-preview" type="button" role="tab">
-            <i class="bi bi-eye"></i> IIRUP Preview
-        </button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link" id="iirup-entries-tab" data-bs-toggle="tab" data-bs-target="#iirup-entries" type="button" role="tab">
-            <i class="bi bi-list"></i> IIRUP Entries
-        </button>
-    </li>
-</ul>
-
-<div class="tab-content" id="iirupTabsContent">
-    <!-- IIRUP Preview Tab -->
-    <div class="tab-pane fade show active" id="iirup-preview" role="tabpanel">
         <div class="card border-0 shadow-lg rounded-4">
             <div class="card-header bg-info text-white rounded-top-4">
                 <h6 class="mb-0">
@@ -26,28 +10,22 @@
                 </h6>
             </div>
             <div class="card-body">
-                <div class="iirup-preview-container" style="background: white; border: 2px solid #dee2e6; border-radius: 8px; padding: 20px; font-family: 'Times New Roman', serif;">
-                    <!-- IIRUP Form Header -->
-                    <div style="text-align: center; margin-bottom: 20px;">
-                        <?php 
-                        // Debug: Check header image
-                        if (!empty($header_image)) {
-                            echo "<!-- Debug: header_image found: " . htmlspecialchars($header_image) . " -->";
-                            echo '<div style="margin-bottom: 10px;">';
-                            echo '<img src="../uploads/forms/' . htmlspecialchars($header_image) . '" alt="Header Image" style="width: 100%; max-height: 120px; object-fit: contain; border: 1px solid red;">';
-                            echo '</div>';
-                        } else {
-                            echo "<!-- Debug: header_image is empty -->";
-                        }
-                        ?>
-                        <div style="text-align: center; margin-bottom: 10px;">
-                            <p style="margin: 0; font-size: 10px;">Republic of the Philippines</p>
-                            <p style="margin: 0; font-size: 12px; font-weight: bold;">MUNICIPALITY OF PILAR</p>
-                            <p style="margin: 0; font-size: 10px;">Province of Sorsogon</p>
+                <div class="iirup-preview-container" style="font-family: Arial, sans-serif; font-size: 11px; color: #000; background: white; border: 2px solid #000; position: relative;">
+                    <!-- Header Section -->
+                    <div style="padding: 20px 20px 10px; text-align: center; position: relative;">
+                        <div style="margin-bottom: 15px;">
+                            <?php if (!empty($header_image)): ?>
+                                <img src="../uploads/forms/<?php echo htmlspecialchars($header_image); ?>" alt="Header Image" style="max-height: 70px;">
+                            <?php else: ?>
+                                <img src="../img/system_logo.png" alt="Logo" style="max-height: 70px;">
+                            <?php endif; ?>
                         </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                            <div style="flex: 1; text-align: center;">
-                                <p style="margin: 0; font-size: 16px; font-weight: bold;">INVENTORY AND INSPECTION REPORT FOR UNSERVICEABLE PROPERTY</p>
+                        <div style="font-size: 9px; margin-bottom: 2px;">Republic of the Philippines</div>
+                        <div style="font-size: 11px; font-weight: bold; margin-bottom: 2px;">MUNICIPALITY OF PILAR</div>
+                        <div style="font-size: 9px; margin-bottom: 8px;">Province of Sorsogon</div>
+                        <h2 style="font-size: 16px; font-weight: bold; margin: 0 0 3px; text-transform: uppercase;">INVENTORY AND INSPECTION REPORT<br>FOR UNSERVICEABLE PROPERTY</h2>
+                        <div style="font-size: 11px; font-weight: bold; margin-bottom: 2px;">Annex A.5</div>
+                    </div>
                             </div>
                             <div style="flex: 0 0 auto;">
                                 <p style="margin: 0; font-size: 10px;">Annex C</p>
@@ -55,108 +33,53 @@
                         </div>
                     </div>
                     
-                    <!-- Header Information -->
-                    <div style="margin-bottom: 15px;">
-                        <table style="width: 100%; border-collapse: collapse;">
-                            <tr>
-                                <td style="width: 33%; padding: 5px; border: 1px solid #000;"><strong>Accountable Officer:</strong></td>
-                                <td style="width: 33%; padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                <td style="width: 34%; padding: 5px; border: 1px solid #000;"><strong>Designation:</strong></td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 5px; border: 1px solid #000;" colspan="3"><strong>Department/Office:</strong></td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 5px; border: 1px solid #000;" colspan="3">&nbsp;</td>
-                            </tr>
-                        </table>
+                    <!-- Metadata Section -->
+                    <div style="padding: 10px 20px; display: flex; justify-content: space-between; font-size: 12px; font-weight: bold;">
+                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <div style="display: flex; align-items: center;">
+                                <span style="min-width: 120px;">Accountable Officer:</span>
+                                <span style="border-bottom: 1px solid #000; min-width: 150px; padding: 0 5px;">&nbsp;</span>
+                            </div>
+                            <div style="display: flex; align-items: center;">
+                                <span style="min-width: 120px;">Department/Office:</span>
+                                <span style="border-bottom: 1px solid #000; min-width: 150px; padding: 0 5px;">&nbsp;</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <div style="display: flex; align-items: center;">
+                                <span style="min-width: 120px;">Designation:</span>
+                                <span style="border-bottom: 1px solid #000; min-width: 150px; padding: 0 5px;">&nbsp;</span>
+                            </div>
+                        </div>
                     </div>
                     
-                    <!-- Inventory Table -->
-                    <div style="margin-bottom: 20px;">
-                        <table style="width: 100%; border-collapse: collapse; border: 2px solid #000; font-size: 10px;">
-                            <thead>
-                                <tr style="background: #f0f0f0;">
-                                    <th rowspan="2" style="padding: 3px; border: 1px solid #000; text-align: center; width: 8%;">Date Acquired</th>
-                                    <th rowspan="2" style="padding: 3px; border: 1px solid #000; text-align: center; width: 15%;">Particulars/Articles</th>
-                                    <th rowspan="2" style="padding: 3px; border: 1px solid #000; text-align: center; width: 10%;">Property No.</th>
-                                    <th rowspan="2" style="padding: 3px; border: 1px solid #000; text-align: center; width: 5%;">Qty</th>
-                                    <th rowspan="2" style="padding: 3px; border: 1px solid #000; text-align: center; width: 8%;">Unit Cost</th>
-                                    <th rowspan="2" style="padding: 3px; border: 1px solid #000; text-align: center; width: 8%;">Total Cost</th>
-                                    <th rowspan="2" style="padding: 3px; border: 1px solid #000; text-align: center; width: 8%;">Accumulated Depreciation</th>
-                                    <th rowspan="2" style="padding: 3px; border: 1px solid #000; text-align: center; width: 8%;">Accumulated Impairment Losses</th>
-                                    <th rowspan="2" style="padding: 3px; border: 1px solid #000; text-align: center; width: 8%;">Carrying Amount</th>
-                                    <th rowspan="2" style="padding: 3px; border: 1px solid #000; text-align: center; width: 8%;">Remarks</th>
-                                    <th colspan="5" style="padding: 3px; border: 1px solid #000; text-align: center; width: 22%;">Inspection and Disposal</th>
-                                </tr>
-                                <tr style="background: #f0f0f0;">
-                                    <th style="padding: 3px; border: 1px solid #000; text-align: center; width: 4%;">Sale</th>
-                                    <th style="padding: 3px; border: 1px solid #000; text-align: center; width: 4%;">Transfer</th>
-                                    <th style="padding: 3px; border: 1px solid #000; text-align: center; width: 4%;">Destruction</th>
-                                    <th style="padding: 3px; border: 1px solid #000; text-align: center; width: 4%;">Others (Specify)</th>
-                                    <th style="padding: 3px; border: 1px solid #000; text-align: center; width: 6%;">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                    <!-- Items Table -->
+                    <table style="width: 100%; border-collapse: collapse; border-top: 2px solid #000; border-bottom: 2px solid #000;">
+                        <thead>
+                            <tr>
+                                <th width="80" style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; text-align: center; font-weight: bold;">Date Acquired</th>
+                                <th width="120" style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; text-align: center; font-weight: bold;">Particulars</th>
+                                <th width="80" style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; text-align: center; font-weight: bold;">Property No.</th>
+                                <th width="50" style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; text-align: center; font-weight: bold;">Qty</th>
+                                <th width="80" style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; text-align: center; font-weight: bold;">Unit Cost</th>
+                                <th width="80" style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; text-align: center; font-weight: bold;">Total Cost</th>
+                                <th width="100" style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; text-align: center; font-weight: bold;">Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php for($i=0; $i<15; $i++): ?>
                                 <tr>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
+                                    <td style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; text-align: center;">&nbsp;</td>
+                                    <td style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; padding-left: 8px;">&nbsp;</td>
+                                    <td style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; text-align: center;">&nbsp;</td>
+                                    <td style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; text-align: center;">&nbsp;</td>
+                                    <td style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; text-align: right;">&nbsp;</td>
+                                    <td style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; text-align: right;">&nbsp;</td>
+                                    <td style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; padding-left: 8px;">&nbsp;</td>
                                 </tr>
-                                <tr>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 3px; border: 1px solid #000;">&nbsp;</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                            <?php endfor; ?>
+                        </tbody>
+                    </table>
                     
                     <!-- Appraised Value Section -->
                     <div style="margin-bottom: 20px;">
@@ -233,18 +156,10 @@
                         </table>
                     </div>
                     
-                    <!-- Footer Note -->
-                    <div style="margin-top: 30px; text-align: center; font-size: 10px; color: #666;">
-                        <p style="margin: 0;">This form is prescribed by Commission on Audit (COA)</p>
-                        <p style="margin: 0;">Inventory and Inspection Report for Unserviceable Property (IIRUP) - Government Property Management</p>
                     </div>
-                </div>
                 
                 <!-- Preview Controls -->
                 <div class="mt-3 text-center">
-                    <button class="btn btn-outline-primary btn-sm" onclick="window.print()">
-                        <i class="bi bi-printer"></i> Print Preview
-                    </button>
                     <button class="btn btn-outline-secondary btn-sm" onclick="zoomPreview()">
                         <i class="bi bi-zoom-in"></i> Zoom
                     </button>
@@ -253,63 +168,4 @@
         </div>
     </div>
     
-    <!-- IIRUP Entries Tab -->
-    <div class="tab-pane fade" id="iirup-entries" role="tabpanel">
-        <div class="card border-0 shadow-lg rounded-4">
-            <div class="card-header bg-primary text-white rounded-top-4">
-                <h6 class="mb-0">
-                    <i class="bi bi-list"></i> IIRUP Entries
-                </h6>
-            </div>
-            <div class="card-body p-0">
-                <?php if (empty($form_data)): ?>
-                    <div class="text-center py-5">
-                        <i class="bi bi-file-earmark-text fs-1 text-muted"></i>
-                        <p class="text-muted mt-3">No IIRUP entries found</p>
-                    </div>
-                <?php else: ?>
-                    <div class="table-responsive">
-                        <table id="iirupTable" class="table table-hover mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Accountable Officer</th>
-                                    <th>Designation</th>
-                                    <th>Office</th>
-                                    <th>Date Created</th>
-                                    <th>Items Count</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($form_data as $entry): ?>
-                                    <?php
-                                    // Get item count for this IIRUP
-                                    $item_count_result = $conn->query("SELECT COUNT(*) as count FROM iirup_items WHERE iirup_id = " . $entry['id']);
-                                    $item_count = $item_count_result->fetch_assoc()['count'];
-                                    ?>
-                                    <tr>
-                                        <td><strong><?php echo htmlspecialchars($entry['accountable_officer']); ?></strong></td>
-                                        <td><?php echo htmlspecialchars($entry['designation']); ?></td>
-                                        <td><?php echo htmlspecialchars($entry['office']); ?></td>
-                                        <td><?php echo date('M j, Y', strtotime($entry['created_at'])); ?></td>
-                                        <td><span class="badge bg-info"><?php echo $item_count; ?> items</span></td>
-                                        <td>
-                                            <div class="form-actions">
-                                                <button class="btn btn-sm btn-outline-primary" onclick="viewIIRUP(<?php echo $entry['id']; ?>)">
-                                                    <i class="bi bi-eye"></i>
-                                                </button>
-                                                <button class="btn btn-sm btn-outline-success" onclick="manageIIRUPItems(<?php echo $entry['id']; ?>)">
-                                                    <i class="bi bi-box"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                <?php endif; ?>
-            </div>
-        </div>
     </div>
-</div>

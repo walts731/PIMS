@@ -507,7 +507,9 @@ if ($result && $row = $result->fetch_assoc()) {
                LEFT JOIN assets a ON ai.asset_id = a.id 
                LEFT JOIN asset_categories ac ON a.asset_categories_id = ac.id 
                LEFT JOIN employees e ON ai.employee_id = e.id 
-               WHERE ai.status = 'serviceable'
+               WHERE ai.status = 'serviceable' 
+               AND ai.employee_id IS NOT NULL 
+               AND ac.category_code NOT IN ('LND', 'OInfra', 'Buildings', 'Land Imp')
                ORDER BY ai.description, ai.property_no";
         
         $assets_result = $conn->query($assets_sql);

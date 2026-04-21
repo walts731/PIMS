@@ -388,9 +388,13 @@ try {
         logSystemAction($_SESSION['user_id'], 'debug', 'process_tag', "ENTERED COMPUTER/ITS BLOCK - Item ID: $item_id, Category Name: " . $category['category_name']);
         // Collect all form data
         $processor = trim($_POST['processor'] ?? '');
-        $ram_capacity = trim($_POST['ram'] ?? '');
-        $storage_capacity = trim($_POST['storage_capacity'] ?? '');
-        $storage_type = trim($_POST['storage_type'] ?? 'ssd');
+        $ram_capacity = substr(trim($_POST['ram'] ?? ''), 0, 20);
+        $storage_capacity = substr(trim($_POST['storage_capacity'] ?? ''), 0, 20);
+        $storage_type = trim($_POST['storage_type'] ?? '');
+        // Validate storage_type against DB ENUM values ('hdd', 'ssd', 'hybrid')
+        if (!in_array($storage_type, ['hdd', 'ssd', 'hybrid'])) {
+            $storage_type = 'ssd'; // Default safe value
+        }
         $model = trim($_POST['model'] ?? '');
         $graphics_card = trim($_POST['graphics'] ?? '');
         $operating_system = trim($_POST['operating_system'] ?? '');

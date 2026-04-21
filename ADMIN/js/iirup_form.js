@@ -387,14 +387,18 @@ function addIIRUPRow() {
 
 function clearRowData(button) {
     const row = button.closest('tr');
-    const inputs = row.getElementsByTagName('input');
-    const selects = row.getElementsByTagName('select');
+    const inputs = row.querySelectorAll('input');
+    const selects = row.querySelectorAll('select');
     
     // Clear all input values and make them editable
     inputs.forEach(input => {
         input.value = '';
         input.readOnly = false;
         input.style.backgroundColor = '';
+        input.style.border = '';
+        // Clear potential datasets
+        delete input.dataset.assetId;
+        delete input.dataset.assetData;
     });
     
     // Reset select fields and make them editable
@@ -402,6 +406,7 @@ function clearRowData(button) {
         select.value = '';
         select.disabled = false;
         select.style.backgroundColor = '';
+        select.style.border = '';
     });
     
     // Hide autocomplete dropdown if visible

@@ -46,7 +46,7 @@ $employees = [];
 $employees_sql = "SELECT e.id, e.employee_no, e.firstname, e.middle_name, e.lastname, o.office_name 
                    FROM employees e 
                    LEFT JOIN offices o ON e.office_id = o.id 
-                   WHERE e.employment_status IN ('permanent', 'uncleared')
+                   WHERE e.clearance_status = 'uncleared'
                    ORDER BY e.lastname, e.firstname";
 $employees_result = $conn->query($employees_sql);
 while ($employee_row = $employees_result->fetch_assoc()) {
@@ -393,7 +393,7 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
                         <div class="col-md-8">
                             <label class="form-label"><strong>From Accountable Officer/Agency/Fund Cluster:</strong></label>
                             <select class="form-select" id="from_employee_search" name="from_office" required>
-                                <option value="">Select Employee (Permanent & Uncleared)</option>
+                                <option value="">Select Employee (Uncleared Status)</option>
                                 <?php foreach ($employees as $employee): ?>
                                     <option value="<?php echo $employee['id']; ?>">
                                         <?php 
@@ -462,24 +462,7 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
                         </div>
                         <div class="col-md-4">
                             <label class="form-label"><strong>End User:</strong></label>
-                            <select class="form-select" name="end_user" id="end_user_search">
-                                <option value="">Select Employee</option>
-                                <?php 
-                                // Get all employees for end user dropdown
-                                $all_employees_sql = "SELECT e.id, e.employee_no, e.firstname, e.middle_name, e.lastname, o.office_name 
-                                                     FROM employees e 
-                                                     LEFT JOIN offices o ON e.office_id = o.id 
-                                                     ORDER BY e.lastname, e.firstname";
-                                $all_employees_result = $conn->query($all_employees_sql);
-                                while ($employee_row = $all_employees_result->fetch_assoc()) {
-                                    $middle_initial = !empty($employee_row['middle_name']) ? substr($employee_row['middle_name'], 0, 1) . '. ' : '';
-                                    $office_name = !empty($employee_row['office_name']) ? '/' . $employee_row['office_name'] : '';
-                                    echo '<option value="' . htmlspecialchars($employee_row['firstname'] . ' ' . $middle_initial . $employee_row['lastname'] . $office_name) . '">';
-                                    echo htmlspecialchars($employee_row['firstname'] . ' ' . $middle_initial . $employee_row['lastname'] . $office_name);
-                                    echo '</option>';
-                                }
-                                ?>
-                            </select>
+                            <input type="text" class="form-control" name="end_user" id="end_user" placeholder="Enter End User Name">
                         </div>
                     </div>
 
@@ -809,12 +792,12 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
                 width: '100%'
             });
             
-            $('#end_user_search').select2({
-                theme: 'bootstrap-5',
-                placeholder: 'Search and select employee...',
-                allowClear: true,
-                width: '100%'
-            });
+            // End user select2 removed
+
+
+
+
+
 
             // Initialize Select2 for asset description dropdowns
             initializeAssetDropdowns();

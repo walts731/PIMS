@@ -3,22 +3,6 @@
 ?>
 
 <!-- RIS Form Management -->
-<ul class="nav nav-tabs" id="risTabs" role="tablist">
-    <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="ris-preview-tab" data-bs-toggle="tab" data-bs-target="#ris-preview" type="button" role="tab">
-            <i class="bi bi-eye"></i> RIS Preview
-        </button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link" id="ris-entries-tab" data-bs-toggle="tab" data-bs-target="#ris-entries" type="button" role="tab">
-            <i class="bi bi-list"></i> RIS Entries
-        </button>
-    </li>
-</ul>
-
-<div class="tab-content" id="risTabsContent">
-    <!-- RIS Preview Tab -->
-    <div class="tab-pane fade show active" id="ris-preview" role="tabpanel">
         <div class="card border-0 shadow-lg rounded-4">
             <div class="card-header bg-info text-white rounded-top-4">
                 <h6 class="mb-0">
@@ -26,135 +10,85 @@
                 </h6>
             </div>
             <div class="card-body">
-                <div class="ris-preview-container" style="background: white; border: 2px solid #dee2e6; border-radius: 8px; padding: 20px; font-family: 'Times New Roman', serif;">
-                    <!-- RIS Form Header -->
-                    <div style="text-align: center; margin-bottom: 20px;">
-                        <?php 
-                        // Debug: Check header image
-                        if (!empty($header_image)) {
-                            echo "<!-- Debug: header_image found: " . htmlspecialchars($header_image) . " -->";
-                            echo '<div style="margin-bottom: 10px;">';
-                            echo '<img src="../uploads/forms/' . htmlspecialchars($header_image) . '" alt="Header Image" style="width: 100%; max-height: 120px; object-fit: contain; border: 1px solid red;">';
-                            echo '</div>';
-                        } else {
-                            echo "<!-- Debug: header_image is empty -->";
-                        }
-                        ?>
-                       
+                <div class="ris-preview-container" style="font-family: Arial, sans-serif; font-size: 11px; color: #000; background: white; border: 2px solid #000; position: relative;">
+                    <!-- Header Section -->
+                    <div style="padding: 20px 20px 10px; text-align: center; position: relative;">
+                        <div style="margin-bottom: 15px;">
+                            <?php if (!empty($header_image)): ?>
+                                <img src="../uploads/forms/<?php echo htmlspecialchars($header_image); ?>" alt="Header Image" style="max-height: 70px;">
+                            <?php else: ?>
+                                <img src="../img/system_logo.png" alt="Logo" style="max-height: 70px;">
+                            <?php endif; ?>
+                        </div>
+                        <h2 style="font-size: 18px; font-weight: bold; margin: 0 0 3px; text-transform: uppercase;">REQUEST & ISSUE SLIP</h2>
+                        <div style="font-size: 11px; font-weight: bold; margin-bottom: 2px;">Annex A.2</div>
                     </div>
                     
-                    <!-- Header Information -->
-                    <div style="margin-bottom: 15px;">
-                        <table style="width: 100%; border-collapse: collapse;">
-                            <tr>
-                                <td style="width: 25%; padding: 5px; border: 1px solid #000;"><strong>DIVISION:</strong></td>
-                                <td style="width: 25%; padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                <td style="width: 25%; padding: 5px; border: 1px solid #000;"><strong>RESPONSIBILITY CENTER:</strong></td>
-                                <td style="width: 25%; padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 5px; border: 1px solid #000;"><strong>RIS NO.:</strong></td>
-                                <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                <td style="padding: 5px; border: 1px solid #000;"><strong>SAI NO.:</strong></td>
-                                <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 5px; border: 1px solid #000;"><strong>OFFICE:</strong></td>
-                                <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                <td style="padding: 5px; border: 1px solid #000;"><strong>CODE:</strong></td>
-                                <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 5px; border: 1px solid #000;"><strong>DATE:</strong></td>
-                                <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                <td style="padding: 5px; border: 1px solid #000;" colspan="2">&nbsp;</td>
-                            </tr>
-                        </table>
+                    <!-- Metadata Section -->
+                    <div style="padding: 10px 20px; display: flex; justify-content: space-between; font-size: 12px; font-weight: bold;">
+                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <div style="display: flex; align-items: center;">
+                                <span style="min-width: 80px;">Division:</span>
+                                <span style="border-bottom: 1px solid #000; min-width: 120px; padding: 0 5px;">&nbsp;</span>
+                            </div>
+                            <div style="display: flex; align-items: center;">
+                                <span style="min-width: 80px;">Responsibility Center:</span>
+                                <span style="border-bottom: 1px solid #000; min-width: 120px; padding: 0 5px;">&nbsp;</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <div style="display: flex; align-items: center;">
+                                <span style="min-width: 80px;">RIS No.:</span>
+                                <span style="border-bottom: 1px solid #000; min-width: 120px; padding: 0 5px;">&nbsp;</span>
+                            </div>
+                            <div style="display: flex; align-items: center;">
+                                <span style="min-width: 80px;">SAI No.:</span>
+                                <span style="border-bottom: 1px solid #000; min-width: 120px; padding: 0 5px;">&nbsp;</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <div style="display: flex; align-items: center;">
+                                <span style="min-width: 80px;">Office:</span>
+                                <span style="border-bottom: 1px solid #000; min-width: 120px; padding: 0 5px;">&nbsp;</span>
+                            </div>
+                            <div style="display: flex; align-items: center;">
+                                <span style="min-width: 80px;">Code:</span>
+                                <span style="border-bottom: 1px solid #000; min-width: 120px; padding: 0 5px;">&nbsp;</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <div style="display: flex; align-items: center;">
+                                <span style="min-width: 80px;">Date:</span>
+                                <span style="border-bottom: 1px solid #000; min-width: 120px; padding: 0 5px;">&nbsp;</span>
+                            </div>
+                        </div>
                     </div>
                     
-                    <!-- Main Items Table -->
-                    <div style="margin-bottom: 20px;">
-                        <table style="width: 100%; border-collapse: collapse; border: 2px solid #000;">
-                            <thead>
-                                <tr style="background: #f0f0f0;">
-                                    <th rowspan="2" style="padding: 5px; border: 1px solid #000; text-align: center; width: 15%;">STOCK NO.</th>
-                                    <th rowspan="2" style="padding: 5px; border: 1px solid #000; text-align: center; width: 10%;">UNIT</th>
-                                    <th rowspan="2" style="padding: 5px; border: 1px solid #000; text-align: left; width: 30%;">DESCRIPTION</th>
-                                    <th colspan="2" style="padding: 5px; border: 1px solid #000; text-align: center; width: 20%;">REQUISITION</th>
-                                    <th colspan="3" style="padding: 5px; border: 1px solid #000; text-align: center; width: 25%;">ISSUANCE</th>
-                                </tr>
-                                <tr style="background: #f0f0f0;">
-                                    <th style="padding: 5px; border: 1px solid #000; text-align: center; width: 10%;">QUANTITY</th>
-                                    <th style="padding: 5px; border: 1px solid #000; text-align: center; width: 10%;">QUANTITY</th>
-                                    <th style="padding: 5px; border: 1px solid #000; text-align: center; width: 5%;">SIGNATURE</th>
-                                    <th style="padding: 5px; border: 1px solid #000; text-align: center; width: 5%;">PRICE</th>
-                                    <th style="padding: 5px; border: 1px solid #000; text-align: center; width: 5%;">TOTAL AMOUNT</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                    <!-- Items Table -->
+                    <table style="width: 100%; border-collapse: collapse; border-top: 2px solid #000; border-bottom: 2px solid #000;">
+                        <thead>
+                            <tr>
+                                <th width="80" style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; text-align: center; font-weight: bold;">Stock No.</th>
+                                <th width="50" style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; text-align: center; font-weight: bold;">Unit</th>
+                                <th style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; text-align: center; font-weight: bold;">Description</th>
+                                <th width="80" style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; text-align: center; font-weight: bold;">Req. Qty</th>
+                                <th width="80" style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; text-align: center; font-weight: bold;">Iss. Qty</th>
+                                <th width="100" style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; text-align: center; font-weight: bold;">Signature</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php for($i=0; $i<20; $i++): ?>
                                 <tr>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
+                                    <td style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; text-align: center;">&nbsp;</td>
+                                    <td style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; text-align: center;">&nbsp;</td>
+                                    <td style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; padding-left: 8px;">&nbsp;</td>
+                                    <td style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; text-align: center;">&nbsp;</td>
+                                    <td style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; text-align: center;">&nbsp;</td>
+                                    <td style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; text-align: center;">&nbsp;</td>
                                 </tr>
-                                <tr>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                            <?php endfor; ?>
+                        </tbody>
+                    </table>
                     
                     <!-- Purpose Section -->
                     <div style="margin-bottom: 20px;">
@@ -167,61 +101,31 @@
                     </div>
                     
                     <!-- Signature Section -->
-                    <div style="margin-top: 40px;">
-                        <table style="width: 100%; border-collapse: collapse;">
-                            <tr>
-                                <td style="width: 25%; padding: 10px; text-align: center; vertical-align: top;">
-                                    <p style="margin: 0; font-weight: bold;">REQUESTED BY:</p>
-                                    <div style="border-bottom: 1px solid #000; margin-bottom: 5px; height: 40px;"></div>
-                                    <p style="margin: 5px 0; font-size: 12px;">Printed Name</p>
-                                    <div style="border-bottom: 1px solid #000; margin-bottom: 5px; height: 20px;"></div>
-                                    <p style="margin: 5px 0; font-size: 12px;">Designation</p>
-                                    <div style="border-bottom: 1px solid #000; margin-bottom: 5px; height: 20px;"></div>
-                                    <p style="margin: 5px 0; font-size: 12px;">Date</p>
-                                </td>
-                                <td style="width: 25%; padding: 10px; text-align: center; vertical-align: top;">
-                                    <p style="margin: 0; font-weight: bold;">APPROVED BY:</p>
-                                    <div style="border-bottom: 1px solid #000; margin-bottom: 5px; height: 40px;"></div>
-                                    <p style="margin: 5px 0; font-size: 12px;">Printed Name</p>
-                                    <div style="border-bottom: 1px solid #000; margin-bottom: 5px; height: 20px;"></div>
-                                    <p style="margin: 5px 0; font-size: 12px;">Designation</p>
-                                    <div style="border-bottom: 1px solid #000; margin-bottom: 5px; height: 20px;"></div>
-                                    <p style="margin: 5px 0; font-size: 12px;">Date</p>
-                                </td>
-                                <td style="width: 25%; padding: 10px; text-align: center; vertical-align: top;">
-                                    <p style="margin: 0; font-weight: bold;">ISSUED BY:</p>
-                                    <div style="border-bottom: 1px solid #000; margin-bottom: 5px; height: 40px;"></div>
-                                    <p style="margin: 5px 0; font-size: 12px;">Printed Name</p>
-                                    <div style="border-bottom: 1px solid #000; margin-bottom: 5px; height: 20px;"></div>
-                                    <p style="margin: 5px 0; font-size: 12px;">Designation</p>
-                                    <div style="border-bottom: 1px solid #000; margin-bottom: 5px; height: 20px;"></div>
-                                    <p style="margin: 5px 0; font-size: 12px;">Date</p>
-                                </td>
-                                <td style="width: 25%; padding: 10px; text-align: center; vertical-align: top;">
-                                    <p style="margin: 0; font-weight: bold;">RECEIVED BY:</p>
-                                    <div style="border-bottom: 1px solid #000; margin-bottom: 5px; height: 40px;"></div>
-                                    <p style="margin: 5px 0; font-size: 12px;">Printed Name</p>
-                                    <div style="border-bottom: 1px solid #000; margin-bottom: 5px; height: 20px;"></div>
-                                    <p style="margin: 5px 0; font-size: 12px;">Designation</p>
-                                    <div style="border-bottom: 1px solid #000; margin-bottom: 5px; height: 20px;"></div>
-                                    <p style="margin: 5px 0; font-size: 12px;">Date</p>
-                                </td>
-                            </tr>
-                        </table>
+                    <div style="display: flex; margin-top: 20px;">
+                        <div style="flex: 1; border: 1px solid #000; padding: 8px 12px 15px; display: flex; flex-direction: column; min-height: 120px; border-left: none; border-bottom: none;">
+                            <div style="font-style: italic; font-weight: bold; font-size: 11px; margin-bottom: 15px;">Requested By:</div>
+                            <div style="text-align: center; margin-top: auto;">
+                                <div style="font-weight: bold; text-transform: uppercase; font-size: 12px; margin-bottom: 2px;">&nbsp;</div>
+                                <div style="font-size: 9px; margin-bottom: 8px;">Signature over Printed Name</div>
+                                <div style="width: 85%; margin: 0 auto 3px; border-bottom: 1px solid #000;"></div>
+                                <div style="font-size: 9px; margin-top: 2px;">Date</div>
+                            </div>
+                        </div>
+                        <div style="flex: 1; border: 1px solid #000; padding: 8px 12px 15px; display: flex; flex-direction: column; min-height: 120px; border-right: none; border-bottom: none;">
+                            <div style="font-style: italic; font-weight: bold; font-size: 11px; margin-bottom: 15px;">Issued By:</div>
+                            <div style="text-align: center; margin-top: auto;">
+                                <div style="font-weight: bold; text-transform: uppercase; font-size: 12px; margin-bottom: 2px;">&nbsp;</div>
+                                <div style="font-size: 9px; margin-bottom: 8px;">Signature over Printed Name</div>
+                                <div style="width: 85%; margin: 0 auto 3px; border-bottom: 1px solid #000;"></div>
+                                <div style="font-size: 9px; margin-top: 2px;">Date</div>
+                            </div>
+                        </div>
                     </div>
                     
-                    <!-- Footer Note -->
-                    <div style="margin-top: 30px; text-align: center; font-size: 10px; color: #666;">
-                        <p style="margin: 0;">This form is prescribed by Commission on Audit (COA)</p>
-                        <p style="margin: 0;">Requisition and Issue Slip (RIS) - Government Property Management</p>
                     </div>
-                </div>
                 
                 <!-- Preview Controls -->
                 <div class="mt-3 text-center">
-                    <button class="btn btn-outline-primary btn-sm" onclick="window.print()">
-                        <i class="bi bi-printer"></i> Print Preview
-                    </button>
                     <button class="btn btn-outline-secondary btn-sm" onclick="zoomPreview()">
                         <i class="bi bi-zoom-in"></i> Zoom
                     </button>
@@ -230,65 +134,4 @@
         </div>
     </div>
     
-    <!-- RIS Entries Tab -->
-    <div class="tab-pane fade" id="ris-entries" role="tabpanel">
-        <div class="card border-0 shadow-lg rounded-4">
-            <div class="card-header bg-primary text-white rounded-top-4">
-                <h6 class="mb-0">
-                    <i class="bi bi-list"></i> RIS Entries
-                </h6>
-            </div>
-            <div class="card-body p-0">
-                <?php if (empty($form_data)): ?>
-                    <div class="text-center py-5">
-                        <i class="bi bi-file-earmark-text fs-1 text-muted"></i>
-                        <p class="text-muted mt-3">No RIS entries found</p>
-                    </div>
-                <?php else: ?>
-                    <div class="table-responsive">
-                        <table id="risTable" class="table table-hover mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>RIS No.</th>
-                                    <th>Division</th>
-                                    <th>Responsibility Center</th>
-                                    <th>Office</th>
-                                    <th>Date</th>
-                                    <th>Items Count</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($form_data as $entry): ?>
-                                    <?php
-                                    // Get item count for this RIS
-                                    $item_count_result = $conn->query("SELECT COUNT(*) as count FROM ris_items WHERE ris_form_id = " . $entry['id']);
-                                    $item_count = $item_count_result->fetch_assoc()['count'];
-                                    ?>
-                                    <tr>
-                                        <td><strong><?php echo htmlspecialchars($entry['ris_no']); ?></strong></td>
-                                        <td><?php echo htmlspecialchars($entry['division']); ?></td>
-                                        <td><?php echo htmlspecialchars($entry['responsibility_center']); ?></td>
-                                        <td><?php echo htmlspecialchars($entry['office_name'] ?? 'Not assigned'); ?></td>
-                                        <td><?php echo date('M j, Y', strtotime($entry['date'])); ?></td>
-                                        <td><span class="badge bg-info"><?php echo $item_count; ?> items</span></td>
-                                        <td>
-                                            <div class="form-actions">
-                                                <button class="btn btn-sm btn-outline-primary" onclick="viewRIS(<?php echo $entry['id']; ?>)">
-                                                    <i class="bi bi-eye"></i>
-                                                </button>
-                                                <button class="btn btn-sm btn-outline-success" onclick="manageRISItems(<?php echo $entry['id']; ?>)">
-                                                    <i class="bi bi-box"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                <?php endif; ?>
-            </div>
-        </div>
     </div>
-</div>
