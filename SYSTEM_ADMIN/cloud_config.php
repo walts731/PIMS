@@ -67,13 +67,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_config'])) {
     if (empty($errors)) {
         try {
             // Check if config exists
-            $stmt = $conn->prepare("SELECT id FROM online_backup_configs WHERE provider = ?");
+            $stmt = $conn->prepare("SELECT api_key, api_secret FROM online_backup_configs WHERE provider = ?");
             $stmt->bind_param("s", $provider);
             $stmt->execute();
             $result = $stmt->get_result();
             $existing = $result->fetch_assoc();
             $stmt->close();
             
+            // If simple mode, preserve existing keys if new ones are empty
+            if (empty($api_key) && !empty($existing['api_key'])) {
+                $api_key = $existing['api_key'];
+            }
+            if (empty($api_secret) && !empty($existing['api_secret'])) {
+                $api_secret = $existing['api_secret'];
+            }
+
             if ($existing) {
                 // Update existing config
                 $stmt = $conn->prepare("
@@ -100,6 +108,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_config'])) {
             $stmt->execute();
             $stmt->close();
             
+            // Trigger OAuth redirect if this is Google Drive and we have keys but no token
+            if ($provider === 'google_drive' && !empty($api_key) && empty($access_token)) {
+                require_once 'includes/cloud_api.php';
+                try {
+                    $cloud_api = new CloudStorageAPI('google_drive');
+                    $auth_url = $cloud_api->getAuthorizationUrl();
+                    header("Location: " . $auth_url);
+                    exit();
+                } catch (Exception $e) {
+                    error_log("Failed to get auth URL: " . $e->getMessage());
+                    // Fall through to success message if we can't redirect
+                }
+            }
+
             logSystemAction($_SESSION['user_id'], 'cloud_config_updated', 'cloud_storage', 
                 "Updated {$provider} configuration");
             
@@ -306,223 +328,207 @@ try {
                 </div>
             <?php endif; ?>
             
-            <!-- Configuration Guide -->
-            <div class="config-card">
-                <h4 class="mb-4"><i class="bi bi-info-circle"></i> Setup Guide</h4>
-                <div class="accordion" id="setupGuide">
-                    <div class="accordion-item">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#googleDriveSetup">
-                                <i class="bi bi-google me-2"></i> Google Drive Setup
-                            </button>
-                        </h2>
-                        <div id="googleDriveSetup" class="accordion-collapse collapse show" data-bs-parent="#setupGuide">
-                            <div class="accordion-body">
-                                <ol>
-                                    <li>Go to <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a></li>
-                                    <li>Create a new project or select existing one</li>
-                                    <li>Enable Google Drive API</li>
-                                    <li>Create OAuth 2.0 credentials</li>
-                                    <li>Add authorized redirect URI: <code><?php echo "http://{$_SERVER['HTTP_HOST']}/PIMS/SYSTEM_ADMIN/cloud_callback.php"; ?></code></li>
-                                    <li>Copy Client ID and Client Secret to the configuration form</li>
-                                </ol>
-                            </div>
+            <!-- Quick Google Drive Setup (Simple Mode) -->
+            <div class="config-card" id="simpleGoogleDriveCard">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 class="mb-0 text-primary">
+                        <i class="bi bi-google"></i> Simplified Google Drive Setup
+                    </h4>
+                    <span class="badge bg-success rounded-pill">Recommended</span>
+                </div>
+                
+                <p class="text-muted mb-4">The easiest way to backup your data. Just enter your Google account email and click connect.</p>
+                
+                <form method="POST" action="cloud_config.php" class="row g-3 align-items-end">
+                    <input type="hidden" name="provider" value="google_drive">
+                    <input type="hidden" name="update_config" value="1">
+                    <input type="hidden" name="config_name" value="Google Drive Backup">
+                    
+                    <div class="col-md-8">
+                        <label for="gmail_address" class="form-label">Google Account Email (Gmail)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0">
+                                <i class="bi bi-envelope-at text-primary"></i>
+                            </span>
+                            <input type="email" class="form-control border-start-0" id="gmail_address" name="folder_path" 
+                                   placeholder="yourname@gmail.com" 
+                                   value="<?php 
+                                        $gd_config = array_filter($configs, function($c) { return $c['provider'] === 'google_drive'; });
+                                        $gd_config = reset($gd_config);
+                                        echo htmlspecialchars($gd_config['folder_path'] ?? ''); 
+                                   ?>">
+                        </div>
+                        <div class="form-text mt-2">This email will be used as the primary backup destination identifier.</div>
+                    </div>
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-primary w-100 py-2 shadow-sm">
+                            <i class="bi bi-link-45deg"></i> Connect & Authorize
+                        </button>
+                    </div>
+                    
+                    <div class="col-12 mt-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="is_active_simple" name="is_active" checked>
+                            <label class="form-check-label" for="is_active_simple">Enable Online Backup automatic syncing</label>
                         </div>
                     </div>
-                    <div class="accordion-item">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#dropboxSetup">
-                                <i class="bi bi-dropbox me-2"></i> Dropbox Setup
+                </form>
+            </div>
+
+            <!-- Existing Configurations (Simplified List) -->
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="config-card">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h4 class="mb-0"><i class="bi bi-list-task"></i> Active Providers</h4>
+                            <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#advancedConfigSection">
+                                <i class="bi bi-gear-fill"></i> Advanced Settings
                             </button>
-                        </h2>
-                        <div id="dropboxSetup" class="accordion-collapse collapse" data-bs-parent="#setupGuide">
-                            <div class="accordion-body">
-                                <ol>
-                                    <li>Go to <a href="https://www.dropbox.com/developers/apps" target="_blank">Dropbox App Console</a></li>
-                                    <li>Create a new app</li>
-                                    <li>Select "Scoped access" and "Full Dropbox"</li>
-                                    <li>Enable app folder or full Dropbox access</li>
-                                    <li>Generate access token</li>
-                                    <li>Copy App Key and App Secret to the configuration form</li>
-                                </ol>
-                            </div>
                         </div>
-                    </div>
-                    <div class="accordion-item">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#onedriveSetup">
-                                <i class="bi bi-microsoft me-2"></i> OneDrive Setup
-                            </button>
-                        </h2>
-                        <div id="onedriveSetup" class="accordion-collapse collapse" data-bs-parent="#setupGuide">
-                            <div class="accordion-body">
-                                <ol>
-                                    <li>Go to <a href="https://portal.azure.com/" target="_blank">Azure Portal</a></li>
-                                    <li>Register a new application</li>
-                                    <li>Add Microsoft Graph permissions (Files.ReadWrite)</li>
-                                    <li>Create client secret</li>
-                                    <li>Add redirect URI: <code><?php echo "http://{$_SERVER['HTTP_HOST']}/PIMS/SYSTEM_ADMIN/cloud_callback.php"; ?></code></li>
-                                    <li>Copy Application ID and Client Secret to the configuration form</li>
-                                </ol>
+                        
+                        <?php if (empty($configs)): ?>
+                            <div class="text-center py-4">
+                                <i class="bi bi-cloud-slash fs-2 text-muted"></i>
+                                <p class="text-muted mt-2">No providers configured yet.</p>
                             </div>
-                        </div>
+                        <?php else: ?>
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Provider</th>
+                                            <th>Identifier / Gmail</th>
+                                            <th>Status</th>
+                                            <th>Last Sync</th>
+                                            <th class="text-end">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($configs as $config): ?>
+                                            <tr>
+                                                <td>
+                                                    <div class="d-flex align-items-center">
+                                                        <?php
+                                                        $icon = [
+                                                            'google_drive' => 'bi-google text-primary',
+                                                            'dropbox' => 'bi-dropbox text-info',
+                                                            'onedrive' => 'bi-microsoft text-primary'
+                                                        ][$config['provider']] ?? 'bi-cloud';
+                                                        ?>
+                                                        <i class="bi <?php echo $icon; ?> fs-4 me-3"></i>
+                                                        <strong><?php echo htmlspecialchars(ucwords(str_replace('_', ' ', $config['provider']))); ?></strong>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <code class="text-dark"><?php echo htmlspecialchars($config['folder_path'] ?: 'Not set'); ?></code>
+                                                </td>
+                                                <td>
+                                                    <span class="badge rounded-pill <?php echo $config['is_active'] ? 'bg-success' : 'bg-secondary'; ?>">
+                                                        <?php echo $config['is_active'] ? 'Active' : 'Inactive'; ?>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <small class="text-muted"><?php echo date('M j, Y H:i', strtotime($config['updated_at'])); ?></small>
+                                                </td>
+                                                <td class="text-end">
+                                                    <div class="btn-group">
+                                                        <button class="btn btn-sm btn-outline-primary" onclick="editConfig('<?php echo $config['provider']; ?>')">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </button>
+                                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteConfig('<?php echo $config['provider']; ?>')">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
             
-            <!-- Existing Configurations -->
-            <div class="config-card">
-                <h4 class="mb-4"><i class="bi bi-gear"></i> Existing Configurations</h4>
-                
-                <?php if (empty($configs)): ?>
-                    <div class="text-center py-5">
-                        <i class="bi bi-cloud fs-1 text-muted"></i>
-                        <p class="text-muted mt-3">No cloud storage configurations found. Set up your first configuration below.</p>
-                    </div>
-                <?php else: ?>
-                    <?php foreach ($configs as $config): ?>
-                        <div class="provider-card">
-                            <div class="row align-items-center">
-                                <div class="col-md-8">
-                                    <h5 class="mb-1">
-                                        <?php
-                                        $icon = [
-                                            'google_drive' => 'bi-google',
-                                            'dropbox' => 'bi-dropbox',
-                                            'onedrive' => 'bi-microsoft'
-                                        ][$config['provider']] ?? 'bi-cloud';
-                                        ?>
-                                        <i class="bi <?php echo $icon; ?>"></i>
-                                        <?php echo htmlspecialchars(ucwords(str_replace('_', ' ', $config['provider']))); ?>
-                                    </h5>
-                                    <p class="text-muted mb-2">
-                                        <small>
-                                            <i class="bi bi-person"></i> <?php echo htmlspecialchars($config['first_name'] . ' ' . $config['last_name']); ?> •
-                                            <i class="bi bi-calendar"></i> <?php echo date('M j, Y H:i', strtotime($config['created_at'])); ?>
-                                        </small>
-                                    </p>
-                                    <div>
-                                        <span class="status-badge <?php echo $config['is_active'] ? 'status-active' : 'status-inactive'; ?>">
-                                            <i class="bi bi-<?php echo $config['is_active'] ? 'check-circle' : 'x-circle'; ?>"></i>
-                                            <?php echo $config['is_active'] ? 'Active' : 'Inactive'; ?>
-                                        </span>
-                                        <?php if (!empty($config['bucket_name'])): ?>
-                                            <span class="badge bg-info ms-2">
-                                                <i class="bi bi-folder"></i> <?php echo htmlspecialchars($config['bucket_name']); ?>
-                                            </span>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                                <div class="col-md-4 text-md-end">
-                                    <button class="btn btn-sm btn-primary" 
-                                            onclick="editConfig('<?php echo $config['provider']; ?>')">
-                                        <i class="bi bi-pencil"></i> Edit
-                                    </button>
-                                    <button class="btn btn-sm btn-danger" 
-                                            onclick="deleteConfig('<?php echo $config['provider']; ?>')">
-                                        <i class="bi bi-trash"></i> Delete
+            <!-- Advanced Configuration Section (Collapsed by default) -->
+            <div class="collapse" id="advancedConfigSection">
+                <div class="config-card">
+                    <h4 class="mb-4 text-warning"><i class="bi bi-shield-lock"></i> Developer / Advanced Settings</h4>
+                    <p class="small text-muted mb-4">Modify raw API credentials and technical endpoints. Only change these if you know what you are doing.</p>
+                    
+                    <form method="POST" action="cloud_config.php" id="configForm">
+                        <input type="hidden" name="provider" id="provider" value="">
+                        <input type="hidden" name="update_config" value="1">
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Configuration Name</label>
+                                <input type="text" class="form-control" id="config_name" name="config_name" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Backup Folder / Email Identifier</label>
+                                <input type="text" class="form-control" id="folder_path" name="folder_path">
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">API Client ID (Public Key)</label>
+                                <input type="text" class="form-control font-monospace" id="api_key" name="api_key">
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">API Client Secret (Private Key)</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control font-monospace" id="api_secret" name="api_secret">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('api_secret')">
+                                        <i class="bi bi-eye"></i>
                                     </button>
                                 </div>
                             </div>
                         </div>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
-            
-            <!-- Configuration Form -->
-            <div class="config-card">
-                <h4 class="mb-4"><i class="bi bi-plus-circle"></i> Add/Edit Configuration</h4>
-                
-                <form method="POST" action="cloud_config.php" id="configForm">
-                    <input type="hidden" name="provider" id="provider" value="">
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="config_name" class="form-label">Configuration Name</label>
-                                <input type="text" class="form-control" id="config_name" name="config_name" 
-                                       placeholder="e.g., My Google Drive" required>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Access Token</label>
+                                <textarea class="form-control font-monospace small" id="access_token" name="access_token" rows="2"></textarea>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Refresh Token</label>
+                                <input type="text" class="form-control font-monospace small" id="refresh_token" name="refresh_token">
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="folder_path" class="form-label">Folder Path</label>
-                                <input type="text" class="form-control" id="folder_path" name="folder_path" 
-                                       placeholder="e.g., /PIMS_Backups">
-                                <div class="form-text">Folder path in cloud storage (optional)</div>
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" checked>
+                                <label class="form-check-label">Is Active</label>
+                            </div>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-secondary" onclick="clearForm()">Reset</button>
+                                <button type="submit" class="btn btn-warning px-4">Update Technical Specs</button>
                             </div>
                         </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="api_key" class="form-label">API Key / Client ID</label>
-                                <input type="text" class="form-control" id="api_key" name="api_key" 
-                                       placeholder="Enter API key or client ID">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="api_secret" class="form-label">API Secret / Client Secret</label>
-                                <input type="password" class="form-control" id="api_secret" name="api_secret" 
-                                       placeholder="Enter API secret or client secret">
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="access_token" class="form-label">Access Token</label>
-                                <input type="text" class="form-control" id="access_token" name="access_token" 
-                                       placeholder="Enter access token (if available)">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="refresh_token" class="form-label">Refresh Token</label>
-                                <input type="text" class="form-control" id="refresh_token" name="refresh_token" 
-                                       placeholder="Enter refresh token (if available)">
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="bucket_name" class="form-label">Bucket/Container Name</label>
-                                <input type="text" class="form-control" id="bucket_name" name="bucket_name" 
-                                       placeholder="Enter bucket or container name">
-                                <div class="form-text">For services that use buckets/containers</div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <div class="form-check mt-4">
-                                    <input class="form-check-input" type="checkbox" id="is_active" name="is_active" checked>
-                                    <label class="form-check-label" for="is_active">
-                                        <i class="bi bi-check-circle"></i> Enable this configuration
-                                    </label>
+                    </form>
+                </div>
+
+                <!-- Technical Setup Guides -->
+                <div class="config-card">
+                    <h5 class="mb-3"><i class="bi bi-book"></i> Reference: Manual API Setup</h5>
+                    <div class="accordion accordion-flush" id="setupGuide">
+                        <div class="accordion-item bg-transparent">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#googleDriveSetup">
+                                    Google Drive API Details
+                                </button>
+                            </h2>
+                            <div id="googleDriveSetup" class="accordion-collapse collapse" data-bs-parent="#setupGuide">
+                                <div class="accordion-body small">
+                                    Redirect URI: <code><?php echo "http://{$_SERVER['HTTP_HOST']}/PIMS/SYSTEM_ADMIN/cloud_callback.php"; ?></code>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="alert alert-info" role="alert">
-                        <i class="bi bi-shield-check"></i>
-                        <strong>Security Note:</strong> All credentials are encrypted and stored securely. Never share your API credentials with others.
-                    </div>
-                    
-                    <div class="text-end">
-                        <button type="button" class="btn btn-secondary" onclick="clearForm()">
-                            <i class="bi bi-x-circle"></i> Clear
-                        </button>
-                        <button type="submit" name="update_config" class="btn btn-primary">
-                            <i class="bi bi-save"></i> Save Configuration
-                        </button>
-                    </div>
-                </form>
+                </div>
             </div>
         </div>
     </div>
@@ -530,40 +536,21 @@ try {
     <?php require_once 'includes/logout-modal.php'; ?>
     <?php require_once 'includes/change-password-modal.php'; ?>
     
-    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- jQuery -->
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    
     <script>
-        // Sidebar functionality
-        const sidebarToggle = document.getElementById('sidebarToggle');
-        const sidebar = document.getElementById('sidebar');
-        const sidebarOverlay = document.getElementById('sidebarOverlay');
-        const mainWrapper = document.getElementById('mainWrapper');
-        const navbar = document.querySelector('.navbar');
-
-        if (sidebarToggle && sidebar && sidebarOverlay) {
-            sidebarToggle.addEventListener('click', function() {
-                sidebar.classList.toggle('active');
-                sidebarOverlay.classList.toggle('active');
-                mainWrapper.classList.toggle('sidebar-active');
-                if (navbar) navbar.classList.toggle('sidebar-active');
-                sidebarToggle.classList.toggle('sidebar-active');
-            });
-
-            sidebarOverlay.addEventListener('click', function() {
-                sidebar.classList.remove('active');
-                sidebarOverlay.classList.remove('active');
-                mainWrapper.classList.remove('sidebar-active');
-                if (navbar) navbar.classList.remove('sidebar-active');
-                sidebarToggle.classList.remove('sidebar-active');
-            });
+        function togglePassword(id) {
+            const input = document.getElementById(id);
+            const icon = event.currentTarget.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('bi-eye', 'bi-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('bi-eye-slash', 'bi-eye');
+            }
         }
         
-        // Configuration management
         function editConfig(provider) {
-            // Load existing configuration data
             const configs = <?php echo json_encode($configs); ?>;
             const config = configs.find(c => c.provider === provider);
             
@@ -574,18 +561,16 @@ try {
                 document.getElementById('api_secret').value = config.api_secret || '';
                 document.getElementById('access_token').value = config.access_token || '';
                 document.getElementById('refresh_token').value = config.refresh_token || '';
-                document.getElementById('bucket_name').value = config.bucket_name || '';
                 document.getElementById('folder_path').value = config.folder_path || '';
-                document.getElementById('is_active').checked = config.is_active;
+                document.getElementById('is_active').checked = parseInt(config.is_active) === 1;
                 
-                // Scroll to form
+                const collapse = new bootstrap.Collapse(document.getElementById('advancedConfigSection'), { show: true });
                 document.getElementById('configForm').scrollIntoView({ behavior: 'smooth' });
             }
         }
         
         function deleteConfig(provider) {
-            if (confirm('Are you sure you want to delete this configuration?')) {
-                // Implement delete functionality
+            if (confirm('Delete technical configuration for ' + provider + '?')) {
                 window.location.href = `cloud_config.php?delete=${provider}`;
             }
         }
@@ -594,40 +579,6 @@ try {
             document.getElementById('configForm').reset();
             document.getElementById('provider').value = '';
         }
-        
-        // Quick setup buttons
-        document.addEventListener('DOMContentLoaded', function() {
-            // Add quick setup buttons for each provider
-            const providers = ['google_drive', 'dropbox', 'onedrive'];
-            const providerNames = {
-                'google_drive': 'Google Drive',
-                'dropbox': 'Dropbox',
-                'onedrive': 'OneDrive'
-            };
-            
-            // Check if there's a success message and redirect to backup page after 3 seconds
-            const successAlert = document.querySelector('.alert-success');
-            if (successAlert && successAlert.textContent.includes('Successfully connected')) {
-                setTimeout(function() {
-                    window.location.href = 'backup.php';
-                }, 3000);
-            }
-        });
-        
-        // Add quick setup buttons for each provider
-        providers.forEach(provider => {
-            const button = document.createElement('button');
-            button.type = 'button';
-            button.className = 'btn btn-outline-primary btn-sm me-2 mb-2';
-            button.innerHTML = `<i class="bi bi-plus"></i> Add ${providerNames[provider]}`;
-            button.onclick = function() {
-                document.getElementById('provider').value = provider;
-                document.getElementById('config_name').value = `${providerNames[provider]} Backup`;
-                document.getElementById('config_name').focus();
-            };
-            
-            document.querySelector('.config-card h4').parentNode.appendChild(button);
-        });
     </script>
 <?php require_once 'includes/footer.php'; ?>
 </body>

@@ -24,6 +24,22 @@ class CloudStorageAPI {
     }
     
     /**
+     * Get authorization URL for OAuth flow
+     */
+    public function getAuthorizationUrl() {
+        switch ($this->provider) {
+            case 'google_drive':
+                return $this->getGoogleDriveOAuthToken(null, null)['auth_url'];
+            case 'dropbox':
+                return $this->getDropboxOAuthToken(null, null)['auth_url'];
+            case 'onedrive':
+                return $this->getOneDriveOAuthToken(null, null)['auth_url'];
+            default:
+                throw new Exception("Unsupported provider for OAuth: {$this->provider}");
+        }
+    }
+    
+    /**
      * Upload file to cloud storage
      */
     public function uploadFile($localFilePath, $remoteFileName = null) {
