@@ -420,16 +420,14 @@ $page_title = 'System Logs';
                             <i class="bi bi-clock-history"></i> System Logs
                         </h1>
                         <p class="text-muted mb-0">Monitor system activities and audit trail</p>
+                        <p class="text-success small mb-0">
+                            <i class="bi bi-clock"></i> Automated monthly clearing: Logs older than 30 days are automatically removed on the 1st of each month
+                        </p>
                     </div>
                     <div class="col-md-4 text-md-end">
-                        <div class="btn-group" role="group">
-                            <button class="btn btn-outline-danger btn-sm" onclick="clearLogs()">
-                                <i class="bi bi-trash"></i> Clear Logs
-                            </button>
-                            <button class="btn btn-outline-primary btn-sm" onclick="exportLogs()">
-                                <i class="bi bi-download"></i> Export
-                            </button>
-                        </div>
+                        <button class="btn btn-outline-danger btn-sm" onclick="clearLogs()">
+                            <i class="bi bi-trash"></i> Clear Logs
+                        </button>
                     </div>
                 </div>
             </div>
@@ -538,6 +536,73 @@ $page_title = 'System Logs';
                                         <p class="text-muted">No modules found</p>
                                     <?php endif; ?>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Automated Cleanup Info -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm rounded-3">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0 text-primary">
+                                <i class="bi bi-gear"></i> Automated Log Management
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="text-info mb-3">
+                                        <i class="bi bi-clock-history"></i> Monthly Cleanup Schedule
+                                    </h6>
+                                    <ul class="list-unstyled">
+                                        <li class="mb-2">
+                                            <i class="bi bi-check-circle text-success"></i>
+                                            <strong>Frequency:</strong> Monthly (1st day of each month)
+                                        </li>
+                                        <li class="mb-2">
+                                            <i class="bi bi-check-circle text-success"></i>
+                                            <strong>Time:</strong> 12:00 AM (midnight)
+                                        </li>
+                                        <li class="mb-2">
+                                            <i class="bi bi-check-circle text-success"></i>
+                                            <strong>Retention:</strong> Last 30 days of logs
+                                        </li>
+                                        <li class="mb-2">
+                                            <i class="bi bi-check-circle text-success"></i>
+                                            <strong>Action:</strong> Removes logs older than 30 days
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="text-info mb-3">
+                                        <i class="bi bi-shield-check"></i> Security & Audit
+                                    </h6>
+                                    <ul class="list-unstyled">
+                                        <li class="mb-2">
+                                            <i class="bi bi-shield text-primary"></i>
+                                            <strong>CLI Only:</strong> Script runs via command line only
+                                        </li>
+                                        <li class="mb-2">
+                                            <i class="bi bi-shield text-primary"></i>
+                                            <strong>Audit Trail:</strong> All cleanup actions are logged
+                                        </li>
+                                        <li class="mb-2">
+                                            <i class="bi bi-shield text-primary"></i>
+                                            <strong>Transaction Safe:</strong> Database integrity maintained
+                                        </li>
+                                        <li class="mb-2">
+                                            <i class="bi bi-shield text-primary"></i>
+                                            <strong>Error Handling:</strong> Comprehensive error logging
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="alert alert-info mt-3 mb-0">
+                                <i class="bi bi-info-circle"></i>
+                                <strong>Note:</strong> The cron job script is located at <code>cron_clear_logs.php</code> with setup instructions in <code>cron_setup.txt</code>
                             </div>
                         </div>
                     </div>
@@ -698,68 +763,6 @@ $page_title = 'System Logs';
         </div>
     </div>
     
-    <!-- Export Logs Modal -->
-    <div class="modal fade" id="exportLogsModal" tabindex="-1" aria-labelledby="exportLogsModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header bg-success text-white">
-                    <h5 class="modal-title" id="exportLogsModalLabel">
-                        <i class="bi bi-download"></i> Export System Logs
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p>Choose your export format and options:</p>
-                    <div class="mb-3">
-                        <label for="exportFormat" class="form-label">Export Format</label>
-                        <select class="form-select" id="exportFormat">
-                            <option value="csv">CSV (Comma Separated Values)</option>
-                            <option value="excel">Excel (XLSX)</option>
-                            <option value="json">JSON</option>
-                            <option value="pdf">PDF</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="exportDateRange" class="form-label">Date Range</label>
-                        <select class="form-select" id="exportDateRange">
-                            <option value="all">All Logs</option>
-                            <option value="today">Today</option>
-                            <option value="week">Last 7 Days</option>
-                            <option value="month">Last 30 Days</option>
-                            <option value="custom">Custom Range</option>
-                        </select>
-                    </div>
-                    <div id="customDateRange" class="mb-3" style="display: none;">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <label for="exportDateFrom" class="form-label">From Date</label>
-                                <input type="date" class="form-control" id="exportDateFrom">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="exportDateTo" class="form-label">To Date</label>
-                                <input type="date" class="form-control" id="exportDateTo">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="includeUserAgent" checked>
-                            <label class="form-check-label" for="includeUserAgent">
-                                Include User Agent Information
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-success" onclick="performExport()">
-                        <i class="bi bi-download"></i> Export Logs
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-    
     <!-- Clear Logs Modal -->
     <div class="modal fade" id="clearLogsModal" tabindex="-1" aria-labelledby="clearLogsModalLabel" aria-hidden="true">
         <div class="modal-dialog">
@@ -887,61 +890,11 @@ $page_title = 'System Logs';
                      "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>"
             });
             
-            // Export date range toggle
-            $('#exportDateRange').change(function() {
-                if ($(this).val() === 'custom') {
-                    $('#customDateRange').show();
-                } else {
-                    $('#customDateRange').hide();
-                }
-            });
-            
             // Clear logs confirmation toggle
             $('#confirmClear').change(function() {
                 $('#confirmClearBtn').prop('disabled', !$(this).is(':checked'));
             });
         });
-        
-        // Export logs
-        function exportLogs() {
-            $('#exportLogsModal').modal('show');
-        }
-        
-        function performExport() {
-            const format = $('#exportFormat').val();
-            const dateRange = $('#exportDateRange').val();
-            const includeUserAgent = $('#includeUserAgent').is(':checked');
-            const dateFrom = $('#exportDateFrom').val();
-            const dateTo = $('#exportDateTo').val();
-            
-            // Show loading state
-            const exportBtn = event.target;
-            const originalText = exportBtn.innerHTML;
-            exportBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Exporting...';
-            exportBtn.disabled = true;
-            
-            // Create export parameters
-            const params = new URLSearchParams({
-                format: format,
-                date_range: dateRange,
-                include_user_agent: includeUserAgent ? '1' : '0'
-            });
-            
-            if (dateRange === 'custom' && dateFrom && dateTo) {
-                params.append('date_from', dateFrom);
-                params.append('date_to', dateTo);
-            }
-            
-            // Download the file
-            window.location.href = 'ajax/export_logs.php?' + params.toString();
-            
-            // Reset button after delay
-            setTimeout(() => {
-                exportBtn.innerHTML = originalText;
-                exportBtn.disabled = false;
-                $('#exportLogsModal').modal('hide');
-            }, 2000);
-        }
         
         // Clear logs
         function clearLogs() {

@@ -1,0 +1,56 @@
+# Cron Job Setup for Monthly Log Clearing
+# 
+# This file contains instructions for setting up the monthly log clearing cron job
+
+## Cron Job Configuration
+
+### Linux/Mac Systems
+Add the following line to your crontab by running: crontab -e
+
+```
+# Run monthly log clearing on the first day of each month at midnight
+0 0 1 * * /usr/bin/php /path/to/your/PIMS/SYSTEM_ADMIN/cron_clear_logs.php >> /path/to/your/PIMS/logs/cron_log_clearing.log 2>&1
+```
+
+### Windows Systems
+Use Windows Task Scheduler to create a scheduled task:
+
+1. Open Task Scheduler
+2. Create Basic Task
+3. Name: "PIMS Monthly Log Clearing"
+4. Trigger: Monthly - Day 1 of each month
+5. Start time: 12:00:00 AM
+6. Action: Start a program
+   - Program/script: C:\xampp\php\php.exe
+   - Add arguments: C:\xampp\htdocs\PIMS\SYSTEM_ADMIN\cron_clear_logs.php
+   - Start in: C:\xampp\htdocs\PIMS\SYSTEM_ADMIN\
+
+## Cron Job Details
+
+- **Frequency**: Monthly (1st day of each month)
+- **Time**: Midnight (00:00)
+- **Action**: Clears logs older than 30 days
+- **Retention**: Keeps last 30 days of logs
+- **Logging**: All actions are logged to system_logs table
+
+## Security Notes
+
+- The script can only be executed from command line (CLI)
+- Web access is blocked for security
+- All operations are logged for audit trail
+- Database transactions ensure data integrity
+
+## Manual Testing
+
+To test the cron job manually, run:
+```
+php C:\xampp\htdocs\PIMS\SYSTEM_ADMIN\cron_clear_logs.php
+```
+
+## Log Files
+
+The cron job will:
+1. Delete logs older than 30 days
+2. Log the cleanup action to system_logs table
+3. Output execution details to console/log file
+4. Maintain audit trail of all cleanup operations
