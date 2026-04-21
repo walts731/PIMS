@@ -123,6 +123,18 @@ $categories_result = $conn->query("SELECT category_code, category_name FROM asse
 $subcategories_result = $conn->query("SELECT sc.sub_category_code, sc.sub_category_name, ac.category_code FROM asset_sub_categories sc JOIN asset_categories ac ON sc.asset_categories_id = ac.id WHERE sc.status = 'active' ORDER BY ac.category_code, sc.sub_category_code");
 $offices_result = $conn->query("SELECT office_code, office_name FROM offices WHERE status = 'active' ORDER BY office_code");
 
+// Get threshold value from database
+$unitCostThreshold = 50000; // Default fallback value
+try {
+    $result = $conn->query("SELECT threshold_value FROM thresholds WHERE threshold_type = 'unit_cost_max' LIMIT 1");
+    if ($result && $row = $result->fetch_assoc()) {
+        $unitCostThreshold = (float)$row['threshold_value'];
+    }
+} catch (Exception $e) {
+    error_log("Error fetching threshold: " . $e->getMessage());
+    // Use default value if database fails
+}
+
 // Get next series number for auto-increment
 $next_series = '01';
 $result = $conn->query("SELECT MAX(CAST(SUBSTRING(property_no, -4, 2) AS UNSIGNED)) as max_series FROM asset_items WHERE property_no LIKE CONCAT(YEAR(CURDATE()), '-%')");
@@ -569,7 +581,7 @@ if ($result && $row = $result->fetch_assoc()) {
                                                         <?php endforeach; ?>
                                                     </select>
                                                 </td>
-                                                <td><input type="number" step="0.01" class="form-control form-control-sm cost-field" name="unit_cost[]" onchange="calculateTotal(this)" max="50000" min="0.01"></td>
+                                                <td><input type="number" step="0.01" class="form-control form-control-sm cost-field" name="unit_cost[]" onchange="calculateTotal(this)" max="<?php echo $unitCostThreshold; ?>" min="0.01"></td>
                                                 <td><input type="number" step="0.01" class="form-control form-control-sm cost-field" name="total_cost[]" readonly></td>
                                                 <td><input type="text" class="form-control form-control-sm description-field" name="description[]"></td>
                                                 <td>
@@ -773,6 +785,9 @@ if ($result && $row = $result->fetch_assoc()) {
         // Property Number Generator Functions
         let currentPropertyField = null;
         let globalSeriesCounter = 1; // Global counter for all property numbers generated
+        
+        // Threshold configuration from database
+        const unitCostThreshold = <?php echo $unitCostThreshold; ?>;
         
         function showPropertyNumberGenerator(button) {
             currentPropertyField = button.closest('td').querySelector('input[name="item_no[]"], textarea[name="item_no[]"]');
@@ -1054,7 +1069,7 @@ if ($result && $row = $result->fetch_assoc()) {
             const cells = [
                 '<input type="number" class="form-control form-control-sm quantity-field" name="quantity[]" onchange="calculateTotal(this)">',
                 '<select class="form-select form-select-sm unit-field" name="unit[]">' + unitOptions + '</select>',
-                '<input type="number" step="0.01" class="form-control form-control-sm cost-field" name="unit_cost[]" onchange="calculateTotal(this)" max="50000" min="0.01">',
+                '<input type="number" step="0.01" class="form-control form-control-sm cost-field" name="unit_cost[]" onchange="calculateTotal(this)" max="<?php echo $unitCostThreshold; ?>" min="0.01">',
                 '<input type="number" step="0.01" class="form-control form-control-sm cost-field" name="total_cost[]" readonly>',
                 '<input type="text" class="form-control form-control-sm description-field" name="description[]">',
                 '<div class="property-number-field">' +
@@ -1122,6 +1137,18 @@ if ($result && $row = $result->fetch_assoc()) {
             const quantity = row.querySelector('input[name="quantity[]"]').value || 0;
             const unitCost = row.querySelector('input[name="unit_cost[]"]').value || 0;
             const totalCost = (parseFloat(quantity) * parseFloat(unitCost)).toFixed(2);
+            
+            // Validate unit cost should be less than threshold
+            if (parseFloat(unitCost) >= unitCostThreshold) {
+                const modal = new bootstrap.Modal(document.getElementById('thresholdModal'));
+                modal.show();
+                
+                row.querySelector('input[name="unit_cost[]"]').value = '';
+                row.querySelector('input[name="total_cost[]"]').value = '';
+                row.querySelector('input[name="unit_cost[]"]').focus();
+                updateGrandTotal();
+                return;
+            }
             
             // Auto-set unit based on quantity with pluralization
             const unitSelect = row.querySelector('select[name="unit[]"]');
@@ -1202,18 +1229,6 @@ if ($result && $row = $result->fetch_assoc()) {
                         unitSelect.value = targetUnit;
                     }
                 }
-            }
-            
-            // Validate unit cost should be less than ₱50,000
-            if (parseFloat(unitCost) >= 50000) {
-                const modal = new bootstrap.Modal(document.getElementById('thresholdModal'));
-                modal.show();
-                
-                row.querySelector('input[name="unit_cost[]"]').value = '';
-                row.querySelector('input[name="total_cost[]"]').value = '';
-                row.querySelector('input[name="unit_cost[]"]').focus();
-                updateGrandTotal();
-                return;
             }
             
             row.querySelector('input[name="total_cost[]"]').value = totalCost;

@@ -118,6 +118,18 @@ $categories_result = $conn->query("SELECT category_code, category_name FROM asse
 $subcategories_result = $conn->query("SELECT sc.sub_category_code, sc.sub_category_name, ac.category_code FROM asset_sub_categories sc JOIN asset_categories ac ON sc.asset_categories_id = ac.id WHERE sc.status = 'active' ORDER BY ac.category_code, sc.sub_category_code");
 $offices_result = $conn->query("SELECT office_code, office_name FROM offices WHERE status = 'active' ORDER BY office_code");
 
+// Get threshold value from database
+$unitCostThreshold = 50000; // Default fallback value
+try {
+    $result = $conn->query("SELECT threshold_value FROM thresholds WHERE threshold_type = 'unit_cost_max' LIMIT 1");
+    if ($result && $row = $result->fetch_assoc()) {
+        $unitCostThreshold = (float)$row['threshold_value'];
+    }
+} catch (Exception $e) {
+    error_log("Error fetching threshold: " . $e->getMessage());
+    // Use default value if database fails
+}
+
 // Get next PAR series number
 $next_par_series = '0001';
 $result = $conn->query("SELECT MAX(CAST(SUBSTRING(par_no, -4, 4) AS UNSIGNED)) as max_series FROM par_forms WHERE par_no LIKE '%P-%' AND par_no REGEXP 'P-[0-9]{4}-[0-9]{2}-[0-9]{4}$'");
@@ -714,6 +726,9 @@ if ($result && $row = $result->fetch_assoc()) {
         const parConfig = null; // Disabled for manual input
         const propertyConfig = null; // Disabled for manual input
         
+        // Threshold configuration from database
+        const unitCostThreshold = <?php echo $unitCostThreshold; ?>;
+        
         function generatePropertyNumber() {
             // COMMENTED OUT FOR MANUAL INPUT
             // if (!propertyConfig) return '';
@@ -890,12 +905,12 @@ if ($result && $row = $result->fetch_assoc()) {
             }
         }
         
-        // Function to validate amount is above 50,000
+        // Function to validate amount is above threshold
         function validateAmount(input) {
             const value = parseFloat(input.value);
-            if (!isNaN(value) && value <= 50000) {
+            if (!isNaN(value) && value <= unitCostThreshold) {
                 // Show warning notification
-                showAmountNotification(input, 'Amount must be above ₱50,000. Current amount: ₱' + value.toFixed(2));
+                showAmountNotification(input, 'Amount must be above ' + unitCostThreshold.toFixed(2) + '. Current amount: ' + value.toFixed(2));
                 
                 // Highlight the field
                 input.style.borderColor = '#dc3545';
