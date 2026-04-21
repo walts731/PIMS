@@ -2153,6 +2153,119 @@ $page_title = 'Requests Management';
         </div>
     </div>
     
+    <!-- Quick Approve Confirmation Modal -->
+    <div class="modal fade" id="quickApproveModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title"><i class="bi bi-check-circle"></i> Confirm Approval</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to approve this request?</p>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> This action will approve the request and the asset will be marked as pending pickup.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="confirmQuickApprove()">
+                        <i class="bi bi-check-circle"></i> Approve Request
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Deny Confirmation Modal -->
+    <div class="modal fade" id="quickDenyModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title"><i class="bi bi-x-circle"></i> Confirm Denial</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="quickDenyForm" method="POST" action="">
+                    <input type="hidden" name="action" value="deny_request">
+                    <input type="hidden" name="request_id" id="quickDenyRequestId">
+                    <div class="modal-body">
+                        <p>Are you sure you want to deny this request?</p>
+                        <div class="mb-3">
+                            <label for="quickDenyReason" class="form-label">Reason for Denial <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="quickDenyReason" name="reason" rows="3" 
+                                    placeholder="Please provide a reason for denying this request..." required></textarea>
+                        </div>
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i> This action cannot be undone and the asset will be made available again.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </button>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-x-circle"></i> Deny Request
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Mark Borrowed Confirmation Modal -->
+    <div class="modal fade" id="quickMarkBorrowedModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-white">
+                    <h5 class="modal-title"><i class="bi bi-hand-index"></i> Confirm Mark as Borrowed</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to mark this asset as borrowed?</p>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> This action will update the asset status to "in use" and the request will be marked as borrowed.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </button>
+                    <button type="button" class="btn btn-warning" onclick="confirmQuickMarkBorrowed()">
+                        <i class="bi bi-hand-index"></i> Mark as Borrowed
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Cancel Request Confirmation Modal -->
+    <div class="modal fade" id="cancelRequestModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title"><i class="bi bi-x-circle"></i> Confirm Cancellation</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to cancel this request?</p>
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i> This action cannot be undone. The asset will be made available for other requests.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="confirmCancelRequest()">
+                        <i class="bi bi-x-circle"></i> Cancel Request
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
@@ -2302,15 +2415,24 @@ document.addEventListener('DOMContentLoaded', function() {
 // Quick-action helpers (create hidden form + submit)
 // ---------------------------------------------------------------------------
 
+// Global variable to store current request ID for quick actions
+let currentQuickApproveRequestId = null;
+let currentQuickMarkBorrowedRequestId = null;
+let currentCancelRequestId = null;
+
 function quickApprove(requestId) {
     console.log('quickApprove called with requestId:', requestId);
-    if (confirm('Are you sure you want to approve this request?')) {
-        showLoading('Approving request...');
+    currentQuickApproveRequestId = requestId;
+    new bootstrap.Modal(document.getElementById('quickApproveModal')).show();
+}
+
+function confirmQuickApprove() {
+    if (currentQuickApproveRequestId) {
         const form = document.createElement('form');
         form.method = 'POST';
         form.innerHTML = `
             <input type="hidden" name="action" value="approve_request">
-            <input type="hidden" name="request_id" value="${requestId}">
+            <input type="hidden" name="request_id" value="${currentQuickApproveRequestId}">
             <input type="hidden" name="notes" value="Approved via quick action">
         `;
         document.body.appendChild(form);
@@ -2320,30 +2442,24 @@ function quickApprove(requestId) {
 
 function quickDeny(requestId) {
     console.log('quickDeny called with requestId:', requestId);
-    const reason = prompt('Please enter the reason for denial:');
-    if (reason) {
-        showLoading('Denying request...');
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.innerHTML = `
-            <input type="hidden" name="action" value="deny_request">
-            <input type="hidden" name="request_id" value="${requestId}">
-            <input type="hidden" name="reason" value="${reason}">
-        `;
-        document.body.appendChild(form);
-        form.submit();
-    }
+    document.getElementById('quickDenyRequestId').value = requestId;
+    document.getElementById('quickDenyReason').value = '';
+    new bootstrap.Modal(document.getElementById('quickDenyModal')).show();
 }
 
 function quickMarkBorrowed(requestId) {
     console.log('quickMarkBorrowed called with requestId:', requestId);
-    if (confirm('Mark this asset as borrowed?')) {
-        showLoading('Marking as borrowed...');
+    currentQuickMarkBorrowedRequestId = requestId;
+    new bootstrap.Modal(document.getElementById('quickMarkBorrowedModal')).show();
+}
+
+function confirmQuickMarkBorrowed() {
+    if (currentQuickMarkBorrowedRequestId) {
         const form = document.createElement('form');
         form.method = 'POST';
         form.innerHTML = `
             <input type="hidden" name="action" value="mark_borrowed">
-            <input type="hidden" name="request_id" value="${requestId}">
+            <input type="hidden" name="request_id" value="${currentQuickMarkBorrowedRequestId}">
         `;
         document.body.appendChild(form);
         form.submit();
@@ -2364,12 +2480,17 @@ function markBorrowed(requestId) {
 
 function cancelRequest(requestId) {
     console.log('cancelRequest called with requestId:', requestId);
-    if (confirm('Are you sure you want to cancel this request? This action cannot be undone.')) {
+    currentCancelRequestId = requestId;
+    new bootstrap.Modal(document.getElementById('cancelRequestModal')).show();
+}
+
+function confirmCancelRequest() {
+    if (currentCancelRequestId) {
         const form = document.createElement('form');
         form.method = 'POST';
         form.innerHTML = `
             <input type="hidden" name="action" value="cancel_request">
-            <input type="hidden" name="request_id" value="${requestId}">
+            <input type="hidden" name="request_id" value="${currentCancelRequestId}">
         `;
         document.body.appendChild(form);
         form.submit();
