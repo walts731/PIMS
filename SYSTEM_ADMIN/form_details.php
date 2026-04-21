@@ -292,9 +292,20 @@ if ($form['form_code'] === 'PAR') {
                         </p>
                     </div>
                     <div class="col-md-4 text-md-end">
-                        <a href="forms.php" class="btn btn-outline-secondary">
-                            <i class="bi bi-arrow-left"></i> Back to Forms
-                        </a>
+                        <div class="dropdown">
+                            <button class="btn btn-primary dropdown-toggle" type="button" id="actionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-gear"></i> Actions
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="actionsDropdown">
+                                <li><a class="dropdown-item" href="forms.php">
+                                    <i class="bi bi-arrow-left"></i> Back to Forms
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                                                <li><a class="dropdown-item" href="#" onclick="editForm(<?php echo $form['id']; ?>)">
+                                    <i class="bi bi-pencil"></i> Edit Form
+                                </a></li>
+                                                                                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -449,6 +460,31 @@ if ($form['form_code'] === 'PAR') {
                 zoomBtn.innerHTML = '<i class="bi bi-zoom-in"></i> Zoom In';
             } else {
                 zoomBtn.innerHTML = '<i class="bi bi-zoom-out"></i> Zoom Out';
+            }
+        }
+        
+        // Edit form
+        function editForm(formId) {
+            window.location.href = 'forms.php?edit=' + formId;
+        }
+        
+        // Duplicate form
+        function duplicateForm(formId) {
+            if (confirm('Are you sure you want to duplicate this form?')) {
+                // This would typically make an AJAX call to duplicate the form
+                // For now, redirect with a parameter
+                window.location.href = 'forms.php?duplicate=' + formId;
+            }
+        }
+        
+        // Delete form
+        function deleteForm(formId) {
+            if (confirm('Are you sure you want to delete this form? This action cannot be undone.')) {
+                if (confirm('WARNING: This will permanently delete the form and all associated data. Continue?')) {
+                    // This would typically make an AJAX call to delete the form
+                    // For now, redirect with a parameter
+                    window.location.href = 'forms.php?delete=' + formId;
+                }
             }
         }
     </script>

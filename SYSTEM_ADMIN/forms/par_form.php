@@ -98,142 +98,84 @@
                                     <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
                                     <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
                                     <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                    <td style="padding: 5px; border: 1px solid #000;">&nbsp;</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 5px; border: 1px solid #000; text-align: right;" colspan="4"><strong>TOTAL</strong></td>
-                                    <td style="padding: 5px; border: 1px solid #000; text-align: right;">&nbsp;</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <!-- Remarks -->
-                    <div style="margin-bottom: 20px;">
-                        <table style="width: 100%; border-collapse: collapse;">
                             <tr>
-                                <td style="padding: 5px; border: 1px solid #000; vertical-align: top;"><strong>Remarks:</strong></td>
-                                <td style="padding: 5px; border: 1px solid #000; height: 60px;">&nbsp;</td>
+                                <th width="40" style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; text-align: center; font-weight: bold;">Qty.</th>
+                                <th width="50" style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; text-align: center; font-weight: bold;">Unit</th>
+                                <th style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; text-align: center; font-weight: bold;">Description</th>
+                                <th width="140" style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; text-align: center; font-weight: bold;">Property Number</th>
+                                <th width="100" style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; text-align: center; font-weight: bold;">Date Acquired</th>
+                                <th width="100" style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; text-align: center; font-weight: bold;">Amount</th>
                             </tr>
-                        </table>
-                    </div>
-                    
+                        </thead>
+                        <tbody>
+                            <?php for($i=0; $i<24; $i++): ?>
+                                <tr>
+                                    <td style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; text-align: center;">&nbsp;</td>
+                                    <td style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; text-align: center;">&nbsp;</td>
+                                    <td style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; padding-left: 8px;">&nbsp;</td>
+                                    <td style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; text-align: center;">&nbsp;</td>
+                                    <td style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; text-align: center;">&nbsp;</td>
+                                    <td style="border: 1px solid #000; padding: 4px 6px; font-size: 10px; height: 22px; text-align: right;">&nbsp;</td>
+                                </tr>
+                            <?php endfor; ?>
+                            
+
+                            <tr style="font-weight: bold;">
+                                <td colspan="3" style="border: none;">&nbsp;</td>
+                                <td align="center">TOTAL</td>
+                                <td style="border-right: none;">&nbsp;</td>
+                                <td align="right">&nbsp;</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
                     <!-- Signature Section -->
-                    <div style="margin-bottom: 20px;">
-                        <table style="width: 100%; border-collapse: collapse;">
-                            <tr>
-                                <td style="width: 50%; padding: 5px; border: 1px solid #000; vertical-align: bottom;">
-                                    <div style="text-align: center;">
-                                        <p style="margin: 0; margin-bottom: 30px;"><strong>Received by:</strong></p>
-                                        <div style="border-bottom: 1px solid #000; margin-bottom: 5px;">&nbsp;</div>
-                                        <p style="margin: 0; margin-top: 5px;">Signature over Printed Name</p>
-                                    </div>
-                                </td>
-                                <td style="width: 50%; padding: 5px; border: 1px solid #000; vertical-align: bottom;">
-                                    <div style="text-align: center;">
-                                        <p style="margin: 0; margin-bottom: 30px;"><strong>Issued by:</strong></p>
-                                        <div style="border-bottom: 1px solid #000; margin-bottom: 5px;">&nbsp;</div>
-                                        <p style="margin: 0; margin-top: 5px;">Signature over Printed Name</p>
-                                    </div>
-                                </td>
-                            </tr>
-                        </table>
-                    </div>
-                    
-                    <!-- Footer Note -->
-                    <div style="margin-top: 30px; text-align: center; font-size: 10px; color: #666;">
-                        <p style="margin: 0;">This form is prescribed by the Commission on Audit (COA)</p>
-                        <p style="margin: 0;">Property Acknowledgement Receipt (PAR) - Government Property Management</p>
+                    <div style="display: flex;">
+                        <div style="flex: 1; border: 1px solid #000; padding: 8px 12px 15px; display: flex; flex-direction: column; min-height: 150px; border-left: none; border-bottom: none;">
+                            <div style="font-style: italic; font-weight: bold; font-size: 11px; margin-bottom: 25px;">Received by:</div>
+                            <div style="text-align: center; margin-top: auto;">
+                                <div style="font-weight: bold; text-transform: uppercase; font-size: 12px; margin-bottom: 2px;">&nbsp;</div>
+                                <div style="font-size: 9px; margin-bottom: 10px;">Signature over Printed Name</div>
+                                
+
+                                <div style="font-weight: bold; margin-top: 10px; text-transform: none;"><?php echo htmlspecialchars($form['first_name'] . ' ' . $form['last_name']); ?></div>
+                                <div style="width: 85%; margin: 0 auto 3px; border-bottom: 1px solid #000;"></div>
+                                <div style="font-size: 9px; margin-bottom: 10px;">Position / Office</div>
+                                
+
+                                <div style="width: 65%; margin: 10px auto 0; border-bottom: 1px solid #000; text-align: center; font-size: 10px; min-height: 15px;">
+                                    <?php echo date('m/d/Y'); ?>
+                                </div>
+                                <div style="font-size: 9px; margin-top: 2px;">Date</div>
+                            </div>
+                        </div>
+                        <div style="flex: 1; border: 1px solid #000; padding: 8px 12px 15px; display: flex; flex-direction: column; min-height: 150px; border-right: none; border-bottom: none;">
+                            <div style="font-style: italic; font-weight: bold; font-size: 11px; margin-bottom: 25px;">Issued by:</div>
+                            <div style="text-align: center; margin-top: auto;">
+                                <div style="font-weight: bold; text-transform: uppercase; font-size: 12px; margin-bottom: 2px;">&nbsp;</div>
+                                <div style="font-size: 9px; margin-bottom: 10px;">Signature over Printed Name</div>
+                                
+
+                                <div style="font-weight: bold; margin-top: 10px; text-transform: none;">&nbsp;</div>
+                                <div style="width: 85%; margin: 0 auto 3px; border-bottom: 1px solid #000;"></div>
+                                <div style="font-size: 9px; margin-bottom: 10px;">Position / Office</div>
+                                
+
+                                <div style="width: 65%; margin: 10px auto 0; border-bottom: 1px solid #000; text-align: center; font-size: 10px; min-height: 15px;">
+                                    &nbsp;
+                                </div>
+                                <div style="font-size: 9px; margin-top: 2px;">Date</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
                 <!-- Preview Controls -->
                 <div class="mt-3 text-center">
-                    <button class="btn btn-outline-primary btn-sm" onclick="window.print()">
-                        <i class="bi bi-printer"></i> Print Preview
-                    </button>
                     <button class="btn btn-outline-secondary btn-sm" onclick="zoomPreview()">
                         <i class="bi bi-zoom-in"></i> Zoom
                     </button>
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
-    
-    <!-- PAR Entries Tab -->
-    <div class="tab-pane fade" id="par-entries" role="tabpanel">
-        <div class="card border-0 shadow-lg rounded-4">
-            <div class="card-header bg-primary text-white rounded-top-4">
-                <h6 class="mb-0">
-                    <i class="bi bi-list"></i> PAR Entries
-                </h6>
-            </div>
-            <div class="card-body p-0">
-                <?php if (empty($form_data)): ?>
-                    <div class="text-center py-5">
-                        <i class="bi bi-file-earmark-text fs-1 text-muted"></i>
-                        <p class="text-muted mt-3">No PAR entries found</p>
-                    </div>
-                <?php else: ?>
-                    <div class="table-responsive">
-                        <table id="parTable" class="table table-hover mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>PAR No.</th>
-                                    <th>Entity Name</th>
-                                    <th>Received By</th>
-                                    <th>Office</th>
-                                    <th>Date Received</th>
-                                    <th>Items Count</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($form_data as $entry): ?>
-                                    <?php
-                                    // Get item count for this PAR
-                                    $item_count_result = $conn->query("SELECT COUNT(*) as count FROM par_items WHERE form_id = " . $entry['id']);
-                                    $item_count = $item_count_result->fetch_assoc()['count'];
-                                    ?>
-                                    <tr>
-                                        <td><strong><?php echo htmlspecialchars($entry['par_no']); ?></strong></td>
-                                        <td><?php echo htmlspecialchars($entry['entity_name']); ?></td>
-                                        <td><?php echo htmlspecialchars($entry['received_by_name']); ?></td>
-                                        <td><?php echo htmlspecialchars($entry['office_name'] ?? 'Not assigned'); ?></td>
-                                        <td><?php echo date('M j, Y', strtotime($entry['date_received_left'])); ?></td>
-                                        <td><span class="badge bg-info"><?php echo $item_count; ?> items</span></td>
-                                        <td>
-                                            <div class="form-actions">
-                                                <button class="btn btn-sm btn-outline-primary" onclick="viewPAR(<?php echo $entry['id']; ?>)">
-                                                    <i class="bi bi-eye"></i>
-                                                </button>
-                                                <button class="btn btn-sm btn-outline-success" onclick="manageItems(<?php echo $entry['id']; ?>)">
-                                                    <i class="bi bi-box"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                <?php endif; ?>
             </div>
         </div>
     </div>
