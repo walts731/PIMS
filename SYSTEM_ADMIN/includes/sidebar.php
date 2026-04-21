@@ -341,16 +341,16 @@ if (!empty($dark_mode_class)) {
         </div>
         
         <div class="sidebar-dropdown">
-            <button class="sidebar-dropdown-toggle <?php echo (in_array($current_page, ['forms.php', 'form_details.php', 'tags.php'])) ? 'active' : ''; ?>" 
+            <button class="sidebar-dropdown-toggle <?php echo (in_array($current_page, ['forms.php', 'form_details.php', 'tags.php', 'thresholds.php'])) ? 'active' : ''; ?>" 
                     type="button" data-bs-toggle="collapse" data-bs-target="#formsDropdown" 
-                    aria-expanded="<?php echo (in_array($current_page, ['forms.php', 'form_details.php', 'tags.php'])) ? 'true' : 'false'; ?>">
+                    aria-expanded="<?php echo (in_array($current_page, ['forms.php', 'form_details.php', 'tags.php', 'thresholds.php'])) ? 'true' : 'false'; ?>">
                 <div>
                     <i class="bi bi-file-earmark-text"></i>
                     Forms & Tags
                 </div>
                 <i class="bi bi-chevron-down"></i>
             </button>
-            <div class="collapse <?php echo (in_array($current_page, ['forms.php', 'form_details.php', 'tags.php'])) ? 'show' : ''; ?>" id="formsDropdown">
+            <div class="collapse <?php echo (in_array($current_page, ['forms.php', 'form_details.php', 'tags.php', 'thresholds.php'])) ? 'show' : ''; ?>" id="formsDropdown">
                 <ul class="sidebar-dropdown-menu">
                     <li>
                         <a href="forms.php" class="sidebar-dropdown-item <?php echo $current_page == 'forms.php' ? 'active' : ''; ?>">
@@ -363,6 +363,13 @@ if (!empty($dark_mode_class)) {
                         <a href="tags.php" class="sidebar-dropdown-item <?php echo $current_page == 'tags.php' ? 'active' : ''; ?>">
                             <i class="bi bi-tags"></i>
                             Tags Management
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="thresholds.php" class="sidebar-dropdown-item <?php echo $current_page == 'thresholds.php' ? 'active' : ''; ?>">
+                            <i class="bi bi-sliders"></i>
+                            Thresholds
                         </a>
                     </li>
                 </ul>
