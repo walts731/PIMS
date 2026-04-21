@@ -1178,20 +1178,32 @@ if ($office_id && $conn) {
         
         /* Modal z-index fixes */
         .modal {
-            z-index: 1055;
-        }
-        
-        .modal-backdrop {
             z-index: 1050;
         }
         
+        .modal-backdrop {
+            z-index: 1040;
+        }
+        
         .modal-dialog {
-            z-index: 1060;
+            z-index: 1051;
         }
         
         /* Prevent multiple backdrops */
         .modal-backdrop ~ .modal-backdrop {
             display: none !important;
+        }
+        
+        /* Hide backdrop for return modal specifically */
+        #returnModal + .modal-backdrop {
+            display: none !important;
+        }
+        
+        /* Completely remove modal-backdrop divs */
+        div.modal-backdrop.fade.show {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
         }
         
         /* Ensure modal is visible */
@@ -1201,15 +1213,15 @@ if ($office_id && $conn) {
         
         /* Fix modal positioning */
         #newRequestModal {
-            z-index: 1055;
+            z-index: 1050;
         }
         
         #newRequestModal .modal-dialog {
-            z-index: 1060;
+            z-index: 1051;
         }
         
         #newRequestModal .modal-content {
-            z-index: 1061;
+            z-index: 1052;
         }
         
         .bulk-actions-bar {
@@ -2147,12 +2159,6 @@ $page_title = 'Requests Management';
         </div>
     </div>
     
-        <!-- Request Details Modal -->
-                
-            </div>
-        </div>
-    </div>
-    
     <!-- Quick Approve Confirmation Modal -->
     <div class="modal fade" id="quickApproveModal" tabindex="-1">
         <div class="modal-dialog">
@@ -2376,13 +2382,32 @@ function denyRequest(requestId) {
 
 function returnAsset(requestId) {
     console.log('returnAsset called with requestId:', requestId);
+    
+    // Clean up any existing backdrops first
+    document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+        if (backdrop.parentNode) {
+            backdrop.parentNode.removeChild(backdrop);
+        }
+    });
+    
     document.getElementById('returnRequestId').value = requestId;
     
     // Reset photo preview
     document.getElementById('photo_preview').innerHTML = '';
     document.getElementById('return_photo').value = '';
     
-    new bootstrap.Modal(document.getElementById('returnModal')).show();
+    // Check if modal already exists
+    let modal = bootstrap.Modal.getInstance(document.getElementById('returnModal'));
+    if (!modal) {
+        modal = new bootstrap.Modal(document.getElementById('returnModal'));
+    }
+    
+    if (modal) {
+        modal.show();
+    } else {
+        console.error('Failed to create return modal instance');
+        alert('Error opening return form. Please refresh the page.');
+    }
 }
 
 // Photo preview functionality for return modal
