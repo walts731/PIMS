@@ -77,10 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     } elseif (empty($lastname)) {
         $message = "Last name is required.";
         $message_type = "danger";
-    } elseif (empty($email)) {
-        $message = "Email is required.";
-        $message_type = "danger";
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    } elseif (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $message = "Please enter a valid email address.";
         $message_type = "danger";
     } elseif ($office_id <= 0) {
@@ -181,10 +178,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     } elseif (empty($lastname)) {
         $message = "Last name is required.";
         $message_type = "danger";
-    } elseif (empty($email)) {
-        $message = "Email is required.";
-        $message_type = "danger";
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    } elseif (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $message = "Please enter a valid email address.";
         $message_type = "danger";
     } elseif (empty($employee_no)) {
@@ -396,6 +390,11 @@ foreach ($employees as $emp) {
                                 </button>
                             </li>
                             <li>
+                                <button class="dropdown-item" onclick="showImportModal()">
+                                    <i class="bi bi-upload"></i> Import
+                                </button>
+                            </li>
+                            <li>
                                 <button class="dropdown-item" onclick="exportEmployees()">
                                     <i class="bi bi-download"></i> Export
                                 </button>
@@ -568,8 +567,8 @@ foreach ($employees as $emp) {
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="addEmail" class="form-label">Email *</label>
-                                <input type="email" class="form-control" id="addEmail" name="email" required>
+                                <label for="addEmail" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="addEmail" name="email">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="addPhone" class="form-label">Phone</label>
@@ -698,8 +697,8 @@ foreach ($employees as $emp) {
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="editEmail" class="form-label">Email *</label>
-                                <input type="email" class="form-control" id="editEmail" name="email" required value="<?php echo htmlspecialchars($edit_employee['email'] ?? ''); ?>">
+                                <label for="editEmail" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="editEmail" name="email" value="<?php echo htmlspecialchars($edit_employee['email'] ?? ''); ?>">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="editPhone" class="form-label">Phone</label>
@@ -803,6 +802,64 @@ foreach ($employees as $emp) {
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                         <button type="submit" class="btn btn-primary">
                             <i class="bi bi-check-circle"></i> Update Employee
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Import Employees Modal -->
+    <div class="modal fade" id="importEmployeesModal" tabindex="-1" aria-labelledby="importEmployeesModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="importEmployeesModalLabel">
+                        <i class="bi bi-upload"></i> Import Employees
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="importEmployeesForm" method="POST" action="process_import_employees.php" enctype="multipart/form-data">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="importFile" class="form-label">Select Excel File *</label>
+                            <input type="file" class="form-control" id="importFile" name="import_file" accept=".xlsx,.xls" required>
+                            <small class="text-muted">Supported formats: .xlsx, .xls (Max 10MB)</small>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>Excel Format Requirements:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>Column 1: FULL NAME</li>
+                                <li>Column 2: POSITION/DESIGNATION</li>
+                                <li>Column 3: OFFICE/DEPARTMENT ASSIGNMENT</li>
+                                <li>Column 4: EMAIL ADDRESS (optional)</li>
+                                <li>Column 5: EMPLOYMENT STATUS</li>
+                                <li>Column 6: EMPLOYEE ID NUMBER</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="skipDuplicates" name="skip_duplicates" checked>
+                                <label class="form-check-label" for="skipDuplicates">
+                                    Skip duplicate employees (based on Employee ID)
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div id="importProgress" style="display: none;" class="mb-3">
+                            <div class="progress">
+                                <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <small class="text-muted mt-1 d-block">Processing employees...</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-upload"></i> Import Employees
                         </button>
                     </div>
                 </form>
@@ -1046,6 +1103,114 @@ foreach ($employees as $emp) {
             a.click();
             window.URL.revokeObjectURL(url);
         }
+        
+        // Import employees functions
+        function showImportModal() {
+            // Clear any previous messages
+            $('#importEmployeesForm .alert').remove();
+            
+            // Reset form
+            $('#importEmployeesForm')[0].reset();
+            
+            // Hide progress
+            $('#importProgress').hide();
+            
+            // Show modal
+            $('#importEmployeesModal').modal('show');
+        }
+        
+        // Handle import form submission
+        $('#importEmployeesForm').on('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const fileInput = document.getElementById('importFile');
+            
+            // Validate file selection
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert('Please select an Excel file to import.');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const fileSize = file.size;
+            const fileExt = file.name.split('.').pop().toLowerCase();
+            
+            // Validate file type
+            if (!['xlsx', 'xls'].includes(fileExt)) {
+                alert('Invalid file format. Please upload an Excel file (.xlsx or .xls).');
+                return;
+            }
+            
+            // Validate file size (10MB)
+            if (fileSize > 10 * 1024 * 1024) {
+                alert('File size too large. Maximum size is 10MB.');
+                return;
+            }
+            
+            // Show progress
+            $('#importProgress').show();
+            $('.progress-bar').css('width', '50%').attr('aria-valuenow', 50);
+            
+            // Submit form
+            $.ajax({
+                url: $(this).attr('action'),
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    // Complete progress
+                    $('.progress-bar').css('width', '100%').attr('aria-valuenow', 100);
+                    
+                    // Close modal after a short delay
+                    setTimeout(function() {
+                        $('#importEmployeesModal').modal('hide');
+                        // Reload page to show results
+                        window.location.reload();
+                    }, 1000);
+                },
+                error: function(xhr, status, error) {
+                    // Hide progress
+                    $('#importProgress').hide();
+                    
+                    // Show error message
+                    alert('Error importing employees: ' + (xhr.responseJSON?.message || error || 'Unknown error'));
+                }
+            });
+        });
+        
+        // Show import results if available
+        $(document).ready(function() {
+            <?php if (isset($_SESSION['import_results'])): ?>
+                const results = <?php echo json_encode($_SESSION['import_results']); ?>;
+                if (results && results.total > 0) {
+                    let message = `Import completed:\n`;
+                    message += `Total processed: ${results.total}\n`;
+                    message += `Successfully imported: ${results.imported}\n`;
+                    message += `Skipped: ${results.skipped}\n`;
+                    message += `Errors: ${results.errors}\n\n`;
+                    
+                    if (results.details && results.details.length > 0) {
+                        message += 'Details:\n';
+                        results.details.forEach(function(detail) {
+                            const status = detail.status.charAt(0).toUpperCase() + detail.status.slice(1);
+                            message += `Row ${detail.row}: ${status} - ${detail.message}`;
+                            if (detail.data) {
+                                message += ` (${detail.data})`;
+                            }
+                            message += '\n';
+                        });
+                    }
+                    
+                    // Show results in a modal or alert
+                    if (results.errors > 0) {
+                        alert(message);
+                    }
+                }
+                <?php unset($_SESSION['import_results']); ?>
+            <?php endif; ?>
+        });
     </script>
 </body>
 </html>

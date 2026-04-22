@@ -2337,6 +2337,227 @@ body.dark-mode .table-drop-indicator {
     animation: pulse 1s infinite;
 }
 
+/* DataTables Base Styling - Stretched and Full Width */
+.dataTables_wrapper {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+.dataTables_wrapper .dataTables_length,
+.dataTables_wrapper .dataTables_filter,
+.dataTables_wrapper .dataTables_info,
+.dataTables_wrapper .dataTables_processing {
+    margin: 0.5rem 0;
+}
+
+.dataTables_wrapper .dataTables_length {
+    float: left;
+}
+
+.dataTables_wrapper .dataTables_filter {
+    float: right;
+    text-align: right;
+}
+
+.dataTables_wrapper .dataTables_info {
+    float: left;
+    padding-top: 0.75rem;
+    font-size: 0.875rem;
+    color: var(--secondary-color);
+}
+
+.dataTables_wrapper .dataTables_paginate {
+    float: right;
+    text-align: right;
+    padding-top: 0.25rem;
+}
+
+/* DataTables Table Styling - Stretched Rows */
+.dataTables_wrapper .dataTable {
+    width: 100% !important;
+    margin: 0 !important;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.dataTables_wrapper .dataTable thead th {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    color: var(--dark-color);
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 2px solid #dee2e6;
+    text-align: left;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.dataTables_wrapper .dataTable tbody td {
+    padding: 0.875rem 1rem;
+    vertical-align: middle;
+    border-bottom: 1px solid #e9ecef;
+    font-size: 0.875rem;
+    line-height: 1.4;
+}
+
+.dataTables_wrapper .dataTable tbody tr {
+    transition: all 0.2s ease;
+}
+
+.dataTables_wrapper .dataTable tbody tr:hover {
+    background-color: #f8f9fa;
+    transform: translateX(2px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.dataTables_wrapper .dataTable tbody tr:hover td {
+    background-color: #f8f9fa;
+}
+
+/* DataTables Striped Rows */
+.dataTables_wrapper .dataTable.stripe tbody tr.odd {
+    background-color: #f8f9fa;
+}
+
+.dataTables_wrapper .dataTable.stripe tbody tr.even {
+    background-color: #ffffff;
+}
+
+.dataTables_wrapper .dataTable.stripe tbody tr.odd:hover,
+.dataTables_wrapper .dataTable.stripe tbody tr.even:hover {
+    background-color: #f8f9fa;
+}
+
+/* DataTables Pagination */
+.dataTables_wrapper .paginate_button {
+    padding: 0.375rem 0.75rem;
+    margin: 0 0.125rem;
+    border: 1px solid #dee2e6;
+    background: #ffffff;
+    color: var(--primary-color);
+    border-radius: 4px;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.dataTables_wrapper .paginate_button:hover {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(30, 86, 160, 0.3);
+}
+
+.dataTables_wrapper .paginate_button.current {
+    background: var(--primary-gradient);
+    border-color: var(--primary-color);
+    color: white;
+    font-weight: 600;
+}
+
+.dataTables_wrapper .paginate_button.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.dataTables_wrapper .paginate_button.disabled:hover {
+    background: #ffffff;
+    color: var(--primary-color);
+    transform: none;
+    box-shadow: none;
+}
+
+/* DataTables Length and Filter Controls */
+.dataTables_wrapper .dataTables_length select,
+.dataTables_wrapper .dataTables_filter input {
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+}
+
+.dataTables_wrapper .dataTables_length select {
+    background: #ffffff;
+    color: var(--dark-color);
+}
+
+.dataTables_wrapper .dataTables_filter input {
+    background: #ffffff;
+    color: var(--dark-color);
+    max-width: 200px;
+}
+
+.dataTables_wrapper .dataTables_length select:focus,
+.dataTables_wrapper .dataTables_filter input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(30, 86, 160, 0.25);
+    outline: none;
+}
+
+/* DataTables Processing Overlay */
+.dataTables_wrapper .dataTables_processing {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: auto;
+    height: auto;
+    margin-left: -125px;
+    margin-top: -25px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.95);
+    color: var(--dark-color);
+    padding: 1rem 2rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+}
+
+/* DataTables Responsive Container */
+.dataTables_wrapper .dataTables_wrapper {
+    position: relative;
+    clear: both;
+    zoom: 1;
+}
+
+/* Custom Filter Containers for Full Width Layout */
+.dataTables_wrapper .office-filter-container,
+.dataTables_wrapper .status-filter-container,
+.dataTables_wrapper .clearance-filter-container,
+.dataTables_wrapper .category-filter-container,
+.dataTables_wrapper .license-filter-container {
+    padding: 0 0.25rem;
+}
+
+.dataTables_wrapper .office-filter-container select,
+.dataTables_wrapper .status-filter-container select,
+.dataTables_wrapper .clearance-filter-container select,
+.dataTables_wrapper .category-filter-container select,
+.dataTables_wrapper .license-filter-container select {
+    width: 100%;
+    font-size: 0.875rem;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    padding: 0.375rem 0.5rem;
+    background: #ffffff;
+    color: var(--dark-color);
+    transition: all 0.2s ease;
+}
+
+.dataTables_wrapper .office-filter-container select:focus,
+.dataTables_wrapper .status-filter-container select:focus,
+.dataTables_wrapper .clearance-filter-container select:focus,
+.dataTables_wrapper .category-filter-container select:focus,
+.dataTables_wrapper .license-filter-container select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(30, 86, 160, 0.25);
+    outline: none;
+}
+
 /* Dark Mode DataTables Specific Styling */
 body.dark-mode .dataTables_wrapper .dataTables_filter input {
     background: #252538;
@@ -2382,6 +2603,61 @@ body.dark-mode .dataTables_wrapper .dataTables_processing {
     background: rgba(26, 26, 46, 0.9) !important;
     color: #e5e7eb !important;
     border-color: #3d3d5c !important;
+}
+
+/* Dark Mode DataTables Table Styling */
+body.dark-mode .dataTables_wrapper .dataTable thead th {
+    background: linear-gradient(135deg, #252538 0%, #1a1a2e 100%);
+    color: var(--primary-color);
+    border-color: #3d3d5c;
+}
+
+body.dark-mode .dataTables_wrapper .dataTable tbody td {
+    background: #1a1a2e;
+    border-color: #3d3d5c;
+    color: #e5e7eb;
+}
+
+body.dark-mode .dataTables_wrapper .dataTable tbody tr:hover td {
+    background: rgba(74, 144, 217, 0.15);
+    color: #ffffff;
+}
+
+body.dark-mode .dataTables_wrapper .dataTable.stripe tbody tr.odd {
+    background: #252538;
+}
+
+body.dark-mode .dataTables_wrapper .dataTable.stripe tbody tr.odd td {
+    background: #252538;
+}
+
+body.dark-mode .dataTables_wrapper .dataTable.stripe tbody tr.even {
+    background: #1a1a2e;
+}
+
+body.dark-mode .dataTables_wrapper .dataTable.stripe tbody tr.even td {
+    background: #1a1a2e;
+}
+
+/* Dark Mode Custom Filter Containers */
+body.dark-mode .office-filter-container select,
+body.dark-mode .status-filter-container select,
+body.dark-mode .clearance-filter-container select,
+body.dark-mode .category-filter-container select,
+body.dark-mode .license-filter-container select {
+    background: #252538;
+    border-color: #3d3d5c;
+    color: #e5e7eb;
+}
+
+body.dark-mode .office-filter-container select:focus,
+body.dark-mode .status-filter-container select:focus,
+body.dark-mode .clearance-filter-container select:focus,
+body.dark-mode .category-filter-container select:focus,
+body.dark-mode .license-filter-container select:focus {
+    background: #2a2a3e;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(74, 144, 217, 0.25);
 }
 
 /* Ensure DataTables table body respects dark mode */
