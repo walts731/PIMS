@@ -77,10 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     } elseif (empty($lastname)) {
         $message = "Last name is required.";
         $message_type = "danger";
-    } elseif (empty($email)) {
-        $message = "Email is required.";
-        $message_type = "danger";
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    } elseif (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $message = "Please enter a valid email address.";
         $message_type = "danger";
     } elseif ($office_id <= 0) {
@@ -181,10 +178,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     } elseif (empty($lastname)) {
         $message = "Last name is required.";
         $message_type = "danger";
-    } elseif (empty($email)) {
-        $message = "Email is required.";
-        $message_type = "danger";
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    } elseif (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $message = "Please enter a valid email address.";
         $message_type = "danger";
     } elseif (empty($employee_no)) {
@@ -573,8 +567,8 @@ foreach ($employees as $emp) {
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="addEmail" class="form-label">Email *</label>
-                                <input type="email" class="form-control" id="addEmail" name="email" required>
+                                <label for="addEmail" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="addEmail" name="email">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="addPhone" class="form-label">Phone</label>
@@ -703,8 +697,8 @@ foreach ($employees as $emp) {
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="editEmail" class="form-label">Email *</label>
-                                <input type="email" class="form-control" id="editEmail" name="email" required value="<?php echo htmlspecialchars($edit_employee['email'] ?? ''); ?>">
+                                <label for="editEmail" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="editEmail" name="email" value="<?php echo htmlspecialchars($edit_employee['email'] ?? ''); ?>">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="editPhone" class="form-label">Phone</label>

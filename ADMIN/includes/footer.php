@@ -235,6 +235,33 @@ $system_version = $system_settings['system_version'] ?? '1.0.0';
                         <li><i class="bi bi-check-circle text-success"></i> Mobile-responsive design</li>
                     </ul>
                     
+                    <h6 class="text-success mt-3">Development Team</h6>
+                    <div class="developers-section text-center">
+                        <div class="row">
+                            <div class="col-md-4 mb-2">
+                                <div class="developer-card">
+                                    <i class="bi bi-person-circle text-success" style="font-size: 2rem;"></i>
+                                    <h6 class="mt-2 mb-1">Walton Loneza</h6>
+                                    <small class="text-muted">Lead Developer</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <div class="developer-card">
+                                    <i class="bi bi-person-circle text-success" style="font-size: 2rem;"></i>
+                                    <h6 class="mt-2 mb-1">Joshua Escano</h6>
+                                    <small class="text-muted">System Developer</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <div class="developer-card">
+                                    <i class="bi bi-person-circle text-success" style="font-size: 2rem;"></i>
+                                    <h6 class="mt-2 mb-1">Elton Moises</h6>
+                                    <small class="text-muted">UI/UX Developer</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="text-center mt-4">
                         <p class="text-muted small">
                             Republic of the Philippines<br>
@@ -992,6 +1019,37 @@ function getSystemSettings() {
     right: 12px;
     width: 20px;
     height: 20px;
+}
+
+/* Developer Cards Styling */
+.developer-card {
+    padding: 1rem;
+    border-radius: 8px;
+    background: rgba(40, 167, 69, 0.05);
+    border: 1px solid rgba(40, 167, 69, 0.2);
+    transition: all 0.3s ease;
+    margin-bottom: 0.5rem;
+}
+
+.developer-card:hover {
+    background: rgba(40, 167, 69, 0.1);
+    border-color: rgba(40, 167, 69, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.15);
+}
+
+.developer-card h6 {
+    color: #28a745;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.developer-card .bi-person-circle {
+    transition: transform 0.3s ease;
+}
+
+.developer-card:hover .bi-person-circle {
+    transform: scale(1.1);
 }
 
 /* Cloud floating animations */
