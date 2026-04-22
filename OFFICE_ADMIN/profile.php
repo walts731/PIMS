@@ -764,5 +764,7 @@ if ($user_data['office']) {
     
     <!-- Sidebar Scripts -->
     <script src="../assets/js/sidebar.js"></script>
+    <!-- Theme Toggle Script -->
+    <script src="assets/js/theme-toggle.js"></script>
 </body>
 </html>

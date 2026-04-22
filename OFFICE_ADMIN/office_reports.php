@@ -1563,5 +1563,7 @@ $report_data['asset_stats']['total_asset_value'] = number_format($report_data['a
 <?php require_once 'includes/notification_script_bootstrap.php'; ?>
 <!-- Sidebar Scripts -->
 <script src="../assets/js/sidebar.js"></script>
+<!-- Theme Toggle Script -->
+<script src="assets/js/theme-toggle.js"></script>
 </body>
 </html>

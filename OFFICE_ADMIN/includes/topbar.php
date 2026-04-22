@@ -1301,17 +1301,6 @@ function confirmLogout() {
 }
 
 // Enhanced profile dropdown functions
-function toggleTheme() {
-    const body = document.body;
-    const currentTheme = body.getAttribute('data-theme') || 'light';
-    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-    
-    body.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
-    
-    // Show notification
-    showNotification(`Theme changed to ${newTheme}`, 'success');
-}
 
 function showKeyboardShortcuts() {
     const shortcuts = `
