@@ -71,10 +71,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'import') {
     if (isset($_FILES['import_file']) && $_FILES['import_file']['error'] == UPLOAD_ERR_OK) {
         $file = $_FILES['import_file']['tmp_name'];
-        $skip_duplicates = isset($_POST['skip_duplicates']) && $_POST['skip_duplicates'] == '1';
         
         $imported_count = 0;
-        $skipped_count = 0;
         $error_count = 0;
         $errors = [];
         
@@ -149,19 +147,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                     
                     
                     try {
-                        // Check for duplicates if skip option is enabled
-                        if ($skip_duplicates) {
-                            $check_stmt = $conn->prepare("SELECT id FROM offices WHERE office_name = ? OR office_code = ?");
-                            $check_stmt->bind_param("ss", $office_name, $office_code);
-                            $check_stmt->execute();
-                            $check_result = $check_stmt->get_result();
-                            
-                            if ($check_result->num_rows > 0) {
-                                $skipped_count++;
-                                continue;
-                            }
-                        }
-                        
                         // Insert office
                         $stmt = $conn->prepare("INSERT INTO offices (office_name, office_code, branch, created_by) VALUES (?, ?, ?, ?)");
                         $stmt->bind_param("ssii", $office_name, $office_code, $branch_id, $_SESSION['user_id']);
@@ -172,17 +157,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                         logSystemAction($_SESSION['user_id'], 'office_imported', 'office_management', "Imported office: {$office_name} ({$office_code})");
                         
                     } catch (Exception $e) {
-                        if (strpos($e->getMessage(), 'Duplicate entry') !== false) {
-                            if ($skip_duplicates) {
-                                $skipped_count++;
-                            } else {
-                                $errors[] = "Row {$row_num}: Office name or code already exists";
-                                $error_count++;
-                            }
-                        } else {
-                            $errors[] = "Row {$row_num}: " . $e->getMessage();
-                            $error_count++;
-                        }
+                        $errors[] = "Row {$row_num}: " . $e->getMessage();
+                        $error_count++;
                     }
                 }
                 
@@ -193,9 +169,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                 if ($imported_count > 0) {
                     $message_parts[] = "{$imported_count} offices imported successfully";
                 }
-                if ($skipped_count > 0) {
-                    $message_parts[] = "{$skipped_count} offices skipped (duplicates)";
-                }
                 if ($error_count > 0) {
                     $message_parts[] = "{$error_count} offices had errors";
                 }
@@ -204,15 +177,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                 
                 if ($imported_count > 0) {
                     $message_type = "success";
-                } elseif ($skipped_count > 0) {
-                    $message_type = "warning";
                 } else {
                     $message_type = "danger";
                 }
                 
                 // Log the import operation
                 logSystemAction($_SESSION['user_id'], 'offices_import_attempt', 'office_management', 
-                    "Import attempt: {$imported_count} imported, {$skipped_count} skipped, {$error_count} errors");
+                    "Import attempt: {$imported_count} imported, {$error_count} errors");
                 
             } else {
                 throw new Exception('Cannot open CSV file');
@@ -264,11 +235,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             logSystemAction($_SESSION['user_id'], 'office_added', 'office_management', "Added office: {$office_name} ({$office_code})");
             
         } catch (Exception $e) {
-            if (strpos($e->getMessage(), 'Duplicate entry') !== false) {
-                $message = "Office name or code already exists.";
-            } else {
-                $message = "Error adding office: " . $e->getMessage();
-            }
+            $message = "Error adding office: " . $e->getMessage();
             $message_type = "danger";
         }
     }
@@ -312,11 +279,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             exit();
             
         } catch (Exception $e) {
-            if (strpos($e->getMessage(), 'Duplicate entry') !== false) {
-                $message = "Office name or code already exists.";
-            } else {
-                $message = "Error updating office: " . $e->getMessage();
-            }
+            $message = "Error updating office: " . $e->getMessage();
             $message_type = "danger";
         }
     }
@@ -885,14 +848,6 @@ $page_title = 'Offices';
                             </div>
                         </div>
                         
-                        <div class="mb-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" value="1" id="skip_duplicates" name="skip_duplicates" checked>
-                                <label class="form-check-label" for="skip_duplicates">
-                                    Skip duplicate offices (same name or code)
-                                </label>
-                            </div>
-                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
