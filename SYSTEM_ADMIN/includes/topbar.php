@@ -13,12 +13,6 @@
                 <i class="bi bi-search"></i>
             </button>
             
-            <!-- QR Scanner -->
-            <div class="nav-item me-1">
-                <a href="scan_qr.php" class="nav-link text-white" title="QR Scanner">
-                    <i class="bi bi-qr-code-scan"></i>
-                </a>
-            </div>
             
             <!-- Dark Mode Toggle -->
             <div class="nav-item me-1">
@@ -152,12 +146,6 @@
                 
                 <!-- Desktop Right Side Actions -->
                 <div class="d-flex align-items-center">
-                    <!-- QR Scanner - Desktop only -->
-                    <div class="nav-item me-2">
-                        <a href="scan_qr.php" class="nav-link text-white" title="QR Scanner">
-                            <i class="bi bi-qr-code-scan"></i>
-                        </a>
-                    </div>
                     
                     <!-- Dark Mode Toggle - Desktop only -->
                     <div class="nav-item me-2">
