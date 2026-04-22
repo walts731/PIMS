@@ -283,11 +283,6 @@ logSystemAction($_SESSION['user_id'], 'access', 'system_settings', 'Accessed sys
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionsDropdown">
                                 <li>
-                                    <button class="dropdown-item" onclick="autoSaveDraft()">
-                                        <i class="bi bi-cloud-upload"></i> Auto-Save
-                                    </button>
-                                </li>
-                                <li>
                                     <button class="dropdown-item" onclick="exportSettings()">
                                         <i class="bi bi-download"></i> Export
                                     </button>
