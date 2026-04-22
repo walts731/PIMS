@@ -822,6 +822,8 @@ function exportData() {
 
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Theme Toggle JS -->
+<script src="assets/js/theme-toggle.js?v=<?php echo time(); ?>"></script>
 <!-- Loading States and Micro-interactions JS -->
 <script src="assets/js/loading-interactions.js?v=<?php echo time(); ?>"></script>
 <!-- Bootstrap-based Notification Script -->

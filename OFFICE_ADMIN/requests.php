@@ -3760,6 +3760,9 @@ function viewAssetImage(button) {
     <!-- Bootstrap-based Notification Script -->
     <?php require_once 'includes/notification_script_bootstrap.php'; ?>
     
+    <!-- Theme Toggle JS -->
+    <script src="assets/js/theme-toggle.js?v=<?php echo time(); ?>"></script>
+    
     <!-- Loading States and Micro-interactions JS -->
     <script src="assets/js/loading-interactions.js?v=<?php echo time(); ?>"></script>
     
