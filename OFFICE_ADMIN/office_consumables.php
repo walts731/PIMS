@@ -788,6 +788,9 @@ $page_title = 'Office Consumables';
     <!-- Bootstrap-based Notification Script -->
     <?php require_once 'includes/notification_script_bootstrap.php'; ?>
     
+    <!-- Theme Toggle JS -->
+    <script src="assets/js/theme-toggle.js?v=<?php echo time(); ?>"></script>
+    
     <!-- Sidebar Scripts -->
     <script src="../assets/js/sidebar.js"></script>
 </body>
