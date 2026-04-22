@@ -60,6 +60,7 @@
                     <li><a class="dropdown-item" href="profile.php"><i class="bi bi-person"></i> Profile</a></li>
                     <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#changePasswordModal"><i class="bi bi-key"></i> Change Password</a></li>
                     <li><a class="dropdown-item" href="system_settings.php"><i class="bi bi-gear"></i> Settings</a></li>
+                    <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#aboutPimsModal"><i class="bi bi-info-circle"></i> About PIMS</a></li>
                     <li><hr class="dropdown-divider"></li>
                     <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#logoutModal"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
                 </ul>
@@ -212,6 +213,7 @@
                             <li><a class="dropdown-item" href="profile.php"><i class="bi bi-person"></i> Profile</a></li>
                             <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#changePasswordModal"><i class="bi bi-key"></i> Change Password</a></li>
                             <li><a class="dropdown-item" href="system_settings.php"><i class="bi bi-gear"></i> Settings</a></li>
+                            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#aboutPimsModal"><i class="bi bi-info-circle"></i> About PIMS</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#logoutModal"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
                         </ul>
@@ -247,6 +249,76 @@
                 <a href="../logout.php" class="btn btn-danger px-4">
                     <i class="bi bi-box-arrow-right me-2"></i>Logout
                 </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- About PIMS Modal -->
+<div class="modal fade" id="aboutPimsModal" tabindex="-1" aria-labelledby="aboutPimsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title" id="aboutPimsModalLabel">
+                    <i class="bi bi-info-circle text-primary me-2"></i>
+                    About PIMS
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <div class="mb-3">
+                    <img src="<?php echo $logo_path; ?>" alt="<?php echo $system_name; ?> Logo" class="img-fluid" style="max-height: 80px; border-radius: 8px;">
+                </div>
+                <h4 class="mb-2"><?php echo $system_name; ?></h4>
+                <p class="text-muted mb-4">Property Inventory and Management System</p>
+                
+                <div class="text-start mb-4">
+                    <h6 class="fw-bold mb-3">System Information</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><strong>Version:</strong> 1.0.0</li>
+                        <li class="mb-2"><strong>Platform:</strong> Web-based Inventory Management</li>
+                        <li class="mb-2"><strong>Technology:</strong> PHP, MySQL, Bootstrap 5</li>
+                        <li class="mb-2"><strong>Purpose:</strong> Efficient property and asset tracking for LGU operations</li>
+                    </ul>
+                </div>
+                
+                <div class="border-top pt-4">
+                    <h6 class="fw-bold mb-3">Development Team</h6>
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="mb-2">
+                                <i class="bi bi-person-circle text-muted" style="font-size: 2rem;"></i>
+                            </div>
+                            <h6 class="mb-1">Developer 1</h6>
+                            <small class="text-muted">Lead Developer</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="mb-2">
+                                <i class="bi bi-person-circle text-muted" style="font-size: 2rem;"></i>
+                            </div>
+                            <h6 class="mb-1">Developer 2</h6>
+                            <small class="text-muted">System Designer</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="mb-2">
+                                <i class="bi bi-person-circle text-muted" style="font-size: 2rem;"></i>
+                            </div>
+                            <h6 class="mb-1">Developer 3</h6>
+                            <small class="text-muted">Database Administrator</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <small class="text-muted">
+                        © 2024 <?php echo $system_name; ?>. All rights reserved.
+                    </small>
+                </div>
+            </div>
+            <div class="modal-footer border-0 justify-content-center">
+                <button type="button" class="btn btn-primary px-4" data-bs-dismiss="modal">
+                    <i class="bi bi-check-circle me-2"></i>Close
+                </button>
             </div>
         </div>
     </div>
