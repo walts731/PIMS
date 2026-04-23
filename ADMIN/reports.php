@@ -188,10 +188,10 @@ if ($report_type === 'assets') {
         COUNT(CASE WHEN employment_status = 'job_order' THEN 1 END) as job_order_count,
         COUNT(CASE WHEN employment_status = 'resigned' THEN 1 END) as resigned_count,
         COUNT(CASE WHEN employment_status = 'retired' THEN 1 END) as retired_count,
-        COUNT(CASE WHEN clearance_status = 'cleared' THEN 1 END) as cleared_count,
-        COUNT(CASE WHEN clearance_status = 'uncleared' THEN 1 END) as uncleared_count,
+        COUNT(CASE WHEN NOT EXISTS (SELECT 1 FROM asset_items ai WHERE ai.employee_id = e.id) THEN 1 END) as cleared_count,
+        COUNT(CASE WHEN EXISTS (SELECT 1 FROM asset_items ai WHERE ai.employee_id = e.id) THEN 1 END) as uncleared_count,
         COUNT(CASE WHEN office_id IS NOT NULL THEN 1 END) as assigned_employees
-        FROM employees";
+        FROM employees e";
     
     $result = $conn->query($employee_summary_sql);
     if ($row = $result->fetch_assoc()) {
