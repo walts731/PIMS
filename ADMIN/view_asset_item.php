@@ -1703,6 +1703,11 @@ $status_display = formatStatus($item['status']);
                     <p class="mt-2 mb-0 text-muted">Property No: <?php echo $item['property_no'] ? htmlspecialchars($item['property_no']) : 'Not assigned'; ?></p>
                 </div>
                 
+                <?php
+                // Categories that should not have action buttons
+                $noActionCategories = ['LND', 'PPM', 'Land Imp', 'OInfra', 'Buildings', 'School Bldg', 'HHC', 'MKT', 'SLH', 'Ostruct', 'P&T', 'PP&MUN'];
+                if (!in_array($item['category_name'], $noActionCategories)):
+                ?>
                 <!-- Actions -->
                 <div class="detail-card">
                     <h5 class="mb-3"><i class="bi bi-gear"></i> Actions</h5>
@@ -1770,6 +1775,7 @@ $status_display = formatStatus($item['status']);
                         <?php endif; ?>
                     </div>
                 </div>
+                <?php endif; ?>
                 
                 <!-- Related Items -->
                 <?php if (!empty($other_items)): ?>
