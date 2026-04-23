@@ -29,6 +29,8 @@ $message_type = '';
 // UPDATE - Edit employee
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'edit') {
     $id = intval($_POST['id'] ?? 0);
+    error_log("Editing employee ID: $id");
+
     $firstname = trim($_POST['firstname'] ?? '');
     $middle_name = trim($_POST['middlename'] ?? '');
     $lastname = trim($_POST['lastname'] ?? '');
@@ -36,6 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     $phone = trim($_POST['phone'] ?? '');
     $employee_no = trim($_POST['employee_no'] ?? ''); // For display only, not updated
     $office_id = intval($_POST['office_id'] ?? 0);
+    error_log("Employee ID $id - office_id from POST: " . ($_POST['office_id'] ?? 'null') . ", processed: $office_id");
     $position = trim($_POST['position'] ?? '');
     $designation = isset($_POST['designation']) ? array_filter($_POST['designation'], function($val) {
         return !empty(trim($val));
@@ -70,65 +73,58 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         }
     }
     
-    // Validation
-    if (empty($firstname)) {
-        $message = "First name is required.";
-        $message_type = "danger";
-    } elseif (empty($lastname)) {
-        $message = "Last name is required.";
-        $message_type = "danger";
-    } elseif (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $message = "Please enter a valid email address.";
-        $message_type = "danger";
-    } elseif ($office_id <= 0) {
-        $message = "Please select an office.";
-        $message_type = "danger";
-    } else {
-        try {
-            // Check if employee exists
-            $check_stmt = $conn->prepare("SELECT id FROM employees WHERE id = ?");
-            $check_stmt->bind_param("i", $id);
-            $check_stmt->execute();
-            if ($check_stmt->get_result()->num_rows == 0) {
-                $message = "Employee not found.";
-                $message_type = "danger";
-            } else {
-                $check_stmt->close();
-                
-                // Check if employee number conflicts with another employee
-                $emp_no_check = $conn->prepare("SELECT id FROM employees WHERE employee_no = ? AND id != ?");
-                $emp_no_check->bind_param("si", $employee_no, $id);
-                $emp_no_check->execute();
-                if ($emp_no_check->get_result()->num_rows > 0) {
-                    $message = "Employee number already exists. Please use a different number.";
-                    $message_type = "danger";
-                    $emp_no_check->close();
-                } else {
-                    $emp_no_check->close();
-                    
-                    // Update employee
-                    $update_sql = "UPDATE employees SET firstname = ?, middle_name = ?, lastname = ?, email = ?, phone = ?, employee_no = ?, office_id = ?, position = ?, designation = ?, employment_status = ?, profile_photo = ? WHERE id = ?";
-                    $update_stmt = $conn->prepare($update_sql);
-                    $update_stmt->bind_param("ssssssissssi", $firstname, $middle_name, $lastname, $email, $phone, $employee_no, $office_id, $position, $designation, $employment_status, $profile_photo, $id);
-                
-                    if ($update_stmt->execute()) {
-                        logSystemAction($_SESSION['user_id'], 'update', 'employees', "Updated employee: $firstname $lastname");
+    // Process update directly without validation constraints
+    try {
+        // Update employee using traditional SQL with proper NULL handling
+        $firstname_esc = $conn->real_escape_string($firstname);
+        $middle_name_esc = $conn->real_escape_string($middle_name);
+        $lastname_esc = $conn->real_escape_string($lastname);
+        $email_esc = ($email !== '' && $email !== null) ? "'" . $conn->real_escape_string($email) . "'" : "NULL";
+        $phone_esc = ($phone !== '' && $phone !== null) ? "'" . $conn->real_escape_string($phone) . "'" : "NULL";
+        $employee_no_esc = $conn->real_escape_string($employee_no);
+        $position_esc = $conn->real_escape_string($position);
+        $designation_esc = ($designation !== '' && $designation !== null) ? "'" . $conn->real_escape_string($designation) . "'" : "NULL";
+        $employment_status_esc = $conn->real_escape_string($employment_status);
+        $profile_photo_esc = ($profile_photo !== '' && $profile_photo !== null) ? "'" . $conn->real_escape_string($profile_photo) . "'" : "NULL";
+        
+        $update_sql = "UPDATE employees SET 
+            firstname = '$firstname_esc', 
+            middle_name = '$middle_name_esc', 
+            lastname = '$lastname_esc', 
+            email = $email_esc, 
+            phone = $phone_esc, 
+            employee_no = '$employee_no_esc', 
+            office_id = $office_id, 
+            position = '$position_esc', 
+            designation = $designation_esc, 
+            employment_status = '$employment_status_esc', 
+            profile_photo = $profile_photo_esc 
+            WHERE id = $id";
+        
+        error_log("Update SQL: " . $update_sql);
+        
+        if ($conn->query($update_sql)) {
+                        $affected_rows = $conn->affected_rows;
+                        error_log("Update executed. Affected rows: $affected_rows for employee ID: $id");
+                        
+                        // Verify the update by reading back the record
+                        $verify_result = $conn->query("SELECT office_id FROM employees WHERE id = $id")->fetch_assoc();
+                        error_log("Verification - office_id in database after update: " . ($verify_result['office_id'] ?? 'null'));
+                        
+                        logSystemAction($_SESSION['user_id'], 'update', 'employees', "Updated employee: $firstname $lastname (office_id: $office_id)");
                         $_SESSION['message'] = "Employee updated successfully!";
                         $_SESSION['message_type'] = "success";
                         header("Location: employees.php");
                         exit();
                     } else {
-                        $message = "Error updating employee.";
+                        error_log("Update failed for employee ID $id: " . $conn->error);
+                        $message = "Error updating employee: " . $conn->error;
                         $message_type = "danger";
                     }
-                    $update_stmt->close();
-                }
-            }
-        } catch (Exception $e) {
-            error_log("Error updating employee: " . $e->getMessage());
-            $message = "Database error occurred.";
-            $message_type = "danger";
-        }
+    } catch (Exception $e) {
+        error_log("Error updating employee: " . $e->getMessage());
+        $message = "Database error occurred.";
+        $message_type = "danger";
     }
 }
 
@@ -680,6 +676,14 @@ foreach ($employees as $emp) {
                         <input type="hidden" name="action" value="edit">
                         <input type="hidden" name="id" id="editEmployeeId" value="<?php echo $edit_employee['id'] ?? ''; ?>">
                         
+                        <?php if (!empty($message) && $message_type == 'danger'): ?>
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <i class="bi bi-exclamation-triangle-fill"></i>
+                                <?php echo htmlspecialchars($message); ?>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        <?php endif; ?>
+                        
                         <div class="row">
                             <div class="col-md-4 mb-3">
                                 <label for="editFirstname" class="form-label">First Name *</label>
@@ -687,7 +691,7 @@ foreach ($employees as $emp) {
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label for="editMiddlename" class="form-label">Middle Name</label>
-                                <input type="text" class="form-control" id="editMiddlename" name="middlename" value="<?php echo htmlspecialchars($edit_employee['middlename'] ?? ''); ?>">
+                                <input type="text" class="form-control" id="editMiddlename" name="middlename" value="<?php echo htmlspecialchars($edit_employee['middle_name'] ?? ''); ?>">
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label for="editLastname" class="form-label">Last Name *</label>
