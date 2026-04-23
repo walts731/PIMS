@@ -1541,6 +1541,63 @@ nav.topbar,
     color: var(--primary-hover) !important;
 }
 
+/* Office Reports specific fixes */
+[data-theme="dark"] .page-header {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .page-header h1 {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .page-header h2,
+[data-theme="dark"] .page-header h3,
+[data-theme="dark"] .page-header h4,
+[data-theme="dark"] .page-header h5,
+[data-theme="dark"] .page-header h6 {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .stats-card {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-primary) !important;
+    box-shadow: var(--card-shadow) !important;
+}
+
+[data-theme="dark"] .stats-card:hover {
+    background: var(--bg-secondary) !important;
+    border-color: var(--primary-color) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: var(--shadow-lg) !important;
+}
+
+[data-theme="dark"] .chart-card {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-primary) !important;
+    box-shadow: var(--card-shadow) !important;
+}
+
+[data-theme="dark"] .chart-card:hover {
+    background: var(--bg-secondary) !important;
+    border-color: var(--primary-color) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: var(--shadow-lg) !important;
+}
+
+[data-theme="dark"] .chart-card h6 {
+    color: var(--text-primary) !important;
+}
+
+/* Filter Section fixes */
+[data-theme="dark"] .filter-section {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
         
         .metric-number {
             font-size: 2.5rem;
