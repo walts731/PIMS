@@ -1429,9 +1429,13 @@ require_once 'includes/subcategory_fields.php';
                     
                     const reader = new FileReader();
                     reader.onload = function(e) {
+                        const imageIndex = processedCount;
                         const newImageHtml = `
-                            <div class="col-md-3 mb-2">
-                                <div class="card border-primary">
+                            <div class="col-md-3 mb-2 new-image-item" data-index="${imageIndex}">
+                                <div class="card border-primary position-relative">
+                                    <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1 remove-new-image" title="Remove image" style="z-index: 10; border-radius: 50%; width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center;">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
                                     <img src="${e.target.result}" class="card-img-top" style="height: 150px; object-fit: cover;" alt="New Image">
                                     <div class="card-body p-2">
                                         <small class="text-muted d-block text-truncate">${file.name}</small>
@@ -1448,6 +1452,45 @@ require_once 'includes/subcategory_fields.php';
                         console.log(`Processed ${processedCount} of ${files.length} new images`);
                     };
                     reader.readAsDataURL(file);
+                }
+            });
+            
+            // Handle click on remove-new-image buttons (delegated event)
+            $(document).on('click', '.remove-new-image', function() {
+                const imageItem = $(this).closest('.new-image-item');
+                const index = imageItem.data('index');
+                
+                // Remove the image preview element
+                imageItem.remove();
+                
+                // Get the file input and create a new FileList without the removed file
+                const fileInput = $('#asset_images')[0];
+                const dt = new DataTransfer();
+                const files = fileInput.files;
+                
+                for (let i = 0; i < files.length; i++) {
+                    if (i !== index) {
+                        dt.items.add(files[i]);
+                    }
+                }
+                
+                // Update the file input with the new FileList
+                fileInput.files = dt.files;
+                
+                // If no more new images, remove the container
+                const newImagesRow = $('#imagePreview').find('.new-images-row');
+                if (newImagesRow.children('.new-image-item').length === 0) {
+                    const previewContainer = $('#imagePreview').find('.preview-container');
+                    const existingImagesRow = previewContainer.find('.existing-images-row');
+                    
+                    if (existingImagesRow.children().length === 0) {
+                        // No existing and no new images, clear the preview
+                        $('#imagePreview').empty();
+                    } else {
+                        // Only existing images remain, keep those
+                        previewContainer.find('hr, h6:contains("New Images Being Added")').remove();
+                        newImagesRow.remove();
+                    }
                 }
             });
             
