@@ -130,6 +130,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
 
 // ADD - Create new employee
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'add') {
+    error_log("Add employee form submission received");
+    
     $firstname = trim($_POST['firstname'] ?? '');
     $middle_name = trim($_POST['middlename'] ?? '');
     $lastname = trim($_POST['lastname'] ?? '');
@@ -144,6 +146,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     $designation = !empty($designation) ? json_encode(array_values($designation)) : null;
     $employment_status = trim($_POST['employment_status'] ?? 'permanent');
     $clearance_status = trim($_POST['clearance_status'] ?? 'uncleared');
+    
+    error_log("Form data - Firstname: '$firstname', Lastname: '$lastname', Office ID: $office_id, Employment Status: '$employment_status', Clearance Status: '$clearance_status'");
     
     // Handle profile photo upload
     $profile_photo = null;
@@ -177,31 +181,48 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     } elseif (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $message = "Please enter a valid email address.";
         $message_type = "danger";
-    } elseif (empty($employee_no)) {
-        $message = "Employee number is required.";
-        $message_type = "danger";
     } elseif ($office_id <= 0) {
         $message = "Please select an office.";
         $message_type = "danger";
     } else {
         try {
-            // Check if employee number already exists
-            $check_stmt = $conn->prepare("SELECT id FROM employees WHERE employee_no = ?");
-            $check_stmt->bind_param("s", $employee_no);
-            $check_stmt->execute();
-            if ($check_stmt->get_result()->num_rows > 0) {
-                $message = "Employee number already exists. Please use a different number.";
-                $message_type = "danger";
-                $check_stmt->close();
-            } else {
-                $check_stmt->close();
+            // Convert empty employee_no to NULL
+            $employee_no = !empty($employee_no) ? $employee_no : null;
+            
+            // Check if employee number already exists (only if provided)
+            if (!empty($employee_no)) {
+                $check_stmt = $conn->prepare("SELECT id FROM employees WHERE employee_no = ?");
+                $check_stmt->bind_param("s", $employee_no);
+                $check_stmt->execute();
+                if ($check_stmt->get_result()->num_rows > 0) {
+                    $message = "Employee number already exists. Please use a different number.";
+                    $message_type = "danger";
+                    $check_stmt->close();
+                } else {
+                    $check_stmt->close();
+                }
+            }
+            
+            // Only proceed if no error message was set
+            if (empty($message)) {
+                error_log("All validations passed, preparing to insert employee");
                 
                 // Insert employee
                 $insert_sql = "INSERT INTO employees (employee_no, firstname, middle_name, lastname, email, phone, office_id, position, designation, employment_status, clearance_status, profile_photo, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
-                $insert_stmt = $conn->prepare($insert_sql);
-                $insert_stmt->bind_param("sssssisssssi", $employee_no, $firstname, $middle_name, $lastname, $email, $phone, $office_id, $position, $designation, $employment_status, $clearance_status, $profile_photo);
+                error_log("Insert SQL: " . $insert_sql);
                 
-                if ($insert_stmt->execute()) {
+                $insert_stmt = $conn->prepare($insert_sql);
+                if (!$insert_stmt) {
+                    error_log("Prepare failed: " . $conn->error);
+                    $message = "Database prepare failed: " . $conn->error;
+                    $message_type = "danger";
+                } else {
+                    error_log("Statement prepared successfully");
+                    
+                    $insert_stmt->bind_param("sssssissssss", $employee_no, $firstname, $middle_name, $lastname, $email, $phone, $office_id, $position, $designation, $employment_status, $clearance_status, $profile_photo);
+                    error_log("Parameters bound successfully");
+                    
+                    if ($insert_stmt->execute()) {
                     $employee_id = $conn->insert_id;
                     
                     // Rename photo file with employee ID if photo was uploaded
@@ -222,20 +243,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                         }
                     }
                     
-                    logSystemAction($_SESSION['user_id'], 'create', 'employees', "Added new employee: $firstname $lastname ($employee_no)");
-                    $_SESSION['message'] = "Employee added successfully! Employee No: $employee_no";
+                    $display_emp_no = !empty($employee_no) ? " ($employee_no)" : "";
+                    logSystemAction($_SESSION['user_id'], 'create', 'employees', "Added new employee: $firstname $lastname$display_emp_no");
+                    $_SESSION['message'] = !empty($employee_no) ? "Employee added successfully! Employee No: $employee_no" : "Employee added successfully!";
                     $_SESSION['message_type'] = "success";
                     header("Location: employees.php");
                     exit();
                 } else {
-                    $message = "Error adding employee.";
+                    $message = "Error adding employee: " . $insert_stmt->error;
                     $message_type = "danger";
+                    error_log("Insert failed: " . $insert_stmt->error);
                 }
                 $insert_stmt->close();
+                }
             }
         } catch (Exception $e) {
             error_log("Error adding employee: " . $e->getMessage());
-            $message = "Database error occurred.";
+            error_log("Exception trace: " . $e->getTraceAsString());
+            $message = "Database error: " . $e->getMessage();
             $message_type = "danger";
         }
     }
@@ -546,6 +571,14 @@ foreach ($employees as $emp) {
                     <div class="modal-body">
                         <input type="hidden" name="action" value="add">
                         
+                        <?php if (!empty($message) && $message_type == 'danger'): ?>
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <i class="bi bi-exclamation-triangle-fill"></i>
+                                <strong>Error:</strong> <?php echo htmlspecialchars($message); ?>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        <?php endif; ?>
+                        
                         <div class="row">
                             <div class="col-md-4 mb-3">
                                 <label for="addFirstname" class="form-label">First Name *</label>
@@ -575,8 +608,7 @@ foreach ($employees as $emp) {
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="addEmployeeNo" class="form-label">Employee No.</label>
-                                <input type="text" class="form-control" id="addEmployeeNo" name="employee_no" placeholder="Enter employee number (auto-generated if empty)">
-                                <small class="text-muted">Leave empty for auto-generated employee number</small>
+                                <input type="text" class="form-control" id="addEmployeeNo" name="employee_no" placeholder="Enter employee number">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <!-- Empty column for balance -->
@@ -886,6 +918,11 @@ foreach ($employees as $emp) {
                 $('#editEmployeeModal').modal('show');
             <?php endif; ?>
             
+            // Show add modal if there's an error from previous submission
+            <?php if (!empty($message) && $message_type == 'danger'): ?>
+                $('#addEmployeeModal').modal('show');
+            <?php endif; ?>
+            
             // Initialize DataTable
             let employeesTable;
             
@@ -1049,8 +1086,60 @@ foreach ($employees as $emp) {
             // Clear form fields
             $('#addEmployeeForm')[0].reset();
             
+            // Clear any existing error messages
+            $('#addEmployeeForm .alert-danger').remove();
+            
             // Show modal
             $('#addEmployeeModal').modal('show');
+        }
+        
+        // Form validation and submission handler
+        $('#addEmployeeForm').on('submit', function(e) {
+            console.log('Form submission triggered');
+            
+            // Client-side validation
+            const firstname = $('#addFirstname').val().trim();
+            const lastname = $('#addLastname').val().trim();
+            const officeId = $('#addOffice').val();
+            const employmentStatus = $('#addEmploymentStatus').val();
+            const clearanceStatus = $('#addClearanceStatus').val();
+            
+            console.log('Form values:', {firstname, lastname, officeId, employmentStatus, clearanceStatus});
+            
+            // Clear previous errors
+            $('#addEmployeeForm .alert-danger').remove();
+            
+            if (!firstname) {
+                showError('First name is required.');
+                e.preventDefault();
+                return false;
+            }
+            
+            if (!lastname) {
+                showError('Last name is required.');
+                e.preventDefault();
+                return false;
+            }
+            
+            if (!officeId) {
+                showError('Please select an office.');
+                e.preventDefault();
+                return false;
+            }
+            
+            console.log('Validation passed, submitting form');
+            return true;
+        });
+        
+        function showError(message) {
+            const errorHtml = `
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <strong>Error:</strong> ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+            $('#addEmployeeForm .modal-body').prepend(errorHtml);
         }
         
         function viewEmployee(id) {
