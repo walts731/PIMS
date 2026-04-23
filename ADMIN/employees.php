@@ -574,9 +574,9 @@ foreach ($employees as $emp) {
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="addEmployeeNo" class="form-label">Employee No. *</label>
-                                <input type="text" class="form-control" id="addEmployeeNo" name="employee_no" required placeholder="Enter employee number">
-                                <small class="text-muted">Enter unique employee number</small>
+                                <label for="addEmployeeNo" class="form-label">Employee No.</label>
+                                <input type="text" class="form-control" id="addEmployeeNo" name="employee_no" placeholder="Enter employee number (auto-generated if empty)">
+                                <small class="text-muted">Leave empty for auto-generated employee number</small>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <!-- Empty column for balance -->
