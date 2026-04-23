@@ -73,7 +73,7 @@ $emp_name = trim(($item['firstname'] ?? '') . ' ' . ($item['lastname'] ?? ''));
 if (empty($emp_name)) $emp_name = 'N/A';
 
 // Determine if we should show the Accountable column based on category
-$excluded_cats = ['LND', 'OInfra', 'Buildings', 'Land Imp'];
+$excluded_cats = ['LND', 'OInfra', 'Buildings', 'Land Imp', 'Ostruct', 'PP&MUN', 'P&T', 'SLH', 'MKT', 'HHC', 'School Bldg'];
 $show_emp_col = !in_array($item['category_name'], $excluded_cats) && !in_array($item['category_code'], $excluded_cats);
 $article_width = $show_emp_col ? 20 : 35;
 
