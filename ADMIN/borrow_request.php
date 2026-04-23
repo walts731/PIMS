@@ -573,9 +573,8 @@ if (isset($_SESSION['error'])) {
     function addAssetSelection() {
         const tbody = document.getElementById('assetSelectionBody');
 
-        // Clone options from first select
-        const firstSelect = document.querySelector('.asset-select');
-        const options = firstSelect.innerHTML;
+        // Use original options HTML (before Select2 modified it) to preserve data attributes
+        const options = originalAssetOptions;
 
         const newRow = document.createElement('tr');
         newRow.className = 'asset-selection-row';
@@ -616,16 +615,53 @@ if (isset($_SESSION['error'])) {
         assetSelectionCount++;
     }
 
+    // Function to update disabled states of asset dropdowns to prevent duplicates
+    function updateAssetDropdownDisabledStates() {
+        // Get all selected values
+        const selectedValues = [];
+        $('.asset-select').each(function() {
+            const val = $(this).val();
+            if (val) {
+                selectedValues.push(val);
+            }
+        });
+        
+        // Update each dropdown
+        $('.asset-select').each(function() {
+            const currentSelect = $(this);
+            const currentValue = currentSelect.val();
+            
+            currentSelect.find('option').each(function() {
+                const option = $(this);
+                const optionValue = option.val();
+                
+                // Skip empty option
+                if (!optionValue) return;
+                
+                // Disable if selected in another row, enable if it's the current selection or not selected anywhere
+                if (selectedValues.includes(optionValue) && optionValue !== currentValue) {
+                    option.prop('disabled', true);
+                } else {
+                    option.prop('disabled', false);
+                }
+            });
+            
+            // Refresh Select2 to show disabled state
+            currentSelect.trigger('change.select2');
+        });
+    }
+
     function removeAssetSelection(button) {
         const row = button.closest('tr');
-        const tbody = document.getElementById('assetSelectionBody');
-
-        if (tbody.children.length > 1) {
-            row.remove();
-            updateIndividualItems();
-        } else {
-            alert('At least one asset type is required.');
-        }
+        
+        // Remove the row
+        row.remove();
+        
+        // Update disabled states after removal
+        updateAssetDropdownDisabledStates();
+        
+        // Update individual items display
+        updateIndividualItems();
     }
 
     function updateIndividualItems() {
@@ -751,8 +787,14 @@ if (isset($_SESSION['error'])) {
         document.getElementById('schedule_return').min = tomorrow.toISOString().split('T')[0];
     });
 
+    // Store original options HTML before Select2 modifies it
+    let originalAssetOptions = '';
+    
     // Initialize Select2 for all asset dropdowns
     $(document).ready(function() {
+        // Store the original options HTML before Select2 modifies it
+        originalAssetOptions = document.querySelector('.asset-select').innerHTML;
+        
         // Initialize Select2 for existing dropdowns
         $('.asset-select').select2({
             theme: 'bootstrap-5',
@@ -763,13 +805,61 @@ if (isset($_SESSION['error'])) {
         
         // Handle asset selection change
         $(document).on('change', '.asset-select', function() {
-            const selectedOption = $(this).find('option:selected');
-            const quantityInput = $(this).closest('tr').find('.quantity-input');
+            const selectElement = $(this);
+            const quantityInput = selectElement.closest('tr').find('.quantity-input');
+            const selectedValue = selectElement.val();
+            const previousValue = selectElement.data('previous-value');
+            
+            // Check if this asset is already selected in another row
+            if (selectedValue) {
+                let isDuplicate = false;
+                $('.asset-select').each(function() {
+                    const otherSelect = $(this);
+                    // Skip the current select element
+                    if (otherSelect[0] === selectElement[0]) return;
+                    
+                    // Check if another row has the same value
+                    if (otherSelect.val() === selectedValue) {
+                        isDuplicate = true;
+                        return false; // Break the loop
+                    }
+                });
+                
+                // If duplicate, reset selection and show modal
+                if (isDuplicate) {
+                    // Reset to empty value
+                    selectElement.val(null).trigger('change');
+                    quantityInput.removeAttr('max');
+                    quantityInput.attr('placeholder', '');
+                    updateIndividualItems();
+                    
+                    // Show duplicate warning modal
+                    const duplicateModal = new bootstrap.Modal(document.getElementById('duplicateAssetModal'));
+                    duplicateModal.show();
+                    return;
+                }
+            }
+            
+            // Get selected data using Select2's data method
+            const selectedData = selectElement.select2('data')[0];
+            const selectedOption = selectElement.find('option:selected');
             
             if (selectedOption.val()) {
-                const availableCount = parseInt(selectedOption.data('available-count'));
-                quantityInput.attr('max', availableCount);
-                quantityInput.attr('placeholder', `Max: ${availableCount}`);
+                // Try to get available count from data attribute, fallback to parsing from text
+                let availableCount = parseInt(selectedOption.data('available-count'));
+                
+                // If data attribute is not available (e.g., in cloned rows), parse from Select2 data or option text
+                if (isNaN(availableCount) && selectedData) {
+                    const textMatch = selectedData.text.match(/Available:\s*(\d+)/);
+                    if (textMatch) {
+                        availableCount = parseInt(textMatch[1]);
+                    }
+                }
+                
+                if (!isNaN(availableCount)) {
+                    quantityInput.attr('max', availableCount);
+                    quantityInput.attr('placeholder', `Max: ${availableCount}`);
+                }
                 // Update individual items when selection changes
                 updateIndividualItems();
             } else {
@@ -777,6 +867,12 @@ if (isset($_SESSION['error'])) {
                 quantityInput.attr('placeholder', '');
                 updateIndividualItems();
             }
+            
+            // Update disabled states to prevent duplicates
+            updateAssetDropdownDisabledStates();
+            
+            // Store current value as previous for next change
+            selectElement.data('previous-value', selectedValue);
         });
 
         // Handle quantity change
@@ -809,5 +905,23 @@ if (isset($_SESSION['error'])) {
 </script>
 
 <?php include 'includes/sidebar-scripts.php'; ?>
+
+<!-- Duplicate Asset Warning Modal -->
+<div class="modal fade" id="duplicateAssetModal" tabindex="-1" aria-labelledby="duplicateAssetModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title" id="duplicateAssetModalLabel"><i class="bi bi-exclamation-triangle-fill"></i> Duplicate Asset Type</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>This asset type has already been selected. Please choose a different asset type or adjust the quantity in the existing row.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
 </body>
 </html>
