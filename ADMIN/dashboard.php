@@ -529,27 +529,6 @@ $total_forms_value = $stats['par_value'] + $stats['ics_value'] + $stats['ris_val
             </div>
         </div>
         
-        <div class="row g-3 mb-4">
-            <div class="col-6 col-md-4">
-                <div class="stat-card">
-                    <div class="stat-value"><?php echo number_format($stats['total_items']); ?></div>
-                    <div class="stat-label"><i class="bi bi-box-seam"></i> Total Asset Items</div>
-                </div>
-            </div>
-            <div class="col-6 col-md-4">
-                <div class="stat-card">
-                    <div class="stat-value">₱<?php echo number_format($stats['total_value'], 2); ?></div>
-                    <div class="stat-label"><i class="bi bi-cash-stack"></i> Total Asset Value</div>
-                </div>
-            </div>
-            <div class="col-6 col-md-4">
-                <div class="stat-card">
-                    <div class="stat-value"><?php echo number_format($stats['employee_count']); ?></div>
-                    <div class="stat-label"><i class="bi bi-people"></i> Employees</div>
-                </div>
-            </div>
-        </div>
-        
         <div class="row">
             <div class="col-lg-12">
                 <div class="row g-3 mb-4">

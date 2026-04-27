@@ -289,7 +289,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
 // Get all offices with branch/parent info
 $offices = [];
 try {
-    $stmt = $conn->prepare("SELECT o.*, u1.username as created_by_name, u2.username as updated_by_name, p.office_name as parent_office_name, p.office_code as parent_office_code, (SELECT COUNT(*) FROM offices WHERE branch = o.id) as child_count FROM offices o LEFT JOIN users u1 ON o.created_by = u1.id LEFT JOIN users u2 ON o.updated_by = u2.id LEFT JOIN offices p ON o.branch = p.id ORDER BY o.office_name");
+    $stmt = $conn->prepare("SELECT o.*, u1.username as created_by_name, u2.username as updated_by_name, p.office_name as parent_office_name, p.office_code as parent_office_code, (SELECT COUNT(*) FROM offices WHERE branch = o.id) as child_count FROM offices o LEFT JOIN users u1 ON o.created_by = u1.id LEFT JOIN users u2 ON o.updated_by = u2.id LEFT JOIN offices p ON o.branch = p.id WHERE o.office_code NOT LIKE 'B%' AND o.office_code NOT LIKE 'L%' ORDER BY o.office_name");
     $stmt->execute();
     $result = $stmt->get_result();
     while ($row = $result->fetch_assoc()) {

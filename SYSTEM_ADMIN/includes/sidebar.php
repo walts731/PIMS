@@ -260,16 +260,16 @@ if (!empty($dark_mode_class)) {
         </a>
         
         <div class="sidebar-dropdown">
-            <button class="sidebar-dropdown-toggle <?php echo (in_array($current_page, ['categories.php', 'sub_categories.php', 'units.php', 'offices.php', 'funds.php'])) ? 'active' : ''; ?>" 
+            <button class="sidebar-dropdown-toggle <?php echo (in_array($current_page, ['categories.php', 'sub_categories.php', 'units.php', 'offices.php', 'funds.php', 'barangays.php', 'locations.php'])) ? 'active' : ''; ?>" 
                     type="button" data-bs-toggle="collapse" data-bs-target="#managementDropdown" 
-                    aria-expanded="<?php echo (in_array($current_page, ['categories.php', 'sub_categories.php', 'units.php', 'offices.php', 'funds.php'])) ? 'true' : 'false'; ?>">
+                    aria-expanded="<?php echo (in_array($current_page, ['categories.php', 'sub_categories.php', 'units.php', 'offices.php', 'funds.php', 'barangays.php', 'locations.php'])) ? 'true' : 'false'; ?>">
                 <div>
                     <i class="bi bi-gear"></i>
                     System Management
                 </div>
                 <i class="bi bi-chevron-down"></i>
             </button>
-            <div class="collapse <?php echo (in_array($current_page, ['categories.php', 'sub_categories.php', 'units.php', 'offices.php', 'funds.php'])) ? 'show' : ''; ?>" id="managementDropdown">
+            <div class="collapse <?php echo (in_array($current_page, ['categories.php', 'sub_categories.php', 'units.php', 'offices.php', 'funds.php', 'barangays.php', 'locations.php'])) ? 'show' : ''; ?>" id="managementDropdown">
                 <ul class="sidebar-dropdown-menu">
                     <li>
                         <a href="categories.php" class="sidebar-dropdown-item <?php echo $current_page == 'categories.php' ? 'active' : ''; ?>">
@@ -293,6 +293,18 @@ if (!empty($dark_mode_class)) {
                         <a href="offices.php" class="sidebar-dropdown-item <?php echo $current_page == 'offices.php' ? 'active' : ''; ?>">
                             <i class="bi bi-building"></i>
                             Offices
+                        </a>
+                    </li>
+                    <li>
+                        <a href="barangays.php" class="sidebar-dropdown-item <?php echo $current_page == 'barangays.php' ? 'active' : ''; ?>">
+                            <i class="bi bi-geo-alt-fill"></i>
+                            Barangays
+                        </a>
+                    </li>
+                    <li>
+                        <a href="locations.php" class="sidebar-dropdown-item <?php echo $current_page == 'locations.php' ? 'active' : ''; ?>">
+                            <i class="bi bi-geo-alt"></i>
+                            Locations
                         </a>
                     </li>
                     

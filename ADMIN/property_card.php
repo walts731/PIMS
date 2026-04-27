@@ -77,8 +77,7 @@ if ($conn && !$conn->connect_error) {
                   LEFT JOIN employees e ON ai.employee_id = e.id
                   LEFT JOIN offices o2 ON e.office_id = o2.id
                   LEFT JOIN par_forms pf ON ai.par_id = pf.id
-                  WHERE (ai.par_id IS NOT NULL AND ai.par_id != '') 
-                  OR (ai.ics_par_no IS NOT NULL AND ai.ics_par_no != '' AND ai.value >= 50000)";
+                  WHERE ai.value >= 50000";
         
         // Add category filter
         if (!empty($selected_category)) {
