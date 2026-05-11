@@ -233,6 +233,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['generate_redtag'])) {
         if (!$execute_result) {
             throw new Exception("Insert failed: " . $conn->error);
         }
+        $red_tag_id = $conn->insert_id;
         
         // Update status to 'red_tagged' if asset_item_id is provided
         if ($asset_item_id > 0) {
@@ -373,6 +374,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['generate_redtag'])) {
         logSystemAction($_SESSION['user_id'], 'redtag_created', 'inventory', "Created red tag {$control_no} for: {$item_description}");
         
         $_SESSION['success'] = "Red tag created successfully! Control No: {$control_no}";
+        
+        // Create notifications for MAIN_USER
+        createMainUserNotificationsForRedTag($control_no, $item_description, $tagged_by, $red_tag_id);
         
     } catch (Exception $e) {
         // Rollback transaction on error
@@ -946,3 +950,34 @@ if (empty($red_tag_no)) {
     </script>
 </body>
 </html>
+
+<?php
+// Function to create notifications for MAIN_USER when Red Tags are created
+function createMainUserNotificationsForRedTag($control_no, $item_description, $tagged_by, $red_tag_id) {
+    global $conn;
+    
+    // Get all MAIN_USER users
+    $main_users_query = "SELECT id FROM users WHERE role = 'main_user' AND is_active = 1";
+    $main_users_result = $conn->query($main_users_query);
+    
+    if ($main_users_result && $main_users_result->num_rows > 0) {
+        while ($main_user = $main_users_result->fetch_assoc()) {
+            $user_id = $main_user['id'];
+            
+            $title = "New Red Tag Created";
+            $message = "A new Red Tag ({$control_no}) has been created by {$tagged_by} for: {$item_description}";
+            $type = "warning";
+            $related_id = $red_tag_id;
+            $related_type = "red_tag";
+            
+            // Insert notification
+            $sql = "INSERT INTO notifications (user_id, title, message, type, related_id, related_type, created_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, NOW())";
+            
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param('issssi', $user_id, $title, $message, $type, $related_id, $related_type);
+            $stmt->execute();
+        }
+    }
+}
+?>

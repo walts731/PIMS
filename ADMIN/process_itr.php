@@ -28,6 +28,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $from_office = $_POST['from_office'];
         $to_office = $_POST['to_office'];
         
+        // Fetch employee names for detailed notifications
+        $from_employee_name = 'Unknown';
+        $to_employee_name = 'Unknown';
+        
+        $emp_stmt = $conn->prepare("SELECT firstname, lastname FROM employees WHERE id = ?");
+        if ($emp_stmt) {
+            $emp_stmt->bind_param("i", $from_office);
+            $emp_stmt->execute();
+            $res = $emp_stmt->get_result();
+            if ($row = $res->fetch_assoc()) {
+                $from_employee_name = $row['firstname'] . ' ' . $row['lastname'];
+            }
+            
+            $emp_stmt->bind_param("i", $to_office);
+            $emp_stmt->execute();
+            $res = $emp_stmt->get_result();
+            if ($row = $res->fetch_assoc()) {
+                $to_employee_name = $row['firstname'] . ' ' . $row['lastname'];
+            }
+            $emp_stmt->close();
+        }
+        
         // Convert date format from MM/DD/YYYY to YYYY-MM-DD for database
         if (!empty($_POST['transfer_date'])) {
             $date_parts = explode('/', $_POST['transfer_date']);
@@ -269,7 +291,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         logSystemAction($_SESSION['user_id'], 'Created ITR form', 'forms', "ITR No: $itr_no, Entity: $entity_name");
         
         // Set success message
-        $_SESSION['success_message'] = "ITR form saved successfully! ITR Number: $itr_no";
+        $_SESSION['success_message'] = "ITR form saved successfully! Asset(s) transferred from $from_employee_name to $to_employee_name. ITR Number: $itr_no";
+        
+        // Create notifications for MAIN_USER
+        createMainUserNotificationsForITR($itr_no, $itr_form_id, $from_employee_name, $to_employee_name);
         
         // Redirect back to form
         header('Location: itr_form.php');
@@ -294,5 +319,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Not a POST request
     header('Location: itr_form.php');
     exit();
+}
+
+// Function to create notifications for MAIN_USER when ITR forms are created
+function createMainUserNotificationsForITR($itr_no, $itr_form_id, $from_employee_name, $to_employee_name) {
+    global $conn;
+    
+    // Get all MAIN_USER users
+    $main_users_query = "SELECT id FROM users WHERE role = 'main_user' AND is_active = 1";
+    $main_users_result = $conn->query($main_users_query);
+    
+    if ($main_users_result && $main_users_result->num_rows > 0) {
+        while ($main_user = $main_users_result->fetch_assoc()) {
+            $user_id = $main_user['id'];
+            
+            $title = "New ITR Form Submitted";
+            $message = "ITR Form '{$itr_no}' has been successfully submitted. Asset(s) transferred from {$from_employee_name} to {$to_employee_name}.";
+            $type = "success";
+            $related_id = $itr_form_id;
+            $related_type = "itr_form";
+            
+            // Insert notification
+            $sql = "INSERT INTO notifications (user_id, title, message, type, related_id, related_type, created_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, NOW())";
+            
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param('issssi', $user_id, $title, $message, $type, $related_id, $related_type);
+            $stmt->execute();
+        }
+    }
 }
 ?>

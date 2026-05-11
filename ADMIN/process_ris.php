@@ -179,7 +179,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 // Insert into consumables table
                 // Always use Supply Office (ID = 3) for actual storage
-                $supply_office_id = 3;
+                $supply_office_id = 163;
                 
                 // Get the original requesting office ID
                 $requesting_office_query = $conn->prepare("SELECT id FROM offices WHERE office_name = ? LIMIT 1");

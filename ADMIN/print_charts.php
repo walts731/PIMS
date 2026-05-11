@@ -112,13 +112,30 @@ try {
         SUM(ai.value) as total_value
         FROM offices o
         LEFT JOIN asset_items ai ON o.id = ai.office_id
-        WHERE o.status = 'active'
+        WHERE o.status = 'active' AND o.office_code NOT LIKE 'L%' AND o.office_code NOT LIKE 'B%'
         GROUP BY o.id, o.office_name
         ORDER BY total_value DESC";
     
     $result = $conn->query($office_asset_sql);
     while ($row = $result->fetch_assoc()) {
         $office_asset_data[] = $row;
+    }
+
+    // Special Office Asset Data (L and B)
+    $special_office_asset_data = [];
+    $special_office_asset_sql = "SELECT 
+        o.office_name,
+        COUNT(ai.id) as asset_count,
+        SUM(ai.value) as total_value
+        FROM offices o
+        LEFT JOIN asset_items ai ON o.id = ai.office_id
+        WHERE o.status = 'active' AND (o.office_code LIKE 'L%' OR o.office_code LIKE 'B%')
+        GROUP BY o.id, o.office_name
+        ORDER BY total_value DESC";
+
+    $result = $conn->query($special_office_asset_sql);
+    while ($row = $result->fetch_assoc()) {
+        $special_office_asset_data[] = $row;
     }
     
     // Category Asset Data
@@ -413,6 +430,14 @@ try {
                 </div>
             </div>
         </div>
+        <div class="chart-row">
+            <div class="chart-full">
+                <div class="chart-title">Special Assets Breakdown (Offices L & B)</div>
+                <div class="chart-container">
+                    <canvas id="specialOfficeChart"></canvas>
+                </div>
+            </div>
+        </div>
     </div>
     
     <script>
@@ -677,10 +702,76 @@ try {
                 }
             }
         });
+        // Asset Value by Special Office (L & B) Chart
+        const specialOfficeCtx = document.getElementById('specialOfficeChart').getContext('2d');
+        new Chart(specialOfficeCtx, {
+            type: 'bar',
+            data: {
+                labels: <?php echo json_encode(array_column($special_office_asset_data, 'office_name')); ?>,
+                datasets: [{
+                    label: 'Asset Value (₱)',
+                    data: <?php echo json_encode(array_column($special_office_asset_data, 'total_value')); ?>,
+                    backgroundColor: 'rgba(139, 92, 246, 0.8)', // Purple glass
+                    borderColor: 'rgba(139, 92, 246, 1)',
+                    borderWidth: 2,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '₱' + value.toLocaleString();
+                            },
+                            color: '#333',
+                            font: {
+                                size: 11,
+                                weight: 'bold'
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            color: '#333',
+                            font: {
+                                size: 11,
+                                weight: 'bold'
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.dataset.label || '';
+                                const value = '₱' + context.parsed.y.toLocaleString();
+                                return label + ': ' + value;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
     // Debug information
         console.log('Asset Stats:', <?php echo json_encode($asset_stats); ?>);
         console.log('Category Data:', <?php echo json_encode($category_asset_data); ?>);
         console.log('Office Data:', <?php echo json_encode($office_asset_data); ?>);
+        console.log('Special Office Data:', <?php echo json_encode($special_office_asset_data); ?>);
         console.log('Consumables Data:', <?php echo json_encode($consumables_data); ?>);
     </script>
 </body>

@@ -92,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file'])) {
                 $reorder_level = $expected_cols['reorder_level'] !== -1 ? intval($data[$expected_cols['reorder_level']]) : 5;
                 
                 // Map Office
-                $office_id = 3; // Default to Supply if not found
+                $office_id = 163; // Default to Supply if not found
                 if ($expected_cols['office'] !== -1) {
                     $office_name = strtolower(trim($data[$expected_cols['office']]));
                     if (isset($offices_map[$office_name])) {

@@ -158,7 +158,7 @@ if ($result && $row = $result->fetch_assoc()) {
 
 // Get offices for dropdown
 $offices = [];
-$result = $conn->query("SELECT id, office_name FROM offices WHERE status = 'active' ORDER BY office_name");
+$result = $conn->query("SELECT id, office_name, office_code FROM offices WHERE status = 'active' AND (office_code NOT LIKE 'L%' AND office_code NOT LIKE 'B%') ORDER BY office_name");
 if ($result) {
     while ($row = $result->fetch_assoc()) {
         $offices[] = $row;

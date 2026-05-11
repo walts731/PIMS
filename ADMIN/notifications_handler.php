@@ -54,6 +54,8 @@ function getNotifications() {
                    CASE 
                        WHEN n.related_type = 'asset' THEN CONCAT('/ADMIN/view_asset_item.php?id=', n.related_id)
                        WHEN n.related_type = 'employee' THEN CONCAT('/ADMIN/employees.php#edit-', n.related_id)
+                       WHEN n.related_type = 'red_tag' THEN CONCAT('/ADMIN/red_tags.php?id=', n.related_id)
+                       WHEN n.related_type = 'disposed_items' THEN '/ADMIN/disposed_items.php'
                        ELSE '#'
                    END as action_url
             FROM notifications n 

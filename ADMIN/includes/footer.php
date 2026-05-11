@@ -53,7 +53,7 @@ $system_version = $system_settings['system_version'] ?? '1.0.0';
                             <h5 class="footer-title"><?php echo htmlspecialchars($system_name); ?></h5>
                         </div>
                         <p class="footer-description">
-                            Professional Inventory Management System designed for efficient asset tracking and management.
+                            Pilar Inventory Management System designed for efficient asset tracking and management.
                         </p>
                         <div class="footer-version">
                             <span class="badge bg-primary">Version <?php echo htmlspecialchars($system_version); ?></span>
@@ -193,14 +193,14 @@ $system_version = $system_settings['system_version'] ?? '1.0.0';
                 </div>
                 <div class="help-section mt-3">
                     <h6 class="text-info">Contact Support</h6>
-                    <p><strong>Email:</strong> support@pims.gov.ph</p>
+                    <p><strong>Email:</strong> pims@gmail.com</p>
                     <p><strong>Phone:</strong> (047) 123-4567</p>
                     <p><strong>Office Hours:</strong> Monday - Friday, 8:00 AM - 5:00 PM</p>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-info" onclick="window.open('user_manual.pdf')">User Manual</button>
+                <button type="button" class="btn btn-info" onclick="window.open('../user_manual.php', '_blank')">User Manual</button>
             </div>
         </div>
     </div>

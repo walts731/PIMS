@@ -204,10 +204,12 @@ if ($report_type === 'assets') {
     $total_offices = 0;
     
     $office_summary_sql = "SELECT 
-        COUNT(*) as total_offices,
-        COUNT(CASE WHEN status = 'active' THEN 1 END) as active_offices,
-        COUNT(CASE WHEN status = 'inactive' THEN 1 END) as inactive_offices,
-        SUM(capacity) as total_capacity
+        COUNT(CASE WHEN office_code NOT LIKE 'L%' AND office_code NOT LIKE 'B%' THEN 1 END) as total_offices,
+        COUNT(CASE WHEN office_code LIKE 'B%' THEN 1 END) as total_barangays,
+        COUNT(CASE WHEN office_code LIKE 'L%' THEN 1 END) as total_locations,
+        COUNT(CASE WHEN status = 'active' AND office_code NOT LIKE 'L%' AND office_code NOT LIKE 'B%' THEN 1 END) as active_offices,
+        COUNT(CASE WHEN status = 'inactive' AND office_code NOT LIKE 'L%' AND office_code NOT LIKE 'B%' THEN 1 END) as inactive_offices,
+        SUM(CASE WHEN office_code NOT LIKE 'L%' AND office_code NOT LIKE 'B%' THEN capacity ELSE 0 END) as total_capacity
         FROM offices";
     
     $result = $conn->query($office_summary_sql);
@@ -282,7 +284,7 @@ if ($report_type === 'assets') {
 
 // Get filter options
 $offices = [];
-$office_sql = "SELECT id, office_name FROM offices WHERE status = 'active' ORDER BY office_name";
+$office_sql = "SELECT id, office_name FROM offices WHERE status = 'active' AND office_code NOT LIKE 'L%' AND office_code NOT LIKE 'B%' ORDER BY office_name";
 $office_result = $conn->query($office_sql);
 while ($row = $office_result->fetch_assoc()) {
     $offices[] = $row;
@@ -506,7 +508,19 @@ function formatStatus($status) {
                             <td>Total Offices</td>
                             <td class="text-center"><?php echo $total_offices; ?></td>
                             <td>N/A</td>
-                            <td>Overall office count</td>
+                            <td>Standard office count</td>
+                        </tr>
+                        <tr>
+                            <td>Total Barangays</td>
+                            <td class="text-center"><?php echo $office_stats['total_barangays'] ?? 0; ?></td>
+                            <td>N/A</td>
+                            <td>Offices with code starting with 'B'</td>
+                        </tr>
+                        <tr>
+                            <td>Total Locations</td>
+                            <td class="text-center"><?php echo $office_stats['total_locations'] ?? 0; ?></td>
+                            <td>N/A</td>
+                            <td>Offices with code starting with 'L'</td>
                         </tr>
                     </tbody>
                 </table>
@@ -635,8 +649,10 @@ function formatStatus($status) {
                 // Summary data
                 const summaryData = [
                     ['Total Assets', <?php echo (int)($total_assets ?? 0); ?>, '₱' + <?php echo (float)($total_asset_value ?? 0); ?>, 'Overall asset count and value'],
+                    ['Total Offices', <?php echo (int)($total_offices ?? 0); ?>, 'N/A', 'Standard office count'],
+                    ['Total Barangays', <?php echo (int)($office_stats['total_barangays'] ?? 0); ?>, 'N/A', 'Offices with code starting with B'],
+                    ['Total Locations', <?php echo (int)($office_stats['total_locations'] ?? 0); ?>, 'N/A', 'Offices with code starting with L'],
                     ['Total Employees', <?php echo (int)($total_employees ?? 0); ?>, 'N/A', 'Overall employee count'],
-                    ['Total Offices', <?php echo (int)($total_offices ?? 0); ?>, 'N/A', 'Overall office count'],
                     ['Serviceable Assets', <?php echo (int)($asset_stats['serviceable_count'] ?? 0); ?>, 'N/A', 'Assets in serviceable condition'],
                     ['Unserviceable Assets', <?php echo (int)($asset_stats['unserviceable_count'] ?? 0); ?>, 'N/A', 'Assets in unserviceable condition'],
                     ['Red Tagged Assets', <?php echo (int)($asset_stats['red_tagged_count'] ?? 0); ?>, 'N/A', 'Assets with red tags'],

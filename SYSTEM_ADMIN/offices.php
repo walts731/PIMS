@@ -89,13 +89,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                 $headers = array_map('strtolower', $headers);
                 
                 // Validate required columns
-                if (!in_array('office_name', $headers) || !in_array('office_code', $headers) || !in_array('parent_office', $headers)) {
-                    throw new Exception('CSV must contain office_name, office_code, and parent_office columns');
+                if (!in_array('office_name', $headers) || !in_array('office_code', $headers)) {
+                    throw new Exception('CSV must contain office_name and office_code columns');
                 }
                 
-                // Get column indexes
+                // Get column indexes (all optional fields)
                 $office_name_idx = array_search('office_name', $headers);
                 $office_code_idx = array_search('office_code', $headers);
+                $address_idx = array_search('address', $headers);
+                $state_idx = array_search('state', $headers);
+                $postal_code_idx = array_search('postal_code', $headers);
+                $country_idx = array_search('country', $headers);
+                $phone_idx = array_search('phone', $headers);
+                $email_idx = array_search('email', $headers);
+                $capacity_idx = array_search('capacity', $headers);
+                $status_idx = array_search('status', $headers);
                 $parent_office_idx = array_search('parent_office', $headers);
                 
                 // Process each row
@@ -110,6 +118,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                     
                     $office_name = trim($data[$office_name_idx] ?? '');
                     $office_code = trim($data[$office_code_idx] ?? '');
+                    $address = trim($data[$address_idx] ?? '');
+                    $state = trim($data[$state_idx] ?? '');
+                    $postal_code = trim($data[$postal_code_idx] ?? '');
+                    $country = trim($data[$country_idx] ?? 'Philippines');
+                    $phone = trim($data[$phone_idx] ?? '');
+                    $email = trim($data[$email_idx] ?? '');
+                    $capacity = intval($data[$capacity_idx] ?? 0);
+                    $status = trim($data[$status_idx] ?? 'active');
                     $parent_office_code = trim($data[$parent_office_idx] ?? '');
                     
                     // Validation
@@ -119,9 +135,30 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                         continue;
                     }
                     
-                    // Validate office code format (numeric, 3-5 digits)
-                    if (!preg_match('/^\d{3,5}$/', $office_code)) {
-                        $errors[] = "Row {$row_num}: Office code must be 3-5 digits (e.g., 050, 123)";
+                    // Validate office code format (alphanumeric, 1-10 characters)
+                    if (!preg_match('/^[A-Za-z0-9]{1,10}$/', $office_code)) {
+                        $errors[] = "Row {$row_num}: Office code must be 1-10 alphanumeric characters";
+                        $error_count++;
+                        continue;
+                    }
+                    
+                    // Validate email if provided
+                    if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                        $errors[] = "Row {$row_num}: Invalid email address";
+                        $error_count++;
+                        continue;
+                    }
+                    
+                    // Validate capacity if provided
+                    if ($capacity < 0) {
+                        $errors[] = "Row {$row_num}: Capacity must be a positive number";
+                        $error_count++;
+                        continue;
+                    }
+                    
+                    // Validate status if provided
+                    if (!empty($status) && !in_array(strtolower($status), ['active', 'inactive'])) {
+                        $errors[] = "Row {$row_num}: Status must be 'active' or 'inactive'";
                         $error_count++;
                         continue;
                     }
@@ -147,14 +184,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                     
                     
                     try {
-                        // Insert office
-                        $stmt = $conn->prepare("INSERT INTO offices (office_name, office_code, branch, created_by) VALUES (?, ?, ?, ?)");
-                        $stmt->bind_param("ssii", $office_name, $office_code, $branch_id, $_SESSION['user_id']);
+                        // Insert office with all fields
+                        $stmt = $conn->prepare("INSERT INTO offices (office_name, office_code, address, state, postal_code, country, phone, email, capacity, status, branch, created_by, updated_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())");
+                        $stmt->bind_param("sssssssssisii", $office_name, $office_code, $address, $state, $postal_code, $country, $phone, $email, $capacity, $status, $branch_id, $_SESSION['user_id'], $_SESSION['user_id']);
                         $stmt->execute();
                         
                         $imported_count++;
                         
-                        logSystemAction($_SESSION['user_id'], 'office_imported', 'office_management', "Imported office: {$office_name} ({$office_code})");
+                        logSystemAction($_SESSION['user_id'], 'office_imported', 'office_management', "Imported office: {$office_name} ({$office_code}) with complete data");
                         
                     } catch (Exception $e) {
                         $errors[] = "Row {$row_num}: " . $e->getMessage();
@@ -774,6 +811,14 @@ $page_title = 'Offices';
                                         <tr>
                                             <th class="text-center bg-success text-white">office_name *</th>
                                             <th class="text-center bg-success text-white">office_code *</th>
+                                            <th class="text-center bg-secondary text-white">address</th>
+                                            <th class="text-center bg-secondary text-white">state</th>
+                                            <th class="text-center bg-secondary text-white">postal_code</th>
+                                            <th class="text-center bg-secondary text-white">country</th>
+                                            <th class="text-center bg-secondary text-white">phone</th>
+                                            <th class="text-center bg-secondary text-white">email</th>
+                                            <th class="text-center bg-secondary text-white">capacity</th>
+                                            <th class="text-center bg-secondary text-white">status</th>
                                             <th class="text-center bg-secondary text-white">parent_office</th>
                                         </tr>
                                     </thead>
@@ -781,26 +826,27 @@ $page_title = 'Offices';
                                         <tr>
                                             <td>Head Office</td>
                                             <td><code>HO</code></td>
+                                            <td>Caloñgay Pilar, Sorsogon</td>
+                                            <td>Sorsogon</td>
+                                            <td>4714</td>
+                                            <td>Philippines</td>
+                                            <td>(123) 456-7890</td>
+                                            <td>headoffice@pilar.gov.ph</td>
+                                            <td>100</td>
+                                            <td>active</td>
                                             <td><em>empty</em></td>
                                         </tr>
                                         <tr>
                                             <td>North District</td>
                                             <td><code>ND</code></td>
-                                            <td>HO</td>
-                                        </tr>
-                                        <tr>
-                                            <td>South District</td>
-                                            <td><code>SD</code></td>
-                                            <td>HO</td>
-                                        </tr>
-                                        <tr>
-                                            <td>East District</td>
-                                            <td><code>ED</code></td>
-                                            <td>HO</td>
-                                        </tr>
-                                        <tr>
-                                            <td>West District</td>
-                                            <td><code>WD</code></td>
+                                            <td>Zone 1, Pilar</td>
+                                            <td>Sorsogon</td>
+                                            <td>4714</td>
+                                            <td>Philippines</td>
+                                            <td>(123) 456-7891</td>
+                                            <td>north@pilar.gov.ph</td>
+                                            <td>50</td>
+                                            <td>active</td>
                                             <td>HO</td>
                                         </tr>
                                     </tbody>
@@ -809,7 +855,8 @@ $page_title = 'Offices';
                             <div class="mt-2">
                                 <small class="text-muted">
                                     <i class="bi bi-info-circle"></i> <strong>Notes:</strong> 
-                                    Columns marked with * are required. Office codes must be unique and 1-5 uppercase letters.
+                                    Columns marked with * are required. Office codes must be unique and 1-10 alphanumeric characters.
+                                    All other columns are optional. Status must be 'active' or 'inactive'.
                                     Parent office should contain the office_code of the parent office, or leave empty for main offices.
                                     First row should contain exact column headers as shown above.
                                 </small>
@@ -1136,34 +1183,73 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Export offices function
     function exportOffices() {
-        // Get current offices data from PHP variable
-        const officesData = <?php echo json_encode($offices); ?>;
+        // Show loading state
+        showAlert('Exporting all offices data...', 'info');
         
-        // Create CSV content with parent office
-        let csvContent = "Office Name,Office Code,Parent Office\n";
-        
-        officesData.forEach(office => {
-            const officeName = (office.office_name || '').replace(/"/g, '""');
-            const officeCode = (office.office_code || '').replace(/"/g, '""');
-            const parentOffice = office.parent_office_code && office.parent_office_name 
-                ? `${office.parent_office_code} - ${office.parent_office_name}`.replace(/"/g, '""')
-                : 'Main Office';
-            csvContent += `"${officeName}","${officeCode}","${parentOffice}"\n`;
-        });
-        
-        // Create download link
-        const blob = new Blob([csvContent], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'offices_export_' + new Date().toISOString().split('T')[0] + '.csv';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-        
-        // Show success message
-        showAlert('Offices exported successfully!', 'success');
+        // Fetch all offices data from server
+        fetch('export_all_offices.php')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Create CSV content with all office details
+                    let csvContent = "ID,Office Name,Office Code,Address,State,Postal Code,Country,Phone,Email,Capacity,Status,Parent Office,Sub-Offices Count,Created By,Created At,Updated By,Updated At\n";
+                    
+                    data.offices.forEach(office => {
+                        const id = office.id || '';
+                        const officeName = (office.office_name || '').replace(/"/g, '""');
+                        const officeCode = (office.office_code || '').replace(/"/g, '""');
+                        const address = (office.address || '').replace(/"/g, '""');
+                        const state = (office.state || '').replace(/"/g, '""');
+                        const postalCode = (office.postal_code || '').replace(/"/g, '""');
+                        const country = (office.country || 'Philippines').replace(/"/g, '""');
+                        const phone = (office.phone || '').replace(/"/g, '""');
+                        const email = (office.email || '').replace(/"/g, '""');
+                        const capacity = office.capacity || 0;
+                        const status = (office.status || 'active').replace(/"/g, '""');
+                        const parentOffice = office.parent_office_code && office.parent_office_name 
+                            ? `${office.parent_office_code} - ${office.parent_office_name}`.replace(/"/g, '""')
+                            : 'Main Office';
+                        const childCount = office.child_count || 0;
+                        const createdBy = (office.created_by_name || '').replace(/"/g, '""');
+                        const createdAt = office.created_at ? new Date(office.created_at).toLocaleString() : '';
+                        const updatedBy = (office.updated_by_name || '').replace(/"/g, '""');
+                        const updatedAt = office.updated_at ? new Date(office.updated_at).toLocaleString() : '';
+                        
+                        csvContent += `"${id}","${officeName}","${officeCode}","${address}","${state}","${postalCode}","${country}","${phone}","${email}","${capacity}","${status}","${parentOffice}","${childCount}","${createdBy}","${createdAt}","${updatedBy}","${updatedAt}"\n`;
+                    });
+                    
+                    // Create download link
+                    const blob = new Blob([csvContent], { type: 'text/csv' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'all_offices_complete_export_' + new Date().toISOString().split('T')[0] + '.csv';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                    
+                    // Show success message with debug info
+                    const debugInfo = data.debug || {};
+                    const message = `Exported ${data.offices.length} offices successfully!`;
+                    const debugMessage = `DB Total: ${debugInfo.total_in_database || 'N/A'}, Exported: ${data.offices.length}, First ID: ${debugInfo.first_id || 'N/A'}, Last ID: ${debugInfo.last_id || 'N/A'}`;
+                    
+                    showAlert(message, 'success');
+                    console.log('Export Debug Info:', debugInfo);
+                    
+                    // Show debug info in console and optionally as alert
+                    if (debugInfo.missing_count > 0) {
+                        console.warn(`Missing ${debugInfo.missing_count} records from export!`);
+                        showAlert(`Warning: ${debugInfo.missing_count} records were not exported. Check console for details.`, 'warning');
+                    }
+                } else {
+                    showAlert('Export failed: ' + data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Export error:', error);
+                showAlert('Export failed: ' + error.message, 'danger');
+            });
     }
     
     // Refresh offices function

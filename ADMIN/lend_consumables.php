@@ -30,9 +30,9 @@ $message_type = '';
 
 
 // Handle filter parameters
-$to_office_filter = isset($_GET['to_office']) ? intval($_GET['to_office']) : 0;
-$from_office_filter = isset($_GET['from_office']) ? intval($_GET['from_office']) : 3; // Default to Supply Office (ID = 3)
-$search_filter = isset($_GET['search']) ? trim($_GET['search']) : '';
+$to_office_filter   = isset($_GET['to_office'])   ? intval($_GET['to_office'])   : 0;
+$from_office_filter = isset($_GET['from_office']) ? intval($_GET['from_office']) : 0; // 0 = show all offices
+$search_filter      = isset($_GET['search'])      ? trim($_GET['search'])        : '';
 
 // Get consumable balance records with filters
 $balance_records = [];
@@ -68,16 +68,17 @@ try {
                 cb.consumable_id,
                 cb.consumable_description,
                 cb.office_id,
-                cb.office_name,
+                COALESCE(oo.office_name, cb.office_name) AS office_name,
                 cb.for_office_id,
                 cb.total_borrowed,
                 cb.total_deducted,
                 cb.current_balance,
                 cb.last_updated,
                 cb.created_at,
-                fo.office_name as for_office_name,
+                fo.office_name AS for_office_name,
                 c.unit_cost
             FROM consumable_balance cb
+            LEFT JOIN offices oo ON cb.office_id   = oo.id
             LEFT JOIN offices fo ON cb.for_office_id = fo.id
             LEFT JOIN consumables c ON cb.consumable_id = c.id";
     
@@ -135,7 +136,7 @@ try {
 // Get offices for dropdown
 $offices = [];
 try {
-    $result = $conn->query("SELECT id, office_name FROM offices WHERE status = 'active' ORDER BY office_name");
+    $result = $conn->query("SELECT id, office_name FROM offices WHERE status = 'active' AND office_code NOT LIKE 'L%' AND office_code NOT LIKE 'B%' ORDER BY office_name");
     if ($result) {
         while ($row = $result->fetch_assoc()) {
             $offices[] = $row;
@@ -319,39 +320,75 @@ try {
             </div>
             
             <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
+                <table class="table table-hover align-middle">
+                    <thead class="table-dark">
                         <tr>
-                            <th>Description</th>
-                            <th> Balance</th>
-                            <th>From Office</th>
-                            <th>To Office</th>
-                            <th>Last Updated</th>
+                            <th>#</th>
+                            <th><i class="bi bi-box-seam me-1"></i>Description</th>
+                            <th><i class="bi bi-building me-1"></i>From Office</th>
+                            <th><i class="bi bi-building-check me-1"></i>To Office</th>
+                            <th class="text-center"><i class="bi bi-arrow-up-right me-1"></i>Total Lent</th>
+                            <th class="text-center"><i class="bi bi-arrow-down-left me-1"></i>Total Returned</th>
+                            <th class="text-center"><i class="bi bi-calculator me-1"></i>Outstanding</th>
+                            <th><i class="bi bi-clock me-1"></i>Last Updated</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if (!empty($balance_records)): ?>
-                            <?php foreach ($balance_records as $record): ?>
+                            <?php foreach ($balance_records as $index => $record): ?>
                                 <tr>
+                                    <td class="text-muted small"><?php echo $index + 1; ?></td>
                                     <td>
-                                        <?php echo htmlspecialchars($record['consumable_description']); ?>
+                                        <strong><?php echo htmlspecialchars($record['consumable_description']); ?></strong>
+                                        <?php if ($record['unit_cost']): ?>
+                                            <br><small class="text-muted">₱<?php echo number_format($record['unit_cost'], 2); ?>/unit</small>
+                                        <?php endif; ?>
                                     </td>
-                                    
                                     <td>
-                                        <span class="badge bg-<?php echo $record['current_balance'] > 0 ? 'success' : 'secondary'; ?>">
-                                            <?php echo $record['current_balance']; ?>
+                                        <span class="badge bg-primary">
+                                            <i class="bi bi-building me-1"></i><?php echo htmlspecialchars($record['office_name'] ?? 'N/A'); ?>
                                         </span>
                                     </td>
-                                    <td><?php echo htmlspecialchars($record['office_name'] ?? 'N/A'); ?></td>
-                                    <td><?php echo htmlspecialchars($record['for_office_name'] ?? 'N/A'); ?></td>
-                                    <td><?php echo date('M d, Y', strtotime($record['last_updated'])); ?></td>
+                                    <td>
+                                        <span class="badge bg-info text-dark">
+                                            <i class="bi bi-building-check me-1"></i><?php echo htmlspecialchars($record['for_office_name'] ?? 'N/A'); ?>
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-warning text-dark fs-6 px-3">
+                                            <?php echo number_format($record['total_deducted']); ?>
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-success fs-6 px-3">
+                                            <?php echo number_format($record['total_borrowed']); ?>
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <?php
+                                            $outstanding = $record['current_balance'];
+                                            $badgeClass  = $outstanding > 0 ? 'bg-danger' : 'bg-secondary';
+                                        ?>
+                                        <span class="badge <?php echo $badgeClass; ?> fs-6 px-3">
+                                            <?php echo number_format($outstanding); ?>
+                                        </span>
+                                    </td>
+                                    <td class="small text-muted">
+                                        <?php echo date('M d, Y', strtotime($record['last_updated'])); ?><br>
+                                        <span class="text-secondary"><?php echo date('h:i A', strtotime($record['last_updated'])); ?></span>
+                                    </td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="7" class="text-center text-muted py-4">
-                                    <i class="bi bi-inbox fs-1"></i>
-                                    <p class="mt-2">No balance records found. Click "Borrow Consumable" to create your first balance record.</p>
+                                <td colspan="8" class="text-center text-muted py-5">
+                                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                    No balance records found.
+                                    <?php if ($from_office_filter || $to_office_filter || $search_filter): ?>
+                                        Try clearing your filters.
+                                    <?php else: ?>
+                                        Lend a consumable to get started.
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endif; ?>

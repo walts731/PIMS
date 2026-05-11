@@ -80,7 +80,7 @@ if (!$consumable) {
 // Get offices for dropdown
 $offices = [];
 try {
-    $result = $conn->query("SELECT id, office_name FROM offices WHERE status = 'active' ORDER BY office_name");
+    $result = $conn->query("SELECT id, office_name FROM offices WHERE status = 'active' AND office_code NOT LIKE 'L%' AND office_code NOT LIKE 'B%' ORDER BY office_name");
     if ($result) {
         while ($row = $result->fetch_assoc()) {
             $offices[] = $row;
@@ -100,6 +100,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     $target_office_id = intval($_POST['target_office_id'] ?? 0);
     $received_by = trim($_POST['received_by'] ?? '');
     $remarks = trim($_POST['remarks'] ?? '');
+    $lent_by_user_id = intval($_SESSION['user_id'] ?? 0);
+    error_log("[LEND DEBUG] RAW POST lend_quantity=" . ($_POST['lend_quantity'] ?? 'NOT SET') . " => intval=" . $lend_quantity);
     
     // Validation
     if ($source_consumable_id <= 0) {
@@ -155,12 +157,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                 $target_action = "Updated existing consumable in target office";
             } else {
                 // Insert new consumable in target office
+                $qty_to_insert = intval($lend_quantity);
+                $reorder_lvl   = intval($source_data['reorder_level']);
+                error_log("[LEND DEBUG] INSERT target consumable: qty={$qty_to_insert}");
                 $insert_target_stmt = $conn->prepare("INSERT INTO consumables (description, quantity, unit_cost, reorder_level, office_id) VALUES (?, ?, ?, ?, ?)");
-                $insert_target_stmt->bind_param("sidii", 
-                    $source_data['description'], 
-                    $lend_quantity, 
-                    $source_data['unit_cost'], 
-                    $source_data['reorder_level'], 
+                $insert_target_stmt->bind_param("siiii",
+                    $source_data['description'],
+                    $qty_to_insert,
+                    $source_data['unit_cost'],
+                    $reorder_lvl,
                     $target_office_id
                 );
                 $insert_target_stmt->execute();
@@ -186,70 +191,57 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             $office_stmt->close();
             
             // Insert into lend_consumables table
-            $total_value = $lend_quantity * $source_data['unit_cost'];
+            $total_value    = floatval($lend_quantity) * floatval($source_data['unit_cost']);
+            $qty_lent       = intval($lend_quantity);
+            $unit_cost_val  = floatval($source_data['unit_cost']);
+            $from_office_id = intval($source_data['office_id']);
+            error_log("[LEND DEBUG] Before lend_consumables INSERT: qty_lent={$qty_lent}, unit_cost={$unit_cost_val}, total={$total_value}, from={$from_office_id}, to={$target_office_id}, lent_by={$lent_by_user_id}");
+            
             $lend_stmt = $conn->prepare("INSERT INTO lend_consumables (consumable_id, description, quantity_lent, unit_cost, total_value, from_office_id, to_office_id, lent_by, received_by, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $lend_stmt->bind_param("isddiissss", 
-                $source_consumable_id,          // i
-                $source_data['description'],      // s
-                $lend_quantity,                 // i
-                $source_data['unit_cost'],       // d
-                $total_value,                   // d
-                $source_data['office_id'],        // i
-                $target_office_id,               // i
-                $_SESSION['user_id'],           // i
-                $received_by,                   // s
-                $remarks                        // s
+            // Types: i,s,i,d,d,i,i,i,s,s  — quantity_lent is INT, unit_cost/total_value are DECIMAL
+            $lend_stmt->bind_param("isiddiisss",
+                $source_consumable_id,
+                $source_data['description'],
+                $qty_lent,
+                $unit_cost_val,
+                $total_value,
+                $from_office_id,
+                $target_office_id,
+                $lent_by_user_id,
+                $received_by,
+                $remarks
             );
             $lend_stmt->execute();
+            error_log("[LEND DEBUG] After lend_consumables INSERT: affected_rows=" . $conn->affected_rows);
             $lend_stmt->close();
             
-            // Update or insert into consumable_balance table for source office (lending out)
-            $zero_deducted = 0; // Variable for total_deducted (0 for lending)
+            // Insert a single record into consumable_balance for this lend transaction.
+            // The unique key is (consumable_id, office_id, for_office_id).
+            // We record one row: source office lent X items to target office.
+            // On duplicate (same consumable lent again between same offices) we accumulate.
             $source_office_name = $source_data['office_name'] ?? 'Unknown';
-            $source_balance_stmt = $conn->prepare("
+            $zero_borrowed = 0;
+            $balance_stmt = $conn->prepare("
                 INSERT INTO consumable_balance (consumable_id, consumable_description, office_id, office_name, for_office_id, total_borrowed, total_deducted, current_balance, created_at, last_updated)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
                 ON DUPLICATE KEY UPDATE 
-                total_borrowed = total_borrowed + VALUES(total_borrowed),
-                current_balance = current_balance - VALUES(total_borrowed),
+                total_deducted = total_deducted + VALUES(total_deducted),
+                current_balance = current_balance + VALUES(current_balance),
                 last_updated = NOW()
             ");
-            $source_balance_stmt->bind_param("issiiiii", 
+            // Types: i (consumable_id), s (description), i (office_id), s (office_name), i (for_office_id), i (total_borrowed=0), i (total_deducted=lend_qty), i (current_balance=lend_qty)
+            $balance_stmt->bind_param("isisiiii",
                 $source_consumable_id,
                 $source_data['description'],
                 $source_data['office_id'],
                 $source_office_name,
                 $target_office_id,
-                $lend_quantity,
-                $zero_deducted, // total_deducted (0 for lending)
-                $lend_quantity // current_balance to subtract
+                $zero_borrowed,
+                $lend_quantity,  // total_deducted
+                $lend_quantity   // current_balance
             );
-            $source_balance_stmt->execute();
-            $source_balance_stmt->close();
-            
-            // Update or insert into consumable_balance table for target office (receiving)
-            $zero_borrowed = 0; // Variable for total_borrowed (0 for receiving)
-            $target_office_name = $office_data['office_name'];
-            $target_balance_stmt = $conn->prepare("
-                INSERT INTO consumable_balance (consumable_id, consumable_description, office_id, office_name, for_office_id, total_borrowed, total_deducted, current_balance, created_at, last_updated)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
-                ON DUPLICATE KEY UPDATE 
-                total_deducted = total_deducted + VALUES(total_deducted),
-                current_balance = current_balance + VALUES(total_deducted),
-                last_updated = NOW()
-            ");
-            $target_balance_stmt->bind_param("issiiiii", 
-                $source_consumable_id,
-                $source_data['description'],
-                $target_office_id,
-                $target_office_name,
-                $source_data['office_id'],
-                $zero_borrowed, // total_borrowed (0 for receiving)
-                $lend_quantity, // total_deducted (amount received)
-                $lend_quantity // current_balance to add
-            );
-            $target_balance_stmt->execute();
-            $target_balance_stmt->close();
+            $balance_stmt->execute();
+            $balance_stmt->close();
             
             // Log lend action
             $log_remarks = "Lent {$lend_quantity} '{$source_data['description']}' from office ID {$source_data['office_id']} to {$office_data['office_name']}. {$target_action}. Balance tracking updated. Remarks: " . ($remarks ?: 'No remarks');
@@ -260,6 +252,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             
             $message = "Successfully lent {$lend_quantity} '{$source_data['description']}' item(s) to {$office_data['office_name']}. Source remaining: {$new_source_quantity}.";
             $message_type = "success";
+            $_SESSION['success_message'] = $message;
             
             // Close modal on success and refresh parent consumables page with success message
             echo "<script>
@@ -373,9 +366,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                                     <div class="col-md-6">
                                         <div class="mb-3">
                                             <label class="form-label">Lend Quantity *</label>
-                                            <input type="number" class="form-control" name="lend_quantity" 
-                                                   min="1" max="<?php echo $consumable['quantity']; ?>" required>
-                                            <small class="text-muted">Maximum available: <?php echo $consumable['quantity']; ?> items</small>
+                                            <input type="text"
+                                                   inputmode="numeric"
+                                                   pattern="[0-9]+"
+                                                   class="form-control"
+                                                   name="lend_quantity"
+                                                   id="lendQuantityInput"
+                                                   autocomplete="off"
+                                                   data-max="<?php echo $consumable['quantity']; ?>"
+                                                   placeholder="Enter quantity (max <?php echo $consumable['quantity']; ?>)"
+                                                   required>
+                                            <small class="text-muted">Maximum available: <strong><?php echo $consumable['quantity']; ?></strong> items</small>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -420,11 +421,53 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                                     <button type="button" class="btn btn-secondary" onclick="parent.closeLendModal()">
                                         <i class="bi bi-x-circle"></i> Cancel
                                     </button>
-                                    <button type="submit" class="btn btn-primary">
+                                    <button type="submit" class="btn btn-primary" id="lendSubmitBtn">
                                         <i class="bi bi-arrow-up-right"></i> Lend Consumable
                                     </button>
                                 </div>
                             </form>
+                            <script>
+                                document.querySelector('form').addEventListener('submit', function(e) {
+                                    const input  = document.getElementById('lendQuantityInput');
+                                    const raw    = input.value.trim();
+                                    const max    = parseInt(input.dataset.max, 10);
+
+                                    // Must be a positive whole number only
+                                    if (!/^\d+$/.test(raw)) {
+                                        e.preventDefault();
+                                        alert('Please enter a valid whole number.');
+                                        input.focus();
+                                        return;
+                                    }
+
+                                    const val = parseInt(raw, 10);
+
+                                    if (val <= 0) {
+                                        e.preventDefault();
+                                        alert('Quantity must be greater than 0.');
+                                        input.focus();
+                                        return;
+                                    }
+
+                                    if (val > max) {
+                                        e.preventDefault();
+                                        alert('Cannot lend ' + val + ' items.\nOnly ' + max + ' items are available in stock.\nPlease enter ' + max + ' or less.');
+                                        input.value = '';
+                                        input.focus();
+                                        return;
+                                    }
+
+                                    // Set the clean integer value back so PHP gets exactly what was typed
+                                    input.value = val;
+                                });
+
+                                // Block non-numeric keystrokes at input level too
+                                document.getElementById('lendQuantityInput').addEventListener('keypress', function(e) {
+                                    if (!/[0-9]/.test(e.key)) {
+                                        e.preventDefault();
+                                    }
+                                });
+                            </script>
                         <?php else: ?>
                             <div class="alert alert-warning">
                                 <i class="bi bi-exclamation-triangle"></i>

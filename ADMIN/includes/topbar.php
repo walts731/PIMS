@@ -1,3 +1,32 @@
+<?php
+// Hook to capture session alerts and turn them into notifications
+if (isset($_SESSION['user_id']) && isset($conn)) {
+    // Helper function to process notifications
+    if (!function_exists('processNotificationHook')) {
+        function processNotificationHook($conn, $session_key, $notif_type, $notif_title) {
+            $msg = !empty($_SESSION[$session_key]) ? $_SESSION[$session_key] : '';
+            $notified_key = '_notified_' . $session_key;
+            
+            if (!empty($msg) && (!isset($_SESSION[$notified_key]) || $_SESSION[$notified_key] !== $msg)) {
+                $stmt = $conn->prepare("INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, ?)");
+                if ($stmt) {
+                    $stmt->bind_param('isss', $_SESSION['user_id'], $notif_title, $msg, $notif_type);
+                    $stmt->execute();
+                    $stmt->close();
+                }
+                $_SESSION[$notified_key] = $msg;
+            } elseif (empty($msg)) {
+                unset($_SESSION[$notified_key]);
+            }
+        }
+    }
+
+    processNotificationHook($conn, 'success', 'success', 'Success');
+    processNotificationHook($conn, 'success_message', 'success', 'Success');
+    processNotificationHook($conn, 'error', 'error', 'System Alert');
+    processNotificationHook($conn, 'error_message', 'error', 'System Alert');
+}
+?>
 <!-- Navigation -->
 <nav class="navbar navbar-expand-lg navbar-dark" id="mainNavbar">
     <div class="container-fluid">
@@ -32,9 +61,9 @@
                 <div class="dropdown">
                     <a class="nav-link text-white position-relative notification-bell" href="#" role="button" data-bs-toggle="dropdown" title="Notifications">
                         <i class="bi bi-bell"></i>
-                        <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
+                        <span class="notification-badge" style="display: none;">0</span>
                     </a>
-                    <div class="dropdown-menu dropdown-menu-end notification-dropdown" id="notificationDropdown">
+                    <div class="dropdown-menu dropdown-menu-end notification-dropdown">
                         <div class="notification-header">
                             <h6 class="mb-0">Notifications</h6>
                             <div class="notification-actions">
@@ -43,7 +72,7 @@
                                 </a>
                             </div>
                         </div>
-                        <div class="notification-list" id="notificationList">
+                        <div class="notification-list">
                             <div class="notification-loading">
                                 <div class="spinner-border spinner-border-sm text-primary" role="status">
                                     <span class="visually-hidden">Loading...</span>
@@ -102,9 +131,9 @@
                     <div class="dropdown">
                         <a class="nav-link text-white position-relative notification-bell" href="#" role="button" data-bs-toggle="dropdown" title="Notifications">
                             <i class="bi bi-bell"></i>
-                            <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
+                            <span class="notification-badge" style="display: none;">0</span>
                         </a>
-                        <div class="dropdown-menu dropdown-menu-end notification-dropdown" id="notificationDropdown">
+                        <div class="dropdown-menu dropdown-menu-end notification-dropdown">
                             <div class="notification-header">
                                 <h6 class="mb-0">Notifications</h6>
                                 <div class="notification-actions">
@@ -113,7 +142,7 @@
                                     </a>
                                 </div>
                             </div>
-                            <div class="notification-list" id="notificationList">
+                            <div class="notification-list">
                                 <div class="notification-loading">
                                     <div class="spinner-border spinner-border-sm text-primary" role="status">
                                         <span class="visually-hidden">Loading...</span>
@@ -171,9 +200,9 @@
                         <div class="dropdown">
                             <a class="nav-link text-white position-relative notification-bell" href="#" role="button" data-bs-toggle="dropdown" title="Notifications">
                                 <i class="bi bi-bell"></i>
-                                <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
+                                <span class="notification-badge" style="display: none;">0</span>
                             </a>
-                            <div class="dropdown-menu dropdown-menu-end notification-dropdown" id="notificationDropdown">
+                            <div class="dropdown-menu dropdown-menu-end notification-dropdown">
                                 <div class="notification-header">
                                     <h6 class="mb-0">Notifications</h6>
                                     <div class="notification-actions">
@@ -182,7 +211,7 @@
                                         </a>
                                     </div>
                                 </div>
-                                <div class="notification-list" id="notificationList">
+                                <div class="notification-list">
                                     <div class="notification-loading">
                                         <div class="spinner-border spinner-border-sm text-primary" role="status">
                                             <span class="visually-hidden">Loading...</span>
@@ -1165,35 +1194,29 @@
 
 <script>
 // Notification System
-let notificationDropdown;
-let notificationList;
-let notificationBadge;
 let notificationTimeout;
 
 document.addEventListener('DOMContentLoaded', function() {
-    notificationDropdown = document.getElementById('notificationDropdown');
-    notificationList = document.getElementById('notificationList');
-    notificationBadge = document.getElementById('notificationBadge');
-    
     // Initialize notification system
     updateNotificationBadge();
     
     // Setup dropdown events
-    const notificationBell = document.querySelector('.notification-bell');
-    if (notificationBell) {
-        notificationBell.addEventListener('click', function() {
+    const notificationBells = document.querySelectorAll('.notification-bell');
+    notificationBells.forEach(bell => {
+        bell.addEventListener('click', function(e) {
+            // Don't prevent default if it's a dropdown toggle, Bootstrap handles it
             loadNotifications();
         });
-    }
+    });
     
     // Setup mark all as read
-    const markAllReadBtn = document.querySelector('.mark-all-read');
-    if (markAllReadBtn) {
-        markAllReadBtn.addEventListener('click', function(e) {
+    const markAllReadBtns = document.querySelectorAll('.mark-all-read');
+    markAllReadBtns.forEach(btn => {
+        btn.addEventListener('click', function(e) {
             e.preventDefault();
             markAllNotificationsAsRead();
         });
-    }
+    });
     
     // Auto-refresh notification count every 30 seconds
     setInterval(updateNotificationBadge, 30000);
@@ -1212,29 +1235,39 @@ function updateNotificationBadge() {
         .then(data => {
             console.log('Notification count response:', data);
             const count = data.unread_count || 0;
-            if (count > 0) {
-                notificationBadge.textContent = count > 99 ? '99+' : count;
-                notificationBadge.style.display = 'flex';
-            } else {
-                notificationBadge.style.display = 'none';
-            }
+            const badges = document.querySelectorAll('.notification-badge');
+            
+            badges.forEach(badge => {
+                if (count > 0) {
+                    badge.textContent = count > 99 ? '99+' : count;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            });
         })
         .catch(error => {
             console.error('Error fetching notification count:', error);
             // Hide badge on error to prevent confusion
-            notificationBadge.style.display = 'none';
+            document.querySelectorAll('.notification-badge').forEach(badge => {
+                badge.style.display = 'none';
+            });
         });
 }
 
 function loadNotifications() {
+    const lists = document.querySelectorAll('.notification-list');
+    
     // Show loading state
-    notificationList.innerHTML = `
-        <div class="notification-loading">
-            <div class="spinner-border spinner-border-sm text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
+    lists.forEach(list => {
+        list.innerHTML = `
+            <div class="notification-loading">
+                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
             </div>
-        </div>
-    `;
+        `;
+    });
     
     fetch('notifications_handler.php?action=get_notifications&limit=10', {
         credentials: 'include'  // Include cookies for session
@@ -1254,24 +1287,30 @@ function loadNotifications() {
         })
         .catch(error => {
             console.error('Error fetching notifications:', error);
-            notificationList.innerHTML = `
-                <div class="notification-empty">
-                    <i class="bi bi-exclamation-triangle"></i>
-                    <p>Error loading notifications</p>
-                    <small>${error.message}</small>
-                </div>
-            `;
+            lists.forEach(list => {
+                list.innerHTML = `
+                    <div class="notification-empty">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <p>Error loading notifications</p>
+                        <small>${error.message}</small>
+                    </div>
+                `;
+            });
         });
 }
 
 function displayNotifications(notifications) {
+    const lists = document.querySelectorAll('.notification-list');
+    
     if (notifications.length === 0) {
-        notificationList.innerHTML = `
-            <div class="notification-empty">
-                <i class="bi bi-bell-slash"></i>
-                <p>No notifications</p>
-            </div>
-        `;
+        lists.forEach(list => {
+            list.innerHTML = `
+                <div class="notification-empty">
+                    <i class="bi bi-bell-slash"></i>
+                    <p>No notifications</p>
+                </div>
+            `;
+        });
         return;
     }
     
@@ -1280,33 +1319,47 @@ function displayNotifications(notifications) {
         const unreadClass = notification.is_read ? '' : 'unread';
         const typeClass = `notification-type ${notification.type}`;
         
+        // Add action URL wrapper if present
+        const hasAction = notification.action_url && notification.action_url !== '#';
+        const contentTag = hasAction ? 'a' : 'div';
+        const contentHref = hasAction ? `href="${notification.action_url}"` : '';
+        const contentStyle = hasAction ? 'style="text-decoration: none; display: block; color: inherit;"' : '';
+        
         html += `
             <div class="notification-item ${unreadClass}" data-id="${notification.id}">
-                <div class="notification-content">
+                <${contentTag} ${contentHref} ${contentStyle} class="notification-content">
                     <div class="notification-title">${notification.title}</div>
                     <div class="notification-message">${notification.message}</div>
                     <div class="notification-meta">
                         <span class="notification-time">${notification.time_ago}</span>
                         <span class="${typeClass}">${notification.type}</span>
                     </div>
-                    ${!notification.is_read ? `
-                        <div class="notification-actions-item">
-                            <button class="btn-mark-read" onclick="markNotificationAsRead(${notification.id})">
-                                <i class="bi bi-check"></i> Mark as read
-                            </button>
-                            <button class="btn-delete" onclick="deleteNotificationItem(${notification.id})">
-                                <i class="bi bi-trash"></i> Delete
-                            </button>
-                        </div>
-                    ` : ''}
-                </div>
+                </${contentTag}>
+                ${!notification.is_read ? `
+                    <div class="notification-actions-item mt-2">
+                        <button class="btn-mark-read" onclick="markNotificationAsRead(${notification.id}); event.stopPropagation();">
+                            <i class="bi bi-check"></i> Mark as read
+                        </button>
+                        <button class="btn-delete" onclick="deleteNotificationItem(${notification.id}); event.stopPropagation();">
+                            <i class="bi bi-trash"></i> Delete
+                        </button>
+                    </div>
+                ` : `
+                    <div class="notification-actions-item mt-2">
+                        <button class="btn-delete" onclick="deleteNotificationItem(${notification.id}); event.stopPropagation();">
+                            <i class="bi bi-trash"></i> Delete
+                        </button>
+                    </div>
+                `}
             </div>
         `;
     });
     
-    notificationList.innerHTML = html;
+    lists.forEach(list => {
+        list.innerHTML = html;
+    });
     
-    // Add click handlers for notification items
+    // Add click handlers for notification items to mark as read when clicked
     document.querySelectorAll('.notification-item').forEach(item => {
         item.addEventListener('click', function(e) {
             // Don't trigger if clicking on action buttons
@@ -1320,14 +1373,11 @@ function displayNotifications(notifications) {
             if (isUnread) {
                 markNotificationAsRead(notificationId);
             }
-            
-            // Navigate to related URL if available
-            // This would need to be implemented based on the notification's action_url
         });
     });
 }
 
-function markNotificationAsRead(notificationId) {
+window.markNotificationAsRead = function(notificationId) {
     fetch('notifications_handler.php?action=mark_read', {
         method: 'POST',
         headers: {
@@ -1339,15 +1389,17 @@ function markNotificationAsRead(notificationId) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Remove unread class and actions
-            const item = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
-            if (item) {
+            // Remove unread class and actions from all instances of this notification
+            document.querySelectorAll(`.notification-item[data-id="${notificationId}"]`).forEach(item => {
                 item.classList.remove('unread');
+                // Optional: you can change the buttons, but usually just removing unread class is fine.
+                // We keep the delete button!
                 const actions = item.querySelector('.notification-actions-item');
                 if (actions) {
-                    actions.remove();
+                    const markReadBtn = actions.querySelector('.btn-mark-read');
+                    if (markReadBtn) markReadBtn.remove();
                 }
-            }
+            });
             updateNotificationBadge();
         }
     })
@@ -1374,7 +1426,7 @@ function markAllNotificationsAsRead() {
     });
 }
 
-function deleteNotificationItem(notificationId) {
+window.deleteNotificationItem = function(notificationId) {
     fetch('notifications_handler.php?action=delete', {
         method: 'POST',
         headers: {
@@ -1386,22 +1438,23 @@ function deleteNotificationItem(notificationId) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Remove notification item
-            const item = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
-            if (item) {
+            // Remove notification item from all lists
+            document.querySelectorAll(`.notification-item[data-id="${notificationId}"]`).forEach(item => {
                 item.remove();
-                
-                // Check if there are no more notifications
-                const remainingItems = document.querySelectorAll('.notification-item');
-                if (remainingItems.length === 0) {
-                    notificationList.innerHTML = `
+            });
+            
+            // Check if there are no more notifications
+            document.querySelectorAll('.notification-list').forEach(list => {
+                if (list.querySelectorAll('.notification-item').length === 0) {
+                    list.innerHTML = `
                         <div class="notification-empty">
                             <i class="bi bi-bell-slash"></i>
                             <p>No notifications</p>
                         </div>
                     `;
                 }
-            }
+            });
+            
             updateNotificationBadge();
         }
     })

@@ -130,13 +130,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     $unit_cost = floatval($_POST['unit_cost'] ?? 0);
     $reorder_level = intval($_POST['reorder_level'] ?? 10);
     $for_office_id = intval($_POST['office_id'] ?? 0); // This will be for_office_id
-    $office_id = 3; // Always use Supply Office (ID = 3) for storage
+    $office_id = 163; // Always use Supply Office (ID = 163) for storage
     
     // Check if consumable with same description already exists in the same office
     $existing_consumable = null;
     if ($for_office_id > 0) {
         // Check for existing allocated record in Supply Office
-        $sql = "SELECT id, quantity, unit_cost FROM consumables WHERE description = ? AND office_id = 3 AND for_office_id = ?";
+        $sql = "SELECT id, quantity, unit_cost FROM consumables WHERE description = ? AND office_id = 163 AND for_office_id = ?";
         $check_stmt = $conn->prepare($sql);
         $check_stmt->bind_param("si", $description, $for_office_id);
         $check_stmt->execute();
@@ -229,6 +229,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                     
                     $message = "Consumable stock updated successfully! Added {$quantity} more items to existing consumable. New WAC: ₱" . number_format($new_unit_cost, 2);
                     $message_type = "success";
+                    $_SESSION['success_message'] = $message;
                     logSystemAction($_SESSION['user_id'], 'consumable_stock_added', 'consumable_management', "Added {$quantity} units to consumable: {$description}. New WAC: ₱{$new_unit_cost}");
                 } else {
                     throw new Exception("Failed to update consumable: " . $update_stmt->error);
@@ -257,6 +258,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                     
                     $message = "Consumable added successfully!";
                     $message_type = "success";
+                    $_SESSION['success_message'] = $message;
                     logSystemAction($_SESSION['user_id'], 'consumable_added', 'consumable_management', "Added consumable: {$description}");
                 } else {
                     throw new Exception("Failed to insert consumable: " . $insert_stmt->error);
@@ -280,7 +282,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     $unit_cost = floatval($_POST['unit_cost'] ?? 0);
     $reorder_level = intval($_POST['reorder_level'] ?? 10);
     $for_office_id = intval($_POST['office_id'] ?? 0); // This will be for_office_id
-    $office_id = 3; // Always use Supply Office (ID = 3) for storage
+    $office_id = 163; // Always use Supply Office (ID = 163) for storage
     
     // Validation
     if (empty($description)) {
@@ -442,7 +444,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['action']) && $_GET['acti
 }
 
 // Handle filter parameters
-$office_filter = isset($_GET['office']) ? intval($_GET['office']) : 3; // Default to Supply Office (ID = 3)
+$office_filter = isset($_GET['office']) ? intval($_GET['office']) : 163; // Default to Supply Office (ID = 163)
 $for_office_filter = isset($_GET['for_office']) ? intval($_GET['for_office']) : 0;
 
 // Get consumables with office information
@@ -494,7 +496,7 @@ try {
 // Get offices for dropdown
 $offices = [];
 try {
-    $result = $conn->query("SELECT id, office_name FROM offices WHERE status = 'active' ORDER BY office_name");
+    $result = $conn->query("SELECT id, office_name FROM offices WHERE status = 'active' AND office_code NOT LIKE 'L%' AND office_code NOT LIKE 'B%' ORDER BY office_name");
     if ($result) {
         while ($row = $result->fetch_assoc()) {
             $offices[] = $row;
@@ -707,7 +709,7 @@ try {
                                                 <button class="btn btn-sm btn-outline-secondary" disabled>
                                                     <i class="bi bi-check-circle"></i>
                                                 </button>
-                                            <?php elseif ($consumable['for_office_id'] == 3): ?>
+                                            <?php elseif ($consumable['for_office_id'] == 163): ?>
                                                 <button class="btn btn-sm btn-outline-warning" onclick="editReorderLevel(<?php echo $consumable['id']; ?>, '<?php echo htmlspecialchars($consumable['description']); ?>', <?php echo $consumable['quantity']; ?>)" title="Edit Reorder Level">
                                                     <i class="bi bi-pencil"></i>
                                                 </button>

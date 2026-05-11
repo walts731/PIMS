@@ -571,7 +571,7 @@ $total_forms_value = $stats['par_value'] + $stats['ics_value'] + $stats['ris_val
                     <div class="col-md-4">
                         <div class="section-card h-100">
                             <div class="section-title">
-                                <i class="bi bi-building"></i> Office Distribution
+                                <i class="bi bi-building"></i> Office/Location Distribution
                             </div>
                             <div class="chart-container">
                                 <canvas id="officeChart"></canvas>

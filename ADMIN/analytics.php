@@ -86,7 +86,7 @@ try {
         SUM(ai.value) as total_value
         FROM offices o
         LEFT JOIN asset_items ai ON o.id = ai.office_id
-        WHERE o.status = 'active'
+        WHERE o.status = 'active' AND o.office_code NOT LIKE 'L%' AND o.office_code NOT LIKE 'B%'
         GROUP BY o.id, o.office_name
         ORDER BY total_value DESC";
     
@@ -94,6 +94,23 @@ try {
     $result = $conn->query($office_asset_sql);
     while ($row = $result->fetch_assoc()) {
         $office_asset_data[] = $row;
+    }
+    
+    // Special Office Asset Data (L and B) for Chart
+    $special_office_asset_sql = "SELECT 
+        o.office_name,
+        COUNT(ai.id) as asset_count,
+        SUM(ai.value) as total_value
+        FROM offices o
+        LEFT JOIN asset_items ai ON o.id = ai.office_id
+        WHERE o.status = 'active' AND (o.office_code LIKE 'L%' OR o.office_code LIKE 'B%')
+        GROUP BY o.id, o.office_name
+        ORDER BY total_value DESC";
+    
+    $special_office_asset_data = [];
+    $result = $conn->query($special_office_asset_sql);
+    while ($row = $result->fetch_assoc()) {
+        $special_office_asset_data[] = $row;
     }
     
     // Category Asset Data for Chart
@@ -416,6 +433,18 @@ try {
                     </div>
                 </div>
             </div>
+
+            <!-- Asset Value by Special Office (L & B) -->
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="chart-card">
+                        <h5><i class="bi bi-bar-chart-steps"></i> Location Assets Breakdown </h5>
+                        <div class="chart-container">
+                            <canvas id="specialOfficeChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -551,17 +580,7 @@ try {
                         }
                     },
                     datalabels: {
-                        display: true,
-                        color: '#333',
-                        font: {
-                            weight: 'bold',
-                            size: 14
-                        },
-                        formatter: (value, ctx) => {
-                            const sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = ((value / sum) * 100).toFixed(1);
-                            return percentage > 5 ? value : '';
-                        }
+                        display: false
                     }
                 }
             }
@@ -648,6 +667,9 @@ try {
                                 return label + ': ' + value;
                             }
                         }
+                    },
+                    datalabels: {
+                        display: false
                     }
                 }
             }
@@ -713,6 +735,86 @@ try {
                                 return label + ': ' + value;
                             }
                         }
+                    },
+                    datalabels: {
+                        display: false
+                    }
+                }
+            }
+        });
+
+        // Asset Value by Special Office (L & B) Chart
+        <?php
+        $special_office_labels = [];
+        $special_office_values = [];
+        foreach ($special_office_asset_data as $office) {
+            $special_office_labels[] = $office['office_name'];
+            $special_office_values[] = $office['total_value'];
+        }
+        ?>
+        
+        const specialOfficeCtx = document.getElementById('specialOfficeChart').getContext('2d');
+        new Chart(specialOfficeCtx, {
+            type: 'bar',
+            data: {
+                labels: <?php echo json_encode($special_office_labels); ?>,
+                datasets: [{
+                    label: 'Asset Value (P)',
+                    data: <?php echo json_encode($special_office_values); ?>,
+                    backgroundColor: 'rgba(139, 92, 246, 0.8)', // Purple glass
+                    borderColor: 'rgba(139, 92, 246, 1)',
+                    borderWidth: 2,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return 'P' + value.toLocaleString();
+                            },
+                            color: '#333',
+                            font: {
+                                size: 11,
+                                weight: 'bold'
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            color: '#333',
+                            font: {
+                                size: 11,
+                                weight: 'bold'
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.dataset.label || '';
+                                const value = 'P' + context.parsed.y.toLocaleString();
+                                return label + ': ' + value;
+                            }
+                        }
+                    },
+                    datalabels: {
+                        display: false
                     }
                 }
             }
@@ -787,15 +889,7 @@ try {
                         }
                     },
                     datalabels: {
-                        display: true,
-                        anchor: 'end',
-                        align: 'top',
-                        color: '#333',
-                        font: {
-                            weight: 'bold',
-                            size: 12
-                        },
-                        formatter: (value) => value + ' items'
+                        display: false
                     }
                 }
             }

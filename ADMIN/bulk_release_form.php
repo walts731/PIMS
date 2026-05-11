@@ -24,7 +24,7 @@ $office_id = isset($_GET['office_id']) ? intval($_GET['office_id']) : 0;
 
 // Fetch offices for dropdown (only offices that have allocatable items)
 $offices = [];
-$office_query = $conn->query("SELECT DISTINCT o.id, o.office_name FROM offices o JOIN consumables c ON c.for_office_id = o.id WHERE c.quantity > 0 AND c.for_office_id != 3 AND c.for_office_id IS NOT NULL ORDER BY o.office_name");
+$office_query = $conn->query("SELECT DISTINCT o.id, o.office_name FROM offices o JOIN consumables c ON c.for_office_id = o.id WHERE c.quantity > 0 AND c.for_office_id != 163 AND c.for_office_id IS NOT NULL AND o.office_code NOT LIKE 'L%' AND o.office_code NOT LIKE 'B%' ORDER BY o.office_name");
 if ($office_query) {
     while ($row = $office_query->fetch_assoc()) {
         $offices[] = $row;

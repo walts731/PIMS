@@ -76,12 +76,13 @@ try {
         $update_sql = "UPDATE red_tags SET 
                        action = 'disposed',
                        disposal_date = ?,
+                       disposal_reason = ?,
                        updated_at = CURRENT_TIMESTAMP,
                        updated_by = ?
                        WHERE id = ?";
         
         $stmt = $conn->prepare($update_sql);
-        $stmt->bind_param("sii", $disposal_date, $_SESSION['user_id'], $red_tag_id);
+        $stmt->bind_param("ssii", $disposal_date, $disposal_reason, $_SESSION['user_id'], $red_tag_id);
         $stmt->execute();
         $stmt->close();
         
@@ -194,9 +195,10 @@ try {
         $asset = $asset_result->fetch_assoc();
         $stmt->close();
         
-        // Check if asset is red_tagged
-        if ($asset['status'] !== 'red_tagged') {
-            throw new Exception('Only red-tagged assets can be disposed.');
+        // Check if asset is red_tagged or unserviceable
+        $current_status = strtolower(trim($asset['status']));
+        if ($current_status !== 'red_tagged' && $current_status !== 'unserviceable') {
+            throw new Exception('Only red-tagged or unserviceable assets can be disposed. Current status: ' . $asset['status']);
         }
         
         // Update asset item status to disposed
@@ -219,6 +221,19 @@ try {
             'asset_item', 
             "Disposed asset item: {$asset['description']} (Reason: {$disposal_reason})"
         );
+
+        // Also update any active red tags for this asset item to 'disposed'
+        $update_redtag_sql = "UPDATE red_tags SET 
+                             action = 'disposed',
+                             disposal_date = ?,
+                             disposal_reason = ?,
+                             updated_at = CURRENT_TIMESTAMP,
+                             updated_by = ?
+                             WHERE asset_item_id = ? AND action != 'disposed'";
+        $stmt = $conn->prepare($update_redtag_sql);
+        $stmt->bind_param("ssii", $disposal_date, $disposal_reason, $_SESSION['user_id'], $asset_item_id);
+        $stmt->execute();
+        $stmt->close();
         
         $success_message = "Asset disposed successfully: {$asset['description']}";
         $redirect_page = "view_asset_item.php?id={$asset_item_id}";
@@ -229,12 +244,48 @@ try {
     
     $_SESSION['success'] = $success_message;
     
+    // Create notifications for MAIN_USER
+    if ($red_tag_id > 0) {
+        createMainUserNotificationsForDisposal($red_tag['item_description'], $disposal_reason, $red_tag['asset_item_id']);
+    } elseif ($asset_item_id > 0) {
+        createMainUserNotificationsForDisposal($asset['description'], $disposal_reason, $asset_item_id);
+    }
+    
 } catch (Exception $e) {
     // Rollback transaction
     $conn->rollback();
     
     error_log("Disposal error: " . $e->getMessage());
     $_SESSION['error'] = "Error disposing item: " . $e->getMessage();
+}
+
+// Function to create notifications for MAIN_USER when items are disposed
+function createMainUserNotificationsForDisposal($item_description, $reason, $asset_item_id) {
+    global $conn;
+    
+    // Get all MAIN_USER users
+    $main_users_query = "SELECT id FROM users WHERE role = 'main_user' AND is_active = 1";
+    $main_users_result = $conn->query($main_users_query);
+    
+    if ($main_users_result && $main_users_result->num_rows > 0) {
+        while ($main_user = $main_users_result->fetch_assoc()) {
+            $user_id = $main_user['id'];
+            
+            $title = "Asset Item Disposed";
+            $message = "Asset Item '{$item_description}' has been marked as disposed. Reason: {$reason}";
+            $type = "danger";
+            $related_id = $asset_item_id;
+            $related_type = "asset"; // Link back to the asset item view
+            
+            // Insert notification
+            $sql = "INSERT INTO notifications (user_id, title, message, type, related_id, related_type, created_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, NOW())";
+            
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param('issssi', $user_id, $title, $message, $type, $related_id, $related_type);
+            $stmt->execute();
+        }
+    }
 }
 
 // Check if this is an AJAX request

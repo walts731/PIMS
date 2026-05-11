@@ -835,13 +835,13 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
                                 const assetDropdown = firstRow.find('select[name="description[]"]');
                                 
                                 // Try to select the asset in the dropdown first
-                                assetDropdown.val(transferData.asset_id).trigger('change');
+                                assetDropdown.val(transferData.item_id).trigger('change');
                                 
                                 // Check if the asset was actually selected
                                 setTimeout(() => {
-                                    if (!assetDropdown.val() || assetDropdown.val() !== transferData.asset_id) {
+                                    if (!assetDropdown.val() || assetDropdown.val() !== transferData.item_id) {
                                         // If asset wasn't found in dropdown, add it manually
-                                        const newOption = new Option(transferData.description, transferData.asset_id, true, true);
+                                        const newOption = new Option(transferData.description, transferData.item_id, true, true);
                                         assetDropdown.append(newOption).trigger('change');
                                         
                                         // Add data attributes for the asset
@@ -867,7 +867,7 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
                                 const assetDropdown = firstRow.find('select[name="description[]"]');
                                 
                                 // Add the asset manually to dropdown
-                                const newOption = new Option(transferData.description, transferData.asset_id, true, true);
+                                const newOption = new Option(transferData.description, transferData.item_id, true, true);
                                 assetDropdown.append(newOption).trigger('change');
                                 
                                 // Add data attributes for the asset
@@ -894,7 +894,7 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
                             const assetDropdown = firstRow.find('select[name="description[]"]');
                             
                             // Add the asset manually to dropdown
-                            const newOption = new Option(transferData.description, transferData.asset_id, true, true);
+                            const newOption = new Option(transferData.description, transferData.item_id, true, true);
                             assetDropdown.append(newOption).trigger('change');
                             
                             // Add data attributes for the asset

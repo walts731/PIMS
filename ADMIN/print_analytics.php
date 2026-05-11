@@ -118,13 +118,30 @@ $office_asset_sql = "SELECT
     SUM(ai.value) as total_value
     FROM offices o
     LEFT JOIN asset_items ai ON o.id = ai.office_id
-    WHERE o.status = 'active'
+    WHERE o.status = 'active' AND o.office_code NOT LIKE 'L%' AND o.office_code NOT LIKE 'B%'
     GROUP BY o.id, o.office_name
     ORDER BY total_value DESC";
 
 $result = $conn->query($office_asset_sql);
 while ($row = $result->fetch_assoc()) {
     $office_asset_data[] = $row;
+}
+
+// Special Office Asset Data (L and B)
+$special_office_asset_data = [];
+$special_office_asset_sql = "SELECT 
+    o.office_name,
+    COUNT(ai.id) as asset_count,
+    SUM(ai.value) as total_value
+    FROM offices o
+    LEFT JOIN asset_items ai ON o.id = ai.office_id
+    WHERE o.status = 'active' AND (o.office_code LIKE 'L%' OR o.office_code LIKE 'B%')
+    GROUP BY o.id, o.office_name
+    ORDER BY total_value DESC";
+
+$result = $conn->query($special_office_asset_sql);
+while ($row = $result->fetch_assoc()) {
+    $special_office_asset_data[] = $row;
 }
 
 // Consumables Data
@@ -483,6 +500,35 @@ while ($row = $result->fetch_assoc()) {
                     <td class="value-cell">₱<?php echo number_format($office['total_value'], 2); ?></td>
                 </tr>
                 <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Special Offices (L & B) Breakdown -->
+    <div class="analytics-section">
+        <div class="section-title">Special Assets Breakdown (Offices L & B)</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Office Name</th>
+                    <th>Asset Count</th>
+                    <th>Total Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (empty($special_office_asset_data)): ?>
+                <tr>
+                    <td colspan="3" style="text-align: center;">No assets found for these offices.</td>
+                </tr>
+                <?php else: ?>
+                    <?php foreach ($special_office_asset_data as $office): ?>
+                    <tr>
+                        <td><?php echo htmlspecialchars($office['office_name']); ?></td>
+                        <td><?php echo number_format($office['asset_count']); ?></td>
+                        <td class="value-cell">₱<?php echo number_format($office['total_value'], 2); ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
             </tbody>
         </table>
     </div>

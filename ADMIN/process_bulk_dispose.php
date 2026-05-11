@@ -104,10 +104,11 @@ try {
             $update_sql = "UPDATE red_tags 
                          SET action = 'disposed',
                              disposal_date = ?,
+                             disposal_reason = ?,
                              updated_by = ?
                          WHERE id = ?";
             $stmt = $conn->prepare($update_sql);
-            $stmt->bind_param("sii", $disposal_date, $user_id, $tag_id);
+            $stmt->bind_param("ssii", $disposal_date, $disposal_reason, $user_id, $tag_id);
             
             error_log("Updating red tag ID $tag_id with disposal info");
             
@@ -150,6 +151,9 @@ try {
     
     // Set appropriate message
     if ($disposed_count > 0) {
+        // Create notifications for MAIN_USER
+        createMainUserNotificationsForBulkDisposal($disposed_count, $disposal_reason);
+
         if ($error_count > 0) {
             $_SESSION['success'] = "Successfully disposed $disposed_count red tag(s). $error_count item(s) could not be disposed.";
         } else {
@@ -165,6 +169,35 @@ try {
     $conn->rollback();
     error_log("Bulk disposal error: " . $e->getMessage());
     $_SESSION['error'] = 'An error occurred during bulk disposal. Please try again.';
+}
+
+// Function to create notifications for MAIN_USER when items are disposed in bulk
+function createMainUserNotificationsForBulkDisposal($count, $reason) {
+    global $conn;
+    
+    // Get all MAIN_USER users
+    $main_users_query = "SELECT id FROM users WHERE role = 'main_user' AND is_active = 1";
+    $main_users_result = $conn->query($main_users_query);
+    
+    if ($main_users_result && $main_users_result->num_rows > 0) {
+        while ($main_user = $main_users_result->fetch_assoc()) {
+            $user_id = $main_user['id'];
+            
+            $title = "Bulk Asset Disposal";
+            $message = "{$count} asset items have been marked as disposed in a bulk operation. Reason: {$reason}";
+            $type = "danger";
+            $related_id = null;
+            $related_type = "disposed_items"; // Link to the disposed items list
+            
+            // Insert notification
+            $sql = "INSERT INTO notifications (user_id, title, message, type, related_id, related_type, created_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, NOW())";
+            
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param('issssi', $user_id, $title, $message, $type, $related_id, $related_type);
+            $stmt->execute();
+        }
+    }
 }
 
 // Regenerate CSRF token

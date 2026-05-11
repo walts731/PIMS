@@ -1515,6 +1515,17 @@ require_once 'includes/subcategory_fields.php';
                                 .html('<i class="bi bi-check-circle-fill me-2"></i>' + response.message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>');
                             $('.page-header').after(alertDiv);
                             
+                            // Create notification for successful tag creation
+                            try {
+                                const notificationSql = "INSERT INTO notifications (user_id, type, title, message, related_type, related_id, is_read, created_at) VALUES (?, 'success', 'Inventory Tag Created', ?, 'asset', ?, 0, NOW())";
+                                const notificationStmt = <?php echo json_encode($conn); ?>.prepare(notificationSql);
+                                notificationStmt.bind_param('isis', <?php echo $_SESSION['user_id']; ?>, response.message, <?php echo $item_id; ?>);
+                                notificationStmt.execute();
+                                notificationStmt.close();
+                            } catch (e) {
+                                console.error('Error creating notification:', e);
+                            }
+                            
                             // Reload the page to update the image display
                             setTimeout(function() {
                                 location.reload();

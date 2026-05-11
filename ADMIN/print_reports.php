@@ -452,12 +452,30 @@ try {
             </div>
             <div class="stat-box">
                 <div class="stat-number"><?php 
-                    $total_offices_sql = "SELECT COUNT(*) as count FROM offices";
+                    $total_offices_sql = "SELECT COUNT(*) as count FROM offices WHERE office_code NOT LIKE 'L%' AND office_code NOT LIKE 'B%'";
                     $result = $conn->query($total_offices_sql);
                     $row = $result->fetch_assoc();
                     echo $row['count'];
                 ?></div>
                 <div class="stat-label">Total Offices</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number"><?php 
+                    $total_b_sql = "SELECT COUNT(*) as count FROM offices WHERE office_code LIKE 'B%'";
+                    $result = $conn->query($total_b_sql);
+                    $row = $result->fetch_assoc();
+                    echo $row['count'];
+                ?></div>
+                <div class="stat-label">Total Barangays</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number"><?php 
+                    $total_l_sql = "SELECT COUNT(*) as count FROM offices WHERE office_code LIKE 'L%'";
+                    $result = $conn->query($total_l_sql);
+                    $row = $result->fetch_assoc();
+                    echo $row['count'];
+                ?></div>
+                <div class="stat-label">Total Locations</div>
             </div>
         </div>
         

@@ -56,6 +56,8 @@ $sql = "SELECT n.*,
                CASE 
                    WHEN n.related_type = 'asset' THEN CONCAT('/ADMIN/view_asset_item.php?id=', n.related_id)
                    WHEN n.related_type = 'employee' THEN CONCAT('/ADMIN/employees.php#edit-', n.related_id)
+                   WHEN n.related_type = 'red_tag' THEN CONCAT('/ADMIN/red_tags.php?id=', n.related_id)
+                   WHEN n.related_type = 'disposed_items' THEN '/ADMIN/disposed_items.php'
                    ELSE '#'
                END as action_url
         FROM notifications n 
@@ -112,6 +114,11 @@ function getTimeAgo($datetime) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Notifications - PIMS</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="../favicon/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="../favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../favicon/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="../favicon/apple-touch-icon.png">
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css?v=<?php echo time(); ?>" rel="stylesheet">
     <!-- Bootstrap Icons -->
@@ -119,8 +126,7 @@ function getTimeAgo($datetime) {
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
-    <link href="../assets/css/index.css" rel="stylesheet">
-    <link href="../assets/css/theme-custom.css" rel="stylesheet">
+    
     <link href="assets/css/admin-unified.css" rel="stylesheet">
     <style>
         body {
@@ -171,21 +177,6 @@ function getTimeAgo($datetime) {
         .notification-type.warning { background: #fff3cd; color: #856404; }
         .notification-type.error { background: #f8d7da; color: #721c24; }
         .notification-type.system { background: #e2e3e5; color: #383d41; }
-        
-        .stats-card {
-            background: linear-gradient(135deg, var(--primary-color) 0%, #4a5bf5 100%);
-            color: white;
-            border-radius: var(--border-radius-lg);
-            padding: 1.5rem;
-            text-align: center;
-            margin-bottom: 1rem;
-        }
-        
-        .stats-number {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-        }
         
         .filter-tabs .nav-link {
             border: none;
@@ -239,34 +230,6 @@ function getTimeAgo($datetime) {
                             <i class="bi bi-trash"></i> Clear All
                         </button>
                     </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Statistics Cards -->
-        <div class="row mb-4">
-            <div class="col-md-3">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $total_notifications; ?></div>
-                    <div class="stats-label">Total Notifications</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $unread_count; ?></div>
-                    <div class="stats-label">Unread</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $total_notifications - $unread_count; ?></div>
-                    <div class="stats-label">Read</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stats-card">
-                    <div class="stats-number"><?php echo $total_pages; ?></div>
-                    <div class="stats-label">Pages</div>
                 </div>
             </div>
         </div>
@@ -487,33 +450,70 @@ function getTimeAgo($datetime) {
         }
         
         function clearAllNotifications() {
-            if (confirm('Are you sure you want to delete all notifications? This action cannot be undone.')) {
-                // Get all notification IDs and delete them one by one
-                const notificationCards = document.querySelectorAll('.notification-card');
-                const deletePromises = [];
-                
-                notificationCards.forEach(card => {
-                    const notificationId = card.dataset.id;
-                    deletePromises.push(
-                        fetch('notifications_handler.php?action=delete', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/x-www-form-urlencoded',
-                            },
-                            body: `notification_id=${notificationId}`
-                        })
-                    );
-                });
-                
-                Promise.all(deletePromises)
-                    .then(() => {
-                        location.reload();
+            // Show Bootstrap modal confirmation
+            const modal = new bootstrap.Modal(document.getElementById('clearNotificationsModal'));
+            modal.show();
+        }
+        
+        function confirmClearAllNotifications() {
+            // Get all notification IDs and delete them one by one
+            const notificationCards = document.querySelectorAll('.notification-card');
+            const deletePromises = [];
+            
+            notificationCards.forEach(card => {
+                const notificationId = card.dataset.id;
+                deletePromises.push(
+                    fetch('notifications_handler.php?action=delete', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `notification_id=${notificationId}`
                     })
-                    .catch(error => {
-                        console.error('Error clearing notifications:', error);
-                    });
-            }
+                );
+            });
+            
+            Promise.all(deletePromises)
+                .then(() => {
+                    // Hide modal and reload page
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('clearNotificationsModal'));
+                    modal.hide();
+                    location.reload();
+                })
+                .catch(error => {
+                    console.error('Error clearing notifications:', error);
+                });
         }
     </script>
+    
+    <!-- Clear All Notifications Confirmation Modal -->
+    <div class="modal fade" id="clearNotificationsModal" tabindex="-1" aria-labelledby="clearNotificationsModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="clearNotificationsModalLabel">
+                        <i class="bi bi-exclamation-triangle text-warning me-2"></i>
+                        Clear All Notifications
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <strong>Warning:</strong> This action cannot be undone.
+                    </div>
+                    <p>Are you sure you want to delete all notifications? This will permanently remove all notifications from the system.</p>
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-lg"></i> Cancel
+                        </button>
+                        <button type="button" class="btn btn-danger" onclick="confirmClearAllNotifications()">
+                            <i class="bi bi-trash-lg"></i> Clear All
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

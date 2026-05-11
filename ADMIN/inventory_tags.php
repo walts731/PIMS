@@ -37,6 +37,7 @@ $where_conditions[] = "ai.status = 'serviceable'";
 // Only show items that have property numbers (required for inventory tags)
 $where_conditions[] = "ai.property_no IS NOT NULL AND ai.property_no != ''";
 
+
 if ($office_filter > 0) {
     $where_conditions[] = "ai.office_id = ?";
     $params[] = $office_filter;
@@ -65,7 +66,7 @@ try {
             LEFT JOIN asset_categories ac ON COALESCE(ai.category_id, a.asset_categories_id) = ac.id 
             LEFT JOIN offices o ON ai.office_id = o.id 
             LEFT JOIN employees e ON ai.employee_id = e.id 
-            $where_clause AND ai.property_no IS NOT NULL AND ai.property_no != ''
+            $where_clause
             ORDER BY ai.created_at DESC";
     
     $stmt = $conn->prepare($sql);
@@ -75,12 +76,29 @@ try {
     $stmt->execute();
     $result = $stmt->get_result();
     
+        
     if ($result) {
         while ($row = $result->fetch_assoc()) {
             $tags[] = $row;
         }
     }
     $stmt->close();
+    
+    // Filter out unwanted categories after fetching
+    $excluded_categories = ['LND', 'Land Imp', 'RN', 'OInfra', 'Buildings', 'School bldg', 'HHC', 'MKT', 'SLH', 'Ostruct', 'PP&MUN', 'P&T'];
+    $filtered_tags = [];
+    foreach ($tags as $tag) {
+        $category_name = $tag['category_name'] ?? '';
+        
+        // Skip if category name is in excluded list or if no category is assigned
+        if (in_array($category_name, $excluded_categories) || empty($category_name)) {
+            continue;
+        }
+        
+        $filtered_tags[] = $tag;
+    }
+    $tags = $filtered_tags;
+    
 } catch (Exception $e) {
     error_log("Error fetching tags: " . $e->getMessage());
 }
@@ -105,11 +123,14 @@ try {
     if ($result) {
         while ($row = $result->fetch_assoc()) {
             $categories[] = $row;
+            // Debug: Log all available categories
+            error_log("Available category: " . ($row['category_code'] ?? 'NULL') . " - " . ($row['category_name'] ?? 'NULL'));
         }
     }
 } catch (Exception $e) {
     error_log("Error fetching categories: " . $e->getMessage());
 }
+
 
 ?>
 

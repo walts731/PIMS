@@ -935,6 +935,16 @@ $status_display = formatStatus($item['status']);
         <?php require_once 'includes/sidebar-toggle.php'; ?>
         <?php require_once 'includes/sidebar.php'; ?>
         <?php require_once 'includes/topbar.php'; ?>
+        
+        <!-- Toast Container for modern notifications -->
+        <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;">
+            <div id="statusToast" class="toast align-items-center border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body" id="toastMessage"></div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+        </div>
     
     <!-- Main Content -->
     <div class="main-content">
@@ -2114,12 +2124,12 @@ $status_display = formatStatus($item['status']);
         // Action functions
         function transferItem() {
             // Redirect to ITR form with asset item details for auto-filling
-            const assetId = <?php echo $item['asset_id']; ?>;
-            const itemId = <?php echo $item['id']; ?>;
-            const description = <?php echo json_encode($item['description']); ?>;
+            const assetId = <?php echo $item['asset_id'] ?? 0; ?>;
+            const itemId = <?php echo $item['id'] ?? 0; ?>;
+            const description = <?php echo json_encode($item['description'] ?? ''); ?>;
             const propertyNo = <?php echo json_encode($item['property_no'] ?? ''); ?>;
-            const value = <?php echo $item['value']; ?>;
-            const unitCost = <?php echo $item['unit_cost']; ?>;
+            const value = <?php echo $item['value'] ?? 0; ?>;
+            const unitCost = <?php echo $item['unit_cost'] ?? 0; ?>;
             
             const url = `itr_form.php?transfer_asset=1&asset_id=${assetId}&item_id=${itemId}&description=${encodeURIComponent(description)}&property_no=${encodeURIComponent(propertyNo)}&value=${value}&unit_cost=${unitCost}`;
             window.location.href = url;
@@ -2254,7 +2264,7 @@ $status_display = formatStatus($item['status']);
             const selectedCheckboxes = document.querySelectorAll('.iirup-component-checkbox:checked');
             
             if (selectedCheckboxes.length === 0) {
-                alert('Please select at least one component to add to IIRUP.');
+                showStatusToast('Please select at least one component to add to IIRUP.', 'warning');
                 return;
             }
             
@@ -2358,12 +2368,12 @@ $status_display = formatStatus($item['status']);
             const date = document.getElementById('disposalDate').value;
             
             if (!reason) {
-                alert('Please enter a disposal reason.');
+                showStatusToast('Please enter a disposal reason.', 'warning');
                 return;
             }
             
             if (!date) {
-                alert('Please select a disposal date.');
+                showStatusToast('Please select a disposal date.', 'warning');
                 return;
             }
             
@@ -2390,7 +2400,7 @@ $status_display = formatStatus($item['status']);
                     addActivityFeedEntry('Disposed', reason, <?php echo json_encode(trim(($_SESSION['firstname'] ?? '') . ' ' . ($_SESSION['lastname'] ?? ''))); ?>, date + ' 12:00:00');
                     
                     // Show success message
-                    alert('Asset has been successfully disposed.');
+                    showStatusToast('Asset has been successfully disposed.', 'success');
                     
                     // Close modal
                     bootstrap.Modal.getInstance(document.getElementById('disposeModal')).hide();
@@ -2405,7 +2415,7 @@ $status_display = formatStatus($item['status']);
             })
             .catch(error => {
                 console.error('Disposal error:', error);
-                alert('Error disposing asset: ' + error.message);
+                showStatusToast('Error disposing asset: ' + error.message, 'danger');
                 
                 // Reset button state
                 confirmBtn.innerHTML = originalText;
@@ -2413,6 +2423,53 @@ $status_display = formatStatus($item['status']);
             });
         };
         
+        // Helper functions for activity feed icons and colors (JS version)
+        function getActionIcon(action) {
+            const icons = {
+                'Created': 'plus-circle-fill',
+                'Updated': 'pencil-square',
+                'Deleted': 'trash-fill',
+                'Status Changed': 'exclamation-triangle-fill',
+                'Assigned': 'person-check-fill',
+                'Transferred': 'arrow-left-right',
+                'Maintenance': 'tools',
+                'Disposed': 'x-circle-fill',
+                'Inspected': 'eye-fill',
+                'Repaired': 'wrench',
+                'Calibrated': 'speedometer2',
+                'Cleaned': 'brush-fill',
+                'Tested': 'check-circle-fill',
+                'Approved': 'check-square-fill',
+                'Rejected': 'x-square-fill',
+                'Peripheral Added': 'pc-display',
+                'Peripheral Updated': 'pencil-square'
+            };
+            return icons[action] || 'circle-fill';
+        }
+
+        function getActionColor(action) {
+            const colors = {
+                'Created': '#28a745',
+                'Updated': '#007bff',
+                'Deleted': '#dc3545',
+                'Status Changed': '#dc3545',
+                'Assigned': '#17a2b8',
+                'Transferred': '#6f42c1',
+                'Maintenance': '#007bff',
+                'Disposed': '#6c757d',
+                'Inspected': '#20c997',
+                'Repaired': '#007bff',
+                'Calibrated': '#6f42c1',
+                'Cleaned': '#28a745',
+                'Tested': '#20c997',
+                'Approved': '#28a745',
+                'Rejected': '#dc3545',
+                'Peripheral Added': '#fd7e14',
+                'Peripheral Updated': '#6f42c1'
+            };
+            return colors[action] || '#6c757d';
+        }
+
         // Function to add activity feed entry dynamically
         function addActivityFeedEntry(action, details, userName, createdAt) {
             const activityFeed = document.querySelector('.activity-feed');
@@ -2564,6 +2621,28 @@ $status_display = formatStatus($item['status']);
             
             // Open Red Tag form with component data
             window.open('create_redtag.php?' + params.toString(), '_blank');
+        }
+
+        // Helper to show modern toasts
+        function showStatusToast(message, type = 'info') {
+            const toastEl = document.getElementById('statusToast');
+            const toastMsg = document.getElementById('toastMessage');
+            
+            if (!toastEl || !toastMsg) return;
+            
+            // Set message
+            toastMsg.textContent = message;
+            
+            // Set theme based on type
+            toastEl.classList.remove('bg-success', 'bg-danger', 'bg-warning', 'bg-info', 'text-white');
+            if (type === 'success') toastEl.classList.add('bg-success', 'text-white');
+            else if (type === 'danger') toastEl.classList.add('bg-danger', 'text-white');
+            else if (type === 'warning') toastEl.classList.add('bg-warning', 'text-white');
+            else toastEl.classList.add('bg-info', 'text-white');
+            
+            // Initialize and show
+            const toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+            toast.show();
         }
     </script>
     

@@ -114,10 +114,11 @@ try {
 $message = '';
 $message_type = '';
 
-// Check for success parameter in URL
+// We now use $_SESSION for success and error messages
 if (isset($_GET['success']) && $_GET['success'] == '1') {
-    $message = "Asset operation completed successfully!";
-    $message_type = "success";
+    if (!isset($_SESSION['success'])) {
+        $_SESSION['success'] = "Asset operation completed successfully!";
+    }
 }
 
 // CREATE - Add new asset
@@ -289,12 +290,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                         }
                     }
                     
-                    $message = "Asset quantity updated successfully! Added {$quantity} more items to existing asset.";
-                    $message_type = "success";
+                    $_SESSION['success'] = "Asset quantity updated successfully! Added {$quantity} more items to existing asset '{$description}'.";
                     logSystemAction($_SESSION['user_id'], 'asset_quantity_updated', 'asset_management', "Updated quantity for existing asset: {$description}");
                     
                     // Redirect to refresh the page and show the updated asset
-                    header('Location: assets.php?success=1');
+                    header('Location: assets.php');
                     exit();
                 } else {
                     throw new Exception("Failed to update asset: " . $conn->error);
@@ -376,8 +376,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                         }
                     }
                     
-                    $message = "Asset added successfully!";
-                    $message_type = "success";
+                    $_SESSION['success'] = "A new asset '{$description}' has been added successfully!";
                     
                     logSystemAction($_SESSION['user_id'], 'asset_added', 'asset_management', "Added asset: {$description}");
                     
@@ -385,7 +384,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                     createMainUserNotification($asset_id, $description);
                     
                     // Redirect to refresh the page and show the new asset
-                    header('Location: assets.php?success=1');
+                    header('Location: assets.php');
                     exit();
                 } else {
                     throw new Exception("Failed to insert asset: " . $conn->error);
@@ -393,8 +392,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             }
             
         } catch (Exception $e) {
-            $message = "Error adding asset: " . $e->getMessage();
-            $message_type = "danger";
+            $_SESSION['error'] = "Error adding asset: " . $e->getMessage();
         }
     }
 }
@@ -514,8 +512,7 @@ try {
     }
     $stmt->close();
 } catch (Exception $e) {
-    $message = "Error fetching assets: " . $e->getMessage();
-    $message_type = "danger";
+    $_SESSION['error'] = "Error fetching assets: " . $e->getMessage();
 }
 
 // Get asset categories for dropdown
@@ -636,10 +633,25 @@ try {
                         <i class="bi bi-box"></i> Asset Management
                     </h1>
                     <p class="text-muted mb-0">Manage and track organizational assets</p>
-                    <?php if ($message): ?>
-                        <div class="alert alert-<?php echo $message_type; ?> mt-2" role="alert">
+                    <?php if (isset($_SESSION['success'])): ?>
+                        <div class="alert alert-success mt-2 alert-dismissible fade show" role="alert">
+                            <i class="bi bi-check-circle"></i>
+                            <?php echo htmlspecialchars($_SESSION['success']); unset($_SESSION['success']); ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    <?php endif; ?>
+                    <?php if (isset($_SESSION['error'])): ?>
+                        <div class="alert alert-danger mt-2 alert-dismissible fade show" role="alert">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <?php echo htmlspecialchars($_SESSION['error']); unset($_SESSION['error']); ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    <?php endif; ?>
+                    <?php if (!empty($message)): ?>
+                        <div class="alert alert-<?php echo $message_type; ?> mt-2 alert-dismissible fade show" role="alert">
                             <i class="bi bi-<?php echo $message_type == 'success' ? 'check-circle' : 'exclamation-triangle'; ?>"></i>
                             <?php echo htmlspecialchars($message); ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
                     <?php endif; ?>
                 </div>

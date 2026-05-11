@@ -124,129 +124,184 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                 throw new Exception("Source consumable not found.");
             }
 
-            $source_data = $source_result->fetch_assoc();
-            $source_quantity = $source_data['quantity'];
+            $source_data     = $source_result->fetch_assoc();
+            $source_quantity = intval($source_data['quantity']);
+            $supply_office_id = intval($source_data['office_id']);
 
             if ($release_quantity > $source_quantity) {
                 throw new Exception("Cannot release {$release_quantity} items. Only {$source_quantity} items available in stock.");
             }
 
-            // Step 1: Check Balance Record for target office
-            // Look for balance records where:
-            // - for_office_id matches the target office (the office receiving the release)
-            // - consumable_description matches the consumable being released
-            // This finds if the target office has any outstanding borrowed items that need to be returned first
-            error_log("DEBUG: Checking balance for target_office_id: {$target_office_id}, consumable_description: '{$source_data['description']}' (escaped: '" . addslashes($source_data['description']) . "')");
-            $balance_check_sql = "SELECT id, consumable_id, consumable_description, office_id, office_name, for_office_id, total_borrowed, total_deducted, current_balance, last_updated, created_at
-                                  FROM consumable_balance
-                                  WHERE for_office_id = {$target_office_id} AND consumable_description = '" . addslashes($source_data['description']) . "'
-                                  FOR UPDATE";
-            $balance_result = $conn->query($balance_check_sql);
-            error_log("DEBUG: Balance check SQL: {$balance_check_sql}");
-            error_log("DEBUG: Balance result num_rows: " . ($balance_result ? $balance_result->num_rows : 'null'));
+            // ── STEP 1: Check for an outstanding borrow balance for the target office ──────────
+            // consumable_balance rows are keyed: office_id=supplier, for_office_id=borrower
+            // So we look for: for_office_id = target AND description matches.
+            $outstanding_balance = 0;
+            $balance_action      = "No balance record found";
 
-            $current_balance_for_office = 0;
-            $borrowed_deducted = 0;
-            $balance_action = "No balance record found";
+            $bal_stmt = $conn->prepare(
+                "SELECT id, consumable_id, current_balance
+                 FROM consumable_balance
+                 WHERE for_office_id = ? AND consumable_description = ?
+                 LIMIT 1
+                 FOR UPDATE"
+            );
+            $bal_stmt->bind_param("is", $target_office_id, $source_data['description']);
+            $bal_stmt->execute();
+            $bal_result = $bal_stmt->get_result();
+            $bal_stmt->close();
 
-            if ($balance_result && $balance_result->num_rows > 0) {
-                $balance_data = $balance_result->fetch_assoc();
+            if ($bal_result->num_rows > 0) {
+                $balance_data        = $bal_result->fetch_assoc();
+                $outstanding_balance = intval($balance_data['current_balance']);
+                error_log("DEBUG: Balance record id={$balance_data['id']}, outstanding={$outstanding_balance}");
 
-                error_log("DEBUG: Found balance record - id: {$balance_data['id']}, office_id: {$balance_data['office_id']}, for_office_id: {$balance_data['for_office_id']}, consumable_description: '{$balance_data['consumable_description']}', current_balance: {$balance_data['current_balance']}, total_borrowed: {$balance_data['total_borrowed']}, total_deducted: {$balance_data['total_deducted']}");
+                if ($release_type === 'with_deduction' && $outstanding_balance > 0) {
 
-                if ($release_type === 'with_deduction') {
-                    // Process balance deduction - delete balance record and return items to supply office
-                    $delete_stmt = $conn->prepare("DELETE FROM consumable_balance WHERE id = ?");
-                    $delete_stmt->bind_param("i", $balance_data['id']);
-                    if (!$delete_stmt->execute()) {
-                        error_log("ERROR: Failed to delete balance record: " . $delete_stmt->error);
-                        throw new Exception("Failed to delete balance record: " . $delete_stmt->error);
+                    // ── DELETE the consumable_balance record ──────────────────────────────────
+                    $del_bal = $conn->prepare("DELETE FROM consumable_balance WHERE id = ?");
+                    $del_bal->bind_param("i", $balance_data['id']);
+                    if (!$del_bal->execute()) {
+                        throw new Exception("Failed to delete balance record: " . $del_bal->error);
                     }
-                    error_log("DEBUG: Balance record deleted successfully, affected rows: " . $delete_stmt->affected_rows);
-                    $delete_stmt->close();
+                    $del_bal->close();
                     error_log("DEBUG: Balance record {$balance_data['id']} deleted");
 
-                    // Delete corresponding lend_consumables records since items are being permanently released/transferred
-                    $delete_lend_stmt = $conn->prepare("DELETE FROM lend_consumables WHERE consumable_id = ? AND to_office_id = ?");
-                    $delete_lend_stmt->bind_param("ii", $balance_data['consumable_id'], $balance_data['for_office_id']);
-                    if (!$delete_lend_stmt->execute()) {
-                        error_log("ERROR: Failed to delete lend_consumables records: " . $delete_lend_stmt->error);
-                        throw new Exception("Failed to update lending records: " . $delete_lend_stmt->error);
-                    }
-                    error_log("DEBUG: Deleted lend_consumables records for consumable_id: {$balance_data['consumable_id']}, to_office_id: {$balance_data['for_office_id']}");
-                    $delete_lend_stmt->close();
+                    // ── Clean up matching lend_consumables rows ───────────────────────────────
+                    $del_lend = $conn->prepare("DELETE FROM lend_consumables WHERE consumable_id = ? AND to_office_id = ?");
+                    $del_lend->bind_param("ii", $balance_data['consumable_id'], $target_office_id);
+                    $del_lend->execute();
+                    $del_lend->close();
 
-                    $borrowed_deducted = $balance_data['current_balance'];
-                    $balance_action = "Deleted balance record {$balance_data['id']}";
+                    // ── Return the outstanding qty to the Supply Office's OWN stock row ───────
+                    // The "own stock" row is: office_id = supply AND for_office_id = supply (or NULL).
+                    $ret_stmt = $conn->prepare(
+                        "SELECT id, quantity FROM consumables
+                         WHERE description = ? AND office_id = ? AND (for_office_id = ? OR for_office_id IS NULL)
+                         ORDER BY (for_office_id IS NULL) ASC
+                         LIMIT 1
+                         FOR UPDATE"
+                    );
+                    $ret_stmt->bind_param("sii", $source_data['description'], $supply_office_id, $supply_office_id);
+                    $ret_stmt->execute();
+                    $ret_result = $ret_stmt->get_result();
+                    $ret_stmt->close();
+
+                    if ($ret_result->num_rows > 0) {
+                        $ret_row        = $ret_result->fetch_assoc();
+                        $new_ret_qty    = intval($ret_row['quantity']) + $outstanding_balance;
+                        $upd_ret = $conn->prepare("UPDATE consumables SET quantity = ? WHERE id = ?");
+                        $upd_ret->bind_param("ii", $new_ret_qty, $ret_row['id']);
+                        $upd_ret->execute();
+                        $upd_ret->close();
+                        $balance_action = "Deleted balance record {$balance_data['id']}, returned {$outstanding_balance} to supply stock (consumable id={$ret_row['id']})";
+                        error_log("DEBUG: Returned {$outstanding_balance} to supply consumable id={$ret_row['id']}, new qty={$new_ret_qty}");
+                    } else {
+                        // No own-stock row exists — create one
+                        $ins_ret = $conn->prepare(
+                            "INSERT INTO consumables (description, quantity, unit_cost, reorder_level, office_id, for_office_id)
+                             VALUES (?, ?, ?, ?, ?, ?)"
+                        );
+                        $reorder = intval($source_data['reorder_level']);
+                        $ins_ret->bind_param("siidii",
+                            $source_data['description'],
+                            $outstanding_balance,
+                            $source_data['unit_cost'],
+                            $reorder,
+                            $supply_office_id,
+                            $supply_office_id
+                        );
+                        $ins_ret->execute();
+                        $ins_ret->close();
+                        $balance_action = "Deleted balance record {$balance_data['id']}, inserted new supply stock row with {$outstanding_balance} returned items";
+                        error_log("DEBUG: Inserted new supply stock row with qty={$outstanding_balance}");
+                    }
+
                 } else {
-                    // Release without deduction - keep balance record intact
-                    $borrowed_deducted = 0;
-                    $balance_action = "Kept balance record {$balance_data['id']} intact";
+                    // without_deduction — leave balance intact, treat as a straight release
+                    $outstanding_balance = 0;
+                    $balance_action      = "Kept balance record {$balance_data['id']} intact (without_deduction)";
                 }
-            } else {
-                $borrowed_deducted = 0;
-                $balance_action = "No balance record found";
             }
 
-            // Step 4: Release to Target Office (remaining quantity after balance deduction)
-            $actual_release_quantity = $release_quantity - $borrowed_deducted;
+            // ── STEP 2: Compute actual quantity to physically release to the target office ─────
+            // with_deduction:    actual = release_qty - outstanding_balance
+            //   (the balance portion has already been "returned" to supply above)
+            // without_deduction: actual = release_qty (full amount goes to target)
+            $actual_release_quantity = $release_quantity - $outstanding_balance;
 
+            if ($actual_release_quantity < 0) {
+                throw new Exception(
+                    "Outstanding balance ({$outstanding_balance}) exceeds release quantity ({$release_quantity}). " .
+                    "Increase the release quantity to at least {$outstanding_balance}."
+                );
+            }
+
+            // ── STEP 3: Add actual_release_quantity to the target office's stock ───────────────
             if ($actual_release_quantity > 0) {
-                // Check if target office already has this consumable
-                $target_stmt = $conn->prepare("SELECT id, quantity FROM consumables WHERE description = ? AND office_id = ? FOR UPDATE");
-                $target_stmt->bind_param("si", $source_data['description'], $target_office_id);
-                $target_stmt->execute();
-                $target_result = $target_stmt->get_result();
+                $tgt_stmt = $conn->prepare("SELECT id, quantity FROM consumables WHERE description = ? AND office_id = ? FOR UPDATE");
+                $tgt_stmt->bind_param("si", $source_data['description'], $target_office_id);
+                $tgt_stmt->execute();
+                $tgt_result = $tgt_stmt->get_result();
 
-                if ($target_result->num_rows > 0) {
-                    // Update existing consumable in target office
-                    $target_data = $target_result->fetch_assoc();
-                    $new_target_quantity = $target_data['quantity'] + $actual_release_quantity;
-
-                    $update_target_stmt = $conn->prepare("UPDATE consumables SET quantity = ? WHERE id = ?");
-                    $update_target_stmt->bind_param("ii", $new_target_quantity, $target_data['id']);
-                    $update_target_stmt->execute();
-                    $update_target_stmt->close();
+                if ($tgt_result->num_rows > 0) {
+                    $tgt_row      = $tgt_result->fetch_assoc();
+                    $new_tgt_qty  = intval($tgt_row['quantity']) + $actual_release_quantity;
+                    $upd_tgt = $conn->prepare("UPDATE consumables SET quantity = ? WHERE id = ?");
+                    $upd_tgt->bind_param("ii", $new_tgt_qty, $tgt_row['id']);
+                    $upd_tgt->execute();
+                    $upd_tgt->close();
                 } else {
-                    // Insert new consumable in target office
-                    $insert_target_stmt = $conn->prepare("INSERT INTO consumables (description, quantity, unit_cost, reorder_level, office_id) VALUES (?, ?, ?, ?, ?)");
-                    $insert_target_stmt->bind_param("sidii",
+                    $reorder = intval($source_data['reorder_level']);
+                    $ins_tgt = $conn->prepare("INSERT INTO consumables (description, quantity, unit_cost, reorder_level, office_id) VALUES (?, ?, ?, ?, ?)");
+                    $ins_tgt->bind_param("siidi",
                         $source_data['description'],
                         $actual_release_quantity,
                         $source_data['unit_cost'],
-                        $source_data['reorder_level'],
+                        $reorder,
                         $target_office_id
                     );
-                    $insert_target_stmt->execute();
-                    $insert_target_stmt->close();
+                    $ins_tgt->execute();
+                    $ins_tgt->close();
                 }
-                $target_stmt->close();
+                $tgt_stmt->close();
             }
 
-            // Step 5: Deduct from Source (ID 3 in the example)
+            // ── STEP 4: Deduct the FULL release_quantity from the source ───────────────────
+            // All 50 items leave the source (id=3).
+            // They are split into two destinations:
+            //   → actual_release_quantity (e.g. 20) goes to the target office (ADMIN)
+            //   → outstanding_balance     (e.g. 30) was already returned to Supply own-stock
+            // Total: 20 + 30 = 50 = release_quantity  → source becomes 0.
             $new_source_quantity = $source_quantity - $release_quantity;
-            $update_source_stmt = $conn->prepare("UPDATE consumables SET quantity = ? WHERE id = ?");
-            $update_source_stmt->bind_param("ii", $new_source_quantity, $source_consumable_id);
-            $update_source_stmt->execute();
-            $update_source_stmt->close();
+            $upd_src = $conn->prepare("UPDATE consumables SET quantity = ? WHERE id = ?");
+            $upd_src->bind_param("ii", $new_source_quantity, $source_consumable_id);
+            $upd_src->execute();
+            $upd_src->close();
 
             // Get target office name for logging
             $office_stmt = $conn->prepare("SELECT office_name FROM offices WHERE id = ?");
             $office_stmt->bind_param("i", $target_office_id);
             $office_stmt->execute();
-            $office_result = $office_stmt->get_result();
-            $office_data = $office_result->fetch_assoc();
+            $office_data = $office_stmt->get_result()->fetch_assoc();
             $office_stmt->close();
 
             // Log release action
-            $log_remarks = "Released {$release_quantity} '{$source_data['description']}' from office ID {$source_data['office_id']} to {$office_data['office_name']}. Release type: {$release_type}. {$balance_action}, returned {$borrowed_deducted} to supply office, actual release: {$actual_release_quantity}. Remarks: " . ($remarks ?: 'No remarks');
+            $log_remarks = "Released {$release_quantity} '{$source_data['description']}' from source (id={$source_consumable_id}) "
+                         . "→ {$actual_release_quantity} to {$office_data['office_name']}, "
+                         . "{$outstanding_balance} returned to supply stock. "
+                         . "(release_type={$release_type}). {$balance_action}. Source remaining: {$new_source_quantity}. "
+                         . "Remarks: " . ($remarks ?: 'No remarks');
             logSystemAction($_SESSION['user_id'], 'consumable_released', 'consumable_management', $log_remarks);
 
             // Commit transaction
             $conn->commit();
 
-            $message = "Successfully released {$release_quantity} '{$source_data['description']}' item(s) to {$office_data['office_name']} using {$release_type}. {$balance_action}, returned {$borrowed_deducted} to supply office. Source remaining: {$new_source_quantity}.";
+            $message = "Successfully released {$release_quantity} '{$source_data['description']}' item(s) from source. "
+                     . "→ {$actual_release_quantity} item(s) delivered to {$office_data['office_name']}, "
+                     . "{$outstanding_balance} item(s) returned to supply stock. "
+                     . "{$balance_action}. Source remaining: {$new_source_quantity}.";
             $message_type = "success";
+            $_SESSION['success_message'] = $message;
 
             // Close modal on success and refresh parent consumables page with success message
             echo "<script>
@@ -380,9 +435,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                                     <div class="col-md-6">
                                         <div class="mb-3">
                                             <label class="form-label">Release Quantity *</label>
-                                            <input type="number" class="form-control" name="release_quantity"
-                                                   min="1" max="<?php echo $consumable['quantity']; ?>" required>
-                                            <small class="text-muted">Maximum available: <?php echo $consumable['quantity']; ?> items</small>
+                                            <input type="text"
+                                                   inputmode="numeric"
+                                                   pattern="[0-9]+"
+                                                   class="form-control"
+                                                   name="release_quantity"
+                                                   id="releaseQuantityInput"
+                                                   autocomplete="off"
+                                                   data-max="<?php echo $consumable['quantity']; ?>"
+                                                   placeholder="Enter quantity (max <?php echo $consumable['quantity']; ?>)"
+                                                   required>
+                                            <small class="text-muted">Maximum available: <strong><?php echo $consumable['quantity']; ?></strong> items</small>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -458,6 +521,47 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                                     </button>
                                 </div>
                             </form>
+                            <script>
+                                document.querySelector('form').addEventListener('submit', function(e) {
+                                    const input = document.getElementById('releaseQuantityInput');
+                                    const raw   = input.value.trim();
+                                    const max   = parseInt(input.dataset.max, 10);
+
+                                    if (!/^\d+$/.test(raw)) {
+                                        e.preventDefault();
+                                        alert('Please enter a valid whole number.');
+                                        input.focus();
+                                        return;
+                                    }
+
+                                    const val = parseInt(raw, 10);
+
+                                    if (val <= 0) {
+                                        e.preventDefault();
+                                        alert('Quantity must be greater than 0.');
+                                        input.focus();
+                                        return;
+                                    }
+
+                                    if (val > max) {
+                                        e.preventDefault();
+                                        alert('Cannot release ' + val + ' items.\nOnly ' + max + ' items are available in stock.\nPlease enter ' + max + ' or less.');
+                                        input.value = '';
+                                        input.focus();
+                                        return;
+                                    }
+
+                                    // Set clean integer value
+                                    input.value = val;
+                                });
+
+                                // Block non-numeric keystrokes
+                                document.getElementById('releaseQuantityInput').addEventListener('keypress', function(e) {
+                                    if (!/[0-9]/.test(e.key)) {
+                                        e.preventDefault();
+                                    }
+                                });
+                            </script>
                         <?php else: ?>
                             <div class="alert alert-warning">
                                 <i class="bi bi-exclamation-triangle"></i>

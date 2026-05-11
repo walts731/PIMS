@@ -200,7 +200,7 @@ $system_version = $system_settings['system_version'] ?? '1.0.0';
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-info" onclick="window.open('user_manual.pdf')">User Manual</button>
+                <button type="button" class="btn btn-info" onclick="window.open('../user_manual.php', '_blank')">User Manual</button>
             </div>
         </div>
     </div>
