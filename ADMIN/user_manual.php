@@ -1,15 +1,15 @@
 <?php
 session_start();
-require_once 'config.php';
-require_once 'includes/system_functions.php';
-require_once 'includes/logger.php';
+require_once '../config.php';
+require_once '../includes/system_functions.php';
+require_once '../includes/logger.php';
 
 // Check session timeout
 checkSessionTimeout();
 
 // Check if user is logged in
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
-    header('Location: index.php');
+    header('Location: ../index.php');
     exit();
 }
 
@@ -53,65 +53,23 @@ logSystemAction($_SESSION['user_id'], 'access', 'user_manual', 'User accessed ma
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $pageTitle; ?> - <?php echo $system_name; ?></title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="../favicon/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="../favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../favicon/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="../favicon/apple-touch-icon.png">
     
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <!-- Custom CSS -->
-    <link href="assets/css/admin-unified.css" rel="stylesheet">
+    <link href="../SYSTEM_ADMIN/assets/css/admin-unified.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <?php require_once 'ADMIN/includes/dark-mode-init.php'; ?>
+    <?php require_once 'includes/dark-mode-init.php'; ?>
     
     <style>
-        .manual-sidebar {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            border: 1px solid #e9ecef;
-        }
-        
-        .manual-sidebar h5 {
-            color: #495057;
-            font-weight: 600;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #007bff;
-        }
-        
-        .manual-content {
-            padding: 0;
-        }
-        
-        .manual-section {
-            margin-bottom: 30px;
-            padding: 30px;
-            background: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            border: 1px solid #e9ecef;
-        }
-        
-        .manual-section h2 {
-            color: #2c3e50;
-            border-bottom: 3px solid #3498db;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-        }
-        
-        .manual-section h3 {
-            color: #34495e;
-            margin-top: 25px;
-            margin-bottom: 15px;
-        }
-        
-        .manual-section h4 {
-            color: #5d6d7e;
-            margin-top: 20px;
-            margin-bottom: 10px;
-        }
-        
         .feature-list {
             list-style: none;
             padding: 0;
@@ -178,6 +136,7 @@ logSystemAction($_SESSION['user_id'], 'access', 'user_manual', 'User accessed ma
             border-left: 4px solid #3498db;
             padding: 15px;
             margin: 15px 0;
+            border-radius: 0 5px 5px 0;
         }
         
         .warning-box {
@@ -185,6 +144,7 @@ logSystemAction($_SESSION['user_id'], 'access', 'user_manual', 'User accessed ma
             border-left: 4px solid #ffc107;
             padding: 15px;
             margin: 15px 0;
+            border-radius: 0 5px 5px 0;
         }
         
         .success-box {
@@ -192,24 +152,7 @@ logSystemAction($_SESSION['user_id'], 'access', 'user_manual', 'User accessed ma
             border-left: 4px solid #28a745;
             padding: 15px;
             margin: 15px 0;
-        }
-        
-        .nav-link {
-            color: #495057;
-            padding: 8px 15px;
-            margin: 2px 0;
-            border-radius: 5px;
-            transition: all 0.3s;
-        }
-        
-        .nav-link:hover {
-            background: #e9ecef;
-            color: #3498db;
-        }
-        
-        .nav-link.active {
-            background: #3498db;
-            color: white;
+            border-radius: 0 5px 5px 0;
         }
         
         .screenshot-placeholder {
@@ -222,47 +165,7 @@ logSystemAction($_SESSION['user_id'], 'access', 'user_manual', 'User accessed ma
             margin: 15px 0;
         }
         
-        @media (max-width: 768px) {
-            .manual-sidebar {
-                position: static;
-                margin-bottom: 20px;
-            }
-            
-            .manual-content {
-                padding-left: 0;
-            }
-        }
-        
         /* Dark mode styles */
-        body.dark-mode .manual-sidebar {
-            background: #1f2937;
-            border-color: #374151;
-        }
-        
-        body.dark-mode .manual-sidebar h5 {
-            color: #f3f4f6;
-            border-bottom-color: #3b82f6;
-        }
-        
-        body.dark-mode .manual-section {
-            background: #1f2937;
-            color: #e5e7eb;
-            border-color: #374151;
-        }
-        
-        body.dark-mode .manual-section h2 {
-            color: #60a5fa;
-            border-bottom-color: #3b82f6;
-        }
-        
-        body.dark-mode .manual-section h3 {
-            color: #93c5fd;
-        }
-        
-        body.dark-mode .manual-section h4 {
-            color: #cbd5e1;
-        }
-        
         body.dark-mode .feature-list li {
             border-bottom-color: #374151;
         }
@@ -292,142 +195,93 @@ logSystemAction($_SESSION['user_id'], 'access', 'user_manual', 'User accessed ma
             border-color: #4b5563;
             color: #9ca3af;
         }
-        
-        body.dark-mode .nav-link {
-            color: #d1d5db;
-        }
-        
-        body.dark-mode .nav-link:hover {
-            background: #374151;
-            color: #60a5fa;
-        }
-        
-        body.dark-mode .nav-link.active {
-            background: #3b82f6;
-            color: white;
-        }
     </style>
 </head>
 <body>
     <?php $page_title = 'User Manual'; ?>
     <div class="main-wrapper" id="mainWrapper">
-        <!-- Sidebar Toggle -->
-        <button class="sidebar-toggle" id="sidebarToggle">
-            <i class="bi bi-list"></i>
-        </button>
-        
-        <!-- Custom Sidebar for User Manual -->
-        <div class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <div class="logo">
-                    <img src="<?php echo $system_logo; ?>" alt="<?php echo $system_name; ?>" class="logo-img">
-                    <span class="logo-text"><?php echo $system_name; ?></span>
-                </div>
-            </div>
-            
-            <nav class="sidebar-nav">
-                <ul class="nav">
-                    <li class="nav-item">
-                        <a href="dashboard.php" class="nav-link">
-                            <i class="bi bi-speedometer2"></i>
-                            <span>Dashboard</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="#" class="nav-link active">
-                            <i class="bi bi-book"></i>
-                            <span>User Manual</span>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-        </div>
-        
-        <!-- Custom Topbar -->
-        <nav class="topbar">
-            <div class="topbar-left">
-                <button class="mobile-sidebar-toggle" id="mobileSidebarToggle">
-                    <i class="bi bi-list"></i>
-                </button>
-            </div>
-            
-            <div class="topbar-right">
-                <div class="topbar-item">
-                    <button class="btn btn-icon dark-mode-toggle" id="darkModeToggle">
-                        <i class="bi bi-moon"></i>
-                    </button>
-                </div>
-                
-                <div class="topbar-item dropdown">
-                    <button class="user-dropdown" data-bs-toggle="dropdown">
-                        <i class="bi bi-person-circle"></i>
-                        <span><?php echo $_SESSION['username']; ?></span>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="profile.php"><i class="bi bi-person"></i> Profile</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="logout.php"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
-                    </ul>
-                </div>
-            </div>
-        </nav>
+        <?php
+        // Include sidebar and topbar from ADMIN directory
+        require_once 'includes/sidebar-toggle.php';
+        require_once 'includes/sidebar.php';
+        require_once 'includes/topbar.php';
+        ?>
     
         <div class="main-content">
             <div class="page-header">
-                <div class="page-header-content">
-                    <div class="page-title">
-                        <h1 class="h2 mb-0">
-                            <i class="bi bi-book me-2"></i>
-                            User Manual
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h1 class="mb-2">
+                            <i class="bi bi-book"></i> User Manual
                         </h1>
                         <p class="text-muted mb-0">Complete guide for the Pilar Inventory Management System</p>
                     </div>
-                    <div class="page-actions">
-                        <button class="btn btn-outline-primary" onclick="window.print()">
-                            <i class="bi bi-printer"></i> Print Manual
-                        </button>
+                    <div class="col-md-4 text-md-end">
+                        <div class="d-flex gap-2 justify-content-md-end">
+                            <form id="pdfForm" action="../generate_user_manual_pdf.php" method="POST" target="_blank" style="display: inline;">
+                                <input type="hidden" name="action" value="generate_pdf">
+                                <input type="hidden" name="user_role" value="<?php echo $userRole; ?>">
+                                <input type="hidden" name="system_name" value="<?php echo $system_name; ?>">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-file-earmark-pdf"></i> Generate PDF
+                                </button>
+                            </form>
+                            <button class="btn btn-info btn-sm" onclick="openHelpModal()">
+                                <i class="bi bi-question-circle"></i> Help & Support
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="container-fluid">
-                <div class="row">
-                    <!-- Sidebar Navigation -->
-                    <div class="col-md-3">
-                        <div class="manual-sidebar">
-                            <h5 class="mb-3">Table of Contents</h5>
-                            <nav class="nav flex-column">
-                                <a class="nav-link active" href="#overview">System Overview</a>
-                                <a class="nav-link" href="#getting-started">Getting Started</a>
-                                <a class="nav-link" href="#dashboard">Dashboard</a>
-                                <?php if ($isAdmin): ?>
-                                <a class="nav-link" href="#asset-management">Asset Management</a>
-                                <a class="nav-link" href="#inventory">Inventory Management</a>
-                                <a class="nav-link" href="#employees">Employee Management</a>
-                                <a class="nav-link" href="#reports">Reports</a>
-                                <?php endif; ?>
-                                <?php if ($isSystemAdmin): ?>
-                                <a class="nav-link" href="#system-admin">System Administration</a>
-                                <a class="nav-link" href="#offices">Office Management</a>
-                                <a class="nav-link" href="#categories">Category Management</a>
-                                <a class="nav-link" href="#users">User Management</a>
-                                <a class="nav-link" href="#settings">System Settings</a>
-                                <?php endif; ?>
-                                <a class="nav-link" href="#troubleshooting">Troubleshooting</a>
-                                <a class="nav-link" href="#faq">FAQ</a>
-                            </nav>
-                        </div>
-                    </div>
-
-                    <!-- Main Content -->
-                    <div class="col-md-9">
-                        <div class="manual-content">
-                    <!-- System Overview -->
-                    <section id="overview" class="manual-section">
-                        <h2><i class="bi bi-info-circle"></i> System Overview</h2>
+                
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="row g-3 mb-4">
+                    <div class="col-lg-12">
+                        <div class="section-card">
+                            <div class="section-title">
+                                <i class="bi bi-book"></i> User Manual Contents
+                            </div>
+                            <div class="row">
+                                <div class="col-lg-3">
+                                    <div class="section-card mb-4">
+                                        <div class="section-title">
+                                            <i class="bi bi-list"></i> Table of Contents
+                                        </div>
+                                        <nav class="nav flex-column">
+                                            <a class="nav-link active" href="#overview">System Overview</a>
+                                            <a class="nav-link" href="#getting-started">Getting Started</a>
+                                            <a class="nav-link" href="#dashboard">Dashboard</a>
+                                            <?php if ($isAdmin): ?>
+                                            <a class="nav-link" href="#asset-management">Asset Management</a>
+                                            <a class="nav-link" href="#inventory">Inventory Management</a>
+                                            <a class="nav-link" href="#employees">Employee Management</a>
+                                            <a class="nav-link" href="#reports">Reports</a>
+                                            <?php endif; ?>
+                                            <?php if ($isSystemAdmin): ?>
+                                            <a class="nav-link" href="#system-admin">System Administration</a>
+                                            <a class="nav-link" href="#offices">Office Management</a>
+                                            <a class="nav-link" href="#categories">Category Management</a>
+                                            <a class="nav-link" href="#users">User Management</a>
+                                            <a class="nav-link" href="#settings">System Settings</a>
+                                            <?php endif; ?>
+                                            <a class="nav-link" href="#troubleshooting">Troubleshooting</a>
+                                            <a class="nav-link" href="#faq">FAQ</a>
+                                        </nav>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-lg-9">
+                                <div class="section-card mb-4">
+                                    <!-- System Overview -->
+                                    <section id="overview" class="mb-4">
+                                        <div class="section-title">
+                                            <i class="bi bi-info-circle"></i> System Overview
+                                        </div>
                         
                         <h3>What is PIMS?</h3>
-                        <p>The Pilar Inventory Management System (PIMS) is a comprehensive solution designed to help the Municipality of Pilar efficiently track, manage, and report on their physical assets and inventory items. This system provides real-time visibility into asset locations, conditions, and lifecycle management.</p>
+                        <p>The Pilar Inventory Management System (PIMS) is a comprehensive solution designed to help Municipality of Pilar efficiently track, manage, and report on their physical assets and inventory items. This system provides real-time visibility into asset locations, conditions, and lifecycle management.</p>
                         
                         <h3>Key Features</h3>
                         <ul class="feature-list">
@@ -450,9 +304,11 @@ logSystemAction($_SESSION['user_id'], 'access', 'user_manual', 'User accessed ma
                         </ul>
                     </section>
 
-                    <!-- Getting Started -->
-                    <section id="getting-started" class="manual-section">
-                        <h2><i class="bi bi-rocket-takeoff"></i> Getting Started</h2>
+                                    <!-- Getting Started -->
+                                    <section id="getting-started" class="mb-4">
+                                        <div class="section-title">
+                                            <i class="bi bi-rocket-takeoff"></i> Getting Started
+                                        </div>
                         
                         <h3>System Requirements</h3>
                         <div class="highlight-box">
@@ -466,10 +322,10 @@ logSystemAction($_SESSION['user_id'], 'access', 'user_manual', 'User accessed ma
                         
                         <h3>First-Time Login</h3>
                         <ol class="step-list">
-                            <li>Open your web browser and navigate to the PIMS URL</li>
-                            <li>Enter your username and password provided by the system administrator</li>
-                            <li>Click the "Login" button</li>
-                            <li>You will be redirected to the dashboard based on your user role</li>
+                            <li>Open your web browser and navigate to PIMS URL</li>
+                            <li>Enter your username and password provided by system administrator</li>
+                            <li>Click "Login" button</li>
+                            <li>You will be redirected to dashboard based on your user role</li>
                             <li>Change your password if prompted for security reasons</li>
                         </ol>
                         
@@ -524,9 +380,11 @@ logSystemAction($_SESSION['user_id'], 'access', 'user_manual', 'User accessed ma
                         </div>
                     </section>
 
-                    <!-- Dashboard -->
-                    <section id="dashboard" class="manual-section">
-                        <h2><i class="bi bi-speedometer2"></i> Dashboard</h2>
+                                    <!-- Dashboard -->
+                                    <section id="dashboard" class="mb-4">
+                                        <div class="section-title">
+                                            <i class="bi bi-speedometer2"></i> Dashboard
+                                        </div>
                         
                         <h3>Dashboard Overview</h3>
                         <p>The dashboard provides a comprehensive overview of your system's status and key metrics. It's the first page you see after logging in.</p>
@@ -576,9 +434,11 @@ logSystemAction($_SESSION['user_id'], 'access', 'user_manual', 'User accessed ma
                     </section>
 
                     <?php if ($isAdmin): ?>
-                    <!-- Asset Management -->
-                    <section id="asset-management" class="manual-section">
-                        <h2><i class="bi bi-box"></i> Asset Management</h2>
+                                    <!-- Asset Management -->
+                                    <section id="asset-management" class="mb-4">
+                                        <div class="section-title">
+                                            <i class="bi bi-box"></i> Asset Management
+                                        </div>
                         
                         <h3>Asset Overview</h3>
                         <p>Asset Management allows you to track all physical assets within your organization, from acquisition to disposal.</p>
@@ -637,9 +497,11 @@ logSystemAction($_SESSION['user_id'], 'access', 'user_manual', 'User accessed ma
                         
                     </section>
 
-                    <!-- Inventory Management -->
-                    <section id="inventory" class="manual-section">
-                        <h2><i class="bi bi-archive"></i> Inventory Management</h2>
+                                    <!-- Inventory Management -->
+                                    <section id="inventory" class="mb-4">
+                                        <div class="section-title">
+                                            <i class="bi bi-archive"></i> Inventory Management
+                                        </div>
                         
                         <h3>Inventory Overview</h3>
                         <p>Inventory Management handles consumable and non-consumable items that need stock tracking.</p>
@@ -706,9 +568,11 @@ logSystemAction($_SESSION['user_id'], 'access', 'user_manual', 'User accessed ma
                         </ul>
                     </section>
 
-                    <!-- Employee Management -->
-                    <section id="employees" class="manual-section">
-                        <h2><i class="bi bi-people"></i> Employee Management</h2>
+                                    <!-- Employee Management -->
+                                    <section id="employees" class="mb-4">
+                                        <div class="section-title">
+                                            <i class="bi bi-people"></i> Employee Management
+                                        </div>
                         
                         <h3>Employee Records</h3>
                         <p>Manage employee information and track asset assignments to individuals.</p>
@@ -746,9 +610,11 @@ logSystemAction($_SESSION['user_id'], 'access', 'user_manual', 'User accessed ma
                         </div>
                     </section>
 
-                    <!-- Reports -->
-                    <section id="reports" class="manual-section">
-                        <h2><i class="bi bi-file-text"></i> Reports</h2>
+                                    <!-- Reports -->
+                                    <section id="reports" class="mb-4">
+                                        <div class="section-title">
+                                            <i class="bi bi-file-text"></i> Reports
+                                        </div>
                         
                         <h3>Report Overview</h3>
                         <p>The Reports module provides comprehensive analytics and reporting capabilities for informed decision-making.</p>
@@ -783,115 +649,65 @@ logSystemAction($_SESSION['user_id'], 'access', 'user_manual', 'User accessed ma
                             <li>Configure report parameters:
                                 <ul>
                                     <li>Date range</li>
-                                    <li>Department/Office filter</li>
-                                    <li>Category filter</li>
-                                    <li>Status filter</li>
+                                    <li>Filters (category, office, etc.)</li>
+                                    <li>Output format (PDF, Excel, CSV)</li>
                                 </ul>
                             </li>
-                            <li>Choose output format (PDF, Excel, CSV)</li>
                             <li>Click "Generate Report"</li>
-                            <li>Download or print the report</li>
+                            <li>Download or print the generated report</li>
                         </ol>
-                        
                     </section>
                     <?php endif; ?>
 
                     <?php if ($isSystemAdmin): ?>
-                    <!-- System Administration -->
-                    <section id="system-admin" class="manual-section">
-                        <h2><i class="bi bi-gear"></i> System Administration</h2>
+                                    <!-- System Administration -->
+                                    <section id="system-admin" class="mb-4">
+                                        <div class="section-title">
+                                            <i class="bi bi-gear"></i> System Administration
+                                        </div>
                         
-                        <h3>Admin Overview</h3>
+                        <h3>System Administration Overview</h3>
                         <p>System Administration provides tools for managing the PIMS system configuration and users.</p>
                         
                         <h3>System Health</h3>
                         <ul class="feature-list">
-                            <li><i class="bi bi-heart-pulse"></i> Database status monitoring</li>
+                            <li><i class="bi bi-activity"></i> Database status monitoring</li>
                             <li><i class="bi bi-hdd"></i> Storage usage tracking</li>
-                            <li><i class="bi bi-speedometer2"></i> Performance metrics</li>
+                            <li><i class="bi bi-speedometer"></i> Performance metrics</li>
                             <li><i class="bi bi-shield-check"></i> Security audit logs</li>
                         </ul>
                         
                         <h3>Backup Management</h3>
-                        <ol class="step-list">
-                            <li>Navigate to <strong>System Admin → Backup</strong></li>
-                            <li>Choose backup type:
-                                <ul>
-                                    <li>Full backup (database + files)</li>
-                                    <li>Database only</li>
-                                    <li>Files only</li>
-                                </ul>
-                            </li>
-                            <li>Set backup schedule (optional)</li>
-                            <li>Click "Create Backup"</li>
-                            <li>Download backup file when ready</li>
-                        </ol>
-                        
-                        <h3>System Logs</h3>
-                        <div class="highlight-box">
-                            <h5>Log Categories:</h5>
-                            <ul>
-                                <li><strong>System Logs:</strong> General system activities</li>
-                                <li><strong>Login Logs:</strong> User authentication attempts</li>
-                                <li><strong>Security Logs:</strong> Security-related events</li>
-                                <li><strong>Error Logs:</strong> System errors and exceptions</li>
-                            </ul>
-                        </div>
+                        <ul class="feature-list">
+                            <li><i class="bi bi-cloud-upload"></i> Automated backup scheduling</li>
+                            <li><i class="bi bi-download"></i> Manual backup creation</li>
+                            <li><i class="bi bi-arrow-repeat"></i> Backup restoration</li>
+                            <li><i class="bi bi-clock-history"></i> Backup retention policies</li>
+                        </ul>
                     </section>
 
-                    <!-- Office Management -->
-                    <section id="offices" class="manual-section">
-                        <h2><i class="bi bi-building"></i> Office Management</h2>
+                                    <!-- Office Management -->
+                                    <section id="offices" class="mb-4">
+                                        <div class="section-title">
+                                            <i class="bi bi-building"></i> Office Management
+                                        </div>
                         
                         <h3>Office Structure</h3>
                         <p>Organize your physical locations and organizational hierarchy through office management.</p>
                         
                         <h3>Office Types</h3>
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="highlight-box">
-                                    <h5>Main Offices</h5>
-                                    <p>Primary organizational units (HO, 001, 002, etc.)</p>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="highlight-box">
-                                    <h5>Barangays</h5>
-                                    <p>Local government units (B001, B002, etc.)</p>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="highlight-box">
-                                    <h5>Locations</h5>
-                                    <p>Physical locations (L001, L002, etc.)</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <h3>Office Hierarchy</h3>
-                        <p>Offices can be organized in a hierarchical structure:</p>
                         <ul class="feature-list">
-                            <li><i class="bi bi-diagram-3"></i> Parent-child relationships</li>
-                            <li><i class="bi bi-arrow-down"></i> Multi-level nesting</li>
-                            <li><i class="bi bi-diagram-2"></i> Organizational chart view</li>
+                            <li><i class="bi bi-house"></i> <strong>Main Offices:</strong> Primary organizational units (HO, 001, 002, etc.)</li>
+                            <li><i class="bi bi-door-open"></i> <strong>Sub-offices:</strong> Smaller units under main offices</li>
+                            <li><i class="bi bi-archive"></i> <strong>Storage Areas:</strong> Specific locations for inventory storage</li>
                         </ul>
-                        
-                        <h3>Import/Export Offices</h3>
-                        <div class="success-box">
-                            <h5>Bulk Operations</h5>
-                            <p>Import offices from CSV files with complete data including:</p>
-                            <ul>
-                                <li>Office details (name, code, address)</li>
-                                <li>Contact information (phone, email)</li>
-                                <li>Capacity and status</li>
-                                <li>Parent office relationships</li>
-                            </ul>
-                        </div>
                     </section>
 
-                    <!-- Category Management -->
-                    <section id="categories" class="manual-section">
-                        <h2><i class="bi bi-tags"></i> Category Management</h2>
+                                    <!-- Category Management -->
+                                    <section id="categories" class="mb-4">
+                                        <div class="section-title">
+                                            <i class="bi bi-tags"></i> Category Management
+                                        </div>
                         
                         <h3>Category Organization</h3>
                         <p>Categories help organize assets and inventory into logical groups for better management.</p>
@@ -900,32 +716,25 @@ logSystemAction($_SESSION['user_id'], 'access', 'user_manual', 'User accessed ma
                         <ul class="feature-list">
                             <li><i class="bi bi-folder"></i> <strong>Main Categories:</strong> High-level groupings</li>
                             <li><i class="bi bi-folder2"></i> <strong>Subcategories:</strong> More specific classifications</li>
-                            <li><i class="bi bi-tags"></i> <strong>Tags:</strong> Additional classification options</li>
+                            <li><i class="bi bi-tag"></i> <strong>Tags:</strong> Additional classification options</li>
                         </ul>
                         
                         <h3>Default Categories</h3>
-                        <p>System comes with pre-configured categories:</p>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <ul class="feature-list">
-                                    <li>IT Equipment</li>
-                                    <li>Furniture & Fixtures</li>
-                                    <li>Vehicles</li>
-                                </ul>
-                            </div>
-                            <div class="col-md-6">
-                                <ul class="feature-list">
-                                    <li>Tools & Equipment</li>
-                                    <li>Office Supplies</li>
-                                    <li>Other Assets</li>
-                                </ul>
-                            </div>
-                        </div>
+                        <ul class="feature-list">
+                            <li><i class="bi bi-laptop"></i> Information Technology Equipment</li>
+                            <li><i class="bi bi-chair"></i> Office Equipment & Furniture</li>
+                            <li><i class="bi bi-truck"></i> Motor Vehicles</li>
+                            <li><i class="bi bi-tools"></i> Tools & Equipment</li>
+                            <li><i class="bi bi-box"></i> Office Supplies</li>
+                            <li><i class="bi bi-three-dots"></i> Other Assets</li>
+                        </ul>
                     </section>
 
-                    <!-- User Management -->
-                    <section id="users" class="manual-section">
-                        <h2><i class="bi bi-people"></i> User Management</h2>
+                                    <!-- User Management -->
+                                    <section id="users" class="mb-4">
+                                        <div class="section-title">
+                                            <i class="bi bi-people"></i> User Management
+                                        </div>
                         
                         <h3>User Accounts</h3>
                         <p>Manage system user accounts and permissions.</p>
@@ -934,59 +743,41 @@ logSystemAction($_SESSION['user_id'], 'access', 'user_manual', 'User accessed ma
                         <div class="row">
                             <div class="col-md-4">
                                 <div class="highlight-box">
-                                    <h5>Regular User</h5>
+                                    <h5><i class="bi bi-person"></i> Regular User</h5>
                                     <ul>
                                         <li>View assigned assets</li>
-                                        <li>View asset details</li>
-                                        <li>View basic reports</li>
-                                        <li><strong>Viewing only - No editing permissions</strong></li>
+                                        <li>Basic reporting</li>
+                                        <li>No administrative privileges</li>
                                     </ul>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="highlight-box">
-                                    <h5>Admin</h5>
+                                    <h5><i class="bi bi-person-badge"></i> Admin</h5>
                                     <ul>
-                                        <li>Asset management</li>
-                                        <li>Inventory control</li>
+                                        <li>Asset and inventory management</li>
                                         <li>Employee management</li>
-                                        <li>Reporting</li>
+                                        <li>Report generation</li>
+                                        <li>Limited system settings</li>
                                     </ul>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="highlight-box">
-                                    <h5>System Admin</h5>
+                                    <h5><i class="bi bi-person-gear"></i> System Administrator</h5>
                                     <ul>
-                                        <li>All admin functions</li>
+                                        <li>Full system access</li>
                                         <li>User management</li>
-                                        <li>System settings</li>
-                                        <li>Security management</li>
+                                        <li>System configuration</li>
+                                        <li>Backup and maintenance</li>
                                     </ul>
                                 </div>
                             </div>
                         </div>
                         
-                        <h3>Creating Users</h3>
-                        <ol class="step-list">
-                            <li>Navigate to <strong>System Admin → User Management</strong></li>
-                            <li>Click "Add New User"</li>
-                            <li>Fill in user information:
-                                <ul>
-                                    <li>Personal details</li>
-                                    <li>Login credentials</li>
-                                    <li>Role assignment</li>
-                                    <li>Department/office assignment</li>
-                                </ul>
-                            </li>
-                            <li>Set initial password</li>
-                                    <li>Send account details to user</li>
-                            <li>Save user account</li>
-                        </ol>
-                        
-                        <h3>Security Settings</h3>
+                        <h3>Security Best Practices</h3>
                         <div class="warning-box">
-                            <h5>Security Best Practices</h5>
+                            <h5><i class="bi bi-shield-check"></i> Important Security Measures:</h5>
                             <ul>
                                 <li>Enforce strong password policies</li>
                                 <li>Set appropriate session timeouts</li>
@@ -997,110 +788,68 @@ logSystemAction($_SESSION['user_id'], 'access', 'user_manual', 'User accessed ma
                         </div>
                     </section>
 
-                    <!-- System Settings -->
-                    <section id="settings" class="manual-section">
-                        <h2><i class="bi bi-gear"></i> System Settings</h2>
+                                    <!-- System Settings -->
+                                    <section id="settings" class="mb-4">
+                                        <div class="section-title">
+                                            <i class="bi bi-gear"></i> System Settings
+                                        </div>
                         
                         <h3>Settings Overview</h3>
                         <p>Configure system-wide settings to customize PIMS for your organization.</p>
                         
                         <h3>General Settings</h3>
                         <ul class="feature-list">
-                            <li><i class="bi bi-building"></i> <strong>System Information:</strong> Name, logo, email</li>
+                            <li><i class="bi bi-info-circle"></i> <strong>System Information:</strong> Name, logo, email</li>
                             <li><i class="bi bi-clock"></i> <strong>Session Settings:</strong> Timeout, auto-save</li>
                             <li><i class="bi bi-palette"></i> <strong>Appearance:</strong> Dark mode, items per page</li>
                             <li><i class="bi bi-calendar"></i> <strong>Date/Time:</strong> Format preferences</li>
                         </ul>
                         
-                        <h3>Security Settings</h3>
-                        <div class="highlight-box">
-                            <h5>Security Configuration</h5>
-                            <ul>
-                                <li><strong>Password Policy:</strong> Length, complexity requirements</li>
-                                <li><strong>Login Attempts:</strong> Maximum failed attempts</li>
-                                <li><strong>Session Timeout:</strong> Inactivity timeout duration</li>
-                                <li><strong>Two-Factor Auth:</strong> Additional security layer</li>
-                            </ul>
-                        </div>
-                        
                         <h3>Backup Settings</h3>
                         <ul class="feature-list">
                             <li><i class="bi bi-clock-history"></i> <strong>Automatic Backups:</strong> Schedule configuration</li>
                             <li><i class="bi bi-hdd"></i> <strong>Storage Location:</strong> Backup destination</li>
-                            <li><i class="bi bi-calendar-check"></i> <strong>Retention Policy:</strong> How long to keep backups</li>
-                            <li><i class="bi bi-envelope"></i> <strong>Notifications:</strong> Backup status alerts</li>
+                            <li><i class="bi bi-trash"></i> <strong>Retention Policy:</strong> How long to keep backups</li>
+                            <li><i class="bi bi-bell"></i> <strong>Notifications:</strong> Backup status alerts</li>
                         </ul>
                     </section>
                     <?php endif; ?>
 
-                    <!-- Troubleshooting -->
-                    <section id="troubleshooting" class="manual-section">
-                        <h2><i class="bi bi-tools"></i> Troubleshooting</h2>
+                                    <!-- Troubleshooting -->
+                                    <section id="troubleshooting" class="mb-4">
+                                        <div class="section-title">
+                                            <i class="bi bi-exclamation-triangle"></i> Troubleshooting
+                                        </div>
                         
                         <h3>Common Issues</h3>
                         
                         <h4>Login Problems</h4>
                         <div class="warning-box">
-                            <h5>Cannot Login</h5>
-                            <ol class="step-list">
+                            <h5><i class="bi bi-x-circle"></i> Cannot Login</h5>
+                            <ol>
                                 <li>Check username and password spelling</li>
                                 <li>Verify Caps Lock is off</li>
                                 <li>Clear browser cache and cookies</li>
                                 <li>Try a different browser</li>
-                                <li>Contact system administrator</li>
+                                <li>Contact system administrator if issue persists</li>
                             </ol>
                         </div>
                         
                         <h4>Performance Issues</h4>
-                        <div class="highlight-box">
-                            <h5>System Running Slow</h5>
-                            <ul>
-                                <li>Check internet connection speed</li>
-                                <li>Clear browser cache</li>
-                                <li>Close unnecessary browser tabs</li>
-                                <li>Restart browser</li>
-                            </ul>
-                        </div>
-                        
-                        <h4>Data Issues</h4>
                         <div class="warning-box">
-                            <h5>Missing or Incorrect Data</h5>
-                            <ol class="step-list">
-                                <li>Verify data entry was saved</li>
-                                <li>Check for duplicate entries</li>
-                                <li>Review import/export logs</li>
-                                <li>Contact admin for data verification</li>
+                            <h5><i class="bi bi-speedometer2"></i> System Running Slow</h5>
+                            <ol>
+                                <li>Check internet connection speed</li>
+                                <li>Close unnecessary browser tabs</li>
+                                <li>Clear browser cache</li>
+                                <li>Restart browser</li>
+                                <li>Check if system maintenance is scheduled</li>
                             </ol>
                         </div>
                         
-                        <h3>Error Messages</h3>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="highlight-box">
-                                    <h5>Common Error Codes</h5>
-                                    <ul>
-                                        <li><strong>401 Unauthorized:</strong> Login required</li>
-                                        <li><strong>403 Forbidden:</strong> Insufficient permissions</li>
-                                        <li><strong>404 Not Found:</strong> Page doesn't exist</li>
-                                        <li><strong>500 Server Error:</strong> Contact admin</li>
-                                    </ul>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="highlight-box">
-                                    <h5>Database Errors</h5>
-                                    <ul>
-                                        <li><strong>Connection Failed:</strong> Check network</li>
-                                        <li><strong>Query Failed:</strong> Contact admin</li>
-                                        <li><strong>Timeout:</strong> Try again later</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                        
                         <h3>Getting Help</h3>
-                        <div class="success-box">
-                            <h5>Support Channels</h5>
+                        <div class="highlight-box">
+                            <h5><i class="bi bi-question-circle"></i> Support Channels</h5>
                             <ul>
                                 <li><strong>System Administrator:</strong> Primary contact for issues</li>
                                 <li><strong>Help Desk:</strong> For routine problems</li>
@@ -1110,103 +859,32 @@ logSystemAction($_SESSION['user_id'], 'access', 'user_manual', 'User accessed ma
                         </div>
                     </section>
 
-                    <!-- FAQ -->
-                    <section id="faq" class="manual-section">
-                        <h2><i class="bi bi-question-circle"></i> Frequently Asked Questions</h2>
+                                    <!-- FAQ -->
+                                    <section id="faq" class="mb-4">
+                                        <div class="section-title">
+                                            <i class="bi bi-question-circle"></i> Frequently Asked Questions
+                                        </div>
                         
-                        <div class="accordion" id="faqAccordion">
-                            <div class="accordion-item">
-                                <h2 class="accordion-header">
-                                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
-                                        How do I reset my password?
-                                    </button>
-                                </h2>
-                                <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
-                                    <div class="accordion-body">
-                                        You can reset your password by accessing the Profile page. Navigate to your profile and use the password reset option. If you cannot access your account, contact your system administrator for assistance.
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="accordion-item">
-                                <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
-                                        Can I access the system from mobile devices?
-                                    </button>
-                                </h2>
-                                <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                                    <div class="accordion-body">
-                                        Yes, PIMS is fully responsive and works on mobile devices. However, some features like QR code scanning work best on mobile devices with cameras.
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="accordion-item">
-                                <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
-                                        How often should I back up the system?
-                                    </button>
-                                </h2>
-                                <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                                    <div class="accordion-body">
-                                        It's recommended to perform daily backups for critical data. Weekly full backups are suggested for comprehensive protection. Configure automatic backups in System Settings.
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="accordion-item">
-                                <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
-                                        What happens to assets when an employee leaves?
-                                    </button>
-                                </h2>
-                                <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                                    <div class="accordion-body">
-                                        When an employee leaves, the employee status will be updated to "Cleared" if the assets are transferred. Once all assets are transferred and the employee is cleared, the employment status can be updated to "Retired" or "Resigned". The system maintains a history of all assignments for audit purposes.
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="accordion-item">
-                                <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">
-                                        How do I generate reports?
-                                    </button>
-                                </h2>
-                                <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                                    <div class="accordion-body">
-                                        Navigate to Reports → Generate Reports. You can select report type, set filters, choose date ranges, and download in various formats.
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="accordion-item">
-                                <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq6">
-                                        Is there a limit to the number of assets I can add?
-                                    </button>
-                                </h2>
-                                <div id="faq6" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                                    <div class="accordion-body">
-                                        There is no built-in limit to the number of assets. However, system performance may be affected with very large datasets. Consider archiving old assets if needed.
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="accordion-item">
-                                <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq7">
-                                        How secure is my data in PIMS?
-                                    </button>
-                                </h2>
-                                <div id="faq7" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                                    <div class="accordion-body">
-                                        PIMS includes multiple security layers: encrypted passwords, role-based access control, audit logging, and secure session management. Regular backups and security updates are recommended.
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <h3>Q: How do I reset my password?</h3>
+                        <p><strong>A:</strong> Contact your system administrator to reset your password. For security reasons, password resets must be handled by authorized personnel.</p>
+                        
+                        <h3>Q: Can I access PIMS from my mobile device?</h3>
+                        <p><strong>A:</strong> Yes, PIMS is fully responsive and can be accessed from any device with internet connectivity and a modern web browser.</p>
+                        
+                        <h3>Q: How often should I update asset information?</h3>
+                        <p><strong>A:</strong> Asset information should be updated whenever there are changes in location, condition, assignment, or maintenance status. Regular reviews are recommended.</p>
+                        
+                        <h3>Q: What happens to assets when an employee leaves?</h3>
+                        <p><strong>A:</strong> Assets should be reassigned or returned before the employee's departure. The system tracks clearance status to ensure all assets are properly handled.</p>
+                        
+                        <h3>Q: How do I generate reports for specific time periods?</h3>
+                        <p><strong>A:</strong> In the Reports module, select the desired report type and set the date range parameters before generating the report.</p>
+                        
+                        <h3>Q: Is my data secure in PIMS?</h3>
+                        <p><strong>A:</strong> PIMS includes multiple security layers: encrypted passwords, role-based access control, audit logging, and secure session management. Regular backups and security updates are recommended.</p>
                     </section>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1217,38 +895,10 @@ logSystemAction($_SESSION['user_id'], 'access', 'user_manual', 'User accessed ma
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
-    <script>
-        // Sidebar functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            const sidebarToggle = document.getElementById('sidebarToggle');
-            const mobileSidebarToggle = document.getElementById('mobileSidebarToggle');
-            const sidebar = document.getElementById('sidebar');
-            const mainWrapper = document.getElementById('mainWrapper');
-            
-            // Desktop sidebar toggle
-            if (sidebarToggle) {
-                sidebarToggle.addEventListener('click', function() {
-                    mainWrapper.classList.toggle('sidebar-collapsed');
-                });
-            }
-            
-            // Mobile sidebar toggle
-            if (mobileSidebarToggle) {
-                mobileSidebarToggle.addEventListener('click', function() {
-                    mainWrapper.classList.toggle('sidebar-mobile-open');
-                });
-            }
-            
-            // Close mobile sidebar when clicking outside
-            document.addEventListener('click', function(e) {
-                if (window.innerWidth <= 768 && 
-                    !sidebar.contains(e.target) && 
-                    !mobileSidebarToggle.contains(e.target)) {
-                    mainWrapper.classList.remove('sidebar-mobile-open');
-                }
-            });
-        });
-    </script>
+    <?php
+    // Include sidebar scripts from ADMIN directory
+    require_once 'includes/sidebar-scripts.php';
+    ?>
     
     <script>
         // Smooth scrolling for navigation links
@@ -1273,14 +923,14 @@ logSystemAction($_SESSION['user_id'], 'access', 'user_manual', 'User accessed ma
         
         // Update active navigation based on scroll position
         window.addEventListener('scroll', function() {
-            const sections = document.querySelectorAll('.manual-section');
+            const sections = document.querySelectorAll('section[id]');
             const navLinks = document.querySelectorAll('.nav-link');
             
             let current = '';
             sections.forEach(section => {
                 const sectionTop = section.offsetTop;
                 const sectionHeight = section.clientHeight;
-                if (scrollY >= (sectionTop - 100)) {
+                if (window.pageYOffset >= (sectionTop - 200)) {
                     current = section.getAttribute('id');
                 }
             });
@@ -1293,75 +943,135 @@ logSystemAction($_SESSION['user_id'], 'access', 'user_manual', 'User accessed ma
             });
         });
         
-        // Print functionality
-        function printManual() {
-            window.print();
+        // Simple notification function for form submission feedback
+        document.getElementById('pdfForm').addEventListener('submit', function() {
+            showNotification('Opening PDF generation in new window...', 'info');
+        });
+        
+        // Function to open Help & Support modal
+        function openHelpModal() {
+            const helpModal = new bootstrap.Modal(document.getElementById('helpModal'));
+            helpModal.show();
         }
         
-        // Expand/Collapse all sections
-        function toggleAllSections() {
-            const accordions = document.querySelectorAll('.accordion-collapse');
-            const allExpanded = Array.from(accordions).every(acc => acc.classList.contains('show'));
+        function showNotification(message, type) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            notification.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
             
-            accordions.forEach(accordion => {
-                if (allExpanded) {
-                    accordion.classList.remove('show');
-                } else {
-                    accordion.classList.add('show');
+            document.body.appendChild(notification);
+            
+            // Auto-remove after 3 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
                 }
-            });
+            }, 3000);
         }
     </script>
     
-    <style>
-        @media print {
-            .sidebar, .topbar, .sidebar-toggle, .page-header, .no-print {
-                display: none !important;
-            }
-            
-            .main-wrapper {
-                margin-left: 0 !important;
-            }
-            
-            .main-content {
-                margin-left: 0 !important;
-                padding: 0 !important;
-            }
-            
-            .manual-sidebar {
-                display: none !important;
-            }
-            
-            .manual-content {
-                padding-left: 0 !important;
-            }
-            
-            .manual-section {
-                break-inside: avoid;
-                page-break-inside: avoid;
-                margin-bottom: 20px;
-                box-shadow: none;
-                border: 1px solid #ddd;
-            }
-            
-            .container-fluid {
-                padding: 0;
-                max-width: 100%;
-            }
-            
-            .row {
-                margin: 0;
-            }
-            
-            .col-md-3 {
-                display: none !important;
-            }
-            
-            .col-md-9 {
-                flex: 0 0 100% !important;
-                max-width: 100% !important;
-            }
-        }
-    </style>
+    <!-- Help & Support Modal -->
+    <div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="helpModalLabel">
+                        <i class="bi bi-question-circle"></i> Help & Support
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <i class="bi bi-telephone"></i> Contact Support
+                                    </h6>
+                                    <div class="mb-3">
+                                        <strong>System Administrator:</strong><br>
+                                        <span class="text-muted">For system-wide issues and user management</span>
+                                    </div>
+                                    <div class="mb-3">
+                                        <strong>IT Department:</strong><br>
+                                        <span class="text-muted">For technical problems and bug reports</span>
+                                    </div>
+                                    <div class="mb-3">
+                                        <strong>Help Desk:</strong><br>
+                                        <span class="text-muted">For routine assistance and training</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <i class="bi bi-book"></i> Quick Links
+                                    </h6>
+                                    <div class="list-group list-group-flush">
+                                        <a href="#overview" class="list-group-item list-group-item-action">
+                                            <i class="bi bi-info-circle"></i> System Overview
+                                        </a>
+                                        <a href="#getting-started" class="list-group-item list-group-item-action">
+                                            <i class="bi bi-rocket-takeoff"></i> Getting Started
+                                        </a>
+                                        <a href="#dashboard" class="list-group-item list-group-item-action">
+                                            <i class="bi bi-speedometer2"></i> Dashboard Guide
+                                        </a>
+                                        <?php if ($isAdmin): ?>
+                                        <a href="#asset-management" class="list-group-item list-group-item-action">
+                                            <i class="bi bi-box"></i> Asset Management
+                                        </a>
+                                        <a href="#inventory" class="list-group-item list-group-item-action">
+                                            <i class="bi bi-archive"></i> Inventory Management
+                                        </a>
+                                        <a href="#employees" class="list-group-item list-group-item-action">
+                                            <i class="bi bi-people"></i> Employee Management
+                                        </a>
+                                        <a href="#reports" class="list-group-item list-group-item-action">
+                                            <i class="bi bi-file-text"></i> Reports Guide
+                                        </a>
+                                        <?php endif; ?>
+                                        <?php if ($isSystemAdmin): ?>
+                                        <a href="#system-admin" class="list-group-item list-group-item-action">
+                                            <i class="bi bi-gear"></i> System Administration
+                                        </a>
+                                        <a href="#offices" class="list-group-item list-group-item-action">
+                                            <i class="bi bi-building"></i> Office Management
+                                        </a>
+                                        <a href="#categories" class="list-group-item list-group-item-action">
+                                            <i class="bi bi-tags"></i> Category Management
+                                        </a>
+                                        <a href="#users" class="list-group-item list-group-item-action">
+                                            <i class="bi bi-people"></i> User Management
+                                        </a>
+                                        <a href="#settings" class="list-group-item list-group-item-action">
+                                            <i class="bi bi-gear"></i> System Settings
+                                        </a>
+                                        <?php endif; ?>
+                                        <a href="#troubleshooting" class="list-group-item list-group-item-action">
+                                            <i class="bi bi-exclamation-triangle"></i> Troubleshooting
+                                        </a>
+                                        <a href="#faq" class="list-group-item list-group-item-action">
+                                            <i class="bi bi-question-circle"></i> FAQ
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
