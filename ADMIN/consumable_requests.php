@@ -27,11 +27,6 @@ logSystemAction($_SESSION['user_id'], 'Accessed Consumable Requests', 'consumabl
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Office Supplies Consolidator - PIMS</title>
-     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="../favicon/favicon.ico">
-    <link rel="icon" type="image/png" sizes="32x32" href="../favicon/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="../favicon/favicon-16x16.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="../favicon/apple-touch-icon.png">
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -40,6 +35,11 @@ logSystemAction($_SESSION['user_id'], 'Accessed Consumable Requests', 'consumabl
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
+    <link href="../assets/css/index.css" rel="stylesheet">
+    <link href="../assets/css/theme-custom.css" rel="stylesheet">
+    
+    <!-- Excel Parsing Library -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <link href="assets/css/admin-unified.css" rel="stylesheet">
     
     <style>
@@ -53,7 +53,6 @@ logSystemAction($_SESSION['user_id'], 'Accessed Consumable Requests', 'consumabl
         .animate-fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
-<?php require_once 'includes/dark-mode-init.php'; ?>
 </head>
 <body>
     <?php $page_title = 'Office Supplies Consolidator'; ?>
@@ -178,7 +177,6 @@ logSystemAction($_SESSION['user_id'], 'Accessed Consumable Requests', 'consumabl
     <?php include 'includes/logout-modal.php'; ?>
     <?php include 'includes/change-password-modal.php'; ?>
     <?php include 'includes/sidebar-scripts.php'; ?>
-    <?php include 'includes/footer.php'; ?>
 
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -195,97 +193,40 @@ logSystemAction($_SESSION['user_id'], 'Accessed Consumable Requests', 'consumabl
                 const file = e.target.files[0];
                 if (!file) return;
 
-                // Check file size (limit to 10MB for better performance)
-                const maxSize = 10 * 1024 * 1024; // 10MB in bytes
-                if (file.size > maxSize) {
-                    const dropZone = $(this).closest('.cursor-pointer');
-                    dropZone.html('<i class="bi bi-exclamation-triangle display-5 text-warning mb-3 d-inline-block"></i><h5 class="fw-bold">File Too Large</h5><p class="text-muted small">File size: ' + (file.size / 1024 / 1024).toFixed(2) + 'MB. Maximum allowed: 10MB.<br>Please split the file into smaller parts or remove unnecessary data.</p><button class="btn btn-sm btn-outline-primary mt-2" onclick="location.reload()">Try Again</button>');
-                    return;
-                }
-
                 const dropZone = $(this).closest('.cursor-pointer');
                 const originalContent = dropZone.html();
-                
-                // Fixed shorter timeout for faster feedback
-                const timeoutDuration = Math.min(8000, 5000 + (file.size / 1024 / 1024) * 1000); // 5-8 seconds max
-                dropZone.html('<div class="py-3"><div class="spinner-border text-primary mb-3"></div><h5 class="fw-bold">Analyzing Workbook...</h5><p class="text-muted small">File size: ' + (file.size / 1024 / 1024).toFixed(2) + 'MB</p></div>');
-
-                // Add timeout to prevent infinite analysis
-                const analysisTimeout = setTimeout(() => {
-                    dropZone.html('<i class="bi bi-exclamation-triangle display-5 text-warning mb-3 d-inline-block"></i><h5 class="fw-bold">Analysis Failed</h5><p class="text-muted small">File could not be processed. Try a different file or check format.</p><button class="btn btn-sm btn-outline-primary mt-2" onclick="location.reload()">Try Again</button>');
-                }, timeoutDuration);
+                dropZone.html('<div class="py-3"><div class="spinner-border text-primary mb-3"></div><h5 class="fw-bold">Analyzing Workbook...</h5></div>');
 
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     const data = new Uint8Array(e.target.result);
-                    
-                    // Optimized XLSX reading for large files
-                    const workbook = XLSX.read(data, {
-                        type: 'array',
-                        cellDates: false,
-                        cellStyles: false,
-                        cellNF: false,
-                        sheetRows: 1000 // Limit initial read to first 1000 rows for performance
-                    });
-                    
-                    if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
-                        clearTimeout(analysisTimeout);
-                        dropZone.html('<i class="bi bi-exclamation-triangle display-5 text-danger mb-3 d-inline-block"></i><h5 class="fw-bold">Invalid Excel File</h5><p class="text-muted small">The file appears to be corrupted or not a valid Excel file.</p><button class="btn btn-sm btn-outline-primary mt-2" onclick="location.reload()">Try Again</button>');
-                        return;
-                    }
-                    
+                    const workbook = XLSX.read(data, {type: 'array'});
                     const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                     
-                    console.log('Workbook sheets:', workbook.SheetNames);
-                    console.log('First sheet name:', workbook.SheetNames[0]);
-                    
-                    // Simple and Fast Header Detection
-                    try {
-                        console.log('Starting simple header detection...');
-                        
-                        // Just read the first 50 rows quickly
-                        const quickData = XLSX.utils.sheet_to_json(firstSheet, { 
-                            range: 'A1:Z50',
-                            defval: null,
-                            header: 1
-                        });
-                        
-                        console.log('Quick data read:', quickData ? quickData.length : 0, 'rows');
-                        
-                        if (quickData && quickData.length > 0) {
-                            const headers = Object.keys(quickData[0]);
-                            console.log('Headers found:', headers);
-                            
-                            // Simple keyword matching
-                            const itemKeywords = ['desc', 'item', 'particulars', 'article', 'description', 'stock', 'unit'];
-                            const matches = headers.filter(h => {
-                                const headerStr = String(h || '').toLowerCase().trim();
-                                return itemKeywords.some(k => headerStr.includes(k));
-                            }).length;
-                            
-                            console.log('Keyword matches:', matches);
-                            
-                            // Use this data regardless of matches - let user decide mapping
-                            bestData = quickData;
-                            maxMatches = matches;
-                            bestRange = 0;
-                            
-                        } else {
-                            throw new Error('No data found in first 50 rows');
-                        }
-                    } catch(err) {
-                        console.log('Simple detection failed:', err);
-                        clearTimeout(analysisTimeout);
-                        dropZone.html('<i class="bi bi-exclamation-triangle display-5 text-danger mb-3 d-inline-block"></i><h5 class="fw-bold">Cannot Read File</h5><p class="text-muted small">Please ensure this is a valid Excel file with data in the first sheet.</p><button class="btn btn-sm btn-outline-primary mt-2" onclick="location.reload()">Try Again</button>');
-                        return;
+                    // Smarter Header Detection: try rows 0-5 and pick the one with most keyword matches
+                    const itemKeywords = ['desc', 'item', 'particulars', 'article', 'description', 'stock', 'unit'];
+                    let bestRange = 0;
+                    let maxMatches = -1;
+                    let bestData = null;
+
+                    for (let r = 0; r <= 5; r++) {
+                        try {
+                            let testData = XLSX.utils.sheet_to_json(firstSheet, { range: r, defval: null });
+                            if (testData.length > 0) {
+                                let headers = Object.keys(testData[0]);
+                                let matches = headers.filter(h => 
+                                    itemKeywords.some(k => String(h).toLowerCase().includes(k))
+                                ).length;
+                                
+                                if (matches > maxMatches) {
+                                    maxMatches = matches;
+                                    bestRange = r;
+                                    bestData = testData;
+                                }
+                            }
+                        } catch(err) { continue; }
                     }
 
-                    console.log('Best range selected:', bestRange, 'with', maxMatches, 'matches');
-                    console.log('Best data sample:', bestData ? bestData.slice(0, 2) : 'No data');
-
-                    // Clear the timeout since analysis completed
-                    clearTimeout(analysisTimeout);
-                    
                     rawExcelData = bestData || [];
                     
                     if (rawExcelData.length > 0) {
@@ -293,7 +234,6 @@ logSystemAction($_SESSION['user_id'], 'Accessed Consumable Requests', 'consumabl
                         $('#floatingAction').fadeIn();
                         dropZone.html('<i class="bi bi-check-circle-fill display-5 text-success mb-3 d-inline-block"></i><h5 class="fw-bold">File Identified</h5><p class="text-muted small">' + file.name + ' (' + rawExcelData.length + ' rows found)</p>');
                     } else {
-                        clearTimeout(analysisTimeout);
                         alert('Could not find data in the first sheet. Please ensure your Excel file contains a table starting in Row 1 or Row 3.');
                         location.reload();
                     }
@@ -335,8 +275,6 @@ logSystemAction($_SESSION['user_id'], 'Accessed Consumable Requests', 'consumabl
                     });
                     $('#mappingList').html(html);
 
-                    console.log('All headers found:', excelHeaders);
-                    
                     let officeHtml = '';
                     excelHeaders.forEach(h => {
                         const hLower = String(h).toLowerCase().trim();
@@ -346,8 +284,6 @@ logSystemAction($_SESSION['user_id'], 'Accessed Consumable Requests', 'consumabl
                         // Refined Ignore logic: ignore only if it's EXACTLY a common non-office keyword
                         const blackList = ['total', 'cost', 'price', 'id', 'no.', 'avg', 'value', 'grand total', 'remarks', 'amount', 'balance', 'stock'];
                         const isIgnored = blackList.includes(hLower);
-                        
-                        console.log(`Column "${h}": isCore=${isCore}, isIgnored=${isIgnored}`);
                         
                         if (!isCore) {
                             // Data analysis for indicator only
@@ -360,9 +296,6 @@ logSystemAction($_SESSION['user_id'], 'Accessed Consumable Requests', 'consumabl
                             let isChecked = (!isIgnored || hasData) && !isSecondary;
                             const safeH = String(h).replace(/"/g, '&quot;');
                             const displayH = isSecondary ? '(Secondary Column)' : safeH;
-                            
-                            console.log(`Column "${h}" processing: hasData=${hasData}, isSecondary=${isSecondary}, isChecked=${isChecked}`);
-                            
                             officeHtml += `
                                 <div class="col-md-6 mb-2">
                                     <div class="form-check text-truncate" title="${safeH}">
@@ -408,29 +341,16 @@ logSystemAction($_SESSION['user_id'], 'Accessed Consumable Requests', 'consumabl
 
                 $('#submitImport').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Consolidating...');
 
-                console.log('Mapping configuration:', mapping);
-                console.log('Selected office columns:', officeColumns);
-                
                 const officeData = {};
-                let processedRows = 0;
-                let skippedRows = 0;
-                
-                rawExcelData.forEach((row, index) => {
+                rawExcelData.forEach(row => {
                     const desc = row[mapping.description] ? String(row[mapping.description]).trim() : '';
                     const unit = mapping.unit && row[mapping.unit] ? String(row[mapping.unit]).trim() : '';
-                    
-                    if (!desc) {
-                        skippedRows++;
-                        return;
-                    }
+                    if (!desc) return;
 
-                    let rowHasData = false;
                     officeColumns.forEach(officeCol => {
                         const cellValue = row[officeCol];
                         const qty = cellValue !== undefined && cellValue !== null && !isNaN(parseFloat(cellValue)) ? parseFloat(cellValue) : 0;
-                        
                         if (qty > 0) {
-                            rowHasData = true;
                             const office = String(officeCol).trim();
                             if (!officeData[office]) officeData[office] = [];
                             
@@ -459,19 +379,7 @@ logSystemAction($_SESSION['user_id'], 'Accessed Consumable Requests', 'consumabl
                             }
                         }
                     });
-                    
-                    if (rowHasData) {
-                        processedRows++;
-                    } else {
-                        skippedRows++;
-                    }
                 });
-                
-                console.log('Processing summary:');
-                console.log('- Total rows processed:', processedRows);
-                console.log('- Rows skipped (no data):', skippedRows);
-                console.log('- Office data created:', Object.keys(officeData));
-                console.log('Sample office data:', officeData);
 
                 const officesToExport = Object.keys(officeData);
                 if (officesToExport.length === 0) {
