@@ -19,6 +19,9 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
     exit();
 }
 
+require_once 'includes/check_permissions.php';
+adminRequirePermission('users.read', 'can_read', 'dashboard.php');
+
 // Log employees page access
 logSystemAction($_SESSION['user_id'], 'access', 'employees', 'Admin accessed employees page');
 
@@ -28,6 +31,7 @@ $message_type = '';
 
 // UPDATE - Edit employee
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'edit') {
+    adminRequirePermission('users.update', 'can_update', 'employees.php');
     $id = intval($_POST['id'] ?? 0);
     error_log("Editing employee ID: $id");
 
@@ -130,6 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
 
 // ADD - Create new employee
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'add') {
+    adminRequirePermission('users.create', 'can_create', 'employees.php');
     error_log("Add employee form submission received");
     
     $firstname = trim($_POST['firstname'] ?? '');
@@ -405,6 +410,7 @@ foreach ($employees as $emp) {
                             <i class="bi bi-gear"></i> Actions
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionsDropdown">
+                            <?php if (adminHasPermission('users.create', 'can_create')): ?>
                             <li>
                                 <button class="dropdown-item" onclick="addEmployee()">
                                     <i class="bi bi-plus-circle"></i> Add Employee
@@ -415,6 +421,7 @@ foreach ($employees as $emp) {
                                     <i class="bi bi-upload"></i> Import
                                 </button>
                             </li>
+                            <?php endif; ?>
                             <li>
                                 <button class="dropdown-item" onclick="exportEmployees()">
                                     <i class="bi bi-download"></i> Export
@@ -527,9 +534,11 @@ foreach ($employees as $emp) {
                                             <button class="btn btn-outline-primary" onclick="viewEmployee(<?php echo $employee['id']; ?>)">
                                                 <i class="bi bi-eye"></i>
                                             </button>
+                                            <?php if (adminHasPermission('users.update', 'can_update')): ?>
                                             <button class="btn btn-outline-warning" onclick="editEmployee(<?php echo $employee['id']; ?>)">
                                                 <i class="bi bi-pencil"></i>
                                             </button>
+                                            <?php endif; ?>
                                         </div>
                                     </td>
                                     <td style="display:none;"><?php echo htmlspecialchars($employee['office_id']); ?></td>

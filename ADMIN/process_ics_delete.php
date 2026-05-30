@@ -19,6 +19,9 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
     exit();
 }
 
+require_once 'includes/check_permissions.php';
+adminRequirePermission('forms.delete', 'can_delete', 'ics_entries.php');
+
 // Get ICS ID from URL
 $ics_id = $_GET['id'] ?? 0;
 if (empty($ics_id)) {

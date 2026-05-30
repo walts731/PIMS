@@ -8,9 +8,12 @@ header('Content-Type: application/json');
 $category = $_GET['category'] ?? '';
 $subcategory = $_GET['subcategory'] ?? '';
 
-// Get next series number for current year and subcategory
+// Get next series number for the requested year (defaults to current year)
 $next_series = '01';
-$current_year = date('Y');
+$current_year = $_GET['year'] ?? date('Y');
+if (!preg_match('/^\d{4}$/', (string) $current_year)) {
+    $current_year = date('Y');
+}
 
 // Query to get the maximum series number for the current year, category, and subcategory
 // Property number format: YYYY-FORMTYPE-FUND-CATEGORY-SUBCATEGORY+SERIES-OFFICE

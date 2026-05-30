@@ -19,6 +19,9 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
     exit();
 }
 
+require_once 'includes/check_permissions.php';
+adminRequirePermission('consumables.manage', 'can_update', 'consumables.php');
+
 // Create lend_consumables table if it doesn't exist
 $create_table_sql = "CREATE TABLE IF NOT EXISTS lend_consumables (
     id INT AUTO_INCREMENT PRIMARY KEY,

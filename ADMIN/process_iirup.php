@@ -22,6 +22,9 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
     exit();
 }
 
+require_once 'includes/check_permissions.php';
+adminRequirePermission('forms.create', 'can_create', 'iirup_form.php');
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Debug: Log all POST data in detail
     error_log("=== POST DATA ANALYSIS ===");

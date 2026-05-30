@@ -19,6 +19,9 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
     exit();
 }
 
+require_once 'includes/check_permissions.php';
+adminRequirePermission('consumables.manage', 'can_update', 'consumables.php');
+
 // Debug logging
 error_log("DEBUG: Modal loaded with consumable_id: " . (isset($_GET['id']) ? intval($_GET['id']) : 0));
 error_log("DEBUG: Request method: " . $_SERVER['REQUEST_METHOD']);

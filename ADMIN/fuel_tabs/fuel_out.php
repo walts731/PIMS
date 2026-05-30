@@ -31,9 +31,11 @@ $employees_result = $conn->query($employees_query);
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h4 class="mb-0">Fuel Out Transactions</h4>
     <div>
+        <?php if (adminHasPermission('fuel.manage', 'can_create')): ?>
         <button class="btn btn-danger btn-sm" onclick="showFuelOutModal()">
             <i class="bi bi-dash-circle"></i> Record Fuel Out
         </button>
+        <?php endif; ?>
     </div>
 </div>
 

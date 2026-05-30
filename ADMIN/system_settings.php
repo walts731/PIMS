@@ -19,11 +19,15 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
     exit();
 }
 
+require_once 'includes/check_permissions.php';
+adminRequirePermission('system.settings', 'can_read', 'dashboard.php');
+
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
     if ($action === 'update_settings') {
+        adminRequirePermission('system.settings', 'can_update', 'system_settings.php');
         try {
             // Start transaction
             $conn->begin_transaction();
@@ -447,11 +451,13 @@ logSystemAction($_SESSION['user_id'], 'access', 'system_settings', 'Accessed sys
                             </div>
 
                             <!-- Save Button -->
+                            <?php if (adminHasPermission('system.settings', 'can_update')): ?>
                             <div class="text-center mt-4">
                                 <button type="submit" class="btn btn-primary btn-lg action-btn">
                                     <i class="bi bi-check-circle"></i> Save Settings
                                 </button>
                             </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>

@@ -10,6 +10,9 @@ if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['system_admin'
     exit();
 }
 
+require_once 'includes/check_permissions.php';
+adminRequirePermission('assets.delete', 'can_delete', 'red_tags.php');
+
 // Check session timeout
 if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 1800)) {
     session_unset();

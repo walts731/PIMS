@@ -20,6 +20,9 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
     exit();
 }
 
+require_once 'includes/check_permissions.php';
+adminRequirePermission('forms.read', 'can_read', 'dashboard.php');
+
 logSystemAction($_SESSION['user_id'], 'Accessed Inventory Custodian Slip Form', 'forms', 'ics_form.php');
 
 // Function to get singular form of unit name
@@ -319,6 +322,11 @@ if ($result && $row = $result->fetch_assoc()) {
             flex-shrink: 0;
         }
         
+        .date-field {
+            width: 120px;
+            min-width: 120px;
+        }
+        
         .generator-modal .form-label {
             font-weight: 600;
             color: #495057;
@@ -556,6 +564,7 @@ if ($result && $row = $result->fetch_assoc()) {
                                                 <th colspan="2">Amount</th>
                                                 <th>Description</th>
                                                 <th>Item No.</th>
+                                                <th>Date Acquired</th>
                                                 <th>Useful Life</th>
                                                 <th>Action</th>
                                             </tr>
@@ -564,6 +573,7 @@ if ($result && $row = $result->fetch_assoc()) {
                                                 <th></th>
                                                 <th>Unit Cost</th>
                                                 <th>Total Cost</th>
+                                                <th></th>
                                                 <th></th>
                                                 <th></th>
                                                 <th></th>
@@ -592,16 +602,16 @@ if ($result && $row = $result->fetch_assoc()) {
                                                     </button>
                                                 </div>
                                             </td>
+                                                <td><div class="input-group"><input type="date" class="form-control form-control-sm date-field" name="date_acquired[]" title="Select date from calendar"></div></td>
                                                 <td><input type="text" class="form-control form-control-sm useful-life-field" name="useful_life[]"></td>
                                                 <td><button type="button" class="btn btn-sm btn-danger" onclick="removeICSRow(this)"><i class="bi bi-trash"></i></button></td>
                                             </tr>
                                         </tbody>
                                         <tfoot>
                                             <tr class="table-primary fw-bold">
-                                                <td colspan="3" class="text-end">Grand Total:</td>
+                                                <td colspan="4" class="text-end">Grand Total:</td>
                                                 <td id="grandTotal">0.00</td>
-                                                <td colspan="3"></td>
-                                                <td></td>
+                                                <td colspan="4"></td>
                                             </tr>
                                         </tfoot>
                                     </table>
@@ -632,11 +642,13 @@ if ($result && $row = $result->fetch_assoc()) {
                             </div>
                             
                             <!-- Form Actions -->
+                        <?php if (adminHasPermission('forms.create', 'can_create')): ?>
                         <div class="text-center">
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-save"></i> Save ICS
                             </button>
                         </div>
+                        <?php endif; ?>
                     </form>
                 </div>
             </div>
@@ -784,14 +796,29 @@ if ($result && $row = $result->fetch_assoc()) {
     <script>
         // Property Number Generator Functions
         let currentPropertyField = null;
+        let currentGeneratorRow = null;
         let globalSeriesCounter = 1; // Global counter for all property numbers generated
         
         // Threshold configuration from database
         const unitCostThreshold = <?php echo $unitCostThreshold; ?>;
         
+        function getPropertyNumberYear() {
+            if (currentGeneratorRow) {
+                const dateInput = currentGeneratorRow.querySelector('input[name="date_acquired[]"]');
+                if (dateInput && dateInput.value) {
+                    const year = parseInt(dateInput.value.split('-')[0], 10);
+                    if (!isNaN(year)) {
+                        return year;
+                    }
+                }
+            }
+            return new Date().getFullYear();
+        }
+        
         function showPropertyNumberGenerator(button) {
             currentPropertyField = button.closest('td').querySelector('input[name="item_no[]"], textarea[name="item_no[]"]');
             const row = button.closest('tr');
+            currentGeneratorRow = row;
             const quantityInput = row.querySelector('input[name="quantity[]"]');
             const quantity = parseInt(quantityInput.value) || 1;
             const modal = new bootstrap.Modal(document.getElementById('propertyNumberGeneratorModal'));
@@ -821,7 +848,8 @@ if ($result && $row = $result->fetch_assoc()) {
         }
         
         function getNextSeriesNumber() {
-            fetch('../api/get_next_series.php', {
+            const year = getPropertyNumberYear();
+            fetch(`../api/get_next_series.php?year=${year}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -851,7 +879,7 @@ if ($result && $row = $result->fetch_assoc()) {
         }
         
         function generatePropertyNumberPreview() {
-            const year = new Date().getFullYear();
+            const year = getPropertyNumberYear();
             const formType = document.getElementById('formType').value || '04';
             const category = document.getElementById('categorySelect').value || '030';
             const subcategory = document.getElementById('subcategorySelect').value || '01';
@@ -989,6 +1017,19 @@ if ($result && $row = $result->fetch_assoc()) {
                 }
             });
             
+            const icsItemsTable = document.getElementById('icsItemsTable');
+            if (icsItemsTable) {
+                icsItemsTable.addEventListener('change', function(e) {
+                    if (e.target.name === 'date_acquired[]' && currentGeneratorRow && currentGeneratorRow.contains(e.target)) {
+                        const modal = document.getElementById('propertyNumberGeneratorModal');
+                        if (modal && modal.classList.contains('show')) {
+                            getNextSeriesNumber();
+                            generatePropertyNumberPreview();
+                        }
+                    }
+                });
+            }
+            
             // Filter subcategories based on category selection
             document.getElementById('categorySelect').addEventListener('change', function() {
                 const selectedCategory = this.value;
@@ -1076,6 +1117,7 @@ if ($result && $row = $result->fetch_assoc()) {
                 '<input type="text" class="form-control form-control-sm item-no-field" name="item_no[]" value="" readonly placeholder="Click Generate to create">' +
                 '<button type="button" class="btn btn-sm btn-outline-primary" onclick="showPropertyNumberGenerator(this)" title="Generate Property Number"><i class="bi bi-gear"></i> Generate</button>' +
                 '</div>',
+                '<div class="input-group"><input type="date" class="form-control form-control-sm date-field" name="date_acquired[]" title="Select date from calendar"></div>',
                 '<input type="text" class="form-control form-control-sm useful-life-field" name="useful_life[]">',
                 '<button type="button" class="btn btn-sm btn-danger" onclick="removeICSRow(this)"><i class="bi bi-trash"></i></button>'
             ];

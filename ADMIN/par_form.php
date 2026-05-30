@@ -20,6 +20,9 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
     exit();
 }
 
+require_once 'includes/check_permissions.php';
+adminRequirePermission('forms.read', 'can_read', 'dashboard.php');
+
 // Log page access
 logSystemAction($_SESSION['user_id'], 'Accessed Property Acknowledgment Receipt Form', 'forms', 'par_form.php');
 
@@ -582,9 +585,11 @@ if ($result && $row = $result->fetch_assoc()) {
                         
                         <!-- Form Actions -->
                         <div class="text-center">
+                            <?php if (adminHasPermission('forms.create', 'can_create')): ?>
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-save"></i> Save PAR
                             </button>
+                            <?php endif; ?>
                         </div>
                     </form>
                 </div>
@@ -1251,11 +1256,26 @@ if ($result && $row = $result->fetch_assoc()) {
         
         // Property Number Generator Functions
         let currentPropertyField = null;
+        let currentGeneratorRow = null;
         let globalSeriesCounter = 1; // Global counter for all property numbers generated
+        
+        function getPropertyNumberYear() {
+            if (currentGeneratorRow) {
+                const dateInput = currentGeneratorRow.querySelector('input[name="date_acquired[]"]');
+                if (dateInput && dateInput.value) {
+                    const year = parseInt(dateInput.value.split('-')[0], 10);
+                    if (!isNaN(year)) {
+                        return year;
+                    }
+                }
+            }
+            return new Date().getFullYear();
+        }
         
         function showPropertyNumberGenerator(button) {
             currentPropertyField = button.closest('td').querySelector('input[name="property_number[]"], textarea[name="property_number[]"]');
             const row = button.closest('tr');
+            currentGeneratorRow = row;
             const quantityInput = row.querySelector('input[name="quantity[]"]');
             const quantity = parseInt(quantityInput.value) || 1;
             
@@ -1286,7 +1306,8 @@ if ($result && $row = $result->fetch_assoc()) {
         }
         
         function getNextSeriesNumber() {
-            fetch('../api/get_next_series.php', {
+            const year = getPropertyNumberYear();
+            fetch(`../api/get_next_series.php?year=${year}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1320,8 +1341,7 @@ if ($result && $row = $result->fetch_assoc()) {
         }
         
         function generatePropertyNumberPreview() {
-            const currentDate = new Date();
-            const year = currentDate.getFullYear();
+            const year = getPropertyNumberYear();
             const formType = document.getElementById('formType').value || '07';
             const category = document.getElementById('categorySelect').value || '030';
             const subcategory = document.getElementById('subcategorySelect').value || '01';
@@ -1500,6 +1520,20 @@ if ($result && $row = $result->fetch_assoc()) {
             const officeLocationSelect = document.querySelector('select[name="office_location"]');
             if (officeLocationSelect) {
                 officeLocationSelect.addEventListener('change', generatePropertyNumberPreview);
+            }
+            
+            // Refresh preview when date acquired changes for the active row
+            const itemsTable = document.getElementById('itemsTable');
+            if (itemsTable) {
+                itemsTable.addEventListener('change', function(e) {
+                    if (e.target.name === 'date_acquired[]' && currentGeneratorRow && currentGeneratorRow.contains(e.target)) {
+                        const modal = document.getElementById('propertyNumberGeneratorModal');
+                        if (modal && modal.classList.contains('show')) {
+                            getNextSeriesNumber();
+                            generatePropertyNumberPreview();
+                        }
+                    }
+                });
             }
             
             // Filter subcategories based on category selection - separate function

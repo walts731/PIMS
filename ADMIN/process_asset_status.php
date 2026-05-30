@@ -14,6 +14,12 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
     exit();
 }
 
+require_once 'includes/check_permissions.php';
+if (!adminHasPermission('assets.update', 'can_update')) {
+    echo json_encode(['success' => false, 'message' => 'You do not have permission to perform this action.']);
+    exit();
+}
+
 // Check if request is POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['success' => false, 'message' => 'Invalid request method']);

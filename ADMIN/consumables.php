@@ -20,6 +20,9 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
     exit();
 }
 
+require_once 'includes/check_permissions.php';
+adminRequirePermission('consumables.read', 'can_read', 'dashboard.php');
+
 // Log consumables page access
 logSystemAction($_SESSION['user_id'], 'access', 'consumables', 'Admin accessed consumables page');
 
@@ -121,8 +124,9 @@ if (isset($_GET['message']) && isset($_GET['type'])) {
 
 // Handle CRUD operations
 
-// CREATE - Add new consumable
+// ADD - Create new consumable
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'add') {
+    adminRequirePermission('consumables.manage', 'can_create', 'consumables.php');
     $description = trim($_POST['description'] ?? '');
     $supplier = trim($_POST['supplier'] ?? '');
     $quantity = intval($_POST['quantity'] ?? 0);
@@ -272,8 +276,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     }
 }
 
-// UPDATE - Update consumable
+// UPDATE - Update consumable details
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'update') {
+    adminRequirePermission('consumables.manage', 'can_update', 'consumables.php');
     $consumable_id = intval($_POST['consumable_id'] ?? 0);
     $description = trim($_POST['description'] ?? '');
     $supplier = trim($_POST['supplier'] ?? '');
@@ -323,8 +328,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     }
 }
 
-// UPDATE - Update consumable reorder level only
+// UPDATE REORDER LEVEL
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'update_reorder') {
+    adminRequirePermission('consumables.manage', 'can_update', 'consumables.php');
     $consumable_id = intval($_POST['consumable_id'] ?? 0);
     $reorder_level = intval($_POST['reorder_level'] ?? 10);
     
@@ -620,6 +626,7 @@ try {
                             <i class="bi bi-gear"></i> Actions
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionsDropdown">
+                            <?php if (adminHasPermission('consumables.manage', 'can_create')): ?>
                             <li>
                                 <button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#addConsumableModal">
                                     <i class="bi bi-plus-circle"></i> Add Consumable
@@ -630,6 +637,8 @@ try {
                                     <i class="bi bi-upload"></i> Import Consumables
                                 </button>
                             </li>
+                            <?php endif; ?>
+                            <?php if (adminHasPermission('consumables.manage', 'can_update')): ?>
                             <li>
                                 <a class="dropdown-item" href="bulk_release_form.php">
                                     <i class="bi bi-box-seam"></i> Bulk Release
@@ -640,6 +649,7 @@ try {
                                     <i class="bi bi-arrow-left-right"></i> Borrowing
                                 </a>
                             </li>
+                            <?php endif; ?>
                             <li>
                                 <a class="dropdown-item" href="release_history.php">
                                     <i class="bi bi-clock-history"></i> History
@@ -710,19 +720,23 @@ try {
                                                     <i class="bi bi-check-circle"></i>
                                                 </button>
                                             <?php elseif ($consumable['for_office_id'] == 163): ?>
+                                                <?php if (adminHasPermission('consumables.manage', 'can_update')): ?>
                                                 <button class="btn btn-sm btn-outline-warning" onclick="editReorderLevel(<?php echo $consumable['id']; ?>, '<?php echo htmlspecialchars($consumable['description']); ?>', <?php echo $consumable['quantity']; ?>)" title="Edit Reorder Level">
                                                     <i class="bi bi-pencil"></i>
                                                 </button>
                                                 <button class="btn btn-sm btn-outline-primary" onclick="openLendModal(<?php echo $consumable['id']; ?>)" title="Lend Consumable">
                                                     <i class="bi bi-arrow-up-right"></i>
                                                 </button>
+                                                <?php endif; ?>
                                             <?php else: ?>
+                                                <?php if (adminHasPermission('consumables.manage', 'can_update')): ?>
                                                 <button class="btn btn-sm btn-outline-warning" onclick="editReorderLevel(<?php echo $consumable['id']; ?>, '<?php echo htmlspecialchars($consumable['description']); ?>', <?php echo $consumable['quantity']; ?>)" title="Edit Reorder Level">
                                                     <i class="bi bi-pencil"></i>
                                                 </button>
                                                 <button class="btn btn-sm btn-outline-success" onclick="openReleaseModal(<?php echo $consumable['id']; ?>)" title="Release Consumable">
                                                     <i class="bi bi-box-arrow-right"></i>
                                                 </button>
+                                                <?php endif; ?>
                                             <?php endif; ?>
                                         </div>
                                     </td>

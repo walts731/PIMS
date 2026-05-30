@@ -3,6 +3,7 @@ session_start();
 require_once '../config.php';
 require_once '../includes/system_functions.php';
 require_once '../includes/logger.php';
+require_once '../includes/permissions.php';
 
 // Check session timeout
 checkSessionTimeout();
@@ -34,6 +35,8 @@ require_once 'PHPMailer/PHPMailer-7.0.0/src/SMTP.php';
 
 // Log user management page access
 logSystemAction($_SESSION['user_id'], 'access', 'user_management', 'System admin accessed user management page');
+
+ensurePermissionSchema($conn);
 
 // Handle form submissions
 $message = '';
@@ -449,76 +452,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
 
 // Get role permissions for management
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'get_role_permissions') {
-    $role = $_GET['role'];
-    
+    header('Content-Type: application/json');
+
     try {
-        $stmt = $conn->prepare("
-            SELECT p.name, p.description, p.module, rp.can_create, rp.can_read, rp.can_update, rp.can_delete 
-            FROM permissions p 
-            LEFT JOIN role_permissions rp ON p.id = rp.permission_id AND rp.role = ?
-            ORDER BY p.module, p.name
-        ");
-        $stmt->bind_param("s", $role);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        
-        $permissions = [];
-        while ($row = $result->fetch_assoc()) {
-            $permissions[] = $row;
-        }
-        
-        header('Content-Type: application/json');
-        echo json_encode($permissions);
-        exit();
-        $stmt->close();
+        $role = trim($_GET['role'] ?? '');
+        $permissions = getRolePermissionsForManagement($conn, $role);
+        echo json_encode(['success' => true, 'permissions' => $permissions]);
     } catch (Exception $e) {
-        echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
-        exit();
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
+    exit();
 }
 
 // Update role permissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_role_permissions') {
-    $role = $_POST['role'];
-    $permissions = $_POST['permissions'];
-    
+    header('Content-Type: application/json');
+
     try {
-        // Begin transaction
-        $conn->begin_transaction();
-        
-        foreach ($permissions as $permission_id => $perms) {
-            $can_create = isset($perms['can_create']) ? 1 : 0;
-            $can_read = isset($perms['can_read']) ? 1 : 0;
-            $can_update = isset($perms['can_update']) ? 1 : 0;
-            $can_delete = isset($perms['can_delete']) ? 1 : 0;
-            
-            // Update or insert role permission
-            $stmt = $conn->prepare("
-                INSERT INTO role_permissions (role, permission_id, can_create, can_read, can_update, can_delete)
-                VALUES (?, ?, ?, ?, ?, ?)
-                ON DUPLICATE KEY UPDATE 
-                can_create = VALUES(can_create),
-                can_read = VALUES(can_read),
-                can_update = VALUES(can_update),
-                can_delete = VALUES(can_delete)
-            ");
-            $stmt->bind_param("siiiii", $role, $permission_id, $can_create, $can_read, $can_update, $can_delete);
-            $stmt->execute();
-            $stmt->close();
-        }
-        
-        $conn->commit();
-        $message = 'Role permissions updated successfully';
-        $message_type = 'success';
-        
-        // Log role permissions update
+        $role = trim($_POST['role'] ?? '');
+        $permissions = decodePermissionsPayload($_POST['permissions'] ?? '');
+
+        updateRolePermissions($conn, $role, $permissions);
         logSystemAction($_SESSION['user_id'], 'update_role_permissions', 'permissions', "Updated permissions for role: {$role}");
-        
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Role permissions updated successfully.',
+        ]);
     } catch (Exception $e) {
-        $conn->rollback();
-        $message = 'Error updating role permissions: ' . $e->getMessage();
-        $message_type = 'danger';
+        if ($conn->errno) {
+            $conn->rollback();
+        }
+        http_response_code(400);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Error updating role permissions: ' . $e->getMessage(),
+        ]);
     }
+    exit();
 }
 $users = [];
 try {
@@ -1191,6 +1163,8 @@ $page_title = 'User Management';
                         </div>
                     </div>
                     
+                    <div id="permissionsAlert" class="alert d-none" role="alert"></div>
+
                     <div id="permissionsContainer" style="display: none;">
                         <div class="table-responsive">
                             <table class="table table-bordered table-hover">
@@ -1379,133 +1353,166 @@ $page_title = 'User Management';
         });
         
         // Role Permissions Management
+        function showPermissionsAlert(type, text) {
+            const alertEl = document.getElementById('permissionsAlert');
+            if (!alertEl) {
+                return;
+            }
+
+            alertEl.className = 'alert alert-' + type;
+            alertEl.textContent = text;
+            alertEl.classList.remove('d-none');
+        }
+
         function loadRolePermissions() {
             const role = document.getElementById('roleSelect').value;
-            
+            const alertEl = document.getElementById('permissionsAlert');
+            if (alertEl) {
+                alertEl.classList.add('d-none');
+            }
+
             if (!role) {
                 alert('Please select a role first');
                 return;
             }
-            
+
             $.ajax({
-                url: 'user_management.php?action=get_role_permissions&role=' + role,
+                url: 'user_management.php?action=get_role_permissions&role=' + encodeURIComponent(role),
                 method: 'GET',
                 dataType: 'json',
                 success: function(response) {
-                    if (response.error) {
-                        alert('Error: ' + response.error);
-                    } else {
-                        displayPermissions(response);
-                        document.getElementById('permissionsContainer').style.display = 'block';
-                        document.getElementById('savePermissionsBtn').disabled = false;
+                    if (!response.success) {
+                        showPermissionsAlert('danger', response.error || 'Error loading permissions');
+                        return;
                     }
+
+                    displayPermissions(response.permissions || []);
+                    document.getElementById('permissionsContainer').style.display = 'block';
+                    document.getElementById('savePermissionsBtn').disabled = false;
                 },
-                error: function() {
-                    alert('Error loading permissions');
+                error: function(xhr) {
+                    let message = 'Error loading permissions';
+                    if (xhr.responseJSON && xhr.responseJSON.error) {
+                        message = xhr.responseJSON.error;
+                    }
+                    showPermissionsAlert('danger', message);
                 }
             });
         }
-        
+
         function displayPermissions(permissions) {
             const tbody = document.getElementById('permissionsTableBody');
             tbody.innerHTML = '';
-            
+
             let currentModule = '';
             permissions.forEach(permission => {
                 if (permission.module !== currentModule) {
                     currentModule = permission.module;
-                    // Add module header row
                     const moduleRow = document.createElement('tr');
-                    moduleRow.innerHTML = `
-                        <td colspan="8" class="table-secondary fw-bold">
-                            <i class="bi bi-folder"></i> ${currentModule.charAt(0).toUpperCase() + currentModule.slice(1)}
-                        </td>
-                    `;
+                    const moduleCell = document.createElement('td');
+                    moduleCell.colSpan = 7;
+                    moduleCell.className = 'table-secondary fw-bold';
+                    moduleCell.innerHTML = '<i class="bi bi-folder"></i> ' +
+                        currentModule.charAt(0).toUpperCase() + currentModule.slice(1);
+                    moduleRow.appendChild(moduleCell);
                     tbody.appendChild(moduleRow);
                 }
-                
+
                 const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td></td>
-                    <td>${permission.name}</td>
-                    <td><small>${permission.description}</small></td>
-                    <td class="text-center">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" 
-                                   id="create_${permission.name}" 
-                                   data-permission-id="${permission.name}" 
-                                   data-action="can_create" 
-                                   ${permission.can_create ? 'checked' : ''}>
-                        </div>
-                    </td>
-                    <td class="text-center">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" 
-                                   id="read_${permission.name}" 
-                                   data-permission-id="${permission.name}" 
-                                   data-action="can_read" 
-                                   ${permission.can_read ? 'checked' : ''}>
-                        </div>
-                    </td>
-                    <td class="text-center">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" 
-                                   id="update_${permission.name}" 
-                                   data-permission-id="${permission.name}" 
-                                   data-action="can_update" 
-                                   ${permission.can_update ? 'checked' : ''}>
-                        </div>
-                    </td>
-                    <td class="text-center">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" 
-                                   id="delete_${permission.name}" 
-                                   data-permission-id="${permission.name}" 
-                                   data-action="can_delete" 
-                                   ${permission.can_delete ? 'checked' : ''}>
-                        </div>
-                    </td>
-                `;
+
+                const nameCell = document.createElement('td');
+                nameCell.textContent = permission.name;
+
+                const descCell = document.createElement('td');
+                const descSmall = document.createElement('small');
+                descSmall.textContent = permission.description || '';
+                descCell.appendChild(descSmall);
+
+                row.appendChild(document.createElement('td'));
+                row.appendChild(nameCell);
+                row.appendChild(descCell);
+
+                ['can_create', 'can_read', 'can_update', 'can_delete'].forEach(action => {
+                    const actionCell = document.createElement('td');
+                    actionCell.className = 'text-center';
+
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'form-check d-flex justify-content-center';
+
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.className = 'form-check-input';
+                    checkbox.dataset.permissionId = String(permission.id);
+                    checkbox.dataset.action = action;
+                    checkbox.checked = !!permission[action];
+
+                    wrapper.appendChild(checkbox);
+                    actionCell.appendChild(wrapper);
+                    row.appendChild(actionCell);
+                });
+
                 tbody.appendChild(row);
             });
         }
-        
+
         function saveRolePermissions() {
             const role = document.getElementById('roleSelect').value;
+            if (!role) {
+                alert('Please select a role first');
+                return;
+            }
+
             const permissions = {};
-            
-            // Collect all permission data
-            const checkboxes = document.querySelectorAll('#permissionsTableBody input[type="checkbox"]');
+            const checkboxes = document.querySelectorAll('#permissionsTableBody input[type="checkbox"][data-permission-id]');
             checkboxes.forEach(checkbox => {
-                const permissionName = checkbox.dataset.permissionId;
+                const permissionId = checkbox.dataset.permissionId;
                 const action = checkbox.dataset.action;
-                
-                if (!permissions[permissionName]) {
-                    permissions[permissionName] = {};
+
+                if (!permissions[permissionId]) {
+                    permissions[permissionId] = {};
                 }
-                permissions[permissionName][action] = checkbox.checked;
+                permissions[permissionId][action] = checkbox.checked;
             });
-            
-            // Send data to server
+
             const formData = new FormData();
             formData.append('action', 'update_role_permissions');
             formData.append('role', role);
             formData.append('permissions', JSON.stringify(permissions));
-            
+
+            const saveBtn = document.getElementById('savePermissionsBtn');
+            saveBtn.disabled = true;
+
             fetch('user_management.php', {
                 method: 'POST',
-                body: formData
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
             })
-            .then(response => response.text())
-            .then(html => {
-                // Reload page to show updated data
-                location.reload();
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showPermissionsAlert('success', data.message || 'Role permissions updated successfully.');
+                } else {
+                    showPermissionsAlert('danger', data.error || 'Error saving permissions');
+                }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Error saving permissions');
+                showPermissionsAlert('danger', 'Error saving permissions');
+            })
+            .finally(() => {
+                saveBtn.disabled = false;
             });
         }
+
+        document.getElementById('roleSelect').addEventListener('change', function() {
+            if (this.value) {
+                loadRolePermissions();
+            } else {
+                document.getElementById('permissionsContainer').style.display = 'none';
+                document.getElementById('savePermissionsBtn').disabled = true;
+                document.getElementById('permissionsTableBody').innerHTML = '';
+            }
+        });
         
         // Export users function
         function exportUsers() {

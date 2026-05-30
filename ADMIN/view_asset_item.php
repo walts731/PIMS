@@ -8,6 +8,9 @@ if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['system_admin'
     exit();
 }
 
+require_once 'includes/check_permissions.php';
+adminRequirePermission('assets.read', 'can_read');
+
 // Get asset item ID from URL
 $item_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
@@ -268,6 +271,7 @@ function formatTimelineDate($date) {
 
 // Handle POST request for updating asset item
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'update_item') {
+    adminRequirePermission('assets.update', 'can_update', 'view_asset_item.php?id=' . $item_id);
     $update_fields = [];
     $update_values = [];
     $types = '';
@@ -343,6 +347,58 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         } catch (Exception $e) {
             $_SESSION['error'] = 'Error updating asset item: ' . $e->getMessage();
         }
+    }
+}
+
+// Handle POST request for soft-deleting (deactivating) asset item
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'deactivate_item') {
+    adminRequirePermission('assets.delete', 'can_delete', 'view_asset_item.php?id=' . $item_id);
+    $deactivate_item_id = isset($_POST['item_id']) ? intval($_POST['item_id']) : 0;
+
+    if ($deactivate_item_id !== $item_id) {
+        $_SESSION['error'] = 'Invalid asset item.';
+        header('Location: view_asset_item.php?id=' . $item_id);
+        exit();
+    }
+
+    if ($item['status'] === 'inactive') {
+        $_SESSION['error'] = 'This asset item is already inactive.';
+        header('Location: view_asset_item.php?id=' . $item_id);
+        exit();
+    }
+
+    try {
+        $previous_status = $item['status'];
+        $conn->begin_transaction();
+
+        $deactivate_stmt = $conn->prepare("UPDATE asset_items SET status = 'inactive', last_updated = NOW() WHERE id = ?");
+        $deactivate_stmt->bind_param("i", $item_id);
+
+        if (!$deactivate_stmt->execute()) {
+            throw new Exception('Failed to deactivate asset item: ' . $deactivate_stmt->error);
+        }
+        $deactivate_stmt->close();
+
+        $history_details = 'Asset item marked as inactive (previous status: ' . $previous_status . ')';
+        $history_stmt = $conn->prepare("INSERT INTO asset_item_history (item_id, action, details, created_by, created_at) VALUES (?, 'Status Changed', ?, ?, CURRENT_TIMESTAMP)");
+        $history_stmt->bind_param("isi", $item_id, $history_details, $_SESSION['user_id']);
+        $history_stmt->execute();
+        $history_stmt->close();
+
+        $conn->commit();
+
+        if (function_exists('logSystemAction')) {
+            logSystemAction($_SESSION['user_id'], 'asset_item_deactivated', 'asset_management', "Deactivated asset item: {$item['description']} (ID: {$item_id})");
+        }
+
+        $_SESSION['success'] = 'Asset item has been deleted and marked as inactive.';
+        header('Location: view_asset_item.php?id=' . $item_id);
+        exit();
+    } catch (Exception $e) {
+        $conn->rollback();
+        $_SESSION['error'] = 'Error deactivating asset item: ' . $e->getMessage();
+        header('Location: view_asset_item.php?id=' . $item_id);
+        exit();
     }
 }
 
@@ -687,7 +743,8 @@ function formatStatus($status) {
         'disposed' => ['Disposed', 'status-disposed'],
         'red_tagged' => ['Red Tagged', 'status-red-tagged'],
         'borrowed' => ['Borrowed', 'status-borrowed'],
-        'no_tag' => ['No Tag', 'status-no-tag']
+        'no_tag' => ['No Tag', 'status-no-tag'],
+        'inactive' => ['Inactive', 'status-inactive']
     ];
     return $status_map[$status] ?? [$status, 'status-default'];
 }
@@ -948,6 +1005,19 @@ $status_display = formatStatus($item['status']);
     
     <!-- Main Content -->
     <div class="main-content">
+        <?php if (isset($_SESSION['success'])): ?>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle-fill"></i> <?php echo htmlspecialchars($_SESSION['success']); unset($_SESSION['success']); ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
+        <?php if (isset($_SESSION['error'])): ?>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill"></i> <?php echo htmlspecialchars($_SESSION['error']); unset($_SESSION['error']); ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
+
         <!-- Page Header -->
         <div class="page-header">
             <div class="row align-items-center">
@@ -964,11 +1034,13 @@ $status_display = formatStatus($item['status']);
                                 <i class="bi bi-gear"></i> Actions
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionsDropdown">
+                                <?php if (adminHasPermission('assets.update', 'can_update')): ?>
                                 <li>
                                     <a href="asset_items_edit.php?id=<?php echo $item_id; ?>" class="dropdown-item">
                                         <i class="bi bi-pencil"></i> Edit
                                     </a>
                                 </li>
+                                <?php endif; ?>
                                 <li>
                                     <a href="asset_items.php?asset_id=<?php echo $asset_id; ?>" class="dropdown-item">
                                         <i class="bi bi-arrow-left"></i> Back to Items
@@ -984,6 +1056,14 @@ $status_display = formatStatus($item['status']);
                                         <i class="bi bi-file-pdf"></i> Export PDF
                                     </a>
                                 </li>
+                                <?php if ($item['status'] !== 'inactive' && adminHasPermission('assets.delete', 'can_delete')): ?>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#deactivateModal">
+                                        <i class="bi bi-trash"></i> Delete
+                                    </button>
+                                </li>
+                                <?php endif; ?>
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <button type="button" class="dropdown-item" onclick="location.reload()">
@@ -1722,7 +1802,11 @@ $status_display = formatStatus($item['status']);
                 <div class="detail-card">
                     <h5 class="mb-3"><i class="bi bi-gear"></i> Actions</h5>
                     <div class="d-flex flex-wrap gap-2">
-                        <?php if ($item['status'] === 'no_tag'): ?>
+                        <?php if ($item['status'] === 'inactive'): ?>
+                            <div class="text-muted text-center w-100">
+                                <i class="bi bi-slash-circle"></i> This item is inactive. No actions are available.
+                            </div>
+                        <?php elseif ($item['status'] === 'no_tag'): ?>
                             <!-- Show Create Tag button for no_tag assets -->
                             <a href="create_tag.php?id=<?php echo $item_id; ?>" class="btn btn-primary">
                                 <i class="bi bi-tag"></i> Create Tag
@@ -1817,6 +1901,52 @@ $status_display = formatStatus($item['status']);
     <?php require_once 'includes/change-password-modal.php'; ?>
     <?php require_once 'includes/footer.php'; ?>
     
+    <!-- Deactivate (Soft Delete) Confirmation Modal -->
+    <div class="modal fade" id="deactivateModal" tabindex="-1" aria-labelledby="deactivateModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deactivateModalLabel">
+                        <i class="bi bi-trash text-danger"></i> Delete Asset Item
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="deactivateForm" method="POST" action="view_asset_item.php?id=<?php echo $item_id; ?>">
+                        <input type="hidden" name="action" value="deactivate_item">
+                        <input type="hidden" name="item_id" value="<?php echo $item_id; ?>">
+
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <strong>Note:</strong> This will not permanently remove the record. The asset item will be marked as <strong>inactive</strong> and removed from active inventory.
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label"><strong>Description:</strong></label>
+                            <p class="form-control-plaintext mb-0"><?php echo htmlspecialchars($item['description']); ?></p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label"><strong>Property No:</strong></label>
+                            <p class="form-control-plaintext mb-0"><?php echo $item['property_no'] ? htmlspecialchars($item['property_no']) : 'Not assigned'; ?></p>
+                        </div>
+
+                        <div class="mb-0">
+                            <label class="form-label"><strong>Current Status:</strong></label>
+                            <p class="form-control-plaintext mb-0"><?php echo htmlspecialchars($status_display[0]); ?></p>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" form="deactivateForm" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Disposal Confirmation Modal -->
     <div class="modal fade" id="disposeModal" tabindex="-1" aria-labelledby="disposeModalLabel" aria-hidden="true">
         <div class="modal-dialog">

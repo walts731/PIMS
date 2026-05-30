@@ -8,6 +8,9 @@ if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['system_admin'
     exit();
 }
 
+require_once 'includes/check_permissions.php';
+adminRequirePermission('assets.read', 'can_read');
+
 // Get asset ID from URL
 $asset_id = isset($_GET['asset_id']) ? intval($_GET['asset_id']) : 0;
 
@@ -294,9 +297,13 @@ $disposed_items = count(array_filter($items, function($item) { return $item['sta
                                     <td><?php echo date('M j, Y', strtotime($item['acquisition_date'])); ?></td>
                                     <td>
                                         <?php if ($item['status'] === 'no_tag'): ?>
-                                            <a href="create_tag.php?id=<?php echo $item['id']; ?>" class="btn btn-outline-warning btn-action" title="Create Tag">
-                                                <i class="bi bi-tag"></i>
-                                            </a>
+                                            <?php if (adminHasPermission('tags.create', 'can_create')): ?>
+                                                <a href="create_tag.php?id=<?php echo $item['id']; ?>" class="btn btn-outline-warning btn-action" title="Create Tag">
+                                                    <i class="bi bi-tag"></i>
+                                                </a>
+                                            <?php else: ?>
+                                                <span class="text-muted">Pending Tag</span>
+                                            <?php endif; ?>
                                         <?php else: ?>
                                             <a href="view_asset_item.php?id=<?php echo $item['id']; ?>" class="btn btn-outline-info btn-action" title="View Details">
                                                 <i class="bi bi-eye"></i>

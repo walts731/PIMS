@@ -13,6 +13,9 @@ if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['system_admin'
     exit();
 }
 
+require_once 'includes/check_permissions.php';
+adminRequirePermission('tags.create', 'can_create', 'dashboard.php');
+
 // Log create tag page access
 logSystemAction($_SESSION['user_id'], 'access', 'create_tag', 'Admin accessed create tag page');
 

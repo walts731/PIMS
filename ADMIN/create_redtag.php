@@ -20,6 +20,9 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
     exit();
 }
 
+require_once 'includes/check_permissions.php';
+adminRequirePermission('tags.create', 'can_create', 'dashboard.php');
+
 // Log red tag creation page access
 logSystemAction($_SESSION['user_id'], 'access', 'create_redtag', 'Admin accessed create red tag page');
 

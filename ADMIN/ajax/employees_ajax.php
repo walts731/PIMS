@@ -21,12 +21,18 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
     exit();
 }
 
+require_once '../includes/check_permissions.php';
+
 header('Content-Type: application/json');
 
 $response = ['success' => false, 'message' => ''];
 
 // GET employee data for editing
 if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['action']) && $_GET['action'] == 'get_employee') {
+    if (!adminHasPermission('users.read', 'can_read')) {
+        echo json_encode(['success' => false, 'message' => 'You do not have permission to view employee information.']);
+        exit();
+    }
     $id = intval($_GET['id'] ?? 0);
     
     try {
@@ -48,6 +54,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['action']) && $_GET['acti
 
 // UPDATE - Edit employee
 elseif ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'edit') {
+    if (!adminHasPermission('users.update', 'can_update')) {
+        echo json_encode(['success' => false, 'message' => 'You do not have permission to edit employee information.']);
+        exit();
+    }
     $id = intval($_POST['id'] ?? 0);
     $firstname = trim($_POST['firstname'] ?? '');
     $lastname = trim($_POST['lastname'] ?? '');
@@ -101,6 +111,10 @@ elseif ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POS
 
 // ADD - Create new employee
 elseif ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'add') {
+    if (!adminHasPermission('users.create', 'can_create')) {
+        echo json_encode(['success' => false, 'message' => 'You do not have permission to add new employees.']);
+        exit();
+    }
     $firstname = trim($_POST['firstname'] ?? '');
     $lastname = trim($_POST['lastname'] ?? '');
     $email = trim($_POST['email'] ?? '');
@@ -165,6 +179,10 @@ elseif ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POS
 
 // DELETE - Delete employee
 elseif ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'delete') {
+    if (!adminHasPermission('users.delete', 'can_delete')) {
+        echo json_encode(['success' => false, 'message' => 'You do not have permission to delete employees.']);
+        exit();
+    }
     $id = intval($_POST['id'] ?? 0);
     
     if ($id <= 0) {

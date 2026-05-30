@@ -19,6 +19,9 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
     exit();
 }
 
+require_once 'includes/check_permissions.php';
+adminRequirePermission('fuel.read', 'can_read', 'dashboard.php');
+
 // Log fuel page access
 logSystemAction($_SESSION['user_id'], 'access', 'fuel_inventory', 'User accessed fuel inventory page');
 ?>

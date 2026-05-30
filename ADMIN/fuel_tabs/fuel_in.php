@@ -27,9 +27,11 @@ $fuel_types_result = $conn->query($fuel_types_query);
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h4 class="mb-0">Fuel In Transactions</h4>
     <div>
+        <?php if (adminHasPermission('fuel.manage', 'can_create')): ?>
         <button class="btn btn-success btn-sm" onclick="showFuelInModal()">
             <i class="bi bi-plus-circle"></i> Record Fuel In
         </button>
+        <?php endif; ?>
     </div>
 </div>
 

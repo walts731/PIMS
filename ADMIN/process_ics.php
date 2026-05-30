@@ -19,6 +19,9 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
     exit();
 }
 
+require_once 'includes/check_permissions.php';
+adminRequirePermission('forms.create', 'can_create', 'ics_form.php');
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         // Get form data
@@ -41,7 +44,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $total_costs = $_POST['total_cost'] ?? [];
         $descriptions = $_POST['description'] ?? [];
         $useful_lives = $_POST['useful_life'] ?? [];
+        $dates_acquired = $_POST['date_acquired'] ?? [];
         $asset_ids = []; // Track created asset IDs for notifications
+        
+        $date_col_check = $conn->query("SHOW COLUMNS FROM ics_items LIKE 'date_acquired'");
+        if ($date_col_check && $date_col_check->num_rows === 0) {
+            $conn->query("ALTER TABLE ics_items ADD COLUMN date_acquired DATE DEFAULT NULL AFTER item_no");
+        }
         
         // Validate required fields (Removed)
         // if (empty($entity_name) || empty($fund_cluster)) {
@@ -95,7 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->close();
         
         // Insert ICS items
-        $item_stmt = $conn->prepare("INSERT INTO ics_items (form_id, ics_id, item_no, quantity, unit, unit_cost, total_cost, description, useful_life) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $item_stmt = $conn->prepare("INSERT INTO ics_items (form_id, ics_id, item_no, quantity, unit, unit_cost, total_cost, description, useful_life, date_acquired) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         
         for ($i = 0; $i < count($items); $i++) {
             if (!empty($items[$i]) && !empty($descriptions[$i])) {
@@ -103,8 +112,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $unit_cost = floatval($unit_costs[$i]);
                 $total_cost = floatval($total_costs[$i]);
                 $useful_life = intval($useful_lives[$i]);
+                $date_acquired = !empty($dates_acquired[$i]) ? $dates_acquired[$i] : null;
+                $acquisition_date = $date_acquired ?? date('Y-m-d');
                 
-                $item_stmt->bind_param("iisdsddsi", $ics_form_id, $ics_form_id, $items[$i], $quantity, $units[$i], $unit_cost, $total_cost, $descriptions[$i], $useful_life);
+                $item_stmt->bind_param("iisdsddsis", $ics_form_id, $ics_form_id, $items[$i], $quantity, $units[$i], $unit_cost, $total_cost, $descriptions[$i], $useful_life, $date_acquired);
                 
                 if (!$item_stmt->execute()) {
                     throw new Exception('Failed to save ICS item: ' . $item_stmt->error);
@@ -202,13 +213,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $asset_ids[] = $asset_id;
                 
                 // Insert multiple asset items based on quantity
-                $asset_item_stmt = $conn->prepare("INSERT INTO asset_items (asset_id, ics_id, description, unit, status, value, acquisition_date, office_id, created_at, last_updated) VALUES (?, ?, ?, ?, 'no_tag', ?, CURDATE(), ?, NOW(), NOW())");
+                $asset_item_stmt = $conn->prepare("INSERT INTO asset_items (asset_id, ics_id, description, unit, status, value, acquisition_date, office_id, created_at, last_updated) VALUES (?, ?, ?, ?, 'no_tag', ?, ?, ?, NOW(), NOW())");
                 // Create individual asset items for each quantity
                 for ($item_num = 1; $item_num <= $quantity; $item_num++) {
                     // Debug: Log the values being inserted
                     logSystemAction($_SESSION['user_id'], 'ICS Asset Item Insert Debug', 'assets', "Item: {$descriptions[$i]}, Unit: '{$units[$i]}', Unit Cost: {$unit_cost}, Office ID: {$office_id}");
                     
-                    $asset_item_stmt->bind_param("iissdi", $asset_id, $ics_form_id, $descriptions[$i], $units[$i], $unit_cost, $office_id);
+                    $asset_item_stmt->bind_param("iissdsi", $asset_id, $ics_form_id, $descriptions[$i], $units[$i], $unit_cost, $acquisition_date, $office_id);
                     
                     if (!$asset_item_stmt->execute()) {
                         throw new Exception('Failed to save asset item ' . $item_num . ': ' . $asset_item_stmt->error);

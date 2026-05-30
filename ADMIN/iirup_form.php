@@ -19,6 +19,9 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
     exit();
 }
 
+require_once 'includes/check_permissions.php';
+adminRequirePermission('forms.read', 'can_read', 'dashboard.php');
+
 logSystemAction($_SESSION['user_id'], 'Accessed Individual Item Request for User Property Form', 'forms', 'iirup_form.php');
 
 // Handle auto-fill data from view_asset_item.php
@@ -475,9 +478,11 @@ if ($result && $row = $result->fetch_assoc()) {
 
               <!-- Form Actions -->
                         <div class="text-center">
+                            <?php if (adminHasPermission('forms.create', 'can_create')): ?>
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-save"></i> Save IIRUP
                             </button>
+                            <?php endif; ?>
                         </div>
         </div>
     </div>

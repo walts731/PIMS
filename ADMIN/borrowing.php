@@ -15,6 +15,9 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
     exit();
 }
 
+require_once 'includes/check_permissions.php';
+adminRequirePermission('borrowing.read', 'can_read', 'dashboard.php');
+
 // Log borrowing page access
 logSystemAction($_SESSION['user_id'], 'access', 'borrowing', 'Admin accessed borrowing page');
 
@@ -26,6 +29,7 @@ $error_message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action'])) {
         if ($_POST['action'] === 'submit_borrow_request') {
+            adminRequirePermission('borrowing.create', 'can_create', 'borrowing.php');
             // Validate and sanitize input
             $guest_name = trim($_POST['guest_name']);
             $barangay = trim($_POST['barangay']);
@@ -102,6 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header("Location: borrowing.php");
             exit();
         } elseif ($_POST['action'] === 'mark_returned') {
+            adminRequirePermission('borrowing.update', 'can_update', 'borrowing.php');
             $borrow_id = $_POST['borrow_id'];
             
             try {
@@ -337,11 +342,13 @@ if (isset($_SESSION['error_message'])) {
                             <i class="bi bi-gear"></i> Actions
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionsDropdown">
+                            <?php if (adminHasPermission('borrowing.create', 'can_create')): ?>
                             <li>
                                 <button class="dropdown-item" onclick="window.location.href='borrow_request.php'">
                                     <i class="bi bi-plus-circle"></i> New Borrow Request
                                 </button>
                             </li>
+                            <?php endif; ?>
                                                         <li>
                                 <button class="dropdown-item" onclick="refreshBorrowRequests()">
                                     <i class="bi bi-arrow-clockwise"></i> Refresh Page
@@ -415,7 +422,7 @@ if (isset($_SESSION['error_message'])) {
                                             <button type="button" class="btn btn-sm btn-outline-primary" onclick="printBorrowForm(<?php echo $request['id']; ?>)">
                                                 <i class="bi bi-printer"></i> Print
                                             </button>
-                                            <?php if ($request['status'] === 'approved'): ?>
+                                            <?php if ($request['status'] === 'approved' && adminHasPermission('borrowing.update', 'can_update')): ?>
                                                 <button type="button" class="btn btn-sm btn-outline-success" onclick="markAsReturned(<?php echo $request['id']; ?>)">
                                                     <i class="bi bi-check-circle"></i> Return
                                                 </button>

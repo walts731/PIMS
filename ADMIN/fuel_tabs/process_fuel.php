@@ -25,12 +25,15 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
+require_once '../includes/check_permissions.php';
+
 $user_id = $_SESSION['user_id'];
 
 $action = $_POST['action'] ?? '';
 
 // For traditional form submissions (add-fuel-in), don't set JSON header
 if ($action === 'add-fuel-in') {
+    adminRequirePermission('fuel.manage', 'can_create', '../fuel.php?tab=fuelin');
     addFuelIn();
     exit();
 }
@@ -44,24 +47,31 @@ try {
             // Handled above before JSON header
             break;
         case 'quick-add-fuel-in':
+            adminRequirePermission('fuel.manage', 'can_create', '../fuel.php');
             quickAddFuelIn();
             break;
         case 'add-fuel-out':
+            adminRequirePermission('fuel.manage', 'can_create', '../fuel.php');
             addFuelOut();
             break;
         case 'quick-add-fuel-out':
+            adminRequirePermission('fuel.manage', 'can_create', '../fuel.php');
             quickAddFuelOut();
             break;
         case 'add-stock':
+            adminRequirePermission('fuel.manage', 'can_create', '../fuel.php');
             addStock();
             break;
         case 'edit-stock':
+            adminRequirePermission('fuel.manage', 'can_update', '../fuel.php');
             editStock();
             break;
         case 'delete-fuel-in':
+            adminRequirePermission('fuel.manage', 'can_delete', '../fuel.php');
             deleteFuelIn();
             break;
         case 'delete-fuel-out':
+            adminRequirePermission('fuel.manage', 'can_delete', '../fuel.php');
             deleteFuelOut();
             break;
         default:

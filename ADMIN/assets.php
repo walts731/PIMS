@@ -21,6 +21,9 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
     exit();
 }
 
+require_once 'includes/check_permissions.php';
+adminRequirePermission('assets.read', 'can_read');
+
 // Log assets page access
 logSystemAction($_SESSION['user_id'], 'access', 'assets', 'Admin accessed assets page');
 
@@ -123,6 +126,7 @@ if (isset($_GET['success']) && $_GET['success'] == '1') {
 
 // CREATE - Add new asset
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'add') {
+    adminRequirePermission('assets.create', 'can_create', 'assets.php');
     // Debug: Log that we received the POST request
     error_log("DEBUG: POST request received for add asset action");
     error_log("DEBUG: POST data: " . print_r($_POST, true));
@@ -662,11 +666,13 @@ try {
                                 <i class="bi bi-gear"></i> Actions
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionsDropdown">
+                                <?php if (adminHasPermission('assets.create', 'can_create')): ?>
                                 <li>
                                     <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#addAssetModal">
                                         <i class="bi bi-plus-circle"></i> Add Asset
                                     </button>
                                 </li>
+                                <?php endif; ?>
                                 <li>
                                     <button type="button" class="dropdown-item" onclick="exportAssets()">
                                         <i class="bi bi-download"></i> Export Assets

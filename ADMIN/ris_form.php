@@ -20,6 +20,9 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
     exit();
 }
 
+require_once 'includes/check_permissions.php';
+adminRequirePermission('forms.read', 'can_read', 'dashboard.php');
+
 logSystemAction($_SESSION['user_id'], 'Accessed Requisition and Issue Slip Form', 'forms', 'ris_form.php');
 
 // Function to get singular form of unit name
@@ -571,9 +574,11 @@ if ($result && $row = $result->fetch_assoc()) {
                             
                             <!-- Form Actions -->
                         <div class="text-center">
+                            <?php if (adminHasPermission('forms.create', 'can_create')): ?>
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-save"></i> Save RIS
                             </button>
+                            <?php endif; ?>
                         </div>
                     </form>
                 </div>

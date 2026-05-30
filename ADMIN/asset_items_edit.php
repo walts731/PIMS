@@ -9,6 +9,9 @@ if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['system_admin'
     exit();
 }
 
+require_once 'includes/check_permissions.php';
+adminRequirePermission('assets.update', 'can_update', 'assets.php');
+
 // Get asset item ID from URL
 $item_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 

@@ -14,9 +14,12 @@ header('Content-Type: application/json');
 
 $action = $_POST['action'] ?? '';
 
+require_once 'includes/check_permissions.php';
+
 try {
     switch ($action) {
         case 'edit':
+            adminRequirePermission('infrastructure.update', 'can_update', 'infrastructure.php');
             $id = intval($_POST['id']);
             $classification = $_POST['classification'];
             $item_description = $_POST['item_description'];
@@ -82,6 +85,7 @@ try {
             break;
             
         case 'delete':
+            adminRequirePermission('infrastructure.delete', 'can_delete', 'infrastructure.php');
             $id = intval($_POST['id']);
             
             if ($id <= 0) {

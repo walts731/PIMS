@@ -19,6 +19,9 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
     exit();
 }
 
+require_once 'includes/check_permissions.php';
+adminRequirePermission('forms.create', 'can_create', 'par_form.php');
+
 // Function to parse property number and extract category/subcategory codes
 function parsePropertyNumber($property_number) {
     $parsed = [

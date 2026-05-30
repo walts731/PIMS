@@ -19,6 +19,9 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
     exit();
 }
 
+require_once 'includes/check_permissions.php';
+adminRequirePermission('forms.read', 'can_read', 'dashboard.php');
+
 logSystemAction($_SESSION['user_id'], 'Accessed Inventory Transfer Request Form', 'forms', 'itr_form.php');
 
 // Get next ITR number
@@ -568,9 +571,11 @@ if (isset($_GET['transfer_asset']) && $_GET['transfer_asset'] == '1') {
 
                     <!-- Form Actions -->
                     <div class="text-center">
+                        <?php if (adminHasPermission('forms.create', 'can_create')): ?>
                         <button type="submit" class="btn btn-primary">
                             <i class="bi bi-save"></i> Save ITR
                         </button>
+                        <?php endif; ?>
                     </div>
                 </form>
             </div>

@@ -23,6 +23,13 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
 // Log no inventory tag page access
 logSystemAction($_SESSION['user_id'], 'access', 'no_inventory_tag', 'Admin accessed no inventory tag page');
 
+// Flash messages from redirects (e.g. after delete)
+if (isset($_SESSION['flash_message'])) {
+    $message = $_SESSION['flash_message'];
+    $message_type = $_SESSION['flash_type'] ?? 'success';
+    unset($_SESSION['flash_message'], $_SESSION['flash_type']);
+}
+
 // Initialize asset specific manager
 $assetManager = new AssetSpecificManager($conn);
 
@@ -33,7 +40,7 @@ $office_filter = isset($_GET['office']) ? intval($_GET['office']) : 0;
 // Get asset items without inventory tags
 $asset_items = [];
 try {
-    $sql = "SELECT ai.*, a.description as asset_description, ac.category_name, ac.category_code, o.office_name
+    $sql = "SELECT ai.*, ai.description as item_description, a.description as asset_description, ac.category_name, ac.category_code, o.office_name
             FROM asset_items ai 
             LEFT JOIN assets a ON ai.asset_id = a.id 
             LEFT JOIN asset_categories ac ON a.asset_categories_id = ac.id 
@@ -208,8 +215,11 @@ try {
                 <tbody>
                     <?php if (!empty($asset_items)): ?>
                         <?php foreach ($asset_items as $item): ?>
-                            <tr>
-                                <td><?php echo htmlspecialchars($item['asset_description']); ?></td>
+                            <?php
+                            $display_description = $item['item_description'] ?: ($item['asset_description'] ?? '');
+                            ?>
+                            <tr data-item-id="<?php echo (int) $item['id']; ?>">
+                                <td><?php echo htmlspecialchars($display_description); ?></td>
                                 <td>
                                     <?php
                                     $status_class = '';
@@ -248,10 +258,18 @@ try {
                                 <td><?php echo htmlspecialchars($item['office_name'] ?? 'N/A'); ?></td>
                                 <td style="display: none;"><?php echo $item['office_id']; ?></td>
                                 <td data-order="<?php echo strtotime($item['last_updated'] ?? 'now'); ?>"><small><?php echo date('M j, Y', strtotime($item['last_updated'] ?? 'now')); ?></small></td>
-                                <td>
+                                <td class="text-nowrap">
                                     <a href="create_tag.php?id=<?php echo $item['id']; ?>" class="btn btn-outline-warning btn-action" title="Create Tag">
                                         <i class="bi bi-tag"></i>
                                     </a>
+                                    <button type="button"
+                                            class="btn btn-outline-danger btn-action btn-delete-item"
+                                            title="Delete permanently"
+                                            data-item-id="<?php echo (int) $item['id']; ?>"
+                                            data-item-description="<?php echo htmlspecialchars($display_description, ENT_QUOTES, 'UTF-8'); ?>"
+                                            data-property-no="<?php echo htmlspecialchars($item['property_no'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -273,6 +291,34 @@ try {
     <?php require_once 'includes/logout-modal.php'; ?>
     <?php require_once 'includes/change-password-modal.php'; ?>
     <?php require_once 'includes/footer.php'; ?>
+
+    <!-- Delete confirmation modal -->
+    <div class="modal fade" id="deleteItemModal" tabindex="-1" aria-labelledby="deleteItemModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteItemModalLabel">
+                        <i class="bi bi-trash text-danger"></i> Delete Asset Item
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Warning:</strong> This will permanently delete the asset item and cannot be undone.
+                    </div>
+                    <p class="mb-1"><strong>Description:</strong> <span id="deleteItemDescription"></span></p>
+                    <p class="mb-0"><strong>Property No:</strong> <span id="deleteItemPropertyNo"></span></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteItemBtn">
+                        <i class="bi bi-trash"></i> Delete Permanently
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js">
     </script>
@@ -283,6 +329,11 @@ try {
     <?php require_once 'includes/sidebar-scripts.php'; ?>
     <script>
         $(document).ready(function() {
+            let deleteItemId = null;
+            let deleteButton = null;
+            const deleteModalEl = document.getElementById('deleteItemModal');
+            const deleteModal = deleteModalEl ? new bootstrap.Modal(deleteModalEl) : null;
+
             // Initialize DataTable with simplified DOM (search stays inside)
             var table = $('#untaggedTable').DataTable({
                 pageLength: 25,
@@ -327,6 +378,62 @@ try {
                         table.column(4).search(officeValue).draw(); // Search in the hidden Office ID column (index 4)
                     });
                 }
+            });
+
+            $(document).on('click', '.btn-delete-item', function() {
+                deleteItemId = $(this).data('item-id');
+                deleteButton = $(this);
+                $('#deleteItemDescription').text($(this).data('item-description') || 'N/A');
+                const propertyNo = $(this).data('property-no');
+                $('#deleteItemPropertyNo').text(propertyNo ? propertyNo : 'Not assigned');
+                if (deleteModal) {
+                    deleteModal.show();
+                }
+            });
+
+            $('#confirmDeleteItemBtn').on('click', function() {
+                if (!deleteItemId || !deleteButton) {
+                    return;
+                }
+
+                const $confirmBtn = $(this);
+                $confirmBtn.prop('disabled', true);
+
+                $.ajax({
+                    url: 'process_delete_no_tag_item.php',
+                    method: 'POST',
+                    dataType: 'json',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    data: {
+                        action: 'delete',
+                        item_id: deleteItemId
+                    }
+                }).done(function(response) {
+                    if (response.success) {
+                        if (deleteModal) {
+                            deleteModal.hide();
+                        }
+                        table.row(deleteButton.closest('tr')).remove().draw(false);
+                        deleteItemId = null;
+                        deleteButton = null;
+
+                        const alertHtml = '<div class="alert alert-success alert-dismissible fade show mt-2" role="alert">' +
+                            '<i class="bi bi-check-circle"></i> ' + $('<div>').text(response.message).html() +
+                            '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+                        $('.page-header .col-md-8').find('.alert').remove();
+                        $('.page-header .col-md-8').append(alertHtml);
+                    } else {
+                        alert(response.message || 'Failed to delete asset item.');
+                    }
+                }).fail(function(xhr) {
+                    let message = 'Failed to delete asset item.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        message = xhr.responseJSON.message;
+                    }
+                    alert(message);
+                }).always(function() {
+                    $confirmBtn.prop('disabled', false);
+                });
             });
         });
     </script>

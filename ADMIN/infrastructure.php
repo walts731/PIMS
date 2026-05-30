@@ -19,6 +19,9 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
     exit();
 }
 
+require_once 'includes/check_permissions.php';
+adminRequirePermission('infrastructure.read', 'can_read', 'dashboard.php');
+
 // Log infrastructure page access
 logSystemAction($_SESSION['user_id'], 'access', 'infrastructure', 'Admin accessed infrastructure page');
 
@@ -31,6 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     
     if ($action == 'add') {
+        adminRequirePermission('infrastructure.create', 'can_create', 'infrastructure.php');
         $classification = trim($_POST['classification'] ?? '');
         $item_description = trim($_POST['item_description'] ?? '');
         $nature_occupancy = trim($_POST['nature_occupancy'] ?? '');
@@ -207,11 +211,13 @@ while ($row = $loc_result->fetch_assoc()) {
                             <i class="bi bi-gear"></i> Actions
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionsDropdown">
+                            <?php if (adminHasPermission('infrastructure.create', 'can_create')): ?>
                             <li>
                                 <button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#addInfrastructureModal">
                                     <i class="bi bi-plus-circle"></i> Add Infrastructure
                                 </button>
                             </li>
+                            <?php endif; ?>
                             <li>
                                 <button class="dropdown-item" onclick="exportInfrastructure()">
                                     <i class="bi bi-download"></i> Export
@@ -266,12 +272,16 @@ while ($row = $loc_result->fetch_assoc()) {
                                             <button class="btn btn-outline-info" onclick="viewInfrastructure(<?php echo $item['id']; ?>)" title="View Details">
                                                 <i class="bi bi-eye"></i>
                                             </button>
+                                            <?php if (adminHasPermission('infrastructure.update', 'can_update')): ?>
                                             <button class="btn btn-outline-warning" onclick="editInfrastructure(<?php echo $item['id']; ?>)" title="Edit Item">
                                                 <i class="bi bi-pencil"></i>
                                             </button>
+                                            <?php endif; ?>
+                                            <?php if (adminHasPermission('infrastructure.delete', 'can_delete')): ?>
                                             <button class="btn btn-outline-danger" onclick="deleteInfrastructure(<?php echo $item['id']; ?>, '<?php echo htmlspecialchars(addslashes($item['item_description'])); ?>')" title="Delete Item">
                                                 <i class="bi bi-trash"></i>
                                             </button>
+                                            <?php endif; ?>
                                         </div>
                                     </td>
                                     <td style="display:none;"><?php echo htmlspecialchars($item['classification']); ?></td>

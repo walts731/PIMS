@@ -14,9 +14,12 @@ header('Content-Type: application/json');
 
 $action = $_POST['action'] ?? '';
 
+require_once 'includes/check_permissions.php';
+
 try {
     switch ($action) {
         case 'edit':
+            adminRequirePermission('software.update', 'can_update', 'software.php');
             $id = intval($_POST['id']);
             $software_name = $_POST['software_name'];
             $category = $_POST['category'];

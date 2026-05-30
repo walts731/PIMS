@@ -7,6 +7,9 @@ if (!isset($_SESSION['user_id'])) {
 
 require_once '../config.php';
 require_once '../includes/logger.php';
+require_once 'includes/check_permissions.php';
+
+adminRequirePermission('borrowing.create', 'can_create', 'borrowing.php');
 
 // Check if form is submitted
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

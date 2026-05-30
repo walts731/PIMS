@@ -1,0 +1,6 @@
+[2026-05-20 12:50:42] Cron started.
+[2026-05-20 12:50:42] Found 1 pending backup tasks.
+[2026-05-20 12:50:42] Running task: DAILY (ID: 10)
+[2026-05-20 12:50:44] Task 10 completed successfully.
+[2026-05-20 12:50:44] Next run for task 10 scheduled for 2026-05-21 10:53:00
+[2026-05-20 12:50:44] Cron finished.

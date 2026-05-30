@@ -19,6 +19,9 @@ if (!in_array($_SESSION['role'], ['admin', 'system_admin'])) {
     exit();
 }
 
+require_once 'includes/check_permissions.php';
+adminRequirePermission('assets.delete', 'can_delete', 'red_tags.php');
+
 // Verify CSRF token
 if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token']) || 
     !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
